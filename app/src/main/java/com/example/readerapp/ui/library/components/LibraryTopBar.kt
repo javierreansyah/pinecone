@@ -28,7 +28,7 @@ fun LibraryTopBar(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     onSettingsClick: () -> Unit,
-    onTuneClick: () -> Unit
+    onTuneClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier

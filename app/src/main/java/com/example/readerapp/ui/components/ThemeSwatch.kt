@@ -36,11 +36,12 @@ fun ThemeSwatch(
     color: Color = Color.Transparent,
     isAuto: Boolean = false,
     isCustom: Boolean = false,
-    label: String
+    label: String,
+    modifier: Modifier = Modifier.padding(horizontal = 4.dp)
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(horizontal = 4.dp)
+        modifier = modifier
     ) {
         Box(
             modifier = Modifier
@@ -59,8 +60,8 @@ fun ThemeSwatch(
                 .clip(CircleShape)
                 .background(if (isAuto || isCustom) Color.Transparent else color)
                 .border(
-                    width = 1.dp,
-                    color = if (isAuto || isCustom) Color.Transparent else Color.Gray.copy(alpha = 0.3f),
+                    width = 1.5.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant,
                     shape = CircleShape
                 )
                 .combinedClickable(
@@ -85,7 +86,11 @@ fun ThemeSwatch(
                     )
                 }
             } else if (isCustom) {
-                Icon(MaterialSymbols.Outlined.Add, contentDescription = "Add Theme", tint = MaterialTheme.colorScheme.onSurface)
+                Icon(
+                    imageVector = MaterialSymbols.Outlined.Add, 
+                    contentDescription = "Add Theme", 
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
         Text(

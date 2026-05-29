@@ -53,15 +53,12 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
     )
 
     init {
-        // Import bundled books on first launch
+        // Import bundled books on launch. importBundledBooks checks for existence to avoid duplicates.
         viewModelScope.launch {
-            val hasImported = readerPreferences.hasImportedBundled.first()
-            if (!hasImported) {
-                _uiState.update { it.copy(isImporting = true) }
-                bookRepository.importBundledBooks()
-                readerPreferences.setHasImportedBundled(true)
-                _uiState.update { it.copy(isImporting = false) }
-            }
+            _uiState.update { it.copy(isImporting = true) }
+            bookRepository.importBundledBooks()
+            readerPreferences.setHasImportedBundled(true)
+            _uiState.update { it.copy(isImporting = false) }
         }
     }
 
