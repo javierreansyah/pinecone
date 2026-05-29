@@ -1,0 +1,59 @@
+package com.example.readerapp
+
+import android.app.Application
+import androidx.room.Room
+import com.example.readerapp.data.local.AppDatabase
+import com.example.readerapp.data.repository.BookRepository
+import org.readium.r2.shared.util.http.DefaultHttpClient
+import org.readium.r2.streamer.PublicationOpener
+import org.readium.r2.shared.util.asset.AssetRetriever
+import org.readium.r2.streamer.parser.DefaultPublicationParser
+
+class ReaderApplication : Application() {
+
+    lateinit var database: AppDatabase
+        private set
+
+    lateinit var bookRepository: BookRepository
+        private set
+
+    lateinit var publicationOpener: PublicationOpener
+        private set
+        
+    lateinit var assetRetriever: AssetRetriever
+        private set
+
+    override fun onCreate() {
+        super.onCreate()
+
+        database = Room.databaseBuilder(
+            applicationContext,
+            AppDatabase::class.java,
+            "reader_database",
+        ).build()
+
+        val httpClient = DefaultHttpClient()
+        
+        assetRetriever = AssetRetriever(
+            contentResolver = contentResolver,
+            httpClient = httpClient
+        )
+
+        publicationOpener = PublicationOpener(
+            publicationParser = DefaultPublicationParser(
+                context = this,
+                httpClient = httpClient,
+                assetRetriever = assetRetriever,
+                pdfFactory = null
+            )
+        )
+
+        bookRepository = BookRepository(
+            context = applicationContext,
+            bookDao = database.bookDao(),
+            bookmarkDao = database.bookmarkDao(),
+            publicationOpener = publicationOpener,
+            assetRetriever = assetRetriever
+        )
+    }
+}
