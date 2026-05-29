@@ -1,6 +1,10 @@
 package com.example.readerapp.ui.components
 
 import android.annotation.SuppressLint
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -8,13 +12,25 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Arrow_drop_down
+import com.composables.icons.materialsymbols.outlined.Arrow_drop_up
 import com.composables.icons.materialsymbols.outlined.Brightness_auto
 import com.composables.icons.materialsymbols.outlined.Brightness_medium
+import com.composables.icons.materialsymbols.outlined.Format_align_center
+import com.composables.icons.materialsymbols.outlined.Format_align_left
+import com.composables.icons.materialsymbols.outlined.Format_align_right
+import com.composables.icons.materialsymbols.outlined.Format_align_justify
+import com.composables.icons.materialsymbols.outlined.Format_textdirection_l_to_r
+import com.composables.icons.materialsymbols.outlined.Format_textdirection_r_to_l
+import com.composables.icons.materialsymbols.outlined.Image
+import com.composables.icons.materialsymbols.outlined.Contrast
+import com.composables.icons.materialsymbols.outlined.Invert_colors
 import com.example.readerapp.data.local.CustomReaderTheme
 import com.example.readerapp.data.local.ReaderSettings
 import kotlin.math.roundToInt
@@ -29,19 +45,28 @@ fun ReaderSettingsContent(
 ) {
     var showColorPicker by remember { mutableStateOf(false) }
     var themeToDelete by remember { mutableStateOf<CustomReaderTheme?>(null) }
+    var accessibilityExpanded by remember { mutableStateOf(false) }
+    var publisherStylesExpanded by remember { mutableStateOf(false) }
+
+    val animationSpec = tween<IntSize>(durationMillis = 100)
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+            .padding(bottom = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         // Brightness Section
-        Column {
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             Text("Brightness", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 FilledIconToggleButton(
                     checked = settings.autoBrightness,
                     onCheckedChange = { onSettingsChange(settings.copy(autoBrightness = it)) },
@@ -53,7 +78,6 @@ fun ReaderSettingsContent(
                         contentDescription = "Auto Brightness"
                     )
                 }
-                Spacer(modifier = Modifier.width(16.dp))
                 Slider(
                     value = settings.brightness,
                     onValueChange = { onSettingsChange(settings.copy(brightness = it)) },
@@ -70,20 +94,23 @@ fun ReaderSettingsContent(
         }
 
         // Theme Selection Section
-        Column {
-            Text("Theme Selection", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(12.dp))
+        Column(
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text("Theme", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ThemeSwatch(
                     isSelected = settings.readerThemePreset == "Auto",
                     onClick = { onSettingsChange(settings.copy(readerThemePreset = "Auto")) },
                     isAuto = true,
-                    label = "Auto"
+                    label = "Auto",
+                    modifier = Modifier.padding(start = 0.dp, end = 4.dp)
                 )
                 ThemeSwatch(
                     isSelected = settings.readerThemePreset == "Light",
@@ -132,7 +159,7 @@ fun ReaderSettingsContent(
         }
 
         // Text Size and Margin
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             IncrementDecrementControl(
                 label = "Text Size",
                 value = "${(settings.fontSize * 100).roundToInt()}%",
@@ -150,141 +177,202 @@ fun ReaderSettingsContent(
         }
 
         // Font Selection
-        Column {
-            Text("Font Selection", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
-            SingleSelectDropdown(
-                label = "Font Family",
-                options = listOf("Original", "Serif", "Sans-Serif", "OpenDyslexic"),
-                selected = settings.fontFamily,
-                onSelected = { onSettingsChange(settings.copy(fontFamily = it)) }
-            )
-        }
-
-        // Vertical Scroll Switch
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Vertical Scroll", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.weight(1f))
-            Switch(
-                checked = settings.scroll,
-                onCheckedChange = { onSettingsChange(settings.copy(scroll = it)) }
-            )
-        }
+        SingleSelectDropdown(
+            label = "Font",
+            options = listOf("Original", "Serif", "Sans-Serif", "OpenDyslexic"),
+            selected = settings.fontFamily,
+            onSelected = { onSettingsChange(settings.copy(fontFamily = it)) }
+        )
 
         // Typography Section
-        Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { publisherStylesExpanded = !publisherStylesExpanded }
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text("Typography", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.weight(1f))
-                Text("Publisher Style", style = MaterialTheme.typography.labelSmall)
-                Spacer(modifier = Modifier.width(8.dp))
-                Switch(
-                    checked = settings.publisherStyles,
-                    onCheckedChange = { onSettingsChange(settings.copy(publisherStyles = it)) }
+                Icon(
+                    imageVector = if (publisherStylesExpanded) MaterialSymbols.Outlined.Arrow_drop_up else MaterialSymbols.Outlined.Arrow_drop_down,
+                    contentDescription = null
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            AnimatedVisibility(
+                visible = publisherStylesExpanded,
+                enter = expandVertically(animationSpec = animationSpec),
+                exit = shrinkVertically(animationSpec = animationSpec)
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Publisher Style Switch
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Publisher Style", style = MaterialTheme.typography.bodyLarge)
+                        Spacer(modifier = Modifier.weight(1f))
+                        Switch(
+                            checked = settings.publisherStyles,
+                            onCheckedChange = { 
+                                onSettingsChange(settings.copy(publisherStyles = it))
+                            }
+                        )
+                    }
 
-            Column(modifier = Modifier.alpha(if (settings.publisherStyles) 0.5f else 1.0f)) {
-                Text("Alignment", style = MaterialTheme.typography.labelMedium)
-                Spacer(modifier = Modifier.height(4.dp))
-                SegmentedButtonGroup(
-                    options = listOf("Start", "Left", "Right", "Justify"),
-                    selected = settings.textAlign,
-                    onSelected = { onSettingsChange(settings.copy(textAlign = it)) },
-                    enabled = !settings.publisherStyles,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        SegmentedButtonGroup(
+                            title = "Alignment",
+                            options = listOf("Start", "Left", "Right", "Justify"),
+                            icons = listOf(
+                                MaterialSymbols.Outlined.Format_align_center,
+                                MaterialSymbols.Outlined.Format_align_left,
+                                MaterialSymbols.Outlined.Format_align_right,
+                                MaterialSymbols.Outlined.Format_align_justify
+                            ),
+                            selected = settings.textAlign,
+                            onSelected = { onSettingsChange(settings.copy(textAlign = it)) },
+                            enabled = !settings.publisherStyles
+                        )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            IncrementDecrementControl(
+                                label = "Line Spacing",
+                                value = String.format("%.1f", settings.lineHeight),
+                                onIncrement = { onSettingsChange(settings.copy(lineHeight = (((settings.lineHeight + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(1.0, 2.5))) },
+                                onDecrement = { onSettingsChange(settings.copy(lineHeight = (((settings.lineHeight - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(1.0, 2.5))) },
+                                enabled = !settings.publisherStyles,
+                                modifier = Modifier.weight(1f)
+                            )
+                            IncrementDecrementControl(
+                                label = "Paragraph Spacing",
+                                value = "${(settings.paragraphSpacing * 100).roundToInt()}%",
+                                onIncrement = { onSettingsChange(settings.copy(paragraphSpacing = (((settings.paragraphSpacing + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 2.0))) },
+                                onDecrement = { onSettingsChange(settings.copy(paragraphSpacing = (((settings.paragraphSpacing - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 2.0))) },
+                                enabled = !settings.publisherStyles,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
 
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    IncrementDecrementControl(
-                        label = "Line Spacing",
-                        value = String.format("%.1f", settings.lineHeight),
-                        onIncrement = { onSettingsChange(settings.copy(lineHeight = (((settings.lineHeight + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(1.0, 2.5))) },
-                        onDecrement = { onSettingsChange(settings.copy(lineHeight = (((settings.lineHeight - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(1.0, 2.5))) },
-                        enabled = !settings.publisherStyles,
-                        modifier = Modifier.weight(1f)
-                    )
-                    IncrementDecrementControl(
-                        label = "Paragraph Spacing",
-                        value = "${(settings.paragraphSpacing * 100).roundToInt()}%",
-                        onIncrement = { onSettingsChange(settings.copy(paragraphSpacing = (((settings.paragraphSpacing + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 2.0))) },
-                        onDecrement = { onSettingsChange(settings.copy(paragraphSpacing = (((settings.paragraphSpacing - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 2.0))) },
-                        enabled = !settings.publisherStyles,
-                        modifier = Modifier.weight(1f)
-                    )
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            IncrementDecrementControl(
+                                label = "Word Spacing",
+                                value = "${(settings.wordSpacing * 100).roundToInt()}%",
+                                onIncrement = { onSettingsChange(settings.copy(wordSpacing = (((settings.wordSpacing + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 1.0))) },
+                                onDecrement = { onSettingsChange(settings.copy(wordSpacing = (((settings.wordSpacing - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 1.0))) },
+                                enabled = !settings.publisherStyles,
+                                modifier = Modifier.weight(1f)
+                            )
+                            IncrementDecrementControl(
+                                label = "Letter Spacing",
+                                value = "${(settings.letterSpacing * 100).roundToInt()}%",
+                                onIncrement = { onSettingsChange(settings.copy(letterSpacing = (((settings.letterSpacing + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 0.5))) },
+                                onDecrement = { onSettingsChange(settings.copy(letterSpacing = (((settings.letterSpacing - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 0.5))) },
+                                enabled = !settings.publisherStyles,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    IncrementDecrementControl(
-                        label = "Word Spacing",
-                        value = "${(settings.wordSpacing * 100).roundToInt()}%",
-                        onIncrement = { onSettingsChange(settings.copy(wordSpacing = (((settings.wordSpacing + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 1.0))) },
-                        onDecrement = { onSettingsChange(settings.copy(wordSpacing = (((settings.wordSpacing - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 1.0))) },
-                        enabled = !settings.publisherStyles,
-                        modifier = Modifier.weight(1f)
-                    )
-                    IncrementDecrementControl(
-                        label = "Letter Spacing",
-                        value = "${(settings.letterSpacing * 100).roundToInt()}%",
-                        onIncrement = { onSettingsChange(settings.copy(letterSpacing = (((settings.letterSpacing + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 0.5))) },
-                        onDecrement = { onSettingsChange(settings.copy(letterSpacing = (((settings.letterSpacing - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 0.5))) },
-                        enabled = !settings.publisherStyles,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-        }
-
-        // Formatting switches (Not disabled by publisher style)
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Hyphens", style = MaterialTheme.typography.bodyLarge)
-                Spacer(modifier = Modifier.weight(1f))
-                Switch(
-                    checked = settings.hyphens,
-                    onCheckedChange = { onSettingsChange(settings.copy(hyphens = it)) }
-                )
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Text Normalization", style = MaterialTheme.typography.bodyLarge)
-                Spacer(modifier = Modifier.weight(1f))
-                Switch(
-                    checked = settings.textNormalization,
-                    onCheckedChange = { onSettingsChange(settings.copy(textNormalization = it)) }
-                )
             }
         }
 
         // Accessibility Section
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("Accessibility", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-
-            Column {
-                Text("Reading Progression", style = MaterialTheme.typography.labelMedium)
-                Spacer(modifier = Modifier.height(4.dp))
-                SegmentedButtonGroup(
-                    options = listOf("LTR", "RTL"),
-                    selected = settings.readingProgression,
-                    onSelected = { onSettingsChange(settings.copy(readingProgression = it)) },
-                    modifier = Modifier.fillMaxWidth()
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { accessibilityExpanded = !accessibilityExpanded }
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Accessibility", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.weight(1f))
+                Icon(
+                    imageVector = if (accessibilityExpanded) MaterialSymbols.Outlined.Arrow_drop_up else MaterialSymbols.Outlined.Arrow_drop_down,
+                    contentDescription = null
                 )
             }
 
-            Column {
-                Text("Image Filter", style = MaterialTheme.typography.labelMedium)
-                Spacer(modifier = Modifier.height(4.dp))
-                SegmentedButtonGroup(
-                    options = listOf("None", "Darken", "Invert"),
-                    selected = settings.imageFilter,
-                    onSelected = { onSettingsChange(settings.copy(imageFilter = it)) },
-                    modifier = Modifier.fillMaxWidth()
-                )
+            AnimatedVisibility(
+                visible = accessibilityExpanded,
+                enter = expandVertically(animationSpec = animationSpec),
+                exit = shrinkVertically(animationSpec = animationSpec)
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Vertical Scroll
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Vertical Scroll", style = MaterialTheme.typography.bodyLarge)
+                        Spacer(modifier = Modifier.weight(1f))
+                        Switch(
+                            checked = settings.scroll,
+                            onCheckedChange = { onSettingsChange(settings.copy(scroll = it)) }
+                        )
+                    }
+
+                    // Hyphens
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Hyphens", style = MaterialTheme.typography.bodyLarge)
+                        Spacer(modifier = Modifier.weight(1f))
+                        Switch(
+                            checked = settings.hyphens,
+                            onCheckedChange = { onSettingsChange(settings.copy(hyphens = it)) }
+                        )
+                    }
+
+                    // Text Normalization
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Text Normalization", style = MaterialTheme.typography.bodyLarge)
+                        Spacer(modifier = Modifier.weight(1f))
+                        Switch(
+                            checked = settings.textNormalization,
+                            onCheckedChange = { onSettingsChange(settings.copy(textNormalization = it)) }
+                        )
+                    }
+
+                    // Reading Progression
+                    SegmentedButtonGroup(
+                        title = "Reading Progression",
+                        options = listOf("LTR", "RTL"),
+                        icons = listOf(
+                            MaterialSymbols.Outlined.Format_textdirection_l_to_r,
+                            MaterialSymbols.Outlined.Format_textdirection_r_to_l
+                        ),
+                        selected = settings.readingProgression,
+                        onSelected = { onSettingsChange(settings.copy(readingProgression = it)) }
+                    )
+
+                    // Image Filter
+                    SegmentedButtonGroup(
+                        title = "Image Filter",
+                        options = listOf("None", "Darken", "Invert"),
+                        icons = listOf(
+                            MaterialSymbols.Outlined.Image,
+                            MaterialSymbols.Outlined.Contrast,
+                            MaterialSymbols.Outlined.Invert_colors
+                        ),
+                        selected = settings.imageFilter,
+                        onSelected = { onSettingsChange(settings.copy(imageFilter = it)) }
+                    )
+                }
             }
         }
     }
