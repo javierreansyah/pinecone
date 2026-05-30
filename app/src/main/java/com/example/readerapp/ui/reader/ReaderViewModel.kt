@@ -310,7 +310,7 @@ class ReaderViewModel(
                 activeSearchIndex = index,
                 isInSearchNavigationMode = true,
                 showSearch = false,
-                showControls = false   // dismiss controls so search helper bar is visible
+                showControls = true   // show controls so search helper bar is visible
             )
         }
         _navigateToLocator.tryEmit(results[index].locator)

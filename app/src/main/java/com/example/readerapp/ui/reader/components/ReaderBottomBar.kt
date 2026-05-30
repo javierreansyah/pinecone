@@ -89,7 +89,7 @@ fun ReaderBottomBar(
                 )
             )
             .padding(horizontal = 24.dp)
-            .padding(top = 8.dp, bottom = 8.dp)
+            .padding(top = 8.dp, bottom = 24.dp)
     ) {
         if (isInSearchNavigationMode) {
             // ── Search navigation helper ───────────────────────────────────
@@ -272,15 +272,19 @@ private fun SearchNavBar(
     onNext: () -> Unit
 ) {
     val currentNum = if (activeIndex != null) activeIndex + 1 else 0
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
+    Box(
+        contentAlignment = Alignment.Center,
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
     ) {
         // ✕ exit button
-        IconButton(onClick = onExit, modifier = Modifier.size(40.dp)) {
+        IconButton(
+            onClick = onExit,
+            modifier = Modifier
+                .size(40.dp)
+                .align(Alignment.CenterStart)
+        ) {
             Icon(
                 MaterialSymbols.Outlined.Close,
                 contentDescription = "Exit search",
@@ -300,7 +304,10 @@ private fun SearchNavBar(
         )
 
         // Prev / Next arrows
-        Row(horizontalArrangement = Arrangement.spacedBy(0.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(0.dp),
+            modifier = Modifier.align(Alignment.CenterEnd)
+        ) {
             IconButton(
                 onClick = onPrev,
                 enabled = activeIndex != null && activeIndex > 0,
