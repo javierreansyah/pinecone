@@ -1,8 +1,11 @@
 package com.example.readerapp.ui.reader.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -78,32 +81,48 @@ fun ReaderOverlay(
             }
         }
 
-        // Animated controls overlay
+        // Animated controls overlay — top bar only
         AnimatedVisibility(
-            visible = uiState.showControls,
+            visible = uiState.showControls && !uiState.showSearch,
             enter = fadeIn(),
             exit = fadeOut()
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                // Top bar with gradient background
                 ReaderTopBar(
                     isBookmarked = isBookmarked,
                     onBack = onBack,
-                    onSearchClick = { /* TODO: Search */ },
+                    onSearchClick = { viewModel.showSearch() },
                     onTocClick = { viewModel.showToc() },
                     onSettingsClick = { viewModel.showSettings() },
                     onToggleBookmark = { viewModel.toggleBookmark() },
                     readerBgColor = readerBgColor,
                     modifier = Modifier.align(Alignment.TopCenter)
                 )
+            }
+        }
 
-                // Bottom bar
+        // Bottom bar — shown when controls are visible OR when in search nav mode.
+        // When isInSearchNavigationMode=true the bar transforms into the search helper
+        // (✕  ·  N of M  ·  ←→) regardless of whether the top controls are showing.
+        val showBottomBar = (uiState.showControls && !uiState.showSearch) || uiState.isInSearchNavigationMode
+        AnimatedVisibility(
+            visible = showBottomBar,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
                 ReaderBottomBar(
                     progression = uiState.progression,
                     currentPage = uiState.currentPage,
                     totalPages = uiState.totalPages,
                     readerBgColor = readerBgColor,
                     onSeekToProgression = onSeekToProgression,
+                    isInSearchNavigationMode = uiState.isInSearchNavigationMode,
+                    activeSearchIndex = uiState.activeSearchIndex,
+                    totalSearchResults = uiState.searchResults.size,
+                    onExitSearch = { viewModel.exitSearchNavigation() },
+                    onPrevSearchResult = { viewModel.prevSearchResult() },
+                    onNextSearchResult = { viewModel.nextSearchResult() },
                     modifier = Modifier.align(Alignment.BottomCenter)
                 )
             }
@@ -143,6 +162,23 @@ fun ReaderOverlay(
                     )
                 }
             }
+        }
+
+        // ── Full-screen search overlay ─────────────────────────────────────────
+        AnimatedVisibility(
+            visible = uiState.showSearch,
+            enter = slideInVertically(animationSpec = tween(280)) { it } + fadeIn(tween(200)),
+            exit = slideOutVertically(animationSpec = tween(220)) { it } + fadeOut(tween(180))
+        ) {
+            SearchScreen(
+                query = uiState.searchQuery,
+                results = uiState.searchResults,
+                isLoading = uiState.searchLoading,
+                onQueryChange = { q -> viewModel.updateSearchQuery(q) },
+                onSearch = { q -> viewModel.performSearch(q) },
+                onResultClick = { index -> viewModel.selectSearchResult(index) },
+                onClose = { viewModel.hideSearch() }
+            )
         }
     }
 }

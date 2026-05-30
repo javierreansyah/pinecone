@@ -1,6 +1,7 @@
 package com.example.readerapp.ui.reader
 
 import android.os.Bundle
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.*
@@ -17,12 +18,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import org.readium.r2.navigator.DecorableNavigator
+import org.readium.r2.navigator.Decoration
 import org.readium.r2.navigator.epub.EpubNavigatorFactory
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.input.InputListener
 import org.readium.r2.navigator.input.TapEvent
 import org.readium.r2.shared.ExperimentalReadiumApi
-
 import org.readium.r2.shared.publication.Publication
 import androidx.core.graphics.toColorInt
 
@@ -48,14 +50,18 @@ class ReaderActivity : AppCompatActivity() {
     private val navigatorFlow = MutableStateFlow<EpubNavigatorFragment?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContentView(com.example.readerapp.R.layout.activity_reader)
 
         val composeView = findViewById<ComposeView>(com.example.readerapp.R.id.compose_overlay)
         navigatorContainer = findViewById(com.example.readerapp.R.id.navigator_container)
 
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(navigatorContainer!!) { _, _ ->
-            androidx.core.view.WindowInsetsCompat.CONSUMED
+        // Ensure the navigator container doesn't shift when bars toggle or keyboard appears
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(navigatorContainer!!) { _, insets ->
+            // We handle our own margins based on settings, so we consume the system bar insets
+            // but keep the display cutout insets if needed.
+            insets
         }
 
         val rootLayout = findViewById<android.widget.FrameLayout>(com.example.readerapp.R.id.reader_root)
@@ -102,14 +108,16 @@ class ReaderActivity : AppCompatActivity() {
                     // In scroll mode: full screen (no margins).
                     // In pagination mode: added padding.
                     val density = resources.displayMetrics.density
-                    val topMarginPx = if (settings.scroll) 0 else (58 * density).toInt()
-                    val bottomMarginPx = if (settings.scroll) 0 else (40 * density).toInt()
+                    val newTop = if (settings.scroll) 0 else (58 * density).toInt()
+                    val newBottom = if (settings.scroll) 0 else (40 * density).toInt()
 
                     navigatorContainer?.let { container ->
                         val lp = container.layoutParams as android.widget.FrameLayout.LayoutParams
-                        lp.topMargin = topMarginPx
-                        lp.bottomMargin = bottomMarginPx
-                        container.layoutParams = lp
+                        if (lp.topMargin != newTop || lp.bottomMargin != newBottom) {
+                            lp.topMargin = newTop
+                            lp.bottomMargin = newBottom
+                            container.layoutParams = lp
+                        }
                     }
                 }
             }
@@ -149,6 +157,36 @@ class ReaderActivity : AppCompatActivity() {
             }
         }
 
+        // Navigate to locator emitted by search (result selection, prev/next)
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.navigateToLocator.collectLatest { locator ->
+                    // Using collectLatest to cancel any in-flight navigation if a new one comes in
+                    navigator?.go(locator, animated = true)
+                    
+                    // Workaround for Readium race condition: when navigating backwards across chapter boundaries,
+                    // the WebView may not have fully rendered the target cssSelector, causing the navigator
+                    // to fall back to the end of the chapter (progression 1.0).
+                    // A second go() with animated=false forces it to snap to the exact text once loaded.
+                    kotlinx.coroutines.delay(100)
+                    navigator?.go(locator, animated = false)
+                    
+                    // Apply a highlight decoration at the matched text location
+                    applySearchHighlight(locator)
+                }
+            }
+        }
+
+        // Clear highlight decoration when the user exits search navigation
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect { state ->
+                    if (!state.isInSearchNavigationMode) {
+                        clearSearchHighlight()
+                    }
+                }
+            }
+        }
 
         // Set up Compose overlay
         composeView.setContent {
@@ -271,6 +309,30 @@ class ReaderActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         viewModel.closeBook()
+    }
+
+    // ── Search highlight helpers ─────────────────────────────────────────────
+
+    @OptIn(ExperimentalReadiumApi::class)
+    private suspend fun applySearchHighlight(locator: org.readium.r2.shared.publication.Locator) {
+        val nav = navigator as? DecorableNavigator ?: return
+        val decoration = Decoration(
+            id = "search_current",
+            locator = locator,
+            style = Decoration.Style.Highlight(
+                tint = android.graphics.Color.parseColor("#FFEB3B"), // yellow
+                isActive = false
+            )
+        )
+        nav.applyDecorations(listOf(decoration), group = "search")
+    }
+
+    @OptIn(ExperimentalReadiumApi::class)
+    private fun clearSearchHighlight() {
+        val nav = navigator as? DecorableNavigator ?: return
+        lifecycleScope.launch {
+            nav.applyDecorations(emptyList(), group = "search")
+        }
     }
 
 
