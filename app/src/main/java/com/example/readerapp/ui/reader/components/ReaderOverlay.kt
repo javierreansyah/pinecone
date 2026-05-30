@@ -101,10 +101,9 @@ fun ReaderOverlay(
             }
         }
 
-        // Bottom bar — shown when controls are visible OR when in search nav mode.
-        // When isInSearchNavigationMode=true the bar transforms into the search helper
-        // (✕  ·  N of M  ·  ←→) regardless of whether the top controls are showing.
-        val showBottomBar = (uiState.showControls && !uiState.showSearch) || uiState.isInSearchNavigationMode
+        // Bottom bar — shown when controls are visible.
+        // It shows either the normal progress bar or the search helper bar (if in search nav mode).
+        val showBottomBar = uiState.showControls && !uiState.showSearch
         AnimatedVisibility(
             visible = showBottomBar,
             enter = fadeIn(),
