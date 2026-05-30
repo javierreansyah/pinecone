@@ -5,12 +5,17 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,6 +39,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Arrow_back
+import com.composables.icons.materialsymbols.outlined.Arrow_forward
+import com.composables.icons.materialsymbols.outlined.Close
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -44,6 +53,13 @@ fun ReaderBottomBar(
     totalPages: Int?,
     readerBgColor: Color,
     onSeekToProgression: (Double) -> Unit,
+    // Search navigation
+    isInSearchNavigationMode: Boolean = false,
+    activeSearchIndex: Int? = null,
+    totalSearchResults: Int = 0,
+    onExitSearch: () -> Unit = {},
+    onPrevSearchResult: () -> Unit = {},
+    onNextSearchResult: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var isSeeking by remember { mutableStateOf(false) }
@@ -75,10 +91,21 @@ fun ReaderBottomBar(
             .padding(horizontal = 24.dp)
             .padding(top = 8.dp, bottom = 8.dp)
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        if (isInSearchNavigationMode) {
+            // ── Search navigation helper ───────────────────────────────────
+            SearchNavBar(
+                activeIndex = activeSearchIndex,
+                totalResults = totalSearchResults,
+                onExit = onExitSearch,
+                onPrev = onPrevSearchResult,
+                onNext = onNextSearchResult
+            )
+        } else {
+            // ── Normal progress bar ────────────────────────────────────────
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
             // Progress slider
             val sliderAlpha by animateFloatAsState(
                 targetValue = if (isInteracting) 1f else 0f,
@@ -229,6 +256,81 @@ fun ReaderBottomBar(
                 ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        } // end normal progress Column
+        } // end else (normal progress bar)
+    } // end outer Box
+}
+
+// ── Search Navigation Bar ─────────────────────────────────────────────────────
+
+@Composable
+private fun SearchNavBar(
+    activeIndex: Int?,
+    totalResults: Int,
+    onExit: () -> Unit,
+    onPrev: () -> Unit,
+    onNext: () -> Unit
+) {
+    val currentNum = if (activeIndex != null) activeIndex + 1 else 0
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        // ✕ exit button
+        IconButton(onClick = onExit, modifier = Modifier.size(40.dp)) {
+            Icon(
+                MaterialSymbols.Outlined.Close,
+                contentDescription = "Exit search",
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        // N of M label
+        Text(
+            text = if (totalResults == 0) "No matches" else "$currentNum of $totalResults",
+            style = MaterialTheme.typography.bodySmall.copy(
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 0.5.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        // Prev / Next arrows
+        Row(horizontalArrangement = Arrangement.spacedBy(0.dp)) {
+            IconButton(
+                onClick = onPrev,
+                enabled = activeIndex != null && activeIndex > 0,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    MaterialSymbols.Outlined.Arrow_back,
+                    contentDescription = "Previous result",
+                    modifier = Modifier.size(20.dp),
+                    tint = if (activeIndex != null && activeIndex > 0)
+                        MaterialTheme.colorScheme.onSurface
+                    else
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                )
+            }
+            IconButton(
+                onClick = onNext,
+                enabled = activeIndex != null && activeIndex < totalResults - 1,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    MaterialSymbols.Outlined.Arrow_forward,
+                    contentDescription = "Next result",
+                    modifier = Modifier.size(20.dp),
+                    tint = if (activeIndex != null && activeIndex < totalResults - 1)
+                        MaterialTheme.colorScheme.onSurface
+                    else
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                )
+            }
         }
     }
 }

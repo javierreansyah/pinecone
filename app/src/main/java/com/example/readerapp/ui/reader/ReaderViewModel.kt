@@ -1,3 +1,5 @@
+@file:OptIn(org.readium.r2.shared.ExperimentalReadiumApi::class)
+
 package com.example.readerapp.ui.reader
 
 import androidx.lifecycle.ViewModel
@@ -7,6 +9,7 @@ import com.example.readerapp.data.local.BookmarkEntity
 import com.example.readerapp.data.local.ReaderPreferences
 import com.example.readerapp.data.local.ReaderSettings
 import com.example.readerapp.data.repository.BookRepository
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -15,6 +18,8 @@ import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.services.positions
+import org.readium.r2.shared.publication.services.search.SearchService
+import org.readium.r2.shared.publication.services.search.search
 
 class ReaderViewModel(
     private val bookId: String,
@@ -37,6 +42,14 @@ class ReaderViewModel(
     // UI state
     private val _uiState = MutableStateFlow(ReaderUiState())
     val uiState: StateFlow<ReaderUiState> = _uiState.asStateFlow()
+
+    // Search — one-shot navigation events; buffered so emission before
+    // the collector is ready is not lost (but NOT replayed on reconnect).
+    private val _navigateToLocator = MutableSharedFlow<Locator>(extraBufferCapacity = 1)
+    val navigateToLocator: SharedFlow<Locator> = _navigateToLocator.asSharedFlow()
+
+    // Active search job (cancelled when a new search starts or search is closed)
+    private var searchJob: Job? = null
 
     // Current locator from navigator
     private val _currentLocator = MutableStateFlow<Locator?>(null)
@@ -131,8 +144,15 @@ class ReaderViewModel(
         
         val allPositions = _positions.value
         val pageIndex = if (allPositions.isNotEmpty()) {
-            allPositions.indexOfFirst { it.href == locator.href && (it.locations.progression ?: 0.0) >= (locator.locations.progression ?: 0.0) }
-                .takeIf { it != -1 } ?: allPositions.indexOfLast { it.href == locator.href }
+            // 1. Try to find by total progression (more robust across chapters)
+            val byTotal = locator.locations.totalProgression?.let { target ->
+                allPositions.indexOfLast { (it.locations.totalProgression ?: -1.0) <= target }
+            }?.takeIf { it != -1 }
+
+            // 2. Fallback to href + internal progression
+            byTotal ?: allPositions.indexOfLast { it.href == locator.href && (it.locations.progression ?: 0.0) <= (locator.locations.progression ?: 0.0) }
+                .takeIf { it != -1 } 
+                ?: allPositions.indexOfFirst { it.href == locator.href }
         } else -1
 
         _uiState.update {
@@ -202,6 +222,120 @@ class ReaderViewModel(
 
     fun hideSettings() {
         _uiState.update { it.copy(showSettings = false) }
+    }
+
+    // ── Search ────────────────────────────────────────────────────────────────
+
+    fun showSearch() {
+        _uiState.update { it.copy(showSearch = true, searchQuery = "", searchResults = emptyList(), searchLoading = false, activeSearchIndex = null, isInSearchNavigationMode = false) }
+    }
+
+    fun hideSearch() {
+        searchJob?.cancel()
+        _uiState.update { it.copy(showSearch = false, isInSearchNavigationMode = false, activeSearchIndex = null) }
+    }
+
+    fun updateSearchQuery(query: String) {
+        _uiState.update { it.copy(searchQuery = query) }
+    }
+
+    fun performSearch(query: String) {
+        val publication = _publication.value ?: return
+        if (query.isBlank()) {
+            _uiState.update { it.copy(searchQuery = query, searchResults = emptyList(), searchLoading = false) }
+            return
+        }
+
+        // Cancel any in-flight search
+        searchJob?.cancel()
+        _uiState.update { it.copy(searchQuery = query, searchResults = emptyList(), searchLoading = true) }
+
+        searchJob = viewModelScope.launch {
+            try {
+                val iterator = publication.search(query)
+                if (iterator == null) {
+                    _uiState.update { it.copy(searchLoading = false) }
+                    return@launch
+                }
+
+                val allPositions = _positions.value
+                val totalPositions = allPositions.size
+
+                // Drain iterator page by page; next() returns Try<LocatorCollection, SearchError>
+                while (true) {
+                    val result = iterator.next()
+                    val page = result?.getOrNull() ?: break
+                    val newItems = page.locators.map { locator ->
+                        val posIndex = locator.locations.totalProgression?.let { target ->
+                            allPositions.indexOfLast { (it.locations.totalProgression ?: -1.0) <= target }
+                        }?.takeIf { it != -1 } ?: allPositions.indexOfLast { pos ->
+                            pos.href == locator.href &&
+                            (pos.locations.progression ?: 0.0) <= (locator.locations.progression ?: 0.0)
+                        }.takeIf { it != -1 }
+
+                        val positionLabel = when {
+                            posIndex != null && totalPositions > 0 -> "Position ${posIndex + 1} of $totalPositions"
+                            locator.locations.totalProgression != null ->
+                                "${(locator.locations.totalProgression!! * 100).toInt()}%"
+                            else -> ""
+                        }
+
+                        SearchResultItem(
+                            locator = locator,
+                            chapterTitle = locator.title,
+                            positionLabel = positionLabel,
+                            textBefore = locator.text.before,
+                            highlight = locator.text.highlight,
+                            textAfter = locator.text.after
+                        )
+                    }
+
+                    _uiState.update { state ->
+                        state.copy(searchResults = state.searchResults + newItems)
+                    }
+                }
+
+                _uiState.update { it.copy(searchLoading = false) }
+            } catch (_: Exception) {
+                _uiState.update { it.copy(searchLoading = false) }
+            }
+        }
+    }
+
+    fun selectSearchResult(index: Int) {
+        val results = _uiState.value.searchResults
+        if (index < 0 || index >= results.size) return
+        _uiState.update {
+            it.copy(
+                activeSearchIndex = index,
+                isInSearchNavigationMode = true,
+                showSearch = false,
+                showControls = false   // dismiss controls so search helper bar is visible
+            )
+        }
+        _navigateToLocator.tryEmit(results[index].locator)
+    }
+
+    fun nextSearchResult() {
+        val state = _uiState.value
+        val results = state.searchResults
+        if (results.isEmpty()) return
+        val next = ((state.activeSearchIndex ?: -1) + 1).coerceAtMost(results.size - 1)
+        _uiState.update { it.copy(activeSearchIndex = next) }
+        _navigateToLocator.tryEmit(results[next].locator)
+    }
+
+    fun prevSearchResult() {
+        val state = _uiState.value
+        val results = state.searchResults
+        if (results.isEmpty()) return
+        val prev = ((state.activeSearchIndex ?: 1) - 1).coerceAtLeast(0)
+        _uiState.update { it.copy(activeSearchIndex = prev) }
+        _navigateToLocator.tryEmit(results[prev].locator)
+    }
+
+    fun exitSearchNavigation() {
+        _uiState.update { it.copy(isInSearchNavigationMode = false, activeSearchIndex = null) }
     }
 
     fun updateSettings(settings: ReaderSettings) {
