@@ -27,7 +27,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -48,6 +47,8 @@ import com.composables.icons.materialsymbols.outlined.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.ui.draw.shadow
 import kotlin.math.roundToInt
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -55,6 +56,7 @@ import com.example.readerapp.ui.components.ReaderSettingsContent
 import com.example.readerapp.ui.reader.ReaderViewModel
 import com.example.readerapp.ui.theme.ReaderAppTheme
 import org.readium.r2.shared.publication.Link
+import androidx.core.graphics.toColorInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,14 +78,17 @@ fun ReaderOverlay(
         "Dark" -> Color(0xFF000000)
         "Auto" -> if (isSystemInDarkTheme()) Color(0xFF000000) else Color(0xFFFFFFFF)
         else -> try {
-            Color(android.graphics.Color.parseColor(settings.customBackgroundColor))
+            Color(settings.customBackgroundColor.toColorInt())
         } catch (e: Exception) {
             Color.White
         }
     }
 
     // Settings bottom sheet
-    val settingsSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val settingsSheetState = rememberBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+    )
 
     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -337,10 +342,10 @@ fun ReaderOverlay(
                         horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)
                     ) {
                         val swatches = listOf(
-                            android.graphics.Color.parseColor("#40FFEB3B"), // Yellow
-                            android.graphics.Color.parseColor("#40F44336"), // Red
-                            android.graphics.Color.parseColor("#4003A9F4"), // Blue
-                            android.graphics.Color.parseColor("#404CAF50")  // Green
+                            "#40FFEB3B".toColorInt(), // Yellow
+                            "#40F44336".toColorInt(), // Red
+                            "#4003A9F4".toColorInt(), // Blue
+                            "#404CAF50".toColorInt()  // Green
                         )
                         swatches.forEach { colorInt ->
                             val isSelected = menuHighlight?.color == colorInt
@@ -384,88 +389,19 @@ fun ReaderOverlay(
         }
 
         // Edit Note Bottom Sheet
-        if (uiState.editingNote != null) {
-            val note = uiState.editingNote!!
-            var editText by androidx.compose.runtime.remember(note.id) { androidx.compose.runtime.mutableStateOf(note.noteText) }
-            var editColor by androidx.compose.runtime.remember(note.id) { androidx.compose.runtime.mutableStateOf(note.color) }
-
-            val swatches = listOf(
-                android.graphics.Color.parseColor("#4003A9F4"), // Blue
-                android.graphics.Color.parseColor("#40888888"), // Grey
-                android.graphics.Color.parseColor("#40FFEB3B"), // Yellow
-                android.graphics.Color.parseColor("#404CAF50")  // Green
-            )
-
-            ModalBottomSheet(
-                onDismissRequest = { viewModel.hideEditNote() },
-                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-            ) {
-                androidx.compose.foundation.layout.Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .padding(bottom = 32.dp)
-                ) {
-                    androidx.compose.material3.OutlinedTextField(
-                        value = editText,
-                        onValueChange = { editText = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Note text...") },
-                        minLines = 4
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    // Color Swatches
-                    androidx.compose.foundation.layout.Row(
-                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceEvenly,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        swatches.forEach { colorInt ->
-                            val isSelected = editColor == colorInt
-                            androidx.compose.foundation.layout.Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .background(
-                                        color = Color(colorInt).copy(alpha = 1f), // Make swatch opaque for visibility
-                                        shape = androidx.compose.foundation.shape.CircleShape
-                                    )
-                                    .border(
-                                        width = if (isSelected) 3.dp else 0.dp,
-                                        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                                        shape = androidx.compose.foundation.shape.CircleShape
-                                    )
-                                    .clickable { editColor = colorInt }
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    androidx.compose.foundation.layout.Row(
-                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        androidx.compose.material3.Button(
-                            onClick = {
-                                viewModel.deleteNote(note.id)
-                                viewModel.hideEditNote()
-                            },
-                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                        ) {
-                            Text("Delete")
-                        }
-                        
-                        androidx.compose.material3.Button(
-                            onClick = {
-                                viewModel.updateNote(note.copy(noteText = editText, color = editColor))
-                                viewModel.hideEditNote()
-                            }
-                        ) {
-                            Text("Save")
-                        }
-                    }
-                }
+        uiState.editingNote?.let { note ->
+            val uiDarkTheme = when (settings.themeMode) {
+                "Dark" -> true
+                "Light" -> false
+                else -> isSystemInDarkTheme()
+            }
+            ReaderAppTheme(darkTheme = uiDarkTheme, colorPalette = settings.colorPalette) {
+                NoteBottomSheet(
+                    note = note,
+                    onUpdateNote = { viewModel.updateNote(it) },
+                    onDeleteNote = { viewModel.deleteNote(it) },
+                    onDismiss = { viewModel.hideEditNote() }
+                )
             }
         }
     }

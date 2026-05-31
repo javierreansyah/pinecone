@@ -7,11 +7,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontStyle
@@ -22,6 +26,7 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Delete
 import com.example.readerapp.data.local.BookmarkEntity
 import com.example.readerapp.data.local.NoteEntity
+import androidx.core.graphics.toColorInt
 import kotlinx.coroutines.launch
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
@@ -47,7 +52,10 @@ fun ReaderBottomSheet(
     val screenHeight = configuration.screenHeightDp.dp
     val maxSheetHeight = screenHeight * 0.9f
 
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+    )
     val pagerState = rememberPagerState(pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
     
@@ -328,6 +336,122 @@ private fun NotesList(
                             )
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NoteBottomSheet(
+    note: NoteEntity,
+    onUpdateNote: (NoteEntity) -> Unit,
+    onDeleteNote: (Long) -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val sheetState = rememberBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+    )
+    var editText by remember(note.id) { mutableStateOf(note.noteText) }
+    var editColor by remember(note.id) { mutableIntStateOf(note.color) }
+
+    val swatches = listOf(
+        "#40FFEB3B".toColorInt(), // Yellow
+        "#40F44336".toColorInt(), // Red
+        "#4003A9F4".toColorInt(), // Blue
+        "#404CAF50".toColorInt()  // Green
+    )
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 16.dp)
+        ) {
+            // Text field for editing note text
+            OutlinedTextField(
+                value = editText,
+                onValueChange = {
+                    editText = it
+                },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Note text...", style = MaterialTheme.typography.bodyLarge) },
+                textStyle = MaterialTheme.typography.bodyLarge,
+                minLines = 2
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Color Swatches: smaller, outline and ring look, justified left
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                swatches.forEach { colorInt ->
+                    val isSelected = editColor == colorInt
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .let { m ->
+                                if (isSelected) {
+                                    m.border(
+                                        width = 2.dp,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        shape = CircleShape
+                                    )
+                                } else m
+                            }
+                            .padding(4.dp)
+                            .clip(CircleShape)
+                            .background(Color(colorInt).copy(alpha = 1f))
+                            .border(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.outlineVariant,
+                                shape = CircleShape
+                            )
+                            .clickable {
+                                editColor = colorInt
+                            }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Buttons: full width side by side
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                FilledTonalButton(
+                    onClick = {
+                        onDeleteNote(note.id)
+                        onDismiss()
+                    },
+                    modifier = Modifier.weight(1f),
+                    shape = ButtonDefaults.shape
+                ) {
+                    Text("Delete")
+                }
+
+                Button(
+                    onClick = {
+                        onUpdateNote(note.copy(noteText = editText, color = editColor))
+                        onDismiss()
+                    },
+                    modifier = Modifier.weight(1f),
+                    shape = ButtonDefaults.shape
+                ) {
+                    Text("Save")
                 }
             }
         }
