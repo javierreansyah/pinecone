@@ -1,12 +1,9 @@
 package com.example.readerapp.ui.components
 
 import android.annotation.SuppressLint
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -14,15 +11,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Arrow_drop_down
-import com.composables.icons.materialsymbols.outlined.Arrow_drop_up
 import com.composables.icons.materialsymbols.outlined.Brightness_auto
 import com.composables.icons.materialsymbols.outlined.Brightness_medium
-import com.composables.icons.materialsymbols.outlined.Format_align_center
 import com.composables.icons.materialsymbols.outlined.Format_align_left
 import com.composables.icons.materialsymbols.outlined.Format_align_right
 import com.composables.icons.materialsymbols.outlined.Format_align_justify
@@ -43,210 +39,82 @@ fun ReaderSettingsContent(
     settings: ReaderSettings,
     onSettingsChange: (ReaderSettings) -> Unit
 ) {
+    var selectedTab by remember { mutableIntStateOf(0) }
+    val tabs = listOf("Text", "Lighting", "Advanced")
+
     var showColorPicker by remember { mutableStateOf(false) }
     var themeToDelete by remember { mutableStateOf<CustomReaderTheme?>(null) }
-    var accessibilityExpanded by remember { mutableStateOf(false) }
-    var publisherStylesExpanded by remember { mutableStateOf(false) }
-
-    val animationSpec = tween<IntSize>(durationMillis = 100)
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
-            .padding(bottom = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .padding(bottom = 4.dp)
     ) {
-        // Brightness Section
-        Column(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+        TabRow(
+            selectedTabIndex = selectedTab,
+            containerColor = Color.Transparent,
+            divider = {}
         ) {
-            Text("Brightness", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                FilledIconToggleButton(
-                    checked = settings.autoBrightness,
-                    onCheckedChange = { onSettingsChange(settings.copy(autoBrightness = it)) },
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.size(48.dp)
-                ) {
-                    Icon(
-                        imageVector = if (settings.autoBrightness) MaterialSymbols.Outlined.Brightness_auto else MaterialSymbols.Outlined.Brightness_medium,
-                        contentDescription = "Auto Brightness"
-                    )
-                }
-                Slider(
-                    value = settings.brightness,
-                    onValueChange = { onSettingsChange(settings.copy(brightness = it)) },
-                    enabled = !settings.autoBrightness,
-                    modifier = Modifier.weight(1f),
-                    track = { sliderState ->
-                        SliderDefaults.Track(
-                            sliderState = sliderState,
-                            enabled = !settings.autoBrightness,
-                        )
-                    }
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTab == index,
+                    onClick = { selectedTab = index },
+                    text = { Text(title) }
                 )
             }
         }
 
-        // Theme Selection Section
         Column(
-            verticalArrangement = Arrangement.spacedBy(2.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text("Theme", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                ThemeSwatch(
-                    isSelected = settings.readerThemePreset == "Auto",
-                    onClick = { onSettingsChange(settings.copy(readerThemePreset = "Auto")) },
-                    isAuto = true,
-                    label = "Auto",
-                    modifier = Modifier.padding(start = 0.dp, end = 4.dp)
-                )
-                ThemeSwatch(
-                    isSelected = settings.readerThemePreset == "Light",
-                    onClick = { onSettingsChange(settings.copy(readerThemePreset = "Light")) },
-                    color = Color.White,
-                    label = "Light"
-                )
-                ThemeSwatch(
-                    isSelected = settings.readerThemePreset == "Dark",
-                    onClick = { onSettingsChange(settings.copy(readerThemePreset = "Dark")) },
-                    color = Color.Black,
-                    label = "Dark"
-                )
-                ThemeSwatch(
-                    isSelected = settings.readerThemePreset == "Warm",
-                    onClick = { onSettingsChange(settings.copy(readerThemePreset = "Warm")) },
-                    color = Color(0xFFFAF4E8),
-                    label = "Sepia"
-                )
-
-                // Custom Saved Themes
-                settings.customThemes.forEach { theme ->
-                    ThemeSwatch(
-                        isSelected = settings.readerThemePreset == theme.name,
-                        onClick = {
-                            onSettingsChange(settings.copy(
-                                readerThemePreset = theme.name,
-                                customBackgroundColor = theme.backgroundColor,
-                                customTextColor = theme.textColor
-                            ))
-                        },
-                        onLongClick = { themeToDelete = theme },
-                        color = try { Color(theme.backgroundColor.toColorInt()) } catch (_: Exception) { Color.White },
-                        label = theme.name
-                    )
-                }
-
-                // Add New Theme Swatch
-                ThemeSwatch(
-                    isSelected = false,
-                    onClick = { showColorPicker = true },
-                    isCustom = true,
-                    label = "Add"
-                )
-            }
-        }
-
-        // Text Size and Margin
-        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            IncrementDecrementControl(
-                label = "Text Size",
-                value = "${(settings.fontSize * 100).roundToInt()}%",
-                onIncrement = { onSettingsChange(settings.copy(fontSize = (((settings.fontSize + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.5, 3.0))) },
-                onDecrement = { onSettingsChange(settings.copy(fontSize = (((settings.fontSize - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.5, 3.0))) },
-                modifier = Modifier.weight(1f)
-            )
-            IncrementDecrementControl(
-                label = "Margin",
-                value = String.format("%.2f", settings.pageMargins),
-                onIncrement = { onSettingsChange(settings.copy(pageMargins = (((settings.pageMargins + 0.25) * 4.0).roundToInt() / 4.0).coerceIn(0.0, 3.0))) },
-                onDecrement = { onSettingsChange(settings.copy(pageMargins = (((settings.pageMargins - 0.25) * 4.0).roundToInt() / 4.0).coerceIn(0.0, 3.0))) },
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        // Font Selection
-        SingleSelectDropdown(
-            label = "Font",
-            options = listOf("Original", "Serif", "Sans-Serif", "OpenDyslexic"),
-            selected = settings.fontFamily,
-            onSelected = { onSettingsChange(settings.copy(fontFamily = it)) }
-        )
-
-        // Typography Section
-        Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { publisherStylesExpanded = !publisherStylesExpanded }
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Typography", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.weight(1f))
-                Icon(
-                    imageVector = if (publisherStylesExpanded) MaterialSymbols.Outlined.Arrow_drop_up else MaterialSymbols.Outlined.Arrow_drop_down,
-                    contentDescription = null
-                )
-            }
-
-            AnimatedVisibility(
-                visible = publisherStylesExpanded,
-                enter = expandVertically(animationSpec = animationSpec),
-                exit = shrinkVertically(animationSpec = animationSpec)
-            ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // Publisher Style Switch
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Publisher Style", style = MaterialTheme.typography.bodyLarge)
-                        Spacer(modifier = Modifier.weight(1f))
-                        Switch(
-                            checked = settings.publisherStyles,
-                            onCheckedChange = { 
-                                onSettingsChange(settings.copy(publisherStyles = it))
+            when (selectedTab) {
+                0 -> { // Text Tab
+                    // Font Selection
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Font", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            val fonts = listOf("Original", "Serif", "Sans-Serif", "OpenDyslexic")
+                            fonts.forEach { font ->
+                                FontSwatch(
+                                    isSelected = settings.fontFamily == font,
+                                    onClick = { onSettingsChange(settings.copy(fontFamily = font)) },
+                                    fontName = font,
+                                    label = font,
+                                    modifier = Modifier.padding(horizontal = 4.dp)
+                                )
                             }
-                        )
+                        }
                     }
 
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        SegmentedButtonGroup(
-                            title = "Alignment",
-                            options = listOf("Start", "Left", "Right", "Justify"),
-                            icons = listOf(
-                                MaterialSymbols.Outlined.Format_align_center,
-                                MaterialSymbols.Outlined.Format_align_left,
-                                MaterialSymbols.Outlined.Format_align_right,
-                                MaterialSymbols.Outlined.Format_align_justify
-                            ),
-                            selected = settings.textAlign,
-                            onSelected = { onSettingsChange(settings.copy(textAlign = it)) },
-                            enabled = !settings.publisherStyles
-                        )
-
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    // Typography
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Typography", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            IncrementDecrementControl(
+                                label = "Text Size",
+                                value = "${(settings.fontSize * 100).roundToInt()}%",
+                                onIncrement = { onSettingsChange(settings.copy(fontSize = (((settings.fontSize + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.5, 3.0))) },
+                                onDecrement = { onSettingsChange(settings.copy(fontSize = (((settings.fontSize - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.5, 3.0))) },
+                                modifier = Modifier.weight(1f)
+                            )
+                            IncrementDecrementControl(
+                                label = "Margin",
+                                value = String.format("%.2f", settings.pageMargins),
+                                onIncrement = { onSettingsChange(settings.copy(pageMargins = (((settings.pageMargins + 0.25) * 4.0).roundToInt() / 4.0).coerceIn(0.0, 3.0))) },
+                                onDecrement = { onSettingsChange(settings.copy(pageMargins = (((settings.pageMargins - 0.25) * 4.0).roundToInt() / 4.0).coerceIn(0.0, 3.0))) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                             IncrementDecrementControl(
                                 label = "Line Spacing",
                                 value = String.format("%.1f", settings.lineHeight),
@@ -264,8 +132,7 @@ fun ReaderSettingsContent(
                                 modifier = Modifier.weight(1f)
                             )
                         }
-
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                             IncrementDecrementControl(
                                 label = "Word Spacing",
                                 value = "${(settings.wordSpacing * 100).roundToInt()}%",
@@ -284,40 +151,146 @@ fun ReaderSettingsContent(
                             )
                         }
                     }
+
+                    // Alignment
+                    SegmentedButtonGroup(
+                        title = "Alignment",
+                        options = listOf("Left", "Right", "Justify"),
+                        icons = listOf(
+                            MaterialSymbols.Outlined.Format_align_left,
+                            MaterialSymbols.Outlined.Format_align_right,
+                            MaterialSymbols.Outlined.Format_align_justify
+                        ),
+                        selected = settings.textAlign,
+                        onSelected = { onSettingsChange(settings.copy(textAlign = it)) },
+                        enabled = !settings.publisherStyles
+                    )
+
+                    // Publisher Style
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Publisher Style", style = MaterialTheme.typography.bodyLarge)
+                        Spacer(modifier = Modifier.weight(1f))
+                        Switch(
+                            checked = settings.publisherStyles,
+                            onCheckedChange = { onSettingsChange(settings.copy(publisherStyles = it)) }
+                        )
+                    }
                 }
-            }
-        }
 
-        // Accessibility Section
-        Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { accessibilityExpanded = !accessibilityExpanded }
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Accessibility", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.weight(1f))
-                Icon(
-                    imageVector = if (accessibilityExpanded) MaterialSymbols.Outlined.Arrow_drop_up else MaterialSymbols.Outlined.Arrow_drop_down,
-                    contentDescription = null
-                )
-            }
+                1 -> { // Lighting Tab
+                    // Brightness
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Brightness", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            FilledIconToggleButton(
+                                checked = settings.autoBrightness,
+                                onCheckedChange = { onSettingsChange(settings.copy(autoBrightness = it)) },
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.size(48.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (settings.autoBrightness) MaterialSymbols.Outlined.Brightness_auto else MaterialSymbols.Outlined.Brightness_medium,
+                                    contentDescription = "Auto Brightness"
+                                )
+                            }
+                            Slider(
+                                value = settings.brightness,
+                                onValueChange = { onSettingsChange(settings.copy(brightness = it)) },
+                                enabled = !settings.autoBrightness,
+                                modifier = Modifier.weight(1f),
+                                track = { sliderState ->
+                                    SliderDefaults.Track(
+                                        sliderState = sliderState,
+                                        enabled = !settings.autoBrightness,
+                                    )
+                                }
+                            )
+                        }
+                    }
 
-            AnimatedVisibility(
-                visible = accessibilityExpanded,
-                enter = expandVertically(animationSpec = animationSpec),
-                exit = shrinkVertically(animationSpec = animationSpec)
-            ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                    // Theme Selection
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Theme", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            ThemeSwatch(
+                                isSelected = settings.readerThemePreset == "Auto",
+                                onClick = { onSettingsChange(settings.copy(readerThemePreset = "Auto")) },
+                                isAuto = true,
+                                label = "Auto",
+                                modifier = Modifier.padding(start = 0.dp, end = 4.dp)
+                            )
+                            ThemeSwatch(
+                                isSelected = settings.readerThemePreset == "Light",
+                                onClick = { onSettingsChange(settings.copy(readerThemePreset = "Light")) },
+                                color = Color.White,
+                                label = "Light"
+                            )
+                            ThemeSwatch(
+                                isSelected = settings.readerThemePreset == "Dark",
+                                onClick = { onSettingsChange(settings.copy(readerThemePreset = "Dark")) },
+                                color = Color.Black,
+                                label = "Dark"
+                            )
+                            ThemeSwatch(
+                                isSelected = settings.readerThemePreset == "Warm",
+                                onClick = { onSettingsChange(settings.copy(readerThemePreset = "Warm")) },
+                                color = Color(0xFFFAF4E8),
+                                label = "Sepia"
+                            )
+
+                            // Custom Saved Themes
+                            settings.customThemes.forEach { theme ->
+                                ThemeSwatch(
+                                    isSelected = settings.readerThemePreset == theme.name,
+                                    onClick = {
+                                        onSettingsChange(settings.copy(
+                                            readerThemePreset = theme.name,
+                                            customBackgroundColor = theme.backgroundColor,
+                                            customTextColor = theme.textColor
+                                        ))
+                                    },
+                                    onLongClick = { themeToDelete = theme },
+                                    color = try { Color(theme.backgroundColor.toColorInt()) } catch (_: Exception) { Color.White },
+                                    label = theme.name
+                                )
+                            }
+
+                            // Add New Theme Swatch
+                            ThemeSwatch(
+                                isSelected = false,
+                                onClick = { showColorPicker = true },
+                                isCustom = true,
+                                label = "Add"
+                            )
+                        }
+                    }
+
+                    // Image Filter
+                    SegmentedButtonGroup(
+                        title = "Image Filter",
+                        options = listOf("None", "Darken", "Invert"),
+                        icons = listOf(
+                            MaterialSymbols.Outlined.Image,
+                            MaterialSymbols.Outlined.Contrast,
+                            MaterialSymbols.Outlined.Invert_colors
+                        ),
+                        selected = settings.imageFilter,
+                        onSelected = { onSettingsChange(settings.copy(imageFilter = it)) }
+                    )
+                }
+
+                2 -> { // Advanced Tab
                     // Vertical Scroll
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("Vertical Scroll", style = MaterialTheme.typography.bodyLarge)
@@ -359,19 +332,6 @@ fun ReaderSettingsContent(
                         selected = settings.readingProgression,
                         onSelected = { onSettingsChange(settings.copy(readingProgression = it)) }
                     )
-
-                    // Image Filter
-                    SegmentedButtonGroup(
-                        title = "Image Filter",
-                        options = listOf("None", "Darken", "Invert"),
-                        icons = listOf(
-                            MaterialSymbols.Outlined.Image,
-                            MaterialSymbols.Outlined.Contrast,
-                            MaterialSymbols.Outlined.Invert_colors
-                        ),
-                        selected = settings.imageFilter,
-                        onSelected = { onSettingsChange(settings.copy(imageFilter = it)) }
-                    )
                 }
             }
         }
@@ -411,6 +371,64 @@ fun ReaderSettingsContent(
             dismissButton = {
                 TextButton(onClick = { themeToDelete = null }) { Text("Cancel") }
             }
+        )
+    }
+}
+
+@Composable
+private fun FontSwatch(
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    fontName: String,
+    label: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier
+    ) {
+        Box(
+            modifier = Modifier
+                .size(60.dp)
+                .padding(2.dp)
+                .let { m ->
+                    if (isSelected) {
+                        m.border(
+                            width = 2.dp,
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = CircleShape
+                        )
+                    } else m
+                }
+                .padding(4.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .border(
+                    width = 1.5.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                    shape = CircleShape
+                )
+                .clickable { onClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Aa",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontFamily = when (fontName) {
+                        "Serif" -> FontFamily.Serif
+                        "Sans-Serif" -> FontFamily.SansSerif
+                        else -> FontFamily.Default
+                    }
+                )
+            )
+        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.width(60.dp),
+            textAlign = TextAlign.Center
         )
     }
 }
