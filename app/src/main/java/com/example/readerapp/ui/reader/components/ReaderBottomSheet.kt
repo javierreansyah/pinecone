@@ -1,7 +1,7 @@
 package com.example.readerapp.ui.reader.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,6 +15,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.readerapp.data.local.BookmarkEntity
@@ -29,6 +31,7 @@ fun ReaderBottomSheet(
     tableOfContents: List<Link>,
     bookmarks: List<BookmarkEntity>,
     notes: List<NoteEntity>,
+    currentLocator: Locator?,
     onChapterClick: (Link) -> Unit,
     onBookmarkClick: (Locator) -> Unit,
     onNoteClick: (Locator) -> Unit,
@@ -38,6 +41,10 @@ fun ReaderBottomSheet(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp.dp
+    val maxSheetHeight = screenHeight * 0.9f
+
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val pagerState = rememberPagerState(pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
@@ -50,8 +57,16 @@ fun ReaderBottomSheet(
         sheetState = sheetState,
         modifier = modifier
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            TabRow(selectedTabIndex = pagerState.currentPage) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(maxSheetHeight)
+        ) {
+            TabRow(
+                selectedTabIndex = pagerState.currentPage,
+                containerColor = Color.Transparent,
+                divider = {}
+            ) {
                 Tab(
                     selected = pagerState.currentPage == 0,
                     onClick = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
@@ -69,14 +84,22 @@ fun ReaderBottomSheet(
                 )
             }
 
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxWidth().weight(1f, fill = false) // Don't take all space if not needed
-            ) { page ->
-                when (page) {
-                    0 -> TocList(tableOfContents, onChapterClick)
-                    1 -> BookmarksList(bookmarks, onBookmarkClick, onDeleteBookmark)
-                    2 -> NotesList(notes, onNoteClick, onDeleteNote, onAddNoteClick = { showAddNoteDialog = true })
+            @OptIn(ExperimentalFoundationApi::class)
+            CompositionLocalProvider(
+                LocalOverscrollConfiguration provides null
+            ) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    beyondViewportPageCount = 2
+                ) { page ->
+                    when (page) {
+                        0 -> TocList(tableOfContents, currentLocator, onChapterClick)
+                        1 -> BookmarksList(bookmarks, onBookmarkClick, onDeleteBookmark)
+                        2 -> NotesList(notes, onNoteClick, onDeleteNote, onAddNoteClick = { showAddNoteDialog = true })
+                    }
                 }
             }
             // Add some bottom padding
@@ -123,6 +146,7 @@ fun ReaderBottomSheet(
 @Composable
 private fun TocList(
     tableOfContents: List<Link>,
+    currentLocator: Locator?,
     onChapterClick: (Link) -> Unit
 ) {
     if (tableOfContents.isEmpty()) {
@@ -135,8 +159,16 @@ private fun TocList(
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
             items(tableOfContents) { link ->
+                val isCurrentChapter = currentLocator?.href == link.href
                 ListItem(
-                    headlineContent = { Text(link.title ?: link.href.toString()) },
+                    headlineContent = {
+                        Text(
+                            text = link.title ?: link.href.toString(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else Color.Unspecified,
+                            fontWeight = if (isCurrentChapter) FontWeight.Bold else FontWeight.Normal
+                        )
+                    },
                     modifier = Modifier.clickable { onChapterClick(link) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )

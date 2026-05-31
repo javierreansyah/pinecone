@@ -131,11 +131,13 @@ fun ReaderOverlay(
         if (uiState.showToc) {
             val bookmarks by viewModel.bookmarks.collectAsStateWithLifecycle()
             val notes by viewModel.notes.collectAsStateWithLifecycle()
+            val currentLocator by viewModel.currentLocator.collectAsStateWithLifecycle()
 
             ReaderBottomSheet(
                 tableOfContents = viewModel.tableOfContents,
                 bookmarks = bookmarks,
                 notes = notes,
+                currentLocator = currentLocator,
                 onChapterClick = { link ->
                     onNavigateToChapter(link)
                     viewModel.hideToc()
@@ -197,6 +199,7 @@ fun ReaderOverlay(
                 query = uiState.searchQuery,
                 results = uiState.searchResults,
                 isLoading = uiState.searchLoading,
+                searchPerformed = uiState.searchPerformed,
                 onQueryChange = { q -> viewModel.updateSearchQuery(q) },
                 onSearch = { q -> viewModel.performSearch(q) },
                 onResultClick = { index -> viewModel.selectSearchResult(index) },

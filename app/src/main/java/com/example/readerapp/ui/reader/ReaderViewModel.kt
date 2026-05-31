@@ -251,7 +251,7 @@ class ReaderViewModel(
     // ── Search ────────────────────────────────────────────────────────────────
 
     fun showSearch() {
-        _uiState.update { it.copy(showSearch = true, searchQuery = "", searchResults = emptyList(), searchLoading = false, activeSearchIndex = null, isInSearchNavigationMode = false) }
+        _uiState.update { it.copy(showSearch = true, searchQuery = "", searchResults = emptyList(), searchLoading = false, searchPerformed = false, activeSearchIndex = null, isInSearchNavigationMode = false) }
     }
 
     fun hideSearch() {
@@ -260,19 +260,19 @@ class ReaderViewModel(
     }
 
     fun updateSearchQuery(query: String) {
-        _uiState.update { it.copy(searchQuery = query) }
+        _uiState.update { it.copy(searchQuery = query, searchPerformed = false) }
     }
 
     fun performSearch(query: String) {
         val publication = _publication.value ?: return
         if (query.isBlank()) {
-            _uiState.update { it.copy(searchQuery = query, searchResults = emptyList(), searchLoading = false) }
+            _uiState.update { it.copy(searchQuery = query, searchResults = emptyList(), searchLoading = false, searchPerformed = false) }
             return
         }
 
         // Cancel any in-flight search
         searchJob?.cancel()
-        _uiState.update { it.copy(searchQuery = query, searchResults = emptyList(), searchLoading = true) }
+        _uiState.update { it.copy(searchQuery = query, searchResults = emptyList(), searchLoading = true, searchPerformed = true) }
 
         searchJob = viewModelScope.launch {
             try {
@@ -298,7 +298,7 @@ class ReaderViewModel(
                         }.takeIf { it != -1 }
 
                         val positionLabel = when {
-                            posIndex != null && totalPositions > 0 -> "Position ${posIndex + 1} of $totalPositions"
+                            posIndex != null && totalPositions > 0 -> "${posIndex + 1} of $totalPositions"
                             locator.locations.totalProgression != null ->
                                 "${(locator.locations.totalProgression!! * 100).toInt()}%"
                             else -> ""
