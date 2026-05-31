@@ -234,15 +234,20 @@ class BookRepository(
 
     // --- Note Methods ---
 
-    suspend fun addNote(bookId: String, locator: Locator, noteText: String) {
+    suspend fun addNote(bookId: String, locator: Locator, noteText: String, color: Int = -1, chapterTitle: String? = null) {
         noteDao.insert(
             NoteEntity(
                 bookId = bookId,
                 locatorJson = locator.toJSON().toString(),
-                chapterTitle = locator.title,
-                noteText = noteText
+                chapterTitle = chapterTitle ?: locator.title,
+                noteText = noteText,
+                color = color
             )
         )
+    }
+
+    suspend fun updateNote(note: NoteEntity) {
+        noteDao.update(note)
     }
 
     fun getNotes(bookId: String): Flow<List<NoteEntity>> = noteDao.getByBookId(bookId)

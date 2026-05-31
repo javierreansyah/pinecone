@@ -22,5 +22,14 @@ data class ReaderUiState(
     /** Index in [searchResults] that is currently active (user tapped a result). */
     val activeSearchIndex: Int? = null,
     /** When true the bottom bar shows the ← N of M → search helper instead of the progress bar. */
-    val isInSearchNavigationMode: Boolean = false
+    val isInSearchNavigationMode: Boolean = false,
+    
+    // Native Selection
+    val selectionLocator: org.readium.r2.shared.publication.Locator? = null,
+    
+    // Edit Note Bottom Sheet
+    val editingNote: com.example.readerapp.data.local.NoteEntity? = null,
+    
+    // Highlight / Selection Context Menu
+    val viewingHighlight: com.example.readerapp.data.local.NoteEntity? = null
 )

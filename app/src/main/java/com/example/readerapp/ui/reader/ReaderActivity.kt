@@ -141,6 +141,90 @@ class ReaderActivity : AppCompatActivity() {
                     nav?.currentLocator?.collect { locator ->
                         viewModel.onLocatorChanged(locator)
                         viewModel.savePosition(locator)
+                        // Inject custom selection CSS with a small delay to ensure WebView is ready
+                        lifecycleScope.launch {
+                            kotlinx.coroutines.delay(300)
+                            val css = "::selection { background-color: rgba(128, 128, 128, 0.35) !important; color: inherit !important; }"
+                            val script = """
+                                (function() {
+                                    var style = document.getElementById('custom-selection-style');
+                                    if (!style) {
+                                        style = document.createElement('style');
+                                        style.id = 'custom-selection-style';
+                                        style.type = 'text/css';
+                                        document.head.appendChild(style);
+                                    }
+                                    style.innerHTML = '$css';
+                                })();
+                            """
+                            (nav as? org.readium.r2.navigator.epub.EpubNavigatorFragment)?.evaluateJavascript(script)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Observe clear selection events
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.clearSelectionEvent.collect {
+                    (navigator as? org.readium.r2.navigator.SelectableNavigator)?.clearSelection()
+                }
+            }
+        }
+
+        // Poll for native selection changes to dismiss our menu when the user natively taps outside to drop selection
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (true) {
+                    kotlinx.coroutines.delay(200)
+                    if (viewModel.uiState.value.selectionLocator != null) {
+                        val nav = navigator as? org.readium.r2.navigator.SelectableNavigator
+                        if (nav != null) {
+                            val currentSel = nav.currentSelection()
+                            if (currentSel == null) {
+                                viewModel.hideSelectionMenu()
+                            } else {
+                                // Keep our locator up-to-date with handle drags!
+                                if (currentSel.locator != viewModel.uiState.value.selectionLocator) {
+                                    viewModel.showSelectionMenu(currentSel.locator)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Observe notes and highlights and apply them as permanent decorations
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                combine(navigatorFlow.filterNotNull(), viewModel.allNotesAndHighlights) { nav, notes ->
+                    nav to notes
+                }.collectLatest { (nav, notes) ->
+                    if (nav is DecorableNavigator) {
+                        val decorations = notes.mapNotNull { note ->
+                            try {
+                                val locator = org.readium.r2.shared.publication.Locator.fromJSON(org.json.JSONObject(note.locatorJson))
+                                if (locator != null) {
+                                    val isHighlight = note.noteText.isEmpty()
+                                    val tintColor = if (note.color != -1) note.color else {
+                                        if (isHighlight) android.graphics.Color.parseColor("#4003A9F4") else android.graphics.Color.parseColor("#40FFEB3B")
+                                    }
+                                    Decoration(
+                                        id = "note_${note.id}",
+                                        locator = locator,
+                                        style = Decoration.Style.Highlight(
+                                            tint = tintColor,
+                                            isActive = false
+                                        )
+                                    )
+                                } else null
+                            } catch (e: Exception) {
+                                null
+                            }
+                        }
+                        nav.applyDecorations(decorations, group = "notes")
                     }
                 }
             }
@@ -249,9 +333,43 @@ class ReaderActivity : AppCompatActivity() {
         val initialLocator = viewModel.initialLocator
         val initialPreferences = viewModel.epubPreferences.value
 
+        val configuration = EpubNavigatorFragment.Configuration(
+            selectionActionModeCallback = object : android.view.ActionMode.Callback {
+                override fun onCreateActionMode(mode: android.view.ActionMode?, menu: android.view.Menu?): Boolean {
+                    menu?.clear()
+                    
+                    val nav = navigator as? org.readium.r2.navigator.SelectableNavigator
+                    if (nav != null) {
+                        lifecycleScope.launch {
+                            val selection = nav.currentSelection()
+                            if (selection != null) {
+                                viewModel.showSelectionMenu(selection.locator)
+                            }
+                            // Close the native action mode immediately so the default bar disappears
+                            mode?.finish()
+                        }
+                    }
+                    // Return true initially to prevent the default menu from showing up fully before we finish it
+                    return true
+                }
+
+                override fun onPrepareActionMode(mode: android.view.ActionMode?, menu: android.view.Menu?): Boolean {
+                    menu?.clear()
+                    return false
+                }
+
+                override fun onActionItemClicked(mode: android.view.ActionMode?, item: android.view.MenuItem?): Boolean {
+                    return false
+                }
+
+                override fun onDestroyActionMode(mode: android.view.ActionMode?) {}
+            }
+        )
+
         supportFragmentManager.fragmentFactory = navigatorFactory.createFragmentFactory(
             initialLocator = initialLocator,
-            initialPreferences = initialPreferences
+            initialPreferences = initialPreferences,
+            configuration = configuration
         )
 
         supportFragmentManager.beginTransaction()
@@ -290,10 +408,34 @@ class ReaderActivity : AppCompatActivity() {
         //    Only un-consumed taps (centre area) toggle the controls overlay.
         nav.addInputListener(object : InputListener {
             override fun onTap(event: TapEvent): Boolean {
+                if (viewModel.uiState.value.selectionLocator != null || viewModel.uiState.value.viewingHighlight != null) {
+                    viewModel.hideSelectionMenu()
+                    viewModel.hideViewHighlight()
+                    return true
+                }
                 viewModel.toggleControls()
                 return true
             }
         })
+        
+        // 3) Decoration Observer - listen for taps on notes/highlights
+        if (nav is DecorableNavigator) {
+            nav.addDecorationListener("notes", object : org.readium.r2.navigator.DecorableNavigator.Listener {
+                override fun onDecorationActivated(event: org.readium.r2.navigator.DecorableNavigator.OnActivatedEvent): Boolean {
+                    val noteIdStr = event.decoration.id.removePrefix("note_")
+                    val noteId = noteIdStr.toLongOrNull() ?: return false
+                    
+                    val note = viewModel.allNotesAndHighlights.value.find { it.id == noteId } ?: return false
+                    
+                    if (note.noteText.isBlank()) {
+                        viewModel.viewHighlight(note)
+                    } else {
+                        viewModel.editNote(note)
+                    }
+                    return true
+                }
+            })
+        }
     }
 
     override fun onPause() {

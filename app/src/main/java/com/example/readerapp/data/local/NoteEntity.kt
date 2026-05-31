@@ -10,5 +10,6 @@ data class NoteEntity(
     val locatorJson: String,
     val chapterTitle: String? = null,
     val noteText: String,
+    val color: Int = -1, // -1 means default
     val createdAt: Long = System.currentTimeMillis()
 )

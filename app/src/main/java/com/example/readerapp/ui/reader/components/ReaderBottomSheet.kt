@@ -39,6 +39,7 @@ fun ReaderBottomSheet(
     onDeleteBookmark: (Long) -> Unit,
     onDeleteNote: (Long) -> Unit,
     onDismiss: () -> Unit,
+    getPositionLabel: (Locator) -> String,
     modifier: Modifier = Modifier
 ) {
     val configuration = LocalConfiguration.current
@@ -97,8 +98,8 @@ fun ReaderBottomSheet(
                 ) { page ->
                     when (page) {
                         0 -> TocList(tableOfContents, currentLocator, onChapterClick)
-                        1 -> BookmarksList(bookmarks, onBookmarkClick, onDeleteBookmark)
-                        2 -> NotesList(notes, onNoteClick, onDeleteNote, onAddNoteClick = { showAddNoteDialog = true })
+                        1 -> BookmarksList(bookmarks, tableOfContents, getPositionLabel, onBookmarkClick, onDeleteBookmark)
+                        2 -> NotesList(notes, tableOfContents, getPositionLabel, onNoteClick, onDeleteNote)
                     }
                 }
             }
@@ -180,6 +181,8 @@ private fun TocList(
 @Composable
 private fun BookmarksList(
     bookmarks: List<BookmarkEntity>,
+    tableOfContents: List<Link>,
+    getPositionLabel: (Locator) -> String,
     onBookmarkClick: (Locator) -> Unit,
     onDeleteBookmark: (Long) -> Unit
 ) {
@@ -195,12 +198,16 @@ private fun BookmarksList(
             items(bookmarks) { bookmark ->
                 val locator = try { Locator.fromJSON(org.json.JSONObject(bookmark.locatorJson)) } catch (e: Exception) { null }
                 if (locator != null) {
+                    val chapterTitle = bookmark.chapterTitle
+                        ?.takeIf { it.isNotBlank() && it != "In Document" }
+                        ?: tableOfContents.find { it.href.toString().substringBefore("#") == locator.href.toString().substringBefore("#") }?.title
+                        ?: "In Document"
+                        
                     ListItem(
-                        headlineContent = { Text(bookmark.chapterTitle ?: "Unknown Chapter", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        headlineContent = { Text(chapterTitle, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                         supportingContent = { 
-                            val progression = locator.locations.totalProgression
-                            val pct = if (progression != null) "${(progression * 100).toInt()}%" else ""
-                            Text(pct)
+                            val pct = getPositionLabel(locator)
+                            if (pct.isNotBlank()) Text(pct)
                         },
                         trailingContent = {
                             IconButton(onClick = { onDeleteBookmark(bookmark.id) }) {
@@ -219,19 +226,12 @@ private fun BookmarksList(
 @Composable
 private fun NotesList(
     notes: List<NoteEntity>,
+    tableOfContents: List<Link>,
+    getPositionLabel: (Locator) -> String,
     onNoteClick: (Locator) -> Unit,
-    onDeleteNote: (Long) -> Unit,
-    onAddNoteClick: () -> Unit
+    onDeleteNote: (Long) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.CenterEnd) {
-            Button(onClick = onAddNoteClick) {
-                Icon(Icons.Default.Add, contentDescription = "Add")
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Add Note at Current Position")
-            }
-        }
-        
         if (notes.isEmpty()) {
             Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                 Text("No Notes")
@@ -244,17 +244,57 @@ private fun NotesList(
                 items(notes) { note ->
                     val locator = try { Locator.fromJSON(org.json.JSONObject(note.locatorJson)) } catch (e: Exception) { null }
                     if (locator != null) {
-                        ListItem(
-                            headlineContent = { Text(note.noteText, maxLines = 2, overflow = TextOverflow.Ellipsis) },
-                            supportingContent = { Text(note.chapterTitle ?: "Unknown Chapter") },
-                            trailingContent = {
-                                IconButton(onClick = { onDeleteNote(note.id) }) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Delete")
+                        val pct = getPositionLabel(locator)
+                        val chapterTitle = note.chapterTitle
+                            ?.takeIf { it.isNotBlank() && it != "In Document" }
+                            ?: tableOfContents.find { it.href.toString().substringBefore("#") == locator.href.toString().substringBefore("#") }?.title
+                            ?: "In Document"
+                        
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onNoteClick(locator) }
+                                .padding(horizontal = 20.dp, vertical = 12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    // Line 1: Chapter Title
+                                    Text(
+                                        text = chapterTitle,
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.primary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    // Line 2: Progression
+                                    if (pct.isNotBlank()) {
+                                        Text(
+                                            text = pct,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
-                            },
-                            modifier = Modifier.clickable { onNoteClick(locator) },
-                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                        )
+                                IconButton(onClick = { onDeleteNote(note.id) }, modifier = Modifier.padding(start = 8.dp).size(24.dp)) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                            
+                            Spacer(Modifier.height(8.dp))
+                            
+                            // Line 3: Note text
+                            Text(
+                                text = note.noteText,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 3,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 }
             }
