@@ -13,7 +13,8 @@ data class Book(
     val progress: Double,
     val lastOpened: Long?,
     val language: String?,
-    val addedDate: Long
+    val addedDate: Long,
+    val isArchived: Boolean
 ) {
     companion object {
         fun fromEntity(entity: BookEntity): Book = Book(
@@ -24,7 +25,8 @@ data class Book(
             progress = entity.progression,
             lastOpened = entity.lastReadDate,
             language = entity.language,
-            addedDate = entity.addedDate
+            addedDate = entity.addedDate,
+            isArchived = entity.isArchived
         )
     }
 }

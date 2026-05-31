@@ -22,10 +22,19 @@ import org.readium.r2.shared.util.asset.AssetRetriever
 import android.graphics.BitmapFactory
 import org.readium.r2.shared.util.getOrElse
 
+import com.example.readerapp.data.local.ShelfDao
+import com.example.readerapp.data.local.ShelfEntity
+import com.example.readerapp.data.local.ShelfWithCovers
+import com.example.readerapp.data.local.ShelfBookCrossRefEntity
+import com.example.readerapp.data.local.NoteDao
+import com.example.readerapp.data.local.NoteEntity
+
 class BookRepository(
     private val context: Context,
     private val bookDao: BookDao,
     private val bookmarkDao: BookmarkDao,
+    private val shelfDao: ShelfDao,
+    private val noteDao: NoteDao,
     private val publicationOpener: PublicationOpener,
     private val assetRetriever: AssetRetriever
 ) {
@@ -182,10 +191,64 @@ class BookRepository(
         File(book.filePath).delete()
         // Delete cover
         book.coverPath?.let { File(it).delete() }
-        // Delete bookmarks
+        // Delete bookmarks and notes
         bookmarkDao.deleteAllForBook(bookId)
+        noteDao.deleteAllForBook(bookId)
         // Delete from DB
         bookDao.delete(book)
+    }
+
+    // --- Archive Methods ---
+
+    suspend fun toggleArchive(bookId: String) {
+        val book = bookDao.getById(bookId) ?: return
+        bookDao.update(book.copy(isArchived = !book.isArchived))
+    }
+
+    // --- Shelf Methods ---
+
+    fun getAllShelvesWithBooks(): Flow<List<ShelfWithCovers>> = shelfDao.getAllShelvesWithBooks()
+
+    suspend fun getShelfById(shelfId: String): ShelfEntity? = shelfDao.getShelfById(shelfId)
+
+    suspend fun createShelf(name: String): String {
+        val id = java.util.UUID.randomUUID().toString()
+        shelfDao.insertShelf(ShelfEntity(id = id, name = name))
+        return id
+    }
+
+    suspend fun deleteShelf(shelfId: String) {
+        val shelf = shelfDao.getShelfById(shelfId)
+        if (shelf != null) {
+            shelfDao.deleteShelf(shelf)
+        }
+    }
+
+    suspend fun addBookToShelf(shelfId: String, bookId: String) {
+        shelfDao.insertShelfBookCrossRef(ShelfBookCrossRefEntity(shelfId = shelfId, bookId = bookId))
+    }
+
+    suspend fun removeBookFromShelf(shelfId: String, bookId: String) {
+        shelfDao.deleteShelfBookCrossRef(shelfId = shelfId, bookId = bookId)
+    }
+
+    // --- Note Methods ---
+
+    suspend fun addNote(bookId: String, locator: Locator, noteText: String) {
+        noteDao.insert(
+            NoteEntity(
+                bookId = bookId,
+                locatorJson = locator.toJSON().toString(),
+                chapterTitle = locator.title,
+                noteText = noteText
+            )
+        )
+    }
+
+    fun getNotes(bookId: String): Flow<List<NoteEntity>> = noteDao.getByBookId(bookId)
+
+    suspend fun removeNote(id: Long) {
+        noteDao.deleteById(id)
     }
 
     // --- Private helpers ---

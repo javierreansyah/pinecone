@@ -127,14 +127,38 @@ fun ReaderOverlay(
             }
         }
 
-        // TOC Bottom Sheet
+        // Reader Bottom Sheet
         if (uiState.showToc) {
-            TocBottomSheet(
+            val bookmarks by viewModel.bookmarks.collectAsStateWithLifecycle()
+            val notes by viewModel.notes.collectAsStateWithLifecycle()
+
+            ReaderBottomSheet(
                 tableOfContents = viewModel.tableOfContents,
+                bookmarks = bookmarks,
+                notes = notes,
                 onChapterClick = { link ->
                     onNavigateToChapter(link)
                     viewModel.hideToc()
                     viewModel.toggleControls()
+                },
+                onBookmarkClick = { locator ->
+                    onSeekToProgression(locator.locations.totalProgression ?: 0.0) // Or we could add a direct navigate to locator callback
+                    viewModel.hideToc()
+                    viewModel.toggleControls()
+                },
+                onNoteClick = { locator ->
+                    onSeekToProgression(locator.locations.totalProgression ?: 0.0)
+                    viewModel.hideToc()
+                    viewModel.toggleControls()
+                },
+                onAddNote = { text ->
+                    viewModel.addNote(text)
+                },
+                onDeleteBookmark = { id ->
+                    viewModel.deleteBookmark(id)
+                },
+                onDeleteNote = { id ->
+                    viewModel.deleteNote(id)
                 },
                 onDismiss = { viewModel.hideToc() }
             )

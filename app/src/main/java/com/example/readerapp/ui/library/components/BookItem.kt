@@ -22,17 +22,25 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.readerapp.data.model.Book
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BookItem(
     book: Book,
     onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
     isList: Boolean = false
 ) {
     if (isList) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick),
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongClick
+                ),
             verticalAlignment = Alignment.Top
         ) {
             Box(modifier = Modifier
@@ -74,7 +82,10 @@ fun BookItem(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongClick
+                )
         ) {
             Card(
                 shape = MaterialTheme.shapes.small,

@@ -8,6 +8,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -17,7 +18,14 @@ import com.example.readerapp.data.local.ReaderSettings
 import com.example.readerapp.ui.library.LibraryScreen
 import com.example.readerapp.ui.navigation.Screen
 import com.example.readerapp.ui.settings.SettingsScreen
+import com.example.readerapp.ui.library.ArchiveScreen
+import com.example.readerapp.ui.library.ShelfDetailScreen
 import com.example.readerapp.ui.theme.ReaderAppTheme
+import androidx.compose.material3.*
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,10 +48,52 @@ class MainActivity : ComponentActivity() {
                 colorPalette = settings.colorPalette
             ) {
                 val navController = rememberNavController()
-                NavHost(
-                    navController = navController,
-                    startDestination = Screen.Library.route
+                val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+                val scope = rememberCoroutineScope()
+
+                ModalNavigationDrawer(
+                    drawerState = drawerState,
+                    drawerContent = {
+                        ModalDrawerSheet {
+                            Text("Reader App", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.titleLarge)
+                            HorizontalDivider()
+                            NavigationDrawerItem(
+                                label = { Text("Library") },
+                                selected = false,
+                                onClick = {
+                                    navController.navigate(Screen.Library.route) {
+                                        popUpTo(navController.graph.startDestinationId)
+                                        launchSingleTop = true
+                                    }
+                                    scope.launch { drawerState.close() }
+                                },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            )
+                            NavigationDrawerItem(
+                                label = { Text("Archives") },
+                                selected = false,
+                                onClick = {
+                                    navController.navigate(Screen.Archives.route)
+                                    scope.launch { drawerState.close() }
+                                },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            )
+                            NavigationDrawerItem(
+                                label = { Text("Settings") },
+                                selected = false,
+                                onClick = {
+                                    navController.navigate(Screen.Settings.route)
+                                    scope.launch { drawerState.close() }
+                                },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            )
+                        }
+                    }
                 ) {
+                    NavHost(
+                        navController = navController,
+                        startDestination = Screen.Library.route
+                    ) {
                     composable(Screen.Library.route) {
                         LibraryScreen(
                             onNavigateToReader = { bookId ->
@@ -52,8 +102,11 @@ class MainActivity : ComponentActivity() {
                                 }
                                 context.startActivity(intent)
                             },
-                            onNavigateToSettings = {
-                                navController.navigate(Screen.Settings.route)
+                            onOpenDrawerClick = {
+                                scope.launch { drawerState.open() }
+                            },
+                            onNavigateToShelf = { shelfId ->
+                                navController.navigate(Screen.ShelfDetail.createRoute(shelfId))
                             }
                         )
                     }
@@ -63,6 +116,35 @@ class MainActivity : ComponentActivity() {
                                 navController.popBackStack()
                             }
                         )
+                    }
+                    composable(Screen.Archives.route) {
+                        ArchiveScreen(
+                            onNavigateBack = {
+                                navController.popBackStack()
+                            },
+                            onNavigateToReader = { bookId ->
+                                val intent = android.content.Intent(context, com.example.readerapp.ui.reader.ReaderActivity::class.java).apply {
+                                    putExtra(com.example.readerapp.ui.reader.ReaderActivity.EXTRA_BOOK_ID, bookId)
+                                }
+                                context.startActivity(intent)
+                            }
+                        )
+                    }
+                    composable(Screen.ShelfDetail.route) { backStackEntry ->
+                        val shelfId = backStackEntry.arguments?.getString("shelfId") ?: return@composable
+                        ShelfDetailScreen(
+                            shelfId = shelfId,
+                            onNavigateBack = {
+                                navController.popBackStack()
+                            },
+                            onNavigateToReader = { bookId ->
+                                val intent = android.content.Intent(context, com.example.readerapp.ui.reader.ReaderActivity::class.java).apply {
+                                    putExtra(com.example.readerapp.ui.reader.ReaderActivity.EXTRA_BOOK_ID, bookId)
+                                }
+                                context.startActivity(intent)
+                            }
+                        )
+                    }
                     }
                 }
             }

@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.readerapp.ReaderApplication
 import com.example.readerapp.data.local.ReaderPreferences
 import com.example.readerapp.data.model.Book
+import com.example.readerapp.data.local.ShelfWithCovers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -22,6 +23,7 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
 
     val filteredBooks: StateFlow<List<Book>> = combine(booksFlow, _uiState) { books, state ->
         books
+            .filter { !it.isArchived }
             .filter { book ->
                 val matchesSearch = book.title.contains(state.searchQuery, ignoreCase = true) ||
                         (book.author?.contains(state.searchQuery, ignoreCase = true) == true)
@@ -52,6 +54,13 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
         initialValue = emptyList()
     )
 
+    val archivedBooks: StateFlow<List<Book>> = booksFlow
+        .map { books -> books.filter { it.isArchived } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val shelves: StateFlow<List<ShelfWithCovers>> = bookRepository.getAllShelvesWithBooks()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     init {
         // Import bundled books on launch. importBundledBooks checks for existence to avoid duplicates.
         viewModelScope.launch {
@@ -73,6 +82,33 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
     fun deleteBook(bookId: String) {
         viewModelScope.launch {
             bookRepository.deleteBook(bookId)
+        }
+    }
+
+    fun toggleArchive(bookId: String) {
+        viewModelScope.launch {
+            bookRepository.toggleArchive(bookId)
+        }
+    }
+
+    fun createShelfAndAddBook(name: String, bookId: String?) {
+        viewModelScope.launch {
+            val shelfId = bookRepository.createShelf(name)
+            if (bookId != null) {
+                bookRepository.addBookToShelf(shelfId, bookId)
+            }
+        }
+    }
+
+    fun addBookToShelf(shelfId: String, bookId: String) {
+        viewModelScope.launch {
+            bookRepository.addBookToShelf(shelfId, bookId)
+        }
+    }
+
+    fun deleteShelf(shelfId: String) {
+        viewModelScope.launch {
+            bookRepository.deleteShelf(shelfId)
         }
     }
 

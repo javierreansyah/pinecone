@@ -30,7 +30,9 @@ class ReaderApplication : Application() {
             applicationContext,
             AppDatabase::class.java,
             "reader_database",
-        ).build()
+        )
+        .addMigrations(AppDatabase.MIGRATION_1_2)
+        .build()
 
         val httpClient = DefaultHttpClient()
         
@@ -52,6 +54,8 @@ class ReaderApplication : Application() {
             context = applicationContext,
             bookDao = database.bookDao(),
             bookmarkDao = database.bookmarkDao(),
+            shelfDao = database.shelfDao(),
+            noteDao = database.noteDao(),
             publicationOpener = publicationOpener,
             assetRetriever = assetRetriever
         )
