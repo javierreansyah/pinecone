@@ -13,7 +13,8 @@ import com.example.readerapp.data.model.Book
 @Composable
 fun BookList(
     books: List<Book>,
-    onBookClick: (String) -> Unit
+    onBookClick: (String) -> Unit,
+    onBookLongClick: ((String) -> Unit)? = null
 ) {
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
@@ -21,7 +22,12 @@ fun BookList(
         modifier = Modifier.fillMaxSize()
     ) {
         items(books) { book ->
-            BookItem(book = book, onClick = { onBookClick(book.id) }, isList = true)
+            BookItem(
+                book = book, 
+                onClick = { onBookClick(book.id) },
+                onLongClick = { onBookLongClick?.invoke(book.id) },
+                isList = true
+            )
         }
     }
 }

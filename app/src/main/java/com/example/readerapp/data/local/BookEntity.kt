@@ -16,5 +16,6 @@ data class BookEntity(
     val progression: Double = 0.0,
     val lastLocatorJson: String? = null,
     val addedDate: Long = System.currentTimeMillis(),
-    val lastReadDate: Long? = null
+    val lastReadDate: Long? = null,
+    val isArchived: Boolean = false
 )

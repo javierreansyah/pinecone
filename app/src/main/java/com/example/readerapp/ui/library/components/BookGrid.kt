@@ -14,7 +14,8 @@ import com.example.readerapp.data.model.Book
 @Composable
 fun BookGrid(
     books: List<Book>,
-    onBookClick: (String) -> Unit
+    onBookClick: (String) -> Unit,
+    onBookLongClick: ((String) -> Unit)? = null
 ) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(100.dp),
@@ -24,7 +25,11 @@ fun BookGrid(
         modifier = Modifier.fillMaxSize()
     ) {
         items(books) { book ->
-            BookItem(book = book, onClick = { onBookClick(book.id) })
+            BookItem(
+                book = book, 
+                onClick = { onBookClick(book.id) },
+                onLongClick = { onBookLongClick?.invoke(book.id) }
+            )
         }
     }
 }

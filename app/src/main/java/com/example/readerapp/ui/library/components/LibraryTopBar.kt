@@ -27,7 +27,7 @@ import com.composables.icons.materialsymbols.outlined.Tune
 fun LibraryTopBar(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
-    onSettingsClick: () -> Unit,
+    onOpenDrawerClick: () -> Unit,
     onTuneClick: () -> Unit,
 ) {
     Row(
@@ -37,8 +37,8 @@ fun LibraryTopBar(
             .statusBarsPadding(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = onSettingsClick) {
-            Icon(MaterialSymbols.Outlined.Menu, contentDescription = "Settings")
+        IconButton(onClick = onOpenDrawerClick) {
+            Icon(MaterialSymbols.Outlined.Menu, contentDescription = "Menu")
         }
 
         Surface(

@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.readerapp.data.local.BookmarkEntity
+import com.example.readerapp.data.local.NoteEntity
 import com.example.readerapp.data.local.ReaderPreferences
 import com.example.readerapp.data.local.ReaderSettings
 import com.example.readerapp.data.repository.BookRepository
@@ -57,6 +58,10 @@ class ReaderViewModel(
 
     // Bookmarks for the current book
     val bookmarks: StateFlow<List<BookmarkEntity>> = repository.getBookmarks(bookId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Notes for the current book
+    val notes: StateFlow<List<NoteEntity>> = repository.getNotes(bookId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Derived bookmark status
@@ -205,6 +210,25 @@ class ReaderViewModel(
             } else {
                 repository.addBookmark(bookId, locator)
             }
+        }
+    }
+
+    fun deleteBookmark(bookmarkId: Long) {
+        viewModelScope.launch {
+            repository.removeBookmark(bookmarkId)
+        }
+    }
+
+    fun addNote(noteText: String) {
+        val locator = _currentLocator.value ?: return
+        viewModelScope.launch {
+            repository.addNote(bookId, locator, noteText)
+        }
+    }
+
+    fun deleteNote(noteId: Long) {
+        viewModelScope.launch {
+            repository.removeNote(noteId)
         }
     }
 
