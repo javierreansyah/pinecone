@@ -48,6 +48,7 @@ class ReaderActivity : AppCompatActivity() {
     private var navigator: EpubNavigatorFragment? = null
     private var navigatorContainer: FragmentContainerView? = null
     private val navigatorFlow = MutableStateFlow<EpubNavigatorFragment?>(null)
+    private var currentActionMode: android.view.ActionMode? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -119,6 +120,9 @@ class ReaderActivity : AppCompatActivity() {
                             container.layoutParams = lp
                         }
                     }
+
+                    // Inject dynamic ::selection CSS based on the reader background color
+                    injectSelectionCss(color)
                 }
             }
         }
@@ -141,23 +145,11 @@ class ReaderActivity : AppCompatActivity() {
                     nav?.currentLocator?.collect { locator ->
                         viewModel.onLocatorChanged(locator)
                         viewModel.savePosition(locator)
-                        // Inject custom selection CSS with a small delay to ensure WebView is ready
+                        // Re-inject ::selection CSS on every page change — the
+                        // WebView reloads HTML for each new resource/chapter.
                         lifecycleScope.launch {
                             kotlinx.coroutines.delay(300)
-                            val css = "::selection { background-color: rgba(128, 128, 128, 0.35) !important; color: inherit !important; }"
-                            val script = """
-                                (function() {
-                                    var style = document.getElementById('custom-selection-style');
-                                    if (!style) {
-                                        style = document.createElement('style');
-                                        style.id = 'custom-selection-style';
-                                        style.type = 'text/css';
-                                        document.head.appendChild(style);
-                                    }
-                                    style.innerHTML = '$css';
-                                })();
-                            """
-                            (nav as? org.readium.r2.navigator.epub.EpubNavigatorFragment)?.evaluateJavascript(script)
+                            reapplySelectionCss()
                         }
                     }
                 }
@@ -173,28 +165,9 @@ class ReaderActivity : AppCompatActivity() {
             }
         }
 
-        // Poll for native selection changes to dismiss our menu when the user natively taps outside to drop selection
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                while (true) {
-                    kotlinx.coroutines.delay(200)
-                    if (viewModel.uiState.value.selectionLocator != null) {
-                        val nav = navigator as? org.readium.r2.navigator.SelectableNavigator
-                        if (nav != null) {
-                            val currentSel = nav.currentSelection()
-                            if (currentSel == null) {
-                                viewModel.hideSelectionMenu()
-                            } else {
-                                // Keep our locator up-to-date with handle drags!
-                                if (currentSel.locator != viewModel.uiState.value.selectionLocator) {
-                                    viewModel.showSelectionMenu(currentSel.locator)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        // Note: Polling loop for selection has been completely removed to prevent jitter.
+        // We now rely on Android's native onDestroyActionMode to detect when selection is cleared.
+
 
         // Observe notes and highlights and apply them as permanent decorations
         lifecycleScope.launch {
@@ -336,8 +309,12 @@ class ReaderActivity : AppCompatActivity() {
         val configuration = EpubNavigatorFragment.Configuration(
             selectionActionModeCallback = object : android.view.ActionMode.Callback {
                 override fun onCreateActionMode(mode: android.view.ActionMode?, menu: android.view.Menu?): Boolean {
+                    // Clear all native menu items so the default context toolbar
+                    // never renders — our custom Compose bar replaces it.
                     menu?.clear()
-                    
+                    currentActionMode = mode
+
+                    // Show our custom Compose action bar
                     val nav = navigator as? org.readium.r2.navigator.SelectableNavigator
                     if (nav != null) {
                         lifecycleScope.launch {
@@ -345,24 +322,28 @@ class ReaderActivity : AppCompatActivity() {
                             if (selection != null) {
                                 viewModel.showSelectionMenu(selection.locator)
                             }
-                            // Close the native action mode immediately so the default bar disappears
-                            mode?.finish()
                         }
                     }
-                    // Return true initially to prevent the default menu from showing up fully before we finish it
                     return true
                 }
 
                 override fun onPrepareActionMode(mode: android.view.ActionMode?, menu: android.view.Menu?): Boolean {
+                    // Keep clearing — onPrepare is called on every invalidation.
                     menu?.clear()
                     return false
                 }
 
-                override fun onActionItemClicked(mode: android.view.ActionMode?, item: android.view.MenuItem?): Boolean {
-                    return false
-                }
+                override fun onActionItemClicked(mode: android.view.ActionMode?, item: android.view.MenuItem?): Boolean = false
 
-                override fun onDestroyActionMode(mode: android.view.ActionMode?) {}
+                override fun onDestroyActionMode(mode: android.view.ActionMode?) {
+                    if (mode == currentActionMode) {
+                        currentActionMode = null
+                        // dismissSelectionBar() only hides the UI bar.
+                        // It does NOT call clearSelection(), which would
+                        // fight the WebView during cross-column drags.
+                        viewModel.dismissSelectionBar()
+                    }
+                }
             }
         )
 
@@ -435,6 +416,63 @@ class ReaderActivity : AppCompatActivity() {
                     return true
                 }
             })
+        }
+    }
+
+    // ── Dynamic ::selection colour injection ──────────────────────────────
+
+    /** The last CSS colour string injected — avoids redundant JS calls. */
+    private var lastSelectionCssColor: String? = null
+
+    /**
+     * Computes a darkened (for light backgrounds) or lightened (for dark
+     * backgrounds) variant of [bgColor] and injects a `::selection` CSS
+     * rule into the WebView.
+     */
+    private fun injectSelectionCss(bgColor: Int) {
+        val cssBgColor = "rgba(128, 128, 128, 0.35)"
+        
+        // Calculate an explicit text color based on background luminance to avoid the
+        // Chromium `color: inherit` cross-column jitter bug, while still forcing
+        // the custom background color to be respected instead of the default blue.
+        val hsv = FloatArray(3)
+        android.graphics.Color.colorToHSV(bgColor, hsv)
+        val isDark = hsv[2] < 0.5f
+        val cssTextColor = if (isDark) "#ffffff" else "#000000"
+
+        lastSelectionCssColor = "$cssBgColor|$cssTextColor"
+        applySelectionCssToWebView(cssBgColor, cssTextColor)
+    }
+
+    /** Re-applies the last computed selection CSS (needed after page navigation). */
+    private fun reapplySelectionCss() {
+        val parts = lastSelectionCssColor?.split("|") ?: return
+        if (parts.size == 2) {
+            applySelectionCssToWebView(parts[0], parts[1])
+        }
+    }
+
+    @OptIn(ExperimentalReadiumApi::class)
+    private fun applySelectionCssToWebView(cssBgColor: String, cssTextColor: String) {
+        val nav = navigator ?: return
+        val js = """
+            (function() {
+                var id = '__pinecone_selection_style';
+                var existing = document.getElementById(id);
+                if (existing) existing.remove();
+                var s = document.createElement('style');
+                s.id = id;
+                s.textContent = '\n'
+                    + '*::selection { background: $cssBgColor !important; color: $cssTextColor !important; text-shadow: none !important; }\n'
+                    + '*::-webkit-selection { background: $cssBgColor !important; color: $cssTextColor !important; text-shadow: none !important; }\n'
+                    + '::selection { background: $cssBgColor !important; color: $cssTextColor !important; text-shadow: none !important; }\n'
+                    + '::-webkit-selection { background: $cssBgColor !important; color: $cssTextColor !important; text-shadow: none !important; }\n';
+                document.head.appendChild(s);
+                document.documentElement.style.setProperty('--USER__selectionBackgroundColor', '$cssBgColor');
+            })();
+        """.trimIndent()
+        lifecycleScope.launch {
+            try { nav.evaluateJavascript(js) } catch (_: Exception) { }
         }
     }
 
