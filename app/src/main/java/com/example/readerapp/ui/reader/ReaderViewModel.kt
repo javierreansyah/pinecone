@@ -22,6 +22,8 @@ import org.readium.r2.shared.publication.services.positions
 import org.readium.r2.shared.publication.services.search.SearchService
 import org.readium.r2.shared.publication.services.search.search
 
+
+
 class ReaderViewModel(
     private val bookId: String,
     private val repository: BookRepository,
@@ -51,6 +53,8 @@ class ReaderViewModel(
 
     private val _clearSelectionEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val clearSelectionEvent: SharedFlow<Unit> = _clearSelectionEvent.asSharedFlow()
+
+
 
     // Active search job (cancelled when a new search starts or search is closed)
     private var searchJob: Job? = null
@@ -286,6 +290,17 @@ class ReaderViewModel(
     fun hideSelectionMenu() {
         _uiState.update { it.copy(selectionLocator = null) }
         _clearSelectionEvent.tryEmit(Unit)
+    }
+
+    /**
+     * Hides the custom selection action bar WITHOUT clearing the WebView's
+     * native selection.  Used by the ActionMode lifecycle callbacks —
+     * the ActionMode may be temporarily destroyed and re-created during
+     * cross-column paragraph selection, and calling [clearSelection] at that
+     * point would fight the active drag and cause jitter / page-flip attempts.
+     */
+    fun dismissSelectionBar() {
+        _uiState.update { it.copy(selectionLocator = null) }
     }
 
     fun addHighlight(locator: Locator, color: Int = android.graphics.Color.parseColor("#4003A9F4")) {

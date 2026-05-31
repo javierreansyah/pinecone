@@ -8,17 +8,18 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Delete
 import com.example.readerapp.data.local.BookmarkEntity
 import com.example.readerapp.data.local.NoteEntity
 import kotlinx.coroutines.launch
@@ -94,7 +95,8 @@ fun ReaderBottomSheet(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
-                    beyondViewportPageCount = 2
+                    beyondViewportPageCount = 2,
+                    verticalAlignment = Alignment.Top
                 ) { page ->
                     when (page) {
                         0 -> TocList(tableOfContents, currentLocator, onChapterClick)
@@ -179,6 +181,48 @@ private fun TocList(
 }
 
 @Composable
+private fun EntryHeader(
+    title: String,
+    positionLabel: String,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (positionLabel.isNotBlank()) {
+                Text(
+                    text = positionLabel,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        IconButton(
+            onClick = onDelete,
+            modifier = Modifier.size(24.dp)
+        ) {
+            Icon(
+                imageVector = MaterialSymbols.Outlined.Delete,
+                contentDescription = "Delete",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
 private fun BookmarksList(
     bookmarks: List<BookmarkEntity>,
     tableOfContents: List<Link>,
@@ -203,20 +247,18 @@ private fun BookmarksList(
                         ?: tableOfContents.find { it.href.toString().substringBefore("#") == locator.href.toString().substringBefore("#") }?.title
                         ?: "In Document"
                         
-                    ListItem(
-                        headlineContent = { Text(chapterTitle, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                        supportingContent = { 
-                            val pct = getPositionLabel(locator)
-                            if (pct.isNotBlank()) Text(pct)
-                        },
-                        trailingContent = {
-                            IconButton(onClick = { onDeleteBookmark(bookmark.id) }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Delete")
-                            }
-                        },
-                        modifier = Modifier.clickable { onBookmarkClick(locator) },
-                        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onBookmarkClick(locator) }
+                            .padding(horizontal = 20.dp, vertical = 12.dp)
+                    ) {
+                        EntryHeader(
+                            title = chapterTitle,
+                            positionLabel = getPositionLabel(locator),
+                            onDelete = { onDeleteBookmark(bookmark.id) }
+                        )
+                    }
                 }
             }
         }
@@ -231,68 +273,58 @@ private fun NotesList(
     onNoteClick: (Locator) -> Unit,
     onDeleteNote: (Long) -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        if (notes.isEmpty()) {
-            Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                Text("No Notes")
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(bottom = 8.dp)
-            ) {
-                items(notes) { note ->
-                    val locator = try { Locator.fromJSON(org.json.JSONObject(note.locatorJson)) } catch (e: Exception) { null }
-                    if (locator != null) {
-                        val pct = getPositionLabel(locator)
-                        val chapterTitle = note.chapterTitle
-                            ?.takeIf { it.isNotBlank() && it != "In Document" }
-                            ?: tableOfContents.find { it.href.toString().substringBefore("#") == locator.href.toString().substringBefore("#") }?.title
-                            ?: "In Document"
+    if (notes.isEmpty()) {
+        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+            Text("No Notes & Highlights")
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(vertical = 8.dp)
+        ) {
+            items(notes) { note ->
+                val locator = try { Locator.fromJSON(org.json.JSONObject(note.locatorJson)) } catch (e: Exception) { null }
+                if (locator != null) {
+                    val chapterTitle = note.chapterTitle
+                        ?.takeIf { it.isNotBlank() && it != "In Document" }
+                        ?: tableOfContents.find { it.href.toString().substringBefore("#") == locator.href.toString().substringBefore("#") }?.title
+                        ?: "In Document"
+                    
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNoteClick(locator) }
+                            .padding(horizontal = 20.dp, vertical = 12.dp)
+                    ) {
+                        EntryHeader(
+                            title = chapterTitle,
+                            positionLabel = getPositionLabel(locator),
+                            onDelete = { onDeleteNote(note.id) }
+                        )
                         
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onNoteClick(locator) }
-                                .padding(horizontal = 20.dp, vertical = 12.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.Top
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    // Line 1: Chapter Title
-                                    Text(
-                                        text = chapterTitle,
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
-                                        color = MaterialTheme.colorScheme.primary,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    // Line 2: Progression
-                                    if (pct.isNotBlank()) {
-                                        Text(
-                                            text = pct,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                                IconButton(onClick = { onDeleteNote(note.id) }, modifier = Modifier.padding(start = 8.dp).size(24.dp)) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                            
+                        // Display the highlighted text if available
+                        locator.text.highlight?.takeIf { it.isNotBlank() }?.let { highlight ->
                             Spacer(Modifier.height(8.dp))
-                            
-                            // Line 3: Note text
+                            Surface(
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                shape = MaterialTheme.shapes.small
+                            ) {
+                                Text(
+                                    text = highlight,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(8.dp),
+                                    fontStyle = FontStyle.Italic
+                                )
+                            }
+                        }
+                        
+                        if (note.noteText.isNotBlank()) {
+                            Spacer(Modifier.height(8.dp))
                             Text(
                                 text = note.noteText,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 3,
-                                overflow = TextOverflow.Ellipsis
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }

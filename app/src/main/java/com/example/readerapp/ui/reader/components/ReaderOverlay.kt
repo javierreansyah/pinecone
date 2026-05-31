@@ -39,13 +39,12 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ContentCopy
-import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DragHandle
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Content_copy
+import com.composables.icons.materialsymbols.outlined.Search
+import com.composables.icons.materialsymbols.outlined.Edit
+import com.composables.icons.materialsymbols.outlined.Delete
+import com.composables.icons.materialsymbols.outlined.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -161,7 +160,7 @@ fun ReaderOverlay(
         // Reader Bottom Sheet
         if (uiState.showToc) {
             val bookmarks by viewModel.bookmarks.collectAsStateWithLifecycle()
-            val notes by viewModel.notes.collectAsStateWithLifecycle()
+            val notes by viewModel.allNotesAndHighlights.collectAsStateWithLifecycle()
             val currentLocator by viewModel.currentLocator.collectAsStateWithLifecycle()
 
             ReaderBottomSheet(
@@ -258,8 +257,7 @@ fun ReaderOverlay(
 
             val context = androidx.compose.ui.platform.LocalContext.current
             
-            val isDarkBackground = readerBgColor.luminance() < 0.5f
-            val iconColor = if (isDarkBackground) Color.White else Color.Black
+            val onSurface = MaterialTheme.colorScheme.onSurface
 
             androidx.compose.foundation.layout.Box(
                 modifier = Modifier
@@ -270,12 +268,12 @@ fun ReaderOverlay(
                             startY = 0f
                         )
                     )
-                    .padding(WindowInsets.navigationBars.asPaddingValues()) // Handle system navigation bar
+                    .padding(WindowInsets.navigationBars.asPaddingValues())
                     .padding(horizontal = 24.dp)
-                    .padding(top = 8.dp, bottom = 24.dp)
+                    .padding(top = 8.dp, bottom = 4.dp)
             ) {
                 androidx.compose.foundation.layout.Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                     horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -293,7 +291,7 @@ fun ReaderOverlay(
                             },
                             modifier = Modifier.size(40.dp)
                         ) {
-                            Icon(Icons.Outlined.ContentCopy, contentDescription = "Copy", tint = iconColor, modifier = Modifier.size(20.dp))
+                            Icon(MaterialSymbols.Outlined.Content_copy, contentDescription = "Copy", tint = onSurface, modifier = Modifier.size(20.dp))
                         }
                         androidx.compose.material3.IconButton(
                             onClick = {
@@ -305,7 +303,7 @@ fun ReaderOverlay(
                             },
                             modifier = Modifier.size(40.dp)
                         ) {
-                            Icon(Icons.Outlined.Search, contentDescription = "Search", tint = iconColor, modifier = Modifier.size(20.dp))
+                            Icon(MaterialSymbols.Outlined.Search, contentDescription = "Search", tint = onSurface, modifier = Modifier.size(20.dp))
                         }
                         androidx.compose.material3.IconButton(
                             onClick = {
@@ -319,7 +317,7 @@ fun ReaderOverlay(
                             },
                             modifier = Modifier.size(40.dp)
                         ) {
-                            Icon(Icons.Outlined.Edit, contentDescription = "Make Note", tint = iconColor, modifier = Modifier.size(20.dp))
+                            Icon(MaterialSymbols.Outlined.Edit, contentDescription = "Make Note", tint = onSurface, modifier = Modifier.size(20.dp))
                         }
                         if (menuHighlight != null) {
                             androidx.compose.material3.IconButton(
@@ -329,7 +327,7 @@ fun ReaderOverlay(
                                 },
                                 modifier = Modifier.size(40.dp)
                             ) {
-                                Icon(Icons.Outlined.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                                Icon(MaterialSymbols.Outlined.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
                             }
                         }
                     }
@@ -355,7 +353,7 @@ fun ReaderOverlay(
                                     )
                                     .border(
                                         width = if (isSelected) 2.dp else 0.dp,
-                                        color = if (isSelected) iconColor else Color.Transparent,
+                                        color = if (isSelected) onSurface else Color.Transparent,
                                         shape = androidx.compose.foundation.shape.CircleShape
                                     )
                                     .clickable { 
@@ -379,7 +377,7 @@ fun ReaderOverlay(
                         },
                         modifier = Modifier.size(40.dp)
                     ) {
-                        Icon(Icons.Filled.Close, contentDescription = "Close", tint = iconColor, modifier = Modifier.size(20.dp))
+                        Icon(MaterialSymbols.Outlined.Close, contentDescription = "Close", tint = onSurface, modifier = Modifier.size(20.dp))
                     }
                 }
             }
