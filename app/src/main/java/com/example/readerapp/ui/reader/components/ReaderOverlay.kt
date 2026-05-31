@@ -9,6 +9,19 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -17,9 +30,27 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material3.Icon
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.shadow
+import kotlin.math.roundToInt
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.readerapp.ui.components.ReaderSettingsContent
 import com.example.readerapp.ui.reader.ReaderViewModel
@@ -102,8 +133,8 @@ fun ReaderOverlay(
         }
 
         // Bottom bar — shown when controls are visible.
-        // It shows either the normal progress bar or the search helper bar (if in search nav mode).
-        val showBottomBar = uiState.showControls && !uiState.showSearch
+        // Bottom bar — shown when controls are visible and no selection is active.
+        val showBottomBar = uiState.showControls && !uiState.showSearch && uiState.selectionLocator == null && uiState.viewingHighlight == null
         AnimatedVisibility(
             visible = showBottomBar,
             enter = fadeIn(),
@@ -138,6 +169,7 @@ fun ReaderOverlay(
                 bookmarks = bookmarks,
                 notes = notes,
                 currentLocator = currentLocator,
+                getPositionLabel = { viewModel.getPositionLabel(it) },
                 onChapterClick = { link ->
                     onNavigateToChapter(link)
                     viewModel.hideToc()
@@ -205,6 +237,238 @@ fun ReaderOverlay(
                 onResultClick = { index -> viewModel.selectSearchResult(index) },
                 onClose = { viewModel.hideSearch() }
             )
+        }
+
+        // Selection & Highlight Bottom Action Bar
+        val menuLocator = uiState.selectionLocator
+        val menuHighlight = uiState.viewingHighlight
+        val showActionBar = menuLocator != null || menuHighlight != null
+        
+        AnimatedVisibility(
+            visible = showActionBar,
+            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) {
+            val highlightText = try {
+                org.readium.r2.shared.publication.Locator.fromJSON(org.json.JSONObject(
+                    menuHighlight?.locatorJson ?: menuLocator?.toJSON()?.toString() ?: ""
+                ))?.text?.highlight ?: ""
+            } catch (e: Exception) { "" }
+
+            val context = androidx.compose.ui.platform.LocalContext.current
+            
+            val isDarkBackground = readerBgColor.luminance() < 0.5f
+            val iconColor = if (isDarkBackground) Color.White else Color.Black
+
+            androidx.compose.foundation.layout.Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, readerBgColor),
+                            startY = 0f
+                        )
+                    )
+                    .padding(WindowInsets.navigationBars.asPaddingValues()) // Handle system navigation bar
+                    .padding(horizontal = 24.dp)
+                    .padding(top = 8.dp, bottom = 24.dp)
+            ) {
+                androidx.compose.foundation.layout.Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Left side: Action Icons
+                    androidx.compose.foundation.layout.Row(
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(0.dp)
+                    ) {
+                        androidx.compose.material3.IconButton(
+                            onClick = {
+                                val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                val clip = android.content.ClipData.newPlainText("highlight", highlightText)
+                                clipboard.setPrimaryClip(clip)
+                                if (menuLocator != null) viewModel.hideSelectionMenu()
+                                if (menuHighlight != null) viewModel.hideViewHighlight()
+                            },
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(Icons.Outlined.ContentCopy, contentDescription = "Copy", tint = iconColor, modifier = Modifier.size(20.dp))
+                        }
+                        androidx.compose.material3.IconButton(
+                            onClick = {
+                                if (menuLocator != null) viewModel.hideSelectionMenu()
+                                if (menuHighlight != null) viewModel.hideViewHighlight()
+                                viewModel.showSearch()
+                                viewModel.updateSearchQuery(highlightText)
+                                viewModel.performSearch(highlightText)
+                            },
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(Icons.Outlined.Search, contentDescription = "Search", tint = iconColor, modifier = Modifier.size(20.dp))
+                        }
+                        androidx.compose.material3.IconButton(
+                            onClick = {
+                                if (menuLocator != null) {
+                                    viewModel.addNoteAndEdit(menuLocator)
+                                    viewModel.hideSelectionMenu()
+                                } else if (menuHighlight != null) {
+                                    viewModel.editNote(menuHighlight)
+                                    viewModel.hideViewHighlight()
+                                }
+                            },
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(Icons.Outlined.Edit, contentDescription = "Make Note", tint = iconColor, modifier = Modifier.size(20.dp))
+                        }
+                        if (menuHighlight != null) {
+                            androidx.compose.material3.IconButton(
+                                onClick = {
+                                    viewModel.deleteNote(menuHighlight.id)
+                                    viewModel.hideViewHighlight()
+                                },
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(Icons.Outlined.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                            }
+                        }
+                    }
+
+                    // Middle: Color Swatches
+                    androidx.compose.foundation.layout.Row(
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)
+                    ) {
+                        val swatches = listOf(
+                            android.graphics.Color.parseColor("#40FFEB3B"), // Yellow
+                            android.graphics.Color.parseColor("#40F44336"), // Red
+                            android.graphics.Color.parseColor("#4003A9F4"), // Blue
+                            android.graphics.Color.parseColor("#404CAF50")  // Green
+                        )
+                        swatches.forEach { colorInt ->
+                            val isSelected = menuHighlight?.color == colorInt
+                            androidx.compose.foundation.layout.Box(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .background(
+                                        color = Color(colorInt).copy(alpha = 1f),
+                                        shape = androidx.compose.foundation.shape.CircleShape
+                                    )
+                                    .border(
+                                        width = if (isSelected) 2.dp else 0.dp,
+                                        color = if (isSelected) iconColor else Color.Transparent,
+                                        shape = androidx.compose.foundation.shape.CircleShape
+                                    )
+                                    .clickable { 
+                                        if (menuLocator != null) {
+                                            viewModel.addHighlight(menuLocator, colorInt)
+                                            viewModel.hideSelectionMenu()
+                                        } else if (menuHighlight != null) {
+                                            viewModel.updateNote(menuHighlight.copy(color = colorInt))
+                                            viewModel.hideViewHighlight()
+                                        }
+                                    }
+                            )
+                        }
+                    }
+
+                    // Right side: Close (X)
+                    androidx.compose.material3.IconButton(
+                        onClick = {
+                            if (menuLocator != null) viewModel.hideSelectionMenu()
+                            if (menuHighlight != null) viewModel.hideViewHighlight()
+                        },
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(Icons.Filled.Close, contentDescription = "Close", tint = iconColor, modifier = Modifier.size(20.dp))
+                    }
+                }
+            }
+        }
+
+        // Edit Note Bottom Sheet
+        if (uiState.editingNote != null) {
+            val note = uiState.editingNote!!
+            var editText by androidx.compose.runtime.remember(note.id) { androidx.compose.runtime.mutableStateOf(note.noteText) }
+            var editColor by androidx.compose.runtime.remember(note.id) { androidx.compose.runtime.mutableStateOf(note.color) }
+
+            val swatches = listOf(
+                android.graphics.Color.parseColor("#4003A9F4"), // Blue
+                android.graphics.Color.parseColor("#40888888"), // Grey
+                android.graphics.Color.parseColor("#40FFEB3B"), // Yellow
+                android.graphics.Color.parseColor("#404CAF50")  // Green
+            )
+
+            ModalBottomSheet(
+                onDismissRequest = { viewModel.hideEditNote() },
+                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            ) {
+                androidx.compose.foundation.layout.Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .padding(bottom = 32.dp)
+                ) {
+                    androidx.compose.material3.OutlinedTextField(
+                        value = editText,
+                        onValueChange = { editText = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Note text...") },
+                        minLines = 4
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Color Swatches
+                    androidx.compose.foundation.layout.Row(
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceEvenly,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        swatches.forEach { colorInt ->
+                            val isSelected = editColor == colorInt
+                            androidx.compose.foundation.layout.Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(
+                                        color = Color(colorInt).copy(alpha = 1f), // Make swatch opaque for visibility
+                                        shape = androidx.compose.foundation.shape.CircleShape
+                                    )
+                                    .border(
+                                        width = if (isSelected) 3.dp else 0.dp,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                        shape = androidx.compose.foundation.shape.CircleShape
+                                    )
+                                    .clickable { editColor = colorInt }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    androidx.compose.foundation.layout.Row(
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        androidx.compose.material3.Button(
+                            onClick = {
+                                viewModel.deleteNote(note.id)
+                                viewModel.hideEditNote()
+                            },
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                        ) {
+                            Text("Delete")
+                        }
+                        
+                        androidx.compose.material3.Button(
+                            onClick = {
+                                viewModel.updateNote(note.copy(noteText = editText, color = editColor))
+                                viewModel.hideEditNote()
+                            }
+                        ) {
+                            Text("Save")
+                        }
+                    }
+                }
+            }
         }
     }
 }

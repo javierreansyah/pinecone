@@ -49,6 +49,9 @@ class ReaderViewModel(
     private val _navigateToLocator = MutableSharedFlow<Locator>(extraBufferCapacity = 1)
     val navigateToLocator: SharedFlow<Locator> = _navigateToLocator.asSharedFlow()
 
+    private val _clearSelectionEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val clearSelectionEvent: SharedFlow<Unit> = _clearSelectionEvent.asSharedFlow()
+
     // Active search job (cancelled when a new search starts or search is closed)
     private var searchJob: Job? = null
 
@@ -60,9 +63,22 @@ class ReaderViewModel(
     val bookmarks: StateFlow<List<BookmarkEntity>> = repository.getBookmarks(bookId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // Notes for the current book
-    val notes: StateFlow<List<NoteEntity>> = repository.getNotes(bookId)
+    // All raw notes from DB
+    private val allNotes: StateFlow<List<NoteEntity>> = repository.getNotes(bookId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Notes for the current book (text is not empty)
+    val notes: StateFlow<List<NoteEntity>> = allNotes
+        .map { list -> list.filter { it.noteText.isNotBlank() } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Highlights for the current book (text is empty)
+    val highlights: StateFlow<List<NoteEntity>> = allNotes
+        .map { list -> list.filter { it.noteText.isBlank() } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // The combined flow for applying decorations in UI
+    val allNotesAndHighlights = allNotes
 
     // Derived bookmark status
     val isBookmarked: StateFlow<Boolean> = combine(_currentLocator, bookmarks) { locator, bookmarksList ->
@@ -179,6 +195,25 @@ class ReaderViewModel(
         }
     }
 
+    fun getPositionLabel(locator: Locator): String {
+        val allPositions = _positions.value
+        val totalPositions = allPositions.size
+        
+        val posIndex = locator.locations.totalProgression?.let { target ->
+            allPositions.indexOfLast { (it.locations.totalProgression ?: -1.0) <= target }
+        }?.takeIf { it != -1 } ?: allPositions.indexOfLast { pos ->
+            pos.href == locator.href &&
+            (pos.locations.progression ?: 0.0) <= (locator.locations.progression ?: 0.0)
+        }.takeIf { it != -1 }
+
+        return when {
+            posIndex != null -> "page ${posIndex + 1}"
+            locator.locations.totalProgression != null ->
+                "at ${(locator.locations.totalProgression!! * 100).toInt()}%"
+            else -> ""
+        }
+    }
+
     fun savePosition(locator: Locator) {
         viewModelScope.launch {
             repository.saveReadingPosition(bookId, locator)
@@ -219,10 +254,43 @@ class ReaderViewModel(
         }
     }
 
-    fun addNote(noteText: String) {
+    fun addNote(noteText: String, color: Int = android.graphics.Color.parseColor("#40FFEB3B")) {
         val locator = _currentLocator.value ?: return
         viewModelScope.launch {
-            repository.addNote(bookId, locator, noteText)
+            repository.addNote(bookId, locator, noteText, color, locator.title ?: _uiState.value.currentChapter)
+        }
+    }
+
+    fun addNoteForLocator(locator: Locator, noteText: String, color: Int = android.graphics.Color.parseColor("#40FFEB3B")) {
+        viewModelScope.launch {
+            repository.addNote(bookId, locator, noteText, color, locator.title ?: _uiState.value.currentChapter)
+        }
+    }
+
+    fun addNoteAndEdit(locator: Locator) {
+        val newNote = NoteEntity(
+            id = 0, // Unsaved
+            bookId = bookId,
+            locatorJson = locator.toJSON().toString(),
+            chapterTitle = locator.title ?: _uiState.value.currentChapter,
+            noteText = "",
+            color = android.graphics.Color.parseColor("#40FFEB3B")
+        )
+        editNote(newNote)
+    }
+
+    fun showSelectionMenu(locator: Locator) {
+        _uiState.update { it.copy(selectionLocator = locator) }
+    }
+
+    fun hideSelectionMenu() {
+        _uiState.update { it.copy(selectionLocator = null) }
+        _clearSelectionEvent.tryEmit(Unit)
+    }
+
+    fun addHighlight(locator: Locator, color: Int = android.graphics.Color.parseColor("#4003A9F4")) {
+        viewModelScope.launch {
+            repository.addNote(bookId, locator, "", color, locator.title ?: _uiState.value.currentChapter)
         }
     }
 
@@ -230,6 +298,38 @@ class ReaderViewModel(
         viewModelScope.launch {
             repository.removeNote(noteId)
         }
+    }
+
+    fun updateNote(note: NoteEntity) {
+        viewModelScope.launch {
+            if (note.id == 0L) {
+                repository.addNote(
+                    bookId = bookId, 
+                    locator = org.readium.r2.shared.publication.Locator.fromJSON(org.json.JSONObject(note.locatorJson))!!, 
+                    noteText = note.noteText, 
+                    color = note.color,
+                    chapterTitle = note.chapterTitle
+                )
+            } else {
+                repository.updateNote(note)
+            }
+        }
+    }
+
+    fun editNote(note: NoteEntity) {
+        _uiState.update { it.copy(editingNote = note) }
+    }
+
+    fun hideEditNote() {
+        _uiState.update { it.copy(editingNote = null) }
+    }
+
+    fun viewHighlight(note: NoteEntity) {
+        _uiState.update { it.copy(viewingHighlight = note) }
+    }
+
+    fun hideViewHighlight() {
+        _uiState.update { it.copy(viewingHighlight = null) }
     }
 
     fun showToc() {
@@ -298,9 +398,9 @@ class ReaderViewModel(
                         }.takeIf { it != -1 }
 
                         val positionLabel = when {
-                            posIndex != null && totalPositions > 0 -> "${posIndex + 1} of $totalPositions"
+                            posIndex != null -> "page ${posIndex + 1}"
                             locator.locations.totalProgression != null ->
-                                "${(locator.locations.totalProgression!! * 100).toInt()}%"
+                                "at ${(locator.locations.totalProgression!! * 100).toInt()}%"
                             else -> ""
                         }
 

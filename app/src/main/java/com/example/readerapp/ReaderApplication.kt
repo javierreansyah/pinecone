@@ -31,7 +31,7 @@ class ReaderApplication : Application() {
             AppDatabase::class.java,
             "reader_database",
         )
-        .addMigrations(AppDatabase.MIGRATION_1_2)
+        .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3)
         .build()
 
         val httpClient = DefaultHttpClient()

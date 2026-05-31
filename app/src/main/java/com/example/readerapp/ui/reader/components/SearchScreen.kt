@@ -228,10 +228,10 @@ fun SearchResultCard(
             color = primary
         )
 
-        // Line 2: position (at position n)
+        // Line 2: position
         if (item.positionLabel.isNotBlank()) {
             Text(
-                text = "at position ${item.positionLabel}",
+                text = item.positionLabel,
                 style = MaterialTheme.typography.bodySmall,
                 color = onSurfaceVariant
             )

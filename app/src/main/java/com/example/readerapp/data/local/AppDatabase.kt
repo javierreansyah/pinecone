@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ShelfBookCrossRefEntity::class, 
         NoteEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -38,6 +38,12 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("CREATE TABLE IF NOT EXISTS `shelf_book_cross_ref` (`shelfId` TEXT NOT NULL, `bookId` TEXT NOT NULL, `addedAt` INTEGER NOT NULL, PRIMARY KEY(`shelfId`, `bookId`), FOREIGN KEY(`shelfId`) REFERENCES `shelves`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`bookId`) REFERENCES `books`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_shelf_book_cross_ref_shelfId` ON `shelf_book_cross_ref` (`shelfId`)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_shelf_book_cross_ref_bookId` ON `shelf_book_cross_ref` (`bookId`)")
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE notes ADD COLUMN color INTEGER NOT NULL DEFAULT -1")
             }
         }
     }
