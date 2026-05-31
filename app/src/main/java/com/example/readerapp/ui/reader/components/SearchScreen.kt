@@ -15,17 +15,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
-import com.composables.icons.materialsymbols.outlined.Bookmark
 import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Search
 import com.example.readerapp.ui.reader.SearchResultItem
@@ -36,6 +35,7 @@ fun SearchScreen(
     query: String,
     results: List<SearchResultItem>,
     isLoading: Boolean,
+    searchPerformed: Boolean,
     onQueryChange: (String) -> Unit,
     onSearch: (String) -> Unit,
     onResultClick: (Int) -> Unit,
@@ -43,20 +43,22 @@ fun SearchScreen(
     modifier: Modifier = Modifier
 ) {
     val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
     }
 
+    val backgroundColor = MaterialTheme.colorScheme.surface
+
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
+            .background(backgroundColor)
     ) {
         // ── Search bar ────────────────────────────────────────────────────────
         Surface(
-            tonalElevation = 3.dp,
-            color = MaterialTheme.colorScheme.surface,
+            color = backgroundColor,
             modifier = Modifier.fillMaxWidth()
         ) {
             Column {
@@ -98,7 +100,10 @@ fun SearchScreen(
                         },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        keyboardActions = KeyboardActions(onSearch = { onSearch(query) }),
+                        keyboardActions = KeyboardActions(onSearch = { 
+                            onSearch(query)
+                            keyboardController?.hide()
+                        }),
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent,
@@ -113,7 +118,10 @@ fun SearchScreen(
                     )
 
                     IconButton(
-                        onClick = { onSearch(query) },
+                        onClick = { 
+                            onSearch(query)
+                            keyboardController?.hide()
+                        },
                         enabled = query.isNotBlank()
                     ) {
                         Icon(
@@ -135,15 +143,14 @@ fun SearchScreen(
                         trackColor = MaterialTheme.colorScheme.surfaceVariant
                     )
                 }
-
-                HorizontalDivider()
             }
         }
 
-        // ── Results count ────────────────────────────────────────────────────
-        if (results.isNotEmpty() || (!isLoading && query.isNotBlank())) {
+        // ── Results count bar ────────────────────────────────────────────────
+        // Only show if a search was performed and we have results or are not loading
+        if (searchPerformed && (results.isNotEmpty() || !isLoading)) {
             Surface(
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                color = backgroundColor,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
@@ -169,7 +176,7 @@ fun SearchScreen(
             }
 
             // Empty state when search done with no results
-            if (!isLoading && query.isNotBlank() && results.isEmpty()) {
+            if (searchPerformed && !isLoading && results.isEmpty()) {
                 item {
                     Box(
                         contentAlignment = Alignment.Center,
@@ -194,33 +201,6 @@ fun SearchScreen(
                     }
                 }
             }
-
-            // Initial prompt when nothing typed yet
-            if (query.isBlank()) {
-                item {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 80.dp)
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                MaterialSymbols.Outlined.Bookmark,
-                                contentDescription = null,
-                                modifier = Modifier.size(56.dp),
-                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                            )
-                            Spacer(Modifier.height(16.dp))
-                            Text(
-                                "Type to search in this book",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                            )
-                        }
-                    }
-                }
-            }
         }
     }
 }
@@ -233,7 +213,6 @@ fun SearchResultCard(
     modifier: Modifier = Modifier
 ) {
     val primary = MaterialTheme.colorScheme.primary
-    val onSurface = MaterialTheme.colorScheme.onSurface
     val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
 
     Column(
@@ -242,83 +221,61 @@ fun SearchResultCard(
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
-        // ── Header: chapter + position ────────────────────────────────────────
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Icon(
-                MaterialSymbols.Outlined.Bookmark,
-                contentDescription = null,
-                modifier = Modifier.size(14.dp),
-                tint = primary
+        // Line 1: chapter name
+        Text(
+            text = item.chapterTitle ?: "Unknown Chapter",
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+            color = primary
+        )
+
+        // Line 2: position (at position n)
+        if (item.positionLabel.isNotBlank()) {
+            Text(
+                text = "at position ${item.positionLabel}",
+                style = MaterialTheme.typography.bodySmall,
+                color = onSurfaceVariant
             )
-            if (!item.chapterTitle.isNullOrBlank()) {
-                Text(
-                    text = item.chapterTitle,
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = primary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-            }
-            if (item.positionLabel.isNotBlank()) {
-                Text(
-                    text = "·",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = onSurfaceVariant
-                )
-                Text(
-                    text = item.positionLabel,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = onSurfaceVariant
-                )
-            }
         }
 
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(8.dp))
 
-        // ── Snippet: before · highlight · after ───────────────────────────────
+        // Line 3: Snippet: before · highlight · after
         val snippet = buildAnnotatedString {
-            val before = item.textBefore?.trimStart()?.takeLast(120) ?: ""
+            val before = item.textBefore?.trim() ?: ""
             val highlight = item.highlight ?: query
-            val after = item.textAfter?.trimEnd()?.take(120) ?: ""
+            val after = item.textAfter?.trim() ?: ""
 
             if (before.isNotBlank()) {
-                withStyle(SpanStyle(color = onSurfaceVariant, fontSize = 13.sp)) {
-                    append("…$before")
+                withStyle(SpanStyle(color = onSurfaceVariant, fontSize = 14.sp)) {
+                    append(before)
+                    if (!before.endsWith(" ")) append(" ")
                 }
             }
             withStyle(
                 SpanStyle(
                     color = primary,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
                     background = primary.copy(alpha = 0.12f)
                 )
             ) {
                 append(highlight)
             }
             if (after.isNotBlank()) {
-                withStyle(SpanStyle(color = onSurfaceVariant, fontSize = 13.sp)) {
-                    append("$after…")
+                withStyle(SpanStyle(color = onSurfaceVariant, fontSize = 14.sp)) {
+                    if (!after.startsWith(" ")) append(" ")
+                    append(after)
                 }
             }
         }
 
         Text(
             text = snippet,
-            style = MaterialTheme.typography.bodySmall,
-            lineHeight = 19.sp,
-            maxLines = 5,
-            overflow = TextOverflow.Ellipsis
+            style = MaterialTheme.typography.bodyMedium,
+            lineHeight = 20.sp
         )
 
-        Spacer(Modifier.height(4.dp))
-        HorizontalDivider(
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-            modifier = Modifier.padding(top = 8.dp)
-        )
+        // Divider replaced with spacer
+        Spacer(Modifier.height(16.dp))
     }
 }
