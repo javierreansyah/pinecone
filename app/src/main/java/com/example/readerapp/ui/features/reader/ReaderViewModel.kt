@@ -109,10 +109,16 @@ class ReaderViewModel(
         .map { if (it.autoBrightness) -1.0f else it.brightness }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1.0f)
 
+    // System dark theme state (set by activity)
+    val systemDarkThemeFlow = MutableStateFlow(false)
+
     // EpubPreferences built from settings
-    val epubPreferences: StateFlow<EpubPreferences> = readerPreferences.readerSettings
-        .map { it.toEpubPreferences() }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), EpubPreferences())
+    val epubPreferences: StateFlow<EpubPreferences> = combine(
+        readerPreferences.readerSettings,
+        systemDarkThemeFlow
+    ) { settings, isDark ->
+        settings.toEpubPreferences(isDark)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), EpubPreferences())
 
     // Table of contents from publication
     val tableOfContents: List<Link>

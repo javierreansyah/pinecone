@@ -6,14 +6,14 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
-import androidx.core.graphics.ColorUtils
+import androidx.compose.ui.graphics.luminance
 
 @Composable
 fun ReaderTheme(
     readerBackgroundColor: Color,
     content: @Composable () -> Unit
 ) {
-    val isDarkBackground = ColorUtils.calculateLuminance(readerBackgroundColor.value.toInt()) < 0.5
+    val isDarkBackground = readerBackgroundColor.luminance() < 0.5f
     
     // We create a color scheme specifically tuned to contrast with the reader background.
     // This is used for overlays, top/bottom bars that sit directly ON TOP of the reader.

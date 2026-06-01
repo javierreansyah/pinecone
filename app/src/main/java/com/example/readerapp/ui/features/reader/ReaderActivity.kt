@@ -87,13 +87,20 @@ class ReaderActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.settingsFlow.collect { settings ->
+                    val isSystemDark = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+                    viewModel.systemDarkThemeFlow.value = isSystemDark
+
                     val color = when (settings.readerThemePreset) {
                         "Light" -> "#FFFFFF".toColorInt()
                         "Warm" -> "#FAF4E8".toColorInt()
                         "Dark" -> "#000000".toColorInt()
                         "Auto" -> {
-                            val isSystemDark = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
-                            if (isSystemDark) "#000000".toColorInt() else "#FFFFFF".toColorInt()
+                            val uiDarkTheme = when (settings.themeMode) {
+                                "Dark" -> true
+                                "Light" -> false
+                                else -> isSystemDark
+                            }
+                            if (uiDarkTheme) "#000000".toColorInt() else "#FFFFFF".toColorInt()
                         }
                         else -> try {
                             settings.customBackgroundColor.toColorInt()
@@ -258,7 +265,14 @@ class ReaderActivity : AppCompatActivity() {
                 "Light" -> androidx.compose.ui.graphics.Color(0xFFFFFFFF)
                 "Warm" -> androidx.compose.ui.graphics.Color(0xFFFAF4E8)
                 "Dark" -> androidx.compose.ui.graphics.Color(0xFF000000)
-                "Auto" -> if (isSystemDark) androidx.compose.ui.graphics.Color(0xFF000000) else androidx.compose.ui.graphics.Color(0xFFFFFFFF)
+                "Auto" -> {
+                    val uiDarkTheme = when (overlaySettings.themeMode) {
+                        "Dark" -> true
+                        "Light" -> false
+                        else -> isSystemDark
+                    }
+                    if (uiDarkTheme) androidx.compose.ui.graphics.Color(0xFF000000) else androidx.compose.ui.graphics.Color(0xFFFFFFFF)
+                }
                 else -> try {
                     androidx.compose.ui.graphics.Color(overlaySettings.customBackgroundColor.toColorInt())
                 } catch (_: Exception) {
