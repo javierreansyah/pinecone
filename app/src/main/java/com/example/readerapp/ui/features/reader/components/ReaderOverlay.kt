@@ -72,11 +72,17 @@ fun ReaderOverlay(
         initialValue = com.example.readerapp.data.local.ReaderSettings()
     )
 
+    val uiDarkTheme = when (settings.themeMode) {
+        "Dark" -> true
+        "Light" -> false
+        else -> isSystemInDarkTheme()
+    }
+
     val readerBgColor = when (settings.readerThemePreset) {
         "Light" -> Color(0xFFFFFFFF)
         "Warm" -> Color(0xFFFAF4E8)
         "Dark" -> Color(0xFF000000)
-        "Auto" -> if (isSystemInDarkTheme()) Color(0xFF000000) else Color(0xFFFFFFFF)
+        "Auto" -> if (uiDarkTheme) Color(0xFF000000) else Color(0xFFFFFFFF)
         else -> try {
             Color(settings.customBackgroundColor.toColorInt())
         } catch (e: Exception) {
@@ -168,48 +174,46 @@ fun ReaderOverlay(
             val notes by viewModel.allNotesAndHighlights.collectAsStateWithLifecycle()
             val currentLocator by viewModel.currentLocator.collectAsStateWithLifecycle()
 
-            ReaderBottomSheet(
-                tableOfContents = viewModel.tableOfContents,
-                bookmarks = bookmarks,
-                notes = notes,
-                currentLocator = currentLocator,
-                getPositionLabel = { viewModel.getPositionLabel(it) },
-                onChapterClick = { link ->
-                    onNavigateToChapter(link)
-                    viewModel.hideToc()
-                    viewModel.toggleControls()
-                },
-                onBookmarkClick = { locator ->
-                    onSeekToProgression(locator.locations.totalProgression ?: 0.0) // Or we could add a direct navigate to locator callback
-                    viewModel.hideToc()
-                    viewModel.toggleControls()
-                },
-                onNoteClick = { locator ->
-                    onSeekToProgression(locator.locations.totalProgression ?: 0.0)
-                    viewModel.hideToc()
-                    viewModel.toggleControls()
-                },
-                onAddNote = { text ->
-                    viewModel.addNote(text)
-                },
-                onDeleteBookmark = { id ->
-                    viewModel.deleteBookmark(id)
-                },
-                onDeleteNote = { id ->
-                    viewModel.deleteNote(id)
-                },
-                onDismiss = { viewModel.hideToc() }
-            )
+            AppTheme(darkTheme = uiDarkTheme) {
+                ReaderBottomSheet(
+                    tableOfContents = viewModel.tableOfContents,
+                    bookmarks = bookmarks,
+                    notes = notes,
+                    currentLocator = currentLocator,
+                    getPositionLabel = { viewModel.getPositionLabel(it) },
+                    onChapterClick = { link ->
+                        onNavigateToChapter(link)
+                        viewModel.hideToc()
+                        viewModel.toggleControls()
+                    },
+                    onBookmarkClick = { locator ->
+                        onSeekToProgression(locator.locations.totalProgression ?: 0.0) // Or we could add a direct navigate to locator callback
+                        viewModel.hideToc()
+                        viewModel.toggleControls()
+                    },
+                    onNoteClick = { locator ->
+                        onSeekToProgression(locator.locations.totalProgression ?: 0.0)
+                        viewModel.hideToc()
+                        viewModel.toggleControls()
+                    },
+                    onAddNote = { text ->
+                        viewModel.addNote(text)
+                    },
+                    onDeleteBookmark = { id ->
+                        viewModel.deleteBookmark(id)
+                    },
+                    onDeleteNote = { id ->
+                        viewModel.deleteNote(id)
+                    },
+                    onDismiss = { viewModel.hideToc() }
+                )
+            }
         }
+
 
         // Settings Bottom Sheet — wrapped in its own theme that honours the UI
         // themeMode/colorPalette setting, independent of the reader theme.
         if (uiState.showSettings) {
-            val uiDarkTheme = when (settings.themeMode) {
-                "Dark" -> true
-                "Light" -> false
-                else -> isSystemInDarkTheme()
-            }
             AppTheme(darkTheme = uiDarkTheme) {
                 ModalBottomSheet(
                     onDismissRequest = { viewModel.hideSettings() },
@@ -225,23 +229,27 @@ fun ReaderOverlay(
             }
         }
 
+
         // ── Full-screen search overlay ─────────────────────────────────────────
         AnimatedVisibility(
             visible = uiState.showSearch,
             enter = slideInVertically(animationSpec = tween(280)) { it } + fadeIn(tween(200)),
             exit = slideOutVertically(animationSpec = tween(220)) { it } + fadeOut(tween(180))
         ) {
-            SearchScreen(
-                query = uiState.searchQuery,
-                results = uiState.searchResults,
-                isLoading = uiState.searchLoading,
-                searchPerformed = uiState.searchPerformed,
-                onQueryChange = { q -> viewModel.updateSearchQuery(q) },
-                onSearch = { q -> viewModel.performSearch(q) },
-                onResultClick = { index -> viewModel.selectSearchResult(index) },
-                onClose = { viewModel.hideSearch() }
-            )
+            AppTheme(darkTheme = uiDarkTheme) {
+                SearchScreen(
+                    query = uiState.searchQuery,
+                    results = uiState.searchResults,
+                    isLoading = uiState.searchLoading,
+                    searchPerformed = uiState.searchPerformed,
+                    onQueryChange = { q -> viewModel.updateSearchQuery(q) },
+                    onSearch = { q -> viewModel.performSearch(q) },
+                    onResultClick = { index -> viewModel.selectSearchResult(index) },
+                    onClose = { viewModel.hideSearch() }
+                )
+            }
         }
+
 
         // Selection & Highlight Bottom Action Bar
         val menuLocator = uiState.selectionLocator
@@ -390,11 +398,6 @@ fun ReaderOverlay(
 
         // Edit Note Bottom Sheet
         uiState.editingNote?.let { note ->
-            val uiDarkTheme = when (settings.themeMode) {
-                "Dark" -> true
-                "Light" -> false
-                else -> isSystemInDarkTheme()
-            }
             AppTheme(darkTheme = uiDarkTheme) {
                 NoteBottomSheet(
                     note = note,

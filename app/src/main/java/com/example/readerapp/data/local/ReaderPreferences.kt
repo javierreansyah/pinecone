@@ -60,14 +60,38 @@ data class ReaderSettings(
     /**
      * Converts the app-level reader settings to Readium's [EpubPreferences].
      */
-    fun toEpubPreferences(): EpubPreferences {
+    fun toEpubPreferences(isSystemDark: Boolean): EpubPreferences {
+        val resolvedTheme = when (readerThemePreset) {
+            "Light" -> Theme.LIGHT
+            "Dark" -> Theme.DARK
+            "Warm" -> Theme.SEPIA
+            "Auto" -> {
+                val isDark = when (themeMode) {
+                    "Dark" -> true
+                    "Light" -> false
+                    else -> isSystemDark
+                }
+                if (isDark) Theme.DARK else Theme.LIGHT
+            }
+            else -> null // Custom will be handled by backgroundColor/textColor
+        }
+
+        val bgColor = if (readerThemePreset !in listOf("Light", "Dark", "Warm", "Auto")) {
+            try {
+                org.readium.r2.navigator.preferences.Color(android.graphics.Color.parseColor(customBackgroundColor))
+            } catch (e: Exception) { null }
+        } else null
+
+        val txtColor = if (readerThemePreset !in listOf("Light", "Dark", "Warm", "Auto")) {
+            try {
+                org.readium.r2.navigator.preferences.Color(android.graphics.Color.parseColor(customTextColor))
+            } catch (e: Exception) { null }
+        } else null
+
         return EpubPreferences(
-            theme = when (readerThemePreset) {
-                "Light" -> Theme.LIGHT
-                "Dark" -> Theme.DARK
-                "Warm" -> Theme.SEPIA
-                else -> null // Auto or Custom will be handled by app theme
-            },
+            theme = resolvedTheme,
+            backgroundColor = bgColor,
+            textColor = txtColor,
             publisherStyles = publisherStyles,
             fontSize = fontSize,
             fontFamily = when (fontFamily) {
