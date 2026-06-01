@@ -51,7 +51,7 @@ fun ReaderSettingsContent(
             .heightIn(max = maxSheetHeight)
             .padding(bottom = 4.dp)
     ) {
-        TabRow(
+        PrimaryTabRow(
             selectedTabIndex = pagerState.currentPage,
             containerColor = Color.Transparent,
             divider = {}
@@ -70,7 +70,7 @@ fun ReaderSettingsContent(
         // Overriding the local overscroll configuration to null completely eliminates
         // the platform's elastic snap-back/bounce physics when you finish a swipe.
         CompositionLocalProvider(
-            LocalOverscrollConfiguration provides null
+            LocalOverscrollFactory provides null
         ) {
             HorizontalPager(
                 state = pagerState,
@@ -241,10 +241,10 @@ private fun TextTabContent(
     // Publisher Style
     Row(
         modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text("Publisher Style", style = MaterialTheme.typography.bodyLarge)
-        Spacer(modifier = Modifier.weight(1f))
         Switch(
             checked = settings.publisherStyles,
             onCheckedChange = { onSettingsChange(settings.copy(publisherStyles = it)) }
@@ -374,9 +374,12 @@ private fun AdvancedTabContent(
     onSettingsChange: (ReaderSettings) -> Unit
 ) {
     // Vertical Scroll
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Text("Vertical Scroll", style = MaterialTheme.typography.bodyLarge)
-        Spacer(modifier = Modifier.weight(1f))
         Switch(
             checked = settings.scroll,
             onCheckedChange = { onSettingsChange(settings.copy(scroll = it)) }
@@ -384,9 +387,12 @@ private fun AdvancedTabContent(
     }
 
     // Hyphens
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Text("Hyphens", style = MaterialTheme.typography.bodyLarge)
-        Spacer(modifier = Modifier.weight(1f))
         Switch(
             checked = settings.hyphens,
             onCheckedChange = { onSettingsChange(settings.copy(hyphens = it)) }
@@ -394,9 +400,12 @@ private fun AdvancedTabContent(
     }
 
     // Text Normalization
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Text("Text Normalization", style = MaterialTheme.typography.bodyLarge)
-        Spacer(modifier = Modifier.weight(1f))
         Switch(
             checked = settings.textNormalization,
             onCheckedChange = { onSettingsChange(settings.copy(textNormalization = it)) }

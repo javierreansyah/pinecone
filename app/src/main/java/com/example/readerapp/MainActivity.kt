@@ -15,12 +15,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.readerapp.data.local.ReaderPreferences
 import com.example.readerapp.data.local.ReaderSettings
-import com.example.readerapp.ui.library.LibraryScreen
+import com.example.readerapp.ui.features.library.LibraryScreen
 import com.example.readerapp.ui.navigation.Screen
-import com.example.readerapp.ui.settings.SettingsScreen
-import com.example.readerapp.ui.library.ArchiveScreen
-import com.example.readerapp.ui.library.ShelfDetailScreen
-import com.example.readerapp.ui.theme.ReaderAppTheme
+import com.example.readerapp.ui.features.settings.SettingsScreen
+import com.example.readerapp.ui.features.library.ArchiveScreen
+import com.example.readerapp.ui.features.library.ShelfDetailScreen
+import com.example.readerapp.ui.theme.AppTheme
 import androidx.compose.material3.*
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
@@ -40,12 +40,9 @@ class MainActivity : ComponentActivity() {
                 "Dark" -> true
                 else -> isSystemInDarkTheme()
             }
-            val useDynamic = settings.colorPalette == "Dynamic"
 
-            ReaderAppTheme(
-                darkTheme = darkTheme,
-                dynamicColor = useDynamic,
-                colorPalette = settings.colorPalette
+            AppTheme(
+                darkTheme = darkTheme
             ) {
                 val navController = rememberNavController()
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -97,8 +94,8 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.Library.route) {
                         LibraryScreen(
                             onNavigateToReader = { bookId ->
-                                val intent = android.content.Intent(context, com.example.readerapp.ui.reader.ReaderActivity::class.java).apply {
-                                    putExtra(com.example.readerapp.ui.reader.ReaderActivity.EXTRA_BOOK_ID, bookId)
+                                val intent = android.content.Intent(context, com.example.readerapp.ui.features.reader.ReaderActivity::class.java).apply {
+                                    putExtra(com.example.readerapp.ui.features.reader.ReaderActivity.EXTRA_BOOK_ID, bookId)
                                 }
                                 context.startActivity(intent)
                             },
@@ -123,8 +120,8 @@ class MainActivity : ComponentActivity() {
                                 navController.popBackStack()
                             },
                             onNavigateToReader = { bookId ->
-                                val intent = android.content.Intent(context, com.example.readerapp.ui.reader.ReaderActivity::class.java).apply {
-                                    putExtra(com.example.readerapp.ui.reader.ReaderActivity.EXTRA_BOOK_ID, bookId)
+                                val intent = android.content.Intent(context, com.example.readerapp.ui.features.reader.ReaderActivity::class.java).apply {
+                                    putExtra(com.example.readerapp.ui.features.reader.ReaderActivity.EXTRA_BOOK_ID, bookId)
                                 }
                                 context.startActivity(intent)
                             }
@@ -138,8 +135,8 @@ class MainActivity : ComponentActivity() {
                                 navController.popBackStack()
                             },
                             onNavigateToReader = { bookId ->
-                                val intent = android.content.Intent(context, com.example.readerapp.ui.reader.ReaderActivity::class.java).apply {
-                                    putExtra(com.example.readerapp.ui.reader.ReaderActivity.EXTRA_BOOK_ID, bookId)
+                                val intent = android.content.Intent(context, com.example.readerapp.ui.features.reader.ReaderActivity::class.java).apply {
+                                    putExtra(com.example.readerapp.ui.features.reader.ReaderActivity.EXTRA_BOOK_ID, bookId)
                                 }
                                 context.startActivity(intent)
                             }
