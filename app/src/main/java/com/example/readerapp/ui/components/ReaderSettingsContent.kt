@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.*
+import com.example.readerapp.R
 import com.example.readerapp.data.local.CustomReaderTheme
 import com.example.readerapp.data.local.ReaderSettings
 import kotlin.math.roundToInt
@@ -311,13 +312,13 @@ private fun LightingTabContent(
             ThemeSwatch(
                 isSelected = settings.readerThemePreset == "Light",
                 onClick = { onSettingsChange(settings.copy(readerThemePreset = "Light")) },
-                color = Color.White,
+                iconRes = R.drawable.light_mode_icon,
                 label = "Light"
             )
             ThemeSwatch(
                 isSelected = settings.readerThemePreset == "Dark",
                 onClick = { onSettingsChange(settings.copy(readerThemePreset = "Dark")) },
-                color = Color.Black,
+                iconRes = R.drawable.dark_mode_icon,
                 label = "Dark"
             )
             ThemeSwatch(

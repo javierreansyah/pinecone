@@ -4,4 +4,10 @@
     <style name="Theme.ReaderApp" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:textColorHighlight">@color/text_selection_grey_light</item>
     </style>
+
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#FAFAFA</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_icon</item>
+        <item name="postSplashScreenTheme">@style/Theme.ReaderApp</item>
+    </style>
 </resources>

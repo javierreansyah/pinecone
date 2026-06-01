@@ -5,7 +5,6 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.readerapp.ReaderApplication
-import com.example.readerapp.data.local.ReaderPreferences
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.data.local.ShelfWithCovers
 import kotlinx.coroutines.flow.*
@@ -13,7 +12,6 @@ import kotlinx.coroutines.launch
 
 class LibraryViewModel(application: Application) : AndroidViewModel(application) {
     private val bookRepository = (application as ReaderApplication).bookRepository
-    private val readerPreferences = ReaderPreferences(application)
 
     private val _uiState = MutableStateFlow(LibraryUiState())
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
@@ -62,13 +60,8 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
-        // Import bundled books on launch. importBundledBooks checks for existence to avoid duplicates.
-        viewModelScope.launch {
-            _uiState.update { it.copy(isImporting = true) }
-            bookRepository.importBundledBooks()
-            readerPreferences.setHasImportedBundled(true)
-            _uiState.update { it.copy(isImporting = false) }
-        }
+        // Automatically importing bundled books on every launch is removed to optimize performance.
+        // It can be triggered manually if needed or only on first run via a dedicated setting.
     }
 
     fun importBook(uri: Uri) {

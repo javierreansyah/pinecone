@@ -22,5 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Reader App"
+rootProject.name = "Pinecone"
 include(":app")

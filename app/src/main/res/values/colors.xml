@@ -10,4 +10,6 @@
     
     <color name="text_selection_grey_light">#66AAAAAA</color>
     <color name="text_selection_grey_dark">#66444444</color>
+    <color name="logo_primary">#1E1E1E</color>
+    <color name="logo_secondary">#C2C2C2</color>
 </resources>
