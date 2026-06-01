@@ -12,34 +12,34 @@
         android:scaleX="0.8"
         android:scaleY="0.8">
         <path
-            android:fillColor="#FAFAFA"
+            android:fillColor="#0A0A0A"
             android:pathData="M150,450h100v100h-100z" />
         <path
-            android:fillColor="#FAFAFA"
+            android:fillColor="#0A0A0A"
             android:pathData="M0,300h400v100h-400z" />
         <path
-            android:fillColor="#404040"
+            android:fillColor="#A3A3A3"
             android:pathData="M325,150h75v100h-75z" />
         <path
-            android:fillColor="#404040"
+            android:fillColor="#A3A3A3"
             android:pathData="M0,150h75v100h-75z" />
         <path
-            android:fillColor="#FAFAFA"
+            android:fillColor="#0A0A0A"
             android:pathData="M75,150h250v100h-250z" />
         <path
-            android:fillColor="#FAFAFA"
+            android:fillColor="#0A0A0A"
             android:pathData="M150,0h100v100h-100z" />
         <path
-            android:fillColor="#404040"
+            android:fillColor="#A3A3A3"
             android:pathData="M250,0h150v100h-150z" />
         <path
-            android:fillColor="#404040"
+            android:fillColor="#A3A3A3"
             android:pathData="M75,0h75v100h-75z" />
         <path
-            android:fillColor="#404040"
+            android:fillColor="#A3A3A3"
             android:pathData="M250,450h150v100h-150z" />
         <path
-            android:fillColor="#404040"
+            android:fillColor="#A3A3A3"
             android:pathData="M0,450h150v100h-150z" />
     </group>
 </vector>

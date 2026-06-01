@@ -47,6 +47,7 @@ fun LibraryScreen(
 
     // Context Menu State
     var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
     var showCreateShelfDialog by remember { mutableStateOf(false) }
     var showAddToShelfDialog by remember { mutableStateOf(false) }
     var newShelfName by remember { mutableStateOf("") }
@@ -152,8 +153,40 @@ fun LibraryScreen(
                             showCreateShelfDialog = true
                         }
                     )
+                    ListItem(
+                        headlineContent = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                        modifier = Modifier.clickable {
+                            showDeleteConfirmation = true
+                        }
+                    )
                 }
             }
+        }
+
+        // Delete Confirmation Dialog
+        if (showDeleteConfirmation) {
+            AlertDialog(
+                onDismissRequest = { showDeleteConfirmation = false },
+                title = { Text("Delete Book") },
+                text = { Text("Are you sure you want to delete this book? This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.deleteBook(selectedBookForMenu!!)
+                            showDeleteConfirmation = false
+                            selectedBookForMenu = null
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteConfirmation = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
 
         // Add to Shelf Dialog

@@ -50,18 +50,23 @@ class BookRepository(
     suspend fun getBook(id: String): BookEntity? = bookDao.getById(id)
 
     /**
-     * Import an EPUB from a content URI (file picker).
+     * Import a book from a content URI (file picker or intent).
      * Copies to internal storage, extracts metadata via Readium, stores in Room.
      */
     suspend fun importBook(uri: Uri): BookEntity? = withContext(Dispatchers.IO) {
         try {
-            // Copy to internal storage
-            val tempFile = File(booksDir, "import_${System.currentTimeMillis()}.epub")
+            // Copy to a temporary file to analyze it
+            val tempFile = File(booksDir, "import_${System.currentTimeMillis()}")
             context.contentResolver.openInputStream(uri)?.use { input ->
                 FileOutputStream(tempFile).use { output ->
                     input.copyTo(output)
                 }
             } ?: return@withContext null
+
+            // Detect media type and extension
+            val asset = assetRetriever.retrieve(tempFile.toUrl(isDirectory = false)).getOrNull()
+            val mediaType = asset?.format
+            val extension = mediaType?.fileExtension ?: "epub"
 
             // Generate ID from file hash
             val bookId = generateFileHash(tempFile)
@@ -72,8 +77,8 @@ class BookRepository(
                 return@withContext bookDao.getById(bookId)
             }
 
-            // Rename to final location
-            val finalFile = File(booksDir, "$bookId.epub")
+            // Rename to final location with correct extension
+            val finalFile = File(booksDir, "$bookId.$extension")
             tempFile.renameTo(finalFile)
 
             // Open with Readium to extract metadata
@@ -82,7 +87,7 @@ class BookRepository(
                 return@withContext null
             }
 
-            val entity = createBookEntity(bookId, finalFile, publication)
+            val entity = createBookEntity(bookId, finalFile, publication, mediaType?.toString())
             publication.close()
 
             bookDao.insert(entity)
@@ -271,7 +276,8 @@ class BookRepository(
     private suspend fun createBookEntity(
         bookId: String,
         file: File,
-        publication: Publication
+        publication: Publication,
+        mediaType: String? = null
     ): BookEntity {
         val metadata = publication.metadata
 
@@ -303,7 +309,7 @@ class BookRepository(
             author = metadata.authors.joinToString(", ") { it.name },
             coverPath = coverPath,
             filePath = file.absolutePath,
-            mediaType = "application/epub+zip",
+            mediaType = mediaType ?: "application/epub+zip",
             identifier = metadata.identifier,
             language = metadata.languages.firstOrNull(),
             progression = 0.0,

@@ -1,15 +1,18 @@
 package com.example.readerapp
 
 import android.os.Bundle
+import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -21,6 +24,7 @@ import com.example.readerapp.ui.features.settings.SettingsScreen
 import com.example.readerapp.ui.features.library.ArchiveScreen
 import com.example.readerapp.ui.features.library.ShelfDetailScreen
 import com.example.readerapp.ui.theme.AppTheme
+import androidx.compose.ui.res.stringResource
 import androidx.compose.material3.*
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
@@ -29,7 +33,11 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
+        
+        handleIntent(intent)
+
         enableEdgeToEdge()
         setContent {
             val context = LocalContext.current
@@ -52,7 +60,7 @@ class MainActivity : ComponentActivity() {
                     drawerState = drawerState,
                     drawerContent = {
                         ModalDrawerSheet {
-                            Text("Reader App", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.titleLarge)
+                            Text(stringResource(id = R.string.app_name), modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.titleLarge)
                             HorizontalDivider()
                             NavigationDrawerItem(
                                 label = { Text("Library") },
@@ -94,7 +102,7 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.Library.route) {
                         LibraryScreen(
                             onNavigateToReader = { bookId ->
-                                val intent = android.content.Intent(context, com.example.readerapp.ui.features.reader.ReaderActivity::class.java).apply {
+                                val intent = Intent(context, com.example.readerapp.ui.features.reader.ReaderActivity::class.java).apply {
                                     putExtra(com.example.readerapp.ui.features.reader.ReaderActivity.EXTRA_BOOK_ID, bookId)
                                 }
                                 context.startActivity(intent)
@@ -120,7 +128,7 @@ class MainActivity : ComponentActivity() {
                                 navController.popBackStack()
                             },
                             onNavigateToReader = { bookId ->
-                                val intent = android.content.Intent(context, com.example.readerapp.ui.features.reader.ReaderActivity::class.java).apply {
+                                val intent = Intent(context, com.example.readerapp.ui.features.reader.ReaderActivity::class.java).apply {
                                     putExtra(com.example.readerapp.ui.features.reader.ReaderActivity.EXTRA_BOOK_ID, bookId)
                                 }
                                 context.startActivity(intent)
@@ -135,7 +143,7 @@ class MainActivity : ComponentActivity() {
                                 navController.popBackStack()
                             },
                             onNavigateToReader = { bookId ->
-                                val intent = android.content.Intent(context, com.example.readerapp.ui.features.reader.ReaderActivity::class.java).apply {
+                                val intent = Intent(context, com.example.readerapp.ui.features.reader.ReaderActivity::class.java).apply {
                                     putExtra(com.example.readerapp.ui.features.reader.ReaderActivity.EXTRA_BOOK_ID, bookId)
                                 }
                                 context.startActivity(intent)
@@ -144,6 +152,22 @@ class MainActivity : ComponentActivity() {
                     }
                     }
                 }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent) {
+        if (intent.action == Intent.ACTION_VIEW) {
+            val uri = intent.data ?: return
+            val repository = (application as ReaderApplication).bookRepository
+            lifecycleScope.launch {
+                repository.importBook(uri)
             }
         }
     }

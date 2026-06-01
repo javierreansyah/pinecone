@@ -34,6 +34,7 @@ fun ThemeSwatch(
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
     color: Color = Color.Transparent,
+    iconRes: Int? = null,
     isAuto: Boolean = false,
     isCustom: Boolean = false,
     label: String,
@@ -58,7 +59,7 @@ fun ThemeSwatch(
                 }
                 .padding(4.dp)
                 .clip(CircleShape)
-                .background(if (isAuto || isCustom) Color.Transparent else color)
+                .background(if (isAuto || isCustom || iconRes != null) Color.Transparent else color)
                 .border(
                     width = 1.5.dp,
                     color = MaterialTheme.colorScheme.outlineVariant,
@@ -85,6 +86,13 @@ fun ThemeSwatch(
                         useCenter = true
                     )
                 }
+            } else if (iconRes != null) {
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(id = iconRes),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
             } else if (isCustom) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Add, 
