@@ -41,7 +41,7 @@ data class ReaderSettings(
     val paragraphIndent: Double = 0.0,
     val wordSpacing: Double = 0.0,
     val letterSpacing: Double = 0.0,
-    val fontWeight: Double? = null,
+    val fontWeights: Map<String, Double> = emptyMap(),
     val hyphens: Boolean = false,
     val scroll: Boolean = false,
     val columnCount: String = "Auto",
@@ -100,6 +100,8 @@ data class ReaderSettings(
                 "Literata" -> FontFamily("Literata")
                 "Source Serif 4" -> FontFamily("Source Serif 4")
                 "Source Sans 3" -> FontFamily("Source Sans 3")
+                "Atkinson Hyperlegible" -> FontFamily("Atkinson Hyperlegible")
+                "Source Code" -> FontFamily("Source Code")
                 else -> null
             },
             textAlign = when (textAlign) {
@@ -114,7 +116,7 @@ data class ReaderSettings(
             paragraphIndent = paragraphIndent,
             wordSpacing = wordSpacing,
             letterSpacing = letterSpacing,
-            fontWeight = fontWeight,
+            fontWeight = fontWeights[fontFamily],
             hyphens = hyphens,
             scroll = scroll,
             columnCount = when (columnCount) {
@@ -159,7 +161,7 @@ class ReaderPreferences(private val context: Context) {
         val PARAGRAPH_INDENT = doublePreferencesKey("paragraph_indent")
         val WORD_SPACING = doublePreferencesKey("word_spacing")
         val LETTER_SPACING = doublePreferencesKey("letter_spacing")
-        val FONT_WEIGHT = doublePreferencesKey("font_weight")
+        val FONT_WEIGHTS = stringPreferencesKey("font_weights")
         val HYPHENS = booleanPreferencesKey("hyphens")
         val SCROLL = booleanPreferencesKey("scroll")
         val COLUMN_COUNT = stringPreferencesKey("column_count")
@@ -196,7 +198,15 @@ class ReaderPreferences(private val context: Context) {
             paragraphIndent = (preferences[PARAGRAPH_INDENT] ?: 0.0).let { Math.round(it * 100.0) / 100.0 },
             wordSpacing = (preferences[WORD_SPACING] ?: 0.0).let { Math.round(it * 100.0) / 100.0 },
             letterSpacing = (preferences[LETTER_SPACING] ?: 0.0).let { Math.round(it * 100.0) / 100.0 },
-            fontWeight = preferences[FONT_WEIGHT],
+            fontWeights = preferences[FONT_WEIGHTS]?.let { str ->
+                if (str.isNotBlank()) {
+                    str.split(",").associate { pair ->
+                        val parts = pair.split(":")
+                        val weight = parts[1].toDouble()
+                        parts[0] to (if (weight > 10.0) 1.0 else weight)
+                    }
+                } else emptyMap()
+            } ?: emptyMap(),
             hyphens = preferences[HYPHENS] ?: false,
             scroll = preferences[SCROLL] ?: false,
             columnCount = preferences[COLUMN_COUNT] ?: "Auto",
@@ -233,10 +243,10 @@ class ReaderPreferences(private val context: Context) {
             preferences[PARAGRAPH_INDENT] = Math.round(settings.paragraphIndent * 100.0) / 100.0
             preferences[WORD_SPACING] = Math.round(settings.wordSpacing * 100.0) / 100.0
             preferences[LETTER_SPACING] = Math.round(settings.letterSpacing * 100.0) / 100.0
-            if (settings.fontWeight != null) {
-                preferences[FONT_WEIGHT] = settings.fontWeight
+            if (settings.fontWeights.isNotEmpty()) {
+                preferences[FONT_WEIGHTS] = settings.fontWeights.entries.joinToString(",") { "${it.key}:${it.value}" }
             } else {
-                preferences.remove(FONT_WEIGHT)
+                preferences.remove(FONT_WEIGHTS)
             }
             preferences[HYPHENS] = settings.hyphens
             preferences[SCROLL] = settings.scroll
