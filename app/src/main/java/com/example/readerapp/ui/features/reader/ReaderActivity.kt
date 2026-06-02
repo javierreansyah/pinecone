@@ -295,6 +295,13 @@ class ReaderActivity : AppCompatActivity() {
                                 navigator?.go(locator)
                             }
                         }
+                    },
+                    onInfoClick = {
+                        val bookId = intent.getStringExtra(EXTRA_BOOK_ID) ?: ""
+                        val infoIntent = android.content.Intent(this@ReaderActivity, com.example.readerapp.ui.features.info.BookInfoActivity::class.java).apply {
+                            putExtra(com.example.readerapp.ui.features.info.BookInfoActivity.EXTRA_BOOK_ID, bookId)
+                        }
+                        startActivity(infoIntent)
                     }
                 )
             }

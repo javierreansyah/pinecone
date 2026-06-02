@@ -16,6 +16,17 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.documentfile.provider.DocumentFile
+import android.widget.Toast
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Upload
+import com.composables.icons.materialsymbols.outlined.Folder
+import com.composables.icons.materialsymbols.outlined.Library_books
+import com.composables.icons.materialsymbols.outlined.Archive
+import com.composables.icons.materialsymbols.outlined.Settings
+import com.example.readerapp.data.repository.BookRepository
 import com.example.readerapp.data.local.ReaderPreferences
 import com.example.readerapp.data.local.ReaderSettings
 import com.example.readerapp.ui.features.library.LibraryScreen
@@ -56,6 +67,39 @@ class MainActivity : ComponentActivity() {
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
 
+                val filePickerLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.OpenMultipleDocuments(),
+                    onResult = { uris ->
+                        if (uris.isNotEmpty()) {
+                            Toast.makeText(context, "Importing ${uris.size} files...", Toast.LENGTH_SHORT).show()
+                            scope.launch {
+                                val repository = (context.applicationContext as ReaderApplication).bookRepository
+                                uris.forEach { uri ->
+                                    repository.importBook(uri)
+                                }
+                                Toast.makeText(context, "Import complete", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                )
+
+                val folderPickerLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.OpenDocumentTree(),
+                    onResult = { uri ->
+                        uri?.let {
+                            Toast.makeText(context, "Scanning folder for books...", Toast.LENGTH_SHORT).show()
+                            scope.launch {
+                                val repository = (context.applicationContext as ReaderApplication).bookRepository
+                                val root = DocumentFile.fromTreeUri(context, it)
+                                if (root != null) {
+                                    importFromDocumentFile(root, repository)
+                                }
+                                Toast.makeText(context, "Folder scan complete", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                )
+
                 ModalNavigationDrawer(
                     drawerState = drawerState,
                     drawerContent = {
@@ -64,6 +108,7 @@ class MainActivity : ComponentActivity() {
                             HorizontalDivider()
                             NavigationDrawerItem(
                                 label = { Text("Library") },
+                                icon = { Icon(MaterialSymbols.Outlined.Library_books, contentDescription = null) },
                                 selected = false,
                                 onClick = {
                                     navController.navigate(Screen.Library.route) {
@@ -76,6 +121,7 @@ class MainActivity : ComponentActivity() {
                             )
                             NavigationDrawerItem(
                                 label = { Text("Archives") },
+                                icon = { Icon(MaterialSymbols.Outlined.Archive, contentDescription = null) },
                                 selected = false,
                                 onClick = {
                                     navController.navigate(Screen.Archives.route)
@@ -83,8 +129,52 @@ class MainActivity : ComponentActivity() {
                                 },
                                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                             )
+                            
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                            Text(
+                                text = "Import",
+                                modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            
+                            NavigationDrawerItem(
+                                label = { Text("Import Files") },
+                                icon = { Icon(MaterialSymbols.Outlined.Upload, contentDescription = null) },
+                                selected = false,
+                                onClick = {
+                                    filePickerLauncher.launch(
+                                        arrayOf(
+                                            "application/epub+zip",
+                                            "application/webpub+json",
+                                            "application/x-cbz",
+                                            "application/x-cbr",
+                                            "application/x-cb7",
+                                            "application/x-cbt",
+                                            "application/vnd.comicbook+zip",
+                                            "application/vnd.comicbook-rar"
+                                        )
+                                    )
+                                    scope.launch { drawerState.close() }
+                                },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            )
+                            NavigationDrawerItem(
+                                label = { Text("Scan Folder") },
+                                icon = { Icon(MaterialSymbols.Outlined.Folder, contentDescription = null) },
+                                selected = false,
+                                onClick = {
+                                    folderPickerLauncher.launch(null)
+                                    scope.launch { drawerState.close() }
+                                },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            )
+
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
                             NavigationDrawerItem(
                                 label = { Text("Settings") },
+                                icon = { Icon(MaterialSymbols.Outlined.Settings, contentDescription = null) },
                                 selected = false,
                                 onClick = {
                                     navController.navigate(Screen.Settings.route)
@@ -168,6 +258,21 @@ class MainActivity : ComponentActivity() {
             val repository = (application as ReaderApplication).bookRepository
             lifecycleScope.launch {
                 repository.importBook(uri)
+            }
+        }
+    }
+
+    private suspend fun importFromDocumentFile(file: DocumentFile, repository: BookRepository) {
+        if (file.isDirectory) {
+            file.listFiles().forEach { child ->
+                importFromDocumentFile(child, repository)
+            }
+        } else {
+            val name = file.name?.lowercase() ?: ""
+            // Simple filter by extension, repository will do deeper validation
+            val supportedExtensions = listOf(".epub", ".cbz", ".cbr", ".cb7", ".cbt", ".webpub")
+            if (supportedExtensions.any { name.endsWith(it) }) {
+                repository.importBook(file.uri)
             }
         }
     }

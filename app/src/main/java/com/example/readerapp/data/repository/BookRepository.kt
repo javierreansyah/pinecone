@@ -315,7 +315,12 @@ class BookRepository(
             progression = 0.0,
             lastLocatorJson = null,
             addedDate = System.currentTimeMillis(),
-            lastReadDate = null
+            lastReadDate = null,
+            isArchived = false,
+            description = metadata.description,
+            publisher = metadata.publishers.joinToString(", ") { it.name }.takeIf { it.isNotEmpty() },
+            published = metadata.published?.toString(),
+            tags = metadata.subjects.joinToString(", ") { it.name }.takeIf { it.isNotEmpty() }
         )
     }
 

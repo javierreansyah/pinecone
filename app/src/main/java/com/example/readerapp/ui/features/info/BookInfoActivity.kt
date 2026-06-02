@@ -1,0 +1,375 @@
+package com.example.readerapp.ui.features.info
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.fromHtml
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Arrow_back
+import com.example.readerapp.ReaderApplication
+import com.example.readerapp.data.local.ReaderPreferences
+import com.example.readerapp.data.local.ReaderSettings
+import com.example.readerapp.data.model.Book
+import com.example.readerapp.ui.theme.AppTheme
+import java.io.File
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+import kotlinx.coroutines.launch
+
+class BookInfoActivity : ComponentActivity() {
+
+    companion object {
+        const val EXTRA_BOOK_ID = "bookId"
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
+
+        val bookId = intent.getStringExtra(EXTRA_BOOK_ID) ?: ""
+
+        setContent {
+            val context = LocalContext.current
+            val app = context.applicationContext as ReaderApplication
+            val repository = app.bookRepository
+            val readerPreferences = remember { ReaderPreferences(context) }
+            val settings by readerPreferences.readerSettings.collectAsState(initial = ReaderSettings())
+
+            val scope = rememberCoroutineScope()
+            var book by remember { mutableStateOf<Book?>(null) }
+            var isLoading by remember { mutableStateOf(true) }
+
+            LaunchedEffect(bookId) {
+                scope.launch {
+                    val entity = repository.getBook(bookId)
+                    if (entity != null) {
+                        book = Book.fromEntity(entity)
+                    }
+                    isLoading = false
+                }
+            }
+
+            val isDarkTheme = when (settings.themeMode) {
+                "Dark" -> true
+                "Light" -> false
+                else -> isSystemInDarkTheme()
+            }
+
+            AppTheme(darkTheme = isDarkTheme) {
+                Scaffold(
+                    topBar = {
+                        TopAppBar(
+                            title = { Text("Book Info", style = AppTheme.typography.titleLarge) },
+                            navigationIcon = {
+                                IconButton(onClick = { finish() }) {
+                                    Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = "Back")
+                                }
+                            },
+                            colors = TopAppBarDefaults.topAppBarColors(
+                                containerColor = AppTheme.colorScheme.surface,
+                                navigationIconContentColor = AppTheme.colorScheme.onSurface,
+                                titleContentColor = AppTheme.colorScheme.onSurface
+                            )
+                        )
+                    },
+                    containerColor = AppTheme.colorScheme.background
+                ) { innerPadding ->
+                    if (isLoading) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = AppTheme.colorScheme.primary)
+                        }
+                    } else if (book == null) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Book not found", style = AppTheme.typography.bodyLarge, color = AppTheme.colorScheme.error)
+                        }
+                    } else {
+                        val currentBook = book!!
+                        SelectionContainer {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(innerPadding)
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(AppTheme.spacing.screenPadding),
+                                verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.large),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                // Cover Image with Drop Shadow & Smooth Gradient Border
+                                Box(
+                                    modifier = Modifier
+                                        .width(160.dp)
+                                        .aspectRatio(1f / 1.5f)
+                                        .shadow(8.dp, RoundedCornerShape(12.dp))
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(AppTheme.colorScheme.surfaceVariant)
+                                ) {
+                                    if (currentBook.coverPath != null) {
+                                        AsyncImage(
+                                            model = File(currentBook.coverPath),
+                                            contentDescription = "Cover Image",
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    } else {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(
+                                                    Brush.verticalGradient(
+                                                        colors = listOf(
+                                                            AppTheme.colorScheme.primaryContainer,
+                                                            AppTheme.colorScheme.secondaryContainer
+                                                        )
+                                                    )
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = currentBook.title.take(1).uppercase(),
+                                                style = AppTheme.typography.headlineLarge,
+                                                color = AppTheme.colorScheme.onPrimaryContainer
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // Book Header Details & Tags Container
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalAlignment = Alignment.Start,
+                                    verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.extraSmall)
+                                ) {
+                                    Text(
+                                        text = currentBook.title,
+                                        style = AppTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = AppTheme.colorScheme.onSurface,
+                                        maxLines = 3,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = currentBook.author ?: "Unknown Author",
+                                        style = AppTheme.typography.bodyLarge,
+                                        color = AppTheme.colorScheme.onSurfaceVariant
+                                    )
+
+                                    // Tags / Categories section
+                                    val tagsList = currentBook.tags?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
+                                    if (tagsList.isNotEmpty()) {
+                                        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+                                            FlowRow(
+                                                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.small),
+                                                verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.small),
+                                                modifier = Modifier.fillMaxWidth().padding(top = AppTheme.spacing.small)
+                                            ) {
+                                                tagsList.forEach { tag ->
+                                                    SuggestionChip(
+                                                        onClick = {},
+                                                        label = { Text(tag) },
+                                                        colors = SuggestionChipDefaults.suggestionChipColors(
+                                                            containerColor = AppTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                                                            labelColor = AppTheme.colorScheme.onPrimaryContainer
+                                                        ),
+                                                        border = null
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Book Progress Card
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(containerColor = AppTheme.colorScheme.surfaceVariant)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(AppTheme.spacing.screenPadding),
+                                        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.small)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "Reading Progress",
+                                                style = AppTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                                color = AppTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            Text(
+                                                text = "${(currentBook.progress * 100).toInt()}%",
+                                                style = AppTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                                color = AppTheme.colorScheme.primary
+                                            )
+                                        }
+                                        LinearProgressIndicator(
+                                            progress = { currentBook.progress.toFloat() },
+                                            modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                                            color = AppTheme.colorScheme.primary,
+                                            trackColor = AppTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
+                                        )
+                                    }
+                                }
+
+                                // Book Description
+                                if (!currentBook.description.isNullOrBlank()) {
+                                    var isExpanded by remember { mutableStateOf(false) }
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.small)
+                                    ) {
+                                        Text(
+                                            text = "Description",
+                                            style = AppTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = AppTheme.colorScheme.onSurface
+                                        )
+                                        HtmlText(
+                                            html = currentBook.description,
+                                            style = AppTheme.typography.bodyMedium,
+                                            color = AppTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = if (isExpanded) Int.MAX_VALUE else 4
+                                        )
+                                        if (currentBook.description.length > 200) {
+                                            TextButton(
+                                                onClick = { isExpanded = !isExpanded },
+                                                contentPadding = PaddingValues(0.dp)
+                                            ) {
+                                                Text(if (isExpanded) "Read Less" else "Read More", color = AppTheme.colorScheme.primary)
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Metadata details
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.medium)
+                                ) {
+                                    Text(
+                                        text = "Publication Details",
+                                        style = AppTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = AppTheme.colorScheme.onSurface
+                                    )
+
+                                    MetadataRow(label = "Publisher", value = currentBook.publisher ?: "N/A")
+                                    MetadataRow(label = "Published Date", value = formatPublishedDate(currentBook.published))
+                                    MetadataRow(label = "Language", value = currentBook.language ?: "N/A")
+                                    MetadataRow(label = "Identifier (ISBN/ID)", value = currentBook.identifier ?: "N/A")
+                                    MetadataRow(
+                                        label = "Format",
+                                        value = when (currentBook.mediaType) {
+                                            "application/epub+zip" -> "EPUB"
+                                            "application/x-cbz" -> "CBZ"
+                                            "application/x-cbr" -> "CBR"
+                                            "application/pdf" -> "PDF"
+                                            else -> currentBook.mediaType?.substringAfterLast('/')?.uppercase() ?: "Unknown"
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun HtmlText(
+        html: String,
+        style: androidx.compose.ui.text.TextStyle,
+        color: Color,
+        maxLines: Int = Int.MAX_VALUE
+    ) {
+        val annotatedString = remember(html) {
+            // Standardize paragraph spacing without doubling every line break.
+            // Most HTML-to-AnnotatedString parsers put a single newline after </p>.
+            // We add one <br> to create a single empty line of space.
+            val formattedHtml = html
+                .replace("</p>", "</p><br>")
+                .trim()
+            AnnotatedString.fromHtml(formattedHtml)
+        }
+
+        Text(
+            text = annotatedString,
+            style = style.copy(lineHeight = style.fontSize * 1.5f),
+            color = color,
+            maxLines = maxLines,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+
+    private fun formatPublishedDate(dateString: String?): String {
+        if (dateString.isNullOrBlank()) return "N/A"
+        return try {
+            val odt = OffsetDateTime.parse(dateString)
+            odt.format(DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.getDefault()))
+        } catch (_: Exception) {
+            try {
+                // Handle cases like "2015-07-20"
+                val ld = java.time.LocalDate.parse(dateString.substringBefore('T'))
+                ld.format(DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.getDefault()))
+            } catch (_: Exception) {
+                dateString
+            }
+        }
+    }
+
+    @Composable
+    private fun MetadataRow(label: String, value: String) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.extraSmall)
+        ) {
+            Text(
+                text = label,
+                style = AppTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                color = AppTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = value,
+                style = AppTheme.typography.bodyMedium,
+                color = AppTheme.colorScheme.onSurface
+            )
+            HorizontalDivider(color = AppTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        }
+    }
+}

@@ -64,7 +64,8 @@ fun ReaderOverlay(
     viewModel: ReaderViewModel,
     onBack: () -> Unit,
     onNavigateToChapter: (Link) -> Unit,
-    onSeekToProgression: (Double) -> Unit
+    onSeekToProgression: (Double) -> Unit,
+    onInfoClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isBookmarked by viewModel.isBookmarked.collectAsStateWithLifecycle()
@@ -136,6 +137,7 @@ fun ReaderOverlay(
                     onTocClick = { viewModel.showToc() },
                     onSettingsClick = { viewModel.showSettings() },
                     onToggleBookmark = { viewModel.toggleBookmark() },
+                    onInfoClick = onInfoClick,
                     readerBgColor = readerBgColor,
                     modifier = Modifier.align(Alignment.TopCenter)
                 )
