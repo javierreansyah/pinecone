@@ -22,8 +22,11 @@ import org.readium.r2.navigator.DecorableNavigator
 import org.readium.r2.navigator.Decoration
 import org.readium.r2.navigator.epub.EpubNavigatorFactory
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
+import org.readium.r2.navigator.epub.css.FontStyle
+import org.readium.r2.navigator.epub.css.FontWeight as CssFontWeight
 import org.readium.r2.navigator.input.InputListener
 import org.readium.r2.navigator.input.TapEvent
+import org.readium.r2.navigator.preferences.FontFamily
 import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.publication.Publication
 import androidx.core.graphics.toColorInt
@@ -308,6 +311,7 @@ class ReaderActivity : AppCompatActivity() {
         }
     }
 
+    @OptIn(ExperimentalReadiumApi::class)
     private fun setupNavigator(publication: Publication) {
         if (supportFragmentManager.findFragmentByTag(NAVIGATOR_TAG) != null) {
             navigator = supportFragmentManager.findFragmentByTag(NAVIGATOR_TAG) as? EpubNavigatorFragment
@@ -325,7 +329,8 @@ class ReaderActivity : AppCompatActivity() {
         val initialLocator = viewModel.initialLocator
         val initialPreferences = viewModel.epubPreferences.value
 
-        val configuration = EpubNavigatorFragment.Configuration(
+        val configuration = EpubNavigatorFragment.Configuration {
+            // Custom selection callback for our Compose action bar.
             selectionActionModeCallback = object : android.view.ActionMode.Callback {
                 override fun onCreateActionMode(mode: android.view.ActionMode?, menu: android.view.Menu?): Boolean {
                     // Clear all native menu items so the default context toolbar
@@ -364,7 +369,52 @@ class ReaderActivity : AppCompatActivity() {
                     }
                 }
             }
-        )
+
+            // Serve the fonts directory so the navigator can load custom font files.
+            servedAssets += "fonts/.*"
+
+            // Source Serif 4 — variable font, used as the default serif option.
+            addFontFamilyDeclaration(FontFamily("Source Serif 4")) {
+                addFontFace {
+                    addSource("fonts/source_serif_4.ttf", preload = true)
+                    setFontStyle(FontStyle.NORMAL)
+                    setFontWeight(CssFontWeight.NORMAL)
+                }
+                addFontFace {
+                    addSource("fonts/source_serif_4_italic.ttf")
+                    setFontStyle(FontStyle.ITALIC)
+                    setFontWeight(CssFontWeight.NORMAL)
+                }
+            }
+
+            // Source Sans 3 — variable font, used as the default sans-serif option.
+            addFontFamilyDeclaration(FontFamily("Source Sans 3")) {
+                addFontFace {
+                    addSource("fonts/source_sans_3.ttf", preload = true)
+                    setFontStyle(FontStyle.NORMAL)
+                    setFontWeight(CssFontWeight.NORMAL)
+                }
+                addFontFace {
+                    addSource("fonts/source_sans_3_italic.ttf")
+                    setFontStyle(FontStyle.ITALIC)
+                    setFontWeight(CssFontWeight.NORMAL)
+                }
+            }
+
+            // Literata — variable font.
+            addFontFamilyDeclaration(FontFamily("Literata")) {
+                addFontFace {
+                    addSource("fonts/literata.ttf", preload = true)
+                    setFontStyle(FontStyle.NORMAL)
+                    setFontWeight(CssFontWeight.NORMAL)
+                }
+                addFontFace {
+                    addSource("fonts/literata_italic.ttf")
+                    setFontStyle(FontStyle.ITALIC)
+                    setFontWeight(CssFontWeight.NORMAL)
+                }
+            }
+        }
 
         supportFragmentManager.fragmentFactory = navigatorFactory.createFragmentFactory(
             initialLocator = initialLocator,

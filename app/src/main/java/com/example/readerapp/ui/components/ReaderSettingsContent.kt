@@ -21,7 +21,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.*
-import com.example.readerapp.R
 import com.example.readerapp.data.local.CustomReaderTheme
 import com.example.readerapp.data.local.ReaderSettings
 import kotlin.math.roundToInt
@@ -155,7 +154,7 @@ private fun TextTabContent(
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            val fonts = listOf("Original", "Serif", "Sans-Serif", "OpenDyslexic")
+            val fonts = listOf("Original", "Serif", "Sans-Serif", "Literata", "Source Serif 4", "Source Sans 3")
             fonts.forEach { font ->
                 FontSwatch(
                     isSelected = settings.fontFamily == font,
@@ -222,6 +221,17 @@ private fun TextTabContent(
                 enabled = !settings.publisherStyles,
                 modifier = Modifier.weight(1f)
             )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            IncrementDecrementControl(
+                label = "Font Weight",
+                value = String.format("%.1f", settings.fontWeight ?: 1.0),
+                onIncrement = { onSettingsChange(settings.copy(fontWeight = ((((settings.fontWeight ?: 1.0) + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.1, 3.0))) },
+                onDecrement = { onSettingsChange(settings.copy(fontWeight = ((((settings.fontWeight ?: 1.0) - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.1, 3.0))) },
+                enabled = !settings.publisherStyles,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
 
@@ -312,13 +322,13 @@ private fun LightingTabContent(
             ThemeSwatch(
                 isSelected = settings.readerThemePreset == "Light",
                 onClick = { onSettingsChange(settings.copy(readerThemePreset = "Light")) },
-                iconRes = R.drawable.light_mode_icon,
+                color = Color.White,
                 label = "Light"
             )
             ThemeSwatch(
                 isSelected = settings.readerThemePreset == "Dark",
                 onClick = { onSettingsChange(settings.copy(readerThemePreset = "Dark")) },
-                iconRes = R.drawable.dark_mode_icon,
+                color = Color.Black,
                 label = "Dark"
             )
             ThemeSwatch(
@@ -466,9 +476,9 @@ private fun FontSwatch(
                 text = "Aa",
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontFamily = when (fontName) {
-                        "Serif" -> FontFamily.Serif
-                        "Sans-Serif" -> FontFamily.SansSerif
-                        else -> FontFamily.Default
+                        "Serif", "Source Serif 4", "Literata" -> androidx.compose.ui.text.font.FontFamily.Serif
+                        "Sans-Serif", "Source Sans 3" -> androidx.compose.ui.text.font.FontFamily.SansSerif
+                        else -> androidx.compose.ui.text.font.FontFamily.Default
                     }
                 )
             )

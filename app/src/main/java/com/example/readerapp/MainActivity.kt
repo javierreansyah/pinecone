@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.BackHandler
 import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -23,7 +24,6 @@ import android.widget.Toast
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Upload
 import com.composables.icons.materialsymbols.outlined.Folder
-import com.composables.icons.materialsymbols.outlined.Library_books
 import com.composables.icons.materialsymbols.outlined.Archive
 import com.composables.icons.materialsymbols.outlined.Settings
 import com.example.readerapp.data.repository.BookRepository
@@ -36,8 +36,16 @@ import com.example.readerapp.ui.features.library.ArchiveScreen
 import com.example.readerapp.ui.features.library.ShelfDetailScreen
 import com.example.readerapp.ui.theme.AppTheme
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.*
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -66,6 +74,10 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
                 val scope = rememberCoroutineScope()
+
+                BackHandler(enabled = drawerState.isOpen) {
+                    scope.launch { drawerState.close() }
+                }
 
                 val filePickerLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.OpenMultipleDocuments(),
@@ -104,21 +116,25 @@ class MainActivity : ComponentActivity() {
                     drawerState = drawerState,
                     drawerContent = {
                         ModalDrawerSheet {
-                            Text(stringResource(id = R.string.app_name), modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.titleLarge)
-                            HorizontalDivider()
-                            NavigationDrawerItem(
-                                label = { Text("Library") },
-                                icon = { Icon(MaterialSymbols.Outlined.Library_books, contentDescription = null) },
-                                selected = false,
-                                onClick = {
-                                    navController.navigate(Screen.Library.route) {
-                                        popUpTo(navController.graph.startDestinationId)
-                                        launchSingleTop = true
-                                    }
-                                    scope.launch { drawerState.close() }
-                                },
-                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                            )
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    painter = painterResource(
+                                        id = if (darkTheme) R.drawable.dark_mode_icon else R.drawable.light_mode_icon
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(24.dp),
+                                    tint = Color.Unspecified
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = stringResource(id = R.string.app_name),
+                                    style = MaterialTheme.typography.headlineMedium
+                                )
+                            }
+                            
                             NavigationDrawerItem(
                                 label = { Text("Archives") },
                                 icon = { Icon(MaterialSymbols.Outlined.Archive, contentDescription = null) },
@@ -127,16 +143,10 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate(Screen.Archives.route)
                                     scope.launch { drawerState.close() }
                                 },
-                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                                shape = RectangleShape
                             )
                             
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                            Text(
-                                text = "Import",
-                                modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp),
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                            HorizontalDivider()
                             
                             NavigationDrawerItem(
                                 label = { Text("Import Files") },
@@ -157,7 +167,7 @@ class MainActivity : ComponentActivity() {
                                     )
                                     scope.launch { drawerState.close() }
                                 },
-                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                                shape = RectangleShape
                             )
                             NavigationDrawerItem(
                                 label = { Text("Scan Folder") },
@@ -167,10 +177,10 @@ class MainActivity : ComponentActivity() {
                                     folderPickerLauncher.launch(null)
                                     scope.launch { drawerState.close() }
                                 },
-                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                                shape = RectangleShape
                             )
 
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                            HorizontalDivider()
 
                             NavigationDrawerItem(
                                 label = { Text("Settings") },
@@ -180,7 +190,7 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate(Screen.Settings.route)
                                     scope.launch { drawerState.close() }
                                 },
-                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                                shape = RectangleShape
                             )
                         }
                     }
