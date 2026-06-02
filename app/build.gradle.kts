@@ -43,6 +43,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.compose.animation.core)
+    implementation(libs.androidx.documentfile)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation("com.composables:icons-material-symbols-outlined-cmp:2.2.1")

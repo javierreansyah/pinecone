@@ -19,6 +19,7 @@ ksp = "2.2.10-2.0.2"
 appcompat = "1.7.1"
 fragmentKtx = "1.8.9"
 coreSplashscreen = "1.2.0"
+documentfile = "1.1.0"
 
 [libraries]
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashscreen" }
@@ -51,6 +52,7 @@ room-compiler = { group = "androidx.room", name = "room-compiler", version.ref =
 desugar-jdk = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugar" }
 androidx-compose-animation = { group = "androidx.compose.animation", name = "animation" }
 androidx-compose-animation-core = { group = "androidx.compose.animation", name = "animation-core" }
+androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version.ref = "documentfile" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

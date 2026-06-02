@@ -135,6 +135,16 @@ fun LibraryScreen(
                     Text("Options", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(16.dp))
                     HorizontalDivider()
                     ListItem(
+                        headlineContent = { Text("Info") },
+                        modifier = Modifier.clickable {
+                            val intent = android.content.Intent(context, com.example.readerapp.ui.features.info.BookInfoActivity::class.java).apply {
+                                putExtra(com.example.readerapp.ui.features.info.BookInfoActivity.EXTRA_BOOK_ID, selectedBookForMenu!!)
+                            }
+                            context.startActivity(intent)
+                            selectedBookForMenu = null
+                        }
+                    )
+                    ListItem(
                         headlineContent = { Text("Archive") },
                         modifier = Modifier.clickable {
                             viewModel.toggleArchive(selectedBookForMenu!!)

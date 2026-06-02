@@ -25,6 +25,7 @@ import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Bookmark
 import com.composables.icons.materialsymbols.outlined.List
 import com.composables.icons.materialsymbols.outlined.Match_case
+import com.composables.icons.materialsymbols.outlined.Info
 import com.composables.icons.materialsymbols.outlined.More_vert
 import com.composables.icons.materialsymbols.outlined.Search
 
@@ -37,6 +38,7 @@ fun ReaderTopBar(
     onTocClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onToggleBookmark: () -> Unit,
+    onInfoClick: () -> Unit,
     readerBgColor: Color,
     modifier: Modifier = Modifier
 ) {
@@ -85,6 +87,19 @@ fun ReaderTopBar(
                             leadingIcon = {
                                 Icon(
                                     MaterialSymbols.Outlined.Bookmark,
+                                    contentDescription = null
+                                )
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Book Info") },
+                            onClick = {
+                                onInfoClick()
+                                showMoreMenu = false
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    MaterialSymbols.Outlined.Info,
                                     contentDescription = null
                                 )
                             }

@@ -14,7 +14,14 @@ data class Book(
     val lastOpened: Long?,
     val language: String?,
     val addedDate: Long,
-    val isArchived: Boolean
+    val isArchived: Boolean,
+    val description: String? = null,
+    val publisher: String? = null,
+    val published: String? = null,
+    val tags: String? = null,
+    val identifier: String? = null,
+    val mediaType: String? = null,
+    val filePath: String = ""
 ) {
     companion object {
         fun fromEntity(entity: BookEntity): Book = Book(
@@ -26,7 +33,14 @@ data class Book(
             lastOpened = entity.lastReadDate,
             language = entity.language,
             addedDate = entity.addedDate,
-            isArchived = entity.isArchived
+            isArchived = entity.isArchived,
+            description = entity.description,
+            publisher = entity.publisher,
+            published = entity.published,
+            tags = entity.tags,
+            identifier = entity.identifier,
+            mediaType = entity.mediaType,
+            filePath = entity.filePath
         )
     }
 }
