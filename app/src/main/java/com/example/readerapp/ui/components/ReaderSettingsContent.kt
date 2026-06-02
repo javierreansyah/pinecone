@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -21,6 +23,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.*
+import com.example.readerapp.R
 import com.example.readerapp.data.local.CustomReaderTheme
 import com.example.readerapp.data.local.ReaderSettings
 import kotlin.math.roundToInt
@@ -154,7 +157,7 @@ private fun TextTabContent(
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            val fonts = listOf("Original", "Serif", "Sans-Serif", "Literata", "Source Serif 4", "Source Sans 3")
+            val fonts = listOf("Original", "Literata", "Source Serif 4", "Source Sans 3", "Atkinson Hyperlegible", "Source Code")
             fonts.forEach { font ->
                 FontSwatch(
                     isSelected = settings.fontFamily == font,
@@ -223,12 +226,20 @@ private fun TextTabContent(
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            val currentFontWeight = settings.fontWeights[settings.fontFamily] ?: 1.0
+            val isVariableFont = settings.fontFamily != "Original"
             IncrementDecrementControl(
                 label = "Font Weight",
-                value = String.format("%.1f", settings.fontWeight ?: 1.0),
-                onIncrement = { onSettingsChange(settings.copy(fontWeight = ((((settings.fontWeight ?: 1.0) + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.1, 3.0))) },
-                onDecrement = { onSettingsChange(settings.copy(fontWeight = ((((settings.fontWeight ?: 1.0) - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.1, 3.0))) },
-                enabled = !settings.publisherStyles,
+                value = String.format("%.2f", currentFontWeight),
+                onIncrement = {
+                    val newWeight = (((currentFontWeight + 0.25) * 100.0).roundToInt() / 100.0).coerceIn(0.5, 2.25)
+                    onSettingsChange(settings.copy(fontWeights = settings.fontWeights + (settings.fontFamily to newWeight)))
+                },
+                onDecrement = {
+                    val newWeight = (((currentFontWeight - 0.25) * 100.0).roundToInt() / 100.0).coerceIn(0.5, 2.25)
+                    onSettingsChange(settings.copy(fontWeights = settings.fontWeights + (settings.fontFamily to newWeight)))
+                },
+                enabled = !settings.publisherStyles && isVariableFont,
                 modifier = Modifier.weight(1f)
             )
             Spacer(modifier = Modifier.weight(1f))
@@ -436,6 +447,7 @@ private fun AdvancedTabContent(
     )
 }
 
+
 @Composable
 private fun FontSwatch(
     isSelected: Boolean,
@@ -444,6 +456,22 @@ private fun FontSwatch(
     label: String,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val fontFamily = remember(fontName) {
+        try {
+            when (fontName) {
+                "Literata" -> FontFamily(Font("fonts/literata.ttf", context.assets))
+                "Source Serif 4" -> FontFamily(Font("fonts/source_serif_4.ttf", context.assets))
+                "Source Sans 3" -> FontFamily(Font("fonts/source_sans_3.ttf", context.assets))
+                "Atkinson Hyperlegible" -> FontFamily(Font("fonts/atkinson_hyperlegible.ttf", context.assets))
+                "Source Code" -> FontFamily(Font("fonts/source_code.ttf", context.assets))
+                else -> FontFamily.Default
+            }
+        } catch (_: Exception) {
+            FontFamily.Default
+        }
+    }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
@@ -475,11 +503,8 @@ private fun FontSwatch(
             Text(
                 text = "Aa",
                 style = MaterialTheme.typography.titleLarge.copy(
-                    fontFamily = when (fontName) {
-                        "Serif", "Source Serif 4", "Literata" -> androidx.compose.ui.text.font.FontFamily.Serif
-                        "Sans-Serif", "Source Sans 3" -> androidx.compose.ui.text.font.FontFamily.SansSerif
-                        else -> androidx.compose.ui.text.font.FontFamily.Default
-                    }
+                    fontWeight = FontWeight.Normal,
+                    fontFamily = fontFamily
                 )
             )
         }
