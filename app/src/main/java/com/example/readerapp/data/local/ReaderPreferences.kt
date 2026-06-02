@@ -95,9 +95,11 @@ data class ReaderSettings(
             publisherStyles = publisherStyles,
             fontSize = fontSize,
             fontFamily = when (fontFamily) {
-                "Serif" -> FontFamily.SERIF
-                "Sans-Serif" -> FontFamily.SANS_SERIF
-                "OpenDyslexic" -> FontFamily.OPEN_DYSLEXIC
+                "Serif" -> FontFamily("serif")
+                "Sans-Serif" -> FontFamily("sans-serif")
+                "Literata" -> FontFamily("Literata")
+                "Source Serif 4" -> FontFamily("Source Serif 4")
+                "Source Sans 3" -> FontFamily("Source Sans 3")
                 else -> null
             },
             textAlign = when (textAlign) {
@@ -185,7 +187,7 @@ class ReaderPreferences(private val context: Context) {
             brightness = preferences[BRIGHTNESS] ?: 1.0f,
             autoBrightness = preferences[AUTO_BRIGHTNESS] ?: false,
 
-            publisherStyles = preferences[PUBLISHER_STYLES] ?: true,
+            publisherStyles = preferences[PUBLISHER_STYLES] ?: false,
             fontSize = (preferences[FONT_SIZE] ?: 1.0).let { Math.round(it * 100.0) / 100.0 },
             fontFamily = preferences[FONT_FAMILY] ?: "Original",
             textAlign = preferences[TEXT_ALIGN] ?: "Start",
