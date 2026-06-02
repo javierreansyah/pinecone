@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -456,18 +455,27 @@ private fun FontSwatch(
     label: String,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
+    val provider = remember {
+        androidx.compose.ui.text.googlefonts.GoogleFont.Provider(
+            providerAuthority = "com.google.android.gms.fonts",
+            providerPackage = "com.google.android.gms",
+            certificates = R.array.com_google_android_gms_fonts_certs
+        )
+    }
+
     val fontFamily = remember(fontName) {
+        if (fontName == "Original") return@remember FontFamily.Default
         try {
-            when (fontName) {
-                "Literata" -> FontFamily(Font("fonts/literata.ttf", context.assets))
-                "Source Serif 4" -> FontFamily(Font("fonts/source_serif_4.ttf", context.assets))
-                "Source Sans 3" -> FontFamily(Font("fonts/source_sans_3.ttf", context.assets))
-                "Atkinson Hyperlegible" -> FontFamily(Font("fonts/atkinson_hyperlegible.ttf", context.assets))
-                "Source Code" -> FontFamily(Font("fonts/source_code.ttf", context.assets))
-                else -> FontFamily.Default
-            }
-        } catch (_: Exception) {
+            val googleFontName = if (fontName == "Source Code") "Source Code Pro" else fontName
+            
+            FontFamily(
+                androidx.compose.ui.text.googlefonts.Font(
+                    googleFont = androidx.compose.ui.text.googlefonts.GoogleFont(googleFontName),
+                    fontProvider = provider
+                )
+            )
+        } catch (e: Exception) {
+            android.util.Log.e("FontSwatch", "Error loading font $fontName", e)
             FontFamily.Default
         }
     }
@@ -500,12 +508,18 @@ private fun FontSwatch(
                 .clickable { onClick() },
             contentAlignment = Alignment.Center
         ) {
+            // Literata's internal glyph metrics have extra padding at the top, pushing it down visually.
+            // We apply a tiny negative offset just to visually center it in the swatch box.
+            val yOffset = if (fontName == "Literata") (-2).dp else 0.dp
+            
             Text(
                 text = "Aa",
+                fontFamily = fontFamily,
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Normal,
-                    fontFamily = fontFamily
-                )
+                    lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified
+                ),
+                modifier = Modifier.offset(y = yOffset)
             )
         }
         Text(
