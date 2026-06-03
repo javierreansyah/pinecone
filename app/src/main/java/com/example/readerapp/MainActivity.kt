@@ -70,7 +70,8 @@ class MainActivity : ComponentActivity() {
             }
 
             AppTheme(
-                darkTheme = darkTheme
+                darkTheme = darkTheme,
+                dynamicColor = settings.colorPalette == "Dynamic"
             ) {
                 val navController = rememberNavController()
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)

@@ -46,8 +46,8 @@ fun SettingsItem(
 
     Box {
         ListItem(
-            headlineContent = { Text(label) },
-            supportingContent = { Text(value) },
+            headlineContent = { Text(label, style = MaterialTheme.typography.titleMedium) },
+            supportingContent = { Text(value, style = MaterialTheme.typography.bodyMedium) },
             trailingContent = { Icon(MaterialSymbols.Outlined.Keyboard_arrow_right, contentDescription = null) },
             modifier = Modifier
                 .fillMaxWidth()
@@ -61,7 +61,7 @@ fun SettingsItem(
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(option) },
+                    text = { Text(option, style = MaterialTheme.typography.titleMedium) },
                     onClick = {
                         onSelected(option)
                         expanded = false

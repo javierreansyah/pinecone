@@ -23,8 +23,8 @@ fun ReaderTheme(
             surface = readerBackgroundColor, // Matches reader background
             onSurface = Color.White,
             onSurfaceVariant = Color.White.copy(alpha = 0.7f),
-            primary = DarkPrimary,
-            onPrimary = DarkOnPrimary
+            primary = primaryDark,
+            onPrimary = onPrimaryDark
         )
     } else {
         lightColorScheme(
@@ -32,18 +32,17 @@ fun ReaderTheme(
             surface = readerBackgroundColor, // Matches reader background
             onSurface = Color.Black,
             onSurfaceVariant = Color.Black.copy(alpha = 0.7f),
-            primary = LightPrimary,
-            onPrimary = LightOnPrimary
+            primary = primaryLight,
+            onPrimary = onPrimaryLight
         )
     }
 
     CompositionLocalProvider(
-        LocalAppSpacing provides AppSpacing(),
-        LocalAppShapes provides AppShapes()
+        LocalSpacing provides Spacing()
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = Typography,
+            typography = AppTypography,
             content = content
         )
     }

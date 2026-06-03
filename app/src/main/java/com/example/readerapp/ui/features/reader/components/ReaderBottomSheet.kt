@@ -31,6 +31,7 @@ import androidx.core.graphics.toColorInt
 import kotlinx.coroutines.launch
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
+import com.example.readerapp.ui.theme.spacing
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -82,17 +83,17 @@ fun ReaderBottomSheet(
                 Tab(
                     selected = pagerState.currentPage == 0,
                     onClick = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
-                    text = { Text("TOC") }
+                    text = { Text("TOC", style = MaterialTheme.typography.titleMedium) }
                 )
                 Tab(
                     selected = pagerState.currentPage == 1,
                     onClick = { coroutineScope.launch { pagerState.animateScrollToPage(1) } },
-                    text = { Text("Bookmarks") }
+                    text = { Text("Bookmarks", style = MaterialTheme.typography.titleMedium) }
                 )
                 Tab(
                     selected = pagerState.currentPage == 2,
                     onClick = { coroutineScope.launch { pagerState.animateScrollToPage(2) } },
-                    text = { Text("Notes") }
+                    text = { Text("Notes", style = MaterialTheme.typography.titleMedium) }
                 )
             }
 
@@ -121,13 +122,13 @@ fun ReaderBottomSheet(
     if (showAddNoteDialog) {
         AlertDialog(
             onDismissRequest = { showAddNoteDialog = false },
-            title = { Text("Add Note") },
+            title = { Text("Add Note", style = MaterialTheme.typography.titleLarge) },
             text = {
                 OutlinedTextField(
                     value = noteText,
                     onValueChange = { noteText = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Enter your note here...") },
+                    placeholder = { Text("Enter your note here...", style = MaterialTheme.typography.bodyLarge) },
                     minLines = 3
                 )
             },
@@ -139,7 +140,7 @@ fun ReaderBottomSheet(
                     noteText = ""
                     showAddNoteDialog = false
                 }) {
-                    Text("Save")
+                    Text("Save", style = MaterialTheme.typography.labelLarge)
                 }
             },
             dismissButton = {
@@ -147,7 +148,7 @@ fun ReaderBottomSheet(
                     noteText = ""
                     showAddNoteDialog = false
                 }) {
-                    Text("Cancel")
+                    Text("Cancel", style = MaterialTheme.typography.labelLarge)
                 }
             }
         )
@@ -162,7 +163,7 @@ private fun TocList(
 ) {
     if (tableOfContents.isEmpty()) {
         Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-            Text("No Table of Contents")
+            Text("No Table of Contents", style = MaterialTheme.typography.bodyLarge)
         }
     } else {
         LazyColumn(
@@ -175,9 +176,8 @@ private fun TocList(
                     headlineContent = {
                         Text(
                             text = link.title ?: link.href.toString(),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else Color.Unspecified,
-                            fontWeight = if (isCurrentChapter) FontWeight.Bold else FontWeight.Normal
+                            style = if (isCurrentChapter) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium,
+                            color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else Color.Unspecified
                         )
                     },
                     modifier = Modifier.clickable { onChapterClick(link) },
@@ -203,8 +203,7 @@ private fun EntryHeader(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
@@ -240,7 +239,7 @@ private fun BookmarksList(
 ) {
     if (bookmarks.isEmpty()) {
         Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-            Text("No Bookmarks")
+            Text("No Bookmarks", style = MaterialTheme.typography.bodyLarge)
         }
     } else {
         LazyColumn(
@@ -283,7 +282,7 @@ private fun NotesList(
 ) {
     if (notes.isEmpty()) {
         Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-            Text("No Notes & Highlights")
+            Text("No Notes & Highlights", style = MaterialTheme.typography.bodyLarge)
         }
     } else {
         LazyColumn(
@@ -303,7 +302,7 @@ private fun NotesList(
                             .fillMaxWidth()
                             .clickable { onNoteClick(locator) }
                             .padding(horizontal = 20.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.small)
+                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)
                     ) {
                         EntryHeader(
                             title = chapterTitle,
@@ -374,7 +373,7 @@ fun NoteBottomSheet(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.medium)
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space16)
         ) {
             // Text field for editing note text
             OutlinedTextField(
@@ -436,7 +435,7 @@ fun NoteBottomSheet(
                     modifier = Modifier.weight(1f),
                     shape = ButtonDefaults.shape
                 ) {
-                    Text("Delete")
+                    Text("Delete", style = MaterialTheme.typography.labelLarge)
                 }
 
                 Button(
@@ -447,7 +446,7 @@ fun NoteBottomSheet(
                     modifier = Modifier.weight(1f),
                     shape = ButtonDefaults.shape
                 ) {
-                    Text("Save")
+                    Text("Save", style = MaterialTheme.typography.labelLarge)
                 }
             }
         }

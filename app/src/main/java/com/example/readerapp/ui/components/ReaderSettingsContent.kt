@@ -64,7 +64,7 @@ fun ReaderSettingsContent(
                     onClick = {
                         scope.launch { pagerState.animateScrollToPage(index) }
                     },
-                    text = { Text(title) }
+                    text = { Text(title, style = MaterialTheme.typography.titleSmall) }
                 )
             }
         }
@@ -123,8 +123,8 @@ fun ReaderSettingsContent(
     if (themeToDelete != null) {
         AlertDialog(
             onDismissRequest = { themeToDelete = null },
-            title = { Text("Delete Theme") },
-            text = { Text("Are you sure you want to delete '${themeToDelete?.name}'?") },
+            title = { Text("Delete Theme", style = MaterialTheme.typography.titleLarge) },
+            text = { Text("Are you sure you want to delete '${themeToDelete?.name}'?", style = MaterialTheme.typography.bodyMedium) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -133,10 +133,10 @@ fun ReaderSettingsContent(
                         onSettingsChange(settings.copy(customThemes = newThemes, readerThemePreset = newPreset))
                         themeToDelete = null
                     }
-                ) { Text("Delete") }
+                ) { Text("Delete", style = MaterialTheme.typography.labelLarge) }
             },
             dismissButton = {
-                TextButton(onClick = { themeToDelete = null }) { Text("Cancel") }
+                TextButton(onClick = { themeToDelete = null }) { Text("Cancel", style = MaterialTheme.typography.labelLarge) }
             }
         )
     }
@@ -149,7 +149,7 @@ private fun TextTabContent(
 ) {
     // Font Selection
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Font", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text("Font", style = MaterialTheme.typography.titleMedium)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -176,7 +176,7 @@ private fun TextTabContent(
 
     // Typography
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Typography", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text("Typography", style = MaterialTheme.typography.titleMedium)
         
         // Text Size, Font Weight
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -227,7 +227,7 @@ private fun TextTabContent(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Publisher Style", style = MaterialTheme.typography.bodyLarge)
+            Text("Publisher Style", style = MaterialTheme.typography.titleMedium)
             Switch(
                 checked = settings.publisherStyles,
                 onCheckedChange = { onSettingsChange(settings.copy(publisherStyles = it)) }
@@ -312,7 +312,7 @@ private fun LightingTabContent(
 ) {
     // Brightness
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Brightness", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text("Brightness", style = MaterialTheme.typography.titleMedium)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -345,7 +345,7 @@ private fun LightingTabContent(
 
     // Theme Selection
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Theme", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text("Theme", style = MaterialTheme.typography.titleMedium)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -430,7 +430,7 @@ private fun AdvancedTabContent(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("Vertical Scroll", style = MaterialTheme.typography.bodyLarge)
+        Text("Vertical Scroll", style = MaterialTheme.typography.titleMedium)
         Switch(
             checked = settings.scroll,
             onCheckedChange = { onSettingsChange(settings.copy(scroll = it)) }
@@ -443,7 +443,7 @@ private fun AdvancedTabContent(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("Hyphens", style = MaterialTheme.typography.bodyLarge)
+        Text("Hyphens", style = MaterialTheme.typography.titleMedium)
         Switch(
             checked = settings.hyphens,
             onCheckedChange = { onSettingsChange(settings.copy(hyphens = it)) }
@@ -456,7 +456,7 @@ private fun AdvancedTabContent(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("Text Normalization", style = MaterialTheme.typography.bodyLarge)
+        Text("Text Normalization", style = MaterialTheme.typography.titleMedium)
         Switch(
             checked = settings.textNormalization,
             onCheckedChange = { onSettingsChange(settings.copy(textNormalization = it)) }
@@ -545,10 +545,7 @@ private fun FontSwatch(
             Text(
                 text = "Aa",
                 fontFamily = fontFamily,
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Normal,
-                    lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified
-                ),
+                style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.offset(y = yOffset)
             )
         }

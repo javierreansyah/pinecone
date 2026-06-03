@@ -79,7 +79,7 @@ fun ReaderTopBar(
                         onDismissRequest = { showMoreMenu = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text(if (isBookmarked) "Remove Bookmark" else "Add Bookmark") },
+                            text = { Text(if (isBookmarked) "Remove Bookmark" else "Add Bookmark", style = MaterialTheme.typography.titleMedium) },
                             onClick = {
                                 onToggleBookmark()
                                 showMoreMenu = false
@@ -92,7 +92,7 @@ fun ReaderTopBar(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Book Info") },
+                            text = { Text("Book Info", style = MaterialTheme.typography.titleMedium) },
                             onClick = {
                                 onInfoClick()
                                 showMoreMenu = false

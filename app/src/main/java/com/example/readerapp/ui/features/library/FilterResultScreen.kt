@@ -42,7 +42,7 @@ fun FilterResultScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(filterValue) },
+                title = { Text(filterValue, style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -53,7 +53,7 @@ fun FilterResultScreen(
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             if (books.isEmpty()) {
-                Text("No books found.", modifier = Modifier.padding(16.dp))
+                Text("No books found.", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(16.dp))
             } else {
                 BookGrid(
                     books = books,

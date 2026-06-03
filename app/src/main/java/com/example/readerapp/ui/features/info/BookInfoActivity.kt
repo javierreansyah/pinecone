@@ -39,6 +39,7 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.launch
+import com.example.readerapp.ui.theme.spacing
 
 class BookInfoActivity : ComponentActivity() {
 
@@ -80,7 +81,10 @@ class BookInfoActivity : ComponentActivity() {
                 else -> isSystemInDarkTheme()
             }
 
-            AppTheme(darkTheme = isDarkTheme) {
+            AppTheme(
+                darkTheme = isDarkTheme,
+                dynamicColor = settings.colorPalette == "Dynamic"
+            ) {
                 Scaffold(
                     topBar = {
                         TopAppBar(
@@ -119,8 +123,8 @@ class BookInfoActivity : ComponentActivity() {
                                     .fillMaxSize()
                                     .padding(innerPadding)
                                     .verticalScroll(rememberScrollState())
-                                    .padding(AppTheme.spacing.screenPadding),
-                                verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.large),
+                                    .padding(MaterialTheme.spacing.screenPadding),
+                                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space24),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 // Cover Image with Drop Shadow & Smooth Gradient Border
@@ -166,11 +170,11 @@ class BookInfoActivity : ComponentActivity() {
                                 Column(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalAlignment = Alignment.Start,
-                                    verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.extraSmall)
+                                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space4)
                                 ) {
                                     Text(
                                         text = currentBook.title,
-                                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                                        style = MaterialTheme.typography.headlineSmall,
                                         color = MaterialTheme.colorScheme.onSurface,
                                         maxLines = 3,
                                         overflow = TextOverflow.Ellipsis
@@ -186,14 +190,14 @@ class BookInfoActivity : ComponentActivity() {
                                     if (tagsList.isNotEmpty()) {
                                         CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
                                             FlowRow(
-                                                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.small),
-                                                verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.small),
-                                                modifier = Modifier.fillMaxWidth().padding(top = AppTheme.spacing.small)
+                                                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8),
+                                                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8),
+                                                modifier = Modifier.fillMaxWidth().padding(top = MaterialTheme.spacing.space8)
                                             ) {
                                                 tagsList.forEach { tag ->
                                                     SuggestionChip(
                                                         onClick = {},
-                                                        label = { Text(tag) }
+                                                        label = { Text(tag, style = MaterialTheme.typography.labelMedium) }
                                                     )
                                                 }
                                             }
@@ -207,8 +211,8 @@ class BookInfoActivity : ComponentActivity() {
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Column(
-                                        modifier = Modifier.padding(AppTheme.spacing.screenPadding),
-                                        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.small)
+                                        modifier = Modifier.padding(MaterialTheme.spacing.screenPadding),
+                                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)
                                     ) {
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
@@ -217,12 +221,12 @@ class BookInfoActivity : ComponentActivity() {
                                         ) {
                                             Text(
                                                 text = "Reading Progress",
-                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                                style = MaterialTheme.typography.titleMedium,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                             Text(
                                                 text = "${(currentBook.progress * 100).toInt()}%",
-                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                                style = MaterialTheme.typography.titleMedium,
                                                 color = MaterialTheme.colorScheme.primary
                                             )
                                         }
@@ -238,11 +242,11 @@ class BookInfoActivity : ComponentActivity() {
                                     var isExpanded by remember { mutableStateOf(false) }
                                     Column(
                                         modifier = Modifier.fillMaxWidth(),
-                                        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.small)
+                                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)
                                     ) {
                                         Text(
                                             text = "Description",
-                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                            style = MaterialTheme.typography.titleMedium,
                                             color = MaterialTheme.colorScheme.onSurface
                                         )
                                         HtmlText(
@@ -256,7 +260,7 @@ class BookInfoActivity : ComponentActivity() {
                                                 onClick = { isExpanded = !isExpanded },
                                                 contentPadding = PaddingValues(0.dp)
                                             ) {
-                                                Text(if (isExpanded) "Read Less" else "Read More", color = MaterialTheme.colorScheme.primary)
+                                                Text(if (isExpanded) "Read Less" else "Read More", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                                             }
                                         }
                                     }
@@ -265,11 +269,11 @@ class BookInfoActivity : ComponentActivity() {
                                 // Metadata details
                                 Column(
                                     modifier = Modifier.fillMaxWidth(),
-                                    verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.medium)
+                                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space16)
                                 ) {
                                     Text(
                                         text = "Publication Details",
-                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                        style = MaterialTheme.typography.titleMedium,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
 
@@ -343,11 +347,11 @@ class BookInfoActivity : ComponentActivity() {
     private fun MetadataRow(label: String, value: String) {
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.extraSmall)
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space4)
         ) {
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
