@@ -17,13 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Menu
-import com.composables.icons.materialsymbols.outlined.Tune
-import com.example.readerapp.data.local.ShelfWithCovers
-import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.features.library.components.*
-import com.example.readerapp.ui.theme.AppTheme
 import com.example.readerapp.ui.theme.spacing
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)

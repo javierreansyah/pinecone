@@ -81,11 +81,6 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
         SearchResults(matchedBooks, matchedShelves, matchedAuthors, matchedTags)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SearchResults())
 
-    init {
-        // Automatically importing bundled books on every launch is removed to optimize performance.
-        // It can be triggered manually if needed or only on first run via a dedicated setting.
-    }
-
     fun importBook(uri: Uri) {
         viewModelScope.launch {
             _uiState.update { it.copy(isImporting = true) }

@@ -11,7 +11,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.features.library.components.BookGrid
 
 @OptIn(ExperimentalMaterial3Api::class)

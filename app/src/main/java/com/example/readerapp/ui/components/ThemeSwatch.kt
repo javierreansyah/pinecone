@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -31,6 +30,7 @@ import com.composables.icons.materialsymbols.outlined.Add
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ThemeSwatch(
+    modifier: Modifier = Modifier,
     isSelected: Boolean,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
@@ -39,7 +39,6 @@ fun ThemeSwatch(
     isAuto: Boolean = false,
     isCustom: Boolean = false,
     label: String,
-    modifier: Modifier = Modifier.padding(horizontal = 4.dp)
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,

@@ -23,13 +23,13 @@ import org.readium.r2.navigator.Decoration
 import org.readium.r2.navigator.epub.EpubNavigatorFactory
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.css.FontStyle
-import org.readium.r2.navigator.epub.css.FontWeight as CssFontWeight
 import org.readium.r2.navigator.input.InputListener
 import org.readium.r2.navigator.input.TapEvent
 import org.readium.r2.navigator.preferences.FontFamily
 import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.publication.Publication
 import androidx.core.graphics.toColorInt
+import kotlin.time.Duration.Companion.milliseconds
 
 class ReaderActivity : AppCompatActivity() {
 
@@ -158,7 +158,7 @@ class ReaderActivity : AppCompatActivity() {
                         // Re-inject ::selection CSS on every page change — the
                         // WebView reloads HTML for each new resource/chapter.
                         lifecycleScope.launch {
-                            kotlinx.coroutines.delay(300)
+                            kotlinx.coroutines.delay(300.milliseconds)
                             reapplySelectionCss()
                         }
                     }
@@ -192,7 +192,7 @@ class ReaderActivity : AppCompatActivity() {
                                 if (locator != null) {
                                     val isHighlight = note.noteText.isEmpty()
                                     val tintColor = if (note.color != -1) note.color else {
-                                        if (isHighlight) android.graphics.Color.parseColor("#4003A9F4") else android.graphics.Color.parseColor("#40FFEB3B")
+                                        if (isHighlight) "#4003A9F4".toColorInt() else "#40FFEB3B".toColorInt()
                                     }
                                     Decoration(
                                         id = "note_${note.id}",
@@ -235,7 +235,7 @@ class ReaderActivity : AppCompatActivity() {
                     // the WebView may not have fully rendered the target cssSelector, causing the navigator
                     // to fall back to the end of the chapter (progression 1.0).
                     // A second go() with animated=false forces it to snap to the exact text once loaded.
-                    kotlinx.coroutines.delay(100)
+                    kotlinx.coroutines.delay(100.milliseconds)
                     navigator?.go(locator, animated = false)
                     
                     // Apply a highlight decoration at the matched text location
@@ -508,23 +508,21 @@ class ReaderActivity : AppCompatActivity() {
         })
         
         // 3) Decoration Observer - listen for taps on notes/highlights
-        if (nav is DecorableNavigator) {
-            nav.addDecorationListener("notes", object : org.readium.r2.navigator.DecorableNavigator.Listener {
-                override fun onDecorationActivated(event: org.readium.r2.navigator.DecorableNavigator.OnActivatedEvent): Boolean {
-                    val noteIdStr = event.decoration.id.removePrefix("note_")
-                    val noteId = noteIdStr.toLongOrNull() ?: return false
-                    
-                    val note = viewModel.allNotesAndHighlights.value.find { it.id == noteId } ?: return false
-                    
-                    if (note.noteText.isBlank()) {
-                        viewModel.viewHighlight(note)
-                    } else {
-                        viewModel.editNote(note)
-                    }
-                    return true
+        nav.addDecorationListener("notes", object : DecorableNavigator.Listener {
+            override fun onDecorationActivated(event: DecorableNavigator.OnActivatedEvent): Boolean {
+                val noteIdStr = event.decoration.id.removePrefix("note_")
+                val noteId = noteIdStr.toLongOrNull() ?: return false
+
+                val note = viewModel.allNotesAndHighlights.value.find { it.id == noteId } ?: return false
+
+                if (note.noteText.isBlank()) {
+                    viewModel.viewHighlight(note)
+                } else {
+                    viewModel.editNote(note)
                 }
-            })
-        }
+                return true
+            }
+        })
     }
 
     // ── Dynamic ::selection colour injection ──────────────────────────────
@@ -608,7 +606,7 @@ class ReaderActivity : AppCompatActivity() {
             id = "search_current",
             locator = locator,
             style = Decoration.Style.Highlight(
-                tint = android.graphics.Color.parseColor("#FFEB3B"), // yellow
+                tint = "#FFEB3B".toColorInt(), // yellow
                 isActive = false
             )
         )

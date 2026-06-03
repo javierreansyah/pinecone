@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -35,13 +34,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.consumePositionChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Arrow_forward
@@ -51,6 +47,7 @@ import kotlin.math.roundToInt
 
 @Composable
 fun ReaderBottomBar(
+    modifier: Modifier = Modifier,
     progression: Double,
     currentPage: Int?,
     totalPages: Int?,
@@ -63,12 +60,11 @@ fun ReaderBottomBar(
     onExitSearch: () -> Unit = {},
     onPrevSearchResult: () -> Unit = {},
     onNextSearchResult: () -> Unit = {},
-    modifier: Modifier = Modifier
 ) {
     var isSeeking by remember { mutableStateOf(false) }
     var sliderPosition by remember { mutableFloatStateOf(progression.toFloat()) }
     var pendingSeek by remember { mutableStateOf<Double?>(null) }
-    var seekBarWidthPx by remember { mutableStateOf(1f) }
+    var seekBarWidthPx by remember { mutableFloatStateOf(1f) }
 
     val isInteracting = isSeeking
 
@@ -202,8 +198,7 @@ fun ReaderBottomBar(
                     ) {
                         val x = size.width * sliderPosition
                         val midY = size.height / 2f
-                        val gap = lineWidthPx
-                        val halfGap = gap / 2f
+                        val halfGap = lineWidthPx / 2f
 
                         // Background border for visual separation
                         val borderStrokeWidth = lineWidthPx * 2.5f

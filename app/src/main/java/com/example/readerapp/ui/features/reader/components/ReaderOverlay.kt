@@ -11,9 +11,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
@@ -29,15 +26,10 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.gestures.detectDragGestures
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Content_copy
 import com.composables.icons.materialsymbols.outlined.Search
@@ -45,12 +37,8 @@ import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Delete
 import com.composables.icons.materialsymbols.outlined.Close
 import androidx.compose.material3.Icon
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
-import androidx.compose.ui.draw.shadow
-import kotlin.math.roundToInt
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.readerapp.ui.components.ReaderSettingsContent
 import com.example.readerapp.ui.features.reader.ReaderViewModel
@@ -86,7 +74,7 @@ fun ReaderOverlay(
         "Auto" -> if (uiDarkTheme) Color(0xFF000000) else Color(0xFFFFFFFF)
         else -> try {
             Color(settings.customBackgroundColor.toColorInt())
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             Color.White
         }
     }
@@ -277,13 +265,13 @@ fun ReaderOverlay(
                 org.readium.r2.shared.publication.Locator.fromJSON(org.json.JSONObject(
                     menuHighlight?.locatorJson ?: menuLocator?.toJSON()?.toString() ?: ""
                 ))?.text?.highlight ?: ""
-            } catch (e: Exception) { "" }
+            } catch (_: Exception) { "" }
 
             val context = androidx.compose.ui.platform.LocalContext.current
             
             val onSurface = MaterialTheme.colorScheme.onSurface
 
-            androidx.compose.foundation.layout.Box(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
@@ -368,7 +356,7 @@ fun ReaderOverlay(
                         )
                         swatches.forEach { colorInt ->
                             val isSelected = menuHighlight?.color == colorInt
-                            androidx.compose.foundation.layout.Box(
+                            Box(
                                 modifier = Modifier
                                     .size(24.dp)
                                     .background(
