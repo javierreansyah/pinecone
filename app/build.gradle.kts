@@ -42,6 +42,7 @@ android {
                 "proguard-rules.pro"
             )
 
+            //noinspection NotShrinkingResources
             isShrinkResources = false
             signingConfig = signingConfigs.getByName("debug")
             applicationIdSuffix = ".benchmark"
@@ -66,6 +67,7 @@ dependencies {
     implementation(libs.androidx.documentfile)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
+    //noinspection UseTomlInstead
     implementation("com.composables:icons-material-symbols-outlined-cmp:2.2.1")
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
@@ -92,5 +94,6 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
-    implementation("androidx.compose.ui:ui-text-google-fonts:1.7.0")
+    //noinspection UseTomlInstead
+    implementation("androidx.compose.ui:ui-text-google-fonts:1.11.2")
 }

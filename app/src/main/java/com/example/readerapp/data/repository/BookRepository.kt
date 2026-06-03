@@ -20,8 +20,6 @@ import java.io.FileOutputStream
 import java.security.MessageDigest
 import org.readium.r2.shared.util.asset.AssetRetriever
 import android.graphics.BitmapFactory
-import org.readium.r2.shared.util.getOrElse
-
 import com.example.readerapp.data.local.ShelfDao
 import com.example.readerapp.data.local.ShelfEntity
 import com.example.readerapp.data.local.ShelfWithCovers

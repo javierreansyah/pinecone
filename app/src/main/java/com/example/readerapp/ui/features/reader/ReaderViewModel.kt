@@ -19,9 +19,8 @@ import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.services.positions
-import org.readium.r2.shared.publication.services.search.SearchService
 import org.readium.r2.shared.publication.services.search.search
-
+import androidx.core.graphics.toColorInt
 
 
 class ReaderViewModel(
@@ -36,7 +35,6 @@ class ReaderViewModel(
 
     // Cached positions for progression seeking
     private val _positions = MutableStateFlow<List<Locator>>(emptyList())
-    val positions: StateFlow<List<Locator>> = _positions.asStateFlow()
 
     // Initial locator for navigator creation (loaded once)
     var initialLocator: Locator? = null
@@ -74,11 +72,6 @@ class ReaderViewModel(
     // Notes for the current book (text is not empty)
     val notes: StateFlow<List<NoteEntity>> = allNotes
         .map { list -> list.filter { it.noteText.isNotBlank() } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    // Highlights for the current book (text is empty)
-    val highlights: StateFlow<List<NoteEntity>> = allNotes
-        .map { list -> list.filter { it.noteText.isBlank() } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // The combined flow for applying decorations in UI
@@ -207,7 +200,6 @@ class ReaderViewModel(
 
     fun getPositionLabel(locator: Locator): String {
         val allPositions = _positions.value
-        val totalPositions = allPositions.size
         
         val posIndex = locator.locations.totalProgression?.let { target ->
             allPositions.indexOfLast { (it.locations.totalProgression ?: -1.0) <= target }
@@ -264,14 +256,8 @@ class ReaderViewModel(
         }
     }
 
-    fun addNote(noteText: String, color: Int = android.graphics.Color.parseColor("#40FFEB3B")) {
+    fun addNote(noteText: String, color: Int = "#40FFEB3B".toColorInt()) {
         val locator = _currentLocator.value ?: return
-        viewModelScope.launch {
-            repository.addNote(bookId, locator, noteText, color, locator.title ?: _uiState.value.currentChapter)
-        }
-    }
-
-    fun addNoteForLocator(locator: Locator, noteText: String, color: Int = android.graphics.Color.parseColor("#40FFEB3B")) {
         viewModelScope.launch {
             repository.addNote(bookId, locator, noteText, color, locator.title ?: _uiState.value.currentChapter)
         }
@@ -284,7 +270,7 @@ class ReaderViewModel(
             locatorJson = locator.toJSON().toString(),
             chapterTitle = locator.title ?: _uiState.value.currentChapter,
             noteText = "",
-            color = android.graphics.Color.parseColor("#40FFEB3B")
+            color = "#40FFEB3B".toColorInt()
         )
         editNote(newNote)
     }
@@ -309,7 +295,7 @@ class ReaderViewModel(
         _uiState.update { it.copy(selectionLocator = null) }
     }
 
-    fun addHighlight(locator: Locator, color: Int = android.graphics.Color.parseColor("#4003A9F4")) {
+    fun addHighlight(locator: Locator, color: Int = "#4003A9F4".toColorInt()) {
         viewModelScope.launch {
             repository.addNote(bookId, locator, "", color, locator.title ?: _uiState.value.currentChapter)
         }
@@ -326,7 +312,7 @@ class ReaderViewModel(
             if (note.id == 0L) {
                 repository.addNote(
                     bookId = bookId, 
-                    locator = org.readium.r2.shared.publication.Locator.fromJSON(org.json.JSONObject(note.locatorJson))!!, 
+                    locator = Locator.fromJSON(org.json.JSONObject(note.locatorJson))!!,
                     noteText = note.noteText, 
                     color = note.color,
                     chapterTitle = note.chapterTitle
@@ -404,12 +390,11 @@ class ReaderViewModel(
                 }
 
                 val allPositions = _positions.value
-                val totalPositions = allPositions.size
 
                 // Drain iterator page by page; next() returns Try<LocatorCollection, SearchError>
                 while (true) {
                     val result = iterator.next()
-                    val page = result?.getOrNull() ?: break
+                    val page = result.getOrNull() ?: break
                     val newItems = page.locators.map { locator ->
                         val posIndex = locator.locations.totalProgression?.let { target ->
                             allPositions.indexOfLast { (it.locations.totalProgression ?: -1.0) <= target }

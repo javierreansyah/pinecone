@@ -22,7 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
@@ -32,7 +31,6 @@ import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.components.SegmentedButtonGroup
 import com.example.readerapp.ui.features.library.SearchCategory
 import com.example.readerapp.ui.features.library.SearchResults
-import com.example.readerapp.ui.theme.AppTheme
 import kotlinx.coroutines.launch
 import com.example.readerapp.ui.theme.spacing
 

@@ -14,6 +14,9 @@ import org.readium.r2.navigator.preferences.ColumnCount
 import org.readium.r2.navigator.preferences.FontFamily
 import org.readium.r2.navigator.preferences.ImageFilter
 import org.readium.r2.shared.util.Language
+import androidx.core.graphics.toColorInt
+import org.readium.r2.shared.ExperimentalReadiumApi
+import kotlin.math.roundToInt
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "reader_settings")
 
@@ -61,6 +64,7 @@ data class ReaderSettings(
     /**
      * Converts the app-level reader settings to Readium's [EpubPreferences].
      */
+    @OptIn(ExperimentalReadiumApi::class)
     fun toEpubPreferences(isSystemDark: Boolean): EpubPreferences {
         val resolvedTheme = when (readerThemePreset) {
             "Light" -> Theme.LIGHT
@@ -79,14 +83,14 @@ data class ReaderSettings(
 
         val bgColor = if (readerThemePreset !in listOf("Light", "Dark", "Warm", "Auto")) {
             try {
-                org.readium.r2.navigator.preferences.Color(android.graphics.Color.parseColor(customBackgroundColor))
-            } catch (e: Exception) { null }
+                org.readium.r2.navigator.preferences.Color(customBackgroundColor.toColorInt())
+            } catch (_: Exception) { null }
         } else null
 
         val txtColor = if (readerThemePreset !in listOf("Light", "Dark", "Warm", "Auto")) {
             try {
-                org.readium.r2.navigator.preferences.Color(android.graphics.Color.parseColor(customTextColor))
-            } catch (e: Exception) { null }
+                org.readium.r2.navigator.preferences.Color(customTextColor.toColorInt())
+            } catch (_: Exception) { null }
         } else null
 
         return EpubPreferences(
@@ -178,9 +182,6 @@ class ReaderPreferences(private val context: Context) {
         val CUSTOM_BACKGROUND_COLOR = stringPreferencesKey("custom_background_color")
         val CUSTOM_TEXT_COLOR = stringPreferencesKey("custom_text_color")
         val CUSTOM_THEMES = stringSetPreferencesKey("custom_themes")
-
-        // First-launch flag for bundled book import
-        val HAS_IMPORTED_BUNDLED = booleanPreferencesKey("has_imported_bundled")
     }
 
     val readerSettings: Flow<ReaderSettings> = context.dataStore.data.map { preferences ->
@@ -192,14 +193,14 @@ class ReaderPreferences(private val context: Context) {
             autoBrightness = preferences[AUTO_BRIGHTNESS] ?: false,
 
             publisherStyles = preferences[PUBLISHER_STYLES] ?: false,
-            fontSize = (preferences[FONT_SIZE] ?: 1.0).let { Math.round(it * 100.0) / 100.0 },
+            fontSize = (preferences[FONT_SIZE] ?: 1.0).let { (it * 100.0).roundToInt() / 100.0 },
             fontFamily = preferences[FONT_FAMILY] ?: "Source Serif 4",
             textAlign = preferences[TEXT_ALIGN] ?: "Start",
-            lineHeight = (preferences[LINE_HEIGHT] ?: 1.5).let { Math.round(it * 10.0) / 10.0 },
-            paragraphSpacing = (preferences[PARAGRAPH_SPACING] ?: 0.0).let { Math.round(it * 100.0) / 100.0 },
-            paragraphIndent = (preferences[PARAGRAPH_INDENT] ?: 0.0).let { Math.round(it * 100.0) / 100.0 },
-            wordSpacing = (preferences[WORD_SPACING] ?: 0.0).let { Math.round(it * 100.0) / 100.0 },
-            letterSpacing = (preferences[LETTER_SPACING] ?: 0.0).let { Math.round(it * 1000.0) / 1000.0 },
+            lineHeight = (preferences[LINE_HEIGHT] ?: 1.5).let { (it * 10.0).roundToInt() / 10.0 },
+            paragraphSpacing = (preferences[PARAGRAPH_SPACING] ?: 0.0).let { (it * 100.0).roundToInt() / 100.0 },
+            paragraphIndent = (preferences[PARAGRAPH_INDENT] ?: 0.0).let { (it * 100.0).roundToInt() / 100.0 },
+            wordSpacing = (preferences[WORD_SPACING] ?: 0.0).let { (it * 100.0).roundToInt() / 100.0 },
+            letterSpacing = (preferences[LETTER_SPACING] ?: 0.0).let { (it * 1000.0).roundToInt() / 1000.0 },
             fontWeights = preferences[FONT_WEIGHTS]?.let { str ->
                 if (str.isNotBlank()) {
                     str.split(",").associate { pair ->
@@ -212,10 +213,10 @@ class ReaderPreferences(private val context: Context) {
             hyphens = preferences[HYPHENS] ?: false,
             scroll = preferences[SCROLL] ?: false,
             columnCount = preferences[COLUMN_COUNT] ?: "Auto",
-            pageMargins = (preferences[PAGE_MARGINS] ?: 1.0).let { Math.round(it * 100.0) / 100.0 },
+            pageMargins = (preferences[PAGE_MARGINS] ?: 1.0).let { (it * 100.0).roundToInt() / 100.0 },
             imageFilter = preferences[IMAGE_FILTER] ?: "None",
-            typeScale = (preferences[TYPE_SCALE] ?: 1.0).let { Math.round(it * 100.0) / 100.0 },
-            verticalMargin = (preferences[VERTICAL_MARGIN] ?: 32.0).let { Math.round(it * 10.0) / 10.0 },
+            typeScale = (preferences[TYPE_SCALE] ?: 1.0).let { (it * 100.0).roundToInt() / 100.0 },
+            verticalMargin = (preferences[VERTICAL_MARGIN] ?: 32.0).let { (it * 10.0).roundToInt() / 10.0 },
             readingProgression = preferences[READING_PROGRESSION] ?: "LTR",
             textNormalization = preferences[TEXT_NORMALIZATION] ?: false,
 
@@ -238,14 +239,14 @@ class ReaderPreferences(private val context: Context) {
             preferences[AUTO_BRIGHTNESS] = settings.autoBrightness
 
             preferences[PUBLISHER_STYLES] = settings.publisherStyles
-            preferences[FONT_SIZE] = Math.round(settings.fontSize * 100.0) / 100.0
+            preferences[FONT_SIZE] = (settings.fontSize * 100.0).roundToInt() / 100.0
             preferences[FONT_FAMILY] = settings.fontFamily
             preferences[TEXT_ALIGN] = settings.textAlign
-            preferences[LINE_HEIGHT] = Math.round(settings.lineHeight * 10.0) / 10.0
-            preferences[PARAGRAPH_SPACING] = Math.round(settings.paragraphSpacing * 100.0) / 100.0
-            preferences[PARAGRAPH_INDENT] = Math.round(settings.paragraphIndent * 100.0) / 100.0
-            preferences[WORD_SPACING] = Math.round(settings.wordSpacing * 100.0) / 100.0
-            preferences[LETTER_SPACING] = Math.round(settings.letterSpacing * 1000.0) / 1000.0
+            preferences[LINE_HEIGHT] = (settings.lineHeight * 10.0).roundToInt() / 10.0
+            preferences[PARAGRAPH_SPACING] = (settings.paragraphSpacing * 100.0).roundToInt() / 100.0
+            preferences[PARAGRAPH_INDENT] = (settings.paragraphIndent * 100.0).roundToInt() / 100.0
+            preferences[WORD_SPACING] = (settings.wordSpacing * 100.0).roundToInt() / 100.0
+            preferences[LETTER_SPACING] = (settings.letterSpacing * 1000.0).roundToInt() / 1000.0
             if (settings.fontWeights.isNotEmpty()) {
                 preferences[FONT_WEIGHTS] = settings.fontWeights.entries.joinToString(",") { "${it.key}:${it.value}" }
             } else {
@@ -254,10 +255,10 @@ class ReaderPreferences(private val context: Context) {
             preferences[HYPHENS] = settings.hyphens
             preferences[SCROLL] = settings.scroll
             preferences[COLUMN_COUNT] = settings.columnCount
-            preferences[PAGE_MARGINS] = Math.round(settings.pageMargins * 100.0) / 100.0
+            preferences[PAGE_MARGINS] = (settings.pageMargins * 100.0).roundToInt() / 100.0
             preferences[IMAGE_FILTER] = settings.imageFilter
-            preferences[TYPE_SCALE] = Math.round(settings.typeScale * 100.0) / 100.0
-            preferences[VERTICAL_MARGIN] = Math.round(settings.verticalMargin * 10.0) / 10.0
+            preferences[TYPE_SCALE] = (settings.typeScale * 100.0).roundToInt() / 100.0
+            preferences[VERTICAL_MARGIN] = (settings.verticalMargin * 10.0).roundToInt() / 10.0
             preferences[READING_PROGRESSION] = settings.readingProgression
             preferences[TEXT_NORMALIZATION] = settings.textNormalization
 
@@ -272,15 +273,5 @@ class ReaderPreferences(private val context: Context) {
 
     suspend fun updateAllSettings(settings: ReaderSettings) {
         updateSettings(settings)
-    }
-
-    val hasImportedBundled: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[HAS_IMPORTED_BUNDLED] ?: false
-    }
-
-    suspend fun setHasImportedBundled(value: Boolean) {
-        context.dataStore.edit { preferences ->
-            preferences[HAS_IMPORTED_BUNDLED] = value
-        }
     }
 }

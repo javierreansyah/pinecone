@@ -1,5 +1,6 @@
 package com.example.readerapp.ui.features.reader.components
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -8,7 +9,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
@@ -19,10 +19,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.readerapp.ui.theme.AppTheme
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Delete
 import com.example.readerapp.data.local.BookmarkEntity
@@ -33,6 +31,7 @@ import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import com.example.readerapp.ui.theme.spacing
 
+@SuppressLint("ConfigurationScreenWidthHeight")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ReaderBottomSheet(
@@ -247,7 +246,7 @@ private fun BookmarksList(
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
             items(bookmarks) { bookmark ->
-                val locator = try { Locator.fromJSON(org.json.JSONObject(bookmark.locatorJson)) } catch (e: Exception) { null }
+                val locator = try { Locator.fromJSON(org.json.JSONObject(bookmark.locatorJson)) } catch (_: Exception) { null }
                 if (locator != null) {
                     val chapterTitle = bookmark.chapterTitle
                         ?.takeIf { it.isNotBlank() && it != "In Document" }
@@ -290,7 +289,7 @@ private fun NotesList(
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
             items(notes) { note ->
-                val locator = try { Locator.fromJSON(org.json.JSONObject(note.locatorJson)) } catch (e: Exception) { null }
+                val locator = try { Locator.fromJSON(org.json.JSONObject(note.locatorJson)) } catch (_: Exception) { null }
                 if (locator != null) {
                     val chapterTitle = note.chapterTitle
                         ?.takeIf { it.isNotBlank() && it != "In Document" }
