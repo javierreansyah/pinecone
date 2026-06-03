@@ -49,9 +49,6 @@ fun SettingsItem(
             headlineContent = { Text(label) },
             supportingContent = { Text(value) },
             trailingContent = { Icon(MaterialSymbols.Outlined.Keyboard_arrow_right, contentDescription = null) },
-            colors = ListItemDefaults.colors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            ),
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(shape)

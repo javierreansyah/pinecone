@@ -23,17 +23,12 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
         books
             .filter { !it.isArchived }
             .filter { book ->
-                val matchesSearch = book.title.contains(state.searchQuery, ignoreCase = true) ||
-                        (book.author?.contains(state.searchQuery, ignoreCase = true) == true)
-                
                 val status = when {
                     book.progress <= 0.0 -> StatusFilter.NotStarted
                     book.progress >= 1.0 -> StatusFilter.Finished
                     else -> StatusFilter.Reading
                 }
-                val matchesStatus = state.selectedStatus.contains(status)
-                
-                matchesSearch && matchesStatus
+                state.selectedStatus.contains(status)
             }
             .let { filtered ->
                 val comparator = when (state.sortType) {
@@ -61,19 +56,27 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
 
     val searchResults: StateFlow<SearchResults> = combine(booksFlow, shelves, _uiState) { books, shelvesList, state ->
         val query = state.searchQuery
+        val category = state.searchCategory
         
-        val matchedBooks = if (query.isBlank()) books else books.filter { 
-            it.title.contains(query, ignoreCase = true) || 
-            it.author?.contains(query, ignoreCase = true) == true 
-        }
-        val matchedShelves = if (query.isBlank()) shelvesList.map { it.shelf } else shelvesList.map { it.shelf }.filter { it.name.contains(query, ignoreCase = true) }
-        val matchedAuthors = books.mapNotNull { it.author }
-            .distinct()
-            .let { authors -> if (query.isBlank()) authors else authors.filter { it.contains(query, ignoreCase = true) } }
-        val matchedTags = books.flatMap { it.tags?.split(",")?.map { t -> t.trim() } ?: emptyList() }
-            .filter { it.isNotEmpty() }
-            .distinct()
-            .let { tags -> if (query.isBlank()) tags else tags.filter { it.contains(query, ignoreCase = true) } }
+        val matchedBooks = if (category != SearchCategory.All && category != SearchCategory.Books) emptyList()
+            else if (query.isBlank()) books else books.filter { 
+                it.title.contains(query, ignoreCase = true) || 
+                it.author?.contains(query, ignoreCase = true) == true 
+            }
+
+        val matchedShelves = if (category != SearchCategory.All && category != SearchCategory.Shelves) emptyList()
+            else if (query.isBlank()) shelvesList.map { it.shelf } else shelvesList.map { it.shelf }.filter { it.name.contains(query, ignoreCase = true) }
+
+        val matchedAuthors = if (category != SearchCategory.All && category != SearchCategory.Authors) emptyList()
+            else books.mapNotNull { it.author }
+                .distinct()
+                .let { authors -> if (query.isBlank()) authors else authors.filter { it.contains(query, ignoreCase = true) } }
+
+        val matchedTags = if (category != SearchCategory.All && category != SearchCategory.Tags) emptyList()
+            else books.flatMap { it.tags?.split(",")?.map { t -> t.trim() } ?: emptyList() }
+                .filter { it.isNotEmpty() }
+                .distinct()
+                .let { tags -> if (query.isBlank()) tags else tags.filter { it.contains(query, ignoreCase = true) } }
 
         SearchResults(matchedBooks, matchedShelves, matchedAuthors, matchedTags)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SearchResults())
@@ -126,6 +129,10 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
 
     fun onSearchQueryChange(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
+    }
+
+    fun onSearchCategoryChange(category: SearchCategory) {
+        _uiState.update { it.copy(searchCategory = category) }
     }
 
     fun getBooksByAuthor(author: String): Flow<List<Book>> = booksFlow.map { books ->

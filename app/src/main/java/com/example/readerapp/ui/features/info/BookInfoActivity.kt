@@ -84,20 +84,14 @@ class BookInfoActivity : ComponentActivity() {
                 Scaffold(
                     topBar = {
                         TopAppBar(
-                            title = { Text("Book Info", style = AppTheme.typography.titleLarge) },
+                            title = { Text("Book Info", style = MaterialTheme.typography.titleLarge) },
                             navigationIcon = {
                                 IconButton(onClick = { finish() }) {
                                     Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = "Back")
                                 }
-                            },
-                            colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = AppTheme.colorScheme.surface,
-                                navigationIconContentColor = AppTheme.colorScheme.onSurface,
-                                titleContentColor = AppTheme.colorScheme.onSurface
-                            )
+                            }
                         )
-                    },
-                    containerColor = AppTheme.colorScheme.background
+                    }
                 ) { innerPadding ->
                     if (isLoading) {
                         Box(
@@ -106,7 +100,7 @@ class BookInfoActivity : ComponentActivity() {
                                 .padding(innerPadding),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator(color = AppTheme.colorScheme.primary)
+                            CircularProgressIndicator()
                         }
                     } else if (book == null) {
                         Box(
@@ -115,7 +109,7 @@ class BookInfoActivity : ComponentActivity() {
                                 .padding(innerPadding),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("Book not found", style = AppTheme.typography.bodyLarge, color = AppTheme.colorScheme.error)
+                            Text("Book not found", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.error)
                         }
                     } else {
                         val currentBook = book!!
@@ -136,7 +130,7 @@ class BookInfoActivity : ComponentActivity() {
                                         .aspectRatio(1f / 1.5f)
                                         .shadow(8.dp, RoundedCornerShape(12.dp))
                                         .clip(RoundedCornerShape(12.dp))
-                                        .background(AppTheme.colorScheme.surfaceVariant)
+                                        .background(MaterialTheme.colorScheme.surfaceVariant)
                                 ) {
                                     if (currentBook.coverPath != null) {
                                         AsyncImage(
@@ -152,8 +146,8 @@ class BookInfoActivity : ComponentActivity() {
                                                 .background(
                                                     Brush.verticalGradient(
                                                         colors = listOf(
-                                                            AppTheme.colorScheme.primaryContainer,
-                                                            AppTheme.colorScheme.secondaryContainer
+                                                            MaterialTheme.colorScheme.primaryContainer,
+                                                            MaterialTheme.colorScheme.secondaryContainer
                                                         )
                                                     )
                                                 ),
@@ -161,8 +155,8 @@ class BookInfoActivity : ComponentActivity() {
                                         ) {
                                             Text(
                                                 text = currentBook.title.take(1).uppercase(),
-                                                style = AppTheme.typography.headlineLarge,
-                                                color = AppTheme.colorScheme.onPrimaryContainer
+                                                style = MaterialTheme.typography.headlineLarge,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
                                             )
                                         }
                                     }
@@ -176,15 +170,15 @@ class BookInfoActivity : ComponentActivity() {
                                 ) {
                                     Text(
                                         text = currentBook.title,
-                                        style = AppTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                                        color = AppTheme.colorScheme.onSurface,
+                                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         maxLines = 3,
                                         overflow = TextOverflow.Ellipsis
                                     )
                                     Text(
                                         text = currentBook.author ?: "Unknown Author",
-                                        style = AppTheme.typography.bodyLarge,
-                                        color = AppTheme.colorScheme.onSurfaceVariant
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
 
                                     // Tags / Categories section
@@ -199,12 +193,7 @@ class BookInfoActivity : ComponentActivity() {
                                                 tagsList.forEach { tag ->
                                                     SuggestionChip(
                                                         onClick = {},
-                                                        label = { Text(tag) },
-                                                        colors = SuggestionChipDefaults.suggestionChipColors(
-                                                            containerColor = AppTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
-                                                            labelColor = AppTheme.colorScheme.onPrimaryContainer
-                                                        ),
-                                                        border = null
+                                                        label = { Text(tag) }
                                                     )
                                                 }
                                             }
@@ -215,8 +204,7 @@ class BookInfoActivity : ComponentActivity() {
                                 // Book Progress Card
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = CardDefaults.cardColors(containerColor = AppTheme.colorScheme.surfaceVariant)
+                                    shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Column(
                                         modifier = Modifier.padding(AppTheme.spacing.screenPadding),
@@ -229,20 +217,18 @@ class BookInfoActivity : ComponentActivity() {
                                         ) {
                                             Text(
                                                 text = "Reading Progress",
-                                                style = AppTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                                color = AppTheme.colorScheme.onSurfaceVariant
+                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                             Text(
                                                 text = "${(currentBook.progress * 100).toInt()}%",
-                                                style = AppTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                                color = AppTheme.colorScheme.primary
+                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                                color = MaterialTheme.colorScheme.primary
                                             )
                                         }
                                         LinearProgressIndicator(
                                             progress = { currentBook.progress.toFloat() },
-                                            modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
-                                            color = AppTheme.colorScheme.primary,
-                                            trackColor = AppTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
+                                            modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp))
                                         )
                                     }
                                 }
@@ -256,13 +242,13 @@ class BookInfoActivity : ComponentActivity() {
                                     ) {
                                         Text(
                                             text = "Description",
-                                            style = AppTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                            color = AppTheme.colorScheme.onSurface
+                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = MaterialTheme.colorScheme.onSurface
                                         )
                                         HtmlText(
                                             html = currentBook.description,
-                                            style = AppTheme.typography.bodyMedium,
-                                            color = AppTheme.colorScheme.onSurfaceVariant,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             maxLines = if (isExpanded) Int.MAX_VALUE else 4
                                         )
                                         if (currentBook.description.length > 200) {
@@ -270,7 +256,7 @@ class BookInfoActivity : ComponentActivity() {
                                                 onClick = { isExpanded = !isExpanded },
                                                 contentPadding = PaddingValues(0.dp)
                                             ) {
-                                                Text(if (isExpanded) "Read Less" else "Read More", color = AppTheme.colorScheme.primary)
+                                                Text(if (isExpanded) "Read Less" else "Read More", color = MaterialTheme.colorScheme.primary)
                                             }
                                         }
                                     }
@@ -283,8 +269,8 @@ class BookInfoActivity : ComponentActivity() {
                                 ) {
                                     Text(
                                         text = "Publication Details",
-                                        style = AppTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = AppTheme.colorScheme.onSurface
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
 
                                     MetadataRow(label = "Publisher", value = currentBook.publisher ?: "N/A")
@@ -361,15 +347,15 @@ class BookInfoActivity : ComponentActivity() {
         ) {
             Text(
                 text = label,
-                style = AppTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                color = AppTheme.colorScheme.onSurfaceVariant
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 text = value,
-                style = AppTheme.typography.bodyMedium,
-                color = AppTheme.colorScheme.onSurface
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
             )
-            HorizontalDivider(color = AppTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
         }
     }
 }
