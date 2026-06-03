@@ -7,4 +7,10 @@ sealed class Screen(val route: String) {
     object ShelfDetail : Screen("shelf_detail/{shelfId}") {
         fun createRoute(shelfId: String) = "shelf_detail/$shelfId"
     }
+    object AuthorDetail : Screen("author_detail/{authorName}") {
+        fun createRoute(authorName: String) = "author_detail/$authorName"
+    }
+    object TagDetail : Screen("tag_detail/{tagName}") {
+        fun createRoute(tagName: String) = "tag_detail/$tagName"
+    }
 }

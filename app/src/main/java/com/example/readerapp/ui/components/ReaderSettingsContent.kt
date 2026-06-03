@@ -156,14 +156,19 @@ private fun TextTabContent(
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            val fonts = listOf("Original", "Literata", "Source Serif 4", "Source Sans 3", "Atkinson Hyperlegible", "Source Code")
-            fonts.forEach { font ->
+            val fonts = listOf(
+                "Source Serif 4" to "Serif",
+                "Source Sans 3" to "Sans",
+                "Literata" to "Literata",
+                "Atkinson Hyperlegible" to "Atkinson",
+                "Source Code" to "Monospace"
+            )
+            fonts.forEach { (font, label) ->
                 FontSwatch(
                     isSelected = settings.fontFamily == font,
                     onClick = { onSettingsChange(settings.copy(fontFamily = font)) },
                     fontName = font,
-                    label = font,
-                    modifier = Modifier.padding(horizontal = 4.dp)
+                    label = label,
                 )
             }
         }
@@ -172,6 +177,8 @@ private fun TextTabContent(
     // Typography
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Typography", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        
+        // Text Size, Font Weight
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             IncrementDecrementControl(
                 label = "Text Size",
@@ -180,53 +187,7 @@ private fun TextTabContent(
                 onDecrement = { onSettingsChange(settings.copy(fontSize = (((settings.fontSize - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.5, 3.0))) },
                 modifier = Modifier.weight(1f)
             )
-            IncrementDecrementControl(
-                label = "Margin",
-                value = String.format("%.2f", settings.pageMargins),
-                onIncrement = { onSettingsChange(settings.copy(pageMargins = (((settings.pageMargins + 0.25) * 4.0).roundToInt() / 4.0).coerceIn(0.0, 3.0))) },
-                onDecrement = { onSettingsChange(settings.copy(pageMargins = (((settings.pageMargins - 0.25) * 4.0).roundToInt() / 4.0).coerceIn(0.0, 3.0))) },
-                modifier = Modifier.weight(1f)
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            IncrementDecrementControl(
-                label = "Line Spacing",
-                value = String.format("%.1f", settings.lineHeight),
-                onIncrement = { onSettingsChange(settings.copy(lineHeight = (((settings.lineHeight + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(1.0, 2.5))) },
-                onDecrement = { onSettingsChange(settings.copy(lineHeight = (((settings.lineHeight - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(1.0, 2.5))) },
-                enabled = !settings.publisherStyles,
-                modifier = Modifier.weight(1f)
-            )
-            IncrementDecrementControl(
-                label = "Paragraph Spacing",
-                value = "${(settings.paragraphSpacing * 100).roundToInt()}%",
-                onIncrement = { onSettingsChange(settings.copy(paragraphSpacing = (((settings.paragraphSpacing + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 2.0))) },
-                onDecrement = { onSettingsChange(settings.copy(paragraphSpacing = (((settings.paragraphSpacing - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 2.0))) },
-                enabled = !settings.publisherStyles,
-                modifier = Modifier.weight(1f)
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            IncrementDecrementControl(
-                label = "Word Spacing",
-                value = "${(settings.wordSpacing * 100).roundToInt()}%",
-                onIncrement = { onSettingsChange(settings.copy(wordSpacing = (((settings.wordSpacing + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 1.0))) },
-                onDecrement = { onSettingsChange(settings.copy(wordSpacing = (((settings.wordSpacing - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 1.0))) },
-                enabled = !settings.publisherStyles,
-                modifier = Modifier.weight(1f)
-            )
-            IncrementDecrementControl(
-                label = "Letter Spacing",
-                value = "${(settings.letterSpacing * 100).roundToInt()}%",
-                onIncrement = { onSettingsChange(settings.copy(letterSpacing = (((settings.letterSpacing + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 0.5))) },
-                onDecrement = { onSettingsChange(settings.copy(letterSpacing = (((settings.letterSpacing - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 0.5))) },
-                enabled = !settings.publisherStyles,
-                modifier = Modifier.weight(1f)
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             val currentFontWeight = settings.fontWeights[settings.fontFamily] ?: 1.0
-            val isVariableFont = settings.fontFamily != "Original"
             IncrementDecrementControl(
                 label = "Font Weight",
                 value = String.format("%.2f", currentFontWeight),
@@ -238,38 +199,107 @@ private fun TextTabContent(
                     val newWeight = (((currentFontWeight - 0.25) * 100.0).roundToInt() / 100.0).coerceIn(0.5, 2.25)
                     onSettingsChange(settings.copy(fontWeights = settings.fontWeights + (settings.fontFamily to newWeight)))
                 },
-                enabled = !settings.publisherStyles && isVariableFont,
                 modifier = Modifier.weight(1f)
             )
-            Spacer(modifier = Modifier.weight(1f))
         }
-    }
 
-    // Alignment
-    SegmentedButtonGroup(
-        title = "Alignment",
-        options = listOf("Left", "Right", "Justify"),
-        icons = listOf(
-            MaterialSymbols.Outlined.Format_align_left,
-            MaterialSymbols.Outlined.Format_align_right,
-            MaterialSymbols.Outlined.Format_align_justify
-        ),
-        selected = settings.textAlign,
-        onSelected = { onSettingsChange(settings.copy(textAlign = it)) },
-        enabled = !settings.publisherStyles
-    )
+        // Horizontal Margin, Vertical Margin
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            IncrementDecrementControl(
+                label = "Horizontal Margin",
+                value = String.format("%.1f", settings.pageMargins),
+                onIncrement = { onSettingsChange(settings.copy(pageMargins = (((settings.pageMargins + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 3.0))) },
+                onDecrement = { onSettingsChange(settings.copy(pageMargins = (((settings.pageMargins - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 3.0))) },
+                modifier = Modifier.weight(1f)
+            )
+            IncrementDecrementControl(
+                label = "Vertical Margin",
+                value = String.format("%.1f", settings.verticalMargin / 32.0),
+                onIncrement = { onSettingsChange(settings.copy(verticalMargin = (((settings.verticalMargin + 3.2) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 128.0))) },
+                onDecrement = { onSettingsChange(settings.copy(verticalMargin = (((settings.verticalMargin - 3.2) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 128.0))) },
+                modifier = Modifier.weight(1f)
+            )
+        }
 
-    // Publisher Style
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text("Publisher Style", style = MaterialTheme.typography.bodyLarge)
-        Switch(
-            checked = settings.publisherStyles,
-            onCheckedChange = { onSettingsChange(settings.copy(publisherStyles = it)) }
+        // Publisher Style
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Publisher Style", style = MaterialTheme.typography.bodyLarge)
+            Switch(
+                checked = settings.publisherStyles,
+                onCheckedChange = { onSettingsChange(settings.copy(publisherStyles = it)) }
+            )
+        }
+
+        // Alignment
+        SegmentedButtonGroup(
+            title = "Alignment",
+            options = listOf("Left", "Right", "Justify"),
+            icons = listOf(
+                MaterialSymbols.Outlined.Format_align_left,
+                MaterialSymbols.Outlined.Format_align_right,
+                MaterialSymbols.Outlined.Format_align_justify
+            ),
+            selected = settings.textAlign,
+            onSelected = { onSettingsChange(settings.copy(textAlign = it)) },
+            enabled = !settings.publisherStyles
         )
+
+        // Line Spacing, Letter Spacing
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            IncrementDecrementControl(
+                label = "Line Spacing",
+                value = String.format("%.1f", settings.lineHeight),
+                onIncrement = { onSettingsChange(settings.copy(lineHeight = (((settings.lineHeight + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(1.0, 2.5))) },
+                onDecrement = { onSettingsChange(settings.copy(lineHeight = (((settings.lineHeight - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(1.0, 2.5))) },
+                enabled = !settings.publisherStyles,
+                modifier = Modifier.weight(1f)
+            )
+            IncrementDecrementControl(
+                label = "Letter Spacing",
+                value = String.format("%.1f", settings.letterSpacing * 4.0),
+                onIncrement = { onSettingsChange(settings.copy(letterSpacing = (((settings.letterSpacing + 0.025) * 1000.0).roundToInt() / 1000.0).coerceIn(0.0, 0.25))) },
+                onDecrement = { onSettingsChange(settings.copy(letterSpacing = (((settings.letterSpacing - 0.025) * 1000.0).roundToInt() / 1000.0).coerceIn(0.0, 0.25))) },
+                enabled = !settings.publisherStyles,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        // Word Spacing, Paragraph Spacing
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            IncrementDecrementControl(
+                label = "Word Spacing",
+                value = String.format("%.1f", settings.wordSpacing),
+                onIncrement = { onSettingsChange(settings.copy(wordSpacing = (((settings.wordSpacing + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 1.0))) },
+                onDecrement = { onSettingsChange(settings.copy(wordSpacing = (((settings.wordSpacing - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 1.0))) },
+                enabled = !settings.publisherStyles,
+                modifier = Modifier.weight(1f)
+            )
+            IncrementDecrementControl(
+                label = "Paragraph Spacing",
+                value = String.format("%.1f", settings.paragraphSpacing / 2.0),
+                onIncrement = { onSettingsChange(settings.copy(paragraphSpacing = (((settings.paragraphSpacing + 0.2) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 2.0))) },
+                onDecrement = { onSettingsChange(settings.copy(paragraphSpacing = (((settings.paragraphSpacing - 0.2) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 2.0))) },
+                enabled = !settings.publisherStyles,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        // Paragraph Indent
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            IncrementDecrementControl(
+                label = "Paragraph Indent",
+                value = String.format("%.1f", settings.paragraphIndent / 2.0),
+                onIncrement = { onSettingsChange(settings.copy(paragraphIndent = (((settings.paragraphIndent + 0.2) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 4.0))) },
+                onDecrement = { onSettingsChange(settings.copy(paragraphIndent = (((settings.paragraphIndent - 0.2) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 4.0))) },
+                enabled = !settings.publisherStyles,
+                modifier = Modifier.weight(0.5f)
+            )
+            Spacer(modifier = Modifier.weight(0.5f))
+        }
     }
 }
 
@@ -464,7 +494,6 @@ private fun FontSwatch(
     }
 
     val fontFamily = remember(fontName) {
-        if (fontName == "Original") return@remember FontFamily.Default
         try {
             val googleFontName = if (fontName == "Source Code") "Source Code Pro" else fontName
             
@@ -482,11 +511,12 @@ private fun FontSwatch(
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(1.dp),
         modifier = modifier
     ) {
         Box(
             modifier = Modifier
-                .size(60.dp)
+                .size(68.dp)
                 .padding(2.dp)
                 .let { m ->
                     if (isSelected) {
@@ -525,9 +555,9 @@ private fun FontSwatch(
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.width(60.dp),
+            modifier = Modifier.width(68.dp),
             textAlign = TextAlign.Center
         )
     }

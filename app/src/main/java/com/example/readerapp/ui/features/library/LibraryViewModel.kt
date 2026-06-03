@@ -59,6 +59,25 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
     val shelves: StateFlow<List<ShelfWithCovers>> = bookRepository.getAllShelvesWithBooks()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val searchResults: StateFlow<SearchResults> = combine(booksFlow, shelves, _uiState) { books, shelvesList, state ->
+        val query = state.searchQuery
+        
+        val matchedBooks = if (query.isBlank()) books else books.filter { 
+            it.title.contains(query, ignoreCase = true) || 
+            it.author?.contains(query, ignoreCase = true) == true 
+        }
+        val matchedShelves = if (query.isBlank()) shelvesList.map { it.shelf } else shelvesList.map { it.shelf }.filter { it.name.contains(query, ignoreCase = true) }
+        val matchedAuthors = books.mapNotNull { it.author }
+            .distinct()
+            .let { authors -> if (query.isBlank()) authors else authors.filter { it.contains(query, ignoreCase = true) } }
+        val matchedTags = books.flatMap { it.tags?.split(",")?.map { t -> t.trim() } ?: emptyList() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .let { tags -> if (query.isBlank()) tags else tags.filter { it.contains(query, ignoreCase = true) } }
+
+        SearchResults(matchedBooks, matchedShelves, matchedAuthors, matchedTags)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SearchResults())
+
     init {
         // Automatically importing bundled books on every launch is removed to optimize performance.
         // It can be triggered manually if needed or only on first run via a dedicated setting.
@@ -107,6 +126,14 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
 
     fun onSearchQueryChange(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
+    }
+
+    fun getBooksByAuthor(author: String): Flow<List<Book>> = booksFlow.map { books ->
+        books.filter { it.author == author }
+    }
+
+    fun getBooksByTag(tag: String): Flow<List<Book>> = booksFlow.map { books ->
+        books.filter { it.tags?.split(",")?.map { t -> t.trim() }?.contains(tag) == true }
     }
 
     fun onLayoutModeChange(mode: LayoutMode) {
