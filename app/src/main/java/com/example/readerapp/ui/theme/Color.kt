@@ -36,37 +36,50 @@ val LightSecondaryContainer = Color(0xFFF5F5F5)
 val LightOnSecondaryContainer = Color(0xFF262626)
 val LightBackground = Color(0xFFFAFAFA)
 val LightOnBackground = Color(0xFF0A0A0A)
-val LightSurface = Color(0xFFFFFFFF)
+val LightSurface = Color(0xFFFAFAFA) // Match background
 val LightOnSurface = Color(0xFF0A0A0A)
 val LightSurfaceVariant = Color(0xFFEFEFEF)
 val LightOnSurfaceVariant = Color(0xFF737373)
-val LightOutline = Color(0xFFE5E5E5)
+val LightOutline = Color(0xFF737373)
+val LightOutlineVariant = Color(0xFFE5E5E5)
+val LightSurfaceDim = Color(0xFFE5E5E5)
+val LightSurfaceBright = Color(0xFFFFFFFF)
+val LightSurfaceContainerLowest = Color(0xFFFFFFFF)
+val LightSurfaceContainerLow = Color(0xFFF5F5F5)
+val LightSurfaceContainer = Color(0xFFF5F5F5)
+val LightSurfaceContainerHigh = Color(0xFFE5E5E5)
+val LightSurfaceContainerHighest = Color(0xFFD4D4D4)
 
 // Swiss Editorial — Dark Theme
 val DarkPrimary = Color(0xFFF5F5F5) // Neutral 100
 val DarkOnPrimary = Color(0xFF0A0A0A)
-val DarkPrimaryContainer = Color(0xFF242424)
+val DarkPrimaryContainer = Color(0xFF262626)
 val DarkOnPrimaryContainer = Color(0xFFF5F5F5)
 val DarkSecondary = Color(0xFFA3A3A3) // Neutral 400 — muted secondary
 val DarkOnSecondary = Color(0xFF0A0A0A)
-val DarkSecondaryContainer = Color(0xFF2A2A2A)
+val DarkSecondaryContainer = Color(0xFF262626)
 val DarkOnSecondaryContainer = Color(0xFFD4D4D4)
 val DarkBackground = Color(0xFF0F0F0F)
 val DarkOnBackground = Color(0xFFF5F5F5)
-val DarkSurface = Color(0xFF1A1A1A)
+val DarkSurface = Color(0xFF0F0F0F) // Match background
 val DarkOnSurface = Color(0xFFF5F5F5)
-val DarkSurfaceVariant = Color(0xFF242424)
+val DarkSurfaceVariant = Color(0xFF1A1A1A)
 val DarkOnSurfaceVariant = Color(0xFFA3A3A3)
-val DarkOutline = Color(0xFF2A2A2A)
-
-// Accent — Swiss red. Use for icons, tags, rules, CTAs only.
-val AccentRed = Color(0xFFE8112D)
-val AccentRedPressed = Color(0xFFB50D23)
-val AccentRedContainer = Color(0xFF7A0918) // dark bg use
-val AccentRedOnContainer = Color(0xFFFAFAFA)
+val DarkOutline = Color(0xFF737373)
+val DarkOutlineVariant = Color(0xFF404040)
+val DarkSurfaceDim = Color(0xFF0F0F0F)
+val DarkSurfaceBright = Color(0xFF262626)
+val DarkSurfaceContainerLowest = Color(0xFF0A0A0A)
+val DarkSurfaceContainerLow = Color(0xFF1A1A1A)
+val DarkSurfaceContainer = Color(0xFF1A1A1A)
+val DarkSurfaceContainerHigh = Color(0xFF262626)
+val DarkSurfaceContainerHighest = Color(0xFF262626)
 
 // Semantic — neutral-adjacent, no chroma
-val ErrorRed = Color(0xFFE8112D) // reuse accent
-val ErrorRedDark = Color(0xFF7A0918)
+val LightError = Color(0xFF0A0A0A)
+val LightOnError = Color(0xFFFAFAFA)
+val DarkError = Color(0xFFF5F5F5)
+val DarkOnError = Color(0xFF0A0A0A)
 val SuccessGreen = Color(0xFF404040) // neutral dark in light mode
 val WarningYellow = Color(0xFF737373) // neutral mid — no yellow chroma
+

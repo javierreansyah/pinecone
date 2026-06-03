@@ -7,8 +7,11 @@ enum class LayoutMode { Grid, List }
 enum class SortType { Title, Author, LastRead, Added, Progress }
 enum class StatusFilter { NotStarted, Reading, Finished }
 
+enum class SearchCategory { All, Books, Authors, Shelves, Tags }
+
 data class LibraryUiState(
     val searchQuery: String = "",
+    val searchCategory: SearchCategory = SearchCategory.All,
     val layoutMode: LayoutMode = LayoutMode.Grid,
     val sortType: SortType = SortType.Added,
     val isAscending: Boolean = false,
