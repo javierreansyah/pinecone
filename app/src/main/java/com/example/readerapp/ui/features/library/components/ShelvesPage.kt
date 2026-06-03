@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,6 +19,7 @@ fun ShelvesPage(
     shelves: List<ShelfWithCovers>,
     onShelfClick: (String) -> Unit,
     onBookClick: (String) -> Unit,
+    onBookLongClick: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     if (shelves.isEmpty()) {
@@ -29,52 +29,74 @@ fun ShelvesPage(
     } else {
         LazyColumn(
             modifier = modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            contentPadding = PaddingValues(vertical = 4.dp)
         ) {
             items(shelves) { shelfWithCovers ->
+                val visibleBooks = shelfWithCovers.books.filter { !it.isArchived }
+                val booksCount = visibleBooks.size
+
                 Column(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onShelfClick(shelfWithCovers.shelf.id) }
+                        .padding(vertical = 16.dp)
                 ) {
-                    if (shelfWithCovers.books.isEmpty()) {
+                    // Header Row
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = shelfWithCovers.shelf.name,
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        val countText = when (booksCount) {
+                            1 -> "1 book"
+                            else -> "$booksCount books"
+                        }
+                        Text(
+                            text = countText,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    // Books horizontal scroll
+                    if (visibleBooks.isEmpty()) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(140.dp)
-                                .clickable { onShelfClick(shelfWithCovers.shelf.id) },
-                            contentAlignment = Alignment.Center
+                                .height(100.dp)
+                                .padding(horizontal = 16.dp),
+                            contentAlignment = Alignment.CenterStart
                         ) {
-                            Text("Empty Shelf", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                "Empty Shelf",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     } else {
                         LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            contentPadding = PaddingValues(bottom = 8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            items(shelfWithCovers.books) { bookEntity ->
+                            items(visibleBooks) { bookEntity ->
                                 val book = Book.fromEntity(bookEntity)
-                                Box(
-                                    modifier = Modifier
-                                        .height(140.dp)
-                                        .aspectRatio(1f / 1.4f)
-                                        .clickable { onBookClick(book.id) }
-                                ) {
-                                    Card(shape = MaterialTheme.shapes.small, modifier = Modifier.fillMaxSize()) {
-                                        CoverImage(book = book)
-                                    }
-                                }
+                                BookItem(
+                                    book = book,
+                                    onClick = { onBookClick(book.id) },
+                                    onLongClick = { onBookLongClick?.invoke(book.id) },
+                                    modifier = Modifier.width(120.dp)
+                                )
                             }
                         }
                     }
-                    
-                    Text(
-                        text = shelfWithCovers.shelf.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onShelfClick(shelfWithCovers.shelf.id) }
-                            .padding(vertical = 4.dp)
-                    )
                 }
             }
         }

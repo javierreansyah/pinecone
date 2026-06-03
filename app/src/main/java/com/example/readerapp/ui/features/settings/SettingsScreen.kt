@@ -16,6 +16,7 @@ import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.example.readerapp.data.local.ReaderPreferences
 import com.example.readerapp.ui.features.settings.components.SettingsGroup
 import com.example.readerapp.ui.features.settings.components.SettingsItem
+import com.example.readerapp.worker.WorkerUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,7 +84,18 @@ fun SettingsScreen(
                     options = listOf("System", "English", "Spanish", "French"),
                     onSelected = { viewModel.updateSettings(settings.copy(locale = it)) },
                     index = 2,
-                    count = 3
+                    count = 4
+                )
+                SettingsItem(
+                    label = "Auto Backup Frequency",
+                    value = settings.autoBackupFrequency,
+                    options = listOf("3h", "6h", "12h", "1d", "2d", "3d", "1w", "never"),
+                    onSelected = { 
+                        viewModel.updateSettings(settings.copy(autoBackupFrequency = it)) 
+                        WorkerUtils.scheduleBackupWork(context, it)
+                    },
+                    index = 3,
+                    count = 4
                 )
             }
         }

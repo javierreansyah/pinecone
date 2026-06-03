@@ -27,13 +27,13 @@ import androidx.compose.foundation.combinedClickable
 fun BookItem(
     book: Book,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier.fillMaxWidth(),
     onLongClick: (() -> Unit)? = null,
     isList: Boolean = false
 ) {
     if (isList) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
+            modifier = modifier
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = onLongClick
@@ -77,8 +77,7 @@ fun BookItem(
         }
     } else {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
+            modifier = modifier
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = onLongClick

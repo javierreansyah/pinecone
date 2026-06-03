@@ -16,6 +16,7 @@ readium = "3.3.0"
 room = "2.8.4"
 desugar = "2.1.5"
 ksp = "2.2.10-2.0.2"
+work = "2.9.0"
 appcompat = "1.7.1"
 fragmentKtx = "1.8.9"
 coreSplashscreen = "1.2.0"
@@ -49,6 +50,7 @@ readium-navigator = { group = "org.readium.kotlin-toolkit", name = "readium-navi
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
 desugar-jdk = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugar" }
 androidx-compose-animation = { group = "androidx.compose.animation", name = "animation" }
 androidx-compose-animation-core = { group = "androidx.compose.animation", name = "animation-core" }
