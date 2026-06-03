@@ -24,7 +24,7 @@ fun ShelvesPage(
 ) {
     if (shelves.isEmpty()) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("No shelves yet. Long press a book to create one.")
+            Text("No shelves yet. Long press a book to create one.", style = MaterialTheme.typography.bodyLarge)
         }
     } else {
         LazyColumn(
@@ -44,7 +44,7 @@ fun ShelvesPage(
                                 .clickable { onShelfClick(shelfWithCovers.shelf.id) },
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("Empty Shelf", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Empty Shelf", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     } else {
                         LazyRow(

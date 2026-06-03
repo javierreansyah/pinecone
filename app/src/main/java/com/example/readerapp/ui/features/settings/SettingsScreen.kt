@@ -38,7 +38,7 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text("Settings", style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = "Back")
@@ -72,7 +72,7 @@ fun SettingsScreen(
                 SettingsItem(
                     label = "Color Palette",
                     value = settings.colorPalette,
-                    options = listOf("Dynamic", "Monochrome"),
+                    options = listOf("Pine", "Dynamic"),
                     onSelected = { viewModel.updateSettings(settings.copy(colorPalette = it)) },
                     index = 1,
                     count = 3

@@ -37,21 +37,19 @@ fun SingleSelectDropdown(
             Text(
                 text = label,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = selected,
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Normal
+                color = MaterialTheme.colorScheme.primary
             )
         }
 
         if (showDialog) {
             AlertDialog(
                 onDismissRequest = { showDialog = false },
-                title = { Text(text = label) },
+                title = { Text(text = label, style = MaterialTheme.typography.titleLarge) },
                 text = {
                     LazyColumn {
                         items(options) { option ->
@@ -59,6 +57,7 @@ fun SingleSelectDropdown(
                                 headlineContent = { 
                                     Text(
                                         text = option,
+                                        style = MaterialTheme.typography.titleMedium,
                                         color = MaterialTheme.colorScheme.onSurface
                                     ) 
                                 },
@@ -84,7 +83,7 @@ fun SingleSelectDropdown(
                 },
                 confirmButton = {
                     TextButton(onClick = { showDialog = false }) {
-                        Text("Cancel")
+                        Text("Cancel", style = MaterialTheme.typography.labelLarge)
                     }
                 }
             )

@@ -31,7 +31,7 @@ fun CoverImage(
             modifier = modifier.fillMaxSize()
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Text(text = book.title.take(1))
+                Text(text = book.title.take(1), style = MaterialTheme.typography.displayMedium)
             }
         }
     }

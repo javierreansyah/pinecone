@@ -29,6 +29,7 @@ import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Search
 import com.example.readerapp.ui.features.reader.SearchResultItem
+import com.example.readerapp.ui.theme.spacing
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -166,7 +167,7 @@ fun SearchScreen(
         // ── Result list ───────────────────────────────────────────────────────
         LazyColumn(
             contentPadding = PaddingValues(vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space16),
             modifier = Modifier.fillMaxSize()
         ) {
             itemsIndexed(results) { index, item ->
@@ -188,7 +189,7 @@ fun SearchScreen(
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.medium)
+                            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space16)
                         ) {
                             Icon(
                                 MaterialSymbols.Outlined.Search,
@@ -224,13 +225,13 @@ fun SearchResultCard(
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.small)
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)
     ) {
         Column {
             // Line 1: chapter name
             Text(
             text = item.chapterTitle ?: "Unknown Chapter",
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.titleMedium,
             color = primary
         )
 

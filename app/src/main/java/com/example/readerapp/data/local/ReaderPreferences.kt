@@ -26,7 +26,7 @@ data class CustomReaderTheme(
 data class ReaderSettings(
     // App-level settings (not Readium)
     val themeMode: String = "System",
-    val colorPalette: String = "Dynamic",
+    val colorPalette: String = "Pine",
     val locale: String = "System",
     val brightness: Float = 1.0f,
     val autoBrightness: Boolean = false,
@@ -186,7 +186,7 @@ class ReaderPreferences(private val context: Context) {
     val readerSettings: Flow<ReaderSettings> = context.dataStore.data.map { preferences ->
         ReaderSettings(
             themeMode = preferences[THEME_MODE] ?: "System",
-            colorPalette = preferences[COLOR_PALETTE] ?: "Dynamic",
+            colorPalette = preferences[COLOR_PALETTE] ?: "Pine",
             locale = preferences[LOCALE] ?: "System",
             brightness = preferences[BRIGHTNESS] ?: 1.0f,
             autoBrightness = preferences[AUTO_BRIGHTNESS] ?: false,

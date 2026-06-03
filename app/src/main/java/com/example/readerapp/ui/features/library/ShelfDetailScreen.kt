@@ -41,7 +41,7 @@ fun ShelfDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(shelfWithCovers?.shelf?.name ?: "Shelf") },
+                title = { Text(shelfWithCovers?.shelf?.name ?: "Shelf", style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -54,7 +54,7 @@ fun ShelfDetailScreen(
             if (shelfWithCovers != null) {
                 val books = shelfWithCovers.books.map { Book.fromEntity(it) }
                 if (books.isEmpty()) {
-                    Text("No books in this shelf.", modifier = Modifier.padding(16.dp))
+                    Text("No books in this shelf.", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(16.dp))
                 } else {
                     BookGrid(
                         books = books,
@@ -62,7 +62,7 @@ fun ShelfDetailScreen(
                     )
                 }
             } else {
-                Text("Shelf not found.", modifier = Modifier.padding(16.dp))
+                Text("Shelf not found.", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(16.dp))
             }
         }
     }

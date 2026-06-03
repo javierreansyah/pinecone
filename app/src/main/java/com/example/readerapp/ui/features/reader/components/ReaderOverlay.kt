@@ -176,7 +176,10 @@ fun ReaderOverlay(
             val notes by viewModel.allNotesAndHighlights.collectAsStateWithLifecycle()
             val currentLocator by viewModel.currentLocator.collectAsStateWithLifecycle()
 
-            AppTheme(darkTheme = uiDarkTheme) {
+            AppTheme(
+                darkTheme = uiDarkTheme,
+                dynamicColor = settings.colorPalette == "Dynamic"
+            ) {
                 ReaderBottomSheet(
                     tableOfContents = viewModel.tableOfContents,
                     bookmarks = bookmarks,
@@ -216,7 +219,10 @@ fun ReaderOverlay(
         // Settings Bottom Sheet — wrapped in its own theme that honours the UI
         // themeMode/colorPalette setting, independent of the reader theme.
         if (uiState.showSettings) {
-            AppTheme(darkTheme = uiDarkTheme) {
+            AppTheme(
+                darkTheme = uiDarkTheme,
+                dynamicColor = settings.colorPalette == "Dynamic"
+            ) {
                 ModalBottomSheet(
                     onDismissRequest = { viewModel.hideSettings() },
                     sheetState = settingsSheetState
@@ -238,7 +244,10 @@ fun ReaderOverlay(
             enter = slideInVertically(animationSpec = tween(280)) { it } + fadeIn(tween(200)),
             exit = slideOutVertically(animationSpec = tween(220)) { it } + fadeOut(tween(180))
         ) {
-            AppTheme(darkTheme = uiDarkTheme) {
+            AppTheme(
+                darkTheme = uiDarkTheme,
+                dynamicColor = settings.colorPalette == "Dynamic"
+            ) {
                 SearchScreen(
                     query = uiState.searchQuery,
                     results = uiState.searchResults,
@@ -400,7 +409,10 @@ fun ReaderOverlay(
 
         // Edit Note Bottom Sheet
         uiState.editingNote?.let { note ->
-            AppTheme(darkTheme = uiDarkTheme) {
+            AppTheme(
+                darkTheme = uiDarkTheme,
+                dynamicColor = settings.colorPalette == "Dynamic"
+            ) {
                 NoteBottomSheet(
                     note = note,
                     onUpdateNote = { viewModel.updateNote(it) },

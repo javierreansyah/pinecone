@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
+import com.example.readerapp.ui.theme.spacing
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -42,7 +43,7 @@ fun BookItem(
                     onLongClick = onLongClick
                 ),
             verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.medium)
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space16)
         ) {
             Box(modifier = Modifier
                 .height(100.dp)
@@ -86,7 +87,7 @@ fun BookItem(
                     onClick = onClick,
                     onLongClick = onLongClick
                 ),
-            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.small)
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)
         ) {
             Card(
                 shape = MaterialTheme.shapes.small,

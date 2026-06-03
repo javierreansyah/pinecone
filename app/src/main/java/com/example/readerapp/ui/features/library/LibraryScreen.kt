@@ -24,6 +24,7 @@ import com.example.readerapp.data.local.ShelfWithCovers
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.features.library.components.*
 import com.example.readerapp.ui.theme.AppTheme
+import com.example.readerapp.ui.theme.spacing
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -115,11 +116,11 @@ fun LibraryScreen(
                                 ) {
                                     Column(
                                         modifier = Modifier.fillMaxSize(),
-                                        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.medium, Alignment.CenterVertically),
+                                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space16, Alignment.CenterVertically),
                                         horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
                                         CircularProgressIndicator()
-                                        Text("Importing...")
+                                        Text("Importing...", style = MaterialTheme.typography.bodyLarge)
                                     }
                                 }
                             }
@@ -154,7 +155,7 @@ fun LibraryScreen(
                     Text("Options", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(16.dp))
                     HorizontalDivider()
                     ListItem(
-                        headlineContent = { Text("Info") },
+                        headlineContent = { Text("Info", style = MaterialTheme.typography.titleMedium) },
                         modifier = Modifier.clickable {
                             val intent = android.content.Intent(context, com.example.readerapp.ui.features.info.BookInfoActivity::class.java).apply {
                                 putExtra(com.example.readerapp.ui.features.info.BookInfoActivity.EXTRA_BOOK_ID, selectedBookForMenu!!)
@@ -164,26 +165,26 @@ fun LibraryScreen(
                         }
                     )
                     ListItem(
-                        headlineContent = { Text("Archive") },
+                        headlineContent = { Text("Archive", style = MaterialTheme.typography.titleMedium) },
                         modifier = Modifier.clickable {
                             viewModel.toggleArchive(selectedBookForMenu!!)
                             selectedBookForMenu = null
                         }
                     )
                     ListItem(
-                        headlineContent = { Text("Add to Shelf") },
+                        headlineContent = { Text("Add to Shelf", style = MaterialTheme.typography.titleMedium) },
                         modifier = Modifier.clickable {
                             showAddToShelfDialog = true
                         }
                     )
                     ListItem(
-                        headlineContent = { Text("Create New Shelf") },
+                        headlineContent = { Text("Create New Shelf", style = MaterialTheme.typography.titleMedium) },
                         modifier = Modifier.clickable {
                             showCreateShelfDialog = true
                         }
                     )
                     ListItem(
-                        headlineContent = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                        headlineContent = { Text("Delete", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error) },
                         modifier = Modifier.clickable {
                             showDeleteConfirmation = true
                         }
@@ -196,8 +197,8 @@ fun LibraryScreen(
         if (showDeleteConfirmation) {
             AlertDialog(
                 onDismissRequest = { showDeleteConfirmation = false },
-                title = { Text("Delete Book") },
-                text = { Text("Are you sure you want to delete this book? This action cannot be undone.") },
+                title = { Text("Delete Book", style = MaterialTheme.typography.titleLarge) },
+                text = { Text("Are you sure you want to delete this book? This action cannot be undone.", style = MaterialTheme.typography.bodyMedium) },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -207,12 +208,12 @@ fun LibraryScreen(
                         },
                         colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                     ) {
-                        Text("Delete")
+                        Text("Delete", style = MaterialTheme.typography.labelLarge)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showDeleteConfirmation = false }) {
-                        Text("Cancel")
+                        Text("Cancel", style = MaterialTheme.typography.labelLarge)
                     }
                 }
             )
@@ -222,15 +223,15 @@ fun LibraryScreen(
         if (showAddToShelfDialog) {
             AlertDialog(
                 onDismissRequest = { showAddToShelfDialog = false },
-                title = { Text("Add to Shelf") },
+                title = { Text("Add to Shelf", style = MaterialTheme.typography.titleLarge) },
                 text = {
                     if (shelves.isEmpty()) {
-                        Text("No shelves available.")
+                        Text("No shelves available.", style = MaterialTheme.typography.bodyLarge)
                     } else {
                         LazyColumn {
                             items(shelves) { shelfWithCovers ->
                                 ListItem(
-                                    headlineContent = { Text(shelfWithCovers.shelf.name) },
+                                    headlineContent = { Text(shelfWithCovers.shelf.name, style = MaterialTheme.typography.titleMedium) },
                                     modifier = Modifier.clickable {
                                         viewModel.addBookToShelf(shelfWithCovers.shelf.id, selectedBookForMenu!!)
                                         showAddToShelfDialog = false
@@ -243,7 +244,7 @@ fun LibraryScreen(
                 },
                 confirmButton = {
                     TextButton(onClick = { showAddToShelfDialog = false }) {
-                        Text("Close")
+                        Text("Close", style = MaterialTheme.typography.labelLarge)
                     }
                 }
             )
@@ -253,12 +254,12 @@ fun LibraryScreen(
         if (showCreateShelfDialog) {
             AlertDialog(
                 onDismissRequest = { showCreateShelfDialog = false },
-                title = { Text("Create New Shelf") },
+                title = { Text("Create New Shelf", style = MaterialTheme.typography.titleLarge) },
                 text = {
                     OutlinedTextField(
                         value = newShelfName,
                         onValueChange = { newShelfName = it },
-                        label = { Text("Shelf Name") },
+                        label = { Text("Shelf Name", style = MaterialTheme.typography.labelMedium) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -272,12 +273,12 @@ fun LibraryScreen(
                             selectedBookForMenu = null
                         }
                     }) {
-                        Text("Create")
+                        Text("Create", style = MaterialTheme.typography.labelLarge)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showCreateShelfDialog = false }) {
-                        Text("Cancel")
+                        Text("Cancel", style = MaterialTheme.typography.labelLarge)
                     }
                 }
             )

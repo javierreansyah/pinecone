@@ -34,6 +34,7 @@ import com.example.readerapp.ui.features.library.SearchCategory
 import com.example.readerapp.ui.features.library.SearchResults
 import com.example.readerapp.ui.theme.AppTheme
 import kotlinx.coroutines.launch
+import com.example.readerapp.ui.theme.spacing
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalFoundationApi::class)
 @Composable
@@ -79,7 +80,7 @@ fun LibrarySearchTopBar(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = if (searchBarState.targetValue == SearchBarValue.Expanded) Alignment.CenterStart else Alignment.Center
                 ) {
-                    Text(modifier = Modifier.clearAndSetSemantics {}, text = "Search library") 
+                    Text(modifier = Modifier.clearAndSetSemantics {}, text = "Search library", style = MaterialTheme.typography.bodyLarge) 
                 }
             },
             leadingIcon = if (showIcons) {
@@ -189,7 +190,6 @@ private fun SearchResultsContent(
                 Text(
                     "Books",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
                 LazyRow(
@@ -208,7 +208,6 @@ private fun SearchResultsContent(
                 Text(
                     "Shelves",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
                 Column(
@@ -242,7 +241,6 @@ private fun SearchResultsContent(
                 Text(
                     "Authors",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
                 Column(
@@ -276,7 +274,6 @@ private fun SearchResultsContent(
                 Text(
                     "Tags",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
                 Column(
@@ -316,13 +313,13 @@ private fun SearchFilterItem(
 ) {
     Surface(
         modifier = modifier.clickable { onClick() },
-        shape = RoundedCornerShape(AppTheme.spacing.small),
+        shape = RoundedCornerShape(MaterialTheme.spacing.space8),
         color = MaterialTheme.colorScheme.surface,
     ) {
         Row(
-            modifier = Modifier.padding(AppTheme.spacing.itemSpacing),
+            modifier = Modifier.padding(MaterialTheme.spacing.itemSpacing),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.small)
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)
         ) {
             Icon(
                 imageVector = icon,
@@ -346,7 +343,7 @@ private fun SearchBookItem(book: Book, onClick: () -> Unit) {
         modifier = Modifier
             .width(120.dp)
             .clickable { onClick() },
-        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.small)
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)
     ) {
         Card(
             shape = MaterialTheme.shapes.small,

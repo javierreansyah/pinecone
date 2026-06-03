@@ -13,6 +13,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import com.example.readerapp.ui.theme.spacing
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedButton
@@ -53,10 +54,10 @@ fun FilterSortBottomSheet(
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 32.dp)
                 .navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.large)
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space24)
         ) {
             // --- VIEW SECTION ---
-            Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.medium)) {
+            Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space16)) {
                 Text("View", style = MaterialTheme.typography.titleMedium)
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                     LayoutMode.entries.forEachIndexed { index, mode ->
@@ -74,14 +75,14 @@ fun FilterSortBottomSheet(
                                 }
                             }
                         ) {
-                            Text(mode.name)
+                            Text(mode.name, style = MaterialTheme.typography.labelLarge)
                         }
                     }
                 }
             }
 
             // --- SORT SECTION ---
-            Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.small)) {
+            Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)) {
                 Text("Sort", style = MaterialTheme.typography.titleMedium)
 
                 Column(
@@ -107,14 +108,14 @@ fun FilterSortBottomSheet(
                                     )
                                 }
                             },
-                            content = { Text(sortTypeLabel(type)) }
+                            content = { Text(sortTypeLabel(type), style = MaterialTheme.typography.bodyLarge) }
                         )
                     }
                 }
             }
 
             // --- STATUS SECTION ---
-            Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.small)) {
+            Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)) {
                 Text("Status", style = MaterialTheme.typography.titleMedium)
 
                 Column(verticalArrangement = Arrangement.spacedBy(segmentedGap)) {
@@ -129,7 +130,7 @@ fun FilterSortBottomSheet(
                             index = index,
                             count = totalStatuses,
                             leadingContent = { Checkbox(checked = isSelected, onCheckedChange = null) },
-                            content = { Text(statusLabel(status)) }
+                            content = { Text(statusLabel(status), style = MaterialTheme.typography.bodyLarge) }
                         )
                     }
                 }

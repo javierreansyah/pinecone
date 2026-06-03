@@ -40,7 +40,7 @@ fun ArchiveScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Archives") },
+                title = { Text("Archives", style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -51,7 +51,7 @@ fun ArchiveScreen(
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             if (archivedBooks.isEmpty()) {
-                Text("No archived books.", modifier = Modifier.padding(16.dp))
+                Text("No archived books.", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(16.dp))
             } else {
                 BookGrid(
                     books = archivedBooks,
@@ -67,14 +67,14 @@ fun ArchiveScreen(
                     Text("Options", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(16.dp))
                     HorizontalDivider()
                     ListItem(
-                        headlineContent = { Text("Unarchive") },
+                        headlineContent = { Text("Unarchive", style = MaterialTheme.typography.titleMedium) },
                         modifier = Modifier.clickable {
                             viewModel.toggleArchive(selectedBookForMenu!!)
                             selectedBookForMenu = null
                         }
                     )
                     ListItem(
-                        headlineContent = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                        headlineContent = { Text("Delete", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error) },
                         modifier = Modifier.clickable {
                             showDeleteConfirmation = true
                         }
@@ -87,8 +87,8 @@ fun ArchiveScreen(
         if (showDeleteConfirmation) {
             AlertDialog(
                 onDismissRequest = { showDeleteConfirmation = false },
-                title = { Text("Delete Book") },
-                text = { Text("Are you sure you want to delete this book? This action cannot be undone.") },
+                title = { Text("Delete Book", style = MaterialTheme.typography.titleLarge) },
+                text = { Text("Are you sure you want to delete this book? This action cannot be undone.", style = MaterialTheme.typography.bodyMedium) },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -98,12 +98,12 @@ fun ArchiveScreen(
                         },
                         colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                     ) {
-                        Text("Delete")
+                        Text("Delete", style = MaterialTheme.typography.labelLarge)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showDeleteConfirmation = false }) {
-                        Text("Cancel")
+                        Text("Cancel", style = MaterialTheme.typography.labelLarge)
                     }
                 }
             )

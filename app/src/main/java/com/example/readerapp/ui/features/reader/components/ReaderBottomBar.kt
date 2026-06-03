@@ -254,10 +254,7 @@ fun ReaderBottomBar(
 
             Text(
                 text = pageText,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontWeight = FontWeight.Medium,
-                    letterSpacing = 0.5.sp
-                ),
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         } // end normal progress Column
@@ -300,10 +297,7 @@ private fun SearchNavBar(
         // N of M label
         Text(
             text = if (totalResults == 0) "No matches" else "$currentNum of $totalResults",
-            style = MaterialTheme.typography.bodySmall.copy(
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 0.5.sp
-            ),
+            style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
 
