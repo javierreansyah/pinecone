@@ -322,6 +322,7 @@ fun ReaderOverlay(
                                 if (menuLocator != null) {
                                     viewModel.addNoteAndEdit(menuLocator)
                                     viewModel.hideSelectionMenu()
+                                    if (menuHighlight != null) viewModel.hideViewHighlight()
                                 } else if (menuHighlight != null) {
                                     viewModel.editNote(menuHighlight)
                                     viewModel.hideViewHighlight()
@@ -331,7 +332,7 @@ fun ReaderOverlay(
                         ) {
                             Icon(MaterialSymbols.Outlined.Edit, contentDescription = "Make Note", tint = onSurface, modifier = Modifier.size(20.dp))
                         }
-                        if (menuHighlight != null) {
+                        if (menuHighlight != null && menuLocator == null) {
                             androidx.compose.material3.IconButton(
                                 onClick = {
                                     viewModel.deleteNote(menuHighlight.id)
@@ -339,57 +340,63 @@ fun ReaderOverlay(
                                 },
                                 modifier = Modifier.size(40.dp)
                             ) {
-                                Icon(MaterialSymbols.Outlined.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                                Icon(MaterialSymbols.Outlined.Delete, contentDescription = "Delete", tint = onSurface, modifier = Modifier.size(20.dp))
                             }
                         }
                     }
 
-                    // Middle: Color Swatches
+                    // Right side: Color Swatches and Close
                     androidx.compose.foundation.layout.Row(
-                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        val swatches = listOf(
-                            "#40FFEB3B".toColorInt(), // Yellow
-                            "#40F44336".toColorInt(), // Red
-                            "#4003A9F4".toColorInt(), // Blue
-                            "#404CAF50".toColorInt()  // Green
-                        )
-                        swatches.forEach { colorInt ->
-                            val isSelected = menuHighlight?.color == colorInt
-                            Box(
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .background(
-                                        color = Color(colorInt).copy(alpha = 1f),
-                                        shape = androidx.compose.foundation.shape.CircleShape
-                                    )
-                                    .border(
-                                        width = if (isSelected) 2.dp else 0.dp,
-                                        color = if (isSelected) onSurface else Color.Transparent,
-                                        shape = androidx.compose.foundation.shape.CircleShape
-                                    )
-                                    .clickable { 
-                                        if (menuLocator != null) {
-                                            viewModel.addHighlight(menuLocator, colorInt)
-                                            viewModel.hideSelectionMenu()
-                                        } else if (menuHighlight != null) {
-                                            viewModel.updateNote(menuHighlight.copy(color = colorInt))
-                                            viewModel.hideViewHighlight()
-                                        }
-                                    }
+                        androidx.compose.foundation.layout.Row(
+                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)
+                        ) {
+                            val swatches = listOf(
+                                "#40fac02e".toColorInt(), // Yellow
+                                "#40fd7142".toColorInt(), // Orange
+                                "#408bc24a".toColorInt(), // Green
+                                "#4025c6da".toColorInt()  // Blue
                             )
+                            swatches.forEach { colorInt ->
+                                val isSelected = menuHighlight?.color == colorInt
+                                Box(
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .background(
+                                            color = Color(colorInt).copy(alpha = 1f),
+                                            shape = androidx.compose.foundation.shape.CircleShape
+                                        )
+                                        .border(
+                                            width = if (isSelected) 2.dp else 0.dp,
+                                            color = if (isSelected) onSurface else Color.Transparent,
+                                            shape = androidx.compose.foundation.shape.CircleShape
+                                        )
+                                        .clickable { 
+                                            if (menuLocator != null) {
+                                                viewModel.addHighlight(menuLocator, colorInt)
+                                                viewModel.hideSelectionMenu()
+                                                if (menuHighlight != null) viewModel.hideViewHighlight()
+                                            } else if (menuHighlight != null) {
+                                                viewModel.updateNote(menuHighlight.copy(color = colorInt))
+                                                viewModel.hideViewHighlight()
+                                            }
+                                        }
+                                )
+                            }
                         }
-                    }
 
-                    // Right side: Close (X)
-                    androidx.compose.material3.IconButton(
-                        onClick = {
-                            if (menuLocator != null) viewModel.hideSelectionMenu()
-                            if (menuHighlight != null) viewModel.hideViewHighlight()
-                        },
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Icon(MaterialSymbols.Outlined.Close, contentDescription = "Close", tint = onSurface, modifier = Modifier.size(20.dp))
+                        // Close (X)
+                        androidx.compose.material3.IconButton(
+                            onClick = {
+                                if (menuLocator != null) viewModel.hideSelectionMenu()
+                                if (menuHighlight != null) viewModel.hideViewHighlight()
+                            },
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(MaterialSymbols.Outlined.Close, contentDescription = "Close", tint = onSurface, modifier = Modifier.size(20.dp))
+                        }
                     }
                 }
             }

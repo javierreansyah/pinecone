@@ -19,6 +19,10 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.readerapp.ui.features.library.components.*
 import com.example.readerapp.ui.theme.spacing
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Book
+import com.composables.icons.materialsymbols.outlined.Folder
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -58,6 +62,7 @@ fun LibraryScreen(
     var newShelfName by remember { mutableStateOf("") }
 
     val pagerState = rememberPagerState(pageCount = { 2 })
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -76,6 +81,30 @@ fun LibraryScreen(
                 onNavigateToTag = onNavigateToTag,
                 scrollBehavior = scrollBehavior
             )
+        },
+        bottomBar = {
+            ShortNavigationBar {
+                ShortNavigationBarItem(
+                    selected = pagerState.currentPage == 0,
+                    onClick = {
+                        scope.launch {
+                            pagerState.animateScrollToPage(0)
+                        }
+                    },
+                    icon = { Icon(MaterialSymbols.Outlined.Book, contentDescription = "Library") },
+                    label = { Text("Library") }
+                )
+                ShortNavigationBarItem(
+                    selected = pagerState.currentPage == 1,
+                    onClick = {
+                        scope.launch {
+                            pagerState.animateScrollToPage(1)
+                        }
+                    },
+                    icon = { Icon(MaterialSymbols.Outlined.Folder, contentDescription = "Shelves") },
+                    label = { Text("Shelves") }
+                )
+            }
         }
     ) { innerPadding ->
         HorizontalPager(
@@ -126,7 +155,8 @@ fun LibraryScreen(
                     ShelvesPage(
                         shelves = shelves,
                         onShelfClick = onNavigateToShelf,
-                        onBookClick = onNavigateToReader
+                        onBookClick = onNavigateToReader,
+                        onBookLongClick = { selectedBookForMenu = it }
                     )
                 }
             }

@@ -59,7 +59,11 @@ data class ReaderSettings(
     val readerThemePreset: String = "Auto",
     val customBackgroundColor: String = "#FFFFFF",
     val customTextColor: String = "#000000",
-    val customThemes: List<CustomReaderTheme> = emptyList()
+    val customThemes: List<CustomReaderTheme> = emptyList(),
+
+    // Backup
+    val autoBackupFrequency: String = "12h",
+    val lastBackupTime: Long = 0L
 ) {
     /**
      * Converts the app-level reader settings to Readium's [EpubPreferences].
@@ -182,6 +186,10 @@ class ReaderPreferences(private val context: Context) {
         val CUSTOM_BACKGROUND_COLOR = stringPreferencesKey("custom_background_color")
         val CUSTOM_TEXT_COLOR = stringPreferencesKey("custom_text_color")
         val CUSTOM_THEMES = stringSetPreferencesKey("custom_themes")
+
+        // Backup
+        val AUTO_BACKUP_FREQUENCY = stringPreferencesKey("auto_backup_frequency")
+        val LAST_BACKUP_TIME = longPreferencesKey("last_backup_time")
     }
 
     val readerSettings: Flow<ReaderSettings> = context.dataStore.data.map { preferences ->
@@ -226,7 +234,10 @@ class ReaderPreferences(private val context: Context) {
             customThemes = preferences[CUSTOM_THEMES]?.map {
                 val parts = it.split("|")
                 CustomReaderTheme(parts[0], parts[1], parts[2])
-            } ?: emptyList()
+            } ?: emptyList(),
+
+            autoBackupFrequency = preferences[AUTO_BACKUP_FREQUENCY] ?: "12h",
+            lastBackupTime = preferences[LAST_BACKUP_TIME] ?: 0L
         )
     }
 
@@ -268,6 +279,9 @@ class ReaderPreferences(private val context: Context) {
             preferences[CUSTOM_THEMES] = settings.customThemes.map {
                 "${it.name}|${it.backgroundColor}|${it.textColor}"
             }.toSet()
+            
+            preferences[AUTO_BACKUP_FREQUENCY] = settings.autoBackupFrequency
+            preferences[LAST_BACKUP_TIME] = settings.lastBackupTime
         }
     }
 

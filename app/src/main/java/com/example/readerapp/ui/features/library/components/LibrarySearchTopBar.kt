@@ -195,7 +195,11 @@ private fun SearchResultsContent(
                     contentPadding = PaddingValues(horizontal = 16.dp)
                 ) {
                     items(results.books) { book ->
-                        SearchBookItem(book = book, onClick = { onBookClick(book) })
+                        BookItem(
+                            book = book,
+                            onClick = { onBookClick(book) },
+                            modifier = Modifier.width(120.dp)
+                        )
                     }
                 }
             }
@@ -335,46 +339,3 @@ private fun SearchFilterItem(
     }
 }
 
-@Composable
-private fun SearchBookItem(book: Book, onClick: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .width(120.dp)
-            .clickable { onClick() },
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)
-    ) {
-        Card(
-            shape = MaterialTheme.shapes.small,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f / 1.4f)
-        ) {
-            CoverImage(book = book)
-        }
-        Text(
-            text = book.title,
-            style = MaterialTheme.typography.titleSmall,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = book.author ?: "Unknown Author",
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = "${(book.progress * 100).toInt()}%",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}

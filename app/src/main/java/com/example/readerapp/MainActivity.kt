@@ -10,6 +10,8 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
@@ -26,6 +28,9 @@ import com.composables.icons.materialsymbols.outlined.Upload
 import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Archive
 import com.composables.icons.materialsymbols.outlined.Settings
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Backup
+import androidx.compose.material.icons.outlined.Restore
 import com.example.readerapp.data.repository.BookRepository
 import com.example.readerapp.data.local.ReaderPreferences
 import com.example.readerapp.data.local.ReaderSettings
@@ -44,12 +49,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.outlined.DriveFolderUpload
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import androidx.compose.ui.platform.LocalLocale
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -113,6 +120,53 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 )
+
+                val restoreBackupLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.OpenDocument(),
+                    onResult = { uri ->
+                        uri?.let {
+                            Toast.makeText(context, "Restoring backup...", Toast.LENGTH_SHORT).show()
+                            scope.launch {
+                                val success = com.example.readerapp.data.repository.BackupRepository(context).restoreBackup(it)
+                                if (success) {
+                                    Toast.makeText(context, "Backup restored successfully. Restarting app...", Toast.LENGTH_SHORT).show()
+                                    val restartIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+                                    restartIntent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                                    context.startActivity(restartIntent)
+                                    Runtime.getRuntime().exit(0)
+                                } else {
+                                    Toast.makeText(context, "Failed to restore backup", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    }
+                )
+
+                var showRestoreWarning by remember { mutableStateOf(false) }
+
+                if (showRestoreWarning) {
+                    AlertDialog(
+                        onDismissRequest = { showRestoreWarning = false },
+                        title = { Text("Restore Backup") },
+                        text = { Text("Warning: Restoring a backup will completely overwrite your current library, reading progress, and settings with the contents of the backup. This action cannot be undone.\n\nDo you want to proceed?") },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    showRestoreWarning = false
+                                    restoreBackupLauncher.launch(arrayOf("*/*"))
+                                    scope.launch { drawerState.close() }
+                                }
+                            ) {
+                                Text("Proceed")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showRestoreWarning = false }) {
+                                Text("Cancel")
+                            }
+                        }
+                    )
+                }
 
                 ModalNavigationDrawer(
                     drawerState = drawerState,
@@ -178,6 +232,49 @@ class MainActivity : ComponentActivity() {
                                 onClick = {
                                     folderPickerLauncher.launch(null)
                                     scope.launch { drawerState.close() }
+                                },
+                                shape = RectangleShape
+                            )
+
+                            HorizontalDivider()
+
+                            val lastBackupText = if (settings.lastBackupTime > 0) {
+                                val formatter = java.text.SimpleDateFormat("MMM dd, HH:mm", LocalLocale.current.platformLocale)
+                                "Last: ${formatter.format(java.util.Date(settings.lastBackupTime))}"
+                            } else {
+                                "Never"
+                            }
+
+                            NavigationDrawerItem(
+                                label = {
+                                    androidx.compose.foundation.layout.Column {
+                                        Text("Backup Now")
+                                        Text(lastBackupText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                },
+                                icon = { Icon(Icons.Outlined.DriveFolderUpload, contentDescription = null) },
+                                selected = false,
+                                onClick = {
+                                    Toast.makeText(context, "Starting backup...", Toast.LENGTH_SHORT).show()
+                                    scope.launch {
+                                        drawerState.close()
+                                        val success = com.example.readerapp.data.repository.BackupRepository(context).performBackup(force = true)
+                                        if (success) {
+                                            Toast.makeText(context, "Backup successful", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, "Backup failed", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                },
+                                shape = RectangleShape
+                            )
+
+                            NavigationDrawerItem(
+                                label = { Text("Restore Backup") },
+                                icon = { Icon(Icons.Outlined.Restore, contentDescription = null) },
+                                selected = false,
+                                onClick = {
+                                    showRestoreWarning = true
                                 },
                                 shape = RectangleShape
                             )

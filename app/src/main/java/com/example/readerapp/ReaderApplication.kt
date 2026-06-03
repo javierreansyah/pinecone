@@ -8,6 +8,10 @@ import org.readium.r2.shared.util.http.DefaultHttpClient
 import org.readium.r2.streamer.PublicationOpener
 import org.readium.r2.shared.util.asset.AssetRetriever
 import org.readium.r2.streamer.parser.DefaultPublicationParser
+import com.example.readerapp.worker.WorkerUtils
+import com.example.readerapp.data.local.ReaderPreferences
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 class ReaderApplication : Application() {
 
@@ -63,5 +67,12 @@ class ReaderApplication : Application() {
             publicationOpener = publicationOpener,
             assetRetriever = assetRetriever
         )
+
+        // Schedule initial backup based on preferences
+        val readerPreferences = ReaderPreferences(applicationContext)
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            val initialFrequency = readerPreferences.readerSettings.first().autoBackupFrequency
+            WorkerUtils.scheduleBackupWork(applicationContext, initialFrequency)
+        }
     }
 }
