@@ -34,7 +34,7 @@ data class ReaderSettings(
     // Readium-mapped settings
     val publisherStyles: Boolean = true,
     val fontSize: Double = 1.0,
-    val fontFamily: String = "Original",
+    val fontFamily: String = "Source Serif 4",
     val textAlign: String = "Start",
     val lineHeight: Double = 1.5,
     val paragraphSpacing: Double = 0.0,
@@ -48,6 +48,7 @@ data class ReaderSettings(
     val pageMargins: Double = 1.0,
     val imageFilter: String = "None",
     val typeScale: Double = 1.0,
+    val verticalMargin: Double = 32.0,
     val readingProgression: String = "LTR",
     val textNormalization: Boolean = false,
 
@@ -168,6 +169,7 @@ class ReaderPreferences(private val context: Context) {
         val PAGE_MARGINS = doublePreferencesKey("page_margins")
         val IMAGE_FILTER = stringPreferencesKey("image_filter")
         val TYPE_SCALE = doublePreferencesKey("type_scale")
+        val VERTICAL_MARGIN = doublePreferencesKey("vertical_margin")
         val READING_PROGRESSION = stringPreferencesKey("reading_progression")
         val TEXT_NORMALIZATION = booleanPreferencesKey("text_normalization")
 
@@ -191,13 +193,13 @@ class ReaderPreferences(private val context: Context) {
 
             publisherStyles = preferences[PUBLISHER_STYLES] ?: false,
             fontSize = (preferences[FONT_SIZE] ?: 1.0).let { Math.round(it * 100.0) / 100.0 },
-            fontFamily = preferences[FONT_FAMILY] ?: "Original",
+            fontFamily = preferences[FONT_FAMILY] ?: "Source Serif 4",
             textAlign = preferences[TEXT_ALIGN] ?: "Start",
             lineHeight = (preferences[LINE_HEIGHT] ?: 1.5).let { Math.round(it * 10.0) / 10.0 },
             paragraphSpacing = (preferences[PARAGRAPH_SPACING] ?: 0.0).let { Math.round(it * 100.0) / 100.0 },
             paragraphIndent = (preferences[PARAGRAPH_INDENT] ?: 0.0).let { Math.round(it * 100.0) / 100.0 },
             wordSpacing = (preferences[WORD_SPACING] ?: 0.0).let { Math.round(it * 100.0) / 100.0 },
-            letterSpacing = (preferences[LETTER_SPACING] ?: 0.0).let { Math.round(it * 100.0) / 100.0 },
+            letterSpacing = (preferences[LETTER_SPACING] ?: 0.0).let { Math.round(it * 1000.0) / 1000.0 },
             fontWeights = preferences[FONT_WEIGHTS]?.let { str ->
                 if (str.isNotBlank()) {
                     str.split(",").associate { pair ->
@@ -213,6 +215,7 @@ class ReaderPreferences(private val context: Context) {
             pageMargins = (preferences[PAGE_MARGINS] ?: 1.0).let { Math.round(it * 100.0) / 100.0 },
             imageFilter = preferences[IMAGE_FILTER] ?: "None",
             typeScale = (preferences[TYPE_SCALE] ?: 1.0).let { Math.round(it * 100.0) / 100.0 },
+            verticalMargin = (preferences[VERTICAL_MARGIN] ?: 32.0).let { Math.round(it * 10.0) / 10.0 },
             readingProgression = preferences[READING_PROGRESSION] ?: "LTR",
             textNormalization = preferences[TEXT_NORMALIZATION] ?: false,
 
@@ -242,7 +245,7 @@ class ReaderPreferences(private val context: Context) {
             preferences[PARAGRAPH_SPACING] = Math.round(settings.paragraphSpacing * 100.0) / 100.0
             preferences[PARAGRAPH_INDENT] = Math.round(settings.paragraphIndent * 100.0) / 100.0
             preferences[WORD_SPACING] = Math.round(settings.wordSpacing * 100.0) / 100.0
-            preferences[LETTER_SPACING] = Math.round(settings.letterSpacing * 100.0) / 100.0
+            preferences[LETTER_SPACING] = Math.round(settings.letterSpacing * 1000.0) / 1000.0
             if (settings.fontWeights.isNotEmpty()) {
                 preferences[FONT_WEIGHTS] = settings.fontWeights.entries.joinToString(",") { "${it.key}:${it.value}" }
             } else {
@@ -254,6 +257,7 @@ class ReaderPreferences(private val context: Context) {
             preferences[PAGE_MARGINS] = Math.round(settings.pageMargins * 100.0) / 100.0
             preferences[IMAGE_FILTER] = settings.imageFilter
             preferences[TYPE_SCALE] = Math.round(settings.typeScale * 100.0) / 100.0
+            preferences[VERTICAL_MARGIN] = Math.round(settings.verticalMargin * 10.0) / 10.0
             preferences[READING_PROGRESSION] = settings.readingProgression
             preferences[TEXT_NORMALIZATION] = settings.textNormalization
 

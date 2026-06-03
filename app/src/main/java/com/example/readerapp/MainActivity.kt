@@ -34,6 +34,7 @@ import com.example.readerapp.ui.navigation.Screen
 import com.example.readerapp.ui.features.settings.SettingsScreen
 import com.example.readerapp.ui.features.library.ArchiveScreen
 import com.example.readerapp.ui.features.library.ShelfDetailScreen
+import com.example.readerapp.ui.features.library.FilterResultScreen
 import com.example.readerapp.ui.theme.AppTheme
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
@@ -212,6 +213,12 @@ class MainActivity : ComponentActivity() {
                             },
                             onNavigateToShelf = { shelfId ->
                                 navController.navigate(Screen.ShelfDetail.createRoute(shelfId))
+                            },
+                            onNavigateToAuthor = { authorName ->
+                                navController.navigate(Screen.AuthorDetail.createRoute(authorName))
+                            },
+                            onNavigateToTag = { tagName ->
+                                navController.navigate(Screen.TagDetail.createRoute(tagName))
                             }
                         )
                     }
@@ -239,6 +246,38 @@ class MainActivity : ComponentActivity() {
                         val shelfId = backStackEntry.arguments?.getString("shelfId") ?: return@composable
                         ShelfDetailScreen(
                             shelfId = shelfId,
+                            onNavigateBack = {
+                                navController.popBackStack()
+                            },
+                            onNavigateToReader = { bookId ->
+                                val intent = Intent(context, com.example.readerapp.ui.features.reader.ReaderActivity::class.java).apply {
+                                    putExtra(com.example.readerapp.ui.features.reader.ReaderActivity.EXTRA_BOOK_ID, bookId)
+                                }
+                                context.startActivity(intent)
+                            }
+                        )
+                    }
+                    composable(Screen.AuthorDetail.route) { backStackEntry ->
+                        val authorName = backStackEntry.arguments?.getString("authorName") ?: return@composable
+                        FilterResultScreen(
+                            filterType = "author",
+                            filterValue = authorName,
+                            onNavigateBack = {
+                                navController.popBackStack()
+                            },
+                            onNavigateToReader = { bookId ->
+                                val intent = Intent(context, com.example.readerapp.ui.features.reader.ReaderActivity::class.java).apply {
+                                    putExtra(com.example.readerapp.ui.features.reader.ReaderActivity.EXTRA_BOOK_ID, bookId)
+                                }
+                                context.startActivity(intent)
+                            }
+                        )
+                    }
+                    composable(Screen.TagDetail.route) { backStackEntry ->
+                        val tagName = backStackEntry.arguments?.getString("tagName") ?: return@composable
+                        FilterResultScreen(
+                            filterType = "tag",
+                            filterValue = tagName,
                             onNavigateBack = {
                                 navController.popBackStack()
                             },

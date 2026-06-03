@@ -119,8 +119,8 @@ class ReaderActivity : AppCompatActivity() {
                     // In scroll mode: full screen (no margins).
                     // In pagination mode: added padding.
                     val density = resources.displayMetrics.density
-                    val newTop = if (settings.scroll) 0 else (32 * density).toInt()
-                    val newBottom = if (settings.scroll) 0 else (16 * density).toInt()
+                    val newTop = if (settings.scroll) 0 else (settings.verticalMargin * density).toInt()
+                    val newBottom = if (settings.scroll) 0 else (maxOf(0.0, settings.verticalMargin - 16) * density).toInt()
 
                     navigatorContainer?.let { container ->
                         val lp = container.layoutParams as android.widget.FrameLayout.LayoutParams
