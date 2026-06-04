@@ -115,7 +115,7 @@ fun LibraryScreen(
                 0 -> {
                     // Books Page
                     Box(modifier = Modifier.fillMaxSize()) {
-                        if (uiState.layoutMode == LayoutMode.Grid) {
+                        if (uiState.bookPreferences.layoutMode == LayoutMode.Grid) {
                             BookGrid(
                                 books = filteredBooks,
                                 onBookClick = onNavigateToReader,
@@ -163,12 +163,17 @@ fun LibraryScreen(
         }
 
         if (showFilterSheet) {
+            val isShelvesTab = pagerState.currentPage == 1
             FilterSortBottomSheet(
-                uiState = uiState,
-                onLayoutModeChange = viewModel::onLayoutModeChange,
-                onSortTypeChange = viewModel::onSortTypeChange,
-                onStatusToggle = viewModel::toggleStatusFilter,
-                onDismiss = { showFilterSheet = false }
+                preferences = if (isShelvesTab) uiState.shelvesPreferences else uiState.bookPreferences,
+                onLayoutModeChange = { viewModel.onLayoutModeChange(it, isShelvesTab) },
+                onSortTypeChange = { viewModel.onSortTypeChange(it, isShelvesTab) },
+                onStatusToggle = { viewModel.toggleStatusFilter(it, isShelvesTab) },
+                onDismiss = { showFilterSheet = false },
+                showViewPicker = !isShelvesTab,
+                showStatusFilter = !isShelvesTab,
+                availableSortTypes = if (isShelvesTab) listOf(SortType.Title, SortType.LastRead, SortType.Added, SortType.Progress) 
+                                     else listOf(SortType.Title, SortType.Author, SortType.LastRead, SortType.Added, SortType.Progress)
             )
         }
 
@@ -249,11 +254,12 @@ fun LibraryScreen(
                 onDismissRequest = { showAddToShelfDialog = false },
                 title = { Text("Add to Shelf", style = MaterialTheme.typography.titleLarge) },
                 text = {
-                    if (shelves.isEmpty()) {
+                    val validShelves = shelves.filter { it.shelf.id != "unshelved" }
+                    if (validShelves.isEmpty()) {
                         Text("No shelves available.", style = MaterialTheme.typography.bodyLarge)
                     } else {
                         LazyColumn {
-                            items(shelves) { shelfWithCovers ->
+                            items(validShelves) { shelfWithCovers ->
                                 ListItem(
                                     headlineContent = { Text(shelfWithCovers.shelf.name, style = MaterialTheme.typography.titleMedium) },
                                     modifier = Modifier.clickable {

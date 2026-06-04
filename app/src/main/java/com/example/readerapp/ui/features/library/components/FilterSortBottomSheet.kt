@@ -34,11 +34,14 @@ import com.example.readerapp.ui.features.library.StatusFilter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FilterSortBottomSheet(
-    uiState: LibraryUiState,
+    preferences: com.example.readerapp.ui.features.library.FilterSortPreferences,
     onLayoutModeChange: (LayoutMode) -> Unit,
     onSortTypeChange: (SortType) -> Unit,
     onStatusToggle: (StatusFilter) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    showViewPicker: Boolean = true,
+    showStatusFilter: Boolean = true,
+    availableSortTypes: List<SortType> = SortType.entries
 ) {
     val segmentedGap = 4.dp
 
@@ -55,25 +58,27 @@ fun FilterSortBottomSheet(
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space24)
         ) {
             // --- VIEW SECTION ---
-            Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space16)) {
-                Text("View", style = MaterialTheme.typography.titleMedium)
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    LayoutMode.entries.forEachIndexed { index, mode ->
-                        SegmentedButton(
-                            selected = uiState.layoutMode == mode,
-                            onClick = { onLayoutModeChange(mode) },
-                            shape = SegmentedButtonDefaults.itemShape(index = index, count = LayoutMode.entries.size),
-                            icon = {
-                                if (uiState.layoutMode == mode) {
-                                    Icon(
-                                        MaterialSymbols.Outlined.Check,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(SegmentedButtonDefaults.IconSize)
-                                    )
+            if (showViewPicker) {
+                Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space16)) {
+                    Text("View", style = MaterialTheme.typography.titleMedium)
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        LayoutMode.entries.forEachIndexed { index, mode ->
+                            SegmentedButton(
+                                selected = preferences.layoutMode == mode,
+                                onClick = { onLayoutModeChange(mode) },
+                                shape = SegmentedButtonDefaults.itemShape(index = index, count = LayoutMode.entries.size),
+                                icon = {
+                                    if (preferences.layoutMode == mode) {
+                                        Icon(
+                                            MaterialSymbols.Outlined.Check,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(SegmentedButtonDefaults.IconSize)
+                                        )
+                                    }
                                 }
+                            ) {
+                                Text(mode.name, style = MaterialTheme.typography.labelLarge)
                             }
-                        ) {
-                            Text(mode.name, style = MaterialTheme.typography.labelLarge)
                         }
                     }
                 }
@@ -87,11 +92,10 @@ fun FilterSortBottomSheet(
                     modifier = Modifier.selectableGroup(),
                     verticalArrangement = Arrangement.spacedBy(segmentedGap)
                 ) {
-                    val sortEntries = SortType.entries
-                    val totalSorts = sortEntries.size
+                    val totalSorts = availableSortTypes.size
 
-                    sortEntries.forEachIndexed { index, type ->
-                        val isSelected = uiState.sortType == type
+                    availableSortTypes.forEachIndexed { index, type ->
+                        val isSelected = preferences.sortType == type
                         SegmentedListItem(
                             selected = isSelected,
                             onClick = { onSortTypeChange(type) },
@@ -101,7 +105,7 @@ fun FilterSortBottomSheet(
                             trailingContent = {
                                 if (isSelected) {
                                     Icon(
-                                        if (uiState.isAscending) MaterialSymbols.Outlined.Arrow_drop_up else MaterialSymbols.Outlined.Arrow_drop_down,
+                                        if (preferences.isAscending) MaterialSymbols.Outlined.Arrow_drop_up else MaterialSymbols.Outlined.Arrow_drop_down,
                                         contentDescription = null
                                     )
                                 }
@@ -113,23 +117,25 @@ fun FilterSortBottomSheet(
             }
 
             // --- STATUS SECTION ---
-            Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)) {
-                Text("Status", style = MaterialTheme.typography.titleMedium)
+            if (showStatusFilter) {
+                Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)) {
+                    Text("Status", style = MaterialTheme.typography.titleMedium)
 
-                Column(verticalArrangement = Arrangement.spacedBy(segmentedGap)) {
-                    val statusEntries = StatusFilter.entries
-                    val totalStatuses = statusEntries.size
+                    Column(verticalArrangement = Arrangement.spacedBy(segmentedGap)) {
+                        val statusEntries = StatusFilter.entries
+                        val totalStatuses = statusEntries.size
 
-                    statusEntries.forEachIndexed { index, status ->
-                        val isSelected = uiState.selectedStatus.contains(status)
-                        SegmentedListItem(
-                            checked = isSelected,
-                            onCheckedChange = { onStatusToggle(status) },
-                            index = index,
-                            count = totalStatuses,
-                            leadingContent = { Checkbox(checked = isSelected, onCheckedChange = null) },
-                            content = { Text(statusLabel(status), style = MaterialTheme.typography.bodyLarge) }
-                        )
+                        statusEntries.forEachIndexed { index, status ->
+                            val isSelected = preferences.selectedStatus.contains(status)
+                            SegmentedListItem(
+                                checked = isSelected,
+                                onCheckedChange = { onStatusToggle(status) },
+                                index = index,
+                                count = totalStatuses,
+                                leadingContent = { Checkbox(checked = isSelected, onCheckedChange = null) },
+                                content = { Text(statusLabel(status), style = MaterialTheme.typography.bodyLarge) }
+                            )
+                        }
                     }
                 }
             }

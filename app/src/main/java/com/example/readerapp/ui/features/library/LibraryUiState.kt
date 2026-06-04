@@ -9,14 +9,19 @@ enum class StatusFilter { NotStarted, Reading, Finished }
 
 enum class SearchCategory { All, Books, Authors, Shelves, Tags }
 
-data class LibraryUiState(
-    val searchQuery: String = "",
-    val searchCategory: SearchCategory = SearchCategory.All,
+data class FilterSortPreferences(
     val layoutMode: LayoutMode = LayoutMode.Grid,
     val sortType: SortType = SortType.Added,
     val isAscending: Boolean = false,
-    val selectedStatus: Set<StatusFilter> = setOf(StatusFilter.NotStarted, StatusFilter.Reading, StatusFilter.Finished),
-    val isImporting: Boolean = false
+    val selectedStatus: Set<StatusFilter> = setOf(StatusFilter.NotStarted, StatusFilter.Reading, StatusFilter.Finished)
+)
+
+data class LibraryUiState(
+    val searchQuery: String = "",
+    val searchCategory: SearchCategory = SearchCategory.All,
+    val isImporting: Boolean = false,
+    val bookPreferences: FilterSortPreferences = FilterSortPreferences(sortType = SortType.Added),
+    val shelvesPreferences: FilterSortPreferences = FilterSortPreferences(sortType = SortType.Title, isAscending = true)
 )
 
 data class SearchResults(

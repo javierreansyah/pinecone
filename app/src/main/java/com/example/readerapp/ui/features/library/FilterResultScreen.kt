@@ -32,7 +32,7 @@ fun FilterResultScreen(
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 if (modelClass.isAssignableFrom(LibraryViewModel::class.java)) {
                     @Suppress("UNCHECKED_CAST")
-                    return LibraryViewModel(context.applicationContext as android.app.Application) as T
+                    return LibraryViewModel(context.applicationContext as android.app.Application, "filter_result") as T
                 }
                 throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             }
@@ -74,7 +74,7 @@ fun FilterResultScreen(
             if (books.isEmpty()) {
                 Text("No books found.", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(16.dp))
             } else {
-                if (uiState.layoutMode == LayoutMode.Grid) {
+                if (uiState.bookPreferences.layoutMode == LayoutMode.Grid) {
                     BookGrid(
                         books = books,
                         onBookClick = onNavigateToReader
@@ -90,11 +90,14 @@ fun FilterResultScreen(
 
         if (showFilterSheet) {
             FilterSortBottomSheet(
-                uiState = uiState,
+                preferences = uiState.bookPreferences,
                 onLayoutModeChange = viewModel::onLayoutModeChange,
                 onSortTypeChange = viewModel::onSortTypeChange,
                 onStatusToggle = viewModel::toggleStatusFilter,
-                onDismiss = { showFilterSheet = false }
+                onDismiss = { showFilterSheet = false },
+                showViewPicker = true,
+                showStatusFilter = true,
+                availableSortTypes = listOf(SortType.Title, SortType.Author, SortType.LastRead, SortType.Added, SortType.Progress)
             )
         }
     }

@@ -45,7 +45,7 @@ fun ShelfDetailScreen(
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 if (modelClass.isAssignableFrom(LibraryViewModel::class.java)) {
                     @Suppress("UNCHECKED_CAST")
-                    return LibraryViewModel(context.applicationContext as android.app.Application) as T
+                    return LibraryViewModel(context.applicationContext as android.app.Application, "shelf_detail") as T
                 }
                 throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             }
@@ -97,13 +97,15 @@ fun ShelfDetailScreen(
                             Text("Save")
                         }
                     } else {
-                        IconButton(onClick = { 
-                            if (shelfWithCovers != null) {
-                                reorderBooks = shelfWithCovers.books.map { Book.fromEntity(it) }
-                                isReordering = true 
+                        if (shelfId != "unshelved") {
+                            IconButton(onClick = { 
+                                if (shelfWithCovers != null) {
+                                    reorderBooks = shelfWithCovers.books.map { Book.fromEntity(it) }
+                                    isReordering = true 
+                                }
+                            }) {
+                                Icon(Icons.Default.FormatListNumbered, contentDescription = "Custom Order")
                             }
-                        }) {
-                            Icon(Icons.Default.FormatListNumbered, contentDescription = "Custom Order")
                         }
                         IconButton(onClick = { showFilterSheet = true }) {
                             Icon(MaterialSymbols.Outlined.Tune, contentDescription = "Filter")
@@ -168,7 +170,7 @@ fun ShelfDetailScreen(
                         }
                     }
                 } else {
-                    if (uiState.layoutMode == LayoutMode.Grid) {
+                    if (uiState.bookPreferences.layoutMode == LayoutMode.Grid) {
                         BookGrid(
                             books = books,
                             onBookClick = onNavigateToReader
@@ -185,11 +187,18 @@ fun ShelfDetailScreen(
 
         if (showFilterSheet) {
             FilterSortBottomSheet(
-                uiState = uiState,
+                preferences = uiState.bookPreferences,
                 onLayoutModeChange = viewModel::onLayoutModeChange,
                 onSortTypeChange = viewModel::onSortTypeChange,
                 onStatusToggle = viewModel::toggleStatusFilter,
-                onDismiss = { showFilterSheet = false }
+                onDismiss = { showFilterSheet = false },
+                showViewPicker = true,
+                showStatusFilter = true,
+                availableSortTypes = if (shelfId == "unshelved") {
+                    SortType.entries.filter { it != SortType.Custom }
+                } else {
+                    SortType.entries // Allows Custom Order
+                }
             )
         }
     }
