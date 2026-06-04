@@ -19,4 +19,10 @@ interface BookmarkDao {
 
     @Query("DELETE FROM bookmarks")
     suspend fun deleteAll()
+
+    @Query("SELECT * FROM bookmarks")
+    suspend fun getAllBookmarksSync(): List<BookmarkEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(bookmarks: List<BookmarkEntity>)
 }

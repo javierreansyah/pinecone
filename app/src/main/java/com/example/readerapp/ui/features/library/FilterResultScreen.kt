@@ -6,12 +6,17 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Tune
 import com.example.readerapp.ui.features.library.components.BookGrid
+import com.example.readerapp.ui.features.library.components.BookList
+import com.example.readerapp.ui.features.library.components.FilterSortBottomSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,19 +39,34 @@ fun FilterResultScreen(
         }
     )
 
-    val books by (if (filterType == "author") viewModel.getBooksByAuthor(filterValue) 
-                 else viewModel.getBooksByTag(filterValue))
+    val uiState by viewModel.uiState.collectAsState()
+    var showFilterSheet by remember { mutableStateOf(false) }
+
+    val baseBooksFlow = remember(filterType, filterValue) {
+        if (filterType == "author") viewModel.getBooksByAuthor(filterValue)
+        else viewModel.getBooksByTag(filterValue)
+    }
+    val books by viewModel.getFilteredAndSortedBooks(baseBooksFlow)
         .collectAsState(initial = emptyList())
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
-                title = { Text(filterValue, style = MaterialTheme.typography.titleLarge) },
+            MediumTopAppBar(
+                title = { Text(filterValue) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                actions = {
+                    IconButton(onClick = { showFilterSheet = true }) {
+                        Icon(MaterialSymbols.Outlined.Tune, contentDescription = "Filter")
+                    }
+                },
+                scrollBehavior = scrollBehavior
             )
         }
     ) { innerPadding ->
@@ -54,11 +74,28 @@ fun FilterResultScreen(
             if (books.isEmpty()) {
                 Text("No books found.", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(16.dp))
             } else {
-                BookGrid(
-                    books = books,
-                    onBookClick = onNavigateToReader
-                )
+                if (uiState.layoutMode == LayoutMode.Grid) {
+                    BookGrid(
+                        books = books,
+                        onBookClick = onNavigateToReader
+                    )
+                } else {
+                    BookList(
+                        books = books,
+                        onBookClick = onNavigateToReader
+                    )
+                }
             }
+        }
+
+        if (showFilterSheet) {
+            FilterSortBottomSheet(
+                uiState = uiState,
+                onLayoutModeChange = viewModel::onLayoutModeChange,
+                onSortTypeChange = viewModel::onSortTypeChange,
+                onStatusToggle = viewModel::toggleStatusFilter,
+                onDismiss = { showFilterSheet = false }
+            )
         }
     }
 }

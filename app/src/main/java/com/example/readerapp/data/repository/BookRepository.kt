@@ -235,6 +235,14 @@ class BookRepository(
         shelfDao.deleteShelfBookCrossRef(shelfId = shelfId, bookId = bookId)
     }
 
+    fun getAllShelfBookCrossRefs(): Flow<List<ShelfBookCrossRefEntity>> = shelfDao.getAllShelfBookCrossRefs()
+
+    suspend fun updateShelfOrder(shelfId: String, newBookIdsOrder: List<String>) = withContext(Dispatchers.IO) {
+        newBookIdsOrder.forEachIndexed { index, bookId ->
+            shelfDao.updateShelfBookOrderIndex(shelfId, bookId, index)
+        }
+    }
+
     // --- Note Methods ---
 
     suspend fun addNote(bookId: String, locator: Locator, noteText: String, color: Int = -1, chapterTitle: String? = null) {

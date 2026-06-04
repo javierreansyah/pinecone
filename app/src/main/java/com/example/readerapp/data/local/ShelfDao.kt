@@ -37,4 +37,31 @@ interface ShelfDao {
 
     @Query("DELETE FROM shelf_book_cross_ref WHERE shelfId = :shelfId AND bookId = :bookId")
     suspend fun deleteShelfBookCrossRef(shelfId: String, bookId: String)
+
+    @Query("SELECT * FROM shelf_book_cross_ref")
+    fun getAllShelfBookCrossRefs(): Flow<List<ShelfBookCrossRefEntity>>
+
+    @Update
+    suspend fun updateShelfBookCrossRefs(crossRefs: List<ShelfBookCrossRefEntity>)
+
+    @Query("UPDATE shelf_book_cross_ref SET orderIndex = :orderIndex WHERE shelfId = :shelfId AND bookId = :bookId")
+    suspend fun updateShelfBookOrderIndex(shelfId: String, bookId: String, orderIndex: Int)
+
+    @Query("SELECT * FROM shelves")
+    suspend fun getAllShelvesSync(): List<ShelfEntity>
+
+    @Query("SELECT * FROM shelf_book_cross_ref")
+    suspend fun getAllShelfBookCrossRefsSync(): List<ShelfBookCrossRefEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAllShelves(shelves: List<ShelfEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAllShelfBookCrossRefs(crossRefs: List<ShelfBookCrossRefEntity>)
+
+    @Query("DELETE FROM shelves")
+    suspend fun deleteAllShelves()
+
+    @Query("DELETE FROM shelf_book_cross_ref")
+    suspend fun deleteAllShelfBookCrossRefs()
 }

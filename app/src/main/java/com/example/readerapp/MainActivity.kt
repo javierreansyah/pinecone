@@ -23,6 +23,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.documentfile.provider.DocumentFile
 import android.widget.Toast
+import coil.imageLoader
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Upload
 import com.composables.icons.materialsymbols.outlined.Folder
@@ -129,11 +130,9 @@ class MainActivity : ComponentActivity() {
                             scope.launch {
                                 val success = com.example.readerapp.data.repository.BackupRepository(context).restoreBackup(it)
                                 if (success) {
-                                    Toast.makeText(context, "Backup restored successfully. Restarting app...", Toast.LENGTH_SHORT).show()
-                                    val restartIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-                                    restartIntent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                                    context.startActivity(restartIntent)
-                                    Runtime.getRuntime().exit(0)
+                                    context.imageLoader.memoryCache?.clear()
+                                    context.imageLoader.diskCache?.clear()
+                                    Toast.makeText(context, "Backup restored successfully!", Toast.LENGTH_SHORT).show()
                                 } else {
                                     Toast.makeText(context, "Failed to restore backup", Toast.LENGTH_SHORT).show()
                                 }
