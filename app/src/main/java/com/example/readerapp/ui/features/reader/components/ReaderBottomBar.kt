@@ -52,6 +52,7 @@ fun ReaderBottomBar(
     currentPage: Int?,
     totalPages: Int?,
     readerBgColor: Color,
+    readerTextColor: Color,
     onSeekToProgression: (Double) -> Unit,
     // Search navigation
     isInSearchNavigationMode: Boolean = false,
@@ -98,7 +99,8 @@ fun ReaderBottomBar(
                 totalResults = totalSearchResults,
                 onExit = onExitSearch,
                 onPrev = onPrevSearchResult,
-                onNext = onNextSearchResult
+                onNext = onNextSearchResult,
+                textColor = readerTextColor
             )
         } else {
             // ── Normal progress bar ────────────────────────────────────────
@@ -111,7 +113,7 @@ fun ReaderBottomBar(
                 targetValue = if (isInteracting) 1f else 0f,
                 label = "sliderInteractAlpha"
             )
-            val onSurface = MaterialTheme.colorScheme.onSurface
+            val onSurface = readerTextColor
             val primary = MaterialTheme.colorScheme.primary
             val density = LocalDensity.current
             val lineWidthPx = with(density) { 2.dp.toPx() }
@@ -250,7 +252,7 @@ fun ReaderBottomBar(
             Text(
                 text = pageText,
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = readerTextColor
             )
         } // end normal progress Column
         } // end else (normal progress bar)
@@ -265,7 +267,8 @@ private fun SearchNavBar(
     totalResults: Int,
     onExit: () -> Unit,
     onPrev: () -> Unit,
-    onNext: () -> Unit
+    onNext: () -> Unit,
+    textColor: Color
 ) {
     val currentNum = if (activeIndex != null) activeIndex + 1 else 0
     Box(
@@ -274,7 +277,6 @@ private fun SearchNavBar(
             .fillMaxWidth()
             .padding(vertical = 4.dp)
     ) {
-        // ✕ exit button
         IconButton(
             onClick = onExit,
             modifier = Modifier
@@ -284,7 +286,7 @@ private fun SearchNavBar(
             Icon(
                 MaterialSymbols.Outlined.Close,
                 contentDescription = "Exit search",
-                tint = MaterialTheme.colorScheme.onSurface,
+                tint = textColor,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -293,7 +295,7 @@ private fun SearchNavBar(
         Text(
             text = if (totalResults == 0) "No matches" else "$currentNum of $totalResults",
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = textColor
         )
 
         // Prev / Next arrows
@@ -311,9 +313,9 @@ private fun SearchNavBar(
                     contentDescription = "Previous result",
                     modifier = Modifier.size(20.dp),
                     tint = if (activeIndex != null && activeIndex > 0)
-                        MaterialTheme.colorScheme.onSurface
+                        textColor
                     else
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        textColor.copy(alpha = 0.3f)
                 )
             }
             IconButton(
@@ -326,9 +328,9 @@ private fun SearchNavBar(
                     contentDescription = "Next result",
                     modifier = Modifier.size(20.dp),
                     tint = if (activeIndex != null && activeIndex < totalResults - 1)
-                        MaterialTheme.colorScheme.onSurface
+                        textColor
                     else
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        textColor.copy(alpha = 0.3f)
                 )
             }
         }

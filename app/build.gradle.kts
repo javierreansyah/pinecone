@@ -1,8 +1,16 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
 }
+
+fun generateVersionCode(): Int {
+    val offset = 1_704_067_200L
+    return ((System.currentTimeMillis() / 1000L) - offset).toInt()
+}
+
+val appVersionName = "1.0"
 
 android {
     namespace = "com.example.readerapp"
@@ -12,16 +20,21 @@ android {
         applicationId = "com.example.readerapp"
         minSdk = 34
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = generateVersionCode()
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".dev"
+            manifestPlaceholders["appName"] = "Pinecone Dev"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            manifestPlaceholders["appName"] = "Pinecone"
 
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -31,21 +44,10 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
 
-        create("benchmark") {
+        create("staging") {
             initWith(getByName("release"))
-
-            isDebuggable = false
-            isMinifyEnabled = true
-
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-
-            //noinspection NotShrinkingResources
-            isShrinkResources = false
-            signingConfig = signingConfigs.getByName("debug")
-            applicationIdSuffix = ".benchmark"
+            applicationIdSuffix = ".dev"
+            manifestPlaceholders["appName"] = "Pinecone Dev"
         }
     }
     compileOptions {
@@ -56,6 +58,20 @@ android {
     buildFeatures {
         compose = true
         viewBinding = true
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        val outputName = when (variant.name) {
+            "release" -> "pinecone-v${appVersionName}.apk"
+            "debug" -> "pinecone-${appVersionName}-debug.apk"
+            "staging" -> "pinecone-${appVersionName}-staging.apk"
+            else -> "pinecone-${appVersionName}-${variant.name}.apk"
+        }
+        variant.outputs.forEach { output ->
+            output.outputFileName.set(outputName)
+        }
     }
 }
 
@@ -98,6 +114,5 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     //noinspection UseTomlInstead
     implementation("androidx.compose.ui:ui-text-google-fonts:1.11.2")
-    //noinspection UseTomlInstead
-    implementation("com.google.code.gson:gson:2.10.1")
+    implementation(libs.kotlinx.serialization.json)
 }

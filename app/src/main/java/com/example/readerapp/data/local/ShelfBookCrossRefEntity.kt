@@ -1,5 +1,7 @@
 package com.example.readerapp.data.local
 
+
+import kotlinx.serialization.Serializable
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -26,6 +28,7 @@ import androidx.room.Index
         Index("bookId")
     ]
 )
+@Serializable
 data class ShelfBookCrossRefEntity(
     val shelfId: String,
     val bookId: String,

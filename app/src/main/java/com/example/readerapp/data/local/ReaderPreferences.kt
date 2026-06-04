@@ -17,22 +17,25 @@ import org.readium.r2.shared.util.Language
 import androidx.core.graphics.toColorInt
 import org.readium.r2.shared.ExperimentalReadiumApi
 import kotlin.math.roundToInt
+import kotlinx.serialization.Serializable
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "reader_settings")
 
+@Serializable
 data class CustomReaderTheme(
     val name: String,
     val backgroundColor: String,
     val textColor: String
 )
 
+@Serializable
 data class ReaderSettings(
     // App-level settings (not Readium)
     val themeMode: String = "System",
     val colorPalette: String = "Pine",
     val locale: String = "System",
-    val brightness: Float = 1.0f,
-    val autoBrightness: Boolean = false,
+    val brightness: Float = 0.5f,
+    val autoBrightness: Boolean = true,
 
     // Readium-mapped settings
     val publisherStyles: Boolean = true,
@@ -63,7 +66,8 @@ data class ReaderSettings(
 
     // Backup
     val autoBackupFrequency: String = "12h",
-    val lastBackupTime: Long = 0L
+    val lastBackupTime: Long = 0L,
+    val backupFolderUri: String = ""
 ) {
     /**
      * Converts the app-level reader settings to Readium's [EpubPreferences].
@@ -190,6 +194,7 @@ class ReaderPreferences(private val context: Context) {
         // Backup
         val AUTO_BACKUP_FREQUENCY = stringPreferencesKey("auto_backup_frequency")
         val LAST_BACKUP_TIME = longPreferencesKey("last_backup_time")
+        val BACKUP_FOLDER_URI = stringPreferencesKey("backup_folder_uri")
     }
 
     val readerSettings: Flow<ReaderSettings> = context.dataStore.data.map { preferences ->
@@ -197,8 +202,8 @@ class ReaderPreferences(private val context: Context) {
             themeMode = preferences[THEME_MODE] ?: "System",
             colorPalette = preferences[COLOR_PALETTE] ?: "Pine",
             locale = preferences[LOCALE] ?: "System",
-            brightness = preferences[BRIGHTNESS] ?: 1.0f,
-            autoBrightness = preferences[AUTO_BRIGHTNESS] ?: false,
+            brightness = preferences[BRIGHTNESS] ?: 0.5f,
+            autoBrightness = preferences[AUTO_BRIGHTNESS] ?: true,
 
             publisherStyles = preferences[PUBLISHER_STYLES] ?: false,
             fontSize = (preferences[FONT_SIZE] ?: 1.0).let { (it * 100.0).roundToInt() / 100.0 },
@@ -237,7 +242,8 @@ class ReaderPreferences(private val context: Context) {
             } ?: emptyList(),
 
             autoBackupFrequency = preferences[AUTO_BACKUP_FREQUENCY] ?: "12h",
-            lastBackupTime = preferences[LAST_BACKUP_TIME] ?: 0L
+            lastBackupTime = preferences[LAST_BACKUP_TIME] ?: 0L,
+            backupFolderUri = preferences[BACKUP_FOLDER_URI] ?: ""
         )
     }
 
@@ -282,6 +288,7 @@ class ReaderPreferences(private val context: Context) {
             
             preferences[AUTO_BACKUP_FREQUENCY] = settings.autoBackupFrequency
             preferences[LAST_BACKUP_TIME] = settings.lastBackupTime
+            preferences[BACKUP_FOLDER_URI] = settings.backupFolderUri
         }
     }
 

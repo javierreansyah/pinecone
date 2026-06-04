@@ -1,5 +1,6 @@
 package com.example.readerapp.ui.features.reader.components
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,8 +27,10 @@ import androidx.compose.ui.unit.sp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Close
+import com.composables.icons.materialsymbols.outlined.Mic
 import com.composables.icons.materialsymbols.outlined.Search
 import com.example.readerapp.ui.features.reader.SearchResultItem
+import com.example.readerapp.ui.components.rememberVoiceSearchLauncher
 import com.example.readerapp.ui.theme.spacing
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,8 +49,20 @@ fun SearchScreen(
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
+    val launchVoiceSearch = rememberVoiceSearchLauncher { spokenText ->
+        onQueryChange(spokenText)
+        onSearch(spokenText)
+        keyboardController?.hide()
+    }
+
     LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
+        if (query.isEmpty()) {
+            focusRequester.requestFocus()
+        }
+    }
+
+    BackHandler {
+        onClose()
     }
 
     val backgroundColor = MaterialTheme.colorScheme.surface
@@ -89,13 +104,23 @@ fun SearchScreen(
                             )
                         },
                         trailingIcon = {
-                            if (query.isNotEmpty()) {
-                                IconButton(onClick = { onQueryChange("") }) {
-                                    Icon(
-                                        MaterialSymbols.Outlined.Close,
-                                        contentDescription = "Clear",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (query.isNotEmpty()) {
+                                    IconButton(onClick = { onQueryChange("") }) {
+                                        Icon(
+                                            MaterialSymbols.Outlined.Close,
+                                            contentDescription = "Clear",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                } else {
+                                    IconButton(onClick = { launchVoiceSearch() }) {
+                                        Icon(
+                                            MaterialSymbols.Outlined.Mic,
+                                            contentDescription = "Voice Search",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
                             }
                         },
@@ -165,8 +190,7 @@ fun SearchScreen(
 
         // ── Result list ───────────────────────────────────────────────────────
         LazyColumn(
-            contentPadding = PaddingValues(vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space16),
+            contentPadding = PaddingValues(bottom = 8.dp),
             modifier = Modifier.fillMaxSize()
         ) {
             itemsIndexed(results) { index, item ->
@@ -223,7 +247,7 @@ fun SearchResultCard(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(horizontal = 20.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)
     ) {
         Column {

@@ -1,10 +1,13 @@
 package com.example.readerapp.data.local
 
+
+import kotlinx.serialization.Serializable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.util.UUID
 
 @Entity(tableName = "shelves")
+@Serializable
 data class ShelfEntity(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
     val name: String,

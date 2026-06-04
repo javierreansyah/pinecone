@@ -37,6 +37,7 @@ import com.example.readerapp.data.local.ReaderPreferences
 import com.example.readerapp.data.local.ReaderSettings
 import com.example.readerapp.ui.features.library.LibraryScreen
 import com.example.readerapp.ui.navigation.Screen
+import com.example.readerapp.ui.navigation.AppDrawer
 import com.example.readerapp.ui.features.settings.SettingsScreen
 import com.example.readerapp.ui.features.library.ArchiveScreen
 import com.example.readerapp.ui.features.library.ShelfDetailScreen
@@ -122,8 +123,47 @@ class MainActivity : ComponentActivity() {
                     }
                 )
 
+                val backupFolderPickerLauncher = rememberLauncherForActivityResult(
+                    contract = object : ActivityResultContracts.OpenDocumentTree() {
+                        override fun createIntent(context: android.content.Context, input: android.net.Uri?): Intent {
+                            val intent = super.createIntent(context, input)
+                            val pineconeDir = java.io.File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOCUMENTS), "Pinecone")
+                            if (!pineconeDir.exists()) pineconeDir.mkdirs()
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && input != null) {
+                                intent.putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, input)
+                            }
+                            return intent
+                        }
+                    },
+                    onResult = { uri ->
+                        uri?.let {
+                            val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                            context.contentResolver.takePersistableUriPermission(it, takeFlags)
+                            
+                            // Save to settings
+                            val newSettings = settings.copy(backupFolderUri = it.toString())
+                            scope.launch {
+                                readerPreferences.updateSettings(newSettings)
+                                Toast.makeText(context, "Backup Location Selected", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                )
+
                 val restoreBackupLauncher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.OpenDocument(),
+                    contract = object : ActivityResultContracts.OpenDocument() {
+                        override fun createIntent(context: android.content.Context, input: Array<String>): Intent {
+                            val intent = super.createIntent(context, input)
+                            val pineconeDir = java.io.File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOCUMENTS), "Pinecone")
+                            if (!pineconeDir.exists()) pineconeDir.mkdirs()
+                            
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                                val uri = android.provider.DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Documents/Pinecone")
+                                intent.putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, uri)
+                            }
+                            return intent
+                        }
+                    },
                     onResult = { uri ->
                         uri?.let {
                             Toast.makeText(context, "Restoring backup...", Toast.LENGTH_SHORT).show()
@@ -170,127 +210,34 @@ class MainActivity : ComponentActivity() {
                 ModalNavigationDrawer(
                     drawerState = drawerState,
                     drawerContent = {
-                        ModalDrawerSheet {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    painter = painterResource(
-                                        id = if (darkTheme) R.drawable.dark_mode_icon else R.drawable.light_mode_icon
-                                    ),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(24.dp),
-                                    tint = Color.Unspecified
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = stringResource(id = R.string.app_name),
-                                    style = MaterialTheme.typography.headlineMedium
-                                )
-                            }
-                            
-                            NavigationDrawerItem(
-                                label = { Text("Archives") },
-                                icon = { Icon(MaterialSymbols.Outlined.Archive, contentDescription = null) },
-                                selected = false,
-                                onClick = {
-                                    navController.navigate(Screen.Archives.route)
-                                    scope.launch { drawerState.close() }
-                                },
-                                shape = RectangleShape
-                            )
-                            
-                            HorizontalDivider()
-                            
-                            NavigationDrawerItem(
-                                label = { Text("Import Files") },
-                                icon = { Icon(MaterialSymbols.Outlined.Upload, contentDescription = null) },
-                                selected = false,
-                                onClick = {
-                                    filePickerLauncher.launch(
-                                        arrayOf(
-                                            "application/epub+zip",
-                                            "application/webpub+json",
-                                            "application/x-cbz",
-                                            "application/x-cbr",
-                                            "application/x-cb7",
-                                            "application/x-cbt",
-                                            "application/vnd.comicbook+zip",
-                                            "application/vnd.comicbook-rar"
-                                        )
+                        AppDrawer(
+                            drawerState = drawerState,
+                            navController = navController,
+                            settings = settings,
+                            darkTheme = darkTheme,
+                            onImportFilesClick = {
+                                filePickerLauncher.launch(
+                                    arrayOf(
+                                        "application/epub+zip",
+                                        "application/webpub+json",
+                                        "application/x-cbz",
+                                        "application/x-cbr",
+                                        "application/x-cb7",
+                                        "application/x-cbt",
+                                        "application/vnd.comicbook+zip",
+                                        "application/vnd.comicbook-rar"
                                     )
-                                    scope.launch { drawerState.close() }
-                                },
-                                shape = RectangleShape
-                            )
-                            NavigationDrawerItem(
-                                label = { Text("Scan Folder") },
-                                icon = { Icon(MaterialSymbols.Outlined.Folder, contentDescription = null) },
-                                selected = false,
-                                onClick = {
-                                    folderPickerLauncher.launch(null)
-                                    scope.launch { drawerState.close() }
-                                },
-                                shape = RectangleShape
-                            )
-
-                            HorizontalDivider()
-
-                            val lastBackupText = if (settings.lastBackupTime > 0) {
-                                val formatter = java.text.SimpleDateFormat("MMM dd, HH:mm", LocalLocale.current.platformLocale)
-                                "Last: ${formatter.format(java.util.Date(settings.lastBackupTime))}"
-                            } else {
-                                "Never"
-                            }
-
-                            NavigationDrawerItem(
-                                label = {
-                                    androidx.compose.foundation.layout.Column {
-                                        Text("Backup Now")
-                                        Text(lastBackupText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                },
-                                icon = { Icon(Icons.Outlined.DriveFolderUpload, contentDescription = null) },
-                                selected = false,
-                                onClick = {
-                                    Toast.makeText(context, "Starting backup...", Toast.LENGTH_SHORT).show()
-                                    scope.launch {
-                                        drawerState.close()
-                                        val success = com.example.readerapp.data.repository.BackupRepository(context).performBackup(force = true)
-                                        if (success) {
-                                            Toast.makeText(context, "Backup successful", Toast.LENGTH_SHORT).show()
-                                        } else {
-                                            Toast.makeText(context, "Backup failed", Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                                },
-                                shape = RectangleShape
-                            )
-
-                            NavigationDrawerItem(
-                                label = { Text("Restore Backup") },
-                                icon = { Icon(Icons.Outlined.Restore, contentDescription = null) },
-                                selected = false,
-                                onClick = {
-                                    showRestoreWarning = true
-                                },
-                                shape = RectangleShape
-                            )
-
-                            HorizontalDivider()
-
-                            NavigationDrawerItem(
-                                label = { Text("Settings") },
-                                icon = { Icon(MaterialSymbols.Outlined.Settings, contentDescription = null) },
-                                selected = false,
-                                onClick = {
-                                    navController.navigate(Screen.Settings.route)
-                                    scope.launch { drawerState.close() }
-                                },
-                                shape = RectangleShape
-                            )
-                        }
+                                )
+                            },
+                            onScanFolderClick = { folderPickerLauncher.launch(null) },
+                            onBackupFolderSetupClick = {
+                                val initialUri = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                                    android.provider.DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Documents/Pinecone")
+                                } else null
+                                backupFolderPickerLauncher.launch(initialUri)
+                            },
+                            onRestoreBackupClick = { showRestoreWarning = true }
+                        )
                     }
                 ) {
                     NavHost(

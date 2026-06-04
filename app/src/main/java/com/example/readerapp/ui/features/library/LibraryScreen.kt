@@ -91,8 +91,8 @@ fun LibraryScreen(
                             pagerState.animateScrollToPage(0)
                         }
                     },
-                    icon = { Icon(MaterialSymbols.Outlined.Book, contentDescription = "Library") },
-                    label = { Text("Library") }
+                    icon = { Icon(MaterialSymbols.Outlined.Book, contentDescription = "Books") },
+                    label = { Text("Books") }
                 )
                 ShortNavigationBarItem(
                     selected = pagerState.currentPage == 1,
@@ -115,9 +115,10 @@ fun LibraryScreen(
                 0 -> {
                     // Books Page
                     Box(modifier = Modifier.fillMaxSize()) {
-                        if (uiState.bookPreferences.layoutMode == LayoutMode.Grid) {
+                        if (uiState.bookPreferences.layoutMode != LayoutMode.List) {
                             BookGrid(
                                 books = filteredBooks,
+                                layoutMode = uiState.bookPreferences.layoutMode,
                                 onBookClick = onNavigateToReader,
                                 onBookLongClick = { selectedBookForMenu = it }
                             )

@@ -40,6 +40,7 @@ fun ReaderTopBar(
     onToggleBookmark: () -> Unit,
     onInfoClick: () -> Unit,
     readerBgColor: Color,
+    readerTextColor: Color,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -109,8 +110,8 @@ fun ReaderTopBar(
             },
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = Color.Transparent,
-                navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                actionIconContentColor = MaterialTheme.colorScheme.onSurface
+                navigationIconContentColor = readerTextColor,
+                actionIconContentColor = readerTextColor
             )
         )
     }

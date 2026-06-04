@@ -2,36 +2,46 @@ package com.example.readerapp.ui.features.library.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import com.example.readerapp.ui.theme.spacing
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.example.readerapp.ui.theme.spacing
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_drop_down
 import com.composables.icons.materialsymbols.outlined.Arrow_drop_up
-import com.composables.icons.materialsymbols.outlined.Check
+import com.composables.icons.materialsymbols.outlined.Grid_view
+import com.composables.icons.materialsymbols.outlined.View_list
 import com.example.readerapp.ui.features.library.LayoutMode
-import com.example.readerapp.ui.features.library.LibraryUiState
 import com.example.readerapp.ui.features.library.SortType
 import com.example.readerapp.ui.features.library.StatusFilter
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FilterSortBottomSheet(
     preferences: com.example.readerapp.ui.features.library.FilterSortPreferences,
@@ -59,25 +69,38 @@ fun FilterSortBottomSheet(
         ) {
             // --- VIEW SECTION ---
             if (showViewPicker) {
-                Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space16)) {
+                Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)) {
                     Text("View", style = MaterialTheme.typography.titleMedium)
-                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        LayoutMode.entries.forEachIndexed { index, mode ->
-                            SegmentedButton(
-                                selected = preferences.layoutMode == mode,
-                                onClick = { onLayoutModeChange(mode) },
-                                shape = SegmentedButtonDefaults.itemShape(index = index, count = LayoutMode.entries.size),
-                                icon = {
-                                    if (preferences.layoutMode == mode) {
-                                        Icon(
-                                            MaterialSymbols.Outlined.Check,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(SegmentedButtonDefaults.IconSize)
-                                        )
-                                    }
-                                }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+                    ) {
+                        val modes = LayoutMode.entries
+                        modes.forEachIndexed { index, mode ->
+                            val isSelected = preferences.layoutMode == mode
+                            ToggleButton(
+                                checked = isSelected,
+                                onCheckedChange = { onLayoutModeChange(mode) },
+                                shapes = when (index) {
+                                    0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                                    modes.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                                    else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                                },
+                                modifier = Modifier.weight(1f).semantics { role = Role.RadioButton }
                             ) {
-                                Text(mode.name, style = MaterialTheme.typography.labelLarge)
+                                val icon = when (mode) {
+                                    LayoutMode.Grid -> MaterialSymbols.Outlined.Grid_view
+                                    LayoutMode.BigGrid -> MaterialSymbols.Outlined.Grid_view
+                                    LayoutMode.List -> MaterialSymbols.Outlined.View_list
+                                }
+                                Icon(icon, contentDescription = null)
+                                Spacer(Modifier.size(ToggleButtonDefaults.IconSpacing))
+                                val label = when (mode) {
+                                    LayoutMode.Grid -> "Grid"
+                                    LayoutMode.BigGrid -> "Big Grid"
+                                    LayoutMode.List -> "List"
+                                }
+                                Text(label)
                             }
                         }
                     }
@@ -120,21 +143,25 @@ fun FilterSortBottomSheet(
             if (showStatusFilter) {
                 Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)) {
                     Text("Status", style = MaterialTheme.typography.titleMedium)
-
-                    Column(verticalArrangement = Arrangement.spacedBy(segmentedGap)) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
                         val statusEntries = StatusFilter.entries
-                        val totalStatuses = statusEntries.size
-
                         statusEntries.forEachIndexed { index, status ->
                             val isSelected = preferences.selectedStatus.contains(status)
-                            SegmentedListItem(
+                            ToggleButton(
                                 checked = isSelected,
                                 onCheckedChange = { onStatusToggle(status) },
-                                index = index,
-                                count = totalStatuses,
-                                leadingContent = { Checkbox(checked = isSelected, onCheckedChange = null) },
-                                content = { Text(statusLabel(status), style = MaterialTheme.typography.bodyLarge) }
-                            )
+                                shapes = when (index) {
+                                    0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                                    statusEntries.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                                    else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                                }
+                            ) {
+                                Text(statusLabel(status))
+                            }
                         }
                     }
                 }

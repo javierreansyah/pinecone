@@ -23,6 +23,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusProperties
+import com.example.readerapp.ui.components.rememberVoiceSearchLauncher
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.*
@@ -54,47 +57,89 @@ fun LibrarySearchTopBar(
 ) {
     val textFieldState = rememberTextFieldState(searchQuery)
     val scope = rememberCoroutineScope()
-    val appBarWithSearchColors = SearchBarDefaults.appBarWithSearchColors()
+    val defaultSearchBarColors = SearchBarDefaults.colors()
+    val appBarWithSearchColors = SearchBarDefaults.appBarWithSearchColors(
+        searchBarColors = defaultSearchBarColors,
+        scrolledSearchBarContainerColor = defaultSearchBarColors.containerColor,
+        appBarContainerColor = MaterialTheme.colorScheme.surface,
+        scrolledAppBarContainerColor = MaterialTheme.colorScheme.surface
+    )
+
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    val focusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
+
+    val launchVoiceSearch = rememberVoiceSearchLauncher { spokenText ->
+        textFieldState.edit { replace(0, length, spokenText) }
+        onSearchQueryChange(spokenText)
+    }
 
     LaunchedEffect(textFieldState.text) {
         onSearchQueryChange(textFieldState.text.toString())
     }
 
     LaunchedEffect(searchBarState.currentValue) {
-        if (searchBarState.currentValue == SearchBarValue.Collapsed && textFieldState.text.isNotEmpty()) {
-            textFieldState.edit { replace(0, length, "") }
+        if (searchBarState.currentValue == SearchBarValue.Collapsed) {
+            focusManager.clearFocus()
+            if (textFieldState.text.isNotEmpty()) {
+                textFieldState.edit { replace(0, length, "") }
+            }
+        } else if (searchBarState.currentValue == SearchBarValue.Expanded) {
+            focusRequester.requestFocus()
         }
     }
 
     val inputField = @Composable {
-        val showIcons = searchBarState.currentValue == SearchBarValue.Expanded && searchBarState.targetValue == SearchBarValue.Expanded
+        val isExpanded = searchBarState.targetValue == SearchBarValue.Expanded
+        val alignmentBias by androidx.compose.animation.core.animateFloatAsState(
+            targetValue = if (isExpanded) -1f else 0f,
+            label = "placeholderAlignment"
+        )
         SearchBarDefaults.InputField(
+            modifier = Modifier
+                .focusRequester(focusRequester)
+                .focusProperties {
+                    canFocus = searchBarState.currentValue == SearchBarValue.Expanded
+                },
             textFieldState = textFieldState,
             searchBarState = searchBarState,
             colors = appBarWithSearchColors.searchBarColors.inputFieldColors,
-            onSearch = { scope.launch { searchBarState.animateToCollapsed() } },
+            onSearch = {
+                focusManager.clearFocus()
+                scope.launch { searchBarState.animateToCollapsed() }
+            },
             placeholder = { 
                 Box(
                     modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = if (searchBarState.targetValue == SearchBarValue.Expanded) Alignment.CenterStart else Alignment.Center
+                    contentAlignment = androidx.compose.ui.BiasAlignment(horizontalBias = alignmentBias, verticalBias = 0f)
                 ) {
                     Text(modifier = Modifier.clearAndSetSemantics {}, text = "Search library", style = MaterialTheme.typography.bodyLarge) 
                 }
             },
-            leadingIcon = if (showIcons) {
-                {
-                    IconButton(onClick = { scope.launch { searchBarState.animateToCollapsed() } }) {
+            leadingIcon = {
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = isExpanded,
+                    enter = androidx.compose.animation.fadeIn(),
+                    exit = androidx.compose.animation.fadeOut()
+                ) {
+                    IconButton(onClick = { 
+                        focusManager.clearFocus()
+                        scope.launch { searchBarState.animateToCollapsed() } 
+                    }) {
                         Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = "Back")
                     }
                 }
-            } else null,
-            trailingIcon = if (showIcons) {
-                {
-                    IconButton(onClick = { /* Microphone action */ }) {
+            },
+            trailingIcon = {
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = isExpanded,
+                    enter = androidx.compose.animation.fadeIn(),
+                    exit = androidx.compose.animation.fadeOut()
+                ) {
+                    IconButton(onClick = { launchVoiceSearch() }) {
                         Icon(MaterialSymbols.Outlined.Mic, contentDescription = "Voice Search")
                     }
                 }
-            } else null,
+            },
         )
     }
 
