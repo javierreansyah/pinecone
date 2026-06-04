@@ -143,6 +143,7 @@ private fun sortTypeLabel(type: SortType): String = when (type) {
     SortType.LastRead -> "Date last read"
     SortType.Added -> "Date added"
     SortType.Progress -> "Percent complete"
+    SortType.Custom -> "Custom Order"
 }
 
 private fun statusLabel(status: StatusFilter): String = when (status) {

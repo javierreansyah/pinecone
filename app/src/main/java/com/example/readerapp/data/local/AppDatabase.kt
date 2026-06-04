@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ShelfBookCrossRefEntity::class, 
         NoteEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -53,6 +53,12 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE books ADD COLUMN publisher TEXT")
                 db.execSQL("ALTER TABLE books ADD COLUMN published TEXT")
                 db.execSQL("ALTER TABLE books ADD COLUMN tags TEXT")
+            }
+        }
+
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE shelf_book_cross_ref ADD COLUMN orderIndex INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

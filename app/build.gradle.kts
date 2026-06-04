@@ -64,6 +64,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.compose.animation.core)
+    implementation(libs.reorderable)
     implementation(libs.androidx.documentfile)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
@@ -97,4 +98,6 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     //noinspection UseTomlInstead
     implementation("androidx.compose.ui:ui-text-google-fonts:1.11.2")
+    //noinspection UseTomlInstead
+    implementation("com.google.code.gson:gson:2.10.1")
 }

@@ -29,5 +29,6 @@ import androidx.room.Index
 data class ShelfBookCrossRefEntity(
     val shelfId: String,
     val bookId: String,
-    val addedAt: Long = System.currentTimeMillis()
+    val addedAt: Long = System.currentTimeMillis(),
+    val orderIndex: Int = 0
 )

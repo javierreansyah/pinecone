@@ -19,4 +19,13 @@ interface NoteDao {
 
     @Query("DELETE FROM notes WHERE bookId = :bookId")
     suspend fun deleteAllForBook(bookId: String)
+
+    @Query("DELETE FROM notes")
+    suspend fun deleteAll()
+
+    @Query("SELECT * FROM notes")
+    suspend fun getAllNotesSync(): List<NoteEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(notes: List<NoteEntity>)
 }

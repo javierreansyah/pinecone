@@ -19,29 +19,34 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
     private val booksFlow: Flow<List<Book>> = bookRepository.getAllBooks()
         .map { entities -> entities.map { Book.fromEntity(it) } }
 
-    val filteredBooks: StateFlow<List<Book>> = combine(booksFlow, _uiState) { books, state ->
-        books
-            .filter { !it.isArchived }
-            .filter { book ->
-                val status = when {
-                    book.progress <= 0.0 -> StatusFilter.NotStarted
-                    book.progress >= 1.0 -> StatusFilter.Finished
-                    else -> StatusFilter.Reading
+    fun getFilteredAndSortedBooks(baseFlow: Flow<List<Book>>): Flow<List<Book>> {
+        return combine(baseFlow, _uiState) { books, state ->
+            books
+                .filter { !it.isArchived }
+                .filter { book ->
+                    val status = when {
+                        book.progress <= 0.0 -> StatusFilter.NotStarted
+                        book.progress >= 1.0 -> StatusFilter.Finished
+                        else -> StatusFilter.Reading
+                    }
+                    state.selectedStatus.contains(status)
                 }
-                state.selectedStatus.contains(status)
-            }
-            .let { filtered ->
-                val comparator = when (state.sortType) {
-                    SortType.Title -> compareBy<Book> { it.title.lowercase() }
-                    SortType.Author -> compareBy { it.author?.lowercase() ?: "" }
-                    SortType.LastRead -> compareBy { it.lastOpened ?: 0L }
-                    SortType.Added -> compareBy { it.addedDate }
-                    SortType.Progress -> compareBy { it.progress }
+                .let { filtered ->
+                    val comparator = when (state.sortType) {
+                        SortType.Title -> compareBy<Book> { it.title.lowercase() }
+                        SortType.Author -> compareBy { it.author?.lowercase() ?: "" }
+                        SortType.LastRead -> compareBy { it.lastOpened ?: 0L }
+                        SortType.Added -> compareBy { it.addedDate }
+                        SortType.Progress -> compareBy { it.progress }
+                        SortType.Custom -> compareBy { 0 }
+                    }
+                    if (state.isAscending) filtered.sortedWith(comparator)
+                    else filtered.sortedWith(comparator.reversed())
                 }
-                if (state.isAscending) filtered.sortedWith(comparator)
-                else filtered.sortedWith(comparator.reversed())
-            }
-    }.stateIn(
+        }
+    }
+
+    val filteredBooks: StateFlow<List<Book>> = getFilteredAndSortedBooks(booksFlow).stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
@@ -51,8 +56,19 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
         .map { books -> books.filter { it.isArchived } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val shelves: StateFlow<List<ShelfWithCovers>> = bookRepository.getAllShelvesWithBooks()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val shelves: StateFlow<List<ShelfWithCovers>> = combine(
+        bookRepository.getAllShelvesWithBooks(),
+        bookRepository.getAllShelfBookCrossRefs()
+    ) { shelvesList, crossRefs ->
+        shelvesList.map { shelfWithCovers ->
+            val shelfId = shelfWithCovers.shelf.id
+            val shelfCrossRefs = crossRefs.filter { it.shelfId == shelfId }
+            val sortedBooks = shelfWithCovers.books.sortedBy { book ->
+                shelfCrossRefs.find { it.bookId == book.id }?.orderIndex ?: 0
+            }
+            shelfWithCovers.copy(books = sortedBooks)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val searchResults: StateFlow<SearchResults> = combine(booksFlow, shelves, _uiState) { books, shelvesList, state ->
         val query = state.searchQuery
@@ -119,6 +135,12 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
     fun deleteShelf(shelfId: String) {
         viewModelScope.launch {
             bookRepository.deleteShelf(shelfId)
+        }
+    }
+
+    fun updateShelfOrder(shelfId: String, newBookIdsOrder: List<String>) {
+        viewModelScope.launch {
+            bookRepository.updateShelfOrder(shelfId, newBookIdsOrder)
         }
     }
 

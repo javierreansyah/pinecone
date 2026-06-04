@@ -28,4 +28,10 @@ interface BookDao {
 
     @Query("DELETE FROM books")
     suspend fun deleteAll()
+
+    @Query("SELECT * FROM books")
+    suspend fun getAllBooksSync(): List<BookEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(books: List<BookEntity>)
 }
