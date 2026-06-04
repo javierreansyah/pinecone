@@ -82,7 +82,7 @@ fun ReaderBottomSheet(
                 Tab(
                     selected = pagerState.currentPage == 0,
                     onClick = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
-                    text = { Text("TOC", style = MaterialTheme.typography.titleMedium) }
+                    text = { Text("Chapters", style = MaterialTheme.typography.titleMedium) }
                 )
                 Tab(
                     selected = pagerState.currentPage == 1,
@@ -281,7 +281,7 @@ private fun NotesList(
 ) {
     if (notes.isEmpty()) {
         Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-            Text("No Notes & Highlights", style = MaterialTheme.typography.bodyLarge)
+            Text("No Notes", style = MaterialTheme.typography.bodyLarge)
         }
     } else {
         LazyColumn(
@@ -356,10 +356,10 @@ fun NoteBottomSheet(
     var editColor by remember(note.id) { mutableIntStateOf(note.color) }
 
     val swatches = listOf(
-        "#40FFEB3B".toColorInt(), // Yellow
-        "#40F44336".toColorInt(), // Red
-        "#4003A9F4".toColorInt(), // Blue
-        "#404CAF50".toColorInt()  // Green
+        "#40fac02e".toColorInt(), // Yellow
+        "#40fd7142".toColorInt(), // Orange
+        "#408bc24a".toColorInt(), // Green
+        "#4025c6da".toColorInt()  // Blue
     )
 
     ModalBottomSheet(

@@ -1,11 +1,14 @@
 package com.example.readerapp.data.model
 
+
+import kotlinx.serialization.Serializable
 import com.example.readerapp.data.local.BookEntity
 import com.example.readerapp.data.local.BookmarkEntity
 import com.example.readerapp.data.local.NoteEntity
 import com.example.readerapp.data.local.ShelfBookCrossRefEntity
 import com.example.readerapp.data.local.ShelfEntity
 
+@Serializable
 data class BackupPayload(
     val version: Int = 1,
     val books: List<BookEntity>,

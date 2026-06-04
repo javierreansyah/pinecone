@@ -11,14 +11,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.readerapp.data.model.Book
 
+import com.example.readerapp.ui.features.library.LayoutMode
+
 @Composable
 fun BookGrid(
     books: List<Book>,
+    layoutMode: LayoutMode = LayoutMode.Grid,
     onBookClick: (String) -> Unit,
     onBookLongClick: ((String) -> Unit)? = null
 ) {
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(100.dp),
+        columns = GridCells.Adaptive(if (layoutMode == LayoutMode.BigGrid) 150.dp else 100.dp),
         contentPadding = PaddingValues(16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),

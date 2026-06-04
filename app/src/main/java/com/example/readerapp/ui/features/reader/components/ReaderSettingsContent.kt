@@ -1,6 +1,7 @@
-package com.example.readerapp.ui.components
+package com.example.readerapp.ui.features.reader.components
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -15,6 +16,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.googlefonts.Font
+import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -25,6 +28,10 @@ import com.example.readerapp.data.local.CustomReaderTheme
 import com.example.readerapp.data.local.ReaderSettings
 import kotlin.math.roundToInt
 import androidx.core.graphics.toColorInt
+import com.example.readerapp.ui.components.CustomColorPickerDialog
+import com.example.readerapp.ui.components.IncrementDecrementControl
+import com.example.readerapp.ui.components.SegmentedButtonGroup
+import com.example.readerapp.ui.components.ThemeSwatch
 import kotlinx.coroutines.launch
 
 @SuppressLint("DefaultLocale", "ConfigurationScreenWidthHeight")
@@ -43,7 +50,7 @@ fun ReaderSettingsContent(
     val scope = rememberCoroutineScope()
 
     var showColorPicker by remember { mutableStateOf(false) }
-    var themeToDelete by remember { mutableStateOf<CustomReaderTheme?>(null) }
+    var themeToEdit by remember { mutableStateOf<CustomReaderTheme?>(null) }
 
     Column(
         modifier = Modifier
@@ -62,7 +69,7 @@ fun ReaderSettingsContent(
                     onClick = {
                         scope.launch { pagerState.animateScrollToPage(index) }
                     },
-                    text = { Text(title, style = MaterialTheme.typography.titleSmall) }
+                    text = { Text(title, style = MaterialTheme.typography.titleMedium) }
                 )
             }
         }
@@ -92,8 +99,14 @@ fun ReaderSettingsContent(
                         1 -> LightingTabContent(
                             settings = settings,
                             onSettingsChange = onSettingsChange,
-                            onAddThemeClick = { showColorPicker = true },
-                            onThemeLongClick = { themeToDelete = it }
+                            onAddThemeClick = { 
+                                themeToEdit = null
+                                showColorPicker = true 
+                            },
+                            onThemeLongClick = { 
+                                themeToEdit = it
+                                showColorPicker = true
+                            }
                         )
                         2 -> AdvancedTabContent(settings, onSettingsChange)
                     }
@@ -104,37 +117,45 @@ fun ReaderSettingsContent(
 
     if (showColorPicker) {
         CustomColorPickerDialog(
-            onDismiss = { showColorPicker = false },
+            initialName = themeToEdit?.name ?: "",
+            initialBgColor = themeToEdit?.backgroundColor ?: "#",
+            initialTextColor = themeToEdit?.textColor ?: "#",
+            onDismiss = { 
+                showColorPicker = false 
+                themeToEdit = null
+            },
+            onDelete = if (themeToEdit != null) {
+                {
+                    val newThemes = settings.customThemes.filter { it.name != themeToEdit?.name }
+                    val newPreset = if (settings.readerThemePreset == themeToEdit?.name) "Auto" else settings.readerThemePreset
+                    onSettingsChange(settings.copy(customThemes = newThemes, readerThemePreset = newPreset))
+                    showColorPicker = false
+                    themeToEdit = null
+                }
+            } else null,
             onConfirm = { name, bgColor, textColor ->
                 val newTheme = CustomReaderTheme(name, bgColor, textColor)
-                onSettingsChange(settings.copy(
-                    customThemes = settings.customThemes + newTheme,
-                    readerThemePreset = name,
-                    customBackgroundColor = bgColor,
-                    customTextColor = textColor
-                ))
-                showColorPicker = false
-            }
-        )
-    }
+                
+                val updatedThemes = if (themeToEdit != null) {
+                    // Update existing theme, keeping its position
+                    settings.customThemes.map { if (it.name == themeToEdit?.name) newTheme else it }
+                } else {
+                    // Add new theme
+                    settings.customThemes + newTheme
+                }
 
-    if (themeToDelete != null) {
-        AlertDialog(
-            onDismissRequest = { themeToDelete = null },
-            title = { Text("Delete Theme", style = MaterialTheme.typography.titleLarge) },
-            text = { Text("Are you sure you want to delete '${themeToDelete?.name}'?", style = MaterialTheme.typography.bodyMedium) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val newThemes = settings.customThemes.filter { it.name != themeToDelete?.name }
-                        val newPreset = if (settings.readerThemePreset == themeToDelete?.name) "Auto" else settings.readerThemePreset
-                        onSettingsChange(settings.copy(customThemes = newThemes, readerThemePreset = newPreset))
-                        themeToDelete = null
-                    }
-                ) { Text("Delete", style = MaterialTheme.typography.labelLarge) }
-            },
-            dismissButton = {
-                TextButton(onClick = { themeToDelete = null }) { Text("Cancel", style = MaterialTheme.typography.labelLarge) }
+                val newPreset = if (settings.readerThemePreset == themeToEdit?.name || themeToEdit == null) name else settings.readerThemePreset
+
+                onSettingsChange(
+                    settings.copy(
+                        customThemes = updatedThemes,
+                        readerThemePreset = newPreset,
+                        customBackgroundColor = if (newPreset == name) bgColor else settings.customBackgroundColor,
+                        customTextColor = if (newPreset == name) textColor else settings.customTextColor
+                    )
+                )
+                showColorPicker = false
+                themeToEdit = null
             }
         )
     }
@@ -181,8 +202,26 @@ private fun TextTabContent(
             IncrementDecrementControl(
                 label = "Text Size",
                 value = "${(settings.fontSize * 100).roundToInt()}%",
-                onIncrement = { onSettingsChange(settings.copy(fontSize = (((settings.fontSize + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.5, 3.0))) },
-                onDecrement = { onSettingsChange(settings.copy(fontSize = (((settings.fontSize - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.5, 3.0))) },
+                onIncrement = {
+                    onSettingsChange(
+                        settings.copy(
+                            fontSize = (((settings.fontSize + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
+                                0.5,
+                                3.0
+                            )
+                        )
+                    )
+                },
+                onDecrement = {
+                    onSettingsChange(
+                        settings.copy(
+                            fontSize = (((settings.fontSize - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
+                                0.5,
+                                3.0
+                            )
+                        )
+                    )
+                },
                 modifier = Modifier.weight(1f)
             )
             val currentFontWeight = settings.fontWeights[settings.fontFamily] ?: 1.0
@@ -190,11 +229,19 @@ private fun TextTabContent(
                 label = "Font Weight",
                 value = String.format("%.2f", currentFontWeight),
                 onIncrement = {
-                    val newWeight = (((currentFontWeight + 0.25) * 100.0).roundToInt() / 100.0).coerceIn(0.5, 2.25)
+                    val newWeight =
+                        (((currentFontWeight + 0.25) * 100.0).roundToInt() / 100.0).coerceIn(
+                            0.5,
+                            2.25
+                        )
                     onSettingsChange(settings.copy(fontWeights = settings.fontWeights + (settings.fontFamily to newWeight)))
                 },
                 onDecrement = {
-                    val newWeight = (((currentFontWeight - 0.25) * 100.0).roundToInt() / 100.0).coerceIn(0.5, 2.25)
+                    val newWeight =
+                        (((currentFontWeight - 0.25) * 100.0).roundToInt() / 100.0).coerceIn(
+                            0.5,
+                            2.25
+                        )
                     onSettingsChange(settings.copy(fontWeights = settings.fontWeights + (settings.fontFamily to newWeight)))
                 },
                 modifier = Modifier.weight(1f)
@@ -206,15 +253,51 @@ private fun TextTabContent(
             IncrementDecrementControl(
                 label = "Horizontal Margin",
                 value = String.format("%.1f", settings.pageMargins),
-                onIncrement = { onSettingsChange(settings.copy(pageMargins = (((settings.pageMargins + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 3.0))) },
-                onDecrement = { onSettingsChange(settings.copy(pageMargins = (((settings.pageMargins - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 3.0))) },
+                onIncrement = {
+                    onSettingsChange(
+                        settings.copy(
+                            pageMargins = (((settings.pageMargins + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
+                                0.0,
+                                3.0
+                            )
+                        )
+                    )
+                },
+                onDecrement = {
+                    onSettingsChange(
+                        settings.copy(
+                            pageMargins = (((settings.pageMargins - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
+                                0.0,
+                                3.0
+                            )
+                        )
+                    )
+                },
                 modifier = Modifier.weight(1f)
             )
             IncrementDecrementControl(
                 label = "Vertical Margin",
                 value = String.format("%.1f", settings.verticalMargin / 32.0),
-                onIncrement = { onSettingsChange(settings.copy(verticalMargin = (((settings.verticalMargin + 3.2) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 128.0))) },
-                onDecrement = { onSettingsChange(settings.copy(verticalMargin = (((settings.verticalMargin - 3.2) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 128.0))) },
+                onIncrement = {
+                    onSettingsChange(
+                        settings.copy(
+                            verticalMargin = (((settings.verticalMargin + 3.2) * 10.0).roundToInt() / 10.0).coerceIn(
+                                0.0,
+                                128.0
+                            )
+                        )
+                    )
+                },
+                onDecrement = {
+                    onSettingsChange(
+                        settings.copy(
+                            verticalMargin = (((settings.verticalMargin - 3.2) * 10.0).roundToInt() / 10.0).coerceIn(
+                                0.0,
+                                128.0
+                            )
+                        )
+                    )
+                },
                 modifier = Modifier.weight(1f)
             )
         }
@@ -251,16 +334,52 @@ private fun TextTabContent(
             IncrementDecrementControl(
                 label = "Line Spacing",
                 value = String.format("%.1f", settings.lineHeight),
-                onIncrement = { onSettingsChange(settings.copy(lineHeight = (((settings.lineHeight + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(1.0, 2.5))) },
-                onDecrement = { onSettingsChange(settings.copy(lineHeight = (((settings.lineHeight - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(1.0, 2.5))) },
+                onIncrement = {
+                    onSettingsChange(
+                        settings.copy(
+                            lineHeight = (((settings.lineHeight + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
+                                1.0,
+                                2.5
+                            )
+                        )
+                    )
+                },
+                onDecrement = {
+                    onSettingsChange(
+                        settings.copy(
+                            lineHeight = (((settings.lineHeight - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
+                                1.0,
+                                2.5
+                            )
+                        )
+                    )
+                },
                 enabled = !settings.publisherStyles,
                 modifier = Modifier.weight(1f)
             )
             IncrementDecrementControl(
                 label = "Letter Spacing",
                 value = String.format("%.1f", settings.letterSpacing * 4.0),
-                onIncrement = { onSettingsChange(settings.copy(letterSpacing = (((settings.letterSpacing + 0.025) * 1000.0).roundToInt() / 1000.0).coerceIn(0.0, 0.25))) },
-                onDecrement = { onSettingsChange(settings.copy(letterSpacing = (((settings.letterSpacing - 0.025) * 1000.0).roundToInt() / 1000.0).coerceIn(0.0, 0.25))) },
+                onIncrement = {
+                    onSettingsChange(
+                        settings.copy(
+                            letterSpacing = (((settings.letterSpacing + 0.025) * 1000.0).roundToInt() / 1000.0).coerceIn(
+                                0.0,
+                                0.25
+                            )
+                        )
+                    )
+                },
+                onDecrement = {
+                    onSettingsChange(
+                        settings.copy(
+                            letterSpacing = (((settings.letterSpacing - 0.025) * 1000.0).roundToInt() / 1000.0).coerceIn(
+                                0.0,
+                                0.25
+                            )
+                        )
+                    )
+                },
                 enabled = !settings.publisherStyles,
                 modifier = Modifier.weight(1f)
             )
@@ -271,16 +390,52 @@ private fun TextTabContent(
             IncrementDecrementControl(
                 label = "Word Spacing",
                 value = String.format("%.1f", settings.wordSpacing),
-                onIncrement = { onSettingsChange(settings.copy(wordSpacing = (((settings.wordSpacing + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 1.0))) },
-                onDecrement = { onSettingsChange(settings.copy(wordSpacing = (((settings.wordSpacing - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 1.0))) },
+                onIncrement = {
+                    onSettingsChange(
+                        settings.copy(
+                            wordSpacing = (((settings.wordSpacing + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
+                                0.0,
+                                1.0
+                            )
+                        )
+                    )
+                },
+                onDecrement = {
+                    onSettingsChange(
+                        settings.copy(
+                            wordSpacing = (((settings.wordSpacing - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
+                                0.0,
+                                1.0
+                            )
+                        )
+                    )
+                },
                 enabled = !settings.publisherStyles,
                 modifier = Modifier.weight(1f)
             )
             IncrementDecrementControl(
                 label = "Paragraph Spacing",
                 value = String.format("%.1f", settings.paragraphSpacing / 2.0),
-                onIncrement = { onSettingsChange(settings.copy(paragraphSpacing = (((settings.paragraphSpacing + 0.2) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 2.0))) },
-                onDecrement = { onSettingsChange(settings.copy(paragraphSpacing = (((settings.paragraphSpacing - 0.2) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 2.0))) },
+                onIncrement = {
+                    onSettingsChange(
+                        settings.copy(
+                            paragraphSpacing = (((settings.paragraphSpacing + 0.2) * 10.0).roundToInt() / 10.0).coerceIn(
+                                0.0,
+                                2.0
+                            )
+                        )
+                    )
+                },
+                onDecrement = {
+                    onSettingsChange(
+                        settings.copy(
+                            paragraphSpacing = (((settings.paragraphSpacing - 0.2) * 10.0).roundToInt() / 10.0).coerceIn(
+                                0.0,
+                                2.0
+                            )
+                        )
+                    )
+                },
                 enabled = !settings.publisherStyles,
                 modifier = Modifier.weight(1f)
             )
@@ -291,8 +446,26 @@ private fun TextTabContent(
             IncrementDecrementControl(
                 label = "Paragraph Indent",
                 value = String.format("%.1f", settings.paragraphIndent / 2.0),
-                onIncrement = { onSettingsChange(settings.copy(paragraphIndent = (((settings.paragraphIndent + 0.2) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 4.0))) },
-                onDecrement = { onSettingsChange(settings.copy(paragraphIndent = (((settings.paragraphIndent - 0.2) * 10.0).roundToInt() / 10.0).coerceIn(0.0, 4.0))) },
+                onIncrement = {
+                    onSettingsChange(
+                        settings.copy(
+                            paragraphIndent = (((settings.paragraphIndent + 0.2) * 10.0).roundToInt() / 10.0).coerceIn(
+                                0.0,
+                                4.0
+                            )
+                        )
+                    )
+                },
+                onDecrement = {
+                    onSettingsChange(
+                        settings.copy(
+                            paragraphIndent = (((settings.paragraphIndent - 0.2) * 10.0).roundToInt() / 10.0).coerceIn(
+                                0.0,
+                                4.0
+                            )
+                        )
+                    )
+                },
                 enabled = !settings.publisherStyles,
                 modifier = Modifier.weight(0.5f)
             )
@@ -381,14 +554,20 @@ private fun LightingTabContent(
                 ThemeSwatch(
                     isSelected = settings.readerThemePreset == theme.name,
                     onClick = {
-                        onSettingsChange(settings.copy(
-                            readerThemePreset = theme.name,
-                            customBackgroundColor = theme.backgroundColor,
-                            customTextColor = theme.textColor
-                        ))
+                        onSettingsChange(
+                            settings.copy(
+                                readerThemePreset = theme.name,
+                                customBackgroundColor = theme.backgroundColor,
+                                customTextColor = theme.textColor
+                            )
+                        )
                     },
                     onLongClick = { onThemeLongClick(theme) },
-                    color = try { Color(theme.backgroundColor.toColorInt()) } catch (_: Exception) { Color.White },
+                    color = try {
+                        Color(theme.backgroundColor.toColorInt())
+                    } catch (_: Exception) {
+                        Color.White
+                    },
                     label = theme.name
                 )
             }
@@ -444,7 +623,8 @@ private fun AdvancedTabContent(
         Text("Hyphens", style = MaterialTheme.typography.titleMedium)
         Switch(
             checked = settings.hyphens,
-            onCheckedChange = { onSettingsChange(settings.copy(hyphens = it)) }
+            onCheckedChange = { onSettingsChange(settings.copy(hyphens = it)) },
+            enabled = !settings.publisherStyles
         )
     }
 
@@ -484,7 +664,7 @@ private fun FontSwatch(
     modifier: Modifier = Modifier
 ) {
     val provider = remember {
-        androidx.compose.ui.text.googlefonts.GoogleFont.Provider(
+        GoogleFont.Provider(
             providerAuthority = "com.google.android.gms.fonts",
             providerPackage = "com.google.android.gms",
             certificates = R.array.com_google_android_gms_fonts_certs
@@ -496,13 +676,13 @@ private fun FontSwatch(
             val googleFontName = if (fontName == "Source Code") "Source Code Pro" else fontName
             
             FontFamily(
-                androidx.compose.ui.text.googlefonts.Font(
-                    googleFont = androidx.compose.ui.text.googlefonts.GoogleFont(googleFontName),
+                Font(
+                    googleFont = GoogleFont(googleFontName),
                     fontProvider = provider
                 )
             )
         } catch (e: Exception) {
-            android.util.Log.e("FontSwatch", "Error loading font $fontName", e)
+            Log.e("FontSwatch", "Error loading font $fontName", e)
             FontFamily.Default
         }
     }

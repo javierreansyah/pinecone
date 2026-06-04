@@ -43,13 +43,11 @@ fun BookItem(
         ) {
             Box(modifier = Modifier
                 .height(100.dp)
-                .aspectRatio(1f / 1.4f)) {
-                Card(
-                    shape = MaterialTheme.shapes.small,
+                .aspectRatio(2f / 3f)) {
+                CoverImage(
+                    book = book,
                     modifier = Modifier.fillMaxSize()
-                ) {
-                    CoverImage(book = book)
-                }
+                )
             }
             Column(
                 modifier = Modifier.height(100.dp),
@@ -84,14 +82,12 @@ fun BookItem(
                 ),
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)
         ) {
-            Card(
-                shape = MaterialTheme.shapes.small,
+            CoverImage(
+                book = book,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(1f / 1.4f)
-            ) {
-                CoverImage(book = book)
-            }
+                    .aspectRatio(2f / 3f)
+            )
             Text(
                 text = book.title,
                 style = MaterialTheme.typography.titleSmall,

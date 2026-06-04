@@ -3,7 +3,7 @@ package com.example.readerapp.ui.features.library
 import com.example.readerapp.data.local.ShelfEntity
 import com.example.readerapp.data.model.Book
 
-enum class LayoutMode { Grid, List }
+enum class LayoutMode { Grid, BigGrid, List }
 enum class SortType { Title, Author, LastRead, Added, Progress, Custom }
 enum class StatusFilter { NotStarted, Reading, Finished }
 

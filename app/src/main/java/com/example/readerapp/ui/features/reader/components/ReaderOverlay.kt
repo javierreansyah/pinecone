@@ -40,7 +40,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.readerapp.ui.components.ReaderSettingsContent
 import com.example.readerapp.ui.features.reader.ReaderViewModel
 import com.example.readerapp.ui.theme.AppTheme
 import org.readium.r2.shared.publication.Link
@@ -76,6 +75,18 @@ fun ReaderOverlay(
             Color(settings.customBackgroundColor.toColorInt())
         } catch (_: Exception) {
             Color.White
+        }
+    }
+
+    val readerTextColor = when (settings.readerThemePreset) {
+        "Light" -> Color.Black
+        "Warm" -> Color(0xFF121212) // Dark text for warm theme
+        "Dark" -> Color.White
+        "Auto" -> if (uiDarkTheme) Color.White else Color.Black
+        else -> try {
+            Color(settings.customTextColor.toColorInt())
+        } catch (_: Exception) {
+            if (uiDarkTheme) Color.White else Color.Black
         }
     }
 
@@ -127,6 +138,7 @@ fun ReaderOverlay(
                     onToggleBookmark = { viewModel.toggleBookmark() },
                     onInfoClick = onInfoClick,
                     readerBgColor = readerBgColor,
+                    readerTextColor = readerTextColor,
                     modifier = Modifier.align(Alignment.TopCenter)
                 )
             }
@@ -146,6 +158,7 @@ fun ReaderOverlay(
                     currentPage = uiState.currentPage,
                     totalPages = uiState.totalPages,
                     readerBgColor = readerBgColor,
+                    readerTextColor = readerTextColor,
                     onSeekToProgression = onSeekToProgression,
                     isInSearchNavigationMode = uiState.isInSearchNavigationMode,
                     activeSearchIndex = uiState.activeSearchIndex,
@@ -269,7 +282,7 @@ fun ReaderOverlay(
 
             val context = androidx.compose.ui.platform.LocalContext.current
             
-            val onSurface = MaterialTheme.colorScheme.onSurface
+            val onSurface = readerTextColor
 
             Box(
                 modifier = Modifier

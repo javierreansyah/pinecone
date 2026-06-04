@@ -17,6 +17,14 @@ import com.example.readerapp.data.local.ReaderPreferences
 import com.example.readerapp.ui.features.settings.components.SettingsGroup
 import com.example.readerapp.ui.features.settings.components.SettingsItem
 import com.example.readerapp.worker.WorkerUtils
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.content.Intent
+import android.net.Uri
+import android.os.Environment
+import android.os.Build
+import android.provider.DocumentsContract
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +43,25 @@ fun SettingsScreen(
     )
 
     val settings by viewModel.settings.collectAsState()
+
+    val folderPickerLauncher = rememberLauncherForActivityResult(
+        contract = object : ActivityResultContracts.OpenDocumentTree() {
+            override fun createIntent(context: android.content.Context, input: Uri?): Intent {
+                val intent = super.createIntent(context, input)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && input != null) {
+                    intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, input)
+                }
+                return intent
+            }
+        },
+        onResult = { uri ->
+            uri?.let {
+                val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                context.contentResolver.takePersistableUriPermission(it, takeFlags)
+                viewModel.updateSettings(settings.copy(backupFolderUri = it.toString()))
+            }
+        }
+    )
 
     Scaffold(
         topBar = {
@@ -96,6 +123,32 @@ fun SettingsScreen(
                     },
                     index = 3,
                     count = 4
+                )
+                
+                // Backup Location Button
+                androidx.compose.material3.ListItem(
+                    headlineContent = { Text("Backup Location") },
+                    supportingContent = { 
+                        Text(
+                            if (settings.backupFolderUri.isNotEmpty()) "Selected" 
+                            else "Not selected (Auto-backup disabled)"
+                        ) 
+                    },
+                    trailingContent = {
+                        TextButton(onClick = { 
+                            val pineconeDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "Pinecone")
+                            if (!pineconeDir.exists()) {
+                                pineconeDir.mkdirs()
+                            }
+                            val initialUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                // Try to set initial URI to Documents/Pinecone
+                                DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Documents/Pinecone")
+                            } else null
+                            folderPickerLauncher.launch(initialUri)
+                        }) {
+                            Text("Select")
+                        }
+                    }
                 )
             }
         }

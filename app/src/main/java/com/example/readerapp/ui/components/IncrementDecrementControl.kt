@@ -38,18 +38,12 @@ fun IncrementDecrementControl(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start
         ) {
-            OutlinedIconButton(
+            OutlinedButton(
                 onClick = onDecrement,
                 enabled = enabled,
-                shape = CircleShape,
+                shapes = ButtonDefaults.shapes(),
                 modifier = Modifier.size(36.dp),
-                colors = IconButtonDefaults.outlinedIconButtonColors(
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                ),
-                border = BorderStroke(
-                    1.5.dp,
-                    if (enabled) MaterialTheme.colorScheme.outlineVariant else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.38f)
-                )
+                contentPadding = PaddingValues(0.dp)
             ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Remove,
@@ -67,18 +61,12 @@ fun IncrementDecrementControl(
                 modifier = Modifier.widthIn(min = 60.dp)
             )
             
-            OutlinedIconButton(
+            OutlinedButton(
                 onClick = onIncrement,
                 enabled = enabled,
-                shape = CircleShape,
+                shapes = ButtonDefaults.shapes(),
                 modifier = Modifier.size(36.dp),
-                colors = IconButtonDefaults.outlinedIconButtonColors(
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                ),
-                border = BorderStroke(
-                    1.dp, 
-                    if (enabled) MaterialTheme.colorScheme.outlineVariant else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.38f)
-                )
+                contentPadding = PaddingValues(0.dp)
             ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Add,

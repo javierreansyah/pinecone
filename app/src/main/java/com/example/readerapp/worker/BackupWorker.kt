@@ -16,7 +16,7 @@ class BackupWorker(
         return if (success) {
             Result.success()
         } else {
-            Result.retry()
+            Result.failure()
         }
     }
 }

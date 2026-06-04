@@ -19,7 +19,3 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
-
-# Keep data models used by Gson for backup/restore
--keep class com.example.readerapp.data.model.BackupPayload { *; }
--keep class com.example.readerapp.data.local.**Entity { *; }

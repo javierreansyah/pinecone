@@ -170,9 +170,10 @@ fun ShelfDetailScreen(
                         }
                     }
                 } else {
-                    if (uiState.bookPreferences.layoutMode == LayoutMode.Grid) {
+                    if (uiState.bookPreferences.layoutMode != LayoutMode.List) {
                         BookGrid(
                             books = books,
+                            layoutMode = uiState.bookPreferences.layoutMode,
                             onBookClick = onNavigateToReader
                         )
                     } else {

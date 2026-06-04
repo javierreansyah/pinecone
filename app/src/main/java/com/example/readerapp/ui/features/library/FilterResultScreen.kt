@@ -74,9 +74,10 @@ fun FilterResultScreen(
             if (books.isEmpty()) {
                 Text("No books found.", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(16.dp))
             } else {
-                if (uiState.bookPreferences.layoutMode == LayoutMode.Grid) {
+                if (uiState.bookPreferences.layoutMode != LayoutMode.List) {
                     BookGrid(
                         books = books,
+                        layoutMode = uiState.bookPreferences.layoutMode,
                         onBookClick = onNavigateToReader
                     )
                 } else {

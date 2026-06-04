@@ -9,9 +9,11 @@ import androidx.room.withTransaction
 import com.example.readerapp.ReaderApplication
 import com.example.readerapp.data.local.ReaderPreferences
 import com.example.readerapp.data.model.BackupPayload
-import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileInputStream
@@ -27,7 +29,12 @@ import java.util.zip.ZipOutputStream
 class BackupRepository(private val context: Context) {
 
     private val readerPreferences = ReaderPreferences(context)
-    private val gson = Gson()
+    
+    private val json = Json { 
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+        isLenient = true 
+    }
 
     suspend fun performBackup(force: Boolean = false): Boolean = withContext(Dispatchers.IO) {
         val settings = readerPreferences.readerSettings.first()
@@ -73,30 +80,38 @@ class BackupRepository(private val context: Context) {
                 notes = notes
             )
             
-            val jsonString = gson.toJson(payload)
+            val jsonString = json.encodeToString(payload)
             
-            // We use MediaStore to save the backup in the Documents folder
-            val resolver = context.contentResolver
-            val collection = MediaStore.Files.getContentUri("external")
+            val backupFolderUriString = settings.backupFolderUri
+            if (backupFolderUriString.isEmpty()) {
+                return@withContext false
+            }
+            val backupFolderUri = Uri.parse(backupFolderUriString)
+            val backupFolder = androidx.documentfile.provider.DocumentFile.fromTreeUri(context, backupFolderUri)
+            if (backupFolder == null || !backupFolder.canWrite()) {
+                return@withContext false
+            }
             
             val typeIndicator = if (force) "M" else "A"
             val timeStamp = SimpleDateFormat("yyMMdd_HHmmss", Locale.US).format(Date())
             val backupFileName = "${timeStamp}_${typeIndicator}.pine"
 
-            val details = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, backupFileName)
-                put(MediaStore.MediaColumns.MIME_TYPE, "application/octet-stream")
-                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS + "/Pinecone/")
-            }
-            val uri = resolver.insert(collection, details) ?: return@withContext false
+            val backupFile = backupFolder.createFile("application/octet-stream", backupFileName) ?: return@withContext false
 
-            resolver.openOutputStream(uri, "wt")?.use { outputStream ->
+            val resolver = context.contentResolver
+            resolver.openOutputStream(backupFile.uri, "wt")?.use { outputStream ->
                 ZipOutputStream(outputStream).use { zos ->
                     zos.setLevel(java.util.zip.Deflater.BEST_SPEED) // Fast zip
                     
                     // Backup JSON data
                     zos.putNextEntry(ZipEntry("data.json"))
                     zos.write(jsonString.toByteArray(Charsets.UTF_8))
+                    zos.closeEntry()
+
+                    // Backup Settings
+                    val settingsJsonString = json.encodeToString(settings)
+                    zos.putNextEntry(ZipEntry("settings.json"))
+                    zos.write(settingsJsonString.toByteArray(Charsets.UTF_8))
                     zos.closeEntry()
 
                     // Backup books
@@ -120,7 +135,7 @@ class BackupRepository(private val context: Context) {
             }
 
             // Cleanup old backups of the SAME type
-            cleanupOldBackups(typeIndicator)
+            cleanupOldBackups(typeIndicator, backupFolderUriString)
 
             // Update last backup time
             val newSettings = settings.copy(lastBackupTime = System.currentTimeMillis())
@@ -132,28 +147,23 @@ class BackupRepository(private val context: Context) {
         }
     }
 
-    private fun cleanupOldBackups(typeIndicator: String) {
+    private fun cleanupOldBackups(typeIndicator: String, backupFolderUriString: String) {
         try {
-            val resolver = context.contentResolver
-            val collection = MediaStore.Files.getContentUri("external")
-            val selection = "${MediaStore.MediaColumns.DISPLAY_NAME} LIKE ? AND ${MediaStore.MediaColumns.RELATIVE_PATH} = ?"
-            val selectionArgs = arrayOf("%_${typeIndicator}.pine", Environment.DIRECTORY_DOCUMENTS + "/Pinecone/")
-            // Sort by DISPLAY_NAME descending so the newest files are first
-            val sortOrder = "${MediaStore.MediaColumns.DISPLAY_NAME} DESC"
-
-            resolver.query(collection, arrayOf(MediaStore.MediaColumns._ID, MediaStore.MediaColumns.DISPLAY_NAME), selection, selectionArgs, sortOrder)?.use { cursor ->
-                var count = 0
-                while (cursor.moveToNext()) {
-                    count++
-                    if (count > 3) {
-                        val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID))
-                        val deleteUri = Uri.withAppendedPath(collection, id.toString())
-                        try {
-                            resolver.delete(deleteUri, null, null)
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    }
+            if (backupFolderUriString.isEmpty()) return
+            val backupFolderUri = Uri.parse(backupFolderUriString)
+            val backupFolder = androidx.documentfile.provider.DocumentFile.fromTreeUri(context, backupFolderUri) ?: return
+            
+            // List all files in the backup folder
+            val files = backupFolder.listFiles()
+            
+            // Filter files by type indicator (.pine)
+            val backupFiles = files.filter { it.name?.endsWith("_${typeIndicator}.pine") == true }
+                .sortedByDescending { it.name } // Newest first based on timestamp in name
+            
+            // Delete oldest files beyond the limit of 3
+            if (backupFiles.size > 3) {
+                for (i in 3 until backupFiles.size) {
+                    backupFiles[i].delete()
                 }
             }
         } catch (e: Exception) {
@@ -198,7 +208,22 @@ class BackupRepository(private val context: Context) {
             }
             
             val jsonString = FileInputStream(dataJsonFile).use { InputStreamReader(it, Charsets.UTF_8).readText() }
-            val payload = gson.fromJson(jsonString, BackupPayload::class.java)
+            val payload = json.decodeFromString<BackupPayload>(jsonString)
+
+            // Restore Settings
+            val settingsJsonFile = File(tempDir, "settings.json")
+            if (settingsJsonFile.exists()) {
+                try {
+                    val settingsJsonString = FileInputStream(settingsJsonFile).use { InputStreamReader(it, Charsets.UTF_8).readText() }
+                    val restoredSettings = json.decodeFromString<com.example.readerapp.data.local.ReaderSettings>(settingsJsonString)
+                    // Preserve the current backup folder URI because permissions are tied to the current installation
+                    val currentSettings = readerPreferences.readerSettings.first()
+                    val settingsToApply = restoredSettings.copy(backupFolderUri = currentSettings.backupFolderUri)
+                    readerPreferences.updateAllSettings(settingsToApply)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
 
             val database = (context.applicationContext as ReaderApplication).database
             
