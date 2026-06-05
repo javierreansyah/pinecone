@@ -124,10 +124,10 @@ fun LibrarySearchTopBar(
                 }
             },
             leadingIcon = {
-                androidx.compose.animation.AnimatedVisibility(
+                AnimatedVisibility(
                     visible = isExpanded,
-                    enter = androidx.compose.animation.fadeIn(),
-                    exit = androidx.compose.animation.fadeOut()
+                    enter = fadeIn(),
+                    exit = fadeOut()
                 ) {
                     IconButton(onClick = { 
                         focusManager.clearFocus()
@@ -138,10 +138,10 @@ fun LibrarySearchTopBar(
                 }
             },
             trailingIcon = {
-                androidx.compose.animation.AnimatedVisibility(
+                AnimatedVisibility(
                     visible = isExpanded,
-                    enter = androidx.compose.animation.fadeIn(),
-                    exit = androidx.compose.animation.fadeOut()
+                    enter = fadeIn(),
+                    exit = fadeOut()
                 ) {
                     IconButton(onClick = { launchVoiceSearch() }) {
                         Icon(MaterialSymbols.Outlined.Mic, contentDescription = "Voice Search")
@@ -363,13 +363,13 @@ private fun SearchFilterItem(
 ) {
     Surface(
         modifier = modifier.clickable { onClick() },
-        shape = RoundedCornerShape(MaterialTheme.spacing.space8),
+        shape = RoundedCornerShape(spacing.space8),
         color = MaterialTheme.colorScheme.surface,
     ) {
         Row(
-            modifier = Modifier.padding(MaterialTheme.spacing.itemSpacing),
+            modifier = Modifier.padding(spacing.itemSpacing),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)
+            horizontalArrangement = Arrangement.spacedBy(spacing.space8)
         ) {
             Icon(
                 imageVector = icon,

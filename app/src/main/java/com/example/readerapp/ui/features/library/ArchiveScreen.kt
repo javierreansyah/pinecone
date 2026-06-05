@@ -1,6 +1,5 @@
 package com.example.readerapp.ui.features.library
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -36,7 +35,7 @@ fun ArchiveScreen(
 
     val archivedBooks by viewModel.archivedBooks.collectAsState()
     var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
-    var showDeleteConfirmation by remember { mutableStateOf(false) }
+
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
@@ -74,50 +73,11 @@ fun ArchiveScreen(
         }
 
         if (selectedBookForMenu != null) {
-            ModalBottomSheet(onDismissRequest = { selectedBookForMenu = null }) {
-                Column(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)) {
-                    Text("Options", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(16.dp))
-                    HorizontalDivider()
-                    ListItem(
-                        headlineContent = { Text("Unarchive", style = MaterialTheme.typography.titleMedium) },
-                        modifier = Modifier.clickable {
-                            viewModel.toggleArchive(selectedBookForMenu!!)
-                            selectedBookForMenu = null
-                        }
-                    )
-                    ListItem(
-                        headlineContent = { Text("Delete", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error) },
-                        modifier = Modifier.clickable {
-                            showDeleteConfirmation = true
-                        }
-                    )
-                }
-            }
-        }
-
-        // Delete Confirmation Dialog
-        if (showDeleteConfirmation) {
-            AlertDialog(
-                onDismissRequest = { showDeleteConfirmation = false },
-                title = { Text("Delete Book", style = MaterialTheme.typography.titleLarge) },
-                text = { Text("Are you sure you want to delete this book? This action cannot be undone.", style = MaterialTheme.typography.bodyMedium) },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            viewModel.deleteBook(selectedBookForMenu!!)
-                            showDeleteConfirmation = false
-                            selectedBookForMenu = null
-                        },
-                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                    ) {
-                        Text("Delete", style = MaterialTheme.typography.labelLarge)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showDeleteConfirmation = false }) {
-                        Text("Cancel", style = MaterialTheme.typography.labelLarge)
-                    }
-                }
+            com.example.readerapp.ui.features.library.components.BookContextMenu(
+                viewModel = viewModel,
+                bookId = selectedBookForMenu!!,
+                shelfId = null,
+                onDismiss = { selectedBookForMenu = null }
             )
         }
     }

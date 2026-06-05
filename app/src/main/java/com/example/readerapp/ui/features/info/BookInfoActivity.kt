@@ -112,8 +112,8 @@ class BookInfoActivity : ComponentActivity() {
                                     .fillMaxSize()
                                     .padding(innerPadding)
                                     .verticalScroll(rememberScrollState())
-                                    .padding(MaterialTheme.spacing.screenPadding),
-                                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space24),
+                                    .padding(spacing.screenPadding),
+                                verticalArrangement = Arrangement.spacedBy(spacing.space24),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 // Cover Image with Drop Shadow & Smooth Gradient Border
@@ -178,9 +178,9 @@ class BookInfoActivity : ComponentActivity() {
                                     if (tagsList.isNotEmpty()) {
                                         CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
                                             FlowRow(
-                                                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8),
-                                                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8),
-                                                modifier = Modifier.fillMaxWidth().padding(top = MaterialTheme.spacing.space8)
+                                                horizontalArrangement = Arrangement.spacedBy(spacing.space8),
+                                                verticalArrangement = Arrangement.spacedBy(spacing.space8),
+                                                modifier = Modifier.fillMaxWidth().padding(top = spacing.space8)
                                             ) {
                                                 tagsList.forEach { tag ->
                                                     SuggestionChip(
@@ -196,7 +196,7 @@ class BookInfoActivity : ComponentActivity() {
                                 // Book Progress
                                 Column(
                                     modifier = Modifier.fillMaxWidth(),
-                                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)
+                                    verticalArrangement = Arrangement.spacedBy(spacing.space8)
                                 ) {
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
@@ -225,7 +225,7 @@ class BookInfoActivity : ComponentActivity() {
                                     var isExpanded by remember { mutableStateOf(false) }
                                     Column(
                                         modifier = Modifier.fillMaxWidth(),
-                                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)
+                                        verticalArrangement = Arrangement.spacedBy(spacing.space8)
                                     ) {
                                         Text(
                                             text = "Description",
@@ -252,7 +252,7 @@ class BookInfoActivity : ComponentActivity() {
                                 // Metadata details
                                 Column(
                                     modifier = Modifier.fillMaxWidth(),
-                                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space16)
+                                    verticalArrangement = Arrangement.spacedBy(spacing.space16)
                                 ) {
                                     Text(
                                         text = "Publication Details",
@@ -342,7 +342,7 @@ class BookInfoActivity : ComponentActivity() {
     private fun MetadataRow(label: String, value: String) {
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space4)
+            verticalArrangement = Arrangement.spacedBy(spacing.space4)
         ) {
             Text(
                 text = label,

@@ -61,24 +61,3 @@ fun SegmentedListItem(
             .clickable { onClick() }
     )
 }
-
-@Composable
-fun SegmentedListItem(
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    index: Int,
-    count: Int,
-    leadingContent: @Composable (() -> Unit)? = null,
-    trailingContent: @Composable (() -> Unit)? = null,
-    content: @Composable () -> Unit
-) {
-    SegmentedListItem(
-        selected = checked,
-        onClick = { onCheckedChange(!checked) },
-        index = index,
-        count = count,
-        leadingContent = leadingContent,
-        trailingContent = trailingContent,
-        content = content
-    )
-}

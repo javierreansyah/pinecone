@@ -136,14 +136,6 @@ class LibraryViewModel(
         SearchResults(matchedBooks, matchedShelves, matchedAuthors, matchedTags)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SearchResults())
 
-    fun importBook(uri: Uri) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isImporting = true) }
-            bookRepository.importBook(uri)
-            _uiState.update { it.copy(isImporting = false) }
-        }
-    }
-
     fun deleteBook(bookId: String) {
         viewModelScope.launch {
             bookRepository.deleteBook(bookId)
@@ -231,7 +223,8 @@ class LibraryViewModel(
             val newPrefs = if (currentPrefs.sortType == sortType) {
                 currentPrefs.copy(isAscending = !currentPrefs.isAscending)
             } else {
-                currentPrefs.copy(sortType = sortType, isAscending = true)
+                val initialAscending = sortType != SortType.LastRead
+                currentPrefs.copy(sortType = sortType, isAscending = initialAscending)
             }
             prefsManager.savePreferences(if (isShelvesTab) "library_shelves" else screenKey, newPrefs)
             if (isShelvesTab) state.copy(shelvesPreferences = newPrefs) else state.copy(bookPreferences = newPrefs)

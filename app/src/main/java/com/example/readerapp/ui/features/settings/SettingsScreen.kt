@@ -139,7 +139,7 @@ fun SettingsScreen(
             )
             
             // Backup Location Button
-            androidx.compose.material3.ListItem(
+            ListItem(
                 headlineContent = { Text("Backup Location") },
                 supportingContent = { 
                     Text(
@@ -153,9 +153,8 @@ fun SettingsScreen(
                         if (!pineconeDir.exists()) {
                             pineconeDir.mkdirs()
                         }
-                        val initialUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        val initialUri =
                             DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Documents/Pinecone")
-                        } else null
                         folderPickerLauncher.launch(initialUri)
                     }) {
                         Text("Select")

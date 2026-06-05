@@ -236,10 +236,6 @@ class ReaderViewModel(
         _uiState.update { it.copy(showControls = !it.showControls) }
     }
 
-    fun showControls() {
-        _uiState.update { it.copy(showControls = true) }
-    }
-
     fun toggleBookmark() {
         val locator = _currentLocator.value ?: return
         viewModelScope.launch {

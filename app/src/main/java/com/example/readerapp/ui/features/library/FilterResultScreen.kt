@@ -14,8 +14,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Tune
-import com.example.readerapp.ui.features.library.components.BookGrid
-import com.example.readerapp.ui.features.library.components.BookList
 import com.example.readerapp.ui.features.library.components.FilterSortBottomSheet
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -83,20 +81,12 @@ fun FilterResultScreen(
             if (books.isEmpty()) {
                 Text("No books found.", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(16.dp))
             } else {
-                if (uiState.bookPreferences.layoutMode != LayoutMode.List) {
-                    BookGrid(
-                        books = books,
-                        layoutMode = uiState.bookPreferences.layoutMode,
-                        onBookClick = onNavigateToReader,
-                        onBookLongClick = { selectedBookForMenu = it }
-                    )
-                } else {
-                    BookList(
-                        books = books,
-                        onBookClick = onNavigateToReader,
-                        onBookLongClick = { selectedBookForMenu = it }
-                    )
-                }
+                com.example.readerapp.ui.features.library.components.BookCollection(
+                    books = books,
+                    layoutMode = uiState.bookPreferences.layoutMode,
+                    onBookClick = onNavigateToReader,
+                    onBookLongClick = { selectedBookForMenu = it }
+                )
             }
         }
 

@@ -278,8 +278,6 @@ fun ReaderOverlay(
             } catch (_: Exception) { "" }
 
             val context = androidx.compose.ui.platform.LocalContext.current
-            
-            val onSurface = readerTextColor
 
             Box(
                 modifier = Modifier
@@ -313,7 +311,8 @@ fun ReaderOverlay(
                             },
                             modifier = Modifier.size(40.dp)
                         ) {
-                            Icon(MaterialSymbols.Outlined.Content_copy, contentDescription = "Copy", tint = onSurface, modifier = Modifier.size(20.dp))
+                            Icon(MaterialSymbols.Outlined.Content_copy, contentDescription = "Copy",
+                                tint = readerTextColor, modifier = Modifier.size(20.dp))
                         }
                         androidx.compose.material3.IconButton(
                             onClick = {
@@ -325,7 +324,8 @@ fun ReaderOverlay(
                             },
                             modifier = Modifier.size(40.dp)
                         ) {
-                            Icon(MaterialSymbols.Outlined.Search, contentDescription = "Search", tint = onSurface, modifier = Modifier.size(20.dp))
+                            Icon(MaterialSymbols.Outlined.Search, contentDescription = "Search",
+                                tint = readerTextColor, modifier = Modifier.size(20.dp))
                         }
                         androidx.compose.material3.IconButton(
                             onClick = {
@@ -340,7 +340,8 @@ fun ReaderOverlay(
                             },
                             modifier = Modifier.size(40.dp)
                         ) {
-                            Icon(MaterialSymbols.Outlined.Edit, contentDescription = "Make Note", tint = onSurface, modifier = Modifier.size(20.dp))
+                            Icon(MaterialSymbols.Outlined.Edit, contentDescription = "Make Note",
+                                tint = readerTextColor, modifier = Modifier.size(20.dp))
                         }
                         if (menuHighlight != null && menuLocator == null) {
                             androidx.compose.material3.IconButton(
@@ -350,7 +351,8 @@ fun ReaderOverlay(
                                 },
                                 modifier = Modifier.size(40.dp)
                             ) {
-                                Icon(MaterialSymbols.Outlined.Delete, contentDescription = "Delete", tint = onSurface, modifier = Modifier.size(20.dp))
+                                Icon(MaterialSymbols.Outlined.Delete, contentDescription = "Delete",
+                                    tint = readerTextColor, modifier = Modifier.size(20.dp))
                             }
                         }
                     }
@@ -380,7 +382,7 @@ fun ReaderOverlay(
                                         )
                                         .border(
                                             width = if (isSelected) 2.dp else 0.dp,
-                                            color = if (isSelected) onSurface else Color.Transparent,
+                                            color = if (isSelected) readerTextColor else Color.Transparent,
                                             shape = androidx.compose.foundation.shape.CircleShape
                                         )
                                         .clickable { 
@@ -405,7 +407,8 @@ fun ReaderOverlay(
                             },
                             modifier = Modifier.size(40.dp)
                         ) {
-                            Icon(MaterialSymbols.Outlined.Close, contentDescription = "Close", tint = onSurface, modifier = Modifier.size(20.dp))
+                            Icon(MaterialSymbols.Outlined.Close, contentDescription = "Close",
+                                tint = readerTextColor, modifier = Modifier.size(20.dp))
                         }
                     }
                 }

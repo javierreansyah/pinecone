@@ -1,6 +1,5 @@
 package com.example.readerapp.ui.theme
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -31,7 +30,7 @@ data class Spacing(
 
 val LocalSpacing = staticCompositionLocalOf { Spacing() }
 
-val MaterialTheme.spacing: Spacing
+val spacing: Spacing
     @Composable
     @ReadOnlyComposable
     get() = LocalSpacing.current

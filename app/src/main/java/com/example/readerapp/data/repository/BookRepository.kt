@@ -97,52 +97,6 @@ class BookRepository(
     }
 
     /**
-     * Import bundled EPUBs from assets on first launch.
-     */
-    suspend fun importBundledBooks() = withContext(Dispatchers.IO) {
-        val assetFiles = try {
-            context.assets.list("")?.filter { it.endsWith(".epub") } ?: emptyList()
-        } catch (e: Exception) {
-            emptyList()
-        }
-
-        for (fileName in assetFiles) {
-            try {
-                val targetFile = File(booksDir, fileName)
-                if (targetFile.exists()) {
-                    // Already copied, check if in DB
-                    val bookId = generateFileHash(targetFile)
-                    if (bookDao.exists(bookId) > 0) continue
-                }
-
-                // Copy from assets
-                context.assets.open(fileName).use { input ->
-                    FileOutputStream(targetFile).use { output ->
-                        input.copyTo(output)
-                    }
-                }
-
-                val bookId = generateFileHash(targetFile)
-                if (bookDao.exists(bookId) > 0) continue
-
-                // Rename to ID-based name
-                val finalFile = File(booksDir, "$bookId.epub")
-                if (finalFile.absolutePath != targetFile.absolutePath) {
-                    targetFile.renameTo(finalFile)
-                }
-
-                val publication = openPublicationFromFile(finalFile) ?: continue
-                val entity = createBookEntity(bookId, finalFile, publication)
-                publication.close()
-
-                bookDao.insert(entity)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    /**
      * Open a Publication for reading. Caller is responsible for closing it.
      */
     suspend fun openPublication(book: BookEntity): Publication? = withContext(Dispatchers.IO) {
