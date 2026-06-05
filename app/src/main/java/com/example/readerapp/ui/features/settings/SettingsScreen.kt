@@ -6,6 +6,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -14,7 +15,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.example.readerapp.data.local.ReaderPreferences
-import com.example.readerapp.ui.features.settings.components.SettingsGroup
 import com.example.readerapp.ui.features.settings.components.SettingsItem
 import com.example.readerapp.worker.WorkerUtils
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -26,7 +26,7 @@ import android.os.Build
 import android.provider.DocumentsContract
 import java.io.File
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit
@@ -44,11 +44,13 @@ fun SettingsScreen(
 
     val settings by viewModel.settings.collectAsState()
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
     val folderPickerLauncher = rememberLauncherForActivityResult(
         contract = object : ActivityResultContracts.OpenDocumentTree() {
             override fun createIntent(context: android.content.Context, input: Uri?): Intent {
                 val intent = super.createIntent(context, input)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && input != null) {
+                if (input != null) {
                     intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, input)
                 }
                 return intent
@@ -64,14 +66,24 @@ fun SettingsScreen(
     )
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
-                title = { Text("Settings", style = MaterialTheme.typography.titleLarge) },
+            LargeFlexibleTopAppBar(
+                title = { Text("Settings")},
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    FilledTonalIconButton(
+                        shapes = IconButtonDefaults.shapes(),
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                        onClick = onNavigateBack
+                    ) {
                         Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface
+                ),
+                scrollBehavior = scrollBehavior
             )
         }
     ) { innerPadding ->
@@ -80,77 +92,77 @@ fun SettingsScreen(
                 .padding(innerPadding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp)
+                .padding(vertical = 16.dp)
         ) {
             Text(
                 text = "General",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 12.dp, start = 4.dp)
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 8.dp, start = 16.dp, end = 16.dp)
             )
 
-            SettingsGroup {
-                SettingsItem(
-                    label = "Theme Mode",
-                    value = settings.themeMode,
-                    options = listOf("System", "Light", "Dark"),
-                    onSelected = { viewModel.updateSettings(settings.copy(themeMode = it)) },
-                    index = 0,
-                    count = 3
-                )
-                SettingsItem(
-                    label = "Color Palette",
-                    value = settings.colorPalette,
-                    options = listOf("Pine", "Dynamic"),
-                    onSelected = { viewModel.updateSettings(settings.copy(colorPalette = it)) },
-                    index = 1,
-                    count = 3
-                )
-                SettingsItem(
-                    label = "Language",
-                    value = settings.locale,
-                    options = listOf("System", "English", "Spanish", "French"),
-                    onSelected = { viewModel.updateSettings(settings.copy(locale = it)) },
-                    index = 2,
-                    count = 4
-                )
-                SettingsItem(
-                    label = "Auto Backup Frequency",
-                    value = settings.autoBackupFrequency,
-                    options = listOf("3h", "6h", "12h", "1d", "2d", "3d", "1w", "never"),
-                    onSelected = { 
-                        viewModel.updateSettings(settings.copy(autoBackupFrequency = it)) 
-                        WorkerUtils.scheduleBackupWork(context, it)
-                    },
-                    index = 3,
-                    count = 4
-                )
-                
-                // Backup Location Button
-                androidx.compose.material3.ListItem(
-                    headlineContent = { Text("Backup Location") },
-                    supportingContent = { 
-                        Text(
-                            if (settings.backupFolderUri.isNotEmpty()) "Selected" 
-                            else "Not selected (Auto-backup disabled)"
-                        ) 
-                    },
-                    trailingContent = {
-                        TextButton(onClick = { 
-                            val pineconeDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "Pinecone")
-                            if (!pineconeDir.exists()) {
-                                pineconeDir.mkdirs()
-                            }
-                            val initialUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                // Try to set initial URI to Documents/Pinecone
-                                DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Documents/Pinecone")
-                            } else null
-                            folderPickerLauncher.launch(initialUri)
-                        }) {
-                            Text("Select")
+            SettingsItem(
+                label = "Theme Mode",
+                value = settings.themeMode,
+                options = listOf("System", "Light", "Dark"),
+                onSelected = { viewModel.updateSettings(settings.copy(themeMode = it)) }
+            )
+            SettingsItem(
+                label = "Color Palette",
+                value = settings.colorPalette,
+                options = listOf("Pine", "Dynamic"),
+                onSelected = { viewModel.updateSettings(settings.copy(colorPalette = it)) }
+            )
+            SettingsItem(
+                label = "Language",
+                value = settings.locale,
+                options = listOf("System", "English", "Spanish", "French"),
+                onSelected = { viewModel.updateSettings(settings.copy(locale = it)) }
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Backup",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 8.dp, start = 16.dp, end = 16.dp)
+            )
+
+            SettingsItem(
+                label = "Auto Backup Frequency",
+                value = settings.autoBackupFrequency,
+                options = listOf("3h", "6h", "12h", "1d", "2d", "3d", "1w", "never"),
+                onSelected = { 
+                    viewModel.updateSettings(settings.copy(autoBackupFrequency = it)) 
+                    WorkerUtils.scheduleBackupWork(context, it)
+                }
+            )
+            
+            // Backup Location Button
+            androidx.compose.material3.ListItem(
+                headlineContent = { Text("Backup Location") },
+                supportingContent = { 
+                    Text(
+                        if (settings.backupFolderUri.isNotEmpty()) "Selected" 
+                        else "Not selected (Auto-backup disabled)"
+                    ) 
+                },
+                trailingContent = {
+                    TextButton(onClick = { 
+                        val pineconeDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "Pinecone")
+                        if (!pineconeDir.exists()) {
+                            pineconeDir.mkdirs()
                         }
+                        val initialUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Documents/Pinecone")
+                        } else null
+                        folderPickerLauncher.launch(initialUri)
+                    }) {
+                        Text("Select")
                     }
-                )
-            }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

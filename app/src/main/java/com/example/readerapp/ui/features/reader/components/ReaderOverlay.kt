@@ -125,23 +125,21 @@ fun ReaderOverlay(
         // Animated controls overlay — top bar only
         AnimatedVisibility(
             visible = uiState.showControls && !uiState.showSearch,
-            enter = fadeIn(),
-            exit = fadeOut()
+            enter = slideInVertically(initialOffsetY = { -20 }, animationSpec = tween(250)) + fadeIn(animationSpec = tween(250)),
+            exit = slideOutVertically(targetOffsetY = { -20 }, animationSpec = tween(250)) + fadeOut(animationSpec = tween(250)),
+            modifier = Modifier.align(Alignment.TopCenter)
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                ReaderTopBar(
-                    isBookmarked = isBookmarked,
-                    onBack = onBack,
-                    onSearchClick = { viewModel.showSearch() },
-                    onTocClick = { viewModel.showToc() },
-                    onSettingsClick = { viewModel.showSettings() },
-                    onToggleBookmark = { viewModel.toggleBookmark() },
-                    onInfoClick = onInfoClick,
-                    readerBgColor = readerBgColor,
-                    readerTextColor = readerTextColor,
-                    modifier = Modifier.align(Alignment.TopCenter)
-                )
-            }
+            ReaderTopBar(
+                isBookmarked = isBookmarked,
+                onBack = onBack,
+                onSearchClick = { viewModel.showSearch() },
+                onTocClick = { viewModel.showToc() },
+                onSettingsClick = { viewModel.showSettings() },
+                onToggleBookmark = { viewModel.toggleBookmark() },
+                onInfoClick = onInfoClick,
+                readerBgColor = readerBgColor,
+                readerTextColor = readerTextColor
+            )
         }
 
         // Bottom bar — shown when controls are visible.
@@ -149,26 +147,24 @@ fun ReaderOverlay(
         val showBottomBar = uiState.showControls && !uiState.showSearch && uiState.selectionLocator == null && uiState.viewingHighlight == null
         AnimatedVisibility(
             visible = showBottomBar,
-            enter = fadeIn(),
-            exit = fadeOut()
+            enter = slideInVertically(initialOffsetY = { 20 }, animationSpec = tween(250)) + fadeIn(animationSpec = tween(250)),
+            exit = slideOutVertically(targetOffsetY = { 20 }, animationSpec = tween(250)) + fadeOut(animationSpec = tween(250)),
+            modifier = Modifier.align(Alignment.BottomCenter)
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                ReaderBottomBar(
-                    progression = uiState.progression,
-                    currentPage = uiState.currentPage,
-                    totalPages = uiState.totalPages,
-                    readerBgColor = readerBgColor,
-                    readerTextColor = readerTextColor,
-                    onSeekToProgression = onSeekToProgression,
-                    isInSearchNavigationMode = uiState.isInSearchNavigationMode,
-                    activeSearchIndex = uiState.activeSearchIndex,
-                    totalSearchResults = uiState.searchResults.size,
-                    onExitSearch = { viewModel.exitSearchNavigation() },
-                    onPrevSearchResult = { viewModel.prevSearchResult() },
-                    onNextSearchResult = { viewModel.nextSearchResult() },
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                )
-            }
+            ReaderBottomBar(
+                progression = uiState.progression,
+                currentPage = uiState.currentPage,
+                totalPages = uiState.totalPages,
+                readerBgColor = readerBgColor,
+                readerTextColor = readerTextColor,
+                onSeekToProgression = onSeekToProgression,
+                isInSearchNavigationMode = uiState.isInSearchNavigationMode,
+                activeSearchIndex = uiState.activeSearchIndex,
+                totalSearchResults = uiState.searchResults.size,
+                onExitSearch = { viewModel.exitSearchNavigation() },
+                onPrevSearchResult = { viewModel.prevSearchResult() },
+                onNextSearchResult = { viewModel.nextSearchResult() }
+            )
         }
 
         // Reader Bottom Sheet
@@ -187,6 +183,7 @@ fun ReaderOverlay(
                     notes = notes,
                     currentLocator = currentLocator,
                     getPositionLabel = { viewModel.getPositionLabel(it) },
+                    getChapterPageLabel = { viewModel.getChapterPageLabel(it) },
                     onChapterClick = { link ->
                         onNavigateToChapter(link)
                         viewModel.hideToc()
@@ -270,8 +267,8 @@ fun ReaderOverlay(
         
         AnimatedVisibility(
             visible = showActionBar,
-            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+            enter = slideInVertically(initialOffsetY = { 40 }, animationSpec = tween(250)) + fadeIn(animationSpec = tween(250)),
+            exit = slideOutVertically(targetOffsetY = { 40 }, animationSpec = tween(250)) + fadeOut(animationSpec = tween(250)),
             modifier = Modifier.align(Alignment.BottomCenter)
         ) {
             val highlightText = try {

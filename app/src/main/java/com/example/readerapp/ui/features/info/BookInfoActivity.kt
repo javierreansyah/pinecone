@@ -46,7 +46,7 @@ class BookInfoActivity : ComponentActivity() {
         const val EXTRA_BOOK_ID = "bookId"
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
+    @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -84,19 +84,9 @@ class BookInfoActivity : ComponentActivity() {
                 darkTheme = isDarkTheme,
                 dynamicColor = settings.colorPalette == "Dynamic"
             ) {
-                Scaffold(
-                    topBar = {
-                        TopAppBar(
-                            title = { Text("Book Info", style = MaterialTheme.typography.titleLarge) },
-                            navigationIcon = {
-                                IconButton(onClick = { finish() }) {
-                                    Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = "Back")
-                                }
-                            }
-                        )
-                    }
-                ) { innerPadding ->
-                    if (isLoading) {
+                Scaffold { innerPadding ->
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        if (isLoading) {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -169,7 +159,6 @@ class BookInfoActivity : ComponentActivity() {
                                 Column(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalAlignment = Alignment.Start,
-                                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space4)
                                 ) {
                                     Text(
                                         text = currentBook.title,
@@ -204,36 +193,31 @@ class BookInfoActivity : ComponentActivity() {
                                     }
                                 }
 
-                                // Book Progress Card
-                                Card(
+                                // Book Progress
+                                Column(
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp)
+                                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)
                                 ) {
-                                    Column(
-                                        modifier = Modifier.padding(MaterialTheme.spacing.screenPadding),
-                                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text = "Reading Progress",
-                                                style = MaterialTheme.typography.titleMedium,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                            Text(
-                                                text = "${(currentBook.progress * 100).toInt()}%",
-                                                style = MaterialTheme.typography.titleMedium,
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
-                                        }
-                                        LinearProgressIndicator(
-                                            progress = { currentBook.progress.toFloat() },
-                                            modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp))
+                                        Text(
+                                            text = "Reading Progress",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "${(currentBook.progress * 100).toInt()}%",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.primary
                                         )
                                     }
+                                    LinearProgressIndicator(
+                                        progress = { currentBook.progress.toFloat() },
+                                        modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp))
+                                    )
                                 }
 
                                 // Book Description
@@ -294,6 +278,18 @@ class BookInfoActivity : ComponentActivity() {
                             }
                         }
                     }
+
+                    FilledTonalIconButton(
+                        shapes = IconButtonDefaults.shapes(),
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                        onClick = { finish() },
+                        modifier = Modifier
+                            .padding(top = innerPadding.calculateTopPadding() + 8.dp, start = 16.dp)
+                            .align(Alignment.TopStart)
+                    ) {
+                        Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = "Back")
+                    }
+                }
                 }
             }
         }

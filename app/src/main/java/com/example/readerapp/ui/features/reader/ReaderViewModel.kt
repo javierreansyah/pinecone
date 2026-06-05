@@ -216,6 +216,16 @@ class ReaderViewModel(
         }
     }
 
+    fun getChapterPageLabel(link: Link): String {
+        val allPositions = _positions.value
+        if (allPositions.isEmpty()) return ""
+        val linkHref = link.href.toString().substringBefore("#")
+        val posIndex = allPositions.indexOfFirst {
+            it.href.toString().substringBefore("#") == linkHref
+        }
+        return if (posIndex != -1) "Page ${posIndex + 1}" else ""
+    }
+
     fun savePosition(locator: Locator) {
         viewModelScope.launch {
             repository.saveReadingPosition(bookId, locator)
@@ -224,6 +234,10 @@ class ReaderViewModel(
 
     fun toggleControls() {
         _uiState.update { it.copy(showControls = !it.showControls) }
+    }
+
+    fun showControls() {
+        _uiState.update { it.copy(showControls = true) }
     }
 
     fun toggleBookmark() {

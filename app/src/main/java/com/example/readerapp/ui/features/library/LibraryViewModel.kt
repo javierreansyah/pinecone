@@ -20,7 +20,7 @@ class LibraryViewModel(
 
     private val _uiState = MutableStateFlow(LibraryUiState(
         bookPreferences = prefsManager.getPreferences(screenKey, defaultSort = SortType.Added),
-        shelvesPreferences = prefsManager.getPreferences("library_shelves", defaultSort = SortType.Title, defaultAscending = true)
+        shelvesPreferences = prefsManager.getPreferences("library_shelves", defaultLayout = LayoutMode.BigList, defaultSort = SortType.Title, defaultAscending = true)
     ))
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 
@@ -33,8 +33,8 @@ class LibraryViewModel(
                 .filter { !it.isArchived }
                 .filter { book ->
                     val status = when {
+                        book.isRead -> StatusFilter.Finished
                         book.progress <= 0.0 -> StatusFilter.NotStarted
-                        book.progress >= 1.0 -> StatusFilter.Finished
                         else -> StatusFilter.Reading
                     }
                     state.bookPreferences.selectedStatus.contains(status)
@@ -156,6 +156,12 @@ class LibraryViewModel(
         }
     }
 
+    fun toggleReadStatus(bookId: String) {
+        viewModelScope.launch {
+            bookRepository.toggleReadStatus(bookId)
+        }
+    }
+
     fun createShelfAndAddBook(name: String, bookId: String?) {
         viewModelScope.launch {
             val shelfId = bookRepository.createShelf(name)
@@ -171,9 +177,21 @@ class LibraryViewModel(
         }
     }
 
+    fun removeBookFromShelf(shelfId: String, bookId: String) {
+        viewModelScope.launch {
+            bookRepository.removeBookFromShelf(shelfId, bookId)
+        }
+    }
+
     fun deleteShelf(shelfId: String) {
         viewModelScope.launch {
             bookRepository.deleteShelf(shelfId)
+        }
+    }
+
+    fun renameShelf(shelfId: String, newName: String) {
+        viewModelScope.launch {
+            bookRepository.renameShelf(shelfId, newName)
         }
     }
 

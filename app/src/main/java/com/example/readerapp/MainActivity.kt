@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -59,8 +60,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalLocale
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.LinearEasing
+import coil.annotation.ExperimentalCoilApi
 
 class MainActivity : ComponentActivity() {
+    @OptIn(ExperimentalCoilApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -91,7 +100,26 @@ class MainActivity : ComponentActivity() {
                 }
 
                 val filePickerLauncher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.OpenMultipleDocuments(),
+                    contract = object : androidx.activity.result.contract.ActivityResultContract<Array<String>, List<@JvmSuppressWildcards android.net.Uri>>() {
+                        override fun createIntent(context: android.content.Context, input: Array<String>): Intent {
+                            return Intent(Intent.ACTION_GET_CONTENT).apply {
+                                type = "*/*"
+                                putExtra(Intent.EXTRA_MIME_TYPES, input)
+                                putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                                addCategory(Intent.CATEGORY_OPENABLE)
+                                val uri = android.provider.DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Download")
+                                putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, uri)
+                            }
+                        }
+                        override fun parseResult(resultCode: Int, intent: Intent?): List<android.net.Uri> {
+                            if (resultCode != android.app.Activity.RESULT_OK || intent == null) return emptyList()
+                            val clipData = intent.clipData
+                            if (clipData != null) {
+                                return (0 until clipData.itemCount).map { clipData.getItemAt(it).uri }
+                            }
+                            return listOfNotNull(intent.data)
+                        }
+                    },
                     onResult = { uris ->
                         if (uris.isNotEmpty()) {
                             Toast.makeText(context, "Importing ${uris.size} files...", Toast.LENGTH_SHORT).show()
@@ -107,7 +135,14 @@ class MainActivity : ComponentActivity() {
                 )
 
                 val folderPickerLauncher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.OpenDocumentTree(),
+                    contract = object : ActivityResultContracts.OpenDocumentTree() {
+                        override fun createIntent(context: android.content.Context, input: android.net.Uri?): Intent {
+                            val intent = super.createIntent(context, input)
+                            val uri = android.provider.DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:")
+                            intent.putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, uri)
+                            return intent
+                        }
+                    },
                     onResult = { uri ->
                         uri?.let {
                             Toast.makeText(context, "Scanning folder for books...", Toast.LENGTH_SHORT).show()
@@ -129,7 +164,7 @@ class MainActivity : ComponentActivity() {
                             val intent = super.createIntent(context, input)
                             val pineconeDir = java.io.File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOCUMENTS), "Pinecone")
                             if (!pineconeDir.exists()) pineconeDir.mkdirs()
-                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && input != null) {
+                            if (input != null) {
                                 intent.putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, input)
                             }
                             return intent
@@ -156,11 +191,9 @@ class MainActivity : ComponentActivity() {
                             val intent = super.createIntent(context, input)
                             val pineconeDir = java.io.File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOCUMENTS), "Pinecone")
                             if (!pineconeDir.exists()) pineconeDir.mkdirs()
-                            
-                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                                val uri = android.provider.DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Documents/Pinecone")
-                                intent.putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, uri)
-                            }
+
+                            val uri = android.provider.DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Documents/Pinecone")
+                            intent.putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, uri)
                             return intent
                         }
                     },
@@ -207,14 +240,31 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
+                val currentBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = currentBackStackEntry?.destination?.route
+
                 ModalNavigationDrawer(
                     drawerState = drawerState,
+                    gesturesEnabled = currentRoute == Screen.Library.route,
                     drawerContent = {
                         AppDrawer(
                             drawerState = drawerState,
-                            navController = navController,
                             settings = settings,
                             darkTheme = darkTheme,
+                            onNavigateToArchives = {
+                                navController.navigate(Screen.Archives.route) {
+                                    popUpTo(Screen.Library.route)
+                                    launchSingleTop = true
+                                }
+                                scope.launch { drawerState.close() }
+                            },
+                            onNavigateToSettings = {
+                                navController.navigate(Screen.Settings.route) {
+                                    popUpTo(Screen.Library.route)
+                                    launchSingleTop = true
+                                }
+                                scope.launch { drawerState.close() }
+                            },
                             onImportFilesClick = {
                                 filePickerLauncher.launch(
                                     arrayOf(
@@ -231,9 +281,8 @@ class MainActivity : ComponentActivity() {
                             },
                             onScanFolderClick = { folderPickerLauncher.launch(null) },
                             onBackupFolderSetupClick = {
-                                val initialUri = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                                val initialUri =
                                     android.provider.DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Documents/Pinecone")
-                                } else null
                                 backupFolderPickerLauncher.launch(initialUri)
                             },
                             onRestoreBackupClick = { showRestoreWarning = true }
@@ -266,17 +315,29 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                     }
-                    composable(Screen.Settings.route) {
+                    composable(
+                        Screen.Settings.route,
+                        enterTransition = { EnterTransition.None },
+                        exitTransition = { ExitTransition.None },
+                        popEnterTransition = { EnterTransition.None },
+                        popExitTransition = { ExitTransition.None }
+                    ) {
                         SettingsScreen(
                             onNavigateBack = {
-                                navController.popBackStack()
+                                navController.popBackStack(Screen.Library.route, inclusive = false)
                             }
                         )
                     }
-                    composable(Screen.Archives.route) {
+                    composable(
+                        Screen.Archives.route,
+                        enterTransition = { EnterTransition.None },
+                        exitTransition = { ExitTransition.None },
+                        popEnterTransition = { EnterTransition.None },
+                        popExitTransition = { ExitTransition.None }
+                    ) {
                         ArchiveScreen(
                             onNavigateBack = {
-                                navController.popBackStack()
+                                navController.popBackStack(Screen.Library.route, inclusive = false)
                             },
                             onNavigateToReader = { bookId ->
                                 val intent = Intent(context, com.example.readerapp.ui.features.reader.ReaderActivity::class.java).apply {

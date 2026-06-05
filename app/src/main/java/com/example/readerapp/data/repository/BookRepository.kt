@@ -201,11 +201,16 @@ class BookRepository(
         bookDao.delete(book)
     }
 
-    // --- Archive Methods ---
+    // --- Archive & Read Status Methods ---
 
     suspend fun toggleArchive(bookId: String) {
         val book = bookDao.getById(bookId) ?: return
         bookDao.update(book.copy(isArchived = !book.isArchived))
+    }
+
+    suspend fun toggleReadStatus(bookId: String) {
+        val book = bookDao.getById(bookId) ?: return
+        bookDao.update(book.copy(isRead = !book.isRead))
     }
 
     // --- Shelf Methods ---
@@ -224,6 +229,13 @@ class BookRepository(
         val shelf = shelfDao.getShelfById(shelfId)
         if (shelf != null) {
             shelfDao.deleteShelf(shelf)
+        }
+    }
+
+    suspend fun renameShelf(shelfId: String, newName: String) {
+        val shelf = shelfDao.getShelfById(shelfId)
+        if (shelf != null) {
+            shelfDao.insertShelf(shelf.copy(name = newName))
         }
     }
 

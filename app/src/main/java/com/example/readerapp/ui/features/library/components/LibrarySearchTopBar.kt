@@ -57,10 +57,18 @@ fun LibrarySearchTopBar(
 ) {
     val textFieldState = rememberTextFieldState(searchQuery)
     val scope = rememberCoroutineScope()
-    val defaultSearchBarColors = SearchBarDefaults.colors()
+    val isExpandedTarget = searchBarState.targetValue == SearchBarValue.Expanded
+    val searchBarContainerColor by androidx.compose.animation.animateColorAsState(
+        targetValue = if (isExpandedTarget) MaterialTheme.colorScheme.surfaceContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+        label = "searchBarColor"
+    )
+
+    val defaultSearchBarColors = SearchBarDefaults.colors(
+        containerColor = searchBarContainerColor
+    )
     val appBarWithSearchColors = SearchBarDefaults.appBarWithSearchColors(
         searchBarColors = defaultSearchBarColors,
-        scrolledSearchBarContainerColor = defaultSearchBarColors.containerColor,
+        scrolledSearchBarContainerColor = searchBarContainerColor,
         appBarContainerColor = MaterialTheme.colorScheme.surface,
         scrolledAppBarContainerColor = MaterialTheme.colorScheme.surface
     )
@@ -187,26 +195,22 @@ fun LibrarySearchTopBar(
                         modifier = Modifier
                             .fillMaxWidth()
                             .horizontalScroll(rememberScrollState())
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
                     )
 
                     SearchResultsContent(
                         results = searchResults,
                         onBookClick = { book ->
                             onNavigateToReader(book.id)
-                            scope.launch { searchBarState.animateToCollapsed() }
                         },
                         onShelfClick = { shelf ->
                             onNavigateToShelf(shelf.id)
-                            scope.launch { searchBarState.animateToCollapsed() }
                         },
                         onAuthorClick = { author ->
                             onNavigateToAuthor(author)
-                            scope.launch { searchBarState.animateToCollapsed() }
                         },
                         onTagClick = { tag ->
                             onNavigateToTag(tag)
-                            scope.launch { searchBarState.animateToCollapsed() }
                         }
                     )
                 }
@@ -233,11 +237,10 @@ private fun SearchResultsContent(
                 Text(
                     "Books",
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                 )
                 LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp)
+                    contentPadding = PaddingValues(horizontal = 8.dp)
                 ) {
                     items(results.books) { book ->
                         BookItem(

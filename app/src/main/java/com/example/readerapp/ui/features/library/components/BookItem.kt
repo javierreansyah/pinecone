@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import com.example.readerapp.ui.theme.spacing
@@ -17,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.clip
 import com.example.readerapp.data.model.Book
 
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -25,9 +28,9 @@ import androidx.compose.foundation.combinedClickable
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BookItem(
+    modifier: Modifier = Modifier.fillMaxWidth(),
     book: Book,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier.fillMaxWidth(),
     onLongClick: (() -> Unit)? = null,
     isList: Boolean = false
 ) {
@@ -37,7 +40,8 @@ fun BookItem(
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = onLongClick
-                ),
+                )
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space16)
         ) {
@@ -66,21 +70,30 @@ fun BookItem(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Text(
-                    text = "${(book.progress * 100).toInt()}%",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                if (book.isRead) {
+                    Text(
+                        text = "100% ✓",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                } else {
+                    Text(
+                        text = "${(book.progress * 100).toInt()}%",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         }
     } else {
         Column(
             modifier = modifier
+                .clip(MaterialTheme.shapes.small)
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = onLongClick
-                ),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)
+                )
+                .padding(8.dp)
         ) {
             CoverImage(
                 book = book,
@@ -88,6 +101,7 @@ fun BookItem(
                     .fillMaxWidth()
                     .aspectRatio(2f / 3f)
             )
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = book.title,
                 style = MaterialTheme.typography.titleSmall,
@@ -107,11 +121,19 @@ fun BookItem(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
                 )
-                Text(
-                    text = "${(book.progress * 100).toInt()}%",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (book.isRead) {
+                    Text(
+                        text = "100%",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                } else {
+                    Text(
+                        text = "${(book.progress * 100).toInt()}%",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         }
     }

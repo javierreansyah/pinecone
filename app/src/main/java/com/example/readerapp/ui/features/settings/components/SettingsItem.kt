@@ -27,21 +27,9 @@ fun SettingsItem(
     label: String,
     value: String,
     options: List<String>,
-    onSelected: (String) -> Unit,
-    index: Int,
-    count: Int
+    onSelected: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val defaultRadius = 24.dp
-    val innerRadius = 4.dp
-
-    val topRadius = if (index == 0) defaultRadius else innerRadius
-    val bottomRadius = if (index == count - 1) defaultRadius else innerRadius
-
-    val shape = RoundedCornerShape(
-        topStart = topRadius, topEnd = topRadius,
-        bottomStart = bottomRadius, bottomEnd = bottomRadius
-    )
 
     Box {
         ListItem(
@@ -50,7 +38,6 @@ fun SettingsItem(
             trailingContent = { Icon(MaterialSymbols.Outlined.Keyboard_arrow_right, contentDescription = null) },
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(shape)
                 .clickable { expanded = true }
         )
 

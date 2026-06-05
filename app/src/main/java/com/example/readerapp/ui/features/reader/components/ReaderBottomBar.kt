@@ -1,6 +1,5 @@
 package com.example.readerapp.ui.features.reader.components
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -33,7 +32,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -67,7 +65,6 @@ fun ReaderBottomBar(
     var pendingSeek by remember { mutableStateOf<Double?>(null) }
     var seekBarWidthPx by remember { mutableFloatStateOf(1f) }
 
-    val isInteracting = isSeeking
 
     LaunchedEffect(progression) {
         val target = pendingSeek
@@ -109,15 +106,12 @@ fun ReaderBottomBar(
                 modifier = Modifier.fillMaxWidth()
             ) {
             // Progress slider
-            val sliderAlpha by animateFloatAsState(
-                targetValue = if (isInteracting) 1f else 0f,
-                label = "sliderInteractAlpha"
-            )
             val onSurface = readerTextColor
-            val primary = MaterialTheme.colorScheme.primary
             val density = LocalDensity.current
-            val lineWidthPx = with(density) { 2.dp.toPx() }
-            val separatorHeightPx = with(density) { 6.dp.toPx() }
+            val trackStrokeWidthPx = with(density) { 2.dp.toPx() }
+            val thumbWidthPx = with(density) { 2.dp.toPx() }
+            val thumbHeightPx = with(density) { 14.dp.toPx() }
+            val thumbGapPx = with(density) { 4.dp.toPx() } // horizontal padding on each side of thumb
 
             Box(
                 modifier = Modifier
@@ -156,75 +150,62 @@ fun ReaderBottomBar(
                     },
                 contentAlignment = Alignment.CenterStart
             ) {
-                // Passive thin track
                 Canvas(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(2.dp)
+                        .height(20.dp)
                 ) {
-                    val trackY = size.height / 2
-                    drawLine(
-                        color = onSurface.copy(alpha = 0.24f),
-                        start = Offset(0f, trackY),
-                        end = Offset(size.width, trackY),
-                        strokeWidth = 2.dp.toPx(),
-                        cap = StrokeCap.Round
-                    )
-                    drawLine(
-                        color = onSurface.copy(alpha = 0.70f),
-                        start = Offset(0f, trackY),
-                        end = Offset(size.width * sliderPosition, trackY),
-                        strokeWidth = 2.dp.toPx(),
-                        cap = StrokeCap.Round
-                    )
-                    if (isInteracting) {
-                        val x = size.width * sliderPosition
-                        val halfSep = separatorHeightPx / 2f
+                    val trackY = size.height / 2f
+                    val thumbX = size.width * sliderPosition
+                    val gapLeft = (thumbX - thumbGapPx).coerceAtLeast(0f)
+                    val gapRight = (thumbX + thumbGapPx).coerceAtMost(size.width)
+
+                    if (isSeeking) {
+                        // ── Track with gap around thumb ──
+                        // Active track (left of thumb), stopping before the gap
+                        if (gapLeft > 0f) {
+                            drawLine(
+                                color = onSurface.copy(alpha = 0.70f),
+                                start = Offset(0f, trackY),
+                                end = Offset(gapLeft, trackY),
+                                strokeWidth = trackStrokeWidthPx,
+                                cap = StrokeCap.Round
+                            )
+                        }
+                        // Inactive track (right of thumb), starting after the gap
+                        if (gapRight < size.width) {
+                            drawLine(
+                                color = onSurface.copy(alpha = 0.24f),
+                                start = Offset(gapRight, trackY),
+                                end = Offset(size.width, trackY),
+                                strokeWidth = trackStrokeWidthPx,
+                                cap = StrokeCap.Round
+                            )
+                        }
+
+                        // ── Thumb: simple vertical line ──
+                        val halfThumb = thumbHeightPx / 2f
                         drawLine(
-                            color = readerBgColor,
-                            start = Offset(x, trackY - halfSep),
-                            end = Offset(x, trackY + halfSep),
-                            strokeWidth = lineWidthPx,
+                            color = onSurface.copy(alpha = 0.70f),
+                            start = Offset(thumbX, trackY - halfThumb),
+                            end = Offset(thumbX, trackY + halfThumb),
+                            strokeWidth = thumbWidthPx,
                             cap = StrokeCap.Round
                         )
-                    }
-                }
-
-                // Vertical seek line
-                if (isInteracting) {
-                    Canvas(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(12.dp)
-                            .graphicsLayer { alpha = sliderAlpha }
-                    ) {
-                        val x = size.width * sliderPosition
-                        val midY = size.height / 2f
-                        val halfGap = lineWidthPx / 2f
-
-                        // Background border for visual separation
-                        val borderStrokeWidth = lineWidthPx * 2.5f
+                    } else {
+                        // ── Passive continuous track (no thumb) ──
                         drawLine(
-                            color = readerBgColor,
-                            start = Offset(x, 0f),
-                            end = Offset(x, size.height),
-                            strokeWidth = borderStrokeWidth,
-                            cap = StrokeCap.Round
-                        )
-
-                        // Primary seeker line
-                        drawLine(
-                            color = primary,
-                            start = Offset(x, 0f),
-                            end = Offset(x, (midY - halfGap).coerceAtLeast(0f)),
-                            strokeWidth = lineWidthPx,
+                            color = onSurface.copy(alpha = 0.70f),
+                            start = Offset(0f, trackY),
+                            end = Offset(thumbX, trackY),
+                            strokeWidth = trackStrokeWidthPx,
                             cap = StrokeCap.Round
                         )
                         drawLine(
-                            color = primary,
-                            start = Offset(x, (midY + halfGap).coerceAtMost(size.height)),
-                            end = Offset(x, size.height),
-                            strokeWidth = lineWidthPx,
+                            color = onSurface.copy(alpha = 0.24f),
+                            start = Offset(thumbX, trackY),
+                            end = Offset(size.width, trackY),
+                            strokeWidth = trackStrokeWidthPx,
                             cap = StrokeCap.Round
                         )
                     }
@@ -234,7 +215,7 @@ fun ReaderBottomBar(
 //            Spacer(modifier = Modifier.height(4.dp))
 
             // Page info text
-            val pageText = if (isInteracting || pendingSeek != null) {
+            val pageText = if (isSeeking || pendingSeek != null) {
                 if (totalPages != null) {
                     val page = (sliderPosition * totalPages).roundToInt().coerceIn(1, totalPages)
                     "$page of $totalPages"

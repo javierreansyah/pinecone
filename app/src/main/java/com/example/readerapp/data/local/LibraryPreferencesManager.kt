@@ -10,14 +10,14 @@ import com.example.readerapp.ui.features.library.FilterSortPreferences
 class LibraryPreferencesManager(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("library_prefs", Context.MODE_PRIVATE)
 
-    fun getPreferences(screenKey: String, defaultSort: SortType = SortType.Added, defaultAscending: Boolean = false): FilterSortPreferences {
-        val layoutModeStr = prefs.getString("${screenKey}_layout", LayoutMode.Grid.name) ?: LayoutMode.Grid.name
+    fun getPreferences(screenKey: String, defaultLayout: LayoutMode = LayoutMode.Grid, defaultSort: SortType = SortType.Added, defaultAscending: Boolean = false): FilterSortPreferences {
+        val layoutModeStr = prefs.getString("${screenKey}_layout", defaultLayout.name) ?: defaultLayout.name
         val sortTypeStr = prefs.getString("${screenKey}_sort", defaultSort.name) ?: defaultSort.name
         val isAscending = prefs.getBoolean("${screenKey}_asc", defaultAscending)
         val statusSetStr = prefs.getStringSet("${screenKey}_status", setOf(StatusFilter.NotStarted.name, StatusFilter.Reading.name, StatusFilter.Finished.name)) ?: setOf()
         
         return FilterSortPreferences(
-            layoutMode = try { LayoutMode.valueOf(layoutModeStr) } catch (e: Exception) { LayoutMode.Grid },
+            layoutMode = try { LayoutMode.valueOf(layoutModeStr) } catch (e: Exception) { defaultLayout },
             sortType = try { SortType.valueOf(sortTypeStr) } catch (e: Exception) { defaultSort },
             isAscending = isAscending,
             selectedStatus = statusSetStr.mapNotNull { 

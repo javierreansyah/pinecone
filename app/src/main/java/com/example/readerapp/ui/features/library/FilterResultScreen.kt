@@ -18,7 +18,7 @@ import com.example.readerapp.ui.features.library.components.BookGrid
 import com.example.readerapp.ui.features.library.components.BookList
 import com.example.readerapp.ui.features.library.components.FilterSortBottomSheet
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FilterResultScreen(
     filterType: String, // "author" or "tag"
@@ -41,6 +41,7 @@ fun FilterResultScreen(
 
     val uiState by viewModel.uiState.collectAsState()
     var showFilterSheet by remember { mutableStateOf(false) }
+    var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
 
     val baseBooksFlow = remember(filterType, filterValue) {
         if (filterType == "author") viewModel.getBooksByAuthor(filterValue)
@@ -54,18 +55,26 @@ fun FilterResultScreen(
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            MediumTopAppBar(
+            LargeFlexibleTopAppBar(
                 title = { Text(filterValue) },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    FilledTonalIconButton(
+                        shapes = IconButtonDefaults.shapes(),
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                        onClick = onNavigateBack
+                    ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showFilterSheet = true }) {
+                    IconButton(shapes = IconButtonDefaults.shapes(), onClick = { showFilterSheet = true }) {
                         Icon(MaterialSymbols.Outlined.Tune, contentDescription = "Filter")
                     }
                 },
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface
+                ),
                 scrollBehavior = scrollBehavior
             )
         }
@@ -78,12 +87,14 @@ fun FilterResultScreen(
                     BookGrid(
                         books = books,
                         layoutMode = uiState.bookPreferences.layoutMode,
-                        onBookClick = onNavigateToReader
+                        onBookClick = onNavigateToReader,
+                        onBookLongClick = { selectedBookForMenu = it }
                     )
                 } else {
                     BookList(
                         books = books,
-                        onBookClick = onNavigateToReader
+                        onBookClick = onNavigateToReader,
+                        onBookLongClick = { selectedBookForMenu = it }
                     )
                 }
             }
@@ -99,6 +110,15 @@ fun FilterResultScreen(
                 showViewPicker = true,
                 showStatusFilter = true,
                 availableSortTypes = listOf(SortType.Title, SortType.Author, SortType.LastRead, SortType.Added, SortType.Progress)
+            )
+        }
+
+        if (selectedBookForMenu != null) {
+            com.example.readerapp.ui.features.library.components.BookContextMenu(
+                viewModel = viewModel,
+                bookId = selectedBookForMenu!!,
+                shelfId = null,
+                onDismiss = { selectedBookForMenu = null }
             )
         }
     }

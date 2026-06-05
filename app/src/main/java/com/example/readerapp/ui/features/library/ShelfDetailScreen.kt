@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +23,7 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Tune
 import androidx.compose.material.icons.filled.FormatListNumbered
 import androidx.compose.material.icons.filled.Reorder
+import com.composables.icons.materialsymbols.outlined.Delete
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.features.library.components.BookGrid
 import com.example.readerapp.ui.features.library.components.BookList
@@ -32,7 +34,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ShelfDetailScreen(
     shelfId: String,
@@ -55,6 +57,11 @@ fun ShelfDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showFilterSheet by remember { mutableStateOf(false) }
     var isReordering by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var showMoreMenu by remember { mutableStateOf(false) }
+    var newShelfName by remember { mutableStateOf("") }
+    var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
 
     val shelves by viewModel.shelves.collectAsState()
     val shelfWithCovers = shelves.find { it.shelf.id == shelfId }
@@ -75,15 +82,24 @@ fun ShelfDetailScreen(
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            MediumTopAppBar(
+            LargeFlexibleTopAppBar(
                 title = { Text(shelfWithCovers?.shelf?.name ?: "Shelf") },
+                subtitle = { Text("${books.size} book${if (books.size != 1) "s" else ""}") },
                 navigationIcon = {
                     if (isReordering) {
-                        IconButton(onClick = { isReordering = false }) {
+                        FilledTonalIconButton(
+                            shapes = IconButtonDefaults.shapes(),
+                            colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                            onClick = { isReordering = false }
+                        ) {
                             Icon(Icons.Filled.Close, contentDescription = "Cancel")
                         }
                     } else {
-                        IconButton(onClick = onNavigateBack) {
+                        FilledTonalIconButton(
+                            shapes = IconButtonDefaults.shapes(),
+                            colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                            onClick = onNavigateBack
+                        ) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
                     }
@@ -98,7 +114,7 @@ fun ShelfDetailScreen(
                         }
                     } else {
                         if (shelfId != "unshelved") {
-                            IconButton(onClick = { 
+                            IconButton(shapes = IconButtonDefaults.shapes(), onClick = { 
                                 if (shelfWithCovers != null) {
                                     reorderBooks = shelfWithCovers.books.map { Book.fromEntity(it) }
                                     isReordering = true 
@@ -107,11 +123,42 @@ fun ShelfDetailScreen(
                                 Icon(Icons.Default.FormatListNumbered, contentDescription = "Custom Order")
                             }
                         }
-                        IconButton(onClick = { showFilterSheet = true }) {
+                        IconButton(shapes = IconButtonDefaults.shapes(), onClick = { showFilterSheet = true }) {
                             Icon(MaterialSymbols.Outlined.Tune, contentDescription = "Filter")
+                        }
+                        if (shelfId != "unshelved") {
+                            Box {
+                                IconButton(shapes = IconButtonDefaults.shapes(), onClick = { showMoreMenu = true }) {
+                                    Icon(Icons.Default.MoreVert, contentDescription = "More Options")
+                                }
+                                DropdownMenu(
+                                    expanded = showMoreMenu,
+                                    onDismissRequest = { showMoreMenu = false }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("Rename") },
+                                        onClick = {
+                                            newShelfName = shelfWithCovers?.shelf?.name ?: ""
+                                            showRenameDialog = true
+                                            showMoreMenu = false
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                                        onClick = {
+                                            showDeleteDialog = true
+                                            showMoreMenu = false
+                                        }
+                                    )
+                                }
+                            }
                         }
                     }
                 },
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface
+                ),
                 scrollBehavior = scrollBehavior
             )
         }
@@ -152,7 +199,7 @@ fun ShelfDetailScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Box(modifier = Modifier.weight(1f)) {
-                                            BookItem(book = item, onClick = {}, isList = true)
+                                            BookItem(book = item, onClick = {}, onLongClick = { selectedBookForMenu = item.id }, isList = true)
                                         }
                                         Icon(
                                             imageVector = Icons.Default.DragHandle,
@@ -174,12 +221,14 @@ fun ShelfDetailScreen(
                         BookGrid(
                             books = books,
                             layoutMode = uiState.bookPreferences.layoutMode,
-                            onBookClick = onNavigateToReader
+                            onBookClick = onNavigateToReader,
+                            onBookLongClick = { selectedBookForMenu = it }
                         )
                     } else {
                         BookList(
                             books = books,
-                            onBookClick = onNavigateToReader
+                            onBookClick = onNavigateToReader,
+                            onBookLongClick = { selectedBookForMenu = it }
                         )
                     }
                 }
@@ -200,6 +249,67 @@ fun ShelfDetailScreen(
                 } else {
                     SortType.entries // Allows Custom Order
                 }
+            )
+        }
+        if (showDeleteDialog && shelfWithCovers != null) {
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = false },
+                title = { Text("Delete Shelf") },
+                text = { Text("Are you sure you want to delete '${shelfWithCovers.shelf.name}'? The books inside will not be deleted.") },
+                confirmButton = {
+                    TextButton(onClick = { 
+                        viewModel.deleteShelf(shelfId)
+                        showDeleteDialog = false 
+                        onNavigateBack()
+                    }) {
+                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        if (showRenameDialog && shelfWithCovers != null) {
+            AlertDialog(
+                onDismissRequest = { showRenameDialog = false },
+                title = { Text("Rename Shelf") },
+                text = {
+                    OutlinedTextField(
+                        value = newShelfName,
+                        onValueChange = { newShelfName = it },
+                        label = { Text("Shelf Name") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = { 
+                        if (newShelfName.isNotBlank()) {
+                            viewModel.renameShelf(shelfId, newShelfName)
+                            showRenameDialog = false 
+                        }
+                    }) {
+                        Text("Save")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showRenameDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        if (selectedBookForMenu != null) {
+            com.example.readerapp.ui.features.library.components.BookContextMenu(
+                viewModel = viewModel,
+                bookId = selectedBookForMenu!!,
+                shelfId = shelfId,
+                onDismiss = { selectedBookForMenu = null }
             )
         }
     }
