@@ -12,16 +12,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ButtonGroupDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.ToggleButtonDefaults
@@ -35,7 +31,10 @@ import com.example.readerapp.ui.theme.spacing
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_drop_down
 import com.composables.icons.materialsymbols.outlined.Arrow_drop_up
+import com.composables.icons.materialsymbols.outlined.Border_all
+import com.composables.icons.materialsymbols.outlined.Calendar_view_month
 import com.composables.icons.materialsymbols.outlined.Grid_view
+import com.composables.icons.materialsymbols.outlined.View_carousel
 import com.composables.icons.materialsymbols.outlined.View_list
 import com.example.readerapp.ui.features.library.LayoutMode
 import com.example.readerapp.ui.features.library.SortType
@@ -51,7 +50,8 @@ fun FilterSortBottomSheet(
     onDismiss: () -> Unit,
     showViewPicker: Boolean = true,
     showStatusFilter: Boolean = true,
-    availableSortTypes: List<SortType> = SortType.entries
+    availableSortTypes: List<SortType> = SortType.entries,
+    availableLayoutModes: List<LayoutMode> = listOf(LayoutMode.Grid, LayoutMode.BigGrid, LayoutMode.List)
 ) {
     val segmentedGap = 4.dp
 
@@ -75,32 +75,25 @@ fun FilterSortBottomSheet(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
                     ) {
-                        val modes = LayoutMode.entries
-                        modes.forEachIndexed { index, mode ->
+                        availableLayoutModes.forEachIndexed { index, mode ->
                             val isSelected = preferences.layoutMode == mode
                             ToggleButton(
                                 checked = isSelected,
                                 onCheckedChange = { onLayoutModeChange(mode) },
                                 shapes = when (index) {
                                     0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
-                                    modes.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                                    availableLayoutModes.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
                                     else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
                                 },
                                 modifier = Modifier.weight(1f).semantics { role = Role.RadioButton }
                             ) {
                                 val icon = when (mode) {
-                                    LayoutMode.Grid -> MaterialSymbols.Outlined.Grid_view
-                                    LayoutMode.BigGrid -> MaterialSymbols.Outlined.Grid_view
+                                    LayoutMode.Grid -> MaterialSymbols.Outlined.Calendar_view_month
+                                    LayoutMode.BigGrid -> MaterialSymbols.Outlined.Border_all
                                     LayoutMode.List -> MaterialSymbols.Outlined.View_list
+                                    LayoutMode.BigList -> MaterialSymbols.Outlined.View_carousel
                                 }
                                 Icon(icon, contentDescription = null)
-                                Spacer(Modifier.size(ToggleButtonDefaults.IconSpacing))
-                                val label = when (mode) {
-                                    LayoutMode.Grid -> "Grid"
-                                    LayoutMode.BigGrid -> "Big Grid"
-                                    LayoutMode.List -> "List"
-                                }
-                                Text(label)
                             }
                         }
                     }
@@ -160,7 +153,7 @@ fun FilterSortBottomSheet(
                                     else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
                                 }
                             ) {
-                                Text(statusLabel(status))
+                                Text(statusLabel(status), style = MaterialTheme.typography.labelLarge)
                             }
                         }
                     }

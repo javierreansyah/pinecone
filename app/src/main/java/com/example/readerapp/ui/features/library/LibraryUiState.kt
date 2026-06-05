@@ -3,7 +3,7 @@ package com.example.readerapp.ui.features.library
 import com.example.readerapp.data.local.ShelfEntity
 import com.example.readerapp.data.model.Book
 
-enum class LayoutMode { Grid, BigGrid, List }
+enum class LayoutMode { Grid, BigGrid, List, BigList }
 enum class SortType { Title, Author, LastRead, Added, Progress, Custom }
 enum class StatusFilter { NotStarted, Reading, Finished }
 
@@ -21,7 +21,7 @@ data class LibraryUiState(
     val searchCategory: SearchCategory = SearchCategory.All,
     val isImporting: Boolean = false,
     val bookPreferences: FilterSortPreferences = FilterSortPreferences(sortType = SortType.Added),
-    val shelvesPreferences: FilterSortPreferences = FilterSortPreferences(sortType = SortType.Title, isAscending = true)
+    val shelvesPreferences: FilterSortPreferences = FilterSortPreferences(layoutMode = LayoutMode.BigList, sortType = SortType.Title, isAscending = true)
 )
 
 data class SearchResults(

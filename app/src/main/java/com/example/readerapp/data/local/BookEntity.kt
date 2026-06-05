@@ -24,5 +24,6 @@ data class BookEntity(
     val description: String? = null,
     val publisher: String? = null,
     val published: String? = null,
-    val tags: String? = null
+    val tags: String? = null,
+    val isRead: Boolean = false
 )

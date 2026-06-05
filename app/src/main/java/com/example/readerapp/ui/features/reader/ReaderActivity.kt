@@ -244,10 +244,18 @@ class ReaderActivity : AppCompatActivity() {
             }
         }
 
-        // Clear highlight decoration when the user exits search navigation
+        // Manage system bars and clear highlight decoration when the user exits search navigation
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
+                    val windowInsetsController = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
+                    if (state.showControls) {
+                        windowInsetsController.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+                    } else {
+                        windowInsetsController.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+                        windowInsetsController.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
+                    }
+
                     if (!state.isInSearchNavigationMode) {
                         clearSearchHighlight()
                     }

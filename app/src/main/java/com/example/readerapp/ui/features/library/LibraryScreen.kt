@@ -55,11 +55,7 @@ fun LibraryScreen(
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
 
     // Context Menu State
-    var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
-    var showDeleteConfirmation by remember { mutableStateOf(false) }
-    var showCreateShelfDialog by remember { mutableStateOf(false) }
-    var showAddToShelfDialog by remember { mutableStateOf(false) }
-    var newShelfName by remember { mutableStateOf("") }
+    var selectedBookContext by remember { mutableStateOf<Pair<String, String?>?>(null) }
 
     val pagerState = rememberPagerState(pageCount = { 2 })
     val scope = rememberCoroutineScope()
@@ -114,19 +110,21 @@ fun LibraryScreen(
             when (page) {
                 0 -> {
                     // Books Page
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        if (uiState.bookPreferences.layoutMode != LayoutMode.List) {
+                    Box(modifier = Modifier.fillMaxSize().padding(top = 8.dp), contentAlignment = Alignment.TopStart) {
+                        if (filteredBooks.isEmpty()) {
+                            Box(modifier = Modifier.fillMaxWidth())
+                        } else if (uiState.bookPreferences.layoutMode != LayoutMode.List) {
                             BookGrid(
                                 books = filteredBooks,
                                 layoutMode = uiState.bookPreferences.layoutMode,
                                 onBookClick = onNavigateToReader,
-                                onBookLongClick = { selectedBookForMenu = it }
+                                onBookLongClick = { selectedBookContext = Pair(it, null) }
                             )
                         } else {
                             BookList(
                                 books = filteredBooks,
                                 onBookClick = onNavigateToReader,
-                                onBookLongClick = { selectedBookForMenu = it }
+                                onBookLongClick = { selectedBookContext = Pair(it, null) }
                             )
                         }
 
@@ -157,7 +155,8 @@ fun LibraryScreen(
                         shelves = shelves,
                         onShelfClick = onNavigateToShelf,
                         onBookClick = onNavigateToReader,
-                        onBookLongClick = { selectedBookForMenu = it }
+                        onBookLongClick = { bookId, shelfId -> selectedBookContext = Pair(bookId, shelfId) },
+                        layoutMode = uiState.shelvesPreferences.layoutMode
                     )
                 }
             }
@@ -171,147 +170,22 @@ fun LibraryScreen(
                 onSortTypeChange = { viewModel.onSortTypeChange(it, isShelvesTab) },
                 onStatusToggle = { viewModel.toggleStatusFilter(it, isShelvesTab) },
                 onDismiss = { showFilterSheet = false },
-                showViewPicker = !isShelvesTab,
+                showViewPicker = true,
                 showStatusFilter = !isShelvesTab,
                 availableSortTypes = if (isShelvesTab) listOf(SortType.Title, SortType.LastRead, SortType.Added, SortType.Progress) 
-                                     else listOf(SortType.Title, SortType.Author, SortType.LastRead, SortType.Added, SortType.Progress)
+                                     else listOf(SortType.Title, SortType.Author, SortType.LastRead, SortType.Added, SortType.Progress),
+                availableLayoutModes = if (isShelvesTab) listOf(LayoutMode.List, LayoutMode.BigList)
+                                       else listOf(LayoutMode.Grid, LayoutMode.BigGrid, LayoutMode.List)
             )
         }
 
         // Context Menu
-        if (selectedBookForMenu != null) {
-            ModalBottomSheet(onDismissRequest = { selectedBookForMenu = null }) {
-                Column(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)) {
-                    Text("Options", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(16.dp))
-                    HorizontalDivider()
-                    ListItem(
-                        headlineContent = { Text("Info", style = MaterialTheme.typography.titleMedium) },
-                        modifier = Modifier.clickable {
-                            val intent = android.content.Intent(context, com.example.readerapp.ui.features.info.BookInfoActivity::class.java).apply {
-                                putExtra(com.example.readerapp.ui.features.info.BookInfoActivity.EXTRA_BOOK_ID, selectedBookForMenu!!)
-                            }
-                            context.startActivity(intent)
-                            selectedBookForMenu = null
-                        }
-                    )
-                    ListItem(
-                        headlineContent = { Text("Archive", style = MaterialTheme.typography.titleMedium) },
-                        modifier = Modifier.clickable {
-                            viewModel.toggleArchive(selectedBookForMenu!!)
-                            selectedBookForMenu = null
-                        }
-                    )
-                    ListItem(
-                        headlineContent = { Text("Add to Shelf", style = MaterialTheme.typography.titleMedium) },
-                        modifier = Modifier.clickable {
-                            showAddToShelfDialog = true
-                        }
-                    )
-                    ListItem(
-                        headlineContent = { Text("Create New Shelf", style = MaterialTheme.typography.titleMedium) },
-                        modifier = Modifier.clickable {
-                            showCreateShelfDialog = true
-                        }
-                    )
-                    ListItem(
-                        headlineContent = { Text("Delete", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error) },
-                        modifier = Modifier.clickable {
-                            showDeleteConfirmation = true
-                        }
-                    )
-                }
-            }
-        }
-
-        // Delete Confirmation Dialog
-        if (showDeleteConfirmation) {
-            AlertDialog(
-                onDismissRequest = { showDeleteConfirmation = false },
-                title = { Text("Delete Book", style = MaterialTheme.typography.titleLarge) },
-                text = { Text("Are you sure you want to delete this book? This action cannot be undone.", style = MaterialTheme.typography.bodyMedium) },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            viewModel.deleteBook(selectedBookForMenu!!)
-                            showDeleteConfirmation = false
-                            selectedBookForMenu = null
-                        },
-                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                    ) {
-                        Text("Delete", style = MaterialTheme.typography.labelLarge)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showDeleteConfirmation = false }) {
-                        Text("Cancel", style = MaterialTheme.typography.labelLarge)
-                    }
-                }
-            )
-        }
-
-        // Add to Shelf Dialog
-        if (showAddToShelfDialog) {
-            AlertDialog(
-                onDismissRequest = { showAddToShelfDialog = false },
-                title = { Text("Add to Shelf", style = MaterialTheme.typography.titleLarge) },
-                text = {
-                    val validShelves = shelves.filter { it.shelf.id != "unshelved" }
-                    if (validShelves.isEmpty()) {
-                        Text("No shelves available.", style = MaterialTheme.typography.bodyLarge)
-                    } else {
-                        LazyColumn {
-                            items(validShelves) { shelfWithCovers ->
-                                ListItem(
-                                    headlineContent = { Text(shelfWithCovers.shelf.name, style = MaterialTheme.typography.titleMedium) },
-                                    modifier = Modifier.clickable {
-                                        viewModel.addBookToShelf(shelfWithCovers.shelf.id, selectedBookForMenu!!)
-                                        showAddToShelfDialog = false
-                                        selectedBookForMenu = null
-                                    }
-                                )
-                            }
-                        }
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = { showAddToShelfDialog = false }) {
-                        Text("Close", style = MaterialTheme.typography.labelLarge)
-                    }
-                }
-            )
-        }
-
-        // Create Shelf Dialog
-        if (showCreateShelfDialog) {
-            AlertDialog(
-                onDismissRequest = { showCreateShelfDialog = false },
-                title = { Text("Create New Shelf", style = MaterialTheme.typography.titleLarge) },
-                text = {
-                    OutlinedTextField(
-                        value = newShelfName,
-                        onValueChange = { newShelfName = it },
-                        label = { Text("Shelf Name", style = MaterialTheme.typography.labelMedium) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        if (newShelfName.isNotBlank()) {
-                            viewModel.createShelfAndAddBook(newShelfName, selectedBookForMenu)
-                            newShelfName = ""
-                            showCreateShelfDialog = false
-                            selectedBookForMenu = null
-                        }
-                    }) {
-                        Text("Create", style = MaterialTheme.typography.labelLarge)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showCreateShelfDialog = false }) {
-                        Text("Cancel", style = MaterialTheme.typography.labelLarge)
-                    }
-                }
+        if (selectedBookContext != null) {
+            BookContextMenu(
+                viewModel = viewModel,
+                bookId = selectedBookContext!!.first,
+                shelfId = selectedBookContext!!.second,
+                onDismiss = { selectedBookContext = null }
             )
         }
     }

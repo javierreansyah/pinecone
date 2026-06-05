@@ -21,7 +21,8 @@ data class Book(
     val tags: String? = null,
     val identifier: String? = null,
     val mediaType: String? = null,
-    val filePath: String = ""
+    val filePath: String = "",
+    val isRead: Boolean = false
 ) {
     companion object {
         fun fromEntity(entity: BookEntity): Book = Book(
@@ -40,7 +41,8 @@ data class Book(
             tags = entity.tags,
             identifier = entity.identifier,
             mediaType = entity.mediaType,
-            filePath = entity.filePath
+            filePath = entity.filePath,
+            isRead = entity.isRead
         )
     }
 }

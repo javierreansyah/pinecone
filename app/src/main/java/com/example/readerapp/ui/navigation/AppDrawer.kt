@@ -28,7 +28,6 @@ import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Archive
 import com.composables.icons.materialsymbols.outlined.Folder
@@ -42,9 +41,10 @@ import kotlinx.coroutines.launch
 @Composable
 fun AppDrawer(
     drawerState: DrawerState,
-    navController: NavController,
     settings: ReaderSettings,
     darkTheme: Boolean,
+    onNavigateToArchives: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     onImportFilesClick: () -> Unit,
     onScanFolderClick: () -> Unit,
     onBackupFolderSetupClick: () -> Unit,
@@ -77,20 +77,17 @@ fun AppDrawer(
             label = { Text("Archives") },
             icon = { Icon(MaterialSymbols.Outlined.Archive, contentDescription = null) },
             selected = false,
-            onClick = {
-                navController.navigate(Screen.Archives.route)
-                scope.launch { drawerState.close() }
-            },
+            onClick = { onNavigateToArchives() },
             shape = RectangleShape
         )
 
-        HorizontalDivider()
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
         Text(
             text = "Book Import",
             style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(horizontal = 28.dp, vertical = 16.dp),
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
+            color = MaterialTheme.colorScheme.primary,
         )
 
         NavigationDrawerItem(
@@ -114,13 +111,13 @@ fun AppDrawer(
             shape = RectangleShape
         )
 
-        HorizontalDivider()
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
         Text(
             text = "Local Backup",
             style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(horizontal = 28.dp, vertical = 16.dp),
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
+            color = MaterialTheme.colorScheme.primary,
         )
 
         val lastBackupText = if (settings.lastBackupTime > 0) {
@@ -175,16 +172,13 @@ fun AppDrawer(
             shape = RectangleShape
         )
 
-        HorizontalDivider()
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
         NavigationDrawerItem(
             label = { Text("Settings") },
             icon = { Icon(MaterialSymbols.Outlined.Settings, contentDescription = null) },
             selected = false,
-            onClick = {
-                navController.navigate(Screen.Settings.route)
-                scope.launch { drawerState.close() }
-            },
+            onClick = { onNavigateToSettings() },
             shape = RectangleShape
         )
     }

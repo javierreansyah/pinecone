@@ -47,6 +47,7 @@ fun ReaderBottomSheet(
     onDeleteNote: (Long) -> Unit,
     onDismiss: () -> Unit,
     getPositionLabel: (Locator) -> String,
+    getChapterPageLabel: (Link) -> String,
     modifier: Modifier = Modifier
 ) {
     val configuration = LocalConfiguration.current
@@ -109,7 +110,7 @@ fun ReaderBottomSheet(
                     verticalAlignment = Alignment.Top
                 ) { page ->
                     when (page) {
-                        0 -> TocList(tableOfContents, currentLocator, onChapterClick)
+                        0 -> TocList(tableOfContents, currentLocator, getChapterPageLabel, onChapterClick)
                         1 -> BookmarksList(bookmarks, tableOfContents, getPositionLabel, onBookmarkClick, onDeleteBookmark)
                         2 -> NotesList(notes, tableOfContents, getPositionLabel, onNoteClick, onDeleteNote)
                     }
@@ -158,6 +159,7 @@ fun ReaderBottomSheet(
 private fun TocList(
     tableOfContents: List<Link>,
     currentLocator: Locator?,
+    getChapterPageLabel: (Link) -> String,
     onChapterClick: (Link) -> Unit
 ) {
     if (tableOfContents.isEmpty()) {
@@ -165,20 +167,45 @@ private fun TocList(
             Text("No Table of Contents", style = MaterialTheme.typography.bodyLarge)
         }
     } else {
+        val currentChapterIndex = remember(tableOfContents, currentLocator) {
+            if (currentLocator == null) return@remember 0
+            val currentHref = currentLocator.href.toString().substringBefore("#")
+            val index = tableOfContents.indexOfFirst { it.href.toString().substringBefore("#") == currentHref }
+            if (index >= 0) index else 0
+        }
+        
+        val listState = androidx.compose.foundation.lazy.rememberLazyListState(
+            initialFirstVisibleItemIndex = currentChapterIndex
+        )
+
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
-            items(tableOfContents) { link ->
-                val isCurrentChapter = currentLocator?.href == link.href
+            items(tableOfContents.size) { index ->
+                val link = tableOfContents[index]
+                val currentHref = currentLocator?.href?.toString()?.substringBefore("#")
+                val linkHref = link.href.toString().substringBefore("#")
+                val isCurrentChapter = currentHref == linkHref
+                val pageLabel = getChapterPageLabel(link)
                 ListItem(
                     headlineContent = {
                         Text(
                             text = link.title ?: link.href.toString(),
-                            style = if (isCurrentChapter) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.titleMedium,
                             color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else Color.Unspecified
                         )
                     },
+                    supportingContent = if (pageLabel.isNotBlank()) {
+                        {
+                            Text(
+                                text = pageLabel,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else null,
                     modifier = Modifier.clickable { onChapterClick(link) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
@@ -197,9 +224,9 @@ private fun EntryHeader(
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Top
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
@@ -311,16 +338,23 @@ private fun NotesList(
                         
                         // Display the highlighted text if available
                         locator.text.highlight?.takeIf { it.isNotBlank() }?.let { highlight ->
-                            Surface(
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                shape = MaterialTheme.shapes.small
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(IntrinsicSize.Min)
                             ) {
+                                Box(
+                                    modifier = Modifier
+                                        .width(4.dp)
+                                        .fillMaxHeight()
+                                        .clip(CircleShape)
+                                        .background(Color(note.color).copy(alpha = 1f))
+                                )
                                 Text(
                                     text = highlight,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(8.dp),
-                                    fontStyle = FontStyle.Italic
+                                    modifier = Modifier.padding(start = 12.dp)
                                 )
                             }
                         }
