@@ -22,11 +22,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Tune
 import androidx.compose.material.icons.filled.FormatListNumbered
-import androidx.compose.material.icons.filled.Reorder
-import com.composables.icons.materialsymbols.outlined.Delete
 import com.example.readerapp.data.model.Book
-import com.example.readerapp.ui.features.library.components.BookGrid
-import com.example.readerapp.ui.features.library.components.BookList
 import com.example.readerapp.ui.features.library.components.FilterSortBottomSheet
 import com.example.readerapp.ui.features.library.components.BookItem
 import kotlinx.coroutines.flow.flowOf
@@ -217,20 +213,12 @@ fun ShelfDetailScreen(
                         }
                     }
                 } else {
-                    if (uiState.bookPreferences.layoutMode != LayoutMode.List) {
-                        BookGrid(
-                            books = books,
-                            layoutMode = uiState.bookPreferences.layoutMode,
-                            onBookClick = onNavigateToReader,
-                            onBookLongClick = { selectedBookForMenu = it }
-                        )
-                    } else {
-                        BookList(
-                            books = books,
-                            onBookClick = onNavigateToReader,
-                            onBookLongClick = { selectedBookForMenu = it }
-                        )
-                    }
+                    com.example.readerapp.ui.features.library.components.BookCollection(
+                        books = books,
+                        layoutMode = uiState.bookPreferences.layoutMode,
+                        onBookClick = onNavigateToReader,
+                        onBookLongClick = { selectedBookForMenu = it }
+                    )
                 }
             }
         }

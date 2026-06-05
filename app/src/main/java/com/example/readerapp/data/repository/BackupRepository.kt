@@ -2,17 +2,12 @@ package com.example.readerapp.data.repository
 
 import android.content.Context
 import android.net.Uri
-import android.os.Environment
-import android.provider.MediaStore
-import android.content.ContentValues
 import androidx.room.withTransaction
 import com.example.readerapp.ReaderApplication
 import com.example.readerapp.data.local.ReaderPreferences
 import com.example.readerapp.data.model.BackupPayload
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -25,6 +20,7 @@ import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
+import androidx.core.net.toUri
 
 class BackupRepository(private val context: Context) {
 
@@ -86,7 +82,7 @@ class BackupRepository(private val context: Context) {
             if (backupFolderUriString.isEmpty()) {
                 return@withContext false
             }
-            val backupFolderUri = Uri.parse(backupFolderUriString)
+            val backupFolderUri = backupFolderUriString.toUri()
             val backupFolder = androidx.documentfile.provider.DocumentFile.fromTreeUri(context, backupFolderUri)
             if (backupFolder == null || !backupFolder.canWrite()) {
                 return@withContext false
@@ -150,7 +146,7 @@ class BackupRepository(private val context: Context) {
     private fun cleanupOldBackups(typeIndicator: String, backupFolderUriString: String) {
         try {
             if (backupFolderUriString.isEmpty()) return
-            val backupFolderUri = Uri.parse(backupFolderUriString)
+            val backupFolderUri = backupFolderUriString.toUri()
             val backupFolder = androidx.documentfile.provider.DocumentFile.fromTreeUri(context, backupFolderUri) ?: return
             
             // List all files in the backup folder

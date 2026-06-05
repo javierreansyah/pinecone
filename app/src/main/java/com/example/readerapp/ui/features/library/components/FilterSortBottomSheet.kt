@@ -4,11 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ButtonGroupDefaults
@@ -20,7 +18,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
-import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
@@ -33,7 +30,6 @@ import com.composables.icons.materialsymbols.outlined.Arrow_drop_down
 import com.composables.icons.materialsymbols.outlined.Arrow_drop_up
 import com.composables.icons.materialsymbols.outlined.Border_all
 import com.composables.icons.materialsymbols.outlined.Calendar_view_month
-import com.composables.icons.materialsymbols.outlined.Grid_view
 import com.composables.icons.materialsymbols.outlined.View_carousel
 import com.composables.icons.materialsymbols.outlined.View_list
 import com.example.readerapp.ui.features.library.LayoutMode
@@ -65,11 +61,11 @@ fun FilterSortBottomSheet(
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 32.dp)
                 .navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space24)
+            verticalArrangement = Arrangement.spacedBy(spacing.space24)
         ) {
             // --- VIEW SECTION ---
             if (showViewPicker) {
-                Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)) {
+                Column(verticalArrangement = Arrangement.spacedBy(spacing.space8)) {
                     Text("View", style = MaterialTheme.typography.titleMedium)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -101,7 +97,7 @@ fun FilterSortBottomSheet(
             }
 
             // --- SORT SECTION ---
-            Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)) {
+            Column(verticalArrangement = Arrangement.spacedBy(spacing.space8)) {
                 Text("Sort", style = MaterialTheme.typography.titleMedium)
 
                 Column(
@@ -120,8 +116,9 @@ fun FilterSortBottomSheet(
                             leadingContent = { RadioButton(selected = isSelected, onClick = null) },
                             trailingContent = {
                                 if (isSelected) {
+                                    val isAscendingVisual = if (type == SortType.LastRead) !preferences.isAscending else preferences.isAscending
                                     Icon(
-                                        if (preferences.isAscending) MaterialSymbols.Outlined.Arrow_drop_up else MaterialSymbols.Outlined.Arrow_drop_down,
+                                        if (isAscendingVisual) MaterialSymbols.Outlined.Arrow_drop_up else MaterialSymbols.Outlined.Arrow_drop_down,
                                         contentDescription = null
                                     )
                                 }
@@ -134,7 +131,7 @@ fun FilterSortBottomSheet(
 
             // --- STATUS SECTION ---
             if (showStatusFilter) {
-                Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)) {
+                Column(verticalArrangement = Arrangement.spacedBy(spacing.space8)) {
                     Text("Status", style = MaterialTheme.typography.titleMedium)
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),

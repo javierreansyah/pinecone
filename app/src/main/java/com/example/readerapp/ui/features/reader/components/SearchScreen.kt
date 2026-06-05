@@ -212,7 +212,7 @@ fun SearchScreen(
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space16)
+                            verticalArrangement = Arrangement.spacedBy(spacing.space16)
                         ) {
                             Icon(
                                 MaterialSymbols.Outlined.Search,
@@ -248,7 +248,7 @@ fun SearchResultCard(
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space8)
+        verticalArrangement = Arrangement.spacedBy(spacing.space8)
     ) {
         Column {
             // Line 1: chapter name

@@ -103,7 +103,9 @@ fun BookContextMenu(
                     }
                 )
                 ListItem(
-                    headlineContent = { Text("Archive", style = MaterialTheme.typography.titleMedium) },
+                    headlineContent = { 
+                        Text(if (book?.isArchived == true) "Unarchive" else "Archive", style = MaterialTheme.typography.titleMedium) 
+                    },
                     leadingContent = { Icon(Icons.Outlined.Archive, contentDescription = null) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable {

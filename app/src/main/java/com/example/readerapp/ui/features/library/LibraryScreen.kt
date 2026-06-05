@@ -1,10 +1,7 @@
 package com.example.readerapp.ui.features.library
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.*
@@ -113,16 +110,10 @@ fun LibraryScreen(
                     Box(modifier = Modifier.fillMaxSize().padding(top = 8.dp), contentAlignment = Alignment.TopStart) {
                         if (filteredBooks.isEmpty()) {
                             Box(modifier = Modifier.fillMaxWidth())
-                        } else if (uiState.bookPreferences.layoutMode != LayoutMode.List) {
-                            BookGrid(
+                        } else {
+                            BookCollection(
                                 books = filteredBooks,
                                 layoutMode = uiState.bookPreferences.layoutMode,
-                                onBookClick = onNavigateToReader,
-                                onBookLongClick = { selectedBookContext = Pair(it, null) }
-                            )
-                        } else {
-                            BookList(
-                                books = filteredBooks,
                                 onBookClick = onNavigateToReader,
                                 onBookLongClick = { selectedBookContext = Pair(it, null) }
                             )
@@ -138,7 +129,7 @@ fun LibraryScreen(
                                 ) {
                                     Column(
                                         modifier = Modifier.fillMaxSize(),
-                                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space16, Alignment.CenterVertically),
+                                        verticalArrangement = Arrangement.spacedBy(spacing.space16, Alignment.CenterVertically),
                                         horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
                                         CircularProgressIndicator()

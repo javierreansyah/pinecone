@@ -26,6 +26,7 @@ import com.composables.icons.materialsymbols.outlined.*
 import com.example.readerapp.R
 import com.example.readerapp.data.local.CustomReaderTheme
 import com.example.readerapp.data.local.ReaderSettings
+import java.util.Locale
 import kotlin.math.roundToInt
 import androidx.core.graphics.toColorInt
 import com.example.readerapp.ui.components.CustomColorPickerDialog
@@ -42,6 +43,7 @@ fun ReaderSettingsContent(
     onSettingsChange: (ReaderSettings) -> Unit
 ) {
     val configuration = LocalConfiguration.current
+    val locale = configuration.locales[0]
     val screenHeight = configuration.screenHeightDp.dp
     val maxSheetHeight = screenHeight * 0.6f
 
@@ -95,7 +97,7 @@ fun ReaderSettingsContent(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     when (page) {
-                        0 -> TextTabContent(settings, onSettingsChange)
+                        0 -> TextTabContent(settings, onSettingsChange, locale)
                         1 -> LightingTabContent(
                             settings = settings,
                             onSettingsChange = onSettingsChange,
@@ -164,7 +166,8 @@ fun ReaderSettingsContent(
 @Composable
 private fun TextTabContent(
     settings: ReaderSettings,
-    onSettingsChange: (ReaderSettings) -> Unit
+    onSettingsChange: (ReaderSettings) -> Unit,
+    locale: Locale
 ) {
     // Font Selection
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -227,7 +230,7 @@ private fun TextTabContent(
             val currentFontWeight = settings.fontWeights[settings.fontFamily] ?: 1.0
             IncrementDecrementControl(
                 label = "Font Weight",
-                value = String.format("%.2f", currentFontWeight),
+                value = String.format(locale, "%.2f", currentFontWeight),
                 onIncrement = {
                     val newWeight =
                         (((currentFontWeight + 0.25) * 100.0).roundToInt() / 100.0).coerceIn(
@@ -252,7 +255,7 @@ private fun TextTabContent(
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             IncrementDecrementControl(
                 label = "Horizontal Margin",
-                value = String.format("%.1f", settings.pageMargins),
+                value = String.format(locale, "%.1f", settings.pageMargins),
                 onIncrement = {
                     onSettingsChange(
                         settings.copy(
@@ -277,7 +280,7 @@ private fun TextTabContent(
             )
             IncrementDecrementControl(
                 label = "Vertical Margin",
-                value = String.format("%.1f", settings.verticalMargin / 32.0),
+                value = String.format(locale, "%.1f", settings.verticalMargin / 32.0),
                 onIncrement = {
                     onSettingsChange(
                         settings.copy(
@@ -333,7 +336,7 @@ private fun TextTabContent(
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             IncrementDecrementControl(
                 label = "Line Spacing",
-                value = String.format("%.1f", settings.lineHeight),
+                value = String.format(locale, "%.1f", settings.lineHeight),
                 onIncrement = {
                     onSettingsChange(
                         settings.copy(
@@ -359,7 +362,7 @@ private fun TextTabContent(
             )
             IncrementDecrementControl(
                 label = "Letter Spacing",
-                value = String.format("%.1f", settings.letterSpacing * 4.0),
+                value = String.format(locale, "%.1f", settings.letterSpacing * 4.0),
                 onIncrement = {
                     onSettingsChange(
                         settings.copy(
@@ -389,7 +392,7 @@ private fun TextTabContent(
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             IncrementDecrementControl(
                 label = "Word Spacing",
-                value = String.format("%.1f", settings.wordSpacing),
+                value = String.format(locale, "%.1f", settings.wordSpacing),
                 onIncrement = {
                     onSettingsChange(
                         settings.copy(
@@ -415,7 +418,7 @@ private fun TextTabContent(
             )
             IncrementDecrementControl(
                 label = "Paragraph Spacing",
-                value = String.format("%.1f", settings.paragraphSpacing / 2.0),
+                value = String.format(locale, "%.1f", settings.paragraphSpacing / 2.0),
                 onIncrement = {
                     onSettingsChange(
                         settings.copy(
@@ -445,7 +448,7 @@ private fun TextTabContent(
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             IncrementDecrementControl(
                 label = "Paragraph Indent",
-                value = String.format("%.1f", settings.paragraphIndent / 2.0),
+                value = String.format(locale, "%.1f", settings.paragraphIndent / 2.0),
                 onIncrement = {
                     onSettingsChange(
                         settings.copy(

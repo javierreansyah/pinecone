@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import com.example.readerapp.ui.theme.spacing
 import androidx.compose.material3.Text
@@ -28,7 +27,7 @@ import androidx.compose.foundation.combinedClickable
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BookItem(
-    modifier: Modifier = Modifier.fillMaxWidth(),
+    modifier: Modifier = Modifier,
     book: Book,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
@@ -43,7 +42,7 @@ fun BookItem(
                 )
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.space16)
+            horizontalArrangement = Arrangement.spacedBy(spacing.space16)
         ) {
             Box(modifier = Modifier
                 .height(100.dp)

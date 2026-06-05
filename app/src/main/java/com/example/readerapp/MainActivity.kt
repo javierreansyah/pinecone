@@ -25,14 +25,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.documentfile.provider.DocumentFile
 import android.widget.Toast
 import coil.imageLoader
-import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Upload
-import com.composables.icons.materialsymbols.outlined.Folder
-import com.composables.icons.materialsymbols.outlined.Archive
-import com.composables.icons.materialsymbols.outlined.Settings
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Backup
-import androidx.compose.material.icons.outlined.Restore
 import com.example.readerapp.data.repository.BookRepository
 import com.example.readerapp.data.local.ReaderPreferences
 import com.example.readerapp.data.local.ReaderSettings
@@ -44,28 +36,10 @@ import com.example.readerapp.ui.features.library.ArchiveScreen
 import com.example.readerapp.ui.features.library.ShelfDetailScreen
 import com.example.readerapp.ui.features.library.FilterResultScreen
 import com.example.readerapp.ui.theme.AppTheme
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.*
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.outlined.DriveFolderUpload
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.LinearEasing
 import coil.annotation.ExperimentalCoilApi
 
 class MainActivity : ComponentActivity() {
@@ -112,7 +86,7 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                         override fun parseResult(resultCode: Int, intent: Intent?): List<android.net.Uri> {
-                            if (resultCode != android.app.Activity.RESULT_OK || intent == null) return emptyList()
+                            if (resultCode != RESULT_OK || intent == null) return emptyList()
                             val clipData = intent.clipData
                             if (clipData != null) {
                                 return (0 until clipData.itemCount).map { clipData.getItemAt(it).uri }
