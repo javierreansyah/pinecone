@@ -40,16 +40,23 @@ class LibraryViewModel(
                     state.bookPreferences.selectedStatus.contains(status)
                 }
                 .let { filtered ->
-                    val comparator = when (state.bookPreferences.sortType) {
+                    val baseComparator = when (state.bookPreferences.sortType) {
                         SortType.Title -> compareBy<Book> { it.title.lowercase() }
-                        SortType.Author -> compareBy { it.author?.lowercase() ?: "" }
-                        SortType.LastRead -> compareBy { it.lastOpened ?: 0L }
-                        SortType.Added -> compareBy { it.addedDate }
-                        SortType.Progress -> compareBy { it.progress }
-                        SortType.Custom -> compareBy { 0 }
+                        SortType.Author -> compareBy<Book> { it.authors.firstOrNull()?.lowercase() ?: "" }
+                        SortType.LastRead -> compareBy<Book> { it.lastOpened ?: 0L }
+                        SortType.Added -> compareBy<Book> { it.addedDate }
+                        SortType.Progress -> compareBy<Book> { it.progress }
+                        SortType.Custom -> compareBy<Book> { 0 }
                     }
-                    if (state.bookPreferences.isAscending) filtered.sortedWith(comparator)
-                    else filtered.sortedWith(comparator.reversed())
+                    
+                    val finalComparator = if (state.bookPreferences.sortType == SortType.Title) {
+                        if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
+                    } else {
+                        val mainComp = if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
+                        mainComp.thenBy { it.title.lowercase() }
+                    }
+                    
+                    filtered.sortedWith(finalComparator)
                 }
         }
     }
@@ -74,25 +81,31 @@ class LibraryViewModel(
             val shelfId = shelfWithCovers.shelf.id
             val shelfCrossRefs = crossRefs.filter { it.shelfId == shelfId }
             val sortedBooks = shelfWithCovers.books.sortedBy { book ->
-                shelfCrossRefs.find { it.bookId == book.id }?.orderIndex ?: 0
+                shelfCrossRefs.find { it.bookId == book.book.id }?.orderIndex ?: 0
             }
             shelfWithCovers.copy(books = sortedBooks)
         }.let { processedShelves ->
-            val comparator = when (state.shelvesPreferences.sortType) {
+            val baseComparator = when (state.shelvesPreferences.sortType) {
                 SortType.Title -> compareBy<ShelfWithCovers> { it.shelf.name.lowercase() }
-                SortType.LastRead -> compareBy { shelf -> shelf.books.maxOfOrNull { it.lastReadDate ?: 0L } ?: 0L }
-                SortType.Progress -> compareBy { shelf -> 
-                    if (shelf.books.isEmpty()) 0.0 else shelf.books.map { it.progression }.average()
+                SortType.LastRead -> compareBy { shelf: ShelfWithCovers -> shelf.books.maxOfOrNull { it.book.lastReadDate ?: 0L } ?: 0L }
+                SortType.Progress -> compareBy { shelf: ShelfWithCovers -> 
+                    if (shelf.books.isEmpty()) 0.0 else shelf.books.map { it.book.progression }.average()
                 }
-                SortType.Added -> compareBy { it.shelf.id }
+                SortType.Added -> compareBy { it.shelf.createdAt }
                 else -> compareBy { it.shelf.name.lowercase() }
             }
-            if (state.shelvesPreferences.isAscending) processedShelves.sortedWith(comparator)
-            else processedShelves.sortedWith(comparator.reversed())
+            
+            val finalComparator = if (state.shelvesPreferences.isAscending) {
+                baseComparator.thenBy { it.shelf.name.lowercase() }
+            } else {
+                baseComparator.reversed().thenBy { it.shelf.name.lowercase() }
+            }
+            
+            processedShelves.sortedWith(finalComparator)
         }
 
         val shelvedBookIds = crossRefs.map { it.bookId }.toSet()
-        val unshelvedBooks = allBooksEntities.filter { it.id !in shelvedBookIds }
+        val unshelvedBooks = allBooksEntities.filter { it.book.id !in shelvedBookIds }
 
         if (unshelvedBooks.isNotEmpty()) {
             val unshelvedShelf = ShelfWithCovers(
@@ -116,20 +129,19 @@ class LibraryViewModel(
         val matchedBooks = if (category != SearchCategory.All && category != SearchCategory.Books) emptyList()
             else if (query.isBlank()) books else books.filter { 
                 it.title.contains(query, ignoreCase = true) || 
-                it.author?.contains(query, ignoreCase = true) == true 
+                it.authors.any { author -> author.contains(query, ignoreCase = true) } 
             }
 
         val matchedShelves = if (category != SearchCategory.All && category != SearchCategory.Shelves) emptyList()
             else if (query.isBlank()) shelvesList.map { it.shelf } else shelvesList.map { it.shelf }.filter { it.name.contains(query, ignoreCase = true) }
 
         val matchedAuthors = if (category != SearchCategory.All && category != SearchCategory.Authors) emptyList()
-            else books.mapNotNull { it.author }
+            else books.flatMap { it.authors }
                 .distinct()
                 .let { authors -> if (query.isBlank()) authors else authors.filter { it.contains(query, ignoreCase = true) } }
 
         val matchedTags = if (category != SearchCategory.All && category != SearchCategory.Tags) emptyList()
-            else books.flatMap { it.tags?.split(",")?.map { t -> t.trim() } ?: emptyList() }
-                .filter { it.isNotEmpty() }
+            else books.flatMap { it.tags }
                 .distinct()
                 .let { tags -> if (query.isBlank()) tags else tags.filter { it.contains(query, ignoreCase = true) } }
 
@@ -202,11 +214,11 @@ class LibraryViewModel(
     }
 
     fun getBooksByAuthor(author: String): Flow<List<Book>> = booksFlow.map { books ->
-        books.filter { it.author == author }
+        books.filter { it.authors.contains(author) }
     }
 
     fun getBooksByTag(tag: String): Flow<List<Book>> = booksFlow.map { books ->
-        books.filter { it.tags?.split(",")?.map { t -> t.trim() }?.contains(tag) == true }
+        books.filter { it.tags.contains(tag) }
     }
 
     fun onLayoutModeChange(mode: LayoutMode, isShelvesTab: Boolean = false) {
@@ -240,6 +252,39 @@ class LibraryViewModel(
             val newPrefs = currentPrefs.copy(selectedStatus = updatedStatus)
             prefsManager.savePreferences(if (isShelvesTab) "library_shelves" else screenKey, newPrefs)
             if (isShelvesTab) state.copy(shelvesPreferences = newPrefs) else state.copy(bookPreferences = newPrefs)
+        }
+    }
+
+    val allAuthors = bookRepository.getAllAuthors().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val allTags = bookRepository.getAllTags().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    val authorsWithCounts = kotlinx.coroutines.flow.combine(allAuthors, booksFlow) { authors, books ->
+        authors.map { author -> 
+            val count = books.count { it.authors.contains(author.name) }
+            Pair(author.name, count)
+        }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    val tagsWithCounts = kotlinx.coroutines.flow.combine(allTags, booksFlow) { tags, books ->
+        tags.map { tag -> 
+            val count = books.count { it.tags.contains(tag.name) }
+            Pair(tag.name, count)
+        }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
+    fun deleteFilterItem(type: String, name: String, onSuccess: () -> Unit) {
+        onSuccess()
+        kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            bookRepository.deleteFilterItem(type, name)
+        }
+    }
+
+    @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
+    fun renameFilterItem(type: String, oldName: String, newName: String, onSuccess: (String) -> Unit) {
+        onSuccess(newName.trim())
+        kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            bookRepository.renameFilterItem(type, oldName, newName)
         }
     }
 }

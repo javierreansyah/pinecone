@@ -12,9 +12,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.window.PopupProperties
+import androidx.compose.material.icons.filled.MoreVert
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.example.readerapp.ui.features.library.components.FilterSortBottomSheet
+import com.example.readerapp.ui.features.library.components.RenameFilterDialog
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -22,7 +27,8 @@ fun FilterResultScreen(
     filterType: String, // "author" or "tag"
     filterValue: String,
     onNavigateBack: () -> Unit,
-    onNavigateToReader: (String) -> Unit
+    onNavigateToReader: (String) -> Unit,
+    onNavigateToMerged: (String) -> Unit
 ) {
     val context = LocalContext.current
     val viewModel: LibraryViewModel = viewModel(
@@ -40,6 +46,17 @@ fun FilterResultScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showFilterSheet by remember { mutableStateOf(false) }
     var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
+
+    val allAuthors by viewModel.allAuthors.collectAsState()
+    val allTags by viewModel.allTags.collectAsState()
+    var showMenu by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showRenameDialog by remember { mutableStateOf(false) }
+
+    val suggestionList = remember(filterType, allAuthors, allTags) {
+        if (filterType == "author") allAuthors.map { it.name }
+        else allTags.map { it.name }
+    }
 
     val baseBooksFlow = remember(filterType, filterValue) {
         if (filterType == "author") viewModel.getBooksByAuthor(filterValue)
@@ -67,6 +84,27 @@ fun FilterResultScreen(
                 actions = {
                     IconButton(shapes = IconButtonDefaults.shapes(), onClick = { showFilterSheet = true }) {
                         Icon(MaterialSymbols.Outlined.Tune, contentDescription = "Filter")
+                    }
+                    Box {
+                        IconButton(onClick = { showMenu = !showMenu }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                        }
+                        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Rename") },
+                                onClick = {
+                                    showMenu = false
+                                    showRenameDialog = true
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Delete") },
+                                onClick = {
+                                    showMenu = false
+                                    showDeleteConfirm = true
+                                }
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.largeTopAppBarColors(
@@ -111,5 +149,43 @@ fun FilterResultScreen(
                 onDismiss = { selectedBookForMenu = null }
             )
         }
+
+        if (showDeleteConfirm) {
+            AlertDialog(
+                onDismissRequest = { showDeleteConfirm = false },
+                title = { Text("Delete $filterType") },
+                text = { Text("Are you sure you want to delete '$filterValue'? This will remove it from all books.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showDeleteConfirm = false
+                        viewModel.deleteFilterItem(filterType, filterValue) {
+                            onNavigateBack()
+                        }
+                    }) {
+                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteConfirm = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        if (showRenameDialog) {
+            RenameFilterDialog(
+                initialName = filterValue,
+                suggestions = suggestionList,
+                onDismiss = { showRenameDialog = false },
+                onConfirm = { newName ->
+                    showRenameDialog = false
+                    viewModel.renameFilterItem(filterType, filterValue, newName) { confirmedName ->
+                        onNavigateToMerged(confirmedName)
+                    }
+                }
+            )
+        }
     }
 }
+

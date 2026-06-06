@@ -62,8 +62,7 @@ fun ReaderSettingsContent(
     ) {
         PrimaryTabRow(
             selectedTabIndex = pagerState.currentPage,
-            containerColor = Color.Transparent,
-            divider = {}
+            containerColor = Color.Transparent
         ) {
             tabs.forEachIndexed { index, title ->
                 Tab(
@@ -93,7 +92,7 @@ fun ReaderSettingsContent(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
-                        .padding(16.dp),
+                        .padding(vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     when (page) {
@@ -170,7 +169,7 @@ private fun TextTabContent(
     locale: Locale
 ) {
     // Font Selection
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
         Text("Font", style = MaterialTheme.typography.titleMedium)
         Row(
             modifier = Modifier
@@ -198,10 +197,10 @@ private fun TextTabContent(
 
     // Typography
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Typography", style = MaterialTheme.typography.titleMedium)
+        Text("Typography", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 16.dp))
         
         // Text Size, Font Weight
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
             IncrementDecrementControl(
                 label = "Text Size",
                 value = "${(settings.fontSize * 100).roundToInt()}%",
@@ -252,7 +251,7 @@ private fun TextTabContent(
         }
 
         // Horizontal Margin, Vertical Margin
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
             IncrementDecrementControl(
                 label = "Horizontal Margin",
                 value = String.format(locale, "%.1f", settings.pageMargins),
@@ -306,17 +305,11 @@ private fun TextTabContent(
         }
 
         // Publisher Style
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Publisher Style", style = MaterialTheme.typography.titleMedium)
-            Switch(
-                checked = settings.publisherStyles,
-                onCheckedChange = { onSettingsChange(settings.copy(publisherStyles = it)) }
-            )
-        }
+        SettingsSwitchRow(
+            title = "Publisher Style",
+            isChecked = settings.publisherStyles,
+            onCheckedChange = { onSettingsChange(settings.copy(publisherStyles = it)) }
+        )
 
         // Alignment
         SegmentedButtonGroup(
@@ -329,11 +322,12 @@ private fun TextTabContent(
             ),
             selected = settings.textAlign,
             onSelected = { onSettingsChange(settings.copy(textAlign = it)) },
-            enabled = !settings.publisherStyles
+            enabled = !settings.publisherStyles,
+            modifier = Modifier.padding(horizontal = 16.dp)
         )
 
         // Line Spacing, Letter Spacing
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
             IncrementDecrementControl(
                 label = "Line Spacing",
                 value = String.format(locale, "%.1f", settings.lineHeight),
@@ -389,7 +383,7 @@ private fun TextTabContent(
         }
 
         // Word Spacing, Paragraph Spacing
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
             IncrementDecrementControl(
                 label = "Word Spacing",
                 value = String.format(locale, "%.1f", settings.wordSpacing),
@@ -445,7 +439,7 @@ private fun TextTabContent(
         }
 
         // Paragraph Indent
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
             IncrementDecrementControl(
                 label = "Paragraph Indent",
                 value = String.format(locale, "%.1f", settings.paragraphIndent / 2.0),
@@ -485,7 +479,7 @@ private fun LightingTabContent(
     onThemeLongClick: (CustomReaderTheme) -> Unit
 ) {
     // Brightness
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
         Text("Brightness", style = MaterialTheme.typography.titleMedium)
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -518,7 +512,7 @@ private fun LightingTabContent(
     }
 
     // Theme Selection
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
         Text("Theme", style = MaterialTheme.typography.titleMedium)
         Row(
             modifier = Modifier
@@ -595,7 +589,8 @@ private fun LightingTabContent(
             MaterialSymbols.Outlined.Invert_colors
         ),
         selected = settings.imageFilter,
-        onSelected = { onSettingsChange(settings.copy(imageFilter = it)) }
+        onSelected = { onSettingsChange(settings.copy(imageFilter = it)) },
+        modifier = Modifier.padding(horizontal = 16.dp)
     )
 }
 
@@ -604,57 +599,82 @@ private fun AdvancedTabContent(
     settings: ReaderSettings,
     onSettingsChange: (ReaderSettings) -> Unit
 ) {
-    // Vertical Scroll
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text("Vertical Scroll", style = MaterialTheme.typography.titleMedium)
-        Switch(
-            checked = settings.scroll,
+    Column {
+        // Vertical Scroll
+        SettingsSwitchRow(
+            title = "Vertical Scroll",
+            isChecked = settings.scroll,
             onCheckedChange = { onSettingsChange(settings.copy(scroll = it)) }
         )
-    }
 
-    // Hyphens
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text("Hyphens", style = MaterialTheme.typography.titleMedium)
-        Switch(
-            checked = settings.hyphens,
+        // Hyphens
+        SettingsSwitchRow(
+            title = "Hyphens",
+            isChecked = settings.hyphens,
             onCheckedChange = { onSettingsChange(settings.copy(hyphens = it)) },
             enabled = !settings.publisherStyles
         )
-    }
 
-    // Text Normalization
+        // Text Normalization
+        SettingsSwitchRow(
+            title = "Text Normalization",
+            isChecked = settings.textNormalization,
+            onCheckedChange = { onSettingsChange(settings.copy(textNormalization = it)) }
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // Force Orientation
+        SegmentedButtonGroup(
+            title = "Force Orientation",
+            options = listOf("Auto", "Portrait", "Landscape"),
+            icons = emptyList(),
+            selected = settings.forceOrientation,
+            onSelected = { onSettingsChange(settings.copy(forceOrientation = it)) },
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // Prevent Screen Timeout
+        SettingsSwitchRow(
+            title = "Prevent Screen Timeout",
+            isChecked = settings.preventScreenTimeout,
+            onCheckedChange = { onSettingsChange(settings.copy(preventScreenTimeout = it)) }
+        )
+
+        // Always Shows Status Bar
+        SettingsSwitchRow(
+            title = "Always Show Status Bar",
+            isChecked = settings.alwaysShowStatusBar,
+            onCheckedChange = { onSettingsChange(settings.copy(alwaysShowStatusBar = it)) }
+        )
+    }
+}
+
+@Composable
+private fun SettingsSwitchRow(
+    title: String,
+    isChecked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled) { onCheckedChange(!isChecked) }
+            .padding(horizontal = 16.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("Text Normalization", style = MaterialTheme.typography.titleMedium)
+        Text(title, style = MaterialTheme.typography.titleMedium)
         Switch(
-            checked = settings.textNormalization,
-            onCheckedChange = { onSettingsChange(settings.copy(textNormalization = it)) }
+            checked = isChecked,
+            onCheckedChange = onCheckedChange,
+            enabled = enabled
         )
     }
-
-    // Reading Progression
-    SegmentedButtonGroup(
-        title = "Reading Progression",
-        options = listOf("LTR", "RTL"),
-        icons = listOf(
-            MaterialSymbols.Outlined.Format_textdirection_l_to_r,
-            MaterialSymbols.Outlined.Format_textdirection_r_to_l
-        ),
-        selected = settings.readingProgression,
-        onSelected = { onSettingsChange(settings.copy(readingProgression = it)) }
-    )
 }
 
 

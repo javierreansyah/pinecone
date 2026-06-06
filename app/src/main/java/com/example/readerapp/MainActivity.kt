@@ -14,7 +14,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -217,6 +219,13 @@ class MainActivity : ComponentActivity() {
                 val currentBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = currentBackStackEntry?.destination?.route
 
+                // Safety net: force-close drawer if it's somehow open on a non-Library route
+                LaunchedEffect(currentRoute) {
+                    if (currentRoute != null && currentRoute != Screen.Library.route) {
+                        drawerState.snapTo(DrawerValue.Closed)
+                    }
+                }
+
                 ModalNavigationDrawer(
                     drawerState = drawerState,
                     gesturesEnabled = currentRoute == Screen.Library.route,
@@ -276,7 +285,12 @@ class MainActivity : ComponentActivity() {
                                 context.startActivity(intent)
                             },
                             onOpenDrawerClick = {
-                                scope.launch { drawerState.open() }
+                                // Only open if Library is fully settled (RESUMED), not mid-transition
+                                val isResumed = navController.currentBackStackEntry
+                                    ?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED) == true
+                                if (isResumed) {
+                                    scope.launch { drawerState.open() }
+                                }
                             },
                             onNavigateToShelf = { shelfId ->
                                 navController.navigate(Screen.ShelfDetail.createRoute(shelfId))
@@ -286,29 +300,23 @@ class MainActivity : ComponentActivity() {
                             },
                             onNavigateToTag = { tagName ->
                                 navController.navigate(Screen.TagDetail.createRoute(tagName))
+                            },
+                            onNavigateToAllAuthors = {
+                                navController.navigate(Screen.AllAuthors.route)
+                            },
+                            onNavigateToAllTags = {
+                                navController.navigate(Screen.AllTags.route)
                             }
                         )
                     }
-                    composable(
-                        Screen.Settings.route,
-                        enterTransition = { EnterTransition.None },
-                        exitTransition = { ExitTransition.None },
-                        popEnterTransition = { EnterTransition.None },
-                        popExitTransition = { ExitTransition.None }
-                    ) {
+                    composable(Screen.Settings.route) {
                         SettingsScreen(
                             onNavigateBack = {
                                 navController.popBackStack(Screen.Library.route, inclusive = false)
                             }
                         )
                     }
-                    composable(
-                        Screen.Archives.route,
-                        enterTransition = { EnterTransition.None },
-                        exitTransition = { ExitTransition.None },
-                        popEnterTransition = { EnterTransition.None },
-                        popExitTransition = { ExitTransition.None }
-                    ) {
+                    composable(Screen.Archives.route) {
                         ArchiveScreen(
                             onNavigateBack = {
                                 navController.popBackStack(Screen.Library.route, inclusive = false)
@@ -326,7 +334,7 @@ class MainActivity : ComponentActivity() {
                         ShelfDetailScreen(
                             shelfId = shelfId,
                             onNavigateBack = {
-                                navController.popBackStack()
+                                navController.popBackStack(Screen.Library.route, inclusive = false)
                             },
                             onNavigateToReader = { bookId ->
                                 val intent = Intent(context, com.example.readerapp.ui.features.reader.ReaderActivity::class.java).apply {
@@ -342,13 +350,17 @@ class MainActivity : ComponentActivity() {
                             filterType = "author",
                             filterValue = authorName,
                             onNavigateBack = {
-                                navController.popBackStack()
+                                navController.popBackStack(Screen.Library.route, inclusive = false)
                             },
                             onNavigateToReader = { bookId ->
                                 val intent = Intent(context, com.example.readerapp.ui.features.reader.ReaderActivity::class.java).apply {
                                     putExtra(com.example.readerapp.ui.features.reader.ReaderActivity.EXTRA_BOOK_ID, bookId)
                                 }
                                 context.startActivity(intent)
+                            },
+                            onNavigateToMerged = { newName ->
+                                navController.popBackStack(Screen.Library.route, inclusive = false)
+                                navController.navigate(Screen.AuthorDetail.createRoute(newName))
                             }
                         )
                     }
@@ -358,13 +370,39 @@ class MainActivity : ComponentActivity() {
                             filterType = "tag",
                             filterValue = tagName,
                             onNavigateBack = {
-                                navController.popBackStack()
+                                navController.popBackStack(Screen.Library.route, inclusive = false)
                             },
                             onNavigateToReader = { bookId ->
                                 val intent = Intent(context, com.example.readerapp.ui.features.reader.ReaderActivity::class.java).apply {
                                     putExtra(com.example.readerapp.ui.features.reader.ReaderActivity.EXTRA_BOOK_ID, bookId)
                                 }
                                 context.startActivity(intent)
+                            },
+                            onNavigateToMerged = { newName ->
+                                navController.popBackStack(Screen.Library.route, inclusive = false)
+                                navController.navigate(Screen.TagDetail.createRoute(newName))
+                            }
+                        )
+                    }
+                    composable(Screen.AllAuthors.route) {
+                        com.example.readerapp.ui.features.library.AllFilterItemsScreen(
+                            filterType = "author",
+                            onNavigateBack = {
+                                navController.popBackStack(Screen.Library.route, inclusive = false)
+                            },
+                            onNavigateToDetail = { authorName ->
+                                navController.navigate(Screen.AuthorDetail.createRoute(authorName))
+                            }
+                        )
+                    }
+                    composable(Screen.AllTags.route) {
+                        com.example.readerapp.ui.features.library.AllFilterItemsScreen(
+                            filterType = "tag",
+                            onNavigateBack = {
+                                navController.popBackStack(Screen.Library.route, inclusive = false)
+                            },
+                            onNavigateToDetail = { tagName ->
+                                navController.navigate(Screen.TagDetail.createRoute(tagName))
                             }
                         )
                     }

@@ -100,33 +100,14 @@ fun FilterSortBottomSheet(
             Column(verticalArrangement = Arrangement.spacedBy(spacing.space8)) {
                 Text("Sort", style = MaterialTheme.typography.titleMedium)
 
-                Column(
-                    modifier = Modifier.selectableGroup(),
-                    verticalArrangement = Arrangement.spacedBy(segmentedGap)
-                ) {
-                    val totalSorts = availableSortTypes.size
-
-                    availableSortTypes.forEachIndexed { index, type ->
-                        val isSelected = preferences.sortType == type
-                        SegmentedListItem(
-                            selected = isSelected,
-                            onClick = { onSortTypeChange(type) },
-                            index = index,
-                            count = totalSorts,
-                            leadingContent = { RadioButton(selected = isSelected, onClick = null) },
-                            trailingContent = {
-                                if (isSelected) {
-                                    val isAscendingVisual = if (type == SortType.LastRead) !preferences.isAscending else preferences.isAscending
-                                    Icon(
-                                        if (isAscendingVisual) MaterialSymbols.Outlined.Arrow_drop_up else MaterialSymbols.Outlined.Arrow_drop_down,
-                                        contentDescription = null
-                                    )
-                                }
-                            },
-                            content = { Text(sortTypeLabel(type), style = MaterialTheme.typography.bodyLarge) }
-                        )
-                    }
-                }
+                SortRadioGroup(
+                    options = availableSortTypes,
+                    selectedOption = preferences.sortType,
+                    isAscending = preferences.isAscending,
+                    onOptionSelected = onSortTypeChange,
+                    optionLabel = { sortTypeLabel(it) },
+                    isAscendingVisualModifier = { type, asc -> if (type == SortType.LastRead) !asc else asc }
+                )
             }
 
             // --- STATUS SECTION ---

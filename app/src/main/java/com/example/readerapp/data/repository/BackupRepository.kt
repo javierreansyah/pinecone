@@ -67,13 +67,22 @@ class BackupRepository(private val context: Context) {
             val crossRefs = database.shelfDao().getAllShelfBookCrossRefsSync()
             val notes = database.noteDao().getAllNotesSync()
             
+            val authors = database.bookDao().getAllAuthorsSync()
+            val tags = database.bookDao().getAllTagsSync()
+            val bookAuthorCrossRefs = database.bookDao().getAllBookAuthorCrossRefsSync()
+            val bookTagCrossRefs = database.bookDao().getAllBookTagCrossRefsSync()
+            
             val payload = BackupPayload(
                 version = 1,
                 books = books,
                 bookmarks = bookmarks,
                 shelves = shelves,
                 shelfBookCrossRefs = crossRefs,
-                notes = notes
+                notes = notes,
+                authors = authors,
+                tags = tags,
+                bookAuthorCrossRefs = bookAuthorCrossRefs,
+                bookTagCrossRefs = bookTagCrossRefs
             )
             
             val jsonString = json.encodeToString(payload)
@@ -231,6 +240,10 @@ class BackupRepository(private val context: Context) {
                 database.shelfDao().deleteAllShelves()
                 database.shelfDao().deleteAllShelfBookCrossRefs()
                 database.noteDao().deleteAll()
+                database.bookDao().deleteAllAuthors()
+                database.bookDao().deleteAllTags()
+                database.bookDao().deleteAllBookAuthorCrossRefs()
+                database.bookDao().deleteAllBookTagCrossRefs()
                 
                 // Insert from payload
                 database.bookDao().insertAll(payload.books)
@@ -238,6 +251,10 @@ class BackupRepository(private val context: Context) {
                 database.shelfDao().insertAllShelves(payload.shelves)
                 database.shelfDao().insertAllShelfBookCrossRefs(payload.shelfBookCrossRefs)
                 database.noteDao().insertAll(payload.notes)
+                database.bookDao().insertAllAuthors(payload.authors)
+                database.bookDao().insertAllTags(payload.tags)
+                database.bookDao().insertAllBookAuthorCrossRefs(payload.bookAuthorCrossRefs)
+                database.bookDao().insertAllBookTagCrossRefs(payload.bookTagCrossRefs)
                 
                 // 2. Move files while inside the transaction lock. 
                 // This guarantees that Room will NOT emit the new database state to the UI 

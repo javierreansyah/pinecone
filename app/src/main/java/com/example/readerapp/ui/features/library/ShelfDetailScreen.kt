@@ -177,37 +177,36 @@ fun ShelfDetailScreen(
 
                     LazyColumn(
                         state = lazyListState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        modifier = Modifier.fillMaxSize()
                     ) {
                         items(reorderBooks, { it.id }) { item ->
                             ReorderableItem(reorderState, key = item.id) { isDragging ->
                                 val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp)
                                 Surface(
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = MaterialTheme.shapes.small,
+                                    shape = if (isDragging) MaterialTheme.shapes.small else androidx.compose.ui.graphics.RectangleShape,
                                     tonalElevation = elevation,
                                     shadowElevation = elevation
                                 ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Box(modifier = Modifier.weight(1f)) {
-                                            BookItem(book = item, onClick = {}, onLongClick = { selectedBookForMenu = item.id }, isList = true)
-                                        }
-                                        Icon(
-                                            imageVector = Icons.Default.DragHandle,
-                                            contentDescription = "Reorder",
-                                            modifier = Modifier
-                                                .padding(16.dp)
-                                                .draggableHandle(
-                                                    onDragStarted = {},
-                                                    onDragStopped = {},
+                                    BookItem(
+                                        book = item,
+                                        onClick = {},
+                                        onLongClick = { selectedBookForMenu = item.id },
+                                        isList = true,
+                                        trailingContent = {
+                                            Box(modifier = Modifier.height(100.dp), contentAlignment = Alignment.Center) {
+                                                Icon(
+                                                    imageVector = Icons.Default.DragHandle,
+                                                    contentDescription = "Reorder",
+                                                    modifier = Modifier
+                                                        .draggableHandle(
+                                                            onDragStarted = {},
+                                                            onDragStopped = {},
+                                                        )
                                                 )
-                                        )
-                                    }
+                                            }
+                                        }
+                                    )
                                 }
                             }
                         }

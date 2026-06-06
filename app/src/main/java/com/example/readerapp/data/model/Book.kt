@@ -1,6 +1,6 @@
 package com.example.readerapp.data.model
 
-import com.example.readerapp.data.local.BookEntity
+import com.example.readerapp.data.local.BookWithDetails
 
 /**
  * UI-layer model for displaying books in the library.
@@ -8,7 +8,7 @@ import com.example.readerapp.data.local.BookEntity
 data class Book(
     val id: String,
     val title: String,
-    val author: String?,
+    val authors: List<String>,
     val coverPath: String?,
     val progress: Double,
     val lastOpened: Long?,
@@ -18,31 +18,31 @@ data class Book(
     val description: String? = null,
     val publisher: String? = null,
     val published: String? = null,
-    val tags: String? = null,
+    val tags: List<String> = emptyList(),
     val identifier: String? = null,
     val mediaType: String? = null,
     val filePath: String = "",
     val isRead: Boolean = false
 ) {
     companion object {
-        fun fromEntity(entity: BookEntity): Book = Book(
-            id = entity.id,
-            title = entity.title,
-            author = entity.author,
-            coverPath = entity.coverPath,
-            progress = entity.progression,
-            lastOpened = entity.lastReadDate,
-            language = entity.language,
-            addedDate = entity.addedDate,
-            isArchived = entity.isArchived,
-            description = entity.description,
-            publisher = entity.publisher,
-            published = entity.published,
-            tags = entity.tags,
-            identifier = entity.identifier,
-            mediaType = entity.mediaType,
-            filePath = entity.filePath,
-            isRead = entity.isRead
+        fun fromEntity(entity: BookWithDetails): Book = Book(
+            id = entity.book.id,
+            title = entity.book.title,
+            authors = entity.authors.map { it.name },
+            coverPath = entity.book.coverPath,
+            progress = entity.book.progression,
+            lastOpened = entity.book.lastReadDate,
+            language = entity.book.language,
+            addedDate = entity.book.addedDate,
+            isArchived = entity.book.isArchived,
+            description = entity.book.description,
+            publisher = entity.book.publisher,
+            published = entity.book.published,
+            tags = entity.tags.map { it.name },
+            identifier = entity.book.identifier,
+            mediaType = entity.book.mediaType,
+            filePath = entity.book.filePath,
+            isRead = entity.book.isRead
         )
     }
 }

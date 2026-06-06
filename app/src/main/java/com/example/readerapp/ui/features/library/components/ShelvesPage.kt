@@ -36,7 +36,7 @@ fun ShelvesPage(
                 contentPadding = PaddingValues(top = 8.dp)
             ) {
                 items(shelves, key = { it.shelf.id }) { shelfWithCovers ->
-                    val visibleBooks = shelfWithCovers.books.filter { !it.isArchived }
+                    val visibleBooks = shelfWithCovers.books.filter { !it.book.isArchived }
                     val booksCount = visibleBooks.size
 
                     if (layoutMode == LayoutMode.List) {

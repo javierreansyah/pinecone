@@ -10,7 +10,6 @@ import androidx.room.PrimaryKey
 data class BookEntity(
     @PrimaryKey val id: String,
     val title: String,
-    val author: String? = null,
     val coverPath: String? = null,
     val filePath: String,
     val mediaType: String? = null,
@@ -24,6 +23,5 @@ data class BookEntity(
     val description: String? = null,
     val publisher: String? = null,
     val published: String? = null,
-    val tags: String? = null,
     val isRead: Boolean = false
 )

@@ -28,7 +28,9 @@ fun LibraryScreen(
     onOpenDrawerClick: () -> Unit,
     onNavigateToShelf: (String) -> Unit,
     onNavigateToAuthor: (String) -> Unit = {},
-    onNavigateToTag: (String) -> Unit = {}
+    onNavigateToTag: (String) -> Unit = {},
+    onNavigateToAllAuthors: () -> Unit = {},
+    onNavigateToAllTags: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val viewModel: LibraryViewModel = viewModel(
@@ -72,6 +74,8 @@ fun LibraryScreen(
                 onNavigateToShelf = onNavigateToShelf,
                 onNavigateToAuthor = onNavigateToAuthor,
                 onNavigateToTag = onNavigateToTag,
+                onAuthorsHeaderClick = onNavigateToAllAuthors,
+                onTagsHeaderClick = onNavigateToAllTags,
                 scrollBehavior = scrollBehavior
             )
         },

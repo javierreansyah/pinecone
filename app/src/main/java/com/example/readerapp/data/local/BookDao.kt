@@ -5,11 +5,13 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface BookDao {
+    @androidx.room.Transaction
     @Query("SELECT * FROM books ORDER BY lastReadDate DESC, addedDate DESC")
-    fun getAllBooks(): Flow<List<BookEntity>>
+    fun getAllBooks(): Flow<List<BookWithDetails>>
 
+    @androidx.room.Transaction
     @Query("SELECT * FROM books WHERE id = :id")
-    suspend fun getById(id: String): BookEntity?
+    suspend fun getById(id: String): BookWithDetails?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(book: BookEntity)
@@ -34,4 +36,94 @@ interface BookDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(books: List<BookEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertAuthor(author: AuthorEntity): Long
+
+    @Query("SELECT * FROM authors WHERE name = :name")
+    suspend fun getAuthorByName(name: String): AuthorEntity?
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertBookAuthorCrossRef(crossRef: BookAuthorCrossRef)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertTag(tag: TagEntity): Long
+
+    @Query("SELECT * FROM tags WHERE name = :name")
+    suspend fun getTagByName(name: String): TagEntity?
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertBookTagCrossRef(crossRef: BookTagCrossRef)
+
+    @Query("SELECT * FROM authors")
+    fun getAllAuthors(): Flow<List<AuthorEntity>>
+
+    @Query("SELECT * FROM tags")
+    fun getAllTags(): Flow<List<TagEntity>>
+
+    @Query("DELETE FROM book_author_cross_ref WHERE bookId = :bookId")
+    suspend fun deleteBookAuthorCrossRefs(bookId: String)
+
+    @Query("DELETE FROM book_tag_cross_ref WHERE bookId = :bookId")
+    suspend fun deleteBookTagCrossRefs(bookId: String)
+
+    @Query("DELETE FROM authors WHERE id NOT IN (SELECT authorId FROM book_author_cross_ref)")
+    suspend fun deleteOrphanAuthors()
+
+    @Query("DELETE FROM tags WHERE id NOT IN (SELECT tagId FROM book_tag_cross_ref)")
+    suspend fun deleteOrphanTags()
+
+    @Query("DELETE FROM authors WHERE name = :name")
+    suspend fun deleteAuthorByName(name: String)
+
+    @Query("DELETE FROM tags WHERE name = :name")
+    suspend fun deleteTagByName(name: String)
+
+    @Query("UPDATE authors SET name = :newName WHERE name = :oldName")
+    suspend fun renameAuthor(oldName: String, newName: String)
+
+    @Query("UPDATE tags SET name = :newName WHERE name = :oldName")
+    suspend fun renameTag(oldName: String, newName: String)
+
+    @Query("UPDATE OR IGNORE book_author_cross_ref SET authorId = :newId WHERE authorId = :oldId")
+    suspend fun mergeBookAuthorCrossRef(oldId: Long, newId: Long)
+
+    @Query("UPDATE OR IGNORE book_tag_cross_ref SET tagId = :newId WHERE tagId = :oldId")
+    suspend fun mergeBookTagCrossRef(oldId: Long, newId: Long)
+
+    @Query("SELECT * FROM authors")
+    suspend fun getAllAuthorsSync(): List<AuthorEntity>
+
+    @Query("SELECT * FROM tags")
+    suspend fun getAllTagsSync(): List<TagEntity>
+
+    @Query("SELECT * FROM book_author_cross_ref")
+    suspend fun getAllBookAuthorCrossRefsSync(): List<BookAuthorCrossRef>
+
+    @Query("SELECT * FROM book_tag_cross_ref")
+    suspend fun getAllBookTagCrossRefsSync(): List<BookTagCrossRef>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAllAuthors(authors: List<AuthorEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAllTags(tags: List<TagEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAllBookAuthorCrossRefs(crossRefs: List<BookAuthorCrossRef>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAllBookTagCrossRefs(crossRefs: List<BookTagCrossRef>)
+
+    @Query("DELETE FROM authors")
+    suspend fun deleteAllAuthors()
+
+    @Query("DELETE FROM tags")
+    suspend fun deleteAllTags()
+
+    @Query("DELETE FROM book_author_cross_ref")
+    suspend fun deleteAllBookAuthorCrossRefs()
+
+    @Query("DELETE FROM book_tag_cross_ref")
+    suspend fun deleteAllBookTagCrossRefs()
 }

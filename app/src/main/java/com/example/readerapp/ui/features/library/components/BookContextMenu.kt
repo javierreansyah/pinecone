@@ -47,7 +47,7 @@ fun BookContextMenu(
     var newShelfName by remember { mutableStateOf("") }
 
     if (menuState == MenuState.Main) {
-        val bookEntity = shelves.flatMap { it.books }.find { it.id == bookId }
+        val bookEntity = shelves.flatMap { it.books }.find { it.book.id == bookId }
         val book = bookEntity?.let { com.example.readerapp.data.model.Book.fromEntity(it) }
 
         ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -79,7 +79,7 @@ fun BookContextMenu(
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = book.author ?: "Unknown Author",
+                                text = if (book.authors.isNotEmpty()) book.authors.joinToString(", ") else "Unknown Author",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
