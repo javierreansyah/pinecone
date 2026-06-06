@@ -13,4 +13,6 @@ sealed class Screen(val route: String) {
     object TagDetail : Screen("tag_detail/{tagName}") {
         fun createRoute(tagName: String) = "tag_detail/$tagName"
     }
+    object AllAuthors : Screen("all_authors")
+    object AllTags : Screen("all_tags")
 }

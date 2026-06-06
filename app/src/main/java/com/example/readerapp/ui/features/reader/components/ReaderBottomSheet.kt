@@ -67,8 +67,7 @@ fun ReaderBottomSheet(
         ) {
             PrimaryTabRow(
                 selectedTabIndex = pagerState.currentPage,
-                containerColor = Color.Transparent,
-                divider = {}
+                containerColor = Color.Transparent
             ) {
                 Tab(
                     selected = pagerState.currentPage == 0,

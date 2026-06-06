@@ -18,7 +18,7 @@ fun ShelfListItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val visibleBooks = shelfWithCovers.books.filter { !it.isArchived }
+    val visibleBooks = shelfWithCovers.books.filter { !it.book.isArchived }
     val booksCount = visibleBooks.size
     
     // We only need up to 2 covers for the thumbnail

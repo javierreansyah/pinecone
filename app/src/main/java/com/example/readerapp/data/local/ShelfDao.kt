@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 data class ShelfWithCovers(
     @Embedded val shelf: ShelfEntity,
     @Relation(
+        entity = BookEntity::class,
         parentColumn = "id",
         entityColumn = "id",
         associateBy = Junction(
@@ -14,7 +15,7 @@ data class ShelfWithCovers(
             entityColumn = "bookId"
         )
     )
-    val books: List<BookEntity>
+    val books: List<BookWithDetails>
 )
 
 @Dao
@@ -28,6 +29,9 @@ interface ShelfDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertShelf(shelf: ShelfEntity)
+
+    @Update
+    suspend fun updateShelf(shelf: ShelfEntity)
 
     @Delete
     suspend fun deleteShelf(shelf: ShelfEntity)
@@ -64,4 +68,7 @@ interface ShelfDao {
 
     @Query("DELETE FROM shelf_book_cross_ref")
     suspend fun deleteAllShelfBookCrossRefs()
+
+    @Query("DELETE FROM shelves WHERE id NOT IN (SELECT shelfId FROM shelf_book_cross_ref)")
+    suspend fun deleteOrphanShelves()
 }

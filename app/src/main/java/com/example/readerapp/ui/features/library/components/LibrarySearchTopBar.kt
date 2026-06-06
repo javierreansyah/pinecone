@@ -51,6 +51,8 @@ fun LibrarySearchTopBar(
     onNavigateToShelf: (String) -> Unit,
     onNavigateToAuthor: (String) -> Unit,
     onNavigateToTag: (String) -> Unit,
+    onAuthorsHeaderClick: () -> Unit = {},
+    onTagsHeaderClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     scrollBehavior: SearchBarScrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior(),
     searchBarState: SearchBarState = rememberSearchBarState()
@@ -113,7 +115,6 @@ fun LibrarySearchTopBar(
             colors = appBarWithSearchColors.searchBarColors.inputFieldColors,
             onSearch = {
                 focusManager.clearFocus()
-                scope.launch { searchBarState.animateToCollapsed() }
             },
             placeholder = { 
                 Box(
@@ -211,7 +212,9 @@ fun LibrarySearchTopBar(
                         },
                         onTagClick = { tag ->
                             onNavigateToTag(tag)
-                        }
+                        },
+                        onAuthorsHeaderClick = onAuthorsHeaderClick,
+                        onTagsHeaderClick = onTagsHeaderClick
                     )
                 }
             }
@@ -225,7 +228,9 @@ private fun SearchResultsContent(
     onBookClick: (Book) -> Unit,
     onShelfClick: (ShelfEntity) -> Unit,
     onAuthorClick: (String) -> Unit,
-    onTagClick: (String) -> Unit
+    onTagClick: (String) -> Unit,
+    onAuthorsHeaderClick: () -> Unit,
+    onTagsHeaderClick: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -288,11 +293,25 @@ private fun SearchResultsContent(
 
         if (results.authors.isNotEmpty()) {
             item {
-                Text(
-                    "Authors",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onAuthorsHeaderClick() }
+                        .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Authors",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Icon(
+                        MaterialSymbols.Outlined.Chevron_forward,
+                        contentDescription = "View all authors",
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Column(
                     modifier = Modifier.padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -321,11 +340,25 @@ private fun SearchResultsContent(
 
         if (results.tags.isNotEmpty()) {
             item {
-                Text(
-                    "Tags",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onTagsHeaderClick() }
+                        .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Tags",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Icon(
+                        MaterialSymbols.Outlined.Chevron_forward,
+                        contentDescription = "View all tags",
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Column(
                     modifier = Modifier.padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)

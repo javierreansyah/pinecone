@@ -36,6 +36,9 @@ data class ReaderSettings(
     val locale: String = "System",
     val brightness: Float = 0.5f,
     val autoBrightness: Boolean = true,
+    val forceOrientation: String = "Auto",
+    val preventScreenTimeout: Boolean = false,
+    val alwaysShowStatusBar: Boolean = false,
 
     // Readium-mapped settings
     val publisherStyles: Boolean = true,
@@ -163,6 +166,9 @@ class ReaderPreferences(private val context: Context) {
         val LOCALE = stringPreferencesKey("locale")
         val BRIGHTNESS = floatPreferencesKey("brightness")
         val AUTO_BRIGHTNESS = booleanPreferencesKey("auto_brightness")
+        val FORCE_ORIENTATION = stringPreferencesKey("force_orientation")
+        val PREVENT_SCREEN_TIMEOUT = booleanPreferencesKey("prevent_screen_timeout")
+        val ALWAYS_SHOW_STATUS_BAR = booleanPreferencesKey("always_show_status_bar")
 
         // Readium-mapped settings
         val PUBLISHER_STYLES = booleanPreferencesKey("publisher_styles")
@@ -204,6 +210,9 @@ class ReaderPreferences(private val context: Context) {
             locale = preferences[LOCALE] ?: "System",
             brightness = preferences[BRIGHTNESS] ?: 0.5f,
             autoBrightness = preferences[AUTO_BRIGHTNESS] ?: true,
+            forceOrientation = preferences[FORCE_ORIENTATION] ?: "Auto",
+            preventScreenTimeout = preferences[PREVENT_SCREEN_TIMEOUT] ?: false,
+            alwaysShowStatusBar = preferences[ALWAYS_SHOW_STATUS_BAR] ?: false,
 
             publisherStyles = preferences[PUBLISHER_STYLES] ?: false,
             fontSize = (preferences[FONT_SIZE] ?: 1.0).let { (it * 100.0).roundToInt() / 100.0 },
@@ -254,6 +263,9 @@ class ReaderPreferences(private val context: Context) {
             preferences[LOCALE] = settings.locale
             preferences[BRIGHTNESS] = settings.brightness
             preferences[AUTO_BRIGHTNESS] = settings.autoBrightness
+            preferences[FORCE_ORIENTATION] = settings.forceOrientation
+            preferences[PREVENT_SCREEN_TIMEOUT] = settings.preventScreenTimeout
+            preferences[ALWAYS_SHOW_STATUS_BAR] = settings.alwaysShowStatusBar
 
             preferences[PUBLISHER_STYLES] = settings.publisherStyles
             preferences[FONT_SIZE] = (settings.fontSize * 100.0).roundToInt() / 100.0

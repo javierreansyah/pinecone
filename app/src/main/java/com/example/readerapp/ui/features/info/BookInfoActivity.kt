@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
+import com.composables.icons.materialsymbols.outlined.Edit
 import com.example.readerapp.ReaderApplication
 import com.example.readerapp.data.local.ReaderPreferences
 import com.example.readerapp.data.local.ReaderSettings
@@ -64,13 +65,22 @@ class BookInfoActivity : ComponentActivity() {
             var book by remember { mutableStateOf<Book?>(null) }
             var isLoading by remember { mutableStateOf(true) }
 
-            LaunchedEffect(bookId) {
-                scope.launch {
-                    val entity = repository.getBook(bookId)
-                    if (entity != null) {
-                        book = Book.fromEntity(entity)
+            val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+            DisposableEffect(lifecycleOwner, bookId) {
+                val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+                    if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                        scope.launch {
+                            val entity = repository.getBook(bookId)
+                            if (entity != null) {
+                                book = Book.fromEntity(entity)
+                            }
+                            isLoading = false
+                        }
                     }
-                    isLoading = false
+                }
+                lifecycleOwner.lifecycle.addObserver(observer)
+                onDispose {
+                    lifecycleOwner.lifecycle.removeObserver(observer)
                 }
             }
 
@@ -168,13 +178,13 @@ class BookInfoActivity : ComponentActivity() {
                                         overflow = TextOverflow.Ellipsis
                                     )
                                     Text(
-                                        text = currentBook.author ?: "Unknown Author",
+                                        text = if (currentBook.authors.isNotEmpty()) currentBook.authors.joinToString(", ") else "Unknown Author",
                                         style = MaterialTheme.typography.bodyLarge,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
 
                                     // Tags / Categories section
-                                    val tagsList = currentBook.tags?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
+                                    val tagsList = currentBook.tags
                                     if (tagsList.isNotEmpty()) {
                                         CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
                                             FlowRow(
@@ -288,6 +298,22 @@ class BookInfoActivity : ComponentActivity() {
                             .align(Alignment.TopStart)
                     ) {
                         Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = "Back")
+                    }
+
+                    FilledTonalIconButton(
+                        shapes = IconButtonDefaults.shapes(),
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                        onClick = {
+                            val editIntent = android.content.Intent(context, EditBookActivity::class.java).apply {
+                                putExtra(EditBookActivity.EXTRA_BOOK_ID, bookId)
+                            }
+                            context.startActivity(editIntent)
+                        },
+                        modifier = Modifier
+                            .padding(top = innerPadding.calculateTopPadding() + 8.dp, end = 16.dp)
+                            .align(Alignment.TopEnd)
+                    ) {
+                        Icon(MaterialSymbols.Outlined.Edit, contentDescription = "Edit")
                     }
                 }
                 }

@@ -15,6 +15,11 @@ import com.example.readerapp.data.local.BookDao
 import com.example.readerapp.data.local.BookEntity
 import com.example.readerapp.data.local.BookmarkDao
 import com.example.readerapp.data.local.BookmarkEntity
+import com.example.readerapp.data.local.AuthorEntity
+import com.example.readerapp.data.local.TagEntity
+import com.example.readerapp.data.local.BookAuthorCrossRef
+import com.example.readerapp.data.local.BookTagCrossRef
+import com.example.readerapp.data.local.BookWithDetails
 import java.io.File
 import java.io.FileOutputStream
 import java.security.MessageDigest
@@ -43,15 +48,15 @@ class BookRepository(
     private val coversDir: File
         get() = File(context.filesDir, "covers").also { it.mkdirs() }
 
-    fun getAllBooks(): Flow<List<BookEntity>> = bookDao.getAllBooks()
+    fun getAllBooks(): Flow<List<BookWithDetails>> = bookDao.getAllBooks()
 
-    suspend fun getBook(id: String): BookEntity? = bookDao.getById(id)
+    suspend fun getBook(id: String): BookWithDetails? = bookDao.getById(id)
 
     /**
      * Import a book from a content URI (file picker or intent).
      * Copies to internal storage, extracts metadata via Readium, stores in Room.
      */
-    suspend fun importBook(uri: Uri): BookEntity? = withContext(Dispatchers.IO) {
+    suspend fun importBook(uri: Uri): BookWithDetails? = withContext(Dispatchers.IO) {
         try {
             // Copy to a temporary file to analyze it
             val tempFile = File(booksDir, "import_${System.currentTimeMillis()}")
@@ -86,10 +91,29 @@ class BookRepository(
             }
 
             val entity = createBookEntity(bookId, finalFile, publication, mediaType?.toString())
+            bookDao.insert(entity)
+
+            val authors = publication.metadata.authors.map { it.name }
+            authors.forEach { authorName ->
+                var authorId = bookDao.insertAuthor(AuthorEntity(name = authorName))
+                if (authorId == -1L) {
+                    authorId = bookDao.getAuthorByName(authorName)?.id ?: return@forEach
+                }
+                bookDao.insertBookAuthorCrossRef(BookAuthorCrossRef(bookId, authorId))
+            }
+
+            val tags = publication.metadata.subjects.map { it.name }
+            tags.forEach { tagName ->
+                var tagId = bookDao.insertTag(TagEntity(name = tagName))
+                if (tagId == -1L) {
+                    tagId = bookDao.getTagByName(tagName)?.id ?: return@forEach
+                }
+                bookDao.insertBookTagCrossRef(BookTagCrossRef(bookId, tagId))
+            }
+
             publication.close()
 
-            bookDao.insert(entity)
-            entity
+            bookDao.getById(bookId)
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -99,8 +123,8 @@ class BookRepository(
     /**
      * Open a Publication for reading. Caller is responsible for closing it.
      */
-    suspend fun openPublication(book: BookEntity): Publication? = withContext(Dispatchers.IO) {
-        val file = File(book.filePath)
+    suspend fun openPublication(book: BookWithDetails): Publication? = withContext(Dispatchers.IO) {
+        val file = File(book.book.filePath)
         if (!file.exists()) return@withContext null
         openPublicationFromFile(file)
     }
@@ -116,7 +140,7 @@ class BookRepository(
     }
 
     suspend fun getLastLocator(bookId: String): Locator? {
-        val book = bookDao.getById(bookId) ?: return null
+        val book = bookDao.getById(bookId)?.book ?: return null
         val json = book.lastLocatorJson ?: return null
         return try {
             Locator.fromJSON(JSONObject(json))
@@ -143,7 +167,7 @@ class BookRepository(
     }
 
     suspend fun deleteBook(bookId: String) = withContext(Dispatchers.IO) {
-        val book = bookDao.getById(bookId) ?: return@withContext
+        val book = bookDao.getById(bookId)?.book ?: return@withContext
         // Delete EPUB file
         File(book.filePath).delete()
         // Delete cover
@@ -153,17 +177,121 @@ class BookRepository(
         noteDao.deleteAllForBook(bookId)
         // Delete from DB
         bookDao.delete(book)
+        
+        // Cleanup orphans
+        bookDao.deleteOrphanAuthors()
+        bookDao.deleteOrphanTags()
+        shelfDao.deleteOrphanShelves()
+    }
+
+    // --- Update Metadata ---
+
+    suspend fun updateBookMetadata(
+        bookId: String,
+        title: String,
+        description: String?,
+        coverUri: Uri?,
+        authors: List<String>,
+        tags: List<String>
+    ) = withContext(Dispatchers.IO) {
+        val bookDetails = bookDao.getById(bookId) ?: return@withContext
+        val book = bookDetails.book
+        
+        var newCoverPath = book.coverPath
+        if (coverUri != null) {
+            val coverFile = File(coversDir, "${bookId}_custom_${System.currentTimeMillis()}.png")
+            try {
+                context.contentResolver.openInputStream(coverUri)?.use { input ->
+                    FileOutputStream(coverFile).use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                newCoverPath = coverFile.absolutePath
+                book.coverPath?.let { oldPath ->
+                    if (oldPath != newCoverPath) {
+                        File(oldPath).delete()
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        
+        bookDao.update(
+            book.copy(
+                title = title,
+                description = description,
+                coverPath = newCoverPath
+            )
+        )
+        
+        bookDao.deleteBookAuthorCrossRefs(bookId)
+        authors.forEach { authorName ->
+            var authorId = bookDao.insertAuthor(AuthorEntity(name = authorName.trim()))
+            if (authorId == -1L) {
+                authorId = bookDao.getAuthorByName(authorName.trim())?.id ?: return@forEach
+            }
+            bookDao.insertBookAuthorCrossRef(BookAuthorCrossRef(bookId, authorId))
+        }
+        
+        bookDao.deleteBookTagCrossRefs(bookId)
+        tags.forEach { tagName ->
+            var tagId = bookDao.insertTag(TagEntity(name = tagName.trim()))
+            if (tagId == -1L) {
+                tagId = bookDao.getTagByName(tagName.trim())?.id ?: return@forEach
+            }
+            bookDao.insertBookTagCrossRef(BookTagCrossRef(bookId, tagId))
+        }
+        
+        bookDao.deleteOrphanAuthors()
+        bookDao.deleteOrphanTags()
+    }
+
+    fun getAllAuthors(): Flow<List<AuthorEntity>> = bookDao.getAllAuthors()
+    
+    fun getAllTags(): Flow<List<TagEntity>> = bookDao.getAllTags()
+
+    suspend fun deleteFilterItem(type: String, name: String) = withContext(Dispatchers.IO) {
+        if (type == "author") {
+            bookDao.deleteAuthorByName(name)
+        } else if (type == "tag") {
+            bookDao.deleteTagByName(name)
+        }
+    }
+
+    suspend fun renameFilterItem(type: String, oldName: String, newName: String) = withContext(Dispatchers.IO) {
+        val trimmedNewName = newName.trim()
+        if (oldName == trimmedNewName) return@withContext
+        if (type == "author") {
+            val existingDest = bookDao.getAuthorByName(trimmedNewName)
+            val source = bookDao.getAuthorByName(oldName)
+            if (existingDest != null && source != null) {
+                bookDao.mergeBookAuthorCrossRef(source.id, existingDest.id)
+                bookDao.deleteAuthorByName(oldName)
+            } else {
+                bookDao.renameAuthor(oldName, trimmedNewName)
+            }
+        } else if (type == "tag") {
+            val existingDest = bookDao.getTagByName(trimmedNewName)
+            val source = bookDao.getTagByName(oldName)
+            if (existingDest != null && source != null) {
+                bookDao.mergeBookTagCrossRef(source.id, existingDest.id)
+                bookDao.deleteTagByName(oldName)
+            } else {
+                bookDao.renameTag(oldName, trimmedNewName)
+            }
+        }
     }
 
     // --- Archive & Read Status Methods ---
 
     suspend fun toggleArchive(bookId: String) {
-        val book = bookDao.getById(bookId) ?: return
+        val book = bookDao.getById(bookId)?.book ?: return
         bookDao.update(book.copy(isArchived = !book.isArchived))
     }
 
     suspend fun toggleReadStatus(bookId: String) {
-        val book = bookDao.getById(bookId) ?: return
+        val book = bookDao.getById(bookId)?.book ?: return
         bookDao.update(book.copy(isRead = !book.isRead))
     }
 
@@ -189,7 +317,7 @@ class BookRepository(
     suspend fun renameShelf(shelfId: String, newName: String) {
         val shelf = shelfDao.getShelfById(shelfId)
         if (shelf != null) {
-            shelfDao.insertShelf(shelf.copy(name = newName))
+            shelfDao.updateShelf(shelf.copy(name = newName))
         }
     }
 
@@ -199,6 +327,7 @@ class BookRepository(
 
     suspend fun removeBookFromShelf(shelfId: String, bookId: String) {
         shelfDao.deleteShelfBookCrossRef(shelfId = shelfId, bookId = bookId)
+        shelfDao.deleteOrphanShelves()
     }
 
     fun getAllShelfBookCrossRefs(): Flow<List<ShelfBookCrossRefEntity>> = shelfDao.getAllShelfBookCrossRefs()
@@ -278,7 +407,6 @@ class BookRepository(
         return BookEntity(
             id = bookId,
             title = metadata.title ?: file.nameWithoutExtension,
-            author = metadata.authors.joinToString(", ") { it.name },
             coverPath = coverPath,
             filePath = file.absolutePath,
             mediaType = mediaType ?: "application/epub+zip",
@@ -292,7 +420,7 @@ class BookRepository(
             description = metadata.description,
             publisher = metadata.publishers.joinToString(", ") { it.name }.takeIf { it.isNotEmpty() },
             published = metadata.published?.toString(),
-            tags = metadata.subjects.joinToString(", ") { it.name }.takeIf { it.isNotEmpty() }
+            isRead = false
         )
     }
 

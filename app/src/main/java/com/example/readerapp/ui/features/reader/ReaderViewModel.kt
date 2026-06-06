@@ -152,7 +152,7 @@ class ReaderViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        bookTitle = pub.metadata.title ?: book.title
+                        bookTitle = pub.metadata.title ?: book.book.title
                     )
                 }
             } catch (e: Exception) {

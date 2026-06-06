@@ -25,6 +25,7 @@ fun SegmentedListItem(
     count: Int,
     leadingContent: @Composable (() -> Unit)? = null,
     trailingContent: @Composable (() -> Unit)? = null,
+    supportingContent: @Composable (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     val defaultRadius = 16.dp
@@ -46,12 +47,13 @@ fun SegmentedListItem(
     )
 
     val containerColor by animateColorAsState(
-        targetValue = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,
+        targetValue = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer,
         label = "color"
     )
 
     ListItem(
         headlineContent = content,
+        supportingContent = supportingContent,
         leadingContent = leadingContent,
         trailingContent = trailingContent,
         colors = ListItemDefaults.colors(containerColor = containerColor),

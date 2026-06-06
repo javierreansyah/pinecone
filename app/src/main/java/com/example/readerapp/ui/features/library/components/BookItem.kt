@@ -31,11 +31,13 @@ fun BookItem(
     book: Book,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
-    isList: Boolean = false
+    isList: Boolean = false,
+    trailingContent: @Composable (() -> Unit)? = null
 ) {
     if (isList) {
         Row(
             modifier = modifier
+                .fillMaxWidth()
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = onLongClick
@@ -53,7 +55,7 @@ fun BookItem(
                 )
             }
             Column(
-                modifier = Modifier.height(100.dp),
+                modifier = Modifier.weight(1f).height(100.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
@@ -64,7 +66,7 @@ fun BookItem(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = book.author ?: "Unknown Author",
+                        text = if (book.authors.isNotEmpty()) book.authors.joinToString(", ") else "Unknown Author",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -82,6 +84,9 @@ fun BookItem(
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
+            }
+            if (trailingContent != null) {
+                trailingContent()
             }
         }
     } else {
@@ -113,7 +118,7 @@ fun BookItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = book.author ?: "Unknown Author",
+                    text = if (book.authors.isNotEmpty()) book.authors.joinToString(", ") else "Unknown Author",
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

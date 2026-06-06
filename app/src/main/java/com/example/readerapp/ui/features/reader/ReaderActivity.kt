@@ -133,6 +133,20 @@ class ReaderActivity : AppCompatActivity() {
 
                     // Inject dynamic ::selection CSS based on the reader background color
                     injectSelectionCss(color)
+                    
+                    // Prevent Screen Timeout
+                    if (settings.preventScreenTimeout) {
+                        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    } else {
+                        window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    }
+                    
+                    // Force Orientation
+                    requestedOrientation = when (settings.forceOrientation) {
+                        "Portrait" -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+                        "Landscape" -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                        else -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                    }
                 }
             }
         }
@@ -247,9 +261,11 @@ class ReaderActivity : AppCompatActivity() {
         // Manage system bars and clear highlight decoration when the user exits search navigation
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.uiState.collect { state ->
+                combine(viewModel.uiState, viewModel.settingsFlow) { state, settings ->
+                    state to settings
+                }.collect { (state, settings) ->
                     val windowInsetsController = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
-                    if (state.showControls) {
+                    if (state.showControls || settings.alwaysShowStatusBar) {
                         windowInsetsController.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
                     } else {
                         windowInsetsController.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
@@ -600,10 +616,7 @@ class ReaderActivity : AppCompatActivity() {
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        viewModel.closeBook()
-    }
+
 
     // ── Search highlight helpers ─────────────────────────────────────────────
 
