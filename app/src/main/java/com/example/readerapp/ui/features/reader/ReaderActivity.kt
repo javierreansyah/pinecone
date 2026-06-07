@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
 import org.readium.r2.navigator.DecorableNavigator
 import org.readium.r2.navigator.Decoration
 import org.readium.r2.navigator.epub.EpubNavigatorFactory
@@ -52,6 +53,7 @@ class ReaderActivity : AppCompatActivity() {
     private var navigatorContainer: FragmentContainerView? = null
     private val navigatorFlow = MutableStateFlow<EpubNavigatorFragment?>(null)
     private var currentActionMode: android.view.ActionMode? = null
+    private var selectionUpdateJob: kotlinx.coroutines.Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -365,10 +367,19 @@ class ReaderActivity : AppCompatActivity() {
                     // Show our custom Compose action bar
                     val nav = navigator as? org.readium.r2.navigator.SelectableNavigator
                     if (nav != null) {
-                        lifecycleScope.launch {
-                            val selection = nav.currentSelection()
-                            if (selection != null) {
-                                viewModel.showSelectionMenu(selection.locator)
+                        selectionUpdateJob?.cancel()
+                        selectionUpdateJob = lifecycleScope.launch {
+                            // Continuously poll while action mode is active to ensure we catch all
+                            // selection updates, including delayed ones from Chromium bugs on cross-column paragraphs.
+                            while (isActive && currentActionMode != null) {
+                                val selection = nav.currentSelection()
+                                if (selection != null) {
+                                    val currentHighlight = viewModel.uiState.value.selectionLocator?.text?.highlight
+                                    if (selection.locator.text.highlight != currentHighlight) {
+                                        viewModel.showSelectionMenu(selection.locator)
+                                    }
+                                }
+                                kotlinx.coroutines.delay(300.milliseconds)
                             }
                         }
                     }
