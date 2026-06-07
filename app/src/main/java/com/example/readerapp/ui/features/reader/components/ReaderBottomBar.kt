@@ -2,19 +2,21 @@ package com.example.readerapp.ui.features.reader.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,35 +38,61 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.toColorInt
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Arrow_forward
+import com.composables.icons.materialsymbols.outlined.Auto_stories
 import com.composables.icons.materialsymbols.outlined.Close
+import com.composables.icons.materialsymbols.outlined.Content_copy
+import com.composables.icons.materialsymbols.outlined.Delete
+import com.composables.icons.materialsymbols.outlined.Edit
+import com.composables.icons.materialsymbols.outlined.Search
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
+enum class BottomBarMode {
+    PROGRESS,
+    SEARCH_NAV,
+    TEXT_SELECTION
+}
+
 @Composable
-fun ReaderBottomBar(
+fun ReaderBottomBarContainer(
+    modifier: Modifier = Modifier,
+    readerBgColor: Color,
+    content: @Composable () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(Color.Transparent, readerBgColor),
+                    startY = 0f
+                )
+            )
+            .padding(horizontal = 8.dp)
+            .padding(top = 8.dp, bottom = 16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        content()
+    }
+}
+
+@Composable
+fun ReaderProgressTracker(
     modifier: Modifier = Modifier,
     progression: Double,
     currentPage: Int?,
     totalPages: Int?,
-    readerBgColor: Color,
     readerTextColor: Color,
-    onSeekToProgression: (Double) -> Unit,
-    // Search navigation
-    isInSearchNavigationMode: Boolean = false,
-    activeSearchIndex: Int? = null,
-    totalSearchResults: Int = 0,
-    onExitSearch: () -> Unit = {},
-    onPrevSearchResult: () -> Unit = {},
-    onNextSearchResult: () -> Unit = {},
+    onSeekToProgression: (Double) -> Unit
 ) {
     var isSeeking by remember { mutableStateOf(false) }
     var sliderPosition by remember { mutableFloatStateOf(progression.toFloat()) }
     var pendingSeek by remember { mutableStateOf<Double?>(null) }
     var seekBarWidthPx by remember { mutableFloatStateOf(1f) }
-
 
     LaunchedEffect(progression) {
         val target = pendingSeek
@@ -76,185 +104,153 @@ fun ReaderBottomBar(
         }
     }
 
-    Box(
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
         modifier = modifier
             .fillMaxWidth()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(Color.Transparent, readerBgColor),
-                    startY = 0f
-                )
-            )
-            .padding(WindowInsets.navigationBars.asPaddingValues())
-            .padding(horizontal = 24.dp)
-            .padding(top = 8.dp, bottom = 4.dp)
+            .height(48.dp)
     ) {
-        if (isInSearchNavigationMode) {
-            // ── Search navigation helper ───────────────────────────────────
-            SearchNavBar(
-                activeIndex = activeSearchIndex,
-                totalResults = totalSearchResults,
-                onExit = onExitSearch,
-                onPrev = onPrevSearchResult,
-                onNext = onNextSearchResult,
-                textColor = readerTextColor
-            )
-        } else {
-            // ── Normal progress bar ────────────────────────────────────────
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-            // Progress slider
-            val onSurface = readerTextColor
-            val density = LocalDensity.current
-            val trackStrokeWidthPx = with(density) { 2.dp.toPx() }
-            val thumbWidthPx = with(density) { 2.dp.toPx() }
-            val thumbHeightPx = with(density) { 14.dp.toPx() }
-            val thumbGapPx = with(density) { 4.dp.toPx() } // horizontal padding on each side of thumb
+        // Progress slider
+        val density = LocalDensity.current
+        val trackStrokeWidthPx = with(density) { 2.dp.toPx() }
+        val thumbWidthPx = with(density) { 2.dp.toPx() }
+        val thumbHeightPx = with(density) { 14.dp.toPx() }
+        val thumbGapPx = with(density) { 4.dp.toPx() }
 
-            Box(
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp) // extra padding for thumb
+                .height(20.dp)
+                .onSizeChanged { seekBarWidthPx = it.width.toFloat().coerceAtLeast(1f) }
+                .pointerInput(Unit) {
+                    detectTapGestures { offset ->
+                        val p = (offset.x / seekBarWidthPx).coerceIn(0f, 1f)
+                        sliderPosition = p
+                        pendingSeek = sliderPosition.toDouble()
+                        onSeekToProgression(sliderPosition.toDouble())
+                    }
+                }
+                .pointerInput(Unit) {
+                    detectDragGestures(
+                        onDragStart = { offset ->
+                            isSeeking = true
+                            val p = (offset.x / seekBarWidthPx).coerceIn(0f, 1f)
+                            sliderPosition = p
+                        },
+                        onDrag = { change, _ ->
+                            change.consume()
+                            val p = (change.position.x / seekBarWidthPx).coerceIn(0f, 1f)
+                            sliderPosition = p
+                        },
+                        onDragEnd = {
+                            isSeeking = false
+                            pendingSeek = sliderPosition.toDouble()
+                            onSeekToProgression(sliderPosition.toDouble())
+                        },
+                        onDragCancel = {
+                            isSeeking = false
+                        }
+                    )
+                },
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(20.dp)
-                    .onSizeChanged { seekBarWidthPx = it.width.toFloat().coerceAtLeast(1f) }
-                    .pointerInput(Unit) {
-                        detectTapGestures { offset ->
-                            val p = (offset.x / seekBarWidthPx).coerceIn(0f, 1f)
-                            sliderPosition = p
-                            pendingSeek = sliderPosition.toDouble()
-                            onSeekToProgression(sliderPosition.toDouble())
-                        }
-                    }
-                    .pointerInput(Unit) {
-                        detectDragGestures(
-                            onDragStart = { offset ->
-                                isSeeking = true
-                                val p = (offset.x / seekBarWidthPx).coerceIn(0f, 1f)
-                                sliderPosition = p
-                            },
-                            onDrag = { change, _ ->
-                                change.consume()
-                                val p = (change.position.x / seekBarWidthPx).coerceIn(0f, 1f)
-                                sliderPosition = p
-                            },
-                            onDragEnd = {
-                                isSeeking = false
-                                pendingSeek = sliderPosition.toDouble()
-                                onSeekToProgression(sliderPosition.toDouble())
-                            },
-                            onDragCancel = {
-                                isSeeking = false
-                            }
-                        )
-                    },
-                contentAlignment = Alignment.CenterStart
             ) {
-                Canvas(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(20.dp)
-                ) {
-                    val trackY = size.height / 2f
-                    val thumbX = size.width * sliderPosition
-                    val gapLeft = (thumbX - thumbGapPx).coerceAtLeast(0f)
-                    val gapRight = (thumbX + thumbGapPx).coerceAtMost(size.width)
+                val trackY = size.height / 2f
+                val thumbX = size.width * sliderPosition
+                val gapLeft = (thumbX - thumbGapPx).coerceAtLeast(0f)
+                val gapRight = (thumbX + thumbGapPx).coerceAtMost(size.width)
 
-                    if (isSeeking) {
-                        // ── Track with gap around thumb ──
-                        // Active track (left of thumb), stopping before the gap
-                        if (gapLeft > 0f) {
-                            drawLine(
-                                color = onSurface.copy(alpha = 0.70f),
-                                start = Offset(0f, trackY),
-                                end = Offset(gapLeft, trackY),
-                                strokeWidth = trackStrokeWidthPx,
-                                cap = StrokeCap.Round
-                            )
-                        }
-                        // Inactive track (right of thumb), starting after the gap
-                        if (gapRight < size.width) {
-                            drawLine(
-                                color = onSurface.copy(alpha = 0.24f),
-                                start = Offset(gapRight, trackY),
-                                end = Offset(size.width, trackY),
-                                strokeWidth = trackStrokeWidthPx,
-                                cap = StrokeCap.Round
-                            )
-                        }
-
-                        // ── Thumb: simple vertical line ──
-                        val halfThumb = thumbHeightPx / 2f
+                if (isSeeking) {
+                    if (gapLeft > 0f) {
                         drawLine(
-                            color = onSurface.copy(alpha = 0.70f),
-                            start = Offset(thumbX, trackY - halfThumb),
-                            end = Offset(thumbX, trackY + halfThumb),
-                            strokeWidth = thumbWidthPx,
-                            cap = StrokeCap.Round
-                        )
-                    } else {
-                        // ── Passive continuous track (no thumb) ──
-                        drawLine(
-                            color = onSurface.copy(alpha = 0.70f),
+                            color = readerTextColor.copy(alpha = 0.70f),
                             start = Offset(0f, trackY),
-                            end = Offset(thumbX, trackY),
+                            end = Offset(gapLeft, trackY),
                             strokeWidth = trackStrokeWidthPx,
                             cap = StrokeCap.Round
                         )
+                    }
+                    if (gapRight < size.width) {
                         drawLine(
-                            color = onSurface.copy(alpha = 0.24f),
-                            start = Offset(thumbX, trackY),
+                            color = readerTextColor.copy(alpha = 0.24f),
+                            start = Offset(gapRight, trackY),
                             end = Offset(size.width, trackY),
                             strokeWidth = trackStrokeWidthPx,
                             cap = StrokeCap.Round
                         )
                     }
+
+                    val halfThumb = thumbHeightPx / 2f
+                    drawLine(
+                        color = readerTextColor.copy(alpha = 0.70f),
+                        start = Offset(thumbX, trackY - halfThumb),
+                        end = Offset(thumbX, trackY + halfThumb),
+                        strokeWidth = thumbWidthPx,
+                        cap = StrokeCap.Round
+                    )
+                } else {
+                    drawLine(
+                        color = readerTextColor.copy(alpha = 0.70f),
+                        start = Offset(0f, trackY),
+                        end = Offset(thumbX, trackY),
+                        strokeWidth = trackStrokeWidthPx,
+                        cap = StrokeCap.Round
+                    )
+                    drawLine(
+                        color = readerTextColor.copy(alpha = 0.24f),
+                        start = Offset(thumbX, trackY),
+                        end = Offset(size.width, trackY),
+                        strokeWidth = trackStrokeWidthPx,
+                        cap = StrokeCap.Round
+                    )
                 }
             }
+        }
 
-//            Spacer(modifier = Modifier.height(4.dp))
-
-            // Page info text
-            val pageText = if (isSeeking || pendingSeek != null) {
-                if (totalPages != null) {
-                    val page = (sliderPosition * totalPages).roundToInt().coerceIn(1, totalPages)
-                    "$page of $totalPages"
-                } else {
-                    "${(sliderPosition * 100).toInt()}%"
-                }
+        // Page info text
+        val pageText = if (isSeeking || pendingSeek != null) {
+            if (totalPages != null) {
+                val page = (sliderPosition * totalPages).roundToInt().coerceIn(1, totalPages)
+                "$page of $totalPages"
             } else {
-                if (currentPage != null && totalPages != null) {
-                    "$currentPage of $totalPages"
-                } else {
-                    "${(progression * 100).toInt()}%"
-                }
+                "${(sliderPosition * 100).toInt()}%"
             }
+        } else {
+            if (currentPage != null && totalPages != null) {
+                "$currentPage of $totalPages"
+            } else {
+                "${(progression * 100).toInt()}%"
+            }
+        }
 
-            Text(
-                text = pageText,
-                style = MaterialTheme.typography.labelMedium,
-                color = readerTextColor
-            )
-        } // end normal progress Column
-        } // end else (normal progress bar)
-    } // end outer Box
+        Text(
+            text = pageText,
+            style = MaterialTheme.typography.labelMedium,
+            color = readerTextColor
+        )
+    }
 }
 
-// ── Search Navigation Bar ─────────────────────────────────────────────────────
-
 @Composable
-private fun SearchNavBar(
+fun ReaderSearchNavigator(
+    modifier: Modifier = Modifier,
     activeIndex: Int?,
     totalResults: Int,
+    textColor: Color,
     onExit: () -> Unit,
     onPrev: () -> Unit,
-    onNext: () -> Unit,
-    textColor: Color
+    onNext: () -> Unit
 ) {
     val currentNum = if (activeIndex != null) activeIndex + 1 else 0
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
     ) {
@@ -272,14 +268,12 @@ private fun SearchNavBar(
             )
         }
 
-        // N of M label
         Text(
             text = if (totalResults == 0) "No matches" else "$currentNum of $totalResults",
             style = MaterialTheme.typography.labelMedium,
             color = textColor
         )
 
-        // Prev / Next arrows
         Row(
             horizontalArrangement = Arrangement.spacedBy(0.dp),
             modifier = Modifier.align(Alignment.CenterEnd)
@@ -313,6 +307,83 @@ private fun SearchNavBar(
                     else
                         textColor.copy(alpha = 0.3f)
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun ReaderTextSelectionControl(
+    modifier: Modifier = Modifier,
+    selectedColorInt: Int?,
+    readerTextColor: Color,
+    showDeleteOption: Boolean,
+    onCopy: () -> Unit,
+    onSearch: () -> Unit,
+    onMakeNote: () -> Unit,
+    onDefine: () -> Unit,
+    onDelete: () -> Unit,
+    onColorSelected: (Int) -> Unit
+) {
+    Row(
+        modifier = modifier.fillMaxWidth().padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Left side: Action Icons
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(0.dp)
+        ) {
+            IconButton(onClick = onCopy, modifier = Modifier.size(40.dp)) {
+                Icon(MaterialSymbols.Outlined.Content_copy, contentDescription = "Copy", tint = readerTextColor, modifier = Modifier.size(20.dp))
+            }
+            IconButton(onClick = onSearch, modifier = Modifier.size(40.dp)) {
+                Icon(MaterialSymbols.Outlined.Search, contentDescription = "Search", tint = readerTextColor, modifier = Modifier.size(20.dp))
+            }
+            IconButton(onClick = onMakeNote, modifier = Modifier.size(40.dp)) {
+                Icon(MaterialSymbols.Outlined.Edit, contentDescription = "Make Note", tint = readerTextColor, modifier = Modifier.size(20.dp))
+            }
+            IconButton(onClick = onDefine, modifier = Modifier.size(40.dp)) {
+                Icon(MaterialSymbols.Outlined.Auto_stories, contentDescription = "Define", tint = readerTextColor, modifier = Modifier.size(20.dp))
+            }
+            if (showDeleteOption) {
+                IconButton(onClick = onDelete, modifier = Modifier.size(40.dp)) {
+                    Icon(MaterialSymbols.Outlined.Delete, contentDescription = "Delete", tint = readerTextColor, modifier = Modifier.size(20.dp))
+                }
+            }
+        }
+
+        // Right side: Color Swatches
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                val swatches = listOf(
+                    "#40fac02e".toColorInt(), // Yellow
+                    "#40fd7142".toColorInt(), // Orange
+                    "#408bc24a".toColorInt(), // Green
+                    "#4025c6da".toColorInt()  // Blue
+                )
+                swatches.forEach { colorInt ->
+                    val isSelected = selectedColorInt == colorInt
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .background(
+                                color = Color(colorInt).copy(alpha = 1f),
+                                shape = androidx.compose.foundation.shape.CircleShape
+                            )
+                            .border(
+                                width = if (isSelected) 2.dp else 0.dp,
+                                color = if (isSelected) readerTextColor else Color.Transparent,
+                                shape = androidx.compose.foundation.shape.CircleShape
+                            )
+                            .clickable { onColorSelected(colorInt) }
+                    )
+                }
             }
         }
     }

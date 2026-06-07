@@ -607,7 +607,7 @@ private fun AdvancedTabContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { showDictionaryDialog = true }
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -632,8 +632,7 @@ private fun AdvancedTabContent(
                                         .clickable {
                                             onSettingsChange(settings.copy(activeDictionaryId = dict.id))
                                             showDictionaryDialog = false
-                                        }
-                                        .padding(vertical = 12.dp),
+                                        },
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     RadioButton(
@@ -657,10 +656,6 @@ private fun AdvancedTabContent(
                 }
             )
         }
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        HorizontalDivider()
-        Spacer(modifier = Modifier.height(8.dp))
 
         // Vertical Scroll
         SettingsSwitchRow(

@@ -76,124 +76,124 @@ fun AppDrawer(
                 text = stringResource(id = R.string.app_name),
                 style = MaterialTheme.typography.headlineMedium
             )
-        }
+            }
 
-        NavigationDrawerItem(
-            label = { Text("Archives") },
-            icon = { Icon(MaterialSymbols.Outlined.Archive, contentDescription = null) },
-            selected = false,
-            onClick = { onNavigateToArchives() },
-            shape = RectangleShape
-        )
+            NavigationDrawerItem(
+                label = { Text("Archives") },
+                icon = { Icon(MaterialSymbols.Outlined.Archive, contentDescription = null) },
+                selected = false,
+                onClick = { onNavigateToArchives() },
+                shape = RectangleShape
+            )
 
-        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            NavigationDrawerItem(
+                label = { Text("Dictionaries") },
+                icon = { Icon(MaterialSymbols.Outlined.Book, contentDescription = null) },
+                selected = false,
+                onClick = { onNavigateToDictionaries() },
+                shape = RectangleShape
+            )
 
-        Text(
-            text = "Book Import",
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
-            color = MaterialTheme.colorScheme.primary,
-        )
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-        NavigationDrawerItem(
-            label = { Text("Import Files") },
-            icon = { Icon(MaterialSymbols.Outlined.Upload, contentDescription = null) },
-            selected = false,
-            onClick = {
-                onImportFilesClick()
-                scope.launch { drawerState.close() }
-            },
-            shape = RectangleShape
-        )
-        NavigationDrawerItem(
-            label = { Text("Scan Folder") },
-            icon = { Icon(MaterialSymbols.Outlined.Folder, contentDescription = null) },
-            selected = false,
-            onClick = {
-                onScanFolderClick()
-                scope.launch { drawerState.close() }
-            },
-            shape = RectangleShape
-        )
+            Text(
+                text = "Book Import",
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
+                color = MaterialTheme.colorScheme.primary,
+            )
 
-        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            NavigationDrawerItem(
+                label = { Text("Import Files") },
+                icon = { Icon(MaterialSymbols.Outlined.Upload, contentDescription = null) },
+                selected = false,
+                onClick = {
+                    onImportFilesClick()
+                    scope.launch { drawerState.close() }
+                },
+                shape = RectangleShape
+            )
+            NavigationDrawerItem(
+                label = { Text("Scan Folder") },
+                icon = { Icon(MaterialSymbols.Outlined.Folder, contentDescription = null) },
+                selected = false,
+                onClick = {
+                    onScanFolderClick()
+                    scope.launch { drawerState.close() }
+                },
+                shape = RectangleShape
+            )
 
-        Text(
-            text = "Local Backup",
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
-            color = MaterialTheme.colorScheme.primary,
-        )
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-        val lastBackupText = if (settings.lastBackupTime > 0) {
-            val formatter = java.text.SimpleDateFormat("MMM dd, HH:mm", LocalLocale.current.platformLocale)
-            "Last: ${formatter.format(java.util.Date(settings.lastBackupTime))}"
-        } else {
-            "Never"
-        }
+            Text(
+                text = "Local Backup",
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
+                color = MaterialTheme.colorScheme.primary,
+            )
 
-        val hasPermission = settings.backupFolderUri.isNotEmpty() && context.contentResolver.persistedUriPermissions.any { it.uri.toString() == settings.backupFolderUri }
+            val lastBackupText = if (settings.lastBackupTime > 0) {
+                val formatter = java.text.SimpleDateFormat("MMM dd, HH:mm", LocalLocale.current.platformLocale)
+                "Last: ${formatter.format(java.util.Date(settings.lastBackupTime))}"
+            } else {
+                "Never"
+            }
 
-        NavigationDrawerItem(
-            label = {
-                Column {
-                    if (hasPermission) {
-                        Text("Backup Now")
-                        Text(lastBackupText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    } else {
-                        Text("Backup not setup")
-                        Text("Setup now", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            },
-            icon = { Icon(if (hasPermission) Icons.Outlined.DriveFolderUpload else MaterialSymbols.Outlined.Folder, contentDescription = null) },
-            selected = false,
-            onClick = {
-                scope.launch {
-                    drawerState.close()
-                    if (!hasPermission) {
-                        onBackupFolderSetupClick()
-                    } else {
-                        Toast.makeText(context, "Starting backup...", Toast.LENGTH_SHORT).show()
-                        val success = BackupRepository(context).performBackup(force = true)
-                        if (success) {
-                            Toast.makeText(context, "Backup successful", Toast.LENGTH_SHORT).show()
+            val hasPermission = settings.backupFolderUri.isNotEmpty() && context.contentResolver.persistedUriPermissions.any { it.uri.toString() == settings.backupFolderUri }
+
+            NavigationDrawerItem(
+                label = {
+                    Column {
+                        if (hasPermission) {
+                            Text("Backup Now")
+                            Text(lastBackupText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         } else {
-                            Toast.makeText(context, "Backup failed", Toast.LENGTH_SHORT).show()
+                            Text("Backup not setup")
+                            Text("Setup now", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
-                }
-            },
-            shape = RectangleShape
-        )
+                },
+                icon = { Icon(if (hasPermission) Icons.Outlined.DriveFolderUpload else MaterialSymbols.Outlined.Folder, contentDescription = null) },
+                selected = false,
+                onClick = {
+                    scope.launch {
+                        drawerState.close()
+                        if (!hasPermission) {
+                            onBackupFolderSetupClick()
+                        } else {
+                            Toast.makeText(context, "Starting backup...", Toast.LENGTH_SHORT).show()
+                            val success = BackupRepository(context).performBackup(force = true)
+                            if (success) {
+                                Toast.makeText(context, "Backup successful", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, "Backup failed", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                },
+                shape = RectangleShape
+            )
 
-        NavigationDrawerItem(
-            label = { Text("Restore Backup") },
-            icon = { Icon(Icons.Outlined.Restore, contentDescription = null) },
-            selected = false,
-            onClick = {
-                onRestoreBackupClick()
-            },
-            shape = RectangleShape
-        )
+            NavigationDrawerItem(
+                label = { Text("Restore Backup") },
+                icon = { Icon(Icons.Outlined.Restore, contentDescription = null) },
+                selected = false,
+                onClick = {
+                    onRestoreBackupClick()
+                },
+                shape = RectangleShape
+            )
 
-        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-        NavigationDrawerItem(
-            label = { Text("Settings") },
-            icon = { Icon(MaterialSymbols.Outlined.Settings, contentDescription = null) },
-            selected = false,
-            onClick = { onNavigateToSettings() },
-            shape = RectangleShape
-        )
-
-        NavigationDrawerItem(
-            label = { Text("Dictionaries") },
-            icon = { Icon(MaterialSymbols.Outlined.Book, contentDescription = null) },
-            selected = false,
-            onClick = { onNavigateToDictionaries() },
-            shape = RectangleShape
-        )
+            NavigationDrawerItem(
+                label = { Text("Settings") },
+                icon = { Icon(MaterialSymbols.Outlined.Settings, contentDescription = null) },
+                selected = false,
+                onClick = { onNavigateToSettings() },
+                shape = RectangleShape
+            )
         }
     }
 }

@@ -51,7 +51,10 @@ class StardictParser(private val context: Context) {
             val idxFile = files.find { it.name.endsWith(".idx") } ?: throw Exception("Missing .idx file")
             var dictFile = files.find { it.name.endsWith(".dict") }
 
-            // 3. Handle dict.dz
+            // Find .syn file
+            var synFile = files.find { it.name.endsWith(".syn") }
+
+            // 3. Handle dict.dz and syn.dz
             if (dictFile == null) {
                 val dzFile = files.find { it.name.endsWith(".dict.dz") }
                 if (dzFile != null) {
@@ -70,6 +73,21 @@ class StardictParser(private val context: Context) {
                 }
             }
 
+            if (synFile == null) {
+                val synDzFile = files.find { it.name.endsWith(".syn.dz") }
+                if (synDzFile != null) {
+                    synFile = File(tempDir, synDzFile.nameWithoutExtension)
+                    FileInputStream(synDzFile).use { fis ->
+                        GZIPInputStream(BufferedInputStream(fis)).use { gis ->
+                            FileOutputStream(synFile).use { fos ->
+                                gis.copyTo(fos)
+                            }
+                        }
+                    }
+                    synDzFile.delete()
+                }
+            }
+
             // 4. Parse .ifo
             onProgress(30)
             val info = parseIfo(ifoFile)
@@ -85,6 +103,7 @@ class StardictParser(private val context: Context) {
             var idxOffset = 0
             val totalBytes = idxBytes.size
             var wordsParsed = 0
+            var wordIndexCounter = 0
             var lastProgressUpdate = 0L
 
             val buffer = mutableListOf<DictionaryEntry>()
@@ -123,8 +142,9 @@ class StardictParser(private val context: Context) {
                 dictRaf.readFully(defBytes)
                 val definition = String(defBytes, Charsets.UTF_8)
 
-                buffer.add(DictionaryEntry(word = word, definition = definition))
+                buffer.add(DictionaryEntry(wordIndex = wordIndexCounter, word = word, definition = definition))
                 wordsParsed++
+                wordIndexCounter++
 
                 if (buffer.size >= 300) {
                     dao.insertAll(buffer)
@@ -145,6 +165,39 @@ class StardictParser(private val context: Context) {
             }
 
             dictRaf.close()
+
+            // 6. Parse .syn into Database
+            if (synFile != null && synFile.exists()) {
+                val synBytes = synFile.readBytes()
+                var synOffset = 0
+                val synTotalBytes = synBytes.size
+                val synBuffer = mutableListOf<SynonymEntry>()
+
+                while (synOffset < synTotalBytes) {
+                    val wordStart = synOffset
+                    while (synOffset < synTotalBytes && synBytes[synOffset].toInt() != 0) {
+                        synOffset++
+                    }
+                    if (synOffset >= synTotalBytes) break
+                    val synonym = String(synBytes, wordStart, synOffset - wordStart, Charsets.UTF_8)
+                    synOffset++ // skip null byte
+
+                    if (synOffset + 4 > synTotalBytes) break
+                    val bb = ByteBuffer.wrap(synBytes, synOffset, 4).order(ByteOrder.BIG_ENDIAN)
+                    val originalWordIndex = bb.int
+                    synOffset += 4
+
+                    synBuffer.add(SynonymEntry(synonym = synonym, originalWordIndex = originalWordIndex))
+                    
+                    if (synBuffer.size >= 1000) {
+                        dao.insertSynonyms(synBuffer)
+                        synBuffer.clear()
+                    }
+                }
+                if (synBuffer.isNotEmpty()) {
+                    dao.insertSynonyms(synBuffer)
+                }
+            }
 
             // Room's InvalidationTracker can crash on a background thread if we close the DB 
             // immediately after a transaction. We will let the garbage collector and SQLite 

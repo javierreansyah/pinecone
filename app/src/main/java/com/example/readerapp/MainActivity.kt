@@ -320,14 +320,14 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.Settings.route) {
                         SettingsScreen(
                             onNavigateBack = {
-                                navController.popBackStack()
+                                navController.popBackStack(Screen.Library.route, inclusive = false)
                             }
                         )
                     }
                     composable(Screen.Archives.route) {
                         ArchiveScreen(
                             onNavigateBack = {
-                                navController.popBackStack()
+                                navController.popBackStack(Screen.Library.route, inclusive = false)
                             },
                             onNavigateToReader = { bookId ->
                                 val intent = Intent(context, com.example.readerapp.ui.features.reader.ReaderActivity::class.java).apply {
@@ -353,7 +353,7 @@ class MainActivity : ComponentActivity() {
                             initialShelfName = name,
                             initialBookCount = count,
                             onNavigateBack = {
-                                navController.popBackStack()
+                                if (navController.previousBackStackEntry != null) navController.popBackStack()
                             },
                             onNavigateToReader = { bookId ->
                                 val intent = Intent(context, com.example.readerapp.ui.features.reader.ReaderActivity::class.java).apply {
@@ -369,7 +369,7 @@ class MainActivity : ComponentActivity() {
                             filterType = "author",
                             filterValue = authorName,
                             onNavigateBack = {
-                                navController.popBackStack()
+                                if (navController.previousBackStackEntry != null) navController.popBackStack()
                             },
                             onNavigateToReader = { bookId ->
                                 val intent = Intent(context, com.example.readerapp.ui.features.reader.ReaderActivity::class.java).apply {
@@ -389,7 +389,7 @@ class MainActivity : ComponentActivity() {
                             filterType = "tag",
                             filterValue = tagName,
                             onNavigateBack = {
-                                navController.popBackStack()
+                                if (navController.previousBackStackEntry != null) navController.popBackStack()
                             },
                             onNavigateToReader = { bookId ->
                                 val intent = Intent(context, com.example.readerapp.ui.features.reader.ReaderActivity::class.java).apply {
@@ -407,7 +407,7 @@ class MainActivity : ComponentActivity() {
                         com.example.readerapp.ui.features.library.AllFilterItemsScreen(
                             filterType = "author",
                             onNavigateBack = {
-                                navController.popBackStack()
+                                if (navController.previousBackStackEntry != null) navController.popBackStack()
                             },
                             onNavigateToDetail = { authorName ->
                                 navController.navigate(Screen.AuthorDetail.createRoute(authorName))
@@ -418,7 +418,7 @@ class MainActivity : ComponentActivity() {
                         com.example.readerapp.ui.features.library.AllFilterItemsScreen(
                             filterType = "tag",
                             onNavigateBack = {
-                                navController.popBackStack()
+                                if (navController.previousBackStackEntry != null) navController.popBackStack()
                             },
                             onNavigateToDetail = { tagName ->
                                 navController.navigate(Screen.TagDetail.createRoute(tagName))
@@ -433,7 +433,7 @@ class MainActivity : ComponentActivity() {
                         val dictViewModel: com.example.readerapp.ui.features.dictionary.DictionariesViewModel = androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
                         com.example.readerapp.ui.features.dictionary.DictionariesScreen(
                             viewModel = dictViewModel,
-                            onBack = { navController.popBackStack() }
+                            onBack = { navController.popBackStack(Screen.Library.route, inclusive = false) }
                         )
                     }
                     }

@@ -1,6 +1,7 @@
 package com.example.readerapp.ui.features.reader.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -8,54 +9,40 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Brush
-import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Content_copy
-import com.composables.icons.materialsymbols.outlined.Search
-import com.composables.icons.materialsymbols.outlined.Edit
-import com.composables.icons.materialsymbols.outlined.Delete
-import com.composables.icons.materialsymbols.outlined.Close
-import androidx.compose.material3.Icon
-import androidx.compose.material3.SheetValue
-import androidx.compose.material3.rememberBottomSheetState
-import com.example.readerapp.ui.features.dictionary.utils.DictionaryFormatter
-import com.example.readerapp.ui.features.dictionary.utils.DefinitionWebView
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.core.graphics.toColorInt
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.composables.icons.materialsymbols.outlined.Auto_stories
+import com.example.readerapp.data.local.ReaderSettings
+import com.example.readerapp.data.local.dictionary.DictionaryEntry
+import com.example.readerapp.ui.features.dictionary.utils.DefinitionWebView
+import com.example.readerapp.ui.features.dictionary.utils.DictionaryFormatter
 import com.example.readerapp.ui.features.reader.ReaderViewModel
 import com.example.readerapp.ui.theme.AppTheme
 import org.readium.r2.shared.publication.Link
-import androidx.core.graphics.toColorInt
+import org.readium.r2.shared.publication.Locator
+import org.json.JSONObject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,7 +56,7 @@ fun ReaderOverlay(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isBookmarked by viewModel.isBookmarked.collectAsStateWithLifecycle()
     val settings by viewModel.settingsFlow.collectAsStateWithLifecycle(
-        initialValue = com.example.readerapp.data.local.ReaderSettings()
+        initialValue = ReaderSettings()
     )
 
     val uiDarkTheme = when (settings.themeMode) {
@@ -92,7 +79,7 @@ fun ReaderOverlay(
 
     val readerTextColor = when (settings.readerThemePreset) {
         "Light" -> Color.Black
-        "Warm" -> Color(0xFF121212) // Dark text for warm theme
+        "Warm" -> Color(0xFF121212)
         "Dark" -> Color.White
         "Auto" -> if (uiDarkTheme) Color.White else Color.Black
         else -> try {
@@ -134,7 +121,7 @@ fun ReaderOverlay(
             }
         }
 
-        // Animated controls overlay — top bar only
+        // Animated controls overlay — top bar
         AnimatedVisibility(
             visible = uiState.showControls && !uiState.showSearch,
             enter = slideInVertically(initialOffsetY = { -20 }, animationSpec = tween(250)) + fadeIn(animationSpec = tween(250)),
@@ -154,32 +141,115 @@ fun ReaderOverlay(
             )
         }
 
-        // Bottom bar — shown when controls are visible.
-        // Bottom bar — shown when controls are visible and no selection is active.
-        val showBottomBar = uiState.showControls && !uiState.showSearch && uiState.selectionLocator == null && uiState.viewingHighlight == null
+        // Animated controls overlay — unified bottom bar
+        val menuLocator = uiState.selectionLocator
+        val menuHighlight = uiState.viewingHighlight
+        val isSelectionActive = menuLocator != null || menuHighlight != null
+        val showBottomBar = (uiState.showControls && !uiState.showSearch) || isSelectionActive
+
         AnimatedVisibility(
             visible = showBottomBar,
-            enter = slideInVertically(initialOffsetY = { 20 }, animationSpec = tween(250)) + fadeIn(animationSpec = tween(250)),
-            exit = slideOutVertically(targetOffsetY = { 20 }, animationSpec = tween(250)) + fadeOut(animationSpec = tween(250)),
+            enter = slideInVertically(initialOffsetY = { 40 }, animationSpec = tween(250)) + fadeIn(animationSpec = tween(250)),
+            exit = slideOutVertically(targetOffsetY = { 40 }, animationSpec = tween(250)) + fadeOut(animationSpec = tween(250)),
             modifier = Modifier.align(Alignment.BottomCenter)
         ) {
-            ReaderBottomBar(
-                progression = uiState.progression,
-                currentPage = uiState.currentPage,
-                totalPages = uiState.totalPages,
-                readerBgColor = readerBgColor,
-                readerTextColor = readerTextColor,
-                onSeekToProgression = onSeekToProgression,
-                isInSearchNavigationMode = uiState.isInSearchNavigationMode,
-                activeSearchIndex = uiState.activeSearchIndex,
-                totalSearchResults = uiState.searchResults.size,
-                onExitSearch = { viewModel.exitSearchNavigation() },
-                onPrevSearchResult = { viewModel.prevSearchResult() },
-                onNextSearchResult = { viewModel.nextSearchResult() }
-            )
+            ReaderBottomBarContainer(readerBgColor = readerBgColor) {
+                val currentMode = when {
+                    isSelectionActive -> BottomBarMode.TEXT_SELECTION
+                    uiState.isInSearchNavigationMode -> BottomBarMode.SEARCH_NAV
+                    else -> BottomBarMode.PROGRESS
+                }
+
+                Crossfade(targetState = currentMode, label = "BottomBarMode") { mode ->
+                    when (mode) {
+                        BottomBarMode.PROGRESS -> {
+                            ReaderProgressTracker(
+                                progression = uiState.progression,
+                                currentPage = uiState.currentPage,
+                                totalPages = uiState.totalPages,
+                                readerTextColor = readerTextColor,
+                                onSeekToProgression = onSeekToProgression
+                            )
+                        }
+                        BottomBarMode.SEARCH_NAV -> {
+                            ReaderSearchNavigator(
+                                activeIndex = uiState.activeSearchIndex,
+                                totalResults = uiState.searchResults.size,
+                                textColor = readerTextColor,
+                                onExit = { viewModel.exitSearchNavigation() },
+                                onPrev = { viewModel.prevSearchResult() },
+                                onNext = { viewModel.nextSearchResult() }
+                            )
+                        }
+                        BottomBarMode.TEXT_SELECTION -> {
+                            val highlightText = try {
+                                Locator.fromJSON(
+                                    JSONObject(
+                                        menuHighlight?.locatorJson ?: menuLocator?.toJSON()?.toString() ?: ""
+                                    )
+                                )?.text?.highlight ?: ""
+                            } catch (_: Exception) { "" }
+
+                            val context = LocalContext.current
+                            val selectedColorInt = menuHighlight?.color
+
+                            ReaderTextSelectionControl(
+                                selectedColorInt = selectedColorInt,
+                                readerTextColor = readerTextColor,
+                                showDeleteOption = menuHighlight != null && menuLocator == null,
+                                onCopy = {
+                                    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                    val clip = android.content.ClipData.newPlainText("highlight", highlightText)
+                                    clipboard.setPrimaryClip(clip)
+                                    if (menuLocator != null) viewModel.hideSelectionMenu()
+                                    if (menuHighlight != null) viewModel.hideViewHighlight()
+                                },
+                                onSearch = {
+                                    if (menuLocator != null) viewModel.hideSelectionMenu()
+                                    if (menuHighlight != null) viewModel.hideViewHighlight()
+                                    viewModel.showSearch()
+                                    viewModel.updateSearchQuery(highlightText)
+                                    viewModel.performSearch(highlightText)
+                                },
+                                onMakeNote = {
+                                    if (menuLocator != null) {
+                                        viewModel.addNoteAndEdit(menuLocator)
+                                        viewModel.hideSelectionMenu()
+                                        if (menuHighlight != null) viewModel.hideViewHighlight()
+                                    } else if (menuHighlight != null) {
+                                        viewModel.editNote(menuHighlight)
+                                        viewModel.hideViewHighlight()
+                                    }
+                                },
+                                onDefine = {
+                                    viewModel.lookupDefinition(highlightText)
+                                    if (menuLocator != null) viewModel.hideSelectionMenu()
+                                    if (menuHighlight != null) viewModel.hideViewHighlight()
+                                },
+                                onDelete = {
+                                    if (menuHighlight != null) {
+                                        viewModel.deleteNote(menuHighlight.id)
+                                        viewModel.hideViewHighlight()
+                                    }
+                                },
+                                onColorSelected = { colorInt ->
+                                    if (menuLocator != null) {
+                                        viewModel.addHighlight(menuLocator, colorInt)
+                                        viewModel.hideSelectionMenu()
+                                        if (menuHighlight != null) viewModel.hideViewHighlight()
+                                    } else if (menuHighlight != null) {
+                                        viewModel.updateNote(menuHighlight.copy(color = colorInt))
+                                        viewModel.hideViewHighlight()
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
         }
 
-        // Reader Bottom Sheet
+        // Reader Bottom Sheet (TOC)
         if (uiState.showToc) {
             val bookmarks by viewModel.bookmarks.collectAsStateWithLifecycle()
             val notes by viewModel.allNotesAndHighlights.collectAsStateWithLifecycle()
@@ -202,7 +272,7 @@ fun ReaderOverlay(
                         viewModel.toggleControls()
                     },
                     onBookmarkClick = { locator ->
-                        onSeekToProgression(locator.locations.totalProgression ?: 0.0) // Or we could add a direct navigate to locator callback
+                        onSeekToProgression(locator.locations.totalProgression ?: 0.0)
                         viewModel.hideToc()
                         viewModel.toggleControls()
                     },
@@ -225,9 +295,7 @@ fun ReaderOverlay(
             }
         }
 
-
-        // Settings Bottom Sheet — wrapped in its own theme that honours the UI
-        // themeMode/colorPalette setting, independent of the reader theme.
+        // Settings Bottom Sheet
         if (uiState.showSettings) {
             AppTheme(
                 darkTheme = uiDarkTheme,
@@ -247,8 +315,7 @@ fun ReaderOverlay(
             }
         }
 
-
-        // ── Full-screen search overlay ─────────────────────────────────────────
+        // Full-screen search overlay
         AnimatedVisibility(
             visible = uiState.showSearch,
             enter = slideInVertically(animationSpec = tween(280)) { it } + fadeIn(tween(200)),
@@ -268,173 +335,6 @@ fun ReaderOverlay(
                     onResultClick = { index -> viewModel.selectSearchResult(index) },
                     onClose = { viewModel.hideSearch() }
                 )
-            }
-        }
-
-
-        // Selection & Highlight Bottom Action Bar
-        val menuLocator = uiState.selectionLocator
-        val menuHighlight = uiState.viewingHighlight
-        val showActionBar = menuLocator != null || menuHighlight != null
-        
-        AnimatedVisibility(
-            visible = showActionBar,
-            enter = slideInVertically(initialOffsetY = { 40 }, animationSpec = tween(250)) + fadeIn(animationSpec = tween(250)),
-            exit = slideOutVertically(targetOffsetY = { 40 }, animationSpec = tween(250)) + fadeOut(animationSpec = tween(250)),
-            modifier = Modifier.align(Alignment.BottomCenter)
-        ) {
-            val highlightText = try {
-                org.readium.r2.shared.publication.Locator.fromJSON(org.json.JSONObject(
-                    menuHighlight?.locatorJson ?: menuLocator?.toJSON()?.toString() ?: ""
-                ))?.text?.highlight ?: ""
-            } catch (_: Exception) { "" }
-
-            val context = androidx.compose.ui.platform.LocalContext.current
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, readerBgColor),
-                            startY = 0f
-                        )
-                    )
-                    .padding(WindowInsets.navigationBars.asPaddingValues())
-                    .padding(horizontal = 24.dp)
-                    .padding(top = 8.dp, bottom = 4.dp)
-            ) {
-                androidx.compose.foundation.layout.Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Left side: Action Icons
-                    androidx.compose.foundation.layout.Row(
-                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(0.dp)
-                    ) {
-                        androidx.compose.material3.IconButton(
-                            onClick = {
-                                val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                val clip = android.content.ClipData.newPlainText("highlight", highlightText)
-                                clipboard.setPrimaryClip(clip)
-                                if (menuLocator != null) viewModel.hideSelectionMenu()
-                                if (menuHighlight != null) viewModel.hideViewHighlight()
-                            },
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Icon(MaterialSymbols.Outlined.Content_copy, contentDescription = "Copy",
-                                tint = readerTextColor, modifier = Modifier.size(20.dp))
-                        }
-                        androidx.compose.material3.IconButton(
-                            onClick = {
-                                if (menuLocator != null) viewModel.hideSelectionMenu()
-                                if (menuHighlight != null) viewModel.hideViewHighlight()
-                                viewModel.showSearch()
-                                viewModel.updateSearchQuery(highlightText)
-                                viewModel.performSearch(highlightText)
-                            },
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Icon(MaterialSymbols.Outlined.Search, contentDescription = "Search",
-                                tint = readerTextColor, modifier = Modifier.size(20.dp))
-                        }
-                        androidx.compose.material3.IconButton(
-                            onClick = {
-                                if (menuLocator != null) {
-                                    viewModel.addNoteAndEdit(menuLocator)
-                                    viewModel.hideSelectionMenu()
-                                    if (menuHighlight != null) viewModel.hideViewHighlight()
-                                } else if (menuHighlight != null) {
-                                    viewModel.editNote(menuHighlight)
-                                    viewModel.hideViewHighlight()
-                                }
-                            },
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Icon(MaterialSymbols.Outlined.Edit, contentDescription = "Make Note",
-                                tint = readerTextColor, modifier = Modifier.size(20.dp))
-                        }
-                        androidx.compose.material3.IconButton(
-                            onClick = {
-                                viewModel.lookupDefinition(highlightText)
-                                if (menuLocator != null) viewModel.hideSelectionMenu()
-                                if (menuHighlight != null) viewModel.hideViewHighlight()
-                            },
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Icon(MaterialSymbols.Outlined.Auto_stories, contentDescription = "Define",
-                                tint = readerTextColor, modifier = Modifier.size(20.dp))
-                        }
-                        if (menuHighlight != null && menuLocator == null) {
-                            androidx.compose.material3.IconButton(
-                                onClick = {
-                                    viewModel.deleteNote(menuHighlight.id)
-                                    viewModel.hideViewHighlight()
-                                },
-                                modifier = Modifier.size(40.dp)
-                            ) {
-                                Icon(MaterialSymbols.Outlined.Delete, contentDescription = "Delete",
-                                    tint = readerTextColor, modifier = Modifier.size(20.dp))
-                            }
-                        }
-                    }
-
-                    // Right side: Color Swatches and Close
-                    androidx.compose.foundation.layout.Row(
-                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)
-                        ) {
-                            val swatches = listOf(
-                                "#40fac02e".toColorInt(), // Yellow
-                                "#40fd7142".toColorInt(), // Orange
-                                "#408bc24a".toColorInt(), // Green
-                                "#4025c6da".toColorInt()  // Blue
-                            )
-                            swatches.forEach { colorInt ->
-                                val isSelected = menuHighlight?.color == colorInt
-                                Box(
-                                    modifier = Modifier
-                                        .size(24.dp)
-                                        .background(
-                                            color = Color(colorInt).copy(alpha = 1f),
-                                            shape = androidx.compose.foundation.shape.CircleShape
-                                        )
-                                        .border(
-                                            width = if (isSelected) 2.dp else 0.dp,
-                                            color = if (isSelected) readerTextColor else Color.Transparent,
-                                            shape = androidx.compose.foundation.shape.CircleShape
-                                        )
-                                        .clickable { 
-                                            if (menuLocator != null) {
-                                                viewModel.addHighlight(menuLocator, colorInt)
-                                                viewModel.hideSelectionMenu()
-                                                if (menuHighlight != null) viewModel.hideViewHighlight()
-                                            } else if (menuHighlight != null) {
-                                                viewModel.updateNote(menuHighlight.copy(color = colorInt))
-                                                viewModel.hideViewHighlight()
-                                            }
-                                        }
-                                )
-                            }
-                        }
-
-                        // Close (X)
-                        androidx.compose.material3.IconButton(
-                            onClick = {
-                                if (menuLocator != null) viewModel.hideSelectionMenu()
-                                if (menuHighlight != null) viewModel.hideViewHighlight()
-                            },
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Icon(MaterialSymbols.Outlined.Close, contentDescription = "Close",
-                                tint = readerTextColor, modifier = Modifier.size(20.dp))
-                        }
-                    }
-                }
             }
         }
 
@@ -459,52 +359,66 @@ fun ReaderOverlay(
                 darkTheme = uiDarkTheme,
                 colorPalette = settings.colorPalette
             ) {
-                ModalBottomSheet(
-                    onDismissRequest = { viewModel.hideDefinition() },
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp)
-                            .padding(top = 8.dp, bottom = 24.dp)
-                    ) {
-                        // Word heading
-                        Text(
-                            text = uiState.definitionWord,
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
+                ReaderDefinitionBottomSheet(
+                    definitionResults = uiState.definitionResults,
+                    onDismiss = { viewModel.hideDefinition() }
+                )
+            }
+        }
+    }
+}
 
-                        if (uiState.definitionResults.isEmpty()) {
-                            Text(
-                                text = "No definition found.",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ReaderDefinitionBottomSheet(
+    definitionResults: List<DictionaryEntry>,
+    onDismiss: () -> Unit
+) {
+    val configuration = LocalConfiguration.current
+    val maxSheetHeight = configuration.screenHeightDp.dp * 0.6f
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = maxSheetHeight)
+                .padding(horizontal = 24.dp)
+                .padding(top = 8.dp, bottom = 24.dp)
+        ) {
+            if (definitionResults.isEmpty()) {
+                Text(
+                    text = "No definition found.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                val scrollState = rememberScrollState()
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f, fill = false)
+                        .verticalScroll(scrollState)
+                ) {
+                    definitionResults.forEachIndexed { index, result ->
+                        Text(
+                            text = result.word,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+
+                        val htmlContent = DictionaryFormatter.prepareHtml(result.definition)
+                        DefinitionWebView(
+                            htmlContent = htmlContent,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        // Divider between multiple results
+                        if (index < definitionResults.size - 1) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant
                             )
-                        } else {
-                            val scrollState = rememberScrollState()
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f, fill = false)
-                                    .verticalScroll(scrollState)
-                            ) {
-                                uiState.definitionResults.forEachIndexed { index, result ->
-                                    val htmlContent = DictionaryFormatter.prepareHtml(result.definition)
-                                    DefinitionWebView(
-                                        htmlContent = htmlContent,
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                    // Divider between multiple results
-                                    if (index < uiState.definitionResults.size - 1) {
-                                        HorizontalDivider(
-                                            modifier = Modifier.padding(vertical = 12.dp),
-                                            color = MaterialTheme.colorScheme.outlineVariant
-                                        )
-                                    }
-                                }
-                            }
                         }
                     }
                 }

@@ -126,7 +126,11 @@ fun DictionariesScreen(
         }
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            if (installedDictionaries.isEmpty() && importState !is ImportState.Loading) {
+            val isLoadingImport = importState is ImportState.Loading
+            val isLoadingRestore = restoreState is ImportState.Loading
+            val totalCount = installedDictionaries.size + (if (isLoadingImport) 1 else 0) + (if (isLoadingRestore) 1 else 0)
+
+            if (totalCount == 0) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.Center,
@@ -161,7 +165,7 @@ fun DictionariesScreen(
                             selected = false,
                             onClick = { },
                             index = index,
-                            count = installedDictionaries.size,
+                            count = totalCount,
                             content = { Text(dict.name) },
                             supportingContent = { Text("${dict.wordCount} words") },
                             trailingContent = {
@@ -191,6 +195,43 @@ fun DictionariesScreen(
                                 }
                             }
                         )
+                    }
+
+                    if (isLoadingImport) {
+                        item {
+                            val loadingState = importState as ImportState.Loading
+                            SegmentedListItem(
+                                selected = false,
+                                onClick = { },
+                                index = installedDictionaries.size,
+                                count = totalCount,
+                                content = { Text("Installing Dictionary...") },
+                                supportingContent = {
+                                    LinearProgressIndicator(
+                                        progress = { loadingState.progress / 100f },
+                                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                                    )
+                                },
+                                trailingContent = { Text("${loadingState.progress}%") }
+                            )
+                        }
+                    }
+
+                    if (isLoadingRestore) {
+                        item {
+                            SegmentedListItem(
+                                selected = false,
+                                onClick = { },
+                                index = installedDictionaries.size + (if (isLoadingImport) 1 else 0),
+                                count = totalCount,
+                                content = { Text("Restoring Dictionaries...") },
+                                supportingContent = {
+                                    LinearProgressIndicator(
+                                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                                    )
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -250,45 +291,6 @@ fun DictionariesScreen(
                 )
             }
 
-            if (importState is ImportState.Loading) {
-                val loadingState = importState as ImportState.Loading
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        CircularProgressIndicator(
-                            progress = { loadingState.progress / 100f },
-                            modifier = Modifier.size(64.dp),
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text("Installing Dictionary... ${loadingState.progress}%")
-                    }
-                }
-            }
-            
-            if (restoreState is ImportState.Loading) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(64.dp),
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text("Restoring Dictionaries...")
-                    }
-                }
-            }
         }
     }
 }
