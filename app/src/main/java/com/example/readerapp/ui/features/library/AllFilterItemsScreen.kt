@@ -24,7 +24,7 @@ import com.example.readerapp.ui.features.library.components.FilterItemSortBottom
 import com.example.readerapp.ui.features.library.components.FilterItemSortType
 import com.example.readerapp.ui.features.library.components.RenameFilterDialog
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AllFilterItemsScreen(
     filterType: String, // "author" or "tag"
@@ -90,7 +90,7 @@ fun AllFilterItemsScreen(
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            LargeFlexibleTopAppBar(
                 title = { Text(if (filterType == "author") "Authors" else "Tags") },
                 navigationIcon = {
                     FilledTonalIconButton(
@@ -106,9 +106,9 @@ fun AllFilterItemsScreen(
                         Icon(MaterialSymbols.Outlined.Tune, contentDescription = "Sort")
                     }
                 },
-                colors = TopAppBarDefaults.largeTopAppBarColors(
+                colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
                 ),
                 scrollBehavior = scrollBehavior
             )

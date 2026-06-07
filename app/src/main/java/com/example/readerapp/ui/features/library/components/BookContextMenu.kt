@@ -30,7 +30,7 @@ enum class MenuState {
     AddToShelf
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun BookContextMenu(
     viewModel: LibraryViewModel,
@@ -158,19 +158,29 @@ fun BookContextMenu(
     } else if (menuState == MenuState.AddToShelf) {
         androidx.compose.ui.window.Dialog(
             onDismissRequest = onDismiss,
-            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+            properties = androidx.compose.ui.window.DialogProperties(
+                usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = false
+            )
         ) {
             Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                 Scaffold(
                     topBar = {
-                        @OptIn(ExperimentalMaterial3Api::class)
                         TopAppBar(
                             title = { Text("Select Shelf") },
                             navigationIcon = {
-                                IconButton(onClick = { menuState = MenuState.Main }) {
+                                FilledTonalIconButton(
+                                    shapes = IconButtonDefaults.shapes(),
+                                    colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                                    onClick = { menuState = MenuState.Main }
+                                ) {
                                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                                }
                             }
+                            },
+                            colors = TopAppBarDefaults.topAppBarColors(
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                scrolledContainerColor = MaterialTheme.colorScheme.surface,
+                            ),
                         )
                     },
                     floatingActionButton = {

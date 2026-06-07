@@ -49,41 +49,43 @@ class BackupRepository(private val context: Context) {
         try {
             val database = (context.applicationContext as ReaderApplication).database
             
-            // 1. Fetch all data synchronously
-            val books = database.bookDao().getAllBooksSync()
-            
-            // Safety Guard: Never backup an empty library
-            if (books.isEmpty()) {
-                return@withContext false
-            }
-
             // If not forced, check if changes were made since last backup
             if (!force && lastModified <= lastBackupTime) {
                 return@withContext true // Skip backup, but consider it "successful"
             }
 
-            val bookmarks = database.bookmarkDao().getAllBookmarksSync()
-            val shelves = database.shelfDao().getAllShelvesSync()
-            val crossRefs = database.shelfDao().getAllShelfBookCrossRefsSync()
-            val notes = database.noteDao().getAllNotesSync()
-            
-            val authors = database.bookDao().getAllAuthorsSync()
-            val tags = database.bookDao().getAllTagsSync()
-            val bookAuthorCrossRefs = database.bookDao().getAllBookAuthorCrossRefsSync()
-            val bookTagCrossRefs = database.bookDao().getAllBookTagCrossRefsSync()
-            
-            val payload = BackupPayload(
-                version = 1,
-                books = books,
-                bookmarks = bookmarks,
-                shelves = shelves,
-                shelfBookCrossRefs = crossRefs,
-                notes = notes,
-                authors = authors,
-                tags = tags,
-                bookAuthorCrossRefs = bookAuthorCrossRefs,
-                bookTagCrossRefs = bookTagCrossRefs
-            )
+            // 1. Fetch all data synchronously in an atomic transaction
+            val payload = database.withTransaction {
+                val books = database.bookDao().getAllBooksSync()
+                
+                // Safety Guard: Never backup an empty library
+                if (books.isEmpty()) {
+                    return@withTransaction null
+                }
+
+                val bookmarks = database.bookmarkDao().getAllBookmarksSync()
+                val shelves = database.shelfDao().getAllShelvesSync()
+                val crossRefs = database.shelfDao().getAllShelfBookCrossRefsSync()
+                val notes = database.noteDao().getAllNotesSync()
+                
+                val authors = database.bookDao().getAllAuthorsSync()
+                val tags = database.bookDao().getAllTagsSync()
+                val bookAuthorCrossRefs = database.bookDao().getAllBookAuthorCrossRefsSync()
+                val bookTagCrossRefs = database.bookDao().getAllBookTagCrossRefsSync()
+                
+                BackupPayload(
+                    version = 1,
+                    books = books,
+                    bookmarks = bookmarks,
+                    shelves = shelves,
+                    shelfBookCrossRefs = crossRefs,
+                    notes = notes,
+                    authors = authors,
+                    tags = tags,
+                    bookAuthorCrossRefs = bookAuthorCrossRefs,
+                    bookTagCrossRefs = bookTagCrossRefs
+                )
+            } ?: return@withContext false
             
             val jsonString = json.encodeToString(payload)
             

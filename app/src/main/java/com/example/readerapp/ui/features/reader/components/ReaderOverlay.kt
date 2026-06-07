@@ -104,7 +104,7 @@ fun ReaderOverlay(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         }
 
@@ -175,7 +175,7 @@ fun ReaderOverlay(
 
             AppTheme(
                 darkTheme = uiDarkTheme,
-                dynamicColor = settings.colorPalette == "Dynamic"
+                colorPalette = settings.colorPalette
             ) {
                 ReaderBottomSheet(
                     tableOfContents = viewModel.tableOfContents,
@@ -219,7 +219,7 @@ fun ReaderOverlay(
         if (uiState.showSettings) {
             AppTheme(
                 darkTheme = uiDarkTheme,
-                dynamicColor = settings.colorPalette == "Dynamic"
+                colorPalette = settings.colorPalette
             ) {
                 ModalBottomSheet(
                     onDismissRequest = { viewModel.hideSettings() },
@@ -244,7 +244,7 @@ fun ReaderOverlay(
         ) {
             AppTheme(
                 darkTheme = uiDarkTheme,
-                dynamicColor = settings.colorPalette == "Dynamic"
+                colorPalette = settings.colorPalette
             ) {
                 SearchScreen(
                     query = uiState.searchQuery,
@@ -419,7 +419,7 @@ fun ReaderOverlay(
         uiState.editingNote?.let { note ->
             AppTheme(
                 darkTheme = uiDarkTheme,
-                dynamicColor = settings.colorPalette == "Dynamic"
+                colorPalette = settings.colorPalette
             ) {
                 NoteBottomSheet(
                     note = note,

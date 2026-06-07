@@ -50,13 +50,23 @@ fun SegmentedListItem(
         targetValue = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer,
         label = "color"
     )
+    val contentColor by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface,
+        label = "contentColor"
+    )
 
     ListItem(
         headlineContent = content,
         supportingContent = supportingContent,
         leadingContent = leadingContent,
         trailingContent = trailingContent,
-        colors = ListItemDefaults.colors(containerColor = containerColor),
+        colors = ListItemDefaults.colors(
+            containerColor = containerColor,
+            headlineColor = contentColor,
+            supportingColor = contentColor,
+            leadingIconColor = contentColor,
+            trailingIconColor = contentColor
+        ),
         modifier = Modifier
             .fillMaxWidth()
             .clip(shape)

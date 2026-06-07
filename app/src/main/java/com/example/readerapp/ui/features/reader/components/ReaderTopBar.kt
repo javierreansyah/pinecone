@@ -3,6 +3,7 @@ package com.example.readerapp.ui.features.reader.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -20,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Bookmark
@@ -64,10 +66,10 @@ fun ReaderTopBar(
                     Icon(MaterialSymbols.Outlined.Search, contentDescription = "Search")
                 }
                 IconButton(onClick = onTocClick) {
-                    Icon(MaterialSymbols.Outlined.List, contentDescription = "Table of Contents")
+                    Icon(MaterialSymbols.Outlined.List, contentDescription = "Table of Contents", modifier = Modifier.size(28.dp))
                 }
                 IconButton(onClick = onSettingsClick) {
-                    Icon(MaterialSymbols.Outlined.Match_case, contentDescription = "Typography")
+                    Icon(MaterialSymbols.Outlined.Match_case, contentDescription = "Typography", modifier = Modifier.size(28.dp))
                 }
 
                 var showMoreMenu by remember { mutableStateOf(false) }

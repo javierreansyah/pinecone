@@ -92,7 +92,7 @@ class BookInfoActivity : ComponentActivity() {
 
             AppTheme(
                 darkTheme = isDarkTheme,
-                dynamicColor = settings.colorPalette == "Dynamic"
+                colorPalette = settings.colorPalette
             ) {
                 Scaffold { innerPadding ->
                     Box(modifier = Modifier.fillMaxSize()) {
@@ -313,7 +313,7 @@ class BookInfoActivity : ComponentActivity() {
                             .padding(top = innerPadding.calculateTopPadding() + 8.dp, end = 16.dp)
                             .align(Alignment.TopEnd)
                     ) {
-                        Icon(MaterialSymbols.Outlined.Edit, contentDescription = "Edit")
+                        Icon(MaterialSymbols.Outlined.Edit, contentDescription = "Edit", modifier = Modifier.size(20.dp))
                     }
                 }
                 }

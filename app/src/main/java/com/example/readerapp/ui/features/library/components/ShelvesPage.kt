@@ -19,7 +19,7 @@ import com.example.readerapp.ui.features.library.LayoutMode
 fun ShelvesPage(
     modifier: Modifier = Modifier,
     shelves: List<ShelfWithCovers>,
-    onShelfClick: (String) -> Unit,
+    onShelfClick: (String, String, Int) -> Unit,
     onBookClick: (String) -> Unit,
     onBookLongClick: ((String, String) -> Unit)? = null,
     layoutMode: LayoutMode = LayoutMode.BigList,
@@ -42,13 +42,13 @@ fun ShelvesPage(
                     if (layoutMode == LayoutMode.List) {
                         ShelfListItem(
                             shelfWithCovers = shelfWithCovers,
-                            onClick = { onShelfClick(shelfWithCovers.shelf.id) }
+                            onClick = { onShelfClick(shelfWithCovers.shelf.id, shelfWithCovers.shelf.name, booksCount) }
                         )
                     } else {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onShelfClick(shelfWithCovers.shelf.id) }
+                                .clickable { onShelfClick(shelfWithCovers.shelf.id, shelfWithCovers.shelf.name, booksCount) }
                                 .padding(vertical = 4.dp)
                         ) {
                             // Header Column
@@ -89,18 +89,24 @@ fun ShelvesPage(
                                     )
                                 }
                             } else {
-                                LazyRow(
-                                    contentPadding = PaddingValues(horizontal = 8.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    items(visibleBooks) { bookEntity ->
-                                        val book = Book.fromEntity(bookEntity)
-                                        BookItem(
-                                            book = book,
-                                            onClick = { onBookClick(book.id) },
-                                            onLongClick = { onBookLongClick?.invoke(book.id, shelfWithCovers.shelf.id) },
-                                            modifier = Modifier.width(120.dp)
-                                        )
+                                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                                    val maxW = maxWidth
+                                    val fitsOnScreen = (120.dp * visibleBooks.size + 16.dp) <= maxW
+                                    
+                                    LazyRow(
+                                        userScrollEnabled = !fitsOnScreen,
+                                        contentPadding = PaddingValues(horizontal = 8.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        items(visibleBooks) { bookEntity ->
+                                            val book = Book.fromEntity(bookEntity)
+                                            BookItem(
+                                                book = book,
+                                                onClick = { onBookClick(book.id) },
+                                                onLongClick = { onBookLongClick?.invoke(book.id, shelfWithCovers.shelf.id) },
+                                                modifier = Modifier.width(120.dp)
+                                            )
+                                        }
                                     }
                                 }
                             }

@@ -14,6 +14,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
+import com.composables.icons.materialsymbols.outlined.Keyboard_arrow_right
 import com.example.readerapp.data.local.ReaderPreferences
 import com.example.readerapp.ui.features.settings.components.SettingsItem
 import com.example.readerapp.worker.WorkerUtils
@@ -24,6 +25,7 @@ import android.net.Uri
 import android.os.Environment
 import android.os.Build
 import android.provider.DocumentsContract
+import com.example.readerapp.ui.features.library.components.SegmentedListItem
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -79,9 +81,9 @@ fun SettingsScreen(
                         Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.largeTopAppBarColors(
+                colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
                 ),
                 scrollBehavior = scrollBehavior
             )
@@ -92,32 +94,39 @@ fun SettingsScreen(
                 .padding(innerPadding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(vertical = 16.dp)
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
                 text = "General",
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp, start = 16.dp, end = 16.dp)
+                modifier = Modifier.padding(bottom = 8.dp)
             )
 
             SettingsItem(
                 label = "Theme Mode",
                 value = settings.themeMode,
                 options = listOf("System", "Light", "Dark"),
-                onSelected = { viewModel.updateSettings(settings.copy(themeMode = it)) }
+                onSelected = { viewModel.updateSettings(settings.copy(themeMode = it)) },
+                index = 0,
+                count = 3
             )
             SettingsItem(
                 label = "Color Palette",
                 value = settings.colorPalette,
-                options = listOf("Pine", "Dynamic"),
-                onSelected = { viewModel.updateSettings(settings.copy(colorPalette = it)) }
+                options = listOf("Pine", "Neutral", "Dynamic"),
+                onSelected = { viewModel.updateSettings(settings.copy(colorPalette = it)) },
+                index = 1,
+                count = 3
             )
             SettingsItem(
                 label = "Language",
                 value = settings.locale,
                 options = listOf("System", "English", "Spanish", "French"),
-                onSelected = { viewModel.updateSettings(settings.copy(locale = it)) }
+                onSelected = { viewModel.updateSettings(settings.copy(locale = it)) },
+                index = 2,
+                count = 3
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -125,7 +134,7 @@ fun SettingsScreen(
                 text = "Backup",
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp, start = 16.dp, end = 16.dp)
+                modifier = Modifier.padding(bottom = 8.dp)
             )
 
             SettingsItem(
@@ -135,12 +144,26 @@ fun SettingsScreen(
                 onSelected = { 
                     viewModel.updateSettings(settings.copy(autoBackupFrequency = it)) 
                     WorkerUtils.scheduleBackupWork(context, it)
-                }
+                },
+                index = 0,
+                count = 2
             )
             
             // Backup Location Button
-            ListItem(
-                headlineContent = { Text("Backup Location") },
+            SegmentedListItem(
+                selected = false,
+                onClick = { 
+                    val pineconeDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "Pinecone")
+                    if (!pineconeDir.exists()) {
+                        pineconeDir.mkdirs()
+                    }
+                    val initialUri =
+                        DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Documents/Pinecone")
+                    folderPickerLauncher.launch(initialUri)
+                },
+                index = 1,
+                count = 2,
+                content = { Text("Backup Location") },
                 supportingContent = { 
                     Text(
                         if (settings.backupFolderUri.isNotEmpty()) "Selected" 
@@ -148,19 +171,11 @@ fun SettingsScreen(
                     ) 
                 },
                 trailingContent = {
-                    TextButton(onClick = { 
-                        val pineconeDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "Pinecone")
-                        if (!pineconeDir.exists()) {
-                            pineconeDir.mkdirs()
-                        }
-                        val initialUri =
-                            DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Documents/Pinecone")
-                        folderPickerLauncher.launch(initialUri)
-                    }) {
-                        Text("Select")
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
+                    Icon(
+                        imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
+                        contentDescription = null
+                    )
+                }
             )
         }
     }

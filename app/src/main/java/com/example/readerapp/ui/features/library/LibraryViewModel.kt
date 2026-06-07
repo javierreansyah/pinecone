@@ -19,7 +19,15 @@ class LibraryViewModel(
     private val prefsManager = LibraryPreferencesManager(application)
 
     private val _uiState = MutableStateFlow(LibraryUiState(
-        bookPreferences = prefsManager.getPreferences(screenKey, defaultSort = SortType.Added),
+        bookPreferences = prefsManager.getPreferences(
+            screenKey = screenKey,
+            defaultSort = when (screenKey) {
+                "shelf_detail" -> SortType.Custom
+                "library_books" -> SortType.LastRead
+                else -> SortType.Added
+            },
+            defaultAscending = if (screenKey == "shelf_detail") true else false
+        ),
         shelvesPreferences = prefsManager.getPreferences("library_shelves", defaultLayout = LayoutMode.BigList, defaultSort = SortType.Title, defaultAscending = true)
     ))
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
@@ -46,10 +54,15 @@ class LibraryViewModel(
                         SortType.LastRead -> compareBy<Book> { it.lastOpened ?: 0L }
                         SortType.Added -> compareBy<Book> { it.addedDate }
                         SortType.Progress -> compareBy<Book> { it.progress }
-                        SortType.Custom -> compareBy<Book> { 0 }
+                        SortType.Custom -> {
+                            val indexMap = books.withIndex().associate { it.value.id to it.index }
+                            compareBy<Book> { indexMap[it.id] ?: 0 }
+                        }
                     }
                     
                     val finalComparator = if (state.bookPreferences.sortType == SortType.Title) {
+                        if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
+                    } else if (state.bookPreferences.sortType == SortType.Custom) {
                         if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
                     } else {
                         val mainComp = if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
