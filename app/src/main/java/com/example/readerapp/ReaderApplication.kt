@@ -12,6 +12,7 @@ import com.example.readerapp.worker.WorkerUtils
 import com.example.readerapp.data.local.ReaderPreferences
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import com.example.readerapp.data.local.dictionary.DictionaryRepository
 
 class ReaderApplication : Application() {
 
@@ -19,6 +20,12 @@ class ReaderApplication : Application() {
         private set
 
     lateinit var bookRepository: BookRepository
+        private set
+
+    lateinit var dictionaryRepository: DictionaryRepository
+        private set
+
+    lateinit var readerPreferences: ReaderPreferences
         private set
 
     lateinit var publicationOpener: PublicationOpener
@@ -73,7 +80,13 @@ class ReaderApplication : Application() {
         )
 
         // Schedule initial backup based on preferences
-        val readerPreferences = ReaderPreferences(applicationContext)
+        readerPreferences = ReaderPreferences(applicationContext)
+        
+        dictionaryRepository = DictionaryRepository(
+            context = applicationContext,
+            preferences = readerPreferences
+        )
+
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
             val initialFrequency = readerPreferences.readerSettings.first().autoBackupFrequency
             WorkerUtils.scheduleBackupWork(applicationContext, initialFrequency)

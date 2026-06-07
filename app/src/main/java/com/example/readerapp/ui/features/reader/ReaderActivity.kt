@@ -45,7 +45,8 @@ class ReaderActivity : AppCompatActivity() {
         ReaderViewModel.Factory(
             bookId = bookId,
             repository = app.bookRepository,
-            readerPreferences = ReaderPreferences(applicationContext)
+            readerPreferences = ReaderPreferences(applicationContext),
+            dictionaryRepository = app.dictionaryRepository
         )
     }
 

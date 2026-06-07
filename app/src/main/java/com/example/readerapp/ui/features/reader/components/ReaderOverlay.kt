@@ -15,6 +15,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -39,7 +43,15 @@ import com.composables.icons.materialsymbols.outlined.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
+import com.example.readerapp.ui.features.dictionary.utils.DictionaryFormatter
+import com.example.readerapp.ui.features.dictionary.utils.DefinitionWebView
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.composables.icons.materialsymbols.outlined.Auto_stories
 import com.example.readerapp.ui.features.reader.ReaderViewModel
 import com.example.readerapp.ui.theme.AppTheme
 import org.readium.r2.shared.publication.Link
@@ -343,6 +355,17 @@ fun ReaderOverlay(
                             Icon(MaterialSymbols.Outlined.Edit, contentDescription = "Make Note",
                                 tint = readerTextColor, modifier = Modifier.size(20.dp))
                         }
+                        androidx.compose.material3.IconButton(
+                            onClick = {
+                                viewModel.lookupDefinition(highlightText)
+                                if (menuLocator != null) viewModel.hideSelectionMenu()
+                                if (menuHighlight != null) viewModel.hideViewHighlight()
+                            },
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(MaterialSymbols.Outlined.Auto_stories, contentDescription = "Define",
+                                tint = readerTextColor, modifier = Modifier.size(20.dp))
+                        }
                         if (menuHighlight != null && menuLocator == null) {
                             androidx.compose.material3.IconButton(
                                 onClick = {
@@ -427,6 +450,64 @@ fun ReaderOverlay(
                     onDeleteNote = { viewModel.deleteNote(it) },
                     onDismiss = { viewModel.hideEditNote() }
                 )
+            }
+        }
+
+        // Definition Bottom Sheet
+        if (uiState.showDefinition) {
+            AppTheme(
+                darkTheme = uiDarkTheme,
+                colorPalette = settings.colorPalette
+            ) {
+                ModalBottomSheet(
+                    onDismissRequest = { viewModel.hideDefinition() },
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp)
+                            .padding(top = 8.dp, bottom = 24.dp)
+                    ) {
+                        // Word heading
+                        Text(
+                            text = uiState.definitionWord,
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        if (uiState.definitionResults.isEmpty()) {
+                            Text(
+                                text = "No definition found.",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            val scrollState = rememberScrollState()
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f, fill = false)
+                                    .verticalScroll(scrollState)
+                            ) {
+                                uiState.definitionResults.forEachIndexed { index, result ->
+                                    val htmlContent = DictionaryFormatter.prepareHtml(result.definition)
+                                    DefinitionWebView(
+                                        htmlContent = htmlContent,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    // Divider between multiple results
+                                    if (index < uiState.definitionResults.size - 1) {
+                                        HorizontalDivider(
+                                            modifier = Modifier.padding(vertical = 12.dp),
+                                            color = MaterialTheme.colorScheme.outlineVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }

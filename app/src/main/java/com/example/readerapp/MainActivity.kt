@@ -249,6 +249,13 @@ class MainActivity : ComponentActivity() {
                                 }
                                 scope.launch { drawerState.close() }
                             },
+                            onNavigateToDictionaries = {
+                                navController.navigate(Screen.Dictionaries.route) {
+                                    popUpTo(Screen.Library.route)
+                                    launchSingleTop = true
+                                }
+                                scope.launch { drawerState.close() }
+                            },
                             onImportFilesClick = {
                                 filePickerLauncher.launch(
                                     arrayOf(
@@ -416,6 +423,17 @@ class MainActivity : ComponentActivity() {
                             onNavigateToDetail = { tagName ->
                                 navController.navigate(Screen.TagDetail.createRoute(tagName))
                             }
+                        )
+                    }
+                    composable(Screen.Dictionaries.route) {
+                        val factory = com.example.readerapp.ui.features.dictionary.DictionariesViewModel.Factory(
+                            (context.applicationContext as ReaderApplication).dictionaryRepository,
+                            readerPreferences
+                        )
+                        val dictViewModel: com.example.readerapp.ui.features.dictionary.DictionariesViewModel = androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
+                        com.example.readerapp.ui.features.dictionary.DictionariesScreen(
+                            viewModel = dictViewModel,
+                            onBack = { navController.popBackStack() }
                         )
                     }
                     }

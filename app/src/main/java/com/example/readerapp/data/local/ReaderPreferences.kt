@@ -29,6 +29,13 @@ data class CustomReaderTheme(
 )
 
 @Serializable
+data class InstalledDictionary(
+    val id: String,
+    val name: String,
+    val wordCount: Int
+)
+
+@Serializable
 data class ReaderSettings(
     // App-level settings (not Readium)
     val themeMode: String = "System",
@@ -70,7 +77,11 @@ data class ReaderSettings(
     // Backup
     val autoBackupFrequency: String = "12h",
     val lastBackupTime: Long = 0L,
-    val backupFolderUri: String = ""
+    val backupFolderUri: String = "",
+    
+    // Dictionaries
+    val activeDictionaryId: String = "",
+    val installedDictionaries: List<InstalledDictionary> = emptyList()
 ) {
     /**
      * Converts the app-level reader settings to Readium's [EpubPreferences].
@@ -201,6 +212,10 @@ class ReaderPreferences(private val context: Context) {
         val AUTO_BACKUP_FREQUENCY = stringPreferencesKey("auto_backup_frequency")
         val LAST_BACKUP_TIME = longPreferencesKey("last_backup_time")
         val BACKUP_FOLDER_URI = stringPreferencesKey("backup_folder_uri")
+
+        // Dictionaries
+        val ACTIVE_DICTIONARY_ID = stringPreferencesKey("active_dictionary_id")
+        val INSTALLED_DICTIONARIES = stringSetPreferencesKey("installed_dictionaries")
     }
 
     val readerSettings: Flow<ReaderSettings> = context.dataStore.data.map { preferences ->
@@ -252,7 +267,17 @@ class ReaderPreferences(private val context: Context) {
 
             autoBackupFrequency = preferences[AUTO_BACKUP_FREQUENCY] ?: "12h",
             lastBackupTime = preferences[LAST_BACKUP_TIME] ?: 0L,
-            backupFolderUri = preferences[BACKUP_FOLDER_URI] ?: ""
+            backupFolderUri = preferences[BACKUP_FOLDER_URI] ?: "",
+            
+            activeDictionaryId = preferences[ACTIVE_DICTIONARY_ID] ?: "",
+            installedDictionaries = preferences[INSTALLED_DICTIONARIES]?.map {
+                val parts = it.split("|")
+                if (parts.size == 3) {
+                    InstalledDictionary(parts[0], parts[1], parts[2].toIntOrNull() ?: 0)
+                } else {
+                    InstalledDictionary("", "", 0)
+                }
+            }?.filter { it.id.isNotEmpty() } ?: emptyList()
         )
     }
 
@@ -301,6 +326,11 @@ class ReaderPreferences(private val context: Context) {
             preferences[AUTO_BACKUP_FREQUENCY] = settings.autoBackupFrequency
             preferences[LAST_BACKUP_TIME] = settings.lastBackupTime
             preferences[BACKUP_FOLDER_URI] = settings.backupFolderUri
+            
+            preferences[ACTIVE_DICTIONARY_ID] = settings.activeDictionaryId
+            preferences[INSTALLED_DICTIONARIES] = settings.installedDictionaries.map {
+                "${it.id}|${it.name}|${it.wordCount}"
+            }.toSet()
         }
     }
 
