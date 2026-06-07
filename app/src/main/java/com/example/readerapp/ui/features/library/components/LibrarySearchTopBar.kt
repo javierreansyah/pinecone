@@ -40,6 +40,7 @@ import com.example.readerapp.ui.theme.spacing
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun LibrarySearchTopBar(
+    modifier: Modifier = Modifier,
     searchQuery: String,
     searchCategory: SearchCategory,
     searchResults: SearchResults,
@@ -53,7 +54,6 @@ fun LibrarySearchTopBar(
     onNavigateToTag: (String) -> Unit,
     onAuthorsHeaderClick: () -> Unit = {},
     onTagsHeaderClick: () -> Unit = {},
-    modifier: Modifier = Modifier,
     scrollBehavior: SearchBarScrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior(),
     searchBarState: SearchBarState = rememberSearchBarState()
 ) {
@@ -313,7 +313,7 @@ private fun SearchResultsContent(
                     )
                 }
                 Column(
-                    modifier = Modifier.padding(horizontal = 16.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     results.authors.chunked(2).forEach { chunk ->
@@ -360,7 +360,7 @@ private fun SearchResultsContent(
                     )
                 }
                 Column(
-                    modifier = Modifier.padding(horizontal = 16.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     results.tags.chunked(2).forEach { chunk ->
