@@ -599,7 +599,69 @@ private fun AdvancedTabContent(
     settings: ReaderSettings,
     onSettingsChange: (ReaderSettings) -> Unit
 ) {
+    var showDictionaryDialog by remember { mutableStateOf(false) }
+
     Column {
+        // Active Dictionary
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { showDictionaryDialog = true }
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Dictionary", style = MaterialTheme.typography.titleMedium)
+            val activeName = settings.installedDictionaries.find { it.id == settings.activeDictionaryId }?.name ?: "None"
+            Text(activeName, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+
+        if (showDictionaryDialog) {
+            AlertDialog(
+                onDismissRequest = { showDictionaryDialog = false },
+                title = { Text("Select Dictionary") },
+                text = {
+                    Column {
+                        if (settings.installedDictionaries.isEmpty()) {
+                            Text("No dictionaries installed. Install one from the navigation drawer.")
+                        } else {
+                            settings.installedDictionaries.forEach { dict ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            onSettingsChange(settings.copy(activeDictionaryId = dict.id))
+                                            showDictionaryDialog = false
+                                        }
+                                        .padding(vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(
+                                        selected = settings.activeDictionaryId == dict.id,
+                                        onClick = {
+                                            onSettingsChange(settings.copy(activeDictionaryId = dict.id))
+                                            showDictionaryDialog = false
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(dict.name)
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showDictionaryDialog = false }) {
+                        Text("Close")
+                    }
+                }
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        HorizontalDivider()
+        Spacer(modifier = Modifier.height(8.dp))
+
         // Vertical Scroll
         SettingsSwitchRow(
             title = "Vertical Scroll",

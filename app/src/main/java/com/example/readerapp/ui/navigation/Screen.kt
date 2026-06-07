@@ -18,4 +18,5 @@ sealed class Screen(val route: String) {
     }
     object AllAuthors : Screen("all_authors")
     object AllTags : Screen("all_tags")
+    object Dictionaries : Screen("dictionaries")
 }

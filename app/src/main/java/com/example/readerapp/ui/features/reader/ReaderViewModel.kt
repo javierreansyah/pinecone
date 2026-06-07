@@ -23,10 +23,14 @@ import org.readium.r2.shared.publication.services.search.search
 import androidx.core.graphics.toColorInt
 
 
+import com.example.readerapp.data.local.dictionary.DictionaryRepository
+import com.example.readerapp.data.local.dictionary.DictionaryEntry
+
 class ReaderViewModel(
     private val bookId: String,
     private val repository: BookRepository,
-    private val readerPreferences: ReaderPreferences
+    private val readerPreferences: ReaderPreferences,
+    private val dictionaryRepository: DictionaryRepository
 ) : ViewModel() {
 
     // Publication (opened by openBook, closed by closeBook)
@@ -41,6 +45,32 @@ class ReaderViewModel(
         private set
 
     // UI state
+    data class ReaderUiState(
+        val isLoading: Boolean = false,
+        val error: String? = null,
+        val bookTitle: String = "",
+        val currentChapter: String? = null,
+        val progression: Double = 0.0,
+        val currentPage: Int? = null,
+        val totalPages: Int? = null,
+        val showControls: Boolean = false,
+        val showToc: Boolean = false,
+        val showSettings: Boolean = false,
+        val selectionLocator: Locator? = null,
+        val editingNote: com.example.readerapp.data.local.NoteEntity? = null,
+        val viewingHighlight: com.example.readerapp.data.local.NoteEntity? = null,
+        val showSearch: Boolean = false,
+        val searchQuery: String = "",
+        val searchResults: List<SearchResultItem> = emptyList(),
+        val searchLoading: Boolean = false,
+        val searchPerformed: Boolean = false,
+        val isInSearchNavigationMode: Boolean = false,
+        val activeSearchIndex: Int? = null,
+        val showDefinition: Boolean = false,
+        val definitionWord: String = "",
+        val definitionResults: List<DictionaryEntry> = emptyList()
+    )
+
     private val _uiState = MutableStateFlow(ReaderUiState())
     val uiState: StateFlow<ReaderUiState> = _uiState.asStateFlow()
 
@@ -349,6 +379,21 @@ class ReaderViewModel(
         _uiState.update { it.copy(viewingHighlight = null) }
     }
 
+    fun lookupDefinition(word: String) {
+        val cleanWord = word.trim().replace(Regex("[^\\w\\s-]"), "")
+        if (cleanWord.isBlank()) return
+        
+        viewModelScope.launch {
+            val activeDictId = readerPreferences.readerSettings.first().activeDictionaryId
+            val results = dictionaryRepository.lookupWord(activeDictId, cleanWord)
+            _uiState.update { it.copy(showDefinition = true, definitionWord = cleanWord, definitionResults = results) }
+        }
+    }
+    
+    fun hideDefinition() {
+        _uiState.update { it.copy(showDefinition = false) }
+    }
+
     fun showToc() {
         _uiState.update { it.copy(showToc = true) }
     }
@@ -497,11 +542,12 @@ class ReaderViewModel(
     class Factory(
         private val bookId: String,
         private val repository: BookRepository,
-        private val readerPreferences: ReaderPreferences
+        private val readerPreferences: ReaderPreferences,
+        private val dictionaryRepository: DictionaryRepository
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return ReaderViewModel(bookId, repository, readerPreferences) as T
+            return ReaderViewModel(bookId, repository, readerPreferences, dictionaryRepository) as T
         }
     }
 }

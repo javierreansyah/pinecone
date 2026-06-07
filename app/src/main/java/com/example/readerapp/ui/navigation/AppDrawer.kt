@@ -35,6 +35,7 @@ import com.composables.icons.materialsymbols.outlined.Archive
 import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Settings
 import com.composables.icons.materialsymbols.outlined.Upload
+import com.composables.icons.materialsymbols.outlined.Book
 import com.example.readerapp.R
 import com.example.readerapp.data.local.ReaderSettings
 import com.example.readerapp.data.repository.BackupRepository
@@ -50,7 +51,8 @@ fun AppDrawer(
     onImportFilesClick: () -> Unit,
     onScanFolderClick: () -> Unit,
     onBackupFolderSetupClick: () -> Unit,
-    onRestoreBackupClick: () -> Unit
+    onRestoreBackupClick: () -> Unit,
+    onNavigateToDictionaries: () -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -182,6 +184,14 @@ fun AppDrawer(
             icon = { Icon(MaterialSymbols.Outlined.Settings, contentDescription = null) },
             selected = false,
             onClick = { onNavigateToSettings() },
+            shape = RectangleShape
+        )
+
+        NavigationDrawerItem(
+            label = { Text("Dictionaries") },
+            icon = { Icon(MaterialSymbols.Outlined.Book, contentDescription = null) },
+            selected = false,
+            onClick = { onNavigateToDictionaries() },
             shape = RectangleShape
         )
         }
