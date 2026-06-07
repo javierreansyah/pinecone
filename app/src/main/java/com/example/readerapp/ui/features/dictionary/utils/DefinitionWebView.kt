@@ -25,7 +25,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 fun DefinitionWebView(
     htmlContent: String,
     modifier: Modifier = Modifier,
-    baseFontSize: TextUnit = MaterialTheme.typography.bodyLarge.fontSize
+    baseFontSize: TextUnit = MaterialTheme.typography.bodyMedium.fontSize
 ) {
     val colorScheme = MaterialTheme.colorScheme
 

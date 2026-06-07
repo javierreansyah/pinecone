@@ -95,17 +95,25 @@ class DictionaryRepository(
         val db = DictionaryDatabase.getDatabase(context, dictionaryId)
         val dao = db.dictionaryDao()
         
-        // Exact match first
-        var results = dao.getDefinitions(word)
+        val results = mutableListOf<DictionaryEntry>()
         
-        // If not found, try partial/prefix (optional)
-        if (results.isEmpty()) {
-            results = dao.getPrefixDefinitions(word)
+        // Exact match
+        results.addAll(dao.getDefinitions(word))
+        
+        // Synonyms
+        val synonyms = dao.getSynonyms(word)
+        for (syn in synonyms) {
+            val baseEntries = dao.getDefinitionsByIndex(syn.originalWordIndex)
+            results.addAll(baseEntries)
         }
         
-        // Close DB? Wait, Room handles caching connections, closing every time might be slow.
-        // It's better to keep it open or let Room manage it. For isolated queries, it's fine.
-        return results
+        // If not found, try partial/prefix
+        if (results.isEmpty()) {
+            results.addAll(dao.getPrefixDefinitions(word))
+        }
+        
+        // Return distinct definitions to avoid duplicates
+        return results.distinctBy { it.definition }
     }
     
     suspend fun deleteDictionary(dictionaryId: String) {

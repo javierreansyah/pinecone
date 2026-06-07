@@ -25,6 +25,9 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.whenResumed
 import com.example.readerapp.ui.components.rememberVoiceSearchLauncher
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
@@ -87,14 +90,45 @@ fun LibrarySearchTopBar(
         onSearchQueryChange(textFieldState.text.toString())
     }
 
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Detect if we are returning from the back stack with the search bar already expanded
+    val wasRestoredExpanded = remember { searchBarState.currentValue == SearchBarValue.Expanded }
+    var hasHandledRestoredExpansion by remember { mutableStateOf(false) }
+
     LaunchedEffect(searchBarState.currentValue) {
         if (searchBarState.currentValue == SearchBarValue.Collapsed) {
             focusManager.clearFocus()
+            keyboardController?.hide()
             if (textFieldState.text.isNotEmpty()) {
                 textFieldState.edit { replace(0, length, "") }
             }
         } else if (searchBarState.currentValue == SearchBarValue.Expanded) {
-            focusRequester.requestFocus()
+            if (wasRestoredExpanded && !hasHandledRestoredExpansion) {
+                // Returning from back stack: do NOT request focus or show keyboard.
+                // Just mark it handled so manual expansions later will still show the keyboard.
+                hasHandledRestoredExpansion = true
+                
+                // Forcefully clear focus immediately so it doesn't try to consume stale IME padding.
+                focusManager.clearFocus()
+                keyboardController?.hide()
+            } else {
+                lifecycleOwner.lifecycle.whenResumed {
+                    focusRequester.requestFocus()
+                    keyboardController?.show()
+                }
+            }
+        }
+    }
+
+    // Collapse search bar when navigating away to prevent stale keyboard/IME padding state
+    DisposableEffect(Unit) {
+        onDispose {
+            if (searchBarState.currentValue == SearchBarValue.Expanded) {
+                focusManager.clearFocus()
+                keyboardController?.hide()
+            }
         }
     }
 
@@ -232,6 +266,14 @@ private fun SearchResultsContent(
     onAuthorsHeaderClick: () -> Unit,
     onTagsHeaderClick: () -> Unit
 ) {
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    val keyboardController = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+
+    val handleAction = { action: () -> Unit ->
+        focusManager.clearFocus()
+        keyboardController?.hide()
+        action()
+    }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 16.dp),
@@ -250,7 +292,7 @@ private fun SearchResultsContent(
                     items(results.books) { book ->
                         BookItem(
                             book = book,
-                            onClick = { onBookClick(book) },
+                            onClick = { handleAction { onBookClick(book) } },
                             modifier = Modifier.width(120.dp)
                         )
                     }
@@ -278,7 +320,7 @@ private fun SearchResultsContent(
                                 SearchFilterItem(
                                     text = shelf.name,
                                     icon = MaterialSymbols.Outlined.Folder,
-                                    onClick = { onShelfClick(shelf) },
+                                    onClick = { handleAction { onShelfClick(shelf) } },
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -296,7 +338,7 @@ private fun SearchResultsContent(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onAuthorsHeaderClick() }
+                        .clickable { handleAction { onAuthorsHeaderClick() } }
                         .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 10.dp),
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -325,7 +367,7 @@ private fun SearchResultsContent(
                                 SearchFilterItem(
                                     text = author,
                                     icon = MaterialSymbols.Outlined.Person,
-                                    onClick = { onAuthorClick(author) },
+                                    onClick = { handleAction { onAuthorClick(author) } },
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -343,7 +385,7 @@ private fun SearchResultsContent(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onTagsHeaderClick() }
+                        .clickable { handleAction { onTagsHeaderClick() } }
                         .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 10.dp),
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -372,7 +414,7 @@ private fun SearchResultsContent(
                                 SearchFilterItem(
                                     text = tag,
                                     icon = MaterialSymbols.Outlined.Label,
-                                    onClick = { onTagClick(tag) },
+                                    onClick = { handleAction { onTagClick(tag) } },
                                     modifier = Modifier.weight(1f)
                                 )
                             }
