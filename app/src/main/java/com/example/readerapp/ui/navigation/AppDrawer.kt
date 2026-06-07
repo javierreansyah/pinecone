@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DriveFolderUpload
 import androidx.compose.material.icons.outlined.Restore
@@ -54,6 +56,7 @@ fun AppDrawer(
     val scope = rememberCoroutineScope()
 
     ModalDrawerSheet {
+        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -181,5 +184,6 @@ fun AppDrawer(
             onClick = { onNavigateToSettings() },
             shape = RectangleShape
         )
+        }
     }
 }

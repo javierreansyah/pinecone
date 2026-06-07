@@ -32,8 +32,12 @@ import com.example.readerapp.data.local.ShelfBookCrossRefEntity
 import com.example.readerapp.data.local.NoteDao
 import com.example.readerapp.data.local.NoteEntity
 
+import com.example.readerapp.data.local.AppDatabase
+import androidx.room.withTransaction
+
 class BookRepository(
     private val context: Context,
+    private val database: AppDatabase,
     private val bookDao: BookDao,
     private val bookmarkDao: BookmarkDao,
     private val shelfDao: ShelfDao,
@@ -91,24 +95,26 @@ class BookRepository(
             }
 
             val entity = createBookEntity(bookId, finalFile, publication, mediaType?.toString())
-            bookDao.insert(entity)
+            database.withTransaction {
+                bookDao.insert(entity)
 
-            val authors = publication.metadata.authors.map { it.name }
-            authors.forEach { authorName ->
-                var authorId = bookDao.insertAuthor(AuthorEntity(name = authorName))
-                if (authorId == -1L) {
-                    authorId = bookDao.getAuthorByName(authorName)?.id ?: return@forEach
+                val authors = publication.metadata.authors.map { it.name }
+                authors.forEach { authorName ->
+                    var authorId = bookDao.insertAuthor(AuthorEntity(name = authorName))
+                    if (authorId == -1L) {
+                        authorId = bookDao.getAuthorByName(authorName)?.id ?: return@forEach
+                    }
+                    bookDao.insertBookAuthorCrossRef(BookAuthorCrossRef(bookId, authorId))
                 }
-                bookDao.insertBookAuthorCrossRef(BookAuthorCrossRef(bookId, authorId))
-            }
 
-            val tags = publication.metadata.subjects.map { it.name }
-            tags.forEach { tagName ->
-                var tagId = bookDao.insertTag(TagEntity(name = tagName))
-                if (tagId == -1L) {
-                    tagId = bookDao.getTagByName(tagName)?.id ?: return@forEach
+                val tags = publication.metadata.subjects.map { it.name }
+                tags.forEach { tagName ->
+                    var tagId = bookDao.insertTag(TagEntity(name = tagName))
+                    if (tagId == -1L) {
+                        tagId = bookDao.getTagByName(tagName)?.id ?: return@forEach
+                    }
+                    bookDao.insertBookTagCrossRef(BookTagCrossRef(bookId, tagId))
                 }
-                bookDao.insertBookTagCrossRef(BookTagCrossRef(bookId, tagId))
             }
 
             publication.close()
@@ -172,16 +178,14 @@ class BookRepository(
         File(book.filePath).delete()
         // Delete cover
         book.coverPath?.let { File(it).delete() }
-        // Delete bookmarks and notes
-        bookmarkDao.deleteAllForBook(bookId)
-        noteDao.deleteAllForBook(bookId)
-        // Delete from DB
-        bookDao.delete(book)
-        
-        // Cleanup orphans
-        bookDao.deleteOrphanAuthors()
-        bookDao.deleteOrphanTags()
-        shelfDao.deleteOrphanShelves()
+        // Delete from DB in a transaction
+        database.withTransaction {
+            bookDao.delete(book)
+            // Cleanup orphans
+            bookDao.deleteOrphanAuthors()
+            bookDao.deleteOrphanTags()
+            shelfDao.deleteOrphanShelves()
+        }
     }
 
     // --- Update Metadata ---
@@ -217,34 +221,36 @@ class BookRepository(
             }
         }
         
-        bookDao.update(
-            book.copy(
-                title = title,
-                description = description,
-                coverPath = newCoverPath
+        database.withTransaction {
+            bookDao.update(
+                book.copy(
+                    title = title,
+                    description = description,
+                    coverPath = newCoverPath
+                )
             )
-        )
-        
-        bookDao.deleteBookAuthorCrossRefs(bookId)
-        authors.forEach { authorName ->
-            var authorId = bookDao.insertAuthor(AuthorEntity(name = authorName.trim()))
-            if (authorId == -1L) {
-                authorId = bookDao.getAuthorByName(authorName.trim())?.id ?: return@forEach
+            
+            bookDao.deleteBookAuthorCrossRefs(bookId)
+            authors.forEach { authorName ->
+                var authorId = bookDao.insertAuthor(AuthorEntity(name = authorName.trim()))
+                if (authorId == -1L) {
+                    authorId = bookDao.getAuthorByName(authorName.trim())?.id ?: return@forEach
+                }
+                bookDao.insertBookAuthorCrossRef(BookAuthorCrossRef(bookId, authorId))
             }
-            bookDao.insertBookAuthorCrossRef(BookAuthorCrossRef(bookId, authorId))
-        }
-        
-        bookDao.deleteBookTagCrossRefs(bookId)
-        tags.forEach { tagName ->
-            var tagId = bookDao.insertTag(TagEntity(name = tagName.trim()))
-            if (tagId == -1L) {
-                tagId = bookDao.getTagByName(tagName.trim())?.id ?: return@forEach
+            
+            bookDao.deleteBookTagCrossRefs(bookId)
+            tags.forEach { tagName ->
+                var tagId = bookDao.insertTag(TagEntity(name = tagName.trim()))
+                if (tagId == -1L) {
+                    tagId = bookDao.getTagByName(tagName.trim())?.id ?: return@forEach
+                }
+                bookDao.insertBookTagCrossRef(BookTagCrossRef(bookId, tagId))
             }
-            bookDao.insertBookTagCrossRef(BookTagCrossRef(bookId, tagId))
+            
+            bookDao.deleteOrphanAuthors()
+            bookDao.deleteOrphanTags()
         }
-        
-        bookDao.deleteOrphanAuthors()
-        bookDao.deleteOrphanTags()
     }
 
     fun getAllAuthors(): Flow<List<AuthorEntity>> = bookDao.getAllAuthors()

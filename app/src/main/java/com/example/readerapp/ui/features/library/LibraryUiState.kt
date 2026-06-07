@@ -20,7 +20,7 @@ data class LibraryUiState(
     val searchQuery: String = "",
     val searchCategory: SearchCategory = SearchCategory.All,
     val isImporting: Boolean = false,
-    val bookPreferences: FilterSortPreferences = FilterSortPreferences(sortType = SortType.Added),
+    val bookPreferences: FilterSortPreferences = FilterSortPreferences(sortType = SortType.LastRead),
     val shelvesPreferences: FilterSortPreferences = FilterSortPreferences(layoutMode = LayoutMode.BigList, sortType = SortType.Title, isAscending = true)
 )
 

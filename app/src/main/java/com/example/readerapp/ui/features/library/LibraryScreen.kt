@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
 fun LibraryScreen(
     onNavigateToReader: (String) -> Unit,
     onOpenDrawerClick: () -> Unit,
-    onNavigateToShelf: (String) -> Unit,
+    onNavigateToShelf: (String, String, Int) -> Unit,
     onNavigateToAuthor: (String) -> Unit = {},
     onNavigateToTag: (String) -> Unit = {},
     onNavigateToAllAuthors: () -> Unit = {},

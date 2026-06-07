@@ -48,7 +48,7 @@ fun LibrarySearchTopBar(
     onOpenDrawerClick: () -> Unit,
     onFilterClick: () -> Unit,
     onNavigateToReader: (String) -> Unit,
-    onNavigateToShelf: (String) -> Unit,
+    onNavigateToShelf: (String, String, Int) -> Unit,
     onNavigateToAuthor: (String) -> Unit,
     onNavigateToTag: (String) -> Unit,
     onAuthorsHeaderClick: () -> Unit = {},
@@ -205,7 +205,7 @@ fun LibrarySearchTopBar(
                             onNavigateToReader(book.id)
                         },
                         onShelfClick = { shelf ->
-                            onNavigateToShelf(shelf.id)
+                            onNavigateToShelf(shelf.id, shelf.name, 0)
                         },
                         onAuthorClick = { author ->
                             onNavigateToAuthor(author)

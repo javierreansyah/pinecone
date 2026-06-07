@@ -63,6 +63,7 @@ class ReaderApplication : Application() {
 
         bookRepository = BookRepository(
             context = applicationContext,
+            database = database,
             bookDao = database.bookDao(),
             bookmarkDao = database.bookmarkDao(),
             shelfDao = database.shelfDao(),

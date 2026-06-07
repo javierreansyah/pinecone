@@ -34,6 +34,8 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 @Composable
 fun ShelfDetailScreen(
     shelfId: String,
+    initialShelfName: String = "",
+    initialBookCount: Int = 0,
     onNavigateBack: () -> Unit,
     onNavigateToReader: (String) -> Unit
 ) {
@@ -75,12 +77,15 @@ fun ShelfDetailScreen(
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
+    val displayTitle = shelfWithCovers?.shelf?.name ?: if (initialShelfName.isNotEmpty()) initialShelfName else "Shelf"
+    val displayCount = shelfWithCovers?.books?.filter { !it.book.isArchived }?.size ?: initialBookCount
+
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text(shelfWithCovers?.shelf?.name ?: "Shelf") },
-                subtitle = { Text("${books.size} book${if (books.size != 1) "s" else ""}") },
+                title = { Text(displayTitle) },
+                subtitle = { Text("$displayCount book${if (displayCount != 1) "s" else ""}") },
                 navigationIcon = {
                     if (isReordering) {
                         FilledTonalIconButton(
@@ -104,6 +109,9 @@ fun ShelfDetailScreen(
                     if (isReordering) {
                         TextButton(onClick = {
                             viewModel.updateShelfOrder(shelfId, reorderBooks.map { it.id })
+                            if (uiState.bookPreferences.sortType != SortType.Custom) {
+                                viewModel.onSortTypeChange(SortType.Custom)
+                            }
                             isReordering = false
                         }) {
                             Text("Save")

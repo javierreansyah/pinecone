@@ -73,7 +73,7 @@ class EditBookActivity : ComponentActivity() {
 
             AppTheme(
                 darkTheme = isDarkTheme,
-                dynamicColor = settings.colorPalette == "Dynamic"
+                colorPalette = settings.colorPalette
             ) {
                 val viewModel: EditBookViewModel = viewModel(
                     factory = EditBookViewModel.Factory(application, bookId)
@@ -129,9 +129,11 @@ class EditBookActivity : ComponentActivity() {
                             verticalArrangement = Arrangement.spacedBy(spacing.space24),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
+                            var isImagePickerOpen by remember { mutableStateOf(false) }
                             val launcher = rememberLauncherForActivityResult(
                                 contract = ActivityResultContracts.GetContent()
                             ) { uri: Uri? ->
+                                isImagePickerOpen = false
                                 viewModel.updateCoverUri(uri)
                             }
 
@@ -143,7 +145,12 @@ class EditBookActivity : ComponentActivity() {
                                     .shadow(8.dp, RoundedCornerShape(12.dp))
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(MaterialTheme.colorScheme.surfaceVariant)
-                                    .clickable { launcher.launch("image/*") }
+                                    .clickable {
+                                        if (!isImagePickerOpen) {
+                                            isImagePickerOpen = true
+                                            launcher.launch("image/*")
+                                        }
+                                    }
                             ) {
                                 if (uiState.coverUri != null) {
                                     AsyncImage(
