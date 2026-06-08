@@ -9,7 +9,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import androidx.compose.ui.res.stringResource
 import com.example.readerapp.R
 import com.example.readerapp.data.local.ShelfWithCovers
 import com.example.readerapp.data.model.Book

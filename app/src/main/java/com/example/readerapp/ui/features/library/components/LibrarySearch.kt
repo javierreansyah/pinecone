@@ -300,7 +300,7 @@ private fun ExpandedSearchContent(
         )
         
         SegmentedButtonGroup(
-            options = SearchCategory.values().map { categoryLabels[it] ?: it.name },
+            options = SearchCategory.entries.map { categoryLabels[it] ?: it.name },
             icons = emptyList(),
             selected = categoryLabels[searchCategory] ?: searchCategory.name,
             onSelected = { selectedLabel ->
@@ -316,7 +316,6 @@ private fun ExpandedSearchContent(
         SearchResultsContent(
             searchCategory = searchCategory,
             results = searchResults,
-            onSearchCategoryChange = onSearchCategoryChange,
             onBookClick = { book -> onNavigateToReader(book.id) },
             onShelfClick = { shelf -> onNavigateToShelf(shelf.id, shelf.name, 0) },
             onAuthorClick = { author -> onNavigateToAuthor(author) },
@@ -331,7 +330,6 @@ private fun ExpandedSearchContent(
 private fun SearchResultsContent(
     searchCategory: SearchCategory,
     results: SearchResults,
-    onSearchCategoryChange: (SearchCategory) -> Unit,
     onBookClick: (Book) -> Unit,
     onShelfClick: (ShelfEntity) -> Unit,
     onAuthorClick: (String) -> Unit,
@@ -349,12 +347,12 @@ private fun SearchResultsContent(
     }
     
     val isAll = searchCategory == SearchCategory.All
-    val MAX_ITEMS_ON_ALL = 8
+    val maxItemForAll = 8
 
-    val booksToShow = if (isAll) results.books.take(MAX_ITEMS_ON_ALL) else results.books
-    val shelvesToShow = if (isAll) results.shelves.take(MAX_ITEMS_ON_ALL) else results.shelves
-    val authorsToShow = if (isAll) results.authors.take(MAX_ITEMS_ON_ALL) else results.authors
-    val tagsToShow = if (isAll) results.tags.take(MAX_ITEMS_ON_ALL) else results.tags
+    val booksToShow = if (isAll) results.books.take(maxItemForAll) else results.books
+    val shelvesToShow = if (isAll) results.shelves.take(maxItemForAll) else results.shelves
+    val authorsToShow = if (isAll) results.authors.take(maxItemForAll) else results.authors
+    val tagsToShow = if (isAll) results.tags.take(maxItemForAll) else results.tags
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),

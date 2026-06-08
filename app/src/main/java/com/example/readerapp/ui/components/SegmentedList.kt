@@ -1,3 +1,7 @@
+@file:OptIn(
+    androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class
+)
 package com.example.readerapp.ui.components
 
 import androidx.compose.animation.animateColorAsState
@@ -11,11 +15,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.Dp
@@ -118,7 +124,7 @@ class SegmentedListBuilder : SegmentedListScope {
 }
 
 @Composable
-fun SegmentedColumn(
+inline fun SegmentedColumn(
     modifier: Modifier = Modifier,
     content: @Composable SegmentedListScope.() -> Unit
 ) {
@@ -149,7 +155,7 @@ fun SegmentedColumn(
 }
 
 @Composable
-fun SegmentedLazyColumn(
+inline fun SegmentedLazyColumn(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
     content: @Composable SegmentedListScope.() -> Unit
@@ -225,21 +231,42 @@ fun SegmentedListItem(
     )
     val contentColor = if (enabled) baseContentColor else baseContentColor.copy(alpha = 0.38f)
 
-    ListItem(
-        headlineContent = content,
-        supportingContent = supportingContent,
-        leadingContent = leadingContent,
-        trailingContent = trailingContent,
-        colors = ListItemDefaults.colors(
-            containerColor = if (enabled) containerColor else containerColor.copy(alpha = 0.6f),
-            headlineColor = contentColor,
-            supportingColor = contentColor,
-            leadingIconColor = contentColor,
-            trailingIconColor = contentColor
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .let { if (onClick != null) it.clickable(enabled = enabled) { onClick() } else it }
-    )
+    if (onClick != null) {
+        ListItem(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(shape),
+            enabled = enabled,
+            leadingContent = leadingContent,
+            trailingContent = trailingContent,
+            supportingContent = supportingContent,
+            verticalAlignment = Alignment.CenterVertically,
+            colors = ListItemDefaults.colors(
+                containerColor = if (enabled) containerColor else containerColor.copy(alpha = 0.6f),
+                headlineColor = contentColor,
+                supportingColor = contentColor,
+                leadingIconColor = contentColor,
+                trailingIconColor = contentColor
+            ),
+            content = content
+        )
+    } else {
+        ListItem(
+            headlineContent = content,
+            supportingContent = supportingContent,
+            leadingContent = leadingContent,
+            trailingContent = trailingContent,
+            colors = ListItemDefaults.colors(
+                containerColor = if (enabled) containerColor else containerColor.copy(alpha = 0.6f),
+                headlineColor = contentColor,
+                supportingColor = contentColor,
+                leadingIconColor = contentColor,
+                trailingIconColor = contentColor
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(shape)
+        )
+    }
 }

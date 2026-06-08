@@ -56,8 +56,6 @@ interface DictionaryDao {
     @Query("SELECT * FROM dictionary_entries WHERE word LIKE :word || '%' COLLATE NOCASE LIMIT 10")
     suspend fun getPrefixDefinitions(word: String): List<DictionaryEntry>
 
-    @Query("SELECT COUNT(*) FROM dictionary_entries")
-    suspend fun getWordCount(): Int
 }
 
 val MIGRATION_1_2 = object : Migration(1, 2) {

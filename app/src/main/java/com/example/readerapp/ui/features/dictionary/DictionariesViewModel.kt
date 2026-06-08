@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 
 class DictionariesViewModel(
     private val repository: DictionaryRepository,
-    private val preferences: ReaderPreferences
+    preferences: ReaderPreferences
 ) : ViewModel() {
 
     val importState: StateFlow<ImportState> = repository.importState
@@ -24,7 +24,7 @@ class DictionariesViewModel(
     
     val installedDictionaries: StateFlow<List<InstalledDictionary>> = preferences.readerSettings
         .map { it.installedDictionaries }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     fun importDictionary(uri: Uri) {
         viewModelScope.launch {

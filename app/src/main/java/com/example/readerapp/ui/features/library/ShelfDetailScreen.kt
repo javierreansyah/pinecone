@@ -79,7 +79,7 @@ fun ShelfDetailScreen(
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-    val displayTitle = shelfWithCovers?.shelf?.name ?: if (initialShelfName.isNotEmpty()) initialShelfName else stringResource(R.string.library_tab_shelves)
+    val displayTitle = shelfWithCovers?.shelf?.name ?: initialShelfName.ifEmpty { stringResource(R.string.library_tab_shelves) }
     val displayCount = shelfWithCovers?.books?.filter { !it.book.isArchived }?.size ?: initialBookCount
 
     Scaffold(

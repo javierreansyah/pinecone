@@ -1,7 +1,6 @@
 package com.example.readerapp.ui.features.library
 
 import android.app.Application
-import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.readerapp.ReaderApplication
@@ -27,11 +26,17 @@ class LibraryViewModel(
                 "library_books" -> SortType.LastRead
                 else -> SortType.Added
             },
-            defaultAscending = if (screenKey == "shelf_detail") true else false
+            defaultAscending = screenKey == "shelf_detail"
         ),
         shelvesPreferences = prefsManager.getPreferences("library_shelves", defaultLayout = LayoutMode.BigList, defaultSort = SortType.Title, defaultAscending = true)
     ))
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
+
+    private val _isBooksLoading = MutableStateFlow(true)
+    val isBooksLoading: StateFlow<Boolean> = _isBooksLoading.asStateFlow()
+
+    private val _isShelvesLoading = MutableStateFlow(true)
+    val isShelvesLoading: StateFlow<Boolean> = _isShelvesLoading.asStateFlow()
 
     private val booksFlow: Flow<List<Book>> = bookRepository.getAllBooks()
         .map { entities -> entities.map { Book.fromEntity(it) } }
@@ -50,11 +55,11 @@ class LibraryViewModel(
                 }
                 .let { filtered ->
                     val baseComparator = when (state.bookPreferences.sortType) {
-                        SortType.Title -> compareBy<Book> { it.title.lowercase() }
-                        SortType.Author -> compareBy<Book> { it.authors.firstOrNull()?.lowercase() ?: "" }
-                        SortType.LastRead -> compareBy<Book> { it.lastOpened ?: 0L }
-                        SortType.Added -> compareBy<Book> { it.addedDate }
-                        SortType.Progress -> compareBy<Book> { it.progress }
+                        SortType.Title -> compareBy { it.title.lowercase() }
+                        SortType.Author -> compareBy { it.authors.firstOrNull()?.lowercase() ?: "" }
+                        SortType.LastRead -> compareBy { it.lastOpened ?: 0L }
+                        SortType.Added -> compareBy { it.addedDate }
+                        SortType.Progress -> compareBy { it.progress }
                         SortType.Custom -> {
                             val indexMap = books.withIndex().associate { it.value.id to it.index }
                             compareBy<Book> { indexMap[it.id] ?: 0 }
@@ -75,11 +80,13 @@ class LibraryViewModel(
         }
     }
 
-    val filteredBooks: StateFlow<List<Book>> = getFilteredAndSortedBooks(booksFlow).stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
-    )
+    val filteredBooks: StateFlow<List<Book>> = getFilteredAndSortedBooks(booksFlow)
+        .onEach { _isBooksLoading.value = false }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
     val archivedBooks: StateFlow<List<Book>> = booksFlow
         .map { books -> books.filter { it.isArchived } }
@@ -100,7 +107,7 @@ class LibraryViewModel(
             shelfWithCovers.copy(books = sortedBooks)
         }.let { processedShelves ->
             val baseComparator = when (state.shelvesPreferences.sortType) {
-                SortType.Title -> compareBy<ShelfWithCovers> { it.shelf.name.lowercase() }
+                SortType.Title -> compareBy { it.shelf.name.lowercase() }
                 SortType.LastRead -> compareBy { shelf: ShelfWithCovers -> shelf.books.maxOfOrNull { it.book.lastReadDate ?: 0L } ?: 0L }
                 SortType.Progress -> compareBy { shelf: ShelfWithCovers -> 
                     if (shelf.books.isEmpty()) 0.0 else shelf.books.map { it.book.progression }.average()
@@ -139,7 +146,8 @@ class LibraryViewModel(
         } else {
             finalShelves
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.onEach { _isShelvesLoading.value = false }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val searchResults: StateFlow<SearchResults> = combine(booksFlow, shelves, _uiState) { books, shelvesList, state ->
         val query = state.searchQuery
@@ -289,14 +297,14 @@ class LibraryViewModel(
     val allAuthors = bookRepository.getAllAuthors().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val allTags = bookRepository.getAllTags().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    val authorsWithCounts = kotlinx.coroutines.flow.combine(allAuthors, booksFlow) { authors, books ->
+    val authorsWithCounts = combine(allAuthors, booksFlow) { authors, books ->
         authors.map { author -> 
             val count = books.count { it.authors.contains(author.name) }
             Pair(author.name, count)
         }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    val tagsWithCounts = kotlinx.coroutines.flow.combine(allTags, booksFlow) { tags, books ->
+    val tagsWithCounts = combine(allTags, booksFlow) { tags, books ->
         tags.map { tag -> 
             val count = books.count { it.tags.contains(tag.name) }
             Pair(tag.name, count)

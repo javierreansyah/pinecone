@@ -589,26 +589,27 @@ private fun LightingTabContent(
     }
 
     // Image Filter
-    val imageFilterOptionsMap = mapOf(
-        "None" to stringResource(R.string.reader_settings_image_filter_none),
-        "Darken" to stringResource(R.string.reader_settings_image_filter_darken),
-        "Invert" to stringResource(R.string.reader_settings_image_filter_invert)
-    )
-    SegmentedButtonGroup(
-        title = stringResource(R.string.reader_settings_image_filter),
-        options = imageFilterOptionsMap.values.toList(),
-        icons = listOf(
-            MaterialSymbols.Outlined.Image,
-            MaterialSymbols.Outlined.Contrast,
-            MaterialSymbols.Outlined.Invert_colors
-        ),
-        selected = imageFilterOptionsMap[settings.imageFilter] ?: settings.imageFilter,
-        onSelected = { localizedValue ->
-            val key = imageFilterOptionsMap.entries.find { it.value == localizedValue }?.key ?: localizedValue
-            onSettingsChange(settings.copy(imageFilter = key))
-        },
-        modifier = Modifier.padding(horizontal = 16.dp)
-    )
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
+        Text(stringResource(R.string.reader_settings_image_filter), style = MaterialTheme.typography.titleMedium)
+        val imageFilterOptionsMap = mapOf(
+            "None" to stringResource(R.string.reader_settings_image_filter_none),
+            "Darken" to stringResource(R.string.reader_settings_image_filter_darken),
+            "Invert" to stringResource(R.string.reader_settings_image_filter_invert)
+        )
+        SegmentedButtonGroup(
+            options = imageFilterOptionsMap.values.toList(),
+            icons = listOf(
+                MaterialSymbols.Outlined.Image,
+                MaterialSymbols.Outlined.Contrast,
+                MaterialSymbols.Outlined.Invert_colors
+            ),
+            selected = imageFilterOptionsMap[settings.imageFilter] ?: settings.imageFilter,
+            onSelected = { localizedValue ->
+                val key = imageFilterOptionsMap.entries.find { it.value == localizedValue }?.key ?: localizedValue
+                onSettingsChange(settings.copy(imageFilter = key))
+            }
+        )
+    }
 }
 
 @Composable
@@ -617,6 +618,7 @@ private fun AdvancedTabContent(
     onSettingsChange: (ReaderSettings) -> Unit
 ) {
     var showDictionaryDialog by remember { mutableStateOf(false) }
+    var showOrientationDialog by remember { mutableStateOf(false) }
 
     Column {
         // Active Dictionary
@@ -647,6 +649,7 @@ private fun AdvancedTabContent(
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        .clip(MaterialTheme.shapes.small)
                                         .clickable {
                                             onSettingsChange(settings.copy(activeDictionaryId = dict.id))
                                             showDictionaryDialog = false
@@ -675,6 +678,64 @@ private fun AdvancedTabContent(
             )
         }
 
+        // Force Orientation
+        val orientationOptionsMap = mapOf(
+            "Auto" to stringResource(R.string.reader_settings_orientation_auto),
+            "Portrait" to stringResource(R.string.reader_settings_orientation_portrait),
+            "Landscape" to stringResource(R.string.reader_settings_orientation_landscape)
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { showOrientationDialog = true }
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(stringResource(R.string.reader_settings_force_orientation), style = MaterialTheme.typography.titleMedium)
+            val activeOrientationName = orientationOptionsMap[settings.forceOrientation] ?: settings.forceOrientation
+            Text(activeOrientationName, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+
+        if (showOrientationDialog) {
+            AlertDialog(
+                onDismissRequest = { showOrientationDialog = false },
+                title = { Text(stringResource(R.string.reader_settings_force_orientation)) },
+                text = {
+                    Column {
+                        orientationOptionsMap.forEach { (key, name) ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(MaterialTheme.shapes.small)
+                                    .clickable {
+                                        onSettingsChange(settings.copy(forceOrientation = key))
+                                        showOrientationDialog = false
+                                    },
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = settings.forceOrientation == key,
+                                    onClick = {
+                                        onSettingsChange(settings.copy(forceOrientation = key))
+                                        showOrientationDialog = false
+                                    }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(name)
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showOrientationDialog = false }) {
+                        Text(stringResource(R.string.action_close))
+                    }
+                }
+            )
+        }
+
         // Vertical Scroll
         SettingsSwitchRow(
             title = stringResource(R.string.reader_settings_vertical_scroll),
@@ -696,28 +757,6 @@ private fun AdvancedTabContent(
             isChecked = settings.textNormalization,
             onCheckedChange = { onSettingsChange(settings.copy(textNormalization = it)) }
         )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        // Force Orientation
-        val orientationOptionsMap = mapOf(
-            "Auto" to stringResource(R.string.reader_settings_orientation_auto),
-            "Portrait" to stringResource(R.string.reader_settings_orientation_portrait),
-            "Landscape" to stringResource(R.string.reader_settings_orientation_landscape)
-        )
-        SegmentedButtonGroup(
-            title = stringResource(R.string.reader_settings_force_orientation),
-            options = orientationOptionsMap.values.toList(),
-            icons = emptyList(),
-            selected = orientationOptionsMap[settings.forceOrientation] ?: settings.forceOrientation,
-            onSelected = { localizedValue ->
-                val key = orientationOptionsMap.entries.find { it.value == localizedValue }?.key ?: localizedValue
-                onSettingsChange(settings.copy(forceOrientation = key))
-            },
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-
-        Spacer(modifier = Modifier.height(4.dp))
 
         // Prevent Screen Timeout
         SettingsSwitchRow(

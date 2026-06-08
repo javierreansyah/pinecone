@@ -45,9 +45,6 @@ interface ShelfDao {
     @Query("SELECT * FROM shelf_book_cross_ref")
     fun getAllShelfBookCrossRefs(): Flow<List<ShelfBookCrossRefEntity>>
 
-    @Update
-    suspend fun updateShelfBookCrossRefs(crossRefs: List<ShelfBookCrossRefEntity>)
-
     @Query("UPDATE shelf_book_cross_ref SET orderIndex = :orderIndex WHERE shelfId = :shelfId AND bookId = :bookId")
     suspend fun updateShelfBookOrderIndex(shelfId: String, bookId: String, orderIndex: Int)
 

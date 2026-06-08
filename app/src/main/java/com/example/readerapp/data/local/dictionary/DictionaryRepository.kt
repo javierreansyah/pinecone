@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.FileInputStream
@@ -66,7 +65,7 @@ class DictionaryRepository(
             )
             
             // Set as active if it's the first one
-            val newActiveId = if (currentSettings.activeDictionaryId.isEmpty()) dictId else currentSettings.activeDictionaryId
+            val newActiveId = currentSettings.activeDictionaryId.ifEmpty { dictId }
 
             preferences.updateSettings(
                 currentSettings.copy(

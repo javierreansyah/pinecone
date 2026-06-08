@@ -131,7 +131,7 @@
         <item quantity="other">%d hasil</item>
     </plurals>
     <plurals name="reader_page_of">
-        <item quantity="other">%1$s dari %2$s halaman</item>
+        <item quantity="other">%1$s dari %2$s</item>
     </plurals>
     <string name="reader_position_at">pada %s</string>
     <plurals name="reader_page_num">
@@ -236,6 +236,13 @@
     <string name="settings_theme_neutral">Netral</string>
     <string name="settings_option_selected">Dipilih</string>
     <string name="settings_option_not_selected">Belum dipilih (Cadangan otomatis dinonaktifkan)</string>
+    <string name="settings_backup_freq_3h">3 jam</string>
+    <string name="settings_backup_freq_6h">6 jam</string>
+    <string name="settings_backup_freq_12h">12 jam</string>
+    <string name="settings_backup_freq_1d">1 hari</string>
+    <string name="settings_backup_freq_2d">2 hari</string>
+    <string name="settings_backup_freq_3d">3 hari</string>
+    <string name="settings_backup_freq_1w">1 minggu</string>
 
     <!-- Navigation Drawer -->
     <string name="nav_book_import">Impor Buku</string>
@@ -248,5 +255,9 @@
     <string name="nav_starting_backup">Memulai pencadangan…</string>
     <string name="nav_backup_success">Cadangan berhasil</string>
     <string name="nav_backup_failed">Cadangan gagal</string>
-
+    <string name="nav_restore_backup">Pulihkan Cadangan</string>
+    <string name="nav_restore_backup_warning">Peringatan: Memulihkan cadangan akan sepenuhnya menimpa perpustakaan, kemajuan membaca, dan pengaturan saat ini dengan konten dari cadangan tersebut. Tindakan ini tidak dapat dibatalkan.\n\nApakah Anda ingin melanjutkan?</string>
+    <string name="nav_restoring_backup">Memulihkan cadangan…</string>
+    <string name="nav_restore_success">Cadangan berhasil dipulihkan!</string>
+    <string name="nav_restore_failed">Gagal memulihkan cadangan</string>
 </resources>

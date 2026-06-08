@@ -19,6 +19,7 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.*
 import com.example.readerapp.ui.features.library.LibraryViewModel
 import com.example.readerapp.ui.features.library.components.ShelfListItem
+import com.example.readerapp.ui.components.EmptyState
 
 enum class MenuState {
     Main,
@@ -34,7 +35,6 @@ fun BookContextMenu(
     onNavigateToBookInfo: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val context = LocalContext.current
     val shelves by viewModel.shelves.collectAsState()
 
     var showDeleteConfirmation by remember { mutableStateOf(false) }
@@ -189,9 +189,11 @@ fun BookContextMenu(
                     Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
                         val validShelves = shelves.filter { it.shelf.id != "unshelved" }
                         if (validShelves.isEmpty()) {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text(stringResource(R.string.library_empty_shelves), style = MaterialTheme.typography.bodyLarge)
-                            }
+                            EmptyState(
+                                icon = MaterialSymbols.Outlined.Folder,
+                                text = stringResource(R.string.library_empty_shelves),
+                                modifier = Modifier.fillMaxSize().padding(16.dp)
+                            )
                         } else {
                             LazyColumn(
                                 modifier = Modifier.fillMaxWidth(),

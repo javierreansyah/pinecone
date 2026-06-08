@@ -5,8 +5,6 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-import androidx.room.TypeConverters
-
 @Database(
     entities = [
         BookEntity::class, 

@@ -1,6 +1,5 @@
 package com.example.readerapp.ui.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -21,9 +20,6 @@ object ThemeRegistry {
         return themes.find { it.name.equals(name, ignoreCase = true) } ?: themes.first()
     }
 
-    fun getThemeNames(): List<String> {
-        return themes.map { it.name }
-    }
 }
 
 @Composable
@@ -36,7 +32,7 @@ fun AppTheme(
     val context = LocalContext.current
     
     // Check if dynamic color is supported (Android 12+)
-    val isDynamicSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val isDynamicSupported = true
     val resolvedPalette = if (colorPalette == "Dynamic" && !isDynamicSupported) {
         "Pine"
     } else {

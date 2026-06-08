@@ -12,7 +12,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -259,11 +258,12 @@ fun DictionariesScreen(
                 )
             } else {
                 SegmentedLazyColumn(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp)
-                ) {
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp)
+                    ) {
                     installedDictionaries.forEach { dict ->
                         item(
+                            key = dict.id,
                             content = { Text(dict.name) },
                             supportingContent = { Text(androidx.compose.ui.res.pluralStringResource(R.plurals.dictionaries_word_count, dict.wordCount, dict.wordCount)) },
                             trailingContent = {
@@ -297,6 +297,7 @@ fun DictionariesScreen(
 
                     if (isLoadingImport) {
                         item(
+                            key = "import",
                             content = { Text(stringResource(R.string.dictionaries_installing)) },
                             supportingContent = {
                                 LinearWavyProgressIndicator(
@@ -310,6 +311,7 @@ fun DictionariesScreen(
 
                     if (isLoadingRestore) {
                         item(
+                            key = "restore",
                             content = { Text(stringResource(R.string.dictionaries_restoring)) },
                             supportingContent = {
                                 LinearWavyProgressIndicator(
@@ -321,6 +323,7 @@ fun DictionariesScreen(
 
                     if (isLoadingBackup) {
                         item(
+                            key = "backup",
                             content = { Text(stringResource(R.string.dictionaries_backing_up)) },
                             supportingContent = {
                                 LinearWavyProgressIndicator(

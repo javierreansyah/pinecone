@@ -178,7 +178,7 @@ fun AppDrawer(
             )
 
             NavigationDrawerItem(
-                label = { Text(stringResource(R.string.dictionaries_restore)) },
+                label = { Text(stringResource(R.string.nav_restore_backup)) },
                 icon = { Icon(MaterialSymbols.Outlined.History, contentDescription = null) },
                 selected = false,
                 onClick = {
