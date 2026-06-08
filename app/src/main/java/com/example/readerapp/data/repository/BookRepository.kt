@@ -305,8 +305,6 @@ class BookRepository(
 
     fun getAllShelvesWithBooks(): Flow<List<ShelfWithCovers>> = shelfDao.getAllShelvesWithBooks()
 
-    suspend fun getShelfById(shelfId: String): ShelfEntity? = shelfDao.getShelfById(shelfId)
-
     suspend fun createShelf(name: String): String {
         val id = java.util.UUID.randomUUID().toString()
         shelfDao.insertShelf(ShelfEntity(id = id, name = name))

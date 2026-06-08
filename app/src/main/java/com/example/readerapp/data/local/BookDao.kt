@@ -5,11 +5,11 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface BookDao {
-    @androidx.room.Transaction
+    @Transaction
     @Query("SELECT * FROM books ORDER BY lastReadDate DESC, addedDate DESC")
     fun getAllBooks(): Flow<List<BookWithDetails>>
 
-    @androidx.room.Transaction
+    @Transaction
     @Query("SELECT * FROM books WHERE id = :id")
     suspend fun getById(id: String): BookWithDetails?
 

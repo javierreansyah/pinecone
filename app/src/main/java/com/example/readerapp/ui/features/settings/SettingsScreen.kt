@@ -17,6 +17,12 @@ import com.example.readerapp.R
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Keyboard_arrow_right
+import com.composables.icons.materialsymbols.outlined.Contrast
+import com.composables.icons.materialsymbols.outlined.Palette
+import com.composables.icons.materialsymbols.outlined.Tune
+import com.composables.icons.materialsymbols.outlined.Translate
+import com.composables.icons.materialsymbols.outlined.Sync
+import com.composables.icons.materialsymbols.outlined.Folder
 import com.example.readerapp.data.local.ReaderPreferences
 import com.example.readerapp.ui.features.settings.components.settingsItem
 import com.example.readerapp.worker.WorkerUtils
@@ -127,6 +133,12 @@ fun SettingsScreen(
                     onSelected = { label -> 
                         val key = themeModeOptionsMap.entries.find { it.value == label }?.key ?: label
                         viewModel.updateSettings(settings.copy(themeMode = key)) 
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = MaterialSymbols.Outlined.Contrast,
+                            contentDescription = null
+                        )
                     }
                 )
                 val colorPaletteLabel = stringResource(R.string.settings_color_palette)
@@ -137,6 +149,12 @@ fun SettingsScreen(
                     onSelected = { label ->
                         val key = colorPaletteOptionsMap.entries.find { it.value == label }?.key ?: label
                         viewModel.updateSettings(settings.copy(colorPalette = key))
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = MaterialSymbols.Outlined.Palette,
+                            contentDescription = null
+                        )
                     }
                 )
                 val themeContrastLabel = stringResource(R.string.settings_theme_contrast)
@@ -153,7 +171,13 @@ fun SettingsScreen(
                         val key = themeContrastOptionsMap.entries.find { it.value == label }?.key ?: label
                         viewModel.updateSettings(settings.copy(themeContrast = key))
                     },
-                    enabled = settings.colorPalette != "Dynamic"
+                    enabled = settings.colorPalette != "Dynamic",
+                    leadingIcon = {
+                        Icon(
+                            imageVector = MaterialSymbols.Outlined.Tune,
+                            contentDescription = null
+                        )
+                    }
                 )
                 val languageLabel = stringResource(R.string.settings_language)
                 val languageOptionsMap = mapOf(
@@ -180,9 +204,16 @@ fun SettingsScreen(
                                 androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(androidx.core.os.LocaleListCompat.forLanguageTags(key))
                             }
                         }
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = MaterialSymbols.Outlined.Translate,
+                            contentDescription = null
+                        )
                     }
                 )
             }
+
 
             Text(
                 text = stringResource(R.string.settings_backup),
@@ -193,13 +224,30 @@ fun SettingsScreen(
 
             SegmentedColumn {
                 val autoBackupLabel = stringResource(R.string.settings_auto_backup_freq)
+                val autoBackupOptionsMap = mapOf(
+                    "3h" to stringResource(R.string.settings_backup_freq_3h),
+                    "6h" to stringResource(R.string.settings_backup_freq_6h),
+                    "12h" to stringResource(R.string.settings_backup_freq_12h),
+                    "1d" to stringResource(R.string.settings_backup_freq_1d),
+                    "2d" to stringResource(R.string.settings_backup_freq_2d),
+                    "3d" to stringResource(R.string.settings_backup_freq_3d),
+                    "1w" to stringResource(R.string.settings_backup_freq_1w),
+                    "never" to stringResource(R.string.settings_option_never)
+                )
                 settingsItem(
                     label = autoBackupLabel,
-                    value = settings.autoBackupFrequency,
-                    options = listOf("3h", "6h", "12h", "1d", "2d", "3d", "1w", "never"),
-                    onSelected = { 
-                        viewModel.updateSettings(settings.copy(autoBackupFrequency = it)) 
-                        WorkerUtils.scheduleBackupWork(context, it)
+                    value = autoBackupOptionsMap[settings.autoBackupFrequency] ?: settings.autoBackupFrequency,
+                    options = autoBackupOptionsMap.values.toList(),
+                    onSelected = { label ->
+                        val key = autoBackupOptionsMap.entries.find { it.value == label }?.key ?: label
+                        viewModel.updateSettings(settings.copy(autoBackupFrequency = key)) 
+                        WorkerUtils.scheduleBackupWork(context, key)
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = MaterialSymbols.Outlined.Sync,
+                            contentDescription = null
+                        )
                     }
                 )
                 
@@ -213,6 +261,12 @@ fun SettingsScreen(
                         val initialUri =
                             DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Documents/Pinecone")
                         folderPickerLauncher.launch(initialUri)
+                    },
+                    leadingContent = {
+                        Icon(
+                            imageVector = MaterialSymbols.Outlined.Folder,
+                            contentDescription = null
+                        )
                     },
                     content = { Text(stringResource(R.string.settings_backup_location)) },
                     supportingContent = { 
@@ -231,6 +285,7 @@ fun SettingsScreen(
                     }
                 )
             }
+
         }
     }
 }

@@ -19,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
@@ -233,7 +232,7 @@ private fun AutocompleteChipTextField(
 ) {
     var text by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
-    var textFieldWidth by remember { mutableStateOf(0) }
+    var textFieldWidth by remember { mutableIntStateOf(0) }
 
     val filteredSuggestions = suggestions.filter { it.contains(text, ignoreCase = true) && !items.contains(it) }
 

@@ -54,6 +54,8 @@ fun LibraryScreen(
     val filteredBooks by viewModel.filteredBooks.collectAsState()
     val shelves by viewModel.shelves.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
+    val isBooksLoading by viewModel.isBooksLoading.collectAsState()
+    val isShelvesLoading by viewModel.isShelvesLoading.collectAsState()
     var showFilterSheet by remember { mutableStateOf(false) }
 
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
@@ -118,11 +120,13 @@ fun LibraryScreen(
                     // Books Page
                     Box(modifier = Modifier.fillMaxSize().padding(top = 8.dp), contentAlignment = Alignment.TopStart) {
                         if (filteredBooks.isEmpty()) {
-                            EmptyState(
-                                icon = MaterialSymbols.Outlined.Book,
-                                text = stringResource(R.string.library_empty_books),
-                                modifier = Modifier.fillMaxSize().padding(16.dp)
-                            )
+                            if (!isBooksLoading) {
+                                EmptyState(
+                                    icon = MaterialSymbols.Outlined.Book,
+                                    text = stringResource(R.string.library_empty_books),
+                                    modifier = Modifier.fillMaxSize().padding(16.dp)
+                                )
+                            }
                         } else {
                             BookCollection(
                                 books = filteredBooks,
@@ -155,13 +159,17 @@ fun LibraryScreen(
                 }
                 1 -> {
                     // Shelves Page
-                    ShelvesPage(
-                        shelves = shelves,
-                        onShelfClick = onNavigateToShelf,
-                        onBookClick = onNavigateToReader,
-                        onBookLongClick = { bookId, shelfId -> selectedBookContext = Pair(bookId, shelfId) },
-                        layoutMode = uiState.shelvesPreferences.layoutMode
-                    )
+                    if (shelves.isEmpty() && isShelvesLoading) {
+                        // Display nothing while fetching
+                    } else {
+                        ShelvesPage(
+                            shelves = shelves,
+                            onShelfClick = onNavigateToShelf,
+                            onBookClick = onNavigateToReader,
+                            onBookLongClick = { bookId, shelfId -> selectedBookContext = Pair(bookId, shelfId) },
+                            layoutMode = uiState.shelvesPreferences.layoutMode
+                        )
+                    }
                 }
             }
         }

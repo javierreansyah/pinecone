@@ -42,8 +42,6 @@ fun DefinitionWebView(
     val tertiary = colorScheme.tertiary
 
     val density = LocalDensity.current
-    val fontSizePx = with(density) { baseFontSize.toPx() }
-    // Convert px back to a rough sp value for CSS (CSS px ≈ dp on Android)
     val fontSizeCss = with(density) { baseFontSize.toPx() / density.density }
 
     val fullHtml = remember(htmlContent, onSurface, primary, primaryContainer, onPrimaryContainer,

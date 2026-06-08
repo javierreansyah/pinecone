@@ -32,6 +32,7 @@ import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.publication.Publication
 import androidx.core.graphics.toColorInt
 import kotlin.time.Duration.Companion.milliseconds
+import androidx.core.net.toUri
 
 class ReaderActivity : AppCompatActivity() {
 
@@ -330,7 +331,8 @@ class ReaderActivity : AppCompatActivity() {
                     },
                     onInfoClick = {
                         val bookId = intent.getStringExtra(EXTRA_BOOK_ID) ?: ""
-                        val infoIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("pinecone://book_info/$bookId"))
+                        val infoIntent = Intent(Intent.ACTION_VIEW,
+                            "pinecone://book_info/$bookId".toUri())
                         startActivity(infoIntent)
                     }
                 )

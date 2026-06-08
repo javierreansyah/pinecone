@@ -3,7 +3,6 @@ package com.example.readerapp
 import android.os.Bundle
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.BackHandler
 import androidx.activity.enableEdgeToEdge
@@ -17,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
@@ -43,9 +43,6 @@ import com.example.readerapp.ui.features.info.EditBookScreen
 import com.example.readerapp.ui.theme.AppTheme
 import androidx.compose.material3.*
 import kotlinx.coroutines.launch
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.core.tween
 import coil.annotation.ExperimentalCoilApi
 
 class MainActivity : AppCompatActivity() {
@@ -166,6 +163,10 @@ class MainActivity : AppCompatActivity() {
                     }
                 )
 
+                val restoringBackupText = stringResource(R.string.nav_restoring_backup)
+                val restoreSuccessText = stringResource(R.string.nav_restore_success)
+                val restoreFailedText = stringResource(R.string.nav_restore_failed)
+
                 val restoreBackupLauncher = rememberLauncherForActivityResult(
                     contract = object : ActivityResultContracts.OpenDocument() {
                         override fun createIntent(context: android.content.Context, input: Array<String>): Intent {
@@ -180,15 +181,15 @@ class MainActivity : AppCompatActivity() {
                     },
                     onResult = { uri ->
                         uri?.let {
-                            Toast.makeText(context, "Restoring backup...", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, restoringBackupText, Toast.LENGTH_SHORT).show()
                             scope.launch {
                                 val success = com.example.readerapp.data.repository.BackupRepository(context).restoreBackup(it)
                                 if (success) {
                                     context.imageLoader.memoryCache?.clear()
                                     context.imageLoader.diskCache?.clear()
-                                    Toast.makeText(context, "Backup restored successfully!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, restoreSuccessText, Toast.LENGTH_SHORT).show()
                                 } else {
-                                    Toast.makeText(context, "Failed to restore backup", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, restoreFailedText, Toast.LENGTH_SHORT).show()
                                 }
                             }
                         }
@@ -200,8 +201,8 @@ class MainActivity : AppCompatActivity() {
                 if (showRestoreWarning) {
                     AlertDialog(
                         onDismissRequest = { showRestoreWarning = false },
-                        title = { Text("Restore Backup") },
-                        text = { Text("Warning: Restoring a backup will completely overwrite your current library, reading progress, and settings with the contents of the backup. This action cannot be undone.\n\nDo you want to proceed?") },
+                        title = { Text(stringResource(R.string.nav_restore_backup)) },
+                        text = { Text(stringResource(R.string.nav_restore_backup_warning)) },
                         confirmButton = {
                             TextButton(
                                 onClick = {
@@ -210,12 +211,12 @@ class MainActivity : AppCompatActivity() {
                                     scope.launch { drawerState.close() }
                                 }
                             ) {
-                                Text("Proceed")
+                                Text(stringResource(R.string.action_proceed))
                             }
                         },
                         dismissButton = {
                             TextButton(onClick = { showRestoreWarning = false }) {
-                                Text("Cancel")
+                                Text(stringResource(R.string.action_cancel))
                             }
                         }
                     )

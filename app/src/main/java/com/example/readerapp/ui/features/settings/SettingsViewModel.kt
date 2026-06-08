@@ -4,21 +4,25 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.readerapp.data.local.ReaderPreferences
 import com.example.readerapp.data.local.ReaderSettings
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class SettingsViewModel(
     private val readerPreferences: ReaderPreferences
 ) : ViewModel() {
 
-    val settings: StateFlow<ReaderSettings> = readerPreferences.readerSettings
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = ReaderSettings()
-        )
+    private val _settings = MutableStateFlow(ReaderSettings())
+    val settings: StateFlow<ReaderSettings> = _settings.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            readerPreferences.readerSettings.collect {
+                _settings.value = it
+            }
+        }
+    }
 
     fun updateSettings(newSettings: ReaderSettings) {
         viewModelScope.launch {
