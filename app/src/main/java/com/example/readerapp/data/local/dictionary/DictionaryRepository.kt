@@ -41,6 +41,9 @@ class DictionaryRepository(
     private val _restoreState = MutableStateFlow<ImportState>(ImportState.Idle)
     val restoreState: StateFlow<ImportState> = _restoreState.asStateFlow()
 
+    private val _backupState = MutableStateFlow<ImportState>(ImportState.Idle)
+    val backupState: StateFlow<ImportState> = _backupState.asStateFlow()
+
     private val json = Json { 
         ignoreUnknownKeys = true
         encodeDefaults = true
@@ -73,9 +76,6 @@ class DictionaryRepository(
             )
 
             _importState.value = ImportState.Success
-            
-            // Backup after adding
-            backupDictionaries()
         } catch (e: Exception) {
             e.printStackTrace()
             _importState.value = ImportState.Error(e.message ?: "Unknown error occurred")
@@ -88,6 +88,10 @@ class DictionaryRepository(
 
     fun resetRestoreState() {
         _restoreState.value = ImportState.Idle
+    }
+
+    fun resetBackupState() {
+        _backupState.value = ImportState.Idle
     }
 
     suspend fun lookupWord(dictionaryId: String, word: String): List<DictionaryEntry> {
@@ -139,9 +143,6 @@ class DictionaryRepository(
         if (walFile.exists()) walFile.delete()
         val shmFile = context.getDatabasePath("dict_$dictionaryId.db-shm")
         if (shmFile.exists()) shmFile.delete()
-        
-        // Backup after deleting
-        backupDictionaries()
     }
 
     suspend fun renameDictionary(dictionaryId: String, newName: String) {
@@ -152,20 +153,24 @@ class DictionaryRepository(
         preferences.updateSettings(
             currentSettings.copy(installedDictionaries = newInstalled)
         )
-        
-        // Backup after renaming
-        backupDictionaries()
     }
 
     suspend fun backupDictionaries() = withContext(Dispatchers.IO) {
+        _backupState.value = ImportState.Loading(0)
         val settings = preferences.readerSettings.first()
         val backupFolderUriString = settings.backupFolderUri
-        if (backupFolderUriString.isEmpty()) return@withContext
+        if (backupFolderUriString.isEmpty()) {
+            _backupState.value = ImportState.Error("Backup folder not set in Settings")
+            return@withContext
+        }
 
         try {
             val backupFolderUri = backupFolderUriString.toUri()
             val backupFolder = androidx.documentfile.provider.DocumentFile.fromTreeUri(context, backupFolderUri)
-            if (backupFolder == null || !backupFolder.canWrite()) return@withContext
+            if (backupFolder == null || !backupFolder.canWrite()) {
+                _backupState.value = ImportState.Error("Cannot write to backup folder")
+                return@withContext
+            }
 
             val installed = settings.installedDictionaries
             val payload = DictionaryBackupPayload(
@@ -181,11 +186,19 @@ class DictionaryRepository(
             if (backupFile == null) {
                 backupFile = backupFolder.createFile("application/octet-stream", backupFileName)
             }
-            if (backupFile == null) return@withContext
+            if (backupFile == null) {
+                _backupState.value = ImportState.Error("Failed to create backup file")
+                return@withContext
+            }
 
             val resolver = context.contentResolver
-            resolver.openOutputStream(backupFile.uri, "wt")?.use { outputStream ->
-                ZipOutputStream(outputStream).use { zos ->
+            val outputStream = resolver.openOutputStream(backupFile.uri, "wt")
+            if (outputStream == null) {
+                _backupState.value = ImportState.Error("Failed to open output stream")
+                return@withContext
+            }
+            outputStream.use { os ->
+                ZipOutputStream(os).use { zos ->
                     zos.setLevel(java.util.zip.Deflater.BEST_SPEED)
                     
                     // JSON
@@ -205,8 +218,10 @@ class DictionaryRepository(
                     }
                 }
             }
+            _backupState.value = ImportState.Success
         } catch (e: Exception) {
             e.printStackTrace()
+            _backupState.value = ImportState.Error(e.message ?: "Failed to backup dictionaries")
         }
     }
 

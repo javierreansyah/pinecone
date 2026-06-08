@@ -1,4 +1,4 @@
-package com.example.readerapp.ui.features.reader.components
+package com.example.readerapp.ui.features.reader.components.overlay
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -10,13 +10,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -374,12 +372,12 @@ fun ReaderTextSelectionControl(
                             .size(24.dp)
                             .background(
                                 color = Color(colorInt).copy(alpha = 1f),
-                                shape = androidx.compose.foundation.shape.CircleShape
+                                shape = CircleShape
                             )
                             .border(
                                 width = if (isSelected) 2.dp else 0.dp,
                                 color = if (isSelected) readerTextColor else Color.Transparent,
-                                shape = androidx.compose.foundation.shape.CircleShape
+                                shape = CircleShape
                             )
                             .clickable { onColorSelected(colorInt) }
                     )

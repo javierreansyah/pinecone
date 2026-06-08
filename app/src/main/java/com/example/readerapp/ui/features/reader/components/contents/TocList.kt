@@ -1,8 +1,9 @@
-package com.example.readerapp.ui.features.reader.components
+package com.example.readerapp.ui.features.reader.components.contents
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -11,6 +12,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Format_list_bulleted
+import com.example.readerapp.ui.components.EmptyState
 
 @Composable
 fun TocList(
@@ -20,9 +24,11 @@ fun TocList(
     onChapterClick: (Link) -> Unit
 ) {
     if (tableOfContents.isEmpty()) {
-        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-            Text("No Table of Contents", style = MaterialTheme.typography.bodyLarge)
-        }
+        EmptyState(
+            icon = MaterialSymbols.Outlined.Format_list_bulleted,
+            text = "No Table of Contents",
+            modifier = Modifier.fillMaxWidth().padding(32.dp)
+        )
     } else {
         val currentChapterIndex = remember(tableOfContents, currentLocator) {
             if (currentLocator == null) return@remember 0
@@ -31,7 +37,7 @@ fun TocList(
             if (index >= 0) index else 0
         }
         
-        val listState = androidx.compose.foundation.lazy.rememberLazyListState(
+        val listState = rememberLazyListState(
             initialFirstVisibleItemIndex = currentChapterIndex
         )
 

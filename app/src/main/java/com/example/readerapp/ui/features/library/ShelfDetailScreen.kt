@@ -4,11 +4,6 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DragHandle
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,10 +16,14 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Tune
-import androidx.compose.material.icons.filled.FormatListNumbered
+import com.composables.icons.materialsymbols.outlined.Close
+import com.composables.icons.materialsymbols.outlined.Arrow_back
+import com.composables.icons.materialsymbols.outlined.Format_list_numbered
+import com.composables.icons.materialsymbols.outlined.More_vert
+import com.composables.icons.materialsymbols.outlined.Drag_handle
 import com.example.readerapp.data.model.Book
-import com.example.readerapp.ui.features.library.components.FilterSortBottomSheet
-import com.example.readerapp.ui.features.library.components.BookItem
+import com.example.readerapp.ui.features.library.components.*
+import com.example.readerapp.ui.features.library.components.book.*
 import kotlinx.coroutines.flow.flowOf
 import androidx.compose.foundation.lazy.rememberLazyListState
 import sh.calvin.reorderable.ReorderableItem
@@ -37,7 +36,8 @@ fun ShelfDetailScreen(
     initialShelfName: String = "",
     initialBookCount: Int = 0,
     onNavigateBack: () -> Unit,
-    onNavigateToReader: (String) -> Unit
+    onNavigateToReader: (String) -> Unit,
+    onNavigateToBookInfo: (String) -> Unit
 ) {
     val context = LocalContext.current
     val viewModel: LibraryViewModel = viewModel(
@@ -93,7 +93,7 @@ fun ShelfDetailScreen(
                             colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                             onClick = { isReordering = false }
                         ) {
-                            Icon(Icons.Filled.Close, contentDescription = "Cancel")
+                            Icon(MaterialSymbols.Outlined.Close, contentDescription = "Cancel")
                         }
                     } else {
                         FilledTonalIconButton(
@@ -101,7 +101,7 @@ fun ShelfDetailScreen(
                             colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                             onClick = onNavigateBack
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = "Back")
                         }
                     }
                 },
@@ -124,7 +124,7 @@ fun ShelfDetailScreen(
                                     isReordering = true 
                                 }
                             }) {
-                                Icon(Icons.Default.FormatListNumbered, contentDescription = "Custom Order")
+                                Icon(MaterialSymbols.Outlined.Format_list_numbered, contentDescription = "Custom Order")
                             }
                         }
                         IconButton(shapes = IconButtonDefaults.shapes(), onClick = { showFilterSheet = true }) {
@@ -133,7 +133,7 @@ fun ShelfDetailScreen(
                         if (shelfId != "unshelved") {
                             Box {
                                 IconButton(shapes = IconButtonDefaults.shapes(), onClick = { showMoreMenu = true }) {
-                                    Icon(Icons.Default.MoreVert, contentDescription = "More Options")
+                                    Icon(MaterialSymbols.Outlined.More_vert, contentDescription = "More Options")
                                 }
                                 DropdownMenu(
                                     expanded = showMoreMenu,
@@ -204,7 +204,7 @@ fun ShelfDetailScreen(
                                         trailingContent = {
                                             Box(modifier = Modifier.height(100.dp), contentAlignment = Alignment.Center) {
                                                 Icon(
-                                                    imageVector = Icons.Default.DragHandle,
+                                                    imageVector = MaterialSymbols.Outlined.Drag_handle,
                                                     contentDescription = "Reorder",
                                                     modifier = Modifier
                                                         .draggableHandle(
@@ -220,7 +220,7 @@ fun ShelfDetailScreen(
                         }
                     }
                 } else {
-                    com.example.readerapp.ui.features.library.components.BookCollection(
+                    BookCollection(
                         books = books,
                         layoutMode = uiState.bookPreferences.layoutMode,
                         onBookClick = onNavigateToReader,
@@ -231,19 +231,13 @@ fun ShelfDetailScreen(
         }
 
         if (showFilterSheet) {
-            FilterSortBottomSheet(
+            ShelfDetailFilterBottomSheet(
+                shelfId = shelfId,
                 preferences = uiState.bookPreferences,
                 onLayoutModeChange = viewModel::onLayoutModeChange,
                 onSortTypeChange = viewModel::onSortTypeChange,
                 onStatusToggle = viewModel::toggleStatusFilter,
-                onDismiss = { showFilterSheet = false },
-                showViewPicker = true,
-                showStatusFilter = true,
-                availableSortTypes = if (shelfId == "unshelved") {
-                    SortType.entries.filter { it != SortType.Custom }
-                } else {
-                    SortType.entries // Allows Custom Order
-                }
+                onDismiss = { showFilterSheet = false }
             )
         }
         if (showDeleteDialog && shelfWithCovers != null) {
@@ -300,10 +294,11 @@ fun ShelfDetailScreen(
         }
 
         if (selectedBookForMenu != null) {
-            com.example.readerapp.ui.features.library.components.BookContextMenu(
+            BookContextMenu(
                 viewModel = viewModel,
                 bookId = selectedBookForMenu!!,
                 shelfId = shelfId,
+                onNavigateToBookInfo = onNavigateToBookInfo,
                 onDismiss = { selectedBookForMenu = null }
             )
         }

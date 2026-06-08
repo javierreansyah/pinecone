@@ -167,7 +167,7 @@ body {
     word-wrap: break-word;
     overflow-wrap: break-word;
     -webkit-text-size-adjust: none;
-    padding: 0;
+    padding: 0 24px;
 }
 
 /* ── Headings ── */
@@ -371,6 +371,21 @@ img {
 ::selection {
     background: var(--primary-container);
     color: var(--on-primary-container);
+}
+
+/* ── Multi-entry styling ── */
+h2.word-title {
+    color: var(--primary);
+    font-weight: 500;
+    font-size: 1.4em;
+    margin-top: 0;
+    margin-bottom: 0.5em;
+}
+
+hr.definition-divider {
+    border: none;
+    border-top: 1px solid var(--outline-variant);
+    margin: 16px 0;
 }
 </style>
 </head>

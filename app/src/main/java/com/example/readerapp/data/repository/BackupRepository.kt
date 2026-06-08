@@ -116,7 +116,11 @@ class BackupRepository(private val context: Context) {
                     zos.closeEntry()
 
                     // Backup Settings
-                    val settingsJsonString = json.encodeToString(settings)
+                    val settingsToBackup = settings.copy(
+                        installedDictionaries = emptyList(),
+                        activeDictionaryId = ""
+                    )
+                    val settingsJsonString = json.encodeToString(settingsToBackup)
                     zos.putNextEntry(ZipEntry("settings.json"))
                     zos.write(settingsJsonString.toByteArray(Charsets.UTF_8))
                     zos.closeEntry()
@@ -223,9 +227,14 @@ class BackupRepository(private val context: Context) {
                 try {
                     val settingsJsonString = FileInputStream(settingsJsonFile).use { InputStreamReader(it, Charsets.UTF_8).readText() }
                     val restoredSettings = json.decodeFromString<com.example.readerapp.data.local.ReaderSettings>(settingsJsonString)
-                    // Preserve the current backup folder URI because permissions are tied to the current installation
+                    // Preserve the current backup folder URI because permissions are tied to the current installation,
+                    // and preserve dictionary settings (backed up separately)
                     val currentSettings = readerPreferences.readerSettings.first()
-                    val settingsToApply = restoredSettings.copy(backupFolderUri = currentSettings.backupFolderUri)
+                    val settingsToApply = restoredSettings.copy(
+                        backupFolderUri = currentSettings.backupFolderUri,
+                        installedDictionaries = currentSettings.installedDictionaries,
+                        activeDictionaryId = currentSettings.activeDictionaryId
+                    )
                     readerPreferences.updateAllSettings(settingsToApply)
                 } catch (e: Exception) {
                     e.printStackTrace()

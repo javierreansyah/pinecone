@@ -9,9 +9,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.DriveFolderUpload
-import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -36,6 +33,8 @@ import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Settings
 import com.composables.icons.materialsymbols.outlined.Upload
 import com.composables.icons.materialsymbols.outlined.Book
+import com.composables.icons.materialsymbols.outlined.Drive_folder_upload
+import com.composables.icons.materialsymbols.outlined.History
 import com.example.readerapp.R
 import com.example.readerapp.data.local.ReaderSettings
 import com.example.readerapp.data.repository.BackupRepository
@@ -154,7 +153,7 @@ fun AppDrawer(
                         }
                     }
                 },
-                icon = { Icon(if (hasPermission) Icons.Outlined.DriveFolderUpload else MaterialSymbols.Outlined.Folder, contentDescription = null) },
+                icon = { Icon(if (hasPermission) MaterialSymbols.Outlined.Drive_folder_upload else MaterialSymbols.Outlined.Folder, contentDescription = null) },
                 selected = false,
                 onClick = {
                     scope.launch {
@@ -177,7 +176,7 @@ fun AppDrawer(
 
             NavigationDrawerItem(
                 label = { Text("Restore Backup") },
-                icon = { Icon(Icons.Outlined.Restore, contentDescription = null) },
+                icon = { Icon(MaterialSymbols.Outlined.History, contentDescription = null) },
                 selected = false,
                 onClick = {
                     onRestoreBackupClick()

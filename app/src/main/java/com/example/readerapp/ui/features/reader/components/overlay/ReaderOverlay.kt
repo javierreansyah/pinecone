@@ -1,5 +1,9 @@
-package com.example.readerapp.ui.features.reader.components
+package com.example.readerapp.ui.features.reader.components.overlay
 
+import android.annotation.SuppressLint
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -39,6 +43,10 @@ import com.example.readerapp.data.local.dictionary.DictionaryEntry
 import com.example.readerapp.ui.features.dictionary.utils.DefinitionWebView
 import com.example.readerapp.ui.features.dictionary.utils.DictionaryFormatter
 import com.example.readerapp.ui.features.reader.ReaderViewModel
+import com.example.readerapp.ui.features.reader.components.contents.NoteBottomSheet
+import com.example.readerapp.ui.features.reader.components.contents.ReaderBottomSheet
+import com.example.readerapp.ui.features.reader.components.settings.ReaderSettingsContent
+import com.example.readerapp.ui.features.reader.components.SearchScreen
 import com.example.readerapp.ui.theme.AppTheme
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
@@ -171,6 +179,7 @@ fun ReaderOverlay(
                                 onSeekToProgression = onSeekToProgression
                             )
                         }
+
                         BottomBarMode.SEARCH_NAV -> {
                             ReaderSearchNavigator(
                                 activeIndex = uiState.activeSearchIndex,
@@ -181,14 +190,18 @@ fun ReaderOverlay(
                                 onNext = { viewModel.nextSearchResult() }
                             )
                         }
+
                         BottomBarMode.TEXT_SELECTION -> {
                             val highlightText = try {
                                 Locator.fromJSON(
                                     JSONObject(
-                                        menuHighlight?.locatorJson ?: menuLocator?.toJSON()?.toString() ?: ""
+                                        menuHighlight?.locatorJson ?: menuLocator?.toJSON()
+                                            ?.toString() ?: ""
                                     )
                                 )?.text?.highlight ?: ""
-                            } catch (_: Exception) { "" }
+                            } catch (_: Exception) {
+                                ""
+                            }
 
                             val context = LocalContext.current
                             val selectedColorInt = menuHighlight?.color
@@ -198,8 +211,9 @@ fun ReaderOverlay(
                                 readerTextColor = readerTextColor,
                                 showDeleteOption = menuHighlight != null && menuLocator == null,
                                 onCopy = {
-                                    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                    val clip = android.content.ClipData.newPlainText("highlight", highlightText)
+                                    val clipboard =
+                                        context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                    val clip = ClipData.newPlainText("highlight", highlightText)
                                     clipboard.setPrimaryClip(clip)
                                     if (menuLocator != null) viewModel.hideSelectionMenu()
                                     if (menuHighlight != null) viewModel.hideViewHighlight()
@@ -257,7 +271,8 @@ fun ReaderOverlay(
 
             AppTheme(
                 darkTheme = uiDarkTheme,
-                colorPalette = settings.colorPalette
+                colorPalette = settings.colorPalette,
+                themeContrast = settings.themeContrast
             ) {
                 ReaderBottomSheet(
                     tableOfContents = viewModel.tableOfContents,
@@ -299,7 +314,8 @@ fun ReaderOverlay(
         if (uiState.showSettings) {
             AppTheme(
                 darkTheme = uiDarkTheme,
-                colorPalette = settings.colorPalette
+                colorPalette = settings.colorPalette,
+                themeContrast = settings.themeContrast
             ) {
                 ModalBottomSheet(
                     onDismissRequest = { viewModel.hideSettings() },
@@ -323,7 +339,8 @@ fun ReaderOverlay(
         ) {
             AppTheme(
                 darkTheme = uiDarkTheme,
-                colorPalette = settings.colorPalette
+                colorPalette = settings.colorPalette,
+                themeContrast = settings.themeContrast
             ) {
                 SearchScreen(
                     query = uiState.searchQuery,
@@ -342,7 +359,8 @@ fun ReaderOverlay(
         uiState.editingNote?.let { note ->
             AppTheme(
                 darkTheme = uiDarkTheme,
-                colorPalette = settings.colorPalette
+                colorPalette = settings.colorPalette,
+                themeContrast = settings.themeContrast
             ) {
                 NoteBottomSheet(
                     note = note,
@@ -357,9 +375,11 @@ fun ReaderOverlay(
         if (uiState.showDefinition) {
             AppTheme(
                 darkTheme = uiDarkTheme,
-                colorPalette = settings.colorPalette
+                colorPalette = settings.colorPalette,
+                themeContrast = settings.themeContrast
             ) {
                 ReaderDefinitionBottomSheet(
+                    definitionWord = uiState.definitionWord,
                     definitionResults = uiState.definitionResults,
                     onDismiss = { viewModel.hideDefinition() }
                 )
@@ -368,9 +388,11 @@ fun ReaderOverlay(
     }
 }
 
+@SuppressLint("ConfigurationScreenWidthHeight")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ReaderDefinitionBottomSheet(
+    definitionWord: String,
     definitionResults: List<DictionaryEntry>,
     onDismiss: () -> Unit
 ) {
@@ -384,14 +406,14 @@ private fun ReaderDefinitionBottomSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(max = maxSheetHeight)
-                .padding(horizontal = 24.dp)
                 .padding(top = 8.dp, bottom = 24.dp)
         ) {
             if (definitionResults.isEmpty()) {
                 Text(
                     text = "No definition found.",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 24.dp)
                 )
             } else {
                 val scrollState = rememberScrollState()
@@ -401,26 +423,19 @@ private fun ReaderDefinitionBottomSheet(
                         .weight(1f, fill = false)
                         .verticalScroll(scrollState)
                 ) {
-                    definitionResults.forEachIndexed { index, result ->
-                        Text(
-                            text = result.word,
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-
-                        val htmlContent = DictionaryFormatter.prepareHtml(result.definition)
-                        DefinitionWebView(
-                            htmlContent = htmlContent,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        // Divider between multiple results
-                        if (index < definitionResults.size - 1) {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(vertical = 12.dp),
-                                color = MaterialTheme.colorScheme.outlineVariant
-                            )
+                    val sortedResults = definitionResults.sortedWith(compareBy<DictionaryEntry> { entry ->
+                        when {
+                            entry.word == definitionWord -> 0
+                            entry.word.firstOrNull()?.isLowerCase() == true -> 1
+                            else -> 2
                         }
-                    }
+                    }.thenBy { it.word })
+
+                    val combinedHtmlContent = DictionaryFormatter.prepareHtmlForMultipleEntries(sortedResults)
+                    DefinitionWebView(
+                        htmlContent = combinedHtmlContent,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         }

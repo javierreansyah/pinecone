@@ -1,5 +1,6 @@
 package com.example.readerapp.ui.features.reader
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -12,7 +13,7 @@ import androidx.fragment.app.FragmentContainerView
 import com.example.readerapp.ReaderApplication
 import com.example.readerapp.data.local.ReaderPreferences
 import com.example.readerapp.ui.theme.ReaderTheme
-import com.example.readerapp.ui.features.reader.components.ReaderOverlay
+import com.example.readerapp.ui.features.reader.components.overlay.ReaderOverlay
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -328,9 +329,7 @@ class ReaderActivity : AppCompatActivity() {
                     },
                     onInfoClick = {
                         val bookId = intent.getStringExtra(EXTRA_BOOK_ID) ?: ""
-                        val infoIntent = android.content.Intent(this@ReaderActivity, com.example.readerapp.ui.features.info.BookInfoActivity::class.java).apply {
-                            putExtra(com.example.readerapp.ui.features.info.BookInfoActivity.EXTRA_BOOK_ID, bookId)
-                        }
+                        val infoIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("pinecone://book_info/$bookId"))
                         startActivity(infoIntent)
                     }
                 )

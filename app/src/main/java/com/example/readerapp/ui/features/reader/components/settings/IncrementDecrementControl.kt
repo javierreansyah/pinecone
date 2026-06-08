@@ -1,4 +1,4 @@
-package com.example.readerapp.ui.components
+package com.example.readerapp.ui.features.reader.components.settings
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*

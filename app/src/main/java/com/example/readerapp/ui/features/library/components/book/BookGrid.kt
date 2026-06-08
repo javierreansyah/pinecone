@@ -1,4 +1,4 @@
-package com.example.readerapp.ui.features.library.components
+package com.example.readerapp.ui.features.library.components.book
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -10,7 +10,6 @@ import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.readerapp.data.model.Book
-
 import com.example.readerapp.ui.features.library.LayoutMode
 
 @Composable

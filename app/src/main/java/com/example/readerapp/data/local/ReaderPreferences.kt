@@ -39,7 +39,8 @@ data class InstalledDictionary(
 data class ReaderSettings(
     // App-level settings (not Readium)
     val themeMode: String = "System",
-    val colorPalette: String = "Pine",
+    val colorPalette: String = "Dynamic",
+    val themeContrast: String = "Standard",
     val locale: String = "System",
     val brightness: Float = 0.5f,
     val autoBrightness: Boolean = true,
@@ -174,6 +175,7 @@ class ReaderPreferences(private val context: Context) {
         // App-level settings
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val COLOR_PALETTE = stringPreferencesKey("color_palette")
+        val THEME_CONTRAST = stringPreferencesKey("theme_contrast")
         val LOCALE = stringPreferencesKey("locale")
         val BRIGHTNESS = floatPreferencesKey("brightness")
         val AUTO_BRIGHTNESS = booleanPreferencesKey("auto_brightness")
@@ -221,7 +223,8 @@ class ReaderPreferences(private val context: Context) {
     val readerSettings: Flow<ReaderSettings> = context.dataStore.data.map { preferences ->
         ReaderSettings(
             themeMode = preferences[THEME_MODE] ?: "System",
-            colorPalette = preferences[COLOR_PALETTE] ?: "Pine",
+            colorPalette = preferences[COLOR_PALETTE] ?: "Dynamic",
+            themeContrast = preferences[THEME_CONTRAST] ?: "Standard",
             locale = preferences[LOCALE] ?: "System",
             brightness = preferences[BRIGHTNESS] ?: 0.5f,
             autoBrightness = preferences[AUTO_BRIGHTNESS] ?: true,
@@ -285,6 +288,7 @@ class ReaderPreferences(private val context: Context) {
         context.dataStore.edit { preferences ->
             preferences[THEME_MODE] = settings.themeMode
             preferences[COLOR_PALETTE] = settings.colorPalette
+            preferences[THEME_CONTRAST] = settings.themeContrast
             preferences[LOCALE] = settings.locale
             preferences[BRIGHTNESS] = settings.brightness
             preferences[AUTO_BRIGHTNESS] = settings.autoBrightness

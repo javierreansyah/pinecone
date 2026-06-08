@@ -1,4 +1,4 @@
-package com.example.readerapp.ui.features.reader.components
+package com.example.readerapp.ui.features.reader.components.overlay
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

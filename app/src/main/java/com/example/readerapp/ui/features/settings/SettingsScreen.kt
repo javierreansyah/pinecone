@@ -16,16 +16,16 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Keyboard_arrow_right
 import com.example.readerapp.data.local.ReaderPreferences
-import com.example.readerapp.ui.features.settings.components.SettingsItem
+import com.example.readerapp.ui.features.settings.components.settingsItem
 import com.example.readerapp.worker.WorkerUtils
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.content.Intent
 import android.net.Uri
 import android.os.Environment
-import android.os.Build
 import android.provider.DocumentsContract
-import com.example.readerapp.ui.features.library.components.SegmentedListItem
+import com.example.readerapp.ui.components.SegmentedColumn
+import com.example.readerapp.ui.theme.ThemeRegistry
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -104,31 +104,34 @@ fun SettingsScreen(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            SettingsItem(
-                label = "Theme Mode",
-                value = settings.themeMode,
-                options = listOf("System", "Light", "Dark"),
-                onSelected = { viewModel.updateSettings(settings.copy(themeMode = it)) },
-                index = 0,
-                count = 3
-            )
-            SettingsItem(
-                label = "Color Palette",
-                value = settings.colorPalette,
-                options = listOf("Pine", "Neutral", "Dynamic"),
-                onSelected = { viewModel.updateSettings(settings.copy(colorPalette = it)) },
-                index = 1,
-                count = 3
-            )
-            SettingsItem(
-                label = "Language",
-                value = settings.locale,
-                options = listOf("System", "English", "Spanish", "French"),
-                onSelected = { viewModel.updateSettings(settings.copy(locale = it)) },
-                index = 2,
-                count = 3
-            )
-            Spacer(modifier = Modifier.height(16.dp))
+            val colorPaletteOptions = remember { listOf("Dynamic") + ThemeRegistry.getThemeNames() }
+            SegmentedColumn(modifier = Modifier.padding(bottom = 16.dp)) {
+                settingsItem(
+                    label = "Theme Mode",
+                    value = settings.themeMode,
+                    options = listOf("System", "Light", "Dark"),
+                    onSelected = { viewModel.updateSettings(settings.copy(themeMode = it)) }
+                )
+                settingsItem(
+                    label = "Color Palette",
+                    value = settings.colorPalette,
+                    options = colorPaletteOptions,
+                    onSelected = { viewModel.updateSettings(settings.copy(colorPalette = it)) }
+                )
+                settingsItem(
+                    label = "Theme Contrast",
+                    value = settings.themeContrast,
+                    options = listOf("Standard", "Medium", "High"),
+                    onSelected = { viewModel.updateSettings(settings.copy(themeContrast = it)) },
+                    enabled = settings.colorPalette != "Dynamic"
+                )
+                settingsItem(
+                    label = "Language",
+                    value = settings.locale,
+                    options = listOf("System", "English", "Spanish", "French"),
+                    onSelected = { viewModel.updateSettings(settings.copy(locale = it)) }
+                )
+            }
 
             Text(
                 text = "Backup",
@@ -137,46 +140,43 @@ fun SettingsScreen(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            SettingsItem(
-                label = "Auto Backup Frequency",
-                value = settings.autoBackupFrequency,
-                options = listOf("3h", "6h", "12h", "1d", "2d", "3d", "1w", "never"),
-                onSelected = { 
-                    viewModel.updateSettings(settings.copy(autoBackupFrequency = it)) 
-                    WorkerUtils.scheduleBackupWork(context, it)
-                },
-                index = 0,
-                count = 2
-            )
-            
-            // Backup Location Button
-            SegmentedListItem(
-                selected = false,
-                onClick = { 
-                    val pineconeDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "Pinecone")
-                    if (!pineconeDir.exists()) {
-                        pineconeDir.mkdirs()
+            SegmentedColumn {
+                settingsItem(
+                    label = "Auto Backup Frequency",
+                    value = settings.autoBackupFrequency,
+                    options = listOf("3h", "6h", "12h", "1d", "2d", "3d", "1w", "never"),
+                    onSelected = { 
+                        viewModel.updateSettings(settings.copy(autoBackupFrequency = it)) 
+                        WorkerUtils.scheduleBackupWork(context, it)
                     }
-                    val initialUri =
-                        DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Documents/Pinecone")
-                    folderPickerLauncher.launch(initialUri)
-                },
-                index = 1,
-                count = 2,
-                content = { Text("Backup Location") },
-                supportingContent = { 
-                    Text(
-                        if (settings.backupFolderUri.isNotEmpty()) "Selected" 
-                        else "Not selected (Auto-backup disabled)"
-                    ) 
-                },
-                trailingContent = {
-                    Icon(
-                        imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                        contentDescription = null
-                    )
-                }
-            )
+                )
+                
+                // Backup Location Button
+                item(
+                    onClick = { 
+                        val pineconeDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "Pinecone")
+                        if (!pineconeDir.exists()) {
+                            pineconeDir.mkdirs()
+                        }
+                        val initialUri =
+                            DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Documents/Pinecone")
+                        folderPickerLauncher.launch(initialUri)
+                    },
+                    content = { Text("Backup Location") },
+                    supportingContent = { 
+                        Text(
+                            if (settings.backupFolderUri.isNotEmpty()) "Selected" 
+                            else "Not selected (Auto-backup disabled)"
+                        ) 
+                    },
+                    trailingContent = {
+                        Icon(
+                            imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
+                            contentDescription = null
+                        )
+                    }
+                )
+            }
         }
     }
 }

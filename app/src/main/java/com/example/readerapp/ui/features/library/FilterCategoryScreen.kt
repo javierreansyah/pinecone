@@ -1,16 +1,8 @@
 package com.example.readerapp.ui.features.library
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -20,9 +12,10 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Tune
-import com.example.readerapp.ui.features.library.components.FilterItemSortBottomSheet
-import com.example.readerapp.ui.features.library.components.FilterItemSortType
-import com.example.readerapp.ui.features.library.components.RenameFilterDialog
+import com.composables.icons.materialsymbols.outlined.Arrow_back
+import com.composables.icons.materialsymbols.outlined.More_vert
+import com.example.readerapp.ui.components.SegmentedLazyColumn
+import com.example.readerapp.ui.features.library.components.*
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -98,7 +91,7 @@ fun AllFilterItemsScreen(
                         colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                         onClick = onNavigateBack
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = "Back")
                     }
                 },
                 actions = {
@@ -119,23 +112,22 @@ fun AllFilterItemsScreen(
                 Text("No items found.", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(16.dp))
             }
         } else {
-            LazyColumn(
+            SegmentedLazyColumn(
                 modifier = Modifier.padding(innerPadding).fillMaxSize().padding(horizontal = 16.dp),
-                contentPadding = PaddingValues(bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                contentPadding = PaddingValues(bottom = 16.dp)
             ) {
-                itemsIndexed(sortedItems) { index, item ->
-                    com.example.readerapp.ui.features.library.components.SegmentedListItem(
-                        selected = false,
+                sortedItems.forEach { item ->
+                    item(
                         onClick = { onNavigateToDetail(item.first) },
-                        index = index,
-                        count = itemsWithCounts.size,
                         content = { Text(item.first) },
                         supportingContent = { Text("${item.second} books") },
                         trailingContent = {
                             Box {
                                 IconButton(onClick = { selectedItemForMenu = item.first }) {
-                                    Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                                    Icon(
+                                        MaterialSymbols.Outlined.More_vert,
+                                        contentDescription = "More options"
+                                    )
                                 }
                                 DropdownMenu(
                                     expanded = selectedItemForMenu == item.first,

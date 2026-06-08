@@ -52,15 +52,6 @@
             android:name=".ui.features.reader.ReaderActivity"
             android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize"
             android:theme="@style/Theme.ReaderApp" />
-        <activity
-            android:name=".ui.features.info.BookInfoActivity"
-            android:theme="@style/Theme.ReaderApp"
-            android:exported="false" />
-        <activity
-            android:name=".ui.features.info.EditBookActivity"
-            android:theme="@style/Theme.ReaderApp"
-            android:windowSoftInputMode="adjustResize"
-            android:exported="false" />
     </application>
 
 </manifest>

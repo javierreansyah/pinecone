@@ -1,9 +1,10 @@
 package com.example.readerapp.ui.features.library
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Arrow_back
+import com.composables.icons.materialsymbols.outlined.Book
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -12,13 +13,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.readerapp.ui.features.library.components.BookGrid
+import com.example.readerapp.ui.features.library.components.book.BookGrid
+import com.example.readerapp.ui.components.EmptyState
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ArchiveScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToReader: (String) -> Unit
+    onNavigateToReader: (String) -> Unit,
+    onNavigateToBookInfo: (String) -> Unit
 ) {
     val context = LocalContext.current
     val viewModel: LibraryViewModel = viewModel(
@@ -49,7 +52,7 @@ fun ArchiveScreen(
                         colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                         onClick = onNavigateBack
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -62,7 +65,11 @@ fun ArchiveScreen(
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             if (archivedBooks.isEmpty()) {
-                Text("No archived books.", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(16.dp))
+                EmptyState(
+                    icon = MaterialSymbols.Outlined.Book,
+                    text = "No archived books.",
+                    modifier = Modifier.fillMaxSize().padding(16.dp)
+                )
             } else {
                 BookGrid(
                     books = archivedBooks,
@@ -73,10 +80,11 @@ fun ArchiveScreen(
         }
 
         if (selectedBookForMenu != null) {
-            com.example.readerapp.ui.features.library.components.BookContextMenu(
+            com.example.readerapp.ui.features.library.components.book.BookContextMenu(
                 viewModel = viewModel,
                 bookId = selectedBookForMenu!!,
                 shelfId = null,
+                onNavigateToBookInfo = onNavigateToBookInfo,
                 onDismiss = { selectedBookForMenu = null }
             )
         }

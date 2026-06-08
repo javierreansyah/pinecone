@@ -1,13 +1,10 @@
-package com.example.readerapp.ui.features.library.components
+package com.example.readerapp.ui.features.library.components.book
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,14 +13,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Archive
-import androidx.compose.material.icons.outlined.BookmarkAdd
-import androidx.compose.material.icons.outlined.BookmarkRemove
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.*
 import com.example.readerapp.ui.features.library.LibraryViewModel
+import com.example.readerapp.ui.features.library.components.ShelfListItem
 
 enum class MenuState {
     Main,
@@ -36,6 +29,7 @@ fun BookContextMenu(
     viewModel: LibraryViewModel,
     bookId: String,
     shelfId: String? = null,
+    onNavigateToBookInfo: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -92,13 +86,10 @@ fun BookContextMenu(
 
                 ListItem(
                     headlineContent = { Text("Info", style = MaterialTheme.typography.titleMedium) },
-                    leadingContent = { Icon(Icons.Outlined.Info, contentDescription = null) },
+                    leadingContent = { Icon(MaterialSymbols.Outlined.Info, contentDescription = null) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable {
-                        val intent = android.content.Intent(context, com.example.readerapp.ui.features.info.BookInfoActivity::class.java).apply {
-                            putExtra(com.example.readerapp.ui.features.info.BookInfoActivity.EXTRA_BOOK_ID, bookId)
-                        }
-                        context.startActivity(intent)
+                        onNavigateToBookInfo(bookId)
                         onDismiss()
                     }
                 )
@@ -106,7 +97,7 @@ fun BookContextMenu(
                     headlineContent = { 
                         Text(if (book?.isArchived == true) "Unarchive" else "Archive", style = MaterialTheme.typography.titleMedium) 
                     },
-                    leadingContent = { Icon(Icons.Outlined.Archive, contentDescription = null) },
+                    leadingContent = { Icon(MaterialSymbols.Outlined.Archive, contentDescription = null) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable {
                         viewModel.toggleArchive(bookId)
@@ -118,7 +109,7 @@ fun BookContextMenu(
                         Text(if (book?.isRead == true) "Mark as Unread" else "Mark as Read", style = MaterialTheme.typography.titleMedium) 
                     },
                     leadingContent = { 
-                        Icon(if (book?.isRead == true) Icons.Outlined.RadioButtonUnchecked else Icons.Outlined.CheckCircle, contentDescription = null) 
+                        Icon(if (book?.isRead == true) MaterialSymbols.Outlined.Radio_button_unchecked else MaterialSymbols.Outlined.Check_circle, contentDescription = null) 
                     },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable {
@@ -128,7 +119,7 @@ fun BookContextMenu(
                 )
                 ListItem(
                     headlineContent = { Text("Add to Shelf", style = MaterialTheme.typography.titleMedium) },
-                    leadingContent = { Icon(Icons.Outlined.BookmarkAdd, contentDescription = null) },
+                    leadingContent = { Icon(MaterialSymbols.Outlined.Bookmark_add, contentDescription = null) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable {
                         menuState = MenuState.AddToShelf
@@ -137,7 +128,7 @@ fun BookContextMenu(
                 if (shelfId != null && shelfId != "unshelved") {
                     ListItem(
                         headlineContent = { Text("Remove from Shelf", style = MaterialTheme.typography.titleMedium) },
-                        leadingContent = { Icon(Icons.Outlined.BookmarkRemove, contentDescription = null) },
+                        leadingContent = { Icon(MaterialSymbols.Outlined.Bookmark_remove, contentDescription = null) },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         modifier = Modifier.clickable {
                             viewModel.removeBookFromShelf(shelfId, bookId)
@@ -147,7 +138,7 @@ fun BookContextMenu(
                 }
                 ListItem(
                     headlineContent = { Text("Delete", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error) },
-                    leadingContent = { Icon(Icons.Outlined.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                    leadingContent = { Icon(MaterialSymbols.Outlined.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable {
                         showDeleteConfirmation = true
@@ -174,8 +165,8 @@ fun BookContextMenu(
                                     colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                                     onClick = { menuState = MenuState.Main }
                                 ) {
-                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                            }
+                                    Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = "Back")
+                                }
                             },
                             colors = TopAppBarDefaults.topAppBarColors(
                                 containerColor = MaterialTheme.colorScheme.surface,
@@ -187,7 +178,7 @@ fun BookContextMenu(
                         FloatingActionButton(
                             onClick = { showCreateShelfDialog = true }
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = "Create Shelf")
+                            Icon(MaterialSymbols.Outlined.Add, contentDescription = "Create Shelf")
                         }
                     }
                 ) { paddingValues ->
@@ -245,8 +236,6 @@ fun BookContextMenu(
             }
         )
     }
-
-    // Add to Shelf Dialog removed as it's now handled by MenuState.AddToShelf
 
     // Create Shelf Dialog
     if (showCreateShelfDialog) {

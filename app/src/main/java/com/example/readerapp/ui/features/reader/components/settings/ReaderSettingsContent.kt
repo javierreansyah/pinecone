@@ -1,4 +1,4 @@
-package com.example.readerapp.ui.features.reader.components
+package com.example.readerapp.ui.features.reader.components.settings
 
 import android.annotation.SuppressLint
 import android.util.Log
@@ -29,10 +29,7 @@ import com.example.readerapp.data.local.ReaderSettings
 import java.util.Locale
 import kotlin.math.roundToInt
 import androidx.core.graphics.toColorInt
-import com.example.readerapp.ui.components.CustomColorPickerDialog
-import com.example.readerapp.ui.components.IncrementDecrementControl
 import com.example.readerapp.ui.components.SegmentedButtonGroup
-import com.example.readerapp.ui.components.ThemeSwatch
 import kotlinx.coroutines.launch
 
 @SuppressLint("DefaultLocale", "ConfigurationScreenWidthHeight")

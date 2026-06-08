@@ -1,4 +1,4 @@
-package com.example.readerapp.ui.features.reader.components
+package com.example.readerapp.ui.features.reader.components.contents
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

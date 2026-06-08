@@ -1,4 +1,4 @@
-package com.example.readerapp.ui.features.library.components
+package com.example.readerapp.ui.features.library.components.book
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,7 +12,6 @@ import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import com.example.readerapp.data.model.Book
 import java.io.File
-
 import androidx.compose.ui.draw.clip
 
 @Composable

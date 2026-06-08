@@ -1,8 +1,6 @@
 package com.example.readerapp.ui.features.library
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -15,11 +13,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.window.PopupProperties
-import androidx.compose.material.icons.filled.MoreVert
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Tune
-import com.example.readerapp.ui.features.library.components.FilterSortBottomSheet
-import com.example.readerapp.ui.features.library.components.RenameFilterDialog
+import com.composables.icons.materialsymbols.outlined.Arrow_back
+import com.composables.icons.materialsymbols.outlined.More_vert
+import com.example.readerapp.ui.features.library.components.*
+import com.example.readerapp.ui.features.library.components.book.*
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -28,7 +27,8 @@ fun FilterResultScreen(
     filterValue: String,
     onNavigateBack: () -> Unit,
     onNavigateToReader: (String) -> Unit,
-    onNavigateToMerged: (String) -> Unit
+    onNavigateToMerged: (String) -> Unit = {},
+    onNavigateToBookInfo: (String) -> Unit
 ) {
     val context = LocalContext.current
     val viewModel: LibraryViewModel = viewModel(
@@ -44,12 +44,12 @@ fun FilterResultScreen(
     )
 
     val uiState by viewModel.uiState.collectAsState()
-    var showFilterSheet by remember { mutableStateOf(false) }
-    var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
+    var selectedBookContext by remember { mutableStateOf<Pair<String, String?>?>(null) }
 
     val allAuthors by viewModel.allAuthors.collectAsState()
     val allTags by viewModel.allTags.collectAsState()
     var showMenu by remember { mutableStateOf(false) }
+    var showFilterSheet by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf(false) }
 
@@ -78,7 +78,7 @@ fun FilterResultScreen(
                         colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                         onClick = onNavigateBack
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = "Back")
                     }
                 },
                 actions = {
@@ -87,7 +87,7 @@ fun FilterResultScreen(
                     }
                     Box {
                         IconButton(onClick = { showMenu = !showMenu }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                            Icon(MaterialSymbols.Outlined.More_vert, contentDescription = "More options")
                         }
                         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                             DropdownMenuItem(
@@ -119,34 +119,32 @@ fun FilterResultScreen(
             if (books.isEmpty()) {
                 Text("No books found.", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(16.dp))
             } else {
-                com.example.readerapp.ui.features.library.components.BookCollection(
+                BookCollection(
                     books = books,
                     layoutMode = uiState.bookPreferences.layoutMode,
                     onBookClick = onNavigateToReader,
-                    onBookLongClick = { selectedBookForMenu = it }
+                    onBookLongClick = { selectedBookContext = it to null }
                 )
             }
         }
 
         if (showFilterSheet) {
-            FilterSortBottomSheet(
+            FilterResultBottomSheet(
                 preferences = uiState.bookPreferences,
                 onLayoutModeChange = viewModel::onLayoutModeChange,
                 onSortTypeChange = viewModel::onSortTypeChange,
                 onStatusToggle = viewModel::toggleStatusFilter,
-                onDismiss = { showFilterSheet = false },
-                showViewPicker = true,
-                showStatusFilter = true,
-                availableSortTypes = listOf(SortType.Title, SortType.Author, SortType.LastRead, SortType.Added, SortType.Progress)
+                onDismiss = { showFilterSheet = false }
             )
         }
 
-        if (selectedBookForMenu != null) {
-            com.example.readerapp.ui.features.library.components.BookContextMenu(
+        if (selectedBookContext != null) {
+            BookContextMenu(
                 viewModel = viewModel,
-                bookId = selectedBookForMenu!!,
-                shelfId = null,
-                onDismiss = { selectedBookForMenu = null }
+                bookId = selectedBookContext!!.first,
+                shelfId = selectedBookContext!!.second,
+                onNavigateToBookInfo = onNavigateToBookInfo,
+                onDismiss = { selectedBookContext = null }
             )
         }
 

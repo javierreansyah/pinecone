@@ -1,4 +1,4 @@
-package com.example.readerapp.ui.features.library.components
+package com.example.readerapp.ui.features.library.components.book
 
 import androidx.compose.runtime.Composable
 import com.example.readerapp.data.model.Book

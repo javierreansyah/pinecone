@@ -1,4 +1,4 @@
-package com.example.readerapp.ui.features.reader.components
+package com.example.readerapp.ui.features.reader.components.contents
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -10,8 +10,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.readerapp.data.local.BookmarkEntity
+import org.json.JSONObject
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Bookmark
+import com.example.readerapp.ui.components.EmptyState
 
 @Composable
 fun BookmarksList(
@@ -22,16 +26,18 @@ fun BookmarksList(
     onDeleteBookmark: (Long) -> Unit
 ) {
     if (bookmarks.isEmpty()) {
-        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-            Text("No Bookmarks", style = MaterialTheme.typography.bodyLarge)
-        }
+        EmptyState(
+            icon = MaterialSymbols.Outlined.Bookmark,
+            text = "No Bookmarks",
+            modifier = Modifier.fillMaxWidth().padding(32.dp)
+        )
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
             items(bookmarks) { bookmark ->
-                val locator = try { Locator.fromJSON(org.json.JSONObject(bookmark.locatorJson)) } catch (_: Exception) { null }
+                val locator = try { Locator.fromJSON(JSONObject(bookmark.locatorJson)) } catch (_: Exception) { null }
                 if (locator != null) {
                     val chapterTitle = bookmark.chapterTitle
                         ?.takeIf { it.isNotBlank() && it != "In Document" }

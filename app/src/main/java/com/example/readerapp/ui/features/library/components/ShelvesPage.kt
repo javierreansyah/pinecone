@@ -14,6 +14,11 @@ import androidx.compose.ui.unit.dp
 import com.example.readerapp.data.local.ShelfWithCovers
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.features.library.LayoutMode
+import com.example.readerapp.ui.features.library.components.book.BookItem
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Folder
+import com.composables.icons.materialsymbols.outlined.Book
+import com.example.readerapp.ui.components.EmptyState
 
 @Composable
 fun ShelvesPage(
@@ -75,19 +80,14 @@ fun ShelvesPage(
 
                             // Books horizontal scroll
                             if (visibleBooks.isEmpty()) {
-                                Box(
+                                EmptyState(
+                                    icon = MaterialSymbols.Outlined.Book,
+                                    text = "Empty Shelf",
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(100.dp)
-                                        .padding(horizontal = 8.dp),
-                                    contentAlignment = Alignment.CenterStart
-                                ) {
-                                    Text(
-                                        "Empty Shelf",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                                        .height(140.dp)
+                                        .padding(horizontal = 8.dp)
+                                )
                             } else {
                                 BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
                                     val maxW = maxWidth
@@ -114,6 +114,12 @@ fun ShelvesPage(
                     }
                 }
             }
+        } else {
+            EmptyState(
+                icon = MaterialSymbols.Outlined.Folder,
+                text = "No shelves found",
+                modifier = Modifier.fillMaxSize().padding(16.dp)
+            )
         }
     }
 }

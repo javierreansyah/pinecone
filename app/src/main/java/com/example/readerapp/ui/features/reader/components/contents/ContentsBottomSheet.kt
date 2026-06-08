@@ -1,4 +1,4 @@
-package com.example.readerapp.ui.features.reader.components
+package com.example.readerapp.ui.features.reader.components.contents
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -99,9 +99,26 @@ fun ReaderBottomSheet(
                     verticalAlignment = Alignment.Top
                 ) { page ->
                     when (page) {
-                        0 -> TocList(tableOfContents, currentLocator, getChapterPageLabel, onChapterClick)
-                        1 -> BookmarksList(bookmarks, tableOfContents, getPositionLabel, onBookmarkClick, onDeleteBookmark)
-                        2 -> NotesList(notes, tableOfContents, getPositionLabel, onNoteClick, onDeleteNote)
+                        0 -> TocList(
+                            tableOfContents,
+                            currentLocator,
+                            getChapterPageLabel,
+                            onChapterClick
+                        )
+                        1 -> BookmarksList(
+                            bookmarks,
+                            tableOfContents,
+                            getPositionLabel,
+                            onBookmarkClick,
+                            onDeleteBookmark
+                        )
+                        2 -> NotesList(
+                            notes,
+                            tableOfContents,
+                            getPositionLabel,
+                            onNoteClick,
+                            onDeleteNote
+                        )
                     }
                 }
             }
