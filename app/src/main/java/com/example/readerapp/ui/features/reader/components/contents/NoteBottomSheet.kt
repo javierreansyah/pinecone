@@ -13,6 +13,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import com.example.readerapp.data.local.NoteEntity
 import com.example.readerapp.ui.theme.spacing
 
@@ -58,7 +60,7 @@ fun NoteBottomSheet(
                     editText = it
                 },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Note text...", style = MaterialTheme.typography.bodyLarge) },
+                placeholder = { Text(stringResource(R.string.reader_note_text_placeholder), style = MaterialTheme.typography.bodyLarge) },
                 textStyle = MaterialTheme.typography.bodyLarge,
                 minLines = 2
             )
@@ -111,7 +113,7 @@ fun NoteBottomSheet(
                     modifier = Modifier.weight(1f),
                     shape = ButtonDefaults.shape
                 ) {
-                    Text("Delete", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.action_delete), style = MaterialTheme.typography.labelLarge)
                 }
 
                 Button(
@@ -122,7 +124,7 @@ fun NoteBottomSheet(
                     modifier = Modifier.weight(1f),
                     shape = ButtonDefaults.shape
                 ) {
-                    Text("Save", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.action_save), style = MaterialTheme.typography.labelLarge)
                 }
             }
         }

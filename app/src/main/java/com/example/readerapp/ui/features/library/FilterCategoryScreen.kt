@@ -14,6 +14,8 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.More_vert
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import com.example.readerapp.ui.components.SegmentedLazyColumn
 import com.example.readerapp.ui.features.library.components.*
 
@@ -84,19 +86,19 @@ fun AllFilterItemsScreen(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text(if (filterType == "author") "Authors" else "Tags") },
+                title = { Text(if (filterType == "author") stringResource(R.string.library_authors_title) else stringResource(R.string.library_tags_title)) },
                 navigationIcon = {
                     FilledTonalIconButton(
                         shapes = IconButtonDefaults.shapes(),
                         colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                         onClick = onNavigateBack
                     ) {
-                        Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = "Back")
+                        Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = stringResource(R.string.action_back))
                     }
                 },
                 actions = {
                     IconButton(onClick = { showSortSheet = true }) {
-                        Icon(MaterialSymbols.Outlined.Tune, contentDescription = "Sort")
+                        Icon(MaterialSymbols.Outlined.Tune, contentDescription = stringResource(R.string.action_sort))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -109,7 +111,7 @@ fun AllFilterItemsScreen(
     ) { innerPadding ->
         if (itemsWithCounts.isEmpty()) {
             Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
-                Text("No items found.", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(16.dp))
+                Text(stringResource(R.string.library_empty_items), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(16.dp))
             }
         } else {
             SegmentedLazyColumn(
@@ -120,13 +122,21 @@ fun AllFilterItemsScreen(
                     item(
                         onClick = { onNavigateToDetail(item.first) },
                         content = { Text(item.first) },
-                        supportingContent = { Text("${item.second} books") },
+                        supportingContent = { 
+                            Text(
+                                androidx.compose.ui.res.pluralStringResource(
+                                    R.plurals.library_books_count, 
+                                    item.second, 
+                                    item.second
+                                )
+                            ) 
+                        },
                         trailingContent = {
                             Box {
                                 IconButton(onClick = { selectedItemForMenu = item.first }) {
                                     Icon(
                                         MaterialSymbols.Outlined.More_vert,
-                                        contentDescription = "More options"
+                                        contentDescription = stringResource(R.string.action_more)
                                     )
                                 }
                                 DropdownMenu(
@@ -134,14 +144,14 @@ fun AllFilterItemsScreen(
                                     onDismissRequest = { selectedItemForMenu = null }
                                 ) {
                                     DropdownMenuItem(
-                                        text = { Text("Rename") },
+                                        text = { Text(stringResource(R.string.action_rename)) },
                                         onClick = {
                                             selectedItemForMenu = null
                                             itemToRename = item.first
                                         }
                                     )
                                     DropdownMenuItem(
-                                        text = { Text("Delete") },
+                                        text = { Text(stringResource(R.string.action_delete)) },
                                         onClick = {
                                             selectedItemForMenu = null
                                             itemToDelete = item.first
@@ -155,35 +165,34 @@ fun AllFilterItemsScreen(
             }
         }
 
-        if (itemToDelete != null) {
+        itemToDelete?.let { name ->
+            val titleType = if (filterType == "author") stringResource(R.string.library_sort_author) else stringResource(R.string.library_sort_label)
             AlertDialog(
                 onDismissRequest = { itemToDelete = null },
-                title = { Text("Delete $filterType") },
-                text = { Text("Are you sure you want to delete '${itemToDelete}'? This will remove it from all books.") },
+                title = { Text(stringResource(R.string.library_delete_item_title, titleType)) },
+                text = { Text(stringResource(R.string.library_delete_item_message, name)) },
                 confirmButton = {
                     TextButton(onClick = {
-                        val nameToDelete = itemToDelete!!
                         itemToDelete = null
-                        viewModel.deleteFilterItem(filterType, nameToDelete) {}
+                        viewModel.deleteFilterItem(filterType, name) {}
                     }) {
-                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { itemToDelete = null }) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.action_cancel))
                     }
                 }
             )
         }
 
-        if (itemToRename != null) {
+        itemToRename?.let { oldName ->
             RenameFilterDialog(
-                initialName = itemToRename!!,
+                initialName = oldName,
                 suggestions = suggestionList,
                 onDismiss = { itemToRename = null },
                 onConfirm = { newName ->
-                    val oldName = itemToRename!!
                     itemToRename = null
                     viewModel.renameFilterItem(filterType, oldName, newName) {}
                 }

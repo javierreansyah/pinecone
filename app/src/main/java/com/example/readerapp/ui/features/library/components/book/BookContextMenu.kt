@@ -13,6 +13,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.*
 import com.example.readerapp.ui.features.library.LibraryViewModel
@@ -73,7 +75,7 @@ fun BookContextMenu(
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = if (book.authors.isNotEmpty()) book.authors.joinToString(", ") else "Unknown Author",
+                                text = if (book.authors.isNotEmpty()) book.authors.joinToString(", ") else stringResource(R.string.book_unknown_author),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
@@ -85,7 +87,7 @@ fun BookContextMenu(
                 }
 
                 ListItem(
-                    headlineContent = { Text("Info", style = MaterialTheme.typography.titleMedium) },
+                    headlineContent = { Text(stringResource(R.string.book_info_title), style = MaterialTheme.typography.titleMedium) },
                     leadingContent = { Icon(MaterialSymbols.Outlined.Info, contentDescription = null) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable {
@@ -95,7 +97,8 @@ fun BookContextMenu(
                 )
                 ListItem(
                     headlineContent = { 
-                        Text(if (book?.isArchived == true) "Unarchive" else "Archive", style = MaterialTheme.typography.titleMedium) 
+                        val labelText = if (book?.isArchived == true) stringResource(R.string.book_unarchive) else stringResource(R.string.book_archive)
+                        Text(labelText, style = MaterialTheme.typography.titleMedium) 
                     },
                     leadingContent = { Icon(MaterialSymbols.Outlined.Archive, contentDescription = null) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
@@ -106,7 +109,8 @@ fun BookContextMenu(
                 )
                 ListItem(
                     headlineContent = { 
-                        Text(if (book?.isRead == true) "Mark as Unread" else "Mark as Read", style = MaterialTheme.typography.titleMedium) 
+                        val labelText = if (book?.isRead == true) stringResource(R.string.book_mark_as_unread) else stringResource(R.string.book_mark_as_read)
+                        Text(labelText, style = MaterialTheme.typography.titleMedium) 
                     },
                     leadingContent = { 
                         Icon(if (book?.isRead == true) MaterialSymbols.Outlined.Radio_button_unchecked else MaterialSymbols.Outlined.Check_circle, contentDescription = null) 
@@ -118,7 +122,7 @@ fun BookContextMenu(
                     }
                 )
                 ListItem(
-                    headlineContent = { Text("Add to Shelf", style = MaterialTheme.typography.titleMedium) },
+                    headlineContent = { Text(stringResource(R.string.library_label_add_to_shelf), style = MaterialTheme.typography.titleMedium) },
                     leadingContent = { Icon(MaterialSymbols.Outlined.Bookmark_add, contentDescription = null) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable {
@@ -127,7 +131,7 @@ fun BookContextMenu(
                 )
                 if (shelfId != null && shelfId != "unshelved") {
                     ListItem(
-                        headlineContent = { Text("Remove from Shelf", style = MaterialTheme.typography.titleMedium) },
+                        headlineContent = { Text(stringResource(R.string.library_label_remove_from_shelf), style = MaterialTheme.typography.titleMedium) },
                         leadingContent = { Icon(MaterialSymbols.Outlined.Bookmark_remove, contentDescription = null) },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         modifier = Modifier.clickable {
@@ -137,7 +141,7 @@ fun BookContextMenu(
                     )
                 }
                 ListItem(
-                    headlineContent = { Text("Delete", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error) },
+                    headlineContent = { Text(stringResource(R.string.action_delete), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error) },
                     leadingContent = { Icon(MaterialSymbols.Outlined.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable {
@@ -158,14 +162,14 @@ fun BookContextMenu(
                 Scaffold(
                     topBar = {
                         TopAppBar(
-                            title = { Text("Select Shelf") },
+                            title = { Text(stringResource(R.string.library_select_shelf_title)) },
                             navigationIcon = {
                                 FilledTonalIconButton(
                                     shapes = IconButtonDefaults.shapes(),
                                     colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                                     onClick = { menuState = MenuState.Main }
                                 ) {
-                                    Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = "Back")
+                                    Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = stringResource(R.string.action_back))
                                 }
                             },
                             colors = TopAppBarDefaults.topAppBarColors(
@@ -178,7 +182,7 @@ fun BookContextMenu(
                         FloatingActionButton(
                             onClick = { showCreateShelfDialog = true }
                         ) {
-                            Icon(MaterialSymbols.Outlined.Add, contentDescription = "Create Shelf")
+                            Icon(MaterialSymbols.Outlined.Add, contentDescription = stringResource(R.string.action_create))
                         }
                     }
                 ) { paddingValues ->
@@ -186,7 +190,7 @@ fun BookContextMenu(
                         val validShelves = shelves.filter { it.shelf.id != "unshelved" }
                         if (validShelves.isEmpty()) {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text("No shelves available.", style = MaterialTheme.typography.bodyLarge)
+                                Text(stringResource(R.string.library_empty_shelves), style = MaterialTheme.typography.bodyLarge)
                             }
                         } else {
                             LazyColumn(
@@ -215,8 +219,8 @@ fun BookContextMenu(
     if (showDeleteConfirmation) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmation = false },
-            title = { Text("Delete Book", style = MaterialTheme.typography.titleLarge) },
-            text = { Text("Are you sure you want to delete this book? This action cannot be undone.", style = MaterialTheme.typography.bodyMedium) },
+            title = { Text(stringResource(R.string.book_delete_title), style = MaterialTheme.typography.titleLarge) },
+            text = { Text(stringResource(R.string.book_delete_message), style = MaterialTheme.typography.bodyMedium) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -226,12 +230,12 @@ fun BookContextMenu(
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Delete", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.action_delete), style = MaterialTheme.typography.labelLarge)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirmation = false }) {
-                    Text("Cancel", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.action_cancel), style = MaterialTheme.typography.labelLarge)
                 }
             }
         )
@@ -241,12 +245,12 @@ fun BookContextMenu(
     if (showCreateShelfDialog) {
         AlertDialog(
             onDismissRequest = { showCreateShelfDialog = false },
-            title = { Text("Create New Shelf", style = MaterialTheme.typography.titleLarge) },
+            title = { Text(stringResource(R.string.library_create_shelf_title), style = MaterialTheme.typography.titleLarge) },
             text = {
                 OutlinedTextField(
                     value = newShelfName,
                     onValueChange = { newShelfName = it },
-                    label = { Text("Shelf Name", style = MaterialTheme.typography.labelMedium) },
+                    label = { Text(stringResource(R.string.library_shelf_name_label), style = MaterialTheme.typography.labelMedium) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -260,12 +264,12 @@ fun BookContextMenu(
                         onDismiss()
                     }
                 }) {
-                    Text("Create", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.action_create), style = MaterialTheme.typography.labelLarge)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showCreateShelfDialog = false }) {
-                    Text("Cancel", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.action_cancel), style = MaterialTheme.typography.labelLarge)
                 }
             }
         )

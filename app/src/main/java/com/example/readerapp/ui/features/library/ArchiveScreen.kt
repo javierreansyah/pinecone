@@ -13,6 +13,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import com.example.readerapp.ui.features.library.components.book.BookGrid
 import com.example.readerapp.ui.components.EmptyState
 
@@ -45,14 +47,14 @@ fun ArchiveScreen(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text("Archives") },
+                title = { Text(stringResource(R.string.library_archives_title)) },
                 navigationIcon = {
                     FilledTonalIconButton(
                         shapes = IconButtonDefaults.shapes(),
                         colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                         onClick = onNavigateBack
                     ) {
-                        Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = "Back")
+                        Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = stringResource(R.string.action_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -67,7 +69,7 @@ fun ArchiveScreen(
             if (archivedBooks.isEmpty()) {
                 EmptyState(
                     icon = MaterialSymbols.Outlined.Book,
-                    text = "No archived books.",
+                    text = stringResource(R.string.library_empty_archives),
                     modifier = Modifier.fillMaxSize().padding(16.dp)
                 )
             } else {
@@ -79,10 +81,10 @@ fun ArchiveScreen(
             }
         }
 
-        if (selectedBookForMenu != null) {
+        selectedBookForMenu?.let { bookId ->
             com.example.readerapp.ui.features.library.components.book.BookContextMenu(
                 viewModel = viewModel,
-                bookId = selectedBookForMenu!!,
+                bookId = bookId,
                 shelfId = null,
                 onNavigateToBookInfo = onNavigateToBookInfo,
                 onDismiss = { selectedBookForMenu = null }

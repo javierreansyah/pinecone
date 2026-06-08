@@ -10,8 +10,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -37,13 +40,17 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Arrow_forward
-import com.composables.icons.materialsymbols.outlined.Auto_stories
+import com.composables.icons.materialsymbols.outlined.Book_3
+import com.composables.icons.materialsymbols.outlined.Book_5
 import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Content_copy
 import com.composables.icons.materialsymbols.outlined.Delete
+import com.composables.icons.materialsymbols.outlined.Dictionary
 import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Search
 import kotlin.math.abs
@@ -71,7 +78,10 @@ fun ReaderBottomBarContainer(
                 )
             )
             .padding(horizontal = 8.dp)
-            .padding(top = 8.dp, bottom = 16.dp),
+            .padding(
+                top = 8.dp,
+                bottom = if (WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() > 0.dp) 2.dp else 12.dp
+            ),
         contentAlignment = Alignment.Center
     ) {
         content()
@@ -215,13 +225,13 @@ fun ReaderProgressTracker(
         val pageText = if (isSeeking || pendingSeek != null) {
             if (totalPages != null) {
                 val page = (sliderPosition * totalPages).roundToInt().coerceIn(1, totalPages)
-                "$page of $totalPages"
+                androidx.compose.ui.res.pluralStringResource(R.plurals.reader_page_of, totalPages, page, totalPages)
             } else {
                 "${(sliderPosition * 100).toInt()}%"
             }
         } else {
             if (currentPage != null && totalPages != null) {
-                "$currentPage of $totalPages"
+                androidx.compose.ui.res.pluralStringResource(R.plurals.reader_page_of, totalPages, currentPage, totalPages)
             } else {
                 "${(progression * 100).toInt()}%"
             }
@@ -260,14 +270,14 @@ fun ReaderSearchNavigator(
         ) {
             Icon(
                 MaterialSymbols.Outlined.Close,
-                contentDescription = "Exit search",
+                contentDescription = stringResource(R.string.action_close),
                 tint = textColor,
                 modifier = Modifier.size(20.dp)
             )
         }
 
         Text(
-            text = if (totalResults == 0) "No matches" else "$currentNum of $totalResults",
+            text = if (totalResults == 0) stringResource(R.string.reader_no_matches) else stringResource(R.string.reader_result_num_of, currentNum, totalResults),
             style = MaterialTheme.typography.labelMedium,
             color = textColor
         )
@@ -283,7 +293,7 @@ fun ReaderSearchNavigator(
             ) {
                 Icon(
                     MaterialSymbols.Outlined.Arrow_back,
-                    contentDescription = "Previous result",
+                    contentDescription = stringResource(R.string.action_back),
                     modifier = Modifier.size(20.dp),
                     tint = if (activeIndex != null && activeIndex > 0)
                         textColor
@@ -298,7 +308,7 @@ fun ReaderSearchNavigator(
             ) {
                 Icon(
                     MaterialSymbols.Outlined.Arrow_forward,
-                    contentDescription = "Next result",
+                    contentDescription = stringResource(R.string.action_more),
                     modifier = Modifier.size(20.dp),
                     tint = if (activeIndex != null && activeIndex < totalResults - 1)
                         textColor
@@ -333,20 +343,20 @@ fun ReaderTextSelectionControl(
             horizontalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             IconButton(onClick = onCopy, modifier = Modifier.size(40.dp)) {
-                Icon(MaterialSymbols.Outlined.Content_copy, contentDescription = "Copy", tint = readerTextColor, modifier = Modifier.size(20.dp))
+                Icon(MaterialSymbols.Outlined.Content_copy, contentDescription = stringResource(R.string.action_copy), tint = readerTextColor, modifier = Modifier.size(20.dp))
             }
             IconButton(onClick = onSearch, modifier = Modifier.size(40.dp)) {
-                Icon(MaterialSymbols.Outlined.Search, contentDescription = "Search", tint = readerTextColor, modifier = Modifier.size(20.dp))
+                Icon(MaterialSymbols.Outlined.Search, contentDescription = stringResource(R.string.action_search), tint = readerTextColor, modifier = Modifier.size(20.dp))
             }
             IconButton(onClick = onMakeNote, modifier = Modifier.size(40.dp)) {
-                Icon(MaterialSymbols.Outlined.Edit, contentDescription = "Make Note", tint = readerTextColor, modifier = Modifier.size(20.dp))
+                Icon(MaterialSymbols.Outlined.Edit, contentDescription = stringResource(R.string.reader_make_note), tint = readerTextColor, modifier = Modifier.size(20.dp))
             }
             IconButton(onClick = onDefine, modifier = Modifier.size(40.dp)) {
-                Icon(MaterialSymbols.Outlined.Auto_stories, contentDescription = "Define", tint = readerTextColor, modifier = Modifier.size(20.dp))
+                Icon(MaterialSymbols.Outlined.Book_3, contentDescription = stringResource(R.string.action_define), tint = readerTextColor, modifier = Modifier.size(20.dp))
             }
             if (showDeleteOption) {
                 IconButton(onClick = onDelete, modifier = Modifier.size(40.dp)) {
-                    Icon(MaterialSymbols.Outlined.Delete, contentDescription = "Delete", tint = readerTextColor, modifier = Modifier.size(20.dp))
+                    Icon(MaterialSymbols.Outlined.Delete, contentDescription = stringResource(R.string.action_delete), tint = readerTextColor, modifier = Modifier.size(20.dp))
                 }
             }
         }

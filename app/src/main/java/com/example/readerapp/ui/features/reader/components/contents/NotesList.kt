@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import com.example.readerapp.data.local.NoteEntity
 import com.example.readerapp.ui.theme.spacing
 import org.json.JSONObject
@@ -33,7 +35,7 @@ fun NotesList(
     if (notes.isEmpty()) {
         EmptyState(
             icon = MaterialSymbols.Outlined.Edit,
-            text = "No Notes",
+            text = stringResource(R.string.reader_no_notes),
             modifier = Modifier.fillMaxWidth().padding(32.dp)
         )
     } else {
@@ -44,10 +46,11 @@ fun NotesList(
             items(notes) { note ->
                 val locator = try { Locator.fromJSON(JSONObject(note.locatorJson)) } catch (_: Exception) { null }
                 if (locator != null) {
+                    val inDocument = stringResource(R.string.reader_in_document)
                     val chapterTitle = note.chapterTitle
-                        ?.takeIf { it.isNotBlank() && it != "In Document" }
+                        ?.takeIf { it.isNotBlank() && it != inDocument }
                         ?: tableOfContents.find { it.href.toString().substringBefore("#") == locator.href.toString().substringBefore("#") }?.title
-                        ?: "In Document"
+                        ?: inDocument
                     
                     Column(
                         modifier = Modifier

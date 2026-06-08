@@ -44,6 +44,7 @@ class ReaderActivity : AppCompatActivity() {
         val bookId = intent.getStringExtra(EXTRA_BOOK_ID) ?: ""
         val app = application as ReaderApplication
         ReaderViewModel.Factory(
+            application = app,
             bookId = bookId,
             repository = app.bookRepository,
             readerPreferences = ReaderPreferences(applicationContext),

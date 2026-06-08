@@ -24,6 +24,8 @@ import coil.compose.AsyncImage
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Edit
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import com.example.readerapp.ReaderApplication
 import com.example.readerapp.data.model.Book
 import java.io.File
@@ -66,7 +68,7 @@ fun BookInfoScreen(
                         onClick = onNavigateBack,
                         modifier = Modifier.padding(start = 8.dp)
                     ) {
-                        Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = "Back")
+                        Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = stringResource(R.string.action_back))
                     }
                 },
                 actions = {
@@ -76,7 +78,7 @@ fun BookInfoScreen(
                         onClick = { onNavigateToEdit(bookId) },
                         modifier = Modifier.padding(end = 8.dp)
                     ) {
-                        Icon(MaterialSymbols.Outlined.Edit, contentDescription = "Edit", modifier = Modifier.size(20.dp))
+                        Icon(MaterialSymbols.Outlined.Edit, contentDescription = stringResource(R.string.action_edit), modifier = Modifier.size(20.dp))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -103,7 +105,7 @@ fun BookInfoScreen(
                         .padding(innerPadding),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Book not found", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.book_not_found), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.error)
                 }
             } else {
                 val currentBook = book!!
@@ -129,7 +131,7 @@ fun BookInfoScreen(
                             if (currentBook.coverPath != null) {
                                 AsyncImage(
                                     model = File(currentBook.coverPath),
-                                    contentDescription = "Cover Image",
+                                    contentDescription = stringResource(R.string.book_info_title),
                                     modifier = Modifier.fillMaxSize(),
                                     contentScale = ContentScale.Crop
                                 )
@@ -169,7 +171,7 @@ fun BookInfoScreen(
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = if (currentBook.authors.isNotEmpty()) currentBook.authors.joinToString(", ") else "Unknown Author",
+                                text = if (currentBook.authors.isNotEmpty()) currentBook.authors.joinToString(", ") else stringResource(R.string.book_unknown_author),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -205,7 +207,7 @@ fun BookInfoScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Reading Progress",
+                                    text = stringResource(R.string.book_reading_progress),
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
@@ -229,7 +231,7 @@ fun BookInfoScreen(
                                 verticalArrangement = Arrangement.spacedBy(spacing.space8)
                             ) {
                                 Text(
-                                    text = "Description",
+                                    text = stringResource(R.string.book_description),
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
@@ -244,7 +246,8 @@ fun BookInfoScreen(
                                         onClick = { isExpanded = !isExpanded },
                                         contentPadding = PaddingValues(0.dp)
                                     ) {
-                                        Text(if (isExpanded) "Read Less" else "Read More", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                                        val labelText = if (isExpanded) stringResource(R.string.book_read_less) else stringResource(R.string.book_read_more)
+                                        Text(labelText, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                                     }
                                 }
                             }
@@ -256,23 +259,24 @@ fun BookInfoScreen(
                             verticalArrangement = Arrangement.spacedBy(spacing.space16)
                         ) {
                             Text(
-                                text = "Publication Details",
+                                text = stringResource(R.string.book_publication_details),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
 
-                            MetadataRow(label = "Publisher", value = currentBook.publisher ?: "N/A")
-                            MetadataRow(label = "Published Date", value = formatPublishedDate(currentBook.published))
-                            MetadataRow(label = "Language", value = currentBook.language ?: "N/A")
-                            MetadataRow(label = "Identifier (ISBN/ID)", value = currentBook.identifier ?: "N/A")
+                            val notAvailable = stringResource(R.string.book_not_available)
+                            MetadataRow(label = stringResource(R.string.book_publisher), value = currentBook.publisher ?: notAvailable)
+                            MetadataRow(label = stringResource(R.string.book_published_date), value = formatPublishedDate(currentBook.published, notAvailable))
+                            MetadataRow(label = stringResource(R.string.book_language), value = currentBook.language ?: notAvailable)
+                            MetadataRow(label = stringResource(R.string.book_identifier), value = currentBook.identifier ?: notAvailable)
                             MetadataRow(
-                                label = "Format",
+                                label = stringResource(R.string.book_format),
                                 value = when (currentBook.mediaType) {
                                     "application/epub+zip" -> "EPUB"
                                     "application/x-cbz" -> "CBZ"
                                     "application/x-cbr" -> "CBR"
                                     "application/pdf" -> "PDF"
-                                    else -> currentBook.mediaType?.substringAfterLast('/')?.uppercase() ?: "Unknown"
+                                    else -> currentBook.mediaType?.substringAfterLast('/')?.uppercase() ?: stringResource(R.string.book_unknown)
                                 }
                             )
                         }
@@ -307,8 +311,8 @@ private fun HtmlText(
     )
 }
 
-private fun formatPublishedDate(dateString: String?): String {
-    if (dateString.isNullOrBlank()) return "N/A"
+private fun formatPublishedDate(dateString: String?, defaultValue: String): String {
+    if (dateString.isNullOrBlank()) return defaultValue
     return try {
         val odt = OffsetDateTime.parse(dateString)
         odt.format(DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.getDefault()))

@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.readerapp.ReaderApplication
+import com.example.readerapp.R
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.data.local.ShelfWithCovers
 import kotlinx.coroutines.flow.*
@@ -129,7 +130,7 @@ class LibraryViewModel(
             val unshelvedShelf = ShelfWithCovers(
                 shelf = com.example.readerapp.data.local.ShelfEntity(
                     id = "unshelved", 
-                    name = "Unshelved", 
+                    name = application.getString(R.string.library_label_unshelved),
                     createdAt = 0L
                 ),
                 books = unshelvedBooks

@@ -8,6 +8,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Add
 import com.composables.icons.materialsymbols.outlined.Remove
@@ -45,7 +47,7 @@ fun IncrementDecrementControl(
             ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Remove,
-                    contentDescription = "Decrease",
+                    contentDescription = stringResource(R.string.action_decrease),
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -68,7 +70,7 @@ fun IncrementDecrementControl(
             ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Add,
-                    contentDescription = "Increase",
+                    contentDescription = stringResource(R.string.action_increase),
                     modifier = Modifier.size(18.dp)
                 )
             }

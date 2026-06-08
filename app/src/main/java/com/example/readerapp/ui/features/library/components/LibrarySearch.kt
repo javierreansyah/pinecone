@@ -36,6 +36,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.whenResumed
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.*
 import com.example.readerapp.data.local.ShelfEntity
@@ -113,12 +115,12 @@ fun LibrarySearchTopBar(
             },
             navigationIcon = {
                 IconButton(onClick = onOpenDrawerClick) {
-                    Icon(MaterialSymbols.Outlined.Menu, contentDescription = "Menu")
+                    Icon(MaterialSymbols.Outlined.Menu, contentDescription = stringResource(R.string.action_menu))
                 }
             },
             actions = {
                 IconButton(onClick = onFilterClick) {
-                    Icon(MaterialSymbols.Outlined.Tune, contentDescription = "Filter")
+                    Icon(MaterialSymbols.Outlined.Tune, contentDescription = stringResource(R.string.action_filter))
                 }
             },
         )
@@ -239,7 +241,7 @@ private fun SearchInputField(
             ) {
                 Text(
                     modifier = Modifier.clearAndSetSemantics {}, 
-                    text = "Search library", 
+                    text = stringResource(R.string.library_search_placeholder), 
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
@@ -254,7 +256,7 @@ private fun SearchInputField(
                     focusManager.clearFocus()
                     scope.launch { searchBarState.animateToCollapsed() }
                 }) {
-                    Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = "Back")
+                    Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = stringResource(R.string.action_back))
                 }
             }
         },
@@ -265,7 +267,7 @@ private fun SearchInputField(
                 exit = fadeOut(animationSpec = tween(durationMillis = 50))
             ) {
                 IconButton(onClick = { launchVoiceSearch() }) {
-                    Icon(MaterialSymbols.Outlined.Mic, contentDescription = "Voice Search")
+                    Icon(MaterialSymbols.Outlined.Mic, contentDescription = stringResource(R.string.action_voice_search))
                 }
             }
         },
@@ -289,13 +291,21 @@ private fun ExpandedSearchContent(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surfaceContainer)
     ) {
-        val options = SearchCategory.values().map { it.name }
+        val categoryLabels = mapOf(
+            SearchCategory.All to stringResource(R.string.action_all),
+            SearchCategory.Books to stringResource(R.string.library_tab_books),
+            SearchCategory.Shelves to stringResource(R.string.library_tab_shelves),
+            SearchCategory.Authors to stringResource(R.string.library_authors_title),
+            SearchCategory.Tags to stringResource(R.string.library_tags_title)
+        )
+        
         SegmentedButtonGroup(
-            options = options,
+            options = SearchCategory.values().map { categoryLabels[it] ?: it.name },
             icons = emptyList(),
-            selected = searchCategory.name,
-            onSelected = { selected ->
-                onSearchCategoryChange(SearchCategory.valueOf(selected))
+            selected = categoryLabels[searchCategory] ?: searchCategory.name,
+            onSelected = { selectedLabel ->
+                val category = categoryLabels.entries.find { it.value == selectedLabel }?.key ?: SearchCategory.All
+                onSearchCategoryChange(category)
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -364,7 +374,7 @@ private fun SearchResultsContent(
         if (shelvesToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Shelves)) {
             item {
                 GridFilterSection(
-                    title = "Shelves",
+                    title = stringResource(R.string.library_tab_shelves),
                     items = shelvesToShow,
                     icon = MaterialSymbols.Outlined.Folder,
                     nameSelector = { it.name },
@@ -377,7 +387,7 @@ private fun SearchResultsContent(
         if (authorsToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Authors)) {
             item {
                 GridFilterSection(
-                    title = "Authors",
+                    title = stringResource(R.string.library_authors_title),
                     items = authorsToShow,
                     icon = MaterialSymbols.Outlined.Person,
                     nameSelector = { it },
@@ -390,7 +400,7 @@ private fun SearchResultsContent(
         if (tagsToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Tags)) {
             item {
                 GridFilterSection(
-                    title = "Tags",
+                    title = stringResource(R.string.library_tags_title),
                     items = tagsToShow,
                     icon = MaterialSymbols.Outlined.Label,
                     nameSelector = { it },
@@ -409,7 +419,7 @@ private fun BooksSection(
     onHeaderClick: (() -> Unit)? = null
 ) {
     SectionHeader(
-        title = "Books",
+        title = stringResource(R.string.library_tab_books),
         onHeaderClick = onHeaderClick,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
     )
@@ -495,7 +505,7 @@ private fun SectionHeader(
         if (onHeaderClick != null) {
             Icon(
                 imageVector = MaterialSymbols.Outlined.Chevron_forward,
-                contentDescription = "View all $title",
+                contentDescription = stringResource(R.string.library_view_all, title),
                 modifier = Modifier.size(20.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )

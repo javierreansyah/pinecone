@@ -19,6 +19,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Book
@@ -75,6 +77,7 @@ fun DictionariesScreen(
         }
     }
 
+    val invalidFormatMsg = stringResource(R.string.dictionaries_invalid_format)
     val restorePicker = rememberLauncherForActivityResult(
         contract = object : ActivityResultContracts.OpenDocument() {
             override fun createIntent(context: android.content.Context, input: Array<String>): android.content.Intent {
@@ -93,37 +96,49 @@ fun DictionariesScreen(
             if (name != null && name.endsWith(".pinedict")) {
                 viewModel.restoreDictionary(uri)
             } else {
-                Toast.makeText(context, "Invalid file format. Please select a .pinedict file.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, invalidFormatMsg, Toast.LENGTH_SHORT).show()
             }
         }
     }
 
+    val installSuccessMsg = stringResource(R.string.dictionaries_install_success)
+    val commonErrorMsg = stringResource(R.string.common_error)
     LaunchedEffect(importState) {
         if (importState is ImportState.Success) {
-            Toast.makeText(context, "Dictionary installed successfully", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, installSuccessMsg, Toast.LENGTH_SHORT).show()
             viewModel.resetImportState()
         } else if (importState is ImportState.Error) {
-            Toast.makeText(context, "Error: ${(importState as ImportState.Error).message}", Toast.LENGTH_LONG).show()
+            val errorMsg = (importState as ImportState.Error).message
+            val formattedMsg = String.format(commonErrorMsg, errorMsg)
+            Toast.makeText(context, formattedMsg, Toast.LENGTH_LONG).show()
             viewModel.resetImportState()
         }
     }
 
+    val commonRestoreErrorMsg = stringResource(R.string.common_restore_error)
+    val restoreSuccessMsg = stringResource(R.string.dictionaries_restore_success)
     LaunchedEffect(restoreState) {
         if (restoreState is ImportState.Success) {
-            Toast.makeText(context, "Dictionaries restored successfully", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, restoreSuccessMsg, Toast.LENGTH_SHORT).show()
             viewModel.resetRestoreState()
         } else if (restoreState is ImportState.Error) {
-            Toast.makeText(context, "Restore Error: ${(restoreState as ImportState.Error).message}", Toast.LENGTH_LONG).show()
+            val errorMsg = (restoreState as ImportState.Error).message
+            val formattedMsg = String.format(commonRestoreErrorMsg, errorMsg)
+            Toast.makeText(context, formattedMsg, Toast.LENGTH_LONG).show()
             viewModel.resetRestoreState()
         }
     }
 
+    val commonBackupErrorMsg = stringResource(R.string.common_backup_error)
+    val backupSuccessMsg = stringResource(R.string.dictionaries_backup_success)
     LaunchedEffect(backupState) {
         if (backupState is ImportState.Success) {
-            Toast.makeText(context, "Dictionaries backed up successfully", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, backupSuccessMsg, Toast.LENGTH_SHORT).show()
             viewModel.resetBackupState()
         } else if (backupState is ImportState.Error) {
-            Toast.makeText(context, "Backup Error: ${(backupState as ImportState.Error).message}", Toast.LENGTH_LONG).show()
+            val errorMsg = (backupState as ImportState.Error).message
+            val formattedMsg = String.format(commonBackupErrorMsg, errorMsg)
+            Toast.makeText(context, formattedMsg, Toast.LENGTH_LONG).show()
             viewModel.resetBackupState()
         }
     }
@@ -132,14 +147,14 @@ fun DictionariesScreen(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text("Dictionaries") },
+                title = { Text(stringResource(R.string.dictionaries_title)) },
                 navigationIcon = {
                     FilledTonalIconButton(
                         shapes = IconButtonDefaults.shapes(),
                         colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                         onClick = onBack
                     ) {
-                        Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = "Back")
+                        Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = stringResource(R.string.action_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -156,8 +171,8 @@ fun DictionariesScreen(
             if (showRestoreWarning) {
                 AlertDialog(
                     onDismissRequest = { showRestoreWarning = false },
-                    title = { Text("Restore Backup") },
-                    text = { Text("Warning: Restoring a backup will completely overwrite your current dictionaries with the contents of the backup. This action cannot be undone.\n\nDo you want to proceed?") },
+                    title = { Text(stringResource(R.string.dictionaries_restore)) },
+                    text = { Text(stringResource(R.string.dictionaries_restore_warning)) },
                     confirmButton = {
                         TextButton(
                             onClick = {
@@ -165,12 +180,12 @@ fun DictionariesScreen(
                                 restorePicker.launch(arrayOf("application/octet-stream"))
                             }
                         ) {
-                            Text("Proceed")
+                            Text(stringResource(R.string.action_proceed))
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { showRestoreWarning = false }) {
-                            Text("Cancel")
+                            Text(stringResource(R.string.action_cancel))
                         }
                     }
                 )
@@ -178,6 +193,7 @@ fun DictionariesScreen(
 
             BackHandler(expanded) { expanded = false }
 
+            val backupNoDictMsg = stringResource(R.string.dictionaries_no_to_backup)
             FloatingActionButtonMenu(
                 expanded = expanded,
                 button = {
@@ -192,7 +208,7 @@ fun DictionariesScreen(
                         }
                         Icon(
                             painter = rememberVectorPainter(imageVector),
-                            contentDescription = "Options",
+                            contentDescription = stringResource(R.string.action_options),
                             modifier = Modifier.animateIcon({ checkedProgress })
                         )
                     }
@@ -202,13 +218,13 @@ fun DictionariesScreen(
                     onClick = {
                         expanded = false
                         if (installedDictionaries.isEmpty()) {
-                            Toast.makeText(context, "No dictionaries installed to backup", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, backupNoDictMsg, Toast.LENGTH_SHORT).show()
                         } else {
                             viewModel.backupDictionaries()
                         }
                     },
                     icon = { Icon(MaterialSymbols.Outlined.Save, contentDescription = null) },
-                    text = { Text("Backup Dictionaries") }
+                    text = { Text(stringResource(R.string.dictionaries_backup)) }
                 )
                 FloatingActionButtonMenuItem(
                     onClick = {
@@ -216,7 +232,7 @@ fun DictionariesScreen(
                         showRestoreWarning = true
                     },
                     icon = { Icon(MaterialSymbols.Outlined.History, contentDescription = null) },
-                    text = { Text("Restore Backup") }
+                    text = { Text(stringResource(R.string.dictionaries_restore)) }
                 )
                 FloatingActionButtonMenuItem(
                     onClick = {
@@ -224,7 +240,7 @@ fun DictionariesScreen(
                         filePicker.launch(arrayOf("application/zip"))
                     },
                     icon = { Icon(MaterialSymbols.Outlined.Download, contentDescription = null) },
-                    text = { Text("Import Stardict") }
+                    text = { Text(stringResource(R.string.dictionaries_import_stardict)) }
                 )
             }
         }
@@ -238,7 +254,7 @@ fun DictionariesScreen(
             if (totalCount == 0) {
                 EmptyState(
                     icon = MaterialSymbols.Outlined.Book,
-                    text = "No dictionaries installed\nTap + to import a Stardict .zip file",
+                    text = stringResource(R.string.dictionaries_empty),
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
@@ -249,25 +265,25 @@ fun DictionariesScreen(
                     installedDictionaries.forEach { dict ->
                         item(
                             content = { Text(dict.name) },
-                            supportingContent = { Text("${dict.wordCount} words") },
+                            supportingContent = { Text(androidx.compose.ui.res.pluralStringResource(R.plurals.dictionaries_word_count, dict.wordCount, dict.wordCount)) },
                             trailingContent = {
                                 Box {
                                     IconButton(onClick = { selectedItemForMenu = dict.id }) {
-                                        Icon(MaterialSymbols.Outlined.More_vert, contentDescription = "More options")
+                                        Icon(MaterialSymbols.Outlined.More_vert, contentDescription = stringResource(R.string.action_more))
                                     }
                                     DropdownMenu(
                                         expanded = selectedItemForMenu == dict.id,
                                         onDismissRequest = { selectedItemForMenu = null }
                                     ) {
                                         DropdownMenuItem(
-                                            text = { Text("Rename") },
+                                            text = { Text(stringResource(R.string.action_rename)) },
                                             onClick = {
                                                 selectedItemForMenu = null
                                                 itemToRename = dict
                                             }
                                         )
                                         DropdownMenuItem(
-                                            text = { Text("Delete") },
+                                            text = { Text(stringResource(R.string.action_delete)) },
                                             onClick = {
                                                 selectedItemForMenu = null
                                                 itemToDelete = dict
@@ -281,7 +297,7 @@ fun DictionariesScreen(
 
                     if (isLoadingImport) {
                         item(
-                            content = { Text("Installing Dictionary...") },
+                            content = { Text(stringResource(R.string.dictionaries_installing)) },
                             supportingContent = {
                                 LinearWavyProgressIndicator(
                                     progress = { animatedProgress },
@@ -294,7 +310,7 @@ fun DictionariesScreen(
 
                     if (isLoadingRestore) {
                         item(
-                            content = { Text("Restoring Dictionaries...") },
+                            content = { Text(stringResource(R.string.dictionaries_restoring)) },
                             supportingContent = {
                                 LinearWavyProgressIndicator(
                                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
@@ -305,7 +321,7 @@ fun DictionariesScreen(
 
                     if (isLoadingBackup) {
                         item(
-                            content = { Text("Backing up Dictionaries...") },
+                            content = { Text(stringResource(R.string.dictionaries_backing_up)) },
                             supportingContent = {
                                 LinearWavyProgressIndicator(
                                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
@@ -316,56 +332,56 @@ fun DictionariesScreen(
                 }
             }
 
-            if (itemToDelete != null) {
+            itemToDelete?.let { dict ->
                 AlertDialog(
                     onDismissRequest = { itemToDelete = null },
-                    title = { Text("Delete Dictionary") },
-                    text = { Text("Are you sure you want to delete '${itemToDelete!!.name}'?") },
+                    title = { Text(stringResource(R.string.dictionaries_delete_title)) },
+                    text = { Text(stringResource(R.string.dictionaries_delete_message, dict.name)) },
                     confirmButton = {
                         TextButton(onClick = {
-                            val dictId = itemToDelete!!.id
+                            val dictId = dict.id
                             itemToDelete = null
                             viewModel.deleteDictionary(dictId)
                         }) {
-                            Text("Delete", color = MaterialTheme.colorScheme.error)
+                            Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error)
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { itemToDelete = null }) {
-                            Text("Cancel")
+                            Text(stringResource(R.string.action_cancel))
                         }
                     }
                 )
             }
 
-            if (itemToRename != null) {
-                var newName by remember { mutableStateOf(itemToRename!!.name) }
+            itemToRename?.let { dict ->
+                var newName by remember(dict.id) { mutableStateOf(dict.name) }
                 AlertDialog(
                     onDismissRequest = { itemToRename = null },
-                    title = { Text("Rename Dictionary") },
+                    title = { Text(stringResource(R.string.dictionaries_rename_title)) },
                     text = {
                         OutlinedTextField(
                             value = newName,
                             onValueChange = { newName = it },
                             singleLine = true,
-                            label = { Text("Name") },
+                            label = { Text(stringResource(R.string.dictionaries_rename_title)) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     },
                     confirmButton = {
                         TextButton(onClick = {
                             if (newName.isNotBlank()) {
-                                val dictId = itemToRename!!.id
+                                val dictId = dict.id
                                 itemToRename = null
                                 viewModel.renameDictionary(dictId, newName.trim())
                             }
                         }) {
-                            Text("Rename")
+                            Text(stringResource(R.string.action_rename))
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { itemToRename = null }) {
-                            Text("Cancel")
+                            Text(stringResource(R.string.action_cancel))
                         }
                     }
                 )

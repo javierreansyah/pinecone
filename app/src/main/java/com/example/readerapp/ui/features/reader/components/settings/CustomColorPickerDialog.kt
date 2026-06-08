@@ -29,6 +29,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import androidx.compose.ui.window.Dialog
 import androidx.core.graphics.toColorInt
 
@@ -75,7 +77,7 @@ fun CustomColorPickerDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = if (onDelete != null) "Edit Theme" else "New Theme", 
+                    text = if (onDelete != null) stringResource(R.string.reader_settings_edit_theme) else stringResource(R.string.reader_settings_new_theme), 
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.align(Alignment.Start)
                 )
@@ -102,7 +104,7 @@ fun CustomColorPickerDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Theme Name") },
+                    label = { Text(stringResource(R.string.reader_settings_theme_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -110,7 +112,7 @@ fun CustomColorPickerDialog(
                 OutlinedTextField(
                     value = bgColorInput,
                     onValueChange = { bgColorInput = formatColorInput(it) },
-                    label = { Text("Background Color (Hex)") },
+                    label = { Text(stringResource(R.string.reader_settings_bg_color)) },
                     placeholder = { Text("#FFFFFF") },
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters),
                     singleLine = true,
@@ -120,7 +122,7 @@ fun CustomColorPickerDialog(
                 OutlinedTextField(
                     value = textColorInput,
                     onValueChange = { textColorInput = formatColorInput(it) },
-                    label = { Text("Text Color (Hex)") },
+                    label = { Text(stringResource(R.string.reader_settings_text_color)) },
                     placeholder = { Text("#000000") },
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters),
                     singleLine = true,
@@ -134,14 +136,14 @@ fun CustomColorPickerDialog(
                     if (onDelete != null) {
                         TextButton(
                             onClick = onDelete,
-                        ) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+                        ) { Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error) }
                     } else {
                         // Spacer to keep Save button on the right when Delete is not present
                         Box(modifier = Modifier.weight(1f))
                     }
                     
                     Row(horizontalArrangement = Arrangement.End) {
-                        TextButton(onClick = onDismiss) { Text("Cancel") }
+                        TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
                         Button(
                             onClick = {
                                 if (isValid) {
@@ -149,7 +151,7 @@ fun CustomColorPickerDialog(
                                 }
                             },
                             enabled = isValid
-                        ) { Text("Save") }
+                        ) { Text(stringResource(R.string.action_save)) }
                     }
                 }
             }

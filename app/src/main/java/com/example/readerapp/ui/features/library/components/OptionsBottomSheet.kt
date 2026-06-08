@@ -25,6 +25,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_drop_down
 import com.composables.icons.materialsymbols.outlined.Arrow_drop_up
@@ -85,7 +87,7 @@ fun <T> SortRadioGroup(
     selectedOption: T,
     isAscending: Boolean,
     onOptionSelected: (T) -> Unit,
-    optionLabel: (T) -> String,
+    optionLabel: @Composable (T) -> String,
     modifier: Modifier = Modifier,
     isAscendingVisualModifier: ((T, Boolean) -> Boolean) = { _, asc -> asc }
 ) {
@@ -119,10 +121,10 @@ fun <T> SortSection(
     selectedOption: T,
     isAscending: Boolean,
     onOptionSelected: (T) -> Unit,
-    optionLabel: (T) -> String,
+    optionLabel: @Composable (T) -> String,
     isAscendingVisualModifier: ((T, Boolean) -> Boolean) = { _, asc -> asc }
 ) {
-    OptionsBottomSheetSection(title = "Sort") {
+    OptionsBottomSheetSection(title = stringResource(R.string.action_sort)) {
         SortRadioGroup(
             options = options,
             selectedOption = selectedOption,
@@ -216,7 +218,7 @@ fun LibraryFilterBottomSheet(
                           else listOf(LayoutMode.Grid, LayoutMode.BigGrid, LayoutMode.List)
         
         SingleToggleGroupSection(
-            title = "View",
+            title = stringResource(R.string.library_label_view),
             options = layoutModes,
             selectedOption = preferences.layoutMode,
             onOptionSelected = onLayoutModeChange,
@@ -231,25 +233,25 @@ fun LibraryFilterBottomSheet(
             selectedOption = preferences.sortType,
             isAscending = preferences.isAscending,
             onOptionSelected = onSortTypeChange,
-            optionLabel = { sortTypeLabel(it) },
+            optionLabel = { stringResource(sortTypeLabelRes(it)) },
             isAscendingVisualModifier = { type, asc -> if (type == SortType.LastRead) !asc else asc }
         )
 
         if (!isShelvesTab) {
             MultiToggleGroupSection(
-                title = "Status",
+                title = stringResource(R.string.library_label_status),
                 options = StatusFilter.entries,
                 selectedOptions = preferences.selectedStatus,
                 onOptionToggled = onStatusToggle,
-                optionContent = { status -> Text(statusLabel(status), style = MaterialTheme.typography.labelLarge) }
+                optionContent = { status -> Text(stringResource(statusLabelRes(status)), style = MaterialTheme.typography.labelLarge) }
             )
         } else {
             MultiToggleGroupSection(
-                title = "Filter",
+                title = stringResource(R.string.action_filter),
                 options = ShelfFilter.entries,
                 selectedOptions = preferences.selectedShelfFilter,
                 onOptionToggled = onShelfFilterToggle,
-                optionContent = { filter -> Text(if (filter == ShelfFilter.Shelves) "Shelves" else "Unshelved", style = MaterialTheme.typography.labelLarge) }
+                optionContent = { filter -> Text(if (filter == ShelfFilter.Shelves) stringResource(R.string.library_tab_shelves) else stringResource(R.string.library_label_unshelved), style = MaterialTheme.typography.labelLarge) }
             )
         }
     }
@@ -267,7 +269,7 @@ fun ShelfDetailFilterBottomSheet(
     OptionsBottomSheet(onDismissRequest = onDismiss) {
         val layoutModes = listOf(LayoutMode.Grid, LayoutMode.BigGrid, LayoutMode.List)
         SingleToggleGroupSection(
-            title = "View",
+            title = stringResource(R.string.library_label_view),
             options = layoutModes,
             selectedOption = preferences.layoutMode,
             onOptionSelected = onLayoutModeChange,
@@ -280,16 +282,16 @@ fun ShelfDetailFilterBottomSheet(
             selectedOption = preferences.sortType,
             isAscending = preferences.isAscending,
             onOptionSelected = onSortTypeChange,
-            optionLabel = { sortTypeLabel(it) },
+            optionLabel = { stringResource(sortTypeLabelRes(it)) },
             isAscendingVisualModifier = { type, asc -> if (type == SortType.LastRead) !asc else asc }
         )
 
         MultiToggleGroupSection(
-            title = "Status",
+            title = stringResource(R.string.library_label_status),
             options = StatusFilter.entries,
             selectedOptions = preferences.selectedStatus,
             onOptionToggled = onStatusToggle,
-            optionContent = { status -> Text(statusLabel(status), style = MaterialTheme.typography.labelLarge) }
+            optionContent = { status -> Text(stringResource(statusLabelRes(status)), style = MaterialTheme.typography.labelLarge) }
         )
     }
 }
@@ -305,7 +307,7 @@ fun FilterResultBottomSheet(
     OptionsBottomSheet(onDismissRequest = onDismiss) {
         val layoutModes = listOf(LayoutMode.Grid, LayoutMode.BigGrid, LayoutMode.List)
         SingleToggleGroupSection(
-            title = "View",
+            title = stringResource(R.string.library_label_view),
             options = layoutModes,
             selectedOption = preferences.layoutMode,
             onOptionSelected = onLayoutModeChange,
@@ -318,16 +320,16 @@ fun FilterResultBottomSheet(
             selectedOption = preferences.sortType,
             isAscending = preferences.isAscending,
             onOptionSelected = onSortTypeChange,
-            optionLabel = { sortTypeLabel(it) },
+            optionLabel = { stringResource(sortTypeLabelRes(it)) },
             isAscendingVisualModifier = { type, asc -> if (type == SortType.LastRead) !asc else asc }
         )
 
         MultiToggleGroupSection(
-            title = "Status",
+            title = stringResource(R.string.library_label_status),
             options = StatusFilter.entries,
             selectedOptions = preferences.selectedStatus,
             onOptionToggled = onStatusToggle,
-            optionContent = { status -> Text(statusLabel(status), style = MaterialTheme.typography.labelLarge) }
+            optionContent = { status -> Text(stringResource(statusLabelRes(status)), style = MaterialTheme.typography.labelLarge) }
         )
     }
 }
@@ -347,7 +349,7 @@ fun FilterItemSortBottomSheet(
             selectedOption = currentSortType,
             isAscending = isAscending,
             onOptionSelected = onSortTypeChange,
-            optionLabel = { if (it == FilterItemSortType.Label) "Label" else "Size" }
+            optionLabel = { if (it == FilterItemSortType.Label) stringResource(R.string.library_sort_label) else stringResource(R.string.library_sort_size) }
         )
     }
 }
@@ -359,18 +361,18 @@ private fun layoutModeIcon(mode: LayoutMode) = when (mode) {
     LayoutMode.BigList -> MaterialSymbols.Outlined.View_carousel
 }
 
-private fun sortTypeLabel(type: SortType): String = when (type) {
-    SortType.Title -> "Title"
-    SortType.Author -> "Author"
-    SortType.LastRead -> "Date last read"
-    SortType.Added -> "Date added"
-    SortType.Progress -> "Percent complete"
-    SortType.Custom -> "Custom Order"
+private fun sortTypeLabelRes(type: SortType): Int = when (type) {
+    SortType.Title -> R.string.library_sort_title
+    SortType.Author -> R.string.library_sort_author
+    SortType.LastRead -> R.string.library_sort_last_read
+    SortType.Added -> R.string.library_sort_added
+    SortType.Progress -> R.string.library_sort_progress
+    SortType.Custom -> R.string.library_sort_custom
 }
 
-private fun statusLabel(status: StatusFilter): String = when (status) {
-    StatusFilter.NotStarted -> "Not started"
-    StatusFilter.Reading -> "Currently reading"
-    StatusFilter.Finished -> "Finished"
+private fun statusLabelRes(status: StatusFilter): Int = when (status) {
+    StatusFilter.NotStarted -> R.string.library_status_not_started
+    StatusFilter.Reading -> R.string.library_status_reading
+    StatusFilter.Finished -> R.string.library_status_finished
 }
 

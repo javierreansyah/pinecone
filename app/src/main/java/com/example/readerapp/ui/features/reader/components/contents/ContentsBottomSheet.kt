@@ -15,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import com.example.readerapp.data.local.BookmarkEntity
 import com.example.readerapp.data.local.NoteEntity
 import kotlinx.coroutines.launch
@@ -72,17 +74,17 @@ fun ReaderBottomSheet(
                 Tab(
                     selected = pagerState.currentPage == 0,
                     onClick = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
-                    text = { Text("Chapters", style = MaterialTheme.typography.titleMedium) }
+                    text = { Text(stringResource(R.string.reader_chapters_title), style = MaterialTheme.typography.titleMedium) }
                 )
                 Tab(
                     selected = pagerState.currentPage == 1,
                     onClick = { coroutineScope.launch { pagerState.animateScrollToPage(1) } },
-                    text = { Text("Bookmarks", style = MaterialTheme.typography.titleMedium) }
+                    text = { Text(stringResource(R.string.reader_bookmarks_title), style = MaterialTheme.typography.titleMedium) }
                 )
                 Tab(
                     selected = pagerState.currentPage == 2,
                     onClick = { coroutineScope.launch { pagerState.animateScrollToPage(2) } },
-                    text = { Text("Notes", style = MaterialTheme.typography.titleMedium) }
+                    text = { Text(stringResource(R.string.reader_notes_title), style = MaterialTheme.typography.titleMedium) }
                 )
             }
 
@@ -128,13 +130,13 @@ fun ReaderBottomSheet(
     if (showAddNoteDialog) {
         AlertDialog(
             onDismissRequest = { showAddNoteDialog = false },
-            title = { Text("Add Note", style = MaterialTheme.typography.titleLarge) },
+            title = { Text(stringResource(R.string.reader_add_note), style = MaterialTheme.typography.titleLarge) },
             text = {
                 OutlinedTextField(
                     value = noteText,
                     onValueChange = { noteText = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Enter your note here...", style = MaterialTheme.typography.bodyLarge) },
+                    placeholder = { Text(stringResource(R.string.reader_enter_note_placeholder), style = MaterialTheme.typography.bodyLarge) },
                     minLines = 3
                 )
             },
@@ -146,7 +148,7 @@ fun ReaderBottomSheet(
                     noteText = ""
                     showAddNoteDialog = false
                 }) {
-                    Text("Save", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.action_save), style = MaterialTheme.typography.labelLarge)
                 }
             },
             dismissButton = {
@@ -154,7 +156,7 @@ fun ReaderBottomSheet(
                     noteText = ""
                     showAddNoteDialog = false
                 }) {
-                    Text("Cancel", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.action_cancel), style = MaterialTheme.typography.labelLarge)
                 }
             }
         )

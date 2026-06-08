@@ -27,6 +27,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Add
 
@@ -100,7 +102,7 @@ fun ThemeSwatch(
             } else if (isCustom) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Add, 
-                    contentDescription = "Add Theme", 
+                    contentDescription = stringResource(R.string.reader_settings_add_theme),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
