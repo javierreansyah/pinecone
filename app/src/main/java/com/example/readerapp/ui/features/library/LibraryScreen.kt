@@ -15,10 +15,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.readerapp.ui.features.library.components.*
+import com.example.readerapp.ui.features.library.components.book.*
 import com.example.readerapp.ui.theme.spacing
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Book
 import com.composables.icons.materialsymbols.outlined.Folder
+import com.example.readerapp.ui.components.EmptyState
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -30,7 +32,8 @@ fun LibraryScreen(
     onNavigateToAuthor: (String) -> Unit = {},
     onNavigateToTag: (String) -> Unit = {},
     onNavigateToAllAuthors: () -> Unit = {},
-    onNavigateToAllTags: () -> Unit = {}
+    onNavigateToAllTags: () -> Unit = {},
+    onNavigateToBookInfo: (String) -> Unit
 ) {
     val context = LocalContext.current
     val viewModel: LibraryViewModel = viewModel(
@@ -113,7 +116,11 @@ fun LibraryScreen(
                     // Books Page
                     Box(modifier = Modifier.fillMaxSize().padding(top = 8.dp), contentAlignment = Alignment.TopStart) {
                         if (filteredBooks.isEmpty()) {
-                            Box(modifier = Modifier.fillMaxWidth())
+                            EmptyState(
+                                icon = MaterialSymbols.Outlined.Book,
+                                text = "No books found",
+                                modifier = Modifier.fillMaxSize().padding(16.dp)
+                            )
                         } else {
                             BookCollection(
                                 books = filteredBooks,
@@ -159,18 +166,16 @@ fun LibraryScreen(
 
         if (showFilterSheet) {
             val isShelvesTab = pagerState.currentPage == 1
-            FilterSortBottomSheet(
-                preferences = if (isShelvesTab) uiState.shelvesPreferences else uiState.bookPreferences,
+            val prefs = if (isShelvesTab) uiState.shelvesPreferences else uiState.bookPreferences
+
+            LibraryFilterBottomSheet(
+                isShelvesTab = isShelvesTab,
+                preferences = prefs,
                 onLayoutModeChange = { viewModel.onLayoutModeChange(it, isShelvesTab) },
                 onSortTypeChange = { viewModel.onSortTypeChange(it, isShelvesTab) },
                 onStatusToggle = { viewModel.toggleStatusFilter(it, isShelvesTab) },
-                onDismiss = { showFilterSheet = false },
-                showViewPicker = true,
-                showStatusFilter = !isShelvesTab,
-                availableSortTypes = if (isShelvesTab) listOf(SortType.Title, SortType.LastRead, SortType.Added, SortType.Progress) 
-                                     else listOf(SortType.Title, SortType.Author, SortType.LastRead, SortType.Added, SortType.Progress),
-                availableLayoutModes = if (isShelvesTab) listOf(LayoutMode.List, LayoutMode.BigList)
-                                       else listOf(LayoutMode.Grid, LayoutMode.BigGrid, LayoutMode.List)
+                onShelfFilterToggle = { viewModel.toggleShelfFilter(it, isShelvesTab) },
+                onDismiss = { showFilterSheet = false }
             )
         }
 
@@ -180,6 +185,7 @@ fun LibraryScreen(
                 viewModel = viewModel,
                 bookId = selectedBookContext!!.first,
                 shelfId = selectedBookContext!!.second,
+                onNavigateToBookInfo = onNavigateToBookInfo,
                 onDismiss = { selectedBookContext = null }
             )
         }

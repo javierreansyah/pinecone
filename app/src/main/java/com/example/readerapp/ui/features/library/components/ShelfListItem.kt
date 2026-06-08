@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.example.readerapp.data.local.ShelfWithCovers
 import com.example.readerapp.data.model.Book
+import com.example.readerapp.ui.features.library.components.book.CoverImage
 
 @Composable
 fun ShelfListItem(

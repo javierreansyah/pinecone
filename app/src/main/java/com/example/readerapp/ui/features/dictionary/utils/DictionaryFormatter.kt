@@ -1,5 +1,7 @@
 package com.example.readerapp.ui.features.dictionary.utils
 
+import com.example.readerapp.data.local.dictionary.DictionaryEntry
+
 /**
  * Utility for preparing dictionary definition content for WebView rendering.
  *
@@ -20,6 +22,24 @@ object DictionaryFormatter {
         "Etymology", "Pronunciation", "Alternative forms",
         "Determiner", "Contraction"
     )
+
+    /**
+     * Prepares a single HTML string containing multiple dictionary entries,
+     * including their word titles and dividers.
+     */
+    fun prepareHtmlForMultipleEntries(entries: List<DictionaryEntry>): String {
+        val sb = StringBuilder()
+        entries.forEachIndexed { index, entry ->
+            sb.append("<h2 class=\"word-title\">").append(escapeHtml(entry.word)).append("</h2>\n")
+            sb.append("<div class=\"definition-content\">\n")
+            sb.append(prepareHtml(entry.definition))
+            sb.append("\n</div>\n")
+            if (index < entries.size - 1) {
+                sb.append("<hr class=\"definition-divider\">\n")
+            }
+        }
+        return sb.toString()
+    }
 
     /**
      * Returns a clean HTML fragment ready for [DefinitionWebView].

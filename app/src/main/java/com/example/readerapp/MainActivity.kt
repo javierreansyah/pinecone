@@ -37,6 +37,8 @@ import com.example.readerapp.ui.features.settings.SettingsScreen
 import com.example.readerapp.ui.features.library.ArchiveScreen
 import com.example.readerapp.ui.features.library.ShelfDetailScreen
 import com.example.readerapp.ui.features.library.FilterResultScreen
+import com.example.readerapp.ui.features.info.BookInfoScreen
+import com.example.readerapp.ui.features.info.EditBookScreen
 import com.example.readerapp.ui.theme.AppTheme
 import androidx.compose.material3.*
 import kotlinx.coroutines.launch
@@ -66,7 +68,8 @@ class MainActivity : ComponentActivity() {
 
             AppTheme(
                 darkTheme = darkTheme,
-                colorPalette = settings.colorPalette
+                colorPalette = settings.colorPalette,
+                themeContrast = settings.themeContrast
             ) {
                 val navController = rememberNavController()
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -314,6 +317,9 @@ class MainActivity : ComponentActivity() {
                             },
                             onNavigateToAllTags = {
                                 navController.navigate(Screen.AllTags.route)
+                            },
+                            onNavigateToBookInfo = { bookId ->
+                                navController.navigate(Screen.BookInfo.createRoute(bookId))
                             }
                         )
                     }
@@ -334,6 +340,9 @@ class MainActivity : ComponentActivity() {
                                     putExtra(com.example.readerapp.ui.features.reader.ReaderActivity.EXTRA_BOOK_ID, bookId)
                                 }
                                 context.startActivity(intent)
+                            },
+                            onNavigateToBookInfo = { bookId ->
+                                navController.navigate(Screen.BookInfo.createRoute(bookId))
                             }
                         )
                     }
@@ -360,6 +369,9 @@ class MainActivity : ComponentActivity() {
                                     putExtra(com.example.readerapp.ui.features.reader.ReaderActivity.EXTRA_BOOK_ID, bookId)
                                 }
                                 context.startActivity(intent)
+                            },
+                            onNavigateToBookInfo = { bookId ->
+                                navController.navigate(Screen.BookInfo.createRoute(bookId))
                             }
                         )
                     }
@@ -380,6 +392,9 @@ class MainActivity : ComponentActivity() {
                             onNavigateToMerged = { newName ->
                                 navController.popBackStack()
                                 navController.navigate(Screen.AuthorDetail.createRoute(newName))
+                            },
+                            onNavigateToBookInfo = { bookId ->
+                                navController.navigate(Screen.BookInfo.createRoute(bookId))
                             }
                         )
                     }
@@ -400,6 +415,9 @@ class MainActivity : ComponentActivity() {
                             onNavigateToMerged = { newName ->
                                 navController.popBackStack()
                                 navController.navigate(Screen.TagDetail.createRoute(newName))
+                            },
+                            onNavigateToBookInfo = { bookId ->
+                                navController.navigate(Screen.BookInfo.createRoute(bookId))
                             }
                         )
                     }
@@ -434,6 +452,34 @@ class MainActivity : ComponentActivity() {
                         com.example.readerapp.ui.features.dictionary.DictionariesScreen(
                             viewModel = dictViewModel,
                             onBack = { navController.popBackStack(Screen.Library.route, inclusive = false) }
+                        )
+                    }
+                    composable(
+                        route = Screen.BookInfo.route,
+                        arguments = listOf(androidx.navigation.navArgument("bookId") { type = androidx.navigation.NavType.StringType }),
+                        deepLinks = listOf(androidx.navigation.navDeepLink { uriPattern = "pinecone://book_info/{bookId}" })
+                    ) { backStackEntry ->
+                        val bookId = backStackEntry.arguments?.getString("bookId") ?: return@composable
+                        BookInfoScreen(
+                            bookId = bookId,
+                            onNavigateBack = {
+                                if (navController.previousBackStackEntry != null) navController.popBackStack() else finish()
+                            },
+                            onNavigateToEdit = { id ->
+                                navController.navigate(Screen.EditBook.createRoute(id))
+                            }
+                        )
+                    }
+                    composable(
+                        route = Screen.EditBook.route,
+                        arguments = listOf(androidx.navigation.navArgument("bookId") { type = androidx.navigation.NavType.StringType })
+                    ) { backStackEntry ->
+                        val bookId = backStackEntry.arguments?.getString("bookId") ?: return@composable
+                        EditBookScreen(
+                            bookId = bookId,
+                            onNavigateBack = {
+                                if (navController.previousBackStackEntry != null) navController.popBackStack()
+                            }
                         )
                     }
                     }

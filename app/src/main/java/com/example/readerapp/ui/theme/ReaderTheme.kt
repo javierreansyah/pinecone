@@ -15,16 +15,27 @@ fun ReaderTheme(
 ) {
     val isDarkBackground = readerBackgroundColor.luminance() < 0.5f
     
-    // We create a color scheme specifically tuned to contrast with the reader background.
-    // This is used for overlays, top/bottom bars that sit directly ON TOP of the reader.
+    // Check if the parent theme is dark or light based on background luminance
+    val parentIsDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    
+    // Resolve primary/onPrimary to respect light/dark mismatch between reader page and app theme
+    val primaryColor = when {
+        isDarkBackground && parentIsDark -> MaterialTheme.colorScheme.primary
+        isDarkBackground && !parentIsDark -> MaterialTheme.colorScheme.inversePrimary
+        !isDarkBackground && parentIsDark -> MaterialTheme.colorScheme.inversePrimary
+        else -> MaterialTheme.colorScheme.primary
+    }
+    
+    val onPrimaryColor = if (primaryColor.luminance() < 0.5f) Color.White else Color.Black
+
     val colorScheme = if (isDarkBackground) {
         darkColorScheme(
             background = Color.Transparent,
             surface = readerBackgroundColor, // Matches reader background
             onSurface = Color.White,
             onSurfaceVariant = Color.White.copy(alpha = 0.7f),
-            primary = primaryDark,
-            onPrimary = onPrimaryDark
+            primary = primaryColor,
+            onPrimary = onPrimaryColor
         )
     } else {
         lightColorScheme(
@@ -32,8 +43,8 @@ fun ReaderTheme(
             surface = readerBackgroundColor, // Matches reader background
             onSurface = Color.Black,
             onSurfaceVariant = Color.Black.copy(alpha = 0.7f),
-            primary = primaryLight,
-            onPrimary = onPrimaryLight
+            primary = primaryColor,
+            onPrimary = onPrimaryColor
         )
     }
 

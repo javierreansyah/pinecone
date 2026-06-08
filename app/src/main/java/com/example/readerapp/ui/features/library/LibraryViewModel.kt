@@ -120,7 +120,12 @@ class LibraryViewModel(
         val shelvedBookIds = crossRefs.map { it.bookId }.toSet()
         val unshelvedBooks = allBooksEntities.filter { it.book.id !in shelvedBookIds }
 
-        if (unshelvedBooks.isNotEmpty()) {
+        val showShelves = state.shelvesPreferences.selectedShelfFilter.contains(ShelfFilter.Shelves)
+        val showUnshelved = state.shelvesPreferences.selectedShelfFilter.contains(ShelfFilter.Unshelved)
+
+        val finalShelves = if (showShelves) sortedShelves else emptyList()
+
+        if (showUnshelved && unshelvedBooks.isNotEmpty()) {
             val unshelvedShelf = ShelfWithCovers(
                 shelf = com.example.readerapp.data.local.ShelfEntity(
                     id = "unshelved", 
@@ -129,9 +134,9 @@ class LibraryViewModel(
                 ),
                 books = unshelvedBooks
             )
-            sortedShelves + unshelvedShelf
+            finalShelves + unshelvedShelf
         } else {
-            sortedShelves
+            finalShelves
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -263,6 +268,18 @@ class LibraryViewModel(
                 if (contains(status)) remove(status) else add(status)
             }
             val newPrefs = currentPrefs.copy(selectedStatus = updatedStatus)
+            prefsManager.savePreferences(if (isShelvesTab) "library_shelves" else screenKey, newPrefs)
+            if (isShelvesTab) state.copy(shelvesPreferences = newPrefs) else state.copy(bookPreferences = newPrefs)
+        }
+    }
+
+    fun toggleShelfFilter(filter: ShelfFilter, isShelvesTab: Boolean = false) {
+        _uiState.update { state ->
+            val currentPrefs = if (isShelvesTab) state.shelvesPreferences else state.bookPreferences
+            val updatedFilter = currentPrefs.selectedShelfFilter.toMutableSet().apply {
+                if (contains(filter)) remove(filter) else add(filter)
+            }
+            val newPrefs = currentPrefs.copy(selectedShelfFilter = updatedFilter)
             prefsManager.savePreferences(if (isShelvesTab) "library_shelves" else screenKey, newPrefs)
             if (isShelvesTab) state.copy(shelvesPreferences = newPrefs) else state.copy(bookPreferences = newPrefs)
         }

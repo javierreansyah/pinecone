@@ -40,6 +40,18 @@ class DictionariesViewModel(
         repository.resetRestoreState()
     }
 
+    val backupState: StateFlow<ImportState> = repository.backupState
+
+    fun resetBackupState() {
+        repository.resetBackupState()
+    }
+
+    fun backupDictionaries() {
+        viewModelScope.launch {
+            repository.backupDictionaries()
+        }
+    }
+
     fun restoreDictionary(uri: Uri) {
         viewModelScope.launch {
             repository.restoreDictionaries(uri)

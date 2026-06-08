@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import com.example.readerapp.ui.features.library.LayoutMode
 import com.example.readerapp.ui.features.library.SortType
 import com.example.readerapp.ui.features.library.StatusFilter
+import com.example.readerapp.ui.features.library.ShelfFilter
 import com.example.readerapp.ui.features.library.FilterSortPreferences
 
 class LibraryPreferencesManager(context: Context) {
@@ -15,6 +16,7 @@ class LibraryPreferencesManager(context: Context) {
         val sortTypeStr = prefs.getString("${screenKey}_sort", defaultSort.name) ?: defaultSort.name
         val isAscending = prefs.getBoolean("${screenKey}_asc", defaultAscending)
         val statusSetStr = prefs.getStringSet("${screenKey}_status", setOf(StatusFilter.NotStarted.name, StatusFilter.Reading.name, StatusFilter.Finished.name)) ?: setOf()
+        val shelfFilterSetStr = prefs.getStringSet("${screenKey}_shelf_filter", setOf(ShelfFilter.Shelves.name, ShelfFilter.Unshelved.name)) ?: setOf()
         
         return FilterSortPreferences(
             layoutMode = try { LayoutMode.valueOf(layoutModeStr) } catch (e: Exception) { defaultLayout },
@@ -22,6 +24,9 @@ class LibraryPreferencesManager(context: Context) {
             isAscending = isAscending,
             selectedStatus = statusSetStr.mapNotNull { 
                 try { StatusFilter.valueOf(it) } catch (e: Exception) { null } 
+            }.toSet(),
+            selectedShelfFilter = shelfFilterSetStr.mapNotNull { 
+                try { ShelfFilter.valueOf(it) } catch (e: Exception) { null } 
             }.toSet()
         )
     }
@@ -32,6 +37,7 @@ class LibraryPreferencesManager(context: Context) {
             putString("${screenKey}_sort", prefsObj.sortType.name)
             putBoolean("${screenKey}_asc", prefsObj.isAscending)
             putStringSet("${screenKey}_status", prefsObj.selectedStatus.map { it.name }.toSet())
+            putStringSet("${screenKey}_shelf_filter", prefsObj.selectedShelfFilter.map { it.name }.toSet())
             apply()
         }
     }
