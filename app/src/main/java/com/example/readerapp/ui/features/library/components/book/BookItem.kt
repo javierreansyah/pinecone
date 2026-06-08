@@ -20,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.theme.spacing
 
@@ -65,7 +67,7 @@ fun BookItem(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = if (book.authors.isNotEmpty()) book.authors.joinToString(", ") else "Unknown Author",
+                        text = if (book.authors.isNotEmpty()) book.authors.joinToString(", ") else stringResource(R.string.book_unknown_author),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -117,7 +119,7 @@ fun BookItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = if (book.authors.isNotEmpty()) book.authors.joinToString(", ") else "Unknown Author",
+                    text = if (book.authors.isNotEmpty()) book.authors.joinToString(", ") else stringResource(R.string.book_unknown_author),
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

@@ -78,7 +78,7 @@ fun AppDrawer(
             }
 
             NavigationDrawerItem(
-                label = { Text("Archives") },
+                label = { Text(stringResource(R.string.library_archives_title)) },
                 icon = { Icon(MaterialSymbols.Outlined.Archive, contentDescription = null) },
                 selected = false,
                 onClick = { onNavigateToArchives() },
@@ -86,7 +86,7 @@ fun AppDrawer(
             )
 
             NavigationDrawerItem(
-                label = { Text("Dictionaries") },
+                label = { Text(stringResource(R.string.dictionaries_title)) },
                 icon = { Icon(MaterialSymbols.Outlined.Book, contentDescription = null) },
                 selected = false,
                 onClick = { onNavigateToDictionaries() },
@@ -96,14 +96,14 @@ fun AppDrawer(
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
             Text(
-                text = "Book Import",
+                text = stringResource(R.string.nav_book_import),
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
                 color = MaterialTheme.colorScheme.primary,
             )
 
             NavigationDrawerItem(
-                label = { Text("Import Files") },
+                label = { Text(stringResource(R.string.nav_import_files)) },
                 icon = { Icon(MaterialSymbols.Outlined.Upload, contentDescription = null) },
                 selected = false,
                 onClick = {
@@ -113,7 +113,7 @@ fun AppDrawer(
                 shape = RectangleShape
             )
             NavigationDrawerItem(
-                label = { Text("Scan Folder") },
+                label = { Text(stringResource(R.string.nav_scan_folder)) },
                 icon = { Icon(MaterialSymbols.Outlined.Folder, contentDescription = null) },
                 selected = false,
                 onClick = {
@@ -126,13 +126,13 @@ fun AppDrawer(
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
             Text(
-                text = "Local Backup",
+                text = stringResource(R.string.nav_local_backup),
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
                 color = MaterialTheme.colorScheme.primary,
             )
 
-            val lastBackupText = if (settings.lastBackupTime > 0) {
+            val lastBackupTimeText = if (settings.lastBackupTime > 0) {
                 val formatter = java.text.SimpleDateFormat("MMM dd, HH:mm", LocalLocale.current.platformLocale)
                 "Last: ${formatter.format(java.util.Date(settings.lastBackupTime))}"
             } else {
@@ -140,16 +140,19 @@ fun AppDrawer(
             }
 
             val hasPermission = settings.backupFolderUri.isNotEmpty() && context.contentResolver.persistedUriPermissions.any { it.uri.toString() == settings.backupFolderUri }
+            val startingMsg = stringResource(R.string.nav_starting_backup)
+            val successMsg = stringResource(R.string.nav_backup_success)
+            val failedMsg = stringResource(R.string.nav_backup_failed)
 
             NavigationDrawerItem(
                 label = {
                     Column {
                         if (hasPermission) {
-                            Text("Backup Now")
-                            Text(lastBackupText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.nav_backup_now))
+                            Text(lastBackupTimeText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         } else {
-                            Text("Backup not setup")
-                            Text("Setup now", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.nav_backup_not_setup))
+                            Text(stringResource(R.string.nav_setup_now), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 },
@@ -161,12 +164,12 @@ fun AppDrawer(
                         if (!hasPermission) {
                             onBackupFolderSetupClick()
                         } else {
-                            Toast.makeText(context, "Starting backup...", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, startingMsg, Toast.LENGTH_SHORT).show()
                             val success = BackupRepository(context).performBackup(force = true)
                             if (success) {
-                                Toast.makeText(context, "Backup successful", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, successMsg, Toast.LENGTH_SHORT).show()
                             } else {
-                                Toast.makeText(context, "Backup failed", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, failedMsg, Toast.LENGTH_SHORT).show()
                             }
                         }
                     }
@@ -175,7 +178,7 @@ fun AppDrawer(
             )
 
             NavigationDrawerItem(
-                label = { Text("Restore Backup") },
+                label = { Text(stringResource(R.string.dictionaries_restore)) },
                 icon = { Icon(MaterialSymbols.Outlined.History, contentDescription = null) },
                 selected = false,
                 onClick = {
@@ -187,7 +190,7 @@ fun AppDrawer(
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
             NavigationDrawerItem(
-                label = { Text("Settings") },
+                label = { Text(stringResource(R.string.settings_title)) },
                 icon = { Icon(MaterialSymbols.Outlined.Settings, contentDescription = null) },
                 selected = false,
                 onClick = { onNavigateToSettings() },

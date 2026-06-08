@@ -3,6 +3,8 @@ package com.example.readerapp.ui.features.library.components
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -32,7 +34,7 @@ fun RenameFilterDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Rename") },
+        title = { Text(stringResource(R.string.action_rename)) },
         text = {
             Column {
                 OutlinedTextField(
@@ -45,7 +47,7 @@ fun RenameFilterDialog(
                         .fillMaxWidth()
                         .focusRequester(focusRequester),
                     singleLine = true,
-                    label = { Text("Name") }
+                    label = { Text(stringResource(R.string.dictionaries_rename_title)) }
                 )
                 DropdownMenu(
                     expanded = expanded && filteredSuggestions.isNotEmpty(),
@@ -65,7 +67,7 @@ fun RenameFilterDialog(
                 if (text.isNotBlank() && suggestions.contains(text) && text != initialName) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Warning: A matching item already exists. Saving will merge this item and its books into the existing one.",
+                        text = stringResource(R.string.library_warning_merge),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -77,12 +79,12 @@ fun RenameFilterDialog(
                 onClick = { onConfirm(text) },
                 enabled = text.isNotBlank()
             ) {
-                Text("Save")
+                Text(stringResource(R.string.action_save))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         }
     )

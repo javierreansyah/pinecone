@@ -10,6 +10,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import com.composables.icons.materialsymbols.MaterialSymbols
@@ -26,7 +28,7 @@ fun TocList(
     if (tableOfContents.isEmpty()) {
         EmptyState(
             icon = MaterialSymbols.Outlined.Format_list_bulleted,
-            text = "No Table of Contents",
+            text = stringResource(R.string.reader_no_toc),
             modifier = Modifier.fillMaxWidth().padding(32.dp)
         )
     } else {

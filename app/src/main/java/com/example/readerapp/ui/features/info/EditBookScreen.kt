@@ -27,6 +27,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Close
@@ -61,10 +63,10 @@ fun EditBookScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Edit Book") },
+                title = { Text(stringResource(R.string.book_edit_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = "Back")
+                        Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = stringResource(R.string.action_back))
                     }
                 },
                 actions = {
@@ -72,7 +74,7 @@ fun EditBookScreen(
                         onClick = { viewModel.saveChanges() },
                         enabled = !uiState.isSaving
                     ) {
-                        Text("Save", style = MaterialTheme.typography.labelLarge)
+                        Text(stringResource(R.string.action_save), style = MaterialTheme.typography.labelLarge)
                     }
                 }
             )
@@ -84,7 +86,7 @@ fun EditBookScreen(
             }
         } else if (uiState.error != null && !uiState.isSaving) {
             Box(modifier = Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
-                Text(uiState.error ?: "Unknown error", color = MaterialTheme.colorScheme.error)
+                Text(uiState.error ?: stringResource(R.string.book_not_found), color = MaterialTheme.colorScheme.error)
             }
         } else {
             Column(
@@ -124,14 +126,14 @@ fun EditBookScreen(
                     if (uiState.coverUri != null) {
                         AsyncImage(
                             model = uiState.coverUri,
-                            contentDescription = "Cover Image",
+                            contentDescription = stringResource(R.string.book_info_title),
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
                     } else if (uiState.existingCoverPath != null) {
                         AsyncImage(
                             model = File(uiState.existingCoverPath!!),
-                            contentDescription = "Cover Image",
+                            contentDescription = stringResource(R.string.book_info_title),
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
@@ -151,7 +153,7 @@ fun EditBookScreen(
                         ) {
                             Icon(
                                 imageVector = MaterialSymbols.Outlined.Image,
-                                contentDescription = "No Cover",
+                                contentDescription = stringResource(R.string.book_info_title),
                                 modifier = Modifier.size(48.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                             )
@@ -171,7 +173,7 @@ fun EditBookScreen(
                     ) {
                         Icon(
                             imageVector = MaterialSymbols.Outlined.Edit,
-                            contentDescription = "Edit Cover",
+                            contentDescription = stringResource(R.string.action_edit),
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(16.dp)
                         )
@@ -182,14 +184,14 @@ fun EditBookScreen(
                 OutlinedTextField(
                     value = uiState.title,
                     onValueChange = { viewModel.updateTitle(it) },
-                    label = { Text("Title") },
+                    label = { Text(stringResource(R.string.library_sort_title)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
 
                 // Authors Autocomplete
                 AutocompleteChipTextField(
-                    label = "Authors",
+                    label = stringResource(R.string.book_label_authors),
                     items = uiState.authors,
                     suggestions = allAuthors.map { it.name },
                     onAdd = { viewModel.addAuthor(it) },
@@ -199,7 +201,7 @@ fun EditBookScreen(
 
                 // Tags Autocomplete
                 AutocompleteChipTextField(
-                    label = "Tags",
+                    label = stringResource(R.string.book_label_tags),
                     items = uiState.tags,
                     suggestions = allTags.map { it.name },
                     onAdd = { viewModel.addTag(it) },
@@ -211,7 +213,7 @@ fun EditBookScreen(
                 OutlinedTextField(
                     value = uiState.description,
                     onValueChange = { viewModel.updateDescription(it) },
-                    label = { Text("Description") },
+                    label = { Text(stringResource(R.string.book_description)) },
                     modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 160.dp)
                 )
             }
@@ -280,7 +282,7 @@ private fun AutocompleteChipTextField(
                                 trailingIcon = {
                                     Icon(
                                         imageVector = MaterialSymbols.Outlined.Close,
-                                        contentDescription = "Remove",
+                                        contentDescription = stringResource(R.string.action_remove),
                                         modifier = Modifier
                                             .size(16.dp)
                                             .clickable { onRemove(item) }
@@ -340,7 +342,7 @@ private fun AutocompleteChipTextField(
             
             if (text.isNotBlank() && !suggestions.any { it.equals(text, ignoreCase = true) }) {
                 DropdownMenuItem(
-                    text = { Text("Create new: \"$text\"") },
+                    text = { Text(stringResource(R.string.book_create_new, text)) },
                     onClick = {
                         onAdd(text)
                         text = ""

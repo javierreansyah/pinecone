@@ -9,6 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import com.example.readerapp.data.local.BookmarkEntity
 import org.json.JSONObject
 import org.readium.r2.shared.publication.Link
@@ -28,7 +30,7 @@ fun BookmarksList(
     if (bookmarks.isEmpty()) {
         EmptyState(
             icon = MaterialSymbols.Outlined.Bookmark,
-            text = "No Bookmarks",
+            text = stringResource(R.string.reader_no_bookmarks),
             modifier = Modifier.fillMaxWidth().padding(32.dp)
         )
     } else {
@@ -39,10 +41,11 @@ fun BookmarksList(
             items(bookmarks) { bookmark ->
                 val locator = try { Locator.fromJSON(JSONObject(bookmark.locatorJson)) } catch (_: Exception) { null }
                 if (locator != null) {
+                    val inDocument = stringResource(R.string.reader_in_document)
                     val chapterTitle = bookmark.chapterTitle
-                        ?.takeIf { it.isNotBlank() && it != "In Document" }
+                        ?.takeIf { it.isNotBlank() && it != inDocument }
                         ?: tableOfContents.find { it.href.toString().substringBefore("#") == locator.href.toString().substringBefore("#") }?.title
-                        ?: "In Document"
+                        ?: inDocument
                         
                     Column(
                         modifier = Modifier

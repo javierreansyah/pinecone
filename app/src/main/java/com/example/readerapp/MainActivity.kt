@@ -2,6 +2,7 @@ package com.example.readerapp
 
 import android.os.Bundle
 import android.content.Intent
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.BackHandler
@@ -47,7 +48,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.tween
 import coil.annotation.ExperimentalCoilApi
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
     @OptIn(ExperimentalCoilApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()

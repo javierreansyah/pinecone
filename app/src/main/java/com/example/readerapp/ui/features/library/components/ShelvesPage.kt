@@ -11,6 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import com.example.readerapp.data.local.ShelfWithCovers
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.features.library.LayoutMode
@@ -67,10 +69,11 @@ fun ShelvesPage(
                                     text = shelfWithCovers.shelf.name,
                                     style = MaterialTheme.typography.titleMedium
                                 )
-                                val countText = when (booksCount) {
-                                    1 -> "1 book"
-                                    else -> "$booksCount books"
-                                }
+                                val countText = androidx.compose.ui.res.pluralStringResource(
+                                    R.plurals.library_shelf_count, 
+                                    booksCount, 
+                                    booksCount
+                                )
                                 Text(
                                     text = countText,
                                     style = MaterialTheme.typography.bodySmall,
@@ -82,7 +85,7 @@ fun ShelvesPage(
                             if (visibleBooks.isEmpty()) {
                                 EmptyState(
                                     icon = MaterialSymbols.Outlined.Book,
-                                    text = "Empty Shelf",
+                                    text = stringResource(R.string.library_empty_shelf),
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(140.dp)
@@ -117,7 +120,7 @@ fun ShelvesPage(
         } else {
             EmptyState(
                 icon = MaterialSymbols.Outlined.Folder,
-                text = "No shelves found",
+                text = stringResource(R.string.library_empty_shelves),
                 modifier = Modifier.fillMaxSize().padding(16.dp)
             )
         }

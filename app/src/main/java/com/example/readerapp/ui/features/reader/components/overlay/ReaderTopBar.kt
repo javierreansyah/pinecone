@@ -22,6 +22,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Bookmark
@@ -58,31 +60,31 @@ fun ReaderTopBar(
             title = { },
             navigationIcon = {
                 IconButton(onClick = onBack) {
-                    Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = "Back")
+                    Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = stringResource(R.string.action_back))
                 }
             },
             actions = {
                 IconButton(onClick = onSearchClick) {
-                    Icon(MaterialSymbols.Outlined.Search, contentDescription = "Search")
+                    Icon(MaterialSymbols.Outlined.Search, contentDescription = stringResource(R.string.action_search))
                 }
                 IconButton(onClick = onTocClick) {
-                    Icon(MaterialSymbols.Outlined.List, contentDescription = "Table of Contents", modifier = Modifier.size(28.dp))
+                    Icon(MaterialSymbols.Outlined.List, contentDescription = stringResource(R.string.reader_toc_title), modifier = Modifier.size(28.dp))
                 }
                 IconButton(onClick = onSettingsClick) {
-                    Icon(MaterialSymbols.Outlined.Match_case, contentDescription = "Typography", modifier = Modifier.size(28.dp))
+                    Icon(MaterialSymbols.Outlined.Match_case, contentDescription = stringResource(R.string.reader_settings_typography), modifier = Modifier.size(28.dp))
                 }
 
                 var showMoreMenu by remember { mutableStateOf(false) }
                 Box {
                     IconButton(onClick = { showMoreMenu = true }) {
-                        Icon(MaterialSymbols.Outlined.More_vert, contentDescription = "More")
+                        Icon(MaterialSymbols.Outlined.More_vert, contentDescription = stringResource(R.string.action_more))
                     }
                     DropdownMenu(
                         expanded = showMoreMenu,
                         onDismissRequest = { showMoreMenu = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text(if (isBookmarked) "Remove Bookmark" else "Add Bookmark", style = MaterialTheme.typography.titleMedium) },
+                            text = { Text(if (isBookmarked) stringResource(R.string.reader_remove_bookmark) else stringResource(R.string.reader_add_bookmark), style = MaterialTheme.typography.titleMedium) },
                             onClick = {
                                 onToggleBookmark()
                                 showMoreMenu = false
@@ -95,7 +97,7 @@ fun ReaderTopBar(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Book Info", style = MaterialTheme.typography.titleMedium) },
+                            text = { Text(stringResource(R.string.book_info_title), style = MaterialTheme.typography.titleMedium) },
                             onClick = {
                                 onInfoClick()
                                 showMoreMenu = false

@@ -10,6 +10,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import com.example.readerapp.data.model.Book
 import java.io.File
 import androidx.compose.ui.draw.clip
@@ -26,7 +28,7 @@ fun CoverImage(
         ) {
             AsyncImage(
                 model = File(book.coverPath),
-                contentDescription = "Cover for ${book.title}",
+                contentDescription = stringResource(R.string.book_cover_description, book.title),
                 modifier = Modifier.clip(MaterialTheme.shapes.small),
                 contentScale = ContentScale.Fit
             )

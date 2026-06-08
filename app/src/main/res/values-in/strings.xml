@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Pinecone</string>
+
+    <!-- Common Actions -->
+    <string name="action_back">Kembali</string>
+    <string name="action_cancel">Batal</string>
+    <string name="action_save">Simpan</string>
+    <string name="action_delete">Hapus</string>
+    <string name="action_rename">Ubah Nama</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_more">Lainnya</string>
+    <string name="action_options">Opsi</string>
+    <string name="action_search">Cari</string>
+    <string name="action_clear">Bersihkan</string>
+    <string name="action_proceed">Lanjutkan</string>
+    <string name="action_add">Tambah</string>
+    <string name="action_remove">Hapus</string>
+    <string name="action_create">Buat</string>
+    <string name="action_copy">Salin</string>
+    <string name="action_define">Definisikan</string>
+    <string name="action_share">Bagikan</string>
+    <string name="action_close">Tutup</string>
+    <string name="action_menu">Menu</string>
+    <string name="action_filter">Filter</string>
+    <string name="action_sort">Urutkan</string>
+    <string name="action_voice_search">Pencarian Suara</string>
+    <string name="action_increase">Perbesar</string>
+    <string name="action_decrease">Perkecil</string>
+    <string name="action_all">Semua</string>
+    <string name="common_error">Kesalahan: %s</string>
+    <string name="common_restore_error">Kesalahan Pemulihan: %s</string>
+    <string name="common_backup_error">Kesalahan Cadangan: %s</string>
+
+    <!-- Library -->
+    <string name="library_tab_books">Buku</string>
+    <string name="library_tab_shelves">Rak</string>
+    <string name="library_search_placeholder">Cari di perpustakaan</string>
+    <string name="library_empty_books">Buku tidak ditemukan</string>
+    <string name="library_empty_shelves">Rak tidak ditemukan</string>
+    <string name="library_empty_shelf">Rak Kosong</string>
+    <string name="library_archives_title">Arsip</string>
+    <string name="library_empty_archives">Tidak ada buku yang diarsipkan.</string>
+    <string name="library_authors_title">Penulis</string>
+    <string name="library_tags_title">Tag</string>
+    <string name="library_view_all">Lihat semua %s</string>
+    <string name="library_delete_shelf_title">Hapus Rak</string>
+    <string name="library_delete_shelf_message">Apakah Anda yakin ingin menghapus \'%s\'? Buku di dalamnya tidak akan dihapus.</string>
+    <string name="library_rename_shelf_title">Ubah Nama Rak</string>
+    <string name="library_shelf_name_label">Nama Rak</string>
+    <string name="library_create_shelf_title">Buat Rak Baru</string>
+    <string name="library_select_shelf_title">Pilih Rak</string>
+    <plurals name="library_shelf_count">
+        <item quantity="other">%d buku</item>
+    </plurals>
+    <plurals name="library_books_count">
+        <item quantity="other">%d buku</item>
+    </plurals>
+    <plurals name="library_item_count">
+        <item quantity="other">%1$d %2$s</item>
+    </plurals>
+    <string name="library_warning_merge">Peringatan: Item yang cocok sudah ada. Menyimpan akan menggabungkan item ini dan bukunya ke dalam item yang sudah ada.</string>
+    <string name="library_importing">Mengimpor…</string>
+    <string name="library_empty_items">Item tidak ditemukan.</string>
+    <string name="library_delete_item_title">Hapus %s</string>
+    <string name="library_delete_item_message">Apakah Anda yakin ingin menghapus \'%s\'? Ini akan menghapusnya dari semua buku.</string>
+    <string name="library_label_view">Tampilan</string>
+    <string name="library_label_status">Status</string>
+    <string name="library_label_unshelved">Belum Masuk Rak</string>
+    <string name="library_label_add_to_shelf">Tambah ke Rak</string>
+    <string name="library_label_remove_from_shelf">Hapus dari Rak</string>
+    <string name="library_sort_title">Judul</string>
+    <string name="library_sort_author">Penulis</string>
+    <string name="library_sort_last_read">Tanggal terakhir dibaca</string>
+    <string name="library_sort_added">Tanggal ditambahkan</string>
+    <string name="library_sort_progress">Persentase selesai</string>
+    <string name="library_sort_custom">Urutan Kustom</string>
+    <string name="library_sort_label">Label</string>
+    <string name="library_sort_size">Ukuran</string>
+    <string name="library_status_not_started">Belum dimulai</string>
+    <string name="library_status_reading">Sedang dibaca</string>
+    <string name="library_status_finished">Selesai</string>
+
+    <!-- Book Details -->
+    <string name="book_info_title">Info Buku</string>
+    <string name="book_not_found">Buku tidak ditemukan</string>
+    <string name="book_edit_title">Edit Buku</string>
+    <string name="book_reading_progress">Kemajuan Membaca</string>
+    <string name="book_description">Deskripsi</string>
+    <string name="book_publication_details">Detail Publikasi</string>
+    <string name="book_publisher">Penerbit</string>
+    <string name="book_published_date">Tanggal Terbit</string>
+    <string name="book_language">Bahasa</string>
+    <string name="book_identifier">Pengenal (ISBN/ID)</string>
+    <string name="book_format">Format</string>
+    <string name="book_archive">Arsipkan</string>
+    <string name="book_unarchive">Batal Arsipkan</string>
+    <string name="book_mark_as_read">Tandai sebagai Selesai Dibaca</string>
+    <string name="book_mark_as_unread">Tandai sebagai Belum Dibaca</string>
+    <string name="book_read_more">Baca Selengkapnya</string>
+    <string name="book_read_less">Lebih Sedikit</string>
+    <string name="book_not_available">N/A</string>
+    <string name="book_unknown">Tidak Diketahui</string>
+    <string name="book_label_authors">Penulis</string>
+    <string name="book_label_tags">Tag</string>
+    <string name="book_create_new">Buat baru: \"%s\"</string>
+    <string name="book_delete_title">Hapus Buku</string>
+    <string name="book_delete_message">Apakah Anda yakin ingin menghapus buku ini? Tindakan ini tidak dapat dibatalkan.</string>
+    <string name="book_cover_description">Sampul untuk %s</string>
+    <string name="book_unknown_author">Penulis Tidak Diketahui</string>
+
+    <!-- Reader -->
+    <string name="reader_no_definition">Definisi tidak ditemukan.</string>
+    <string name="reader_toc_title">Daftar Isi</string>
+    <string name="reader_bookmarks_title">Bookmark</string>
+    <string name="reader_notes_title">Catatan</string>
+    <string name="reader_chapters_title">Bab</string>
+    <string name="reader_add_bookmark">Tambah Bookmark</string>
+    <string name="reader_remove_bookmark">Hapus Bookmark</string>
+    <string name="reader_add_note">Tambah Catatan</string>
+    <string name="reader_make_note">Buat Catatan</string>
+    <string name="reader_no_bookmarks">Tidak Ada Bookmark</string>
+    <string name="reader_no_notes">Tidak Ada Catatan</string>
+    <string name="reader_no_toc">Tidak Ada Daftar Isi</string>
+    <string name="reader_enter_note_placeholder">Masukkan catatan Anda di sini…</string>
+    <string name="reader_note_text_placeholder">Teks catatan…</string>
+    <string name="reader_search_in_book">Cari di dalam buku…</string>
+    <string name="reader_search_no_results">Hasil tidak ditemukan</string>
+    <string name="reader_search_no_results_for">Tidak ada hasil untuk \"%s\"</string>
+    <plurals name="reader_search_results_count">
+        <item quantity="other">%d hasil</item>
+    </plurals>
+    <plurals name="reader_page_of">
+        <item quantity="other">%1$s dari %2$s halaman</item>
+    </plurals>
+    <string name="reader_position_at">pada %s</string>
+    <plurals name="reader_page_num">
+        <item quantity="other">halaman %d</item>
+    </plurals>
+    <string name="reader_in_document">Dalam Dokumen</string>
+    <string name="reader_no_matches">Tidak ada kecocokan</string>
+    <string name="reader_result_num_of">%1$s dari %2$s</string>
+
+    <!-- Reader Settings -->
+    <string name="reader_settings_tab_text">Teks</string>
+    <string name="reader_settings_tab_lighting">Pencahayaan</string>
+    <string name="reader_settings_tab_advanced">Lanjutan</string>
+    <string name="reader_settings_font">Font</string>
+    <string name="reader_settings_typography">Tipografi</string>
+    <string name="reader_settings_text_size">Ukuran Teks</string>
+    <string name="reader_settings_font_weight">Ketebalan Font</string>
+    <string name="reader_settings_line_spacing">Spasi Baris</string>
+    <string name="reader_settings_letter_spacing">Spasi Huruf</string>
+    <string name="reader_settings_word_spacing">Spasi Kata</string>
+    <string name="reader_settings_paragraph_spacing">Spasi Paragraf</string>
+    <string name="reader_settings_paragraph_indent">Indentasi Paragraf</string>
+    <string name="reader_settings_horizontal_margin">Margin Horizontal</string>
+    <string name="reader_settings_vertical_margin">Margin Vertikal</string>
+    <string name="reader_settings_publisher_style">Gaya Penerbit</string>
+    <string name="reader_settings_alignment">Perataan</string>
+    <string name="reader_settings_brightness">Kecerahan</string>
+    <string name="reader_settings_auto_brightness">Kecerahan Otomatis</string>
+    <string name="reader_settings_theme">Tema</string>
+    <string name="reader_settings_theme_auto">Otomatis</string>
+    <string name="reader_settings_theme_light">Terang</string>
+    <string name="reader_settings_theme_dark">Gelap</string>
+    <string name="reader_settings_theme_sepia">Sepia</string>
+    <string name="reader_settings_image_filter">Filter Gambar</string>
+    <string name="reader_settings_vertical_scroll">Gulir Vertikal</string>
+    <string name="reader_settings_hyphens">Tanda Hubung</string>
+    <string name="reader_settings_text_normalization">Normalisasi Teks</string>
+    <string name="reader_settings_force_orientation">Paksa Orientasi</string>
+    <string name="reader_settings_prevent_timeout">Cegah Layar Mati</string>
+    <string name="reader_settings_always_status_bar">Selalu Tampilkan Bilah Status</string>
+    <string name="reader_settings_add_theme">Tambah Tema</string>
+    <string name="reader_settings_new_theme">Tema Baru</string>
+    <string name="reader_settings_edit_theme">Edit Tema</string>
+    <string name="reader_settings_theme_name">Nama Tema</string>
+    <string name="reader_settings_bg_color">Warna Latar Belakang (Hex)</string>
+    <string name="reader_settings_text_color">Warna Teks (Hex)</string>
+
+    <!-- Reader settings options -->
+    <string name="reader_settings_alignment_left">Kiri</string>
+    <string name="reader_settings_alignment_right">Kanan</string>
+    <string name="reader_settings_alignment_justify">Rata Kanan-Kiri</string>
+    <string name="reader_settings_image_filter_none">Tidak Ada</string>
+    <string name="reader_settings_image_filter_darken">Gelapkan</string>
+    <string name="reader_settings_image_filter_invert">Inversi</string>
+    <string name="reader_settings_orientation_auto">Otomatis</string>
+    <string name="reader_settings_orientation_portrait">Potret</string>
+    <string name="reader_settings_orientation_landscape">Lanskap</string>
+
+    <!-- Dictionaries -->
+    <string name="dictionaries_title">Kamus</string>
+    <string name="dictionaries_empty">Kamus tidak terinstal\nKetuk + untuk mengimpor file .zip Stardict</string>
+    <string name="dictionaries_import_stardict">Impor Stardict</string>
+    <string name="dictionaries_backup">Cadangkan Kamus</string>
+    <string name="dictionaries_restore">Pulihkan Cadangan</string>
+    <string name="dictionaries_restore_warning">Peringatan: Memulihkan cadangan akan sepenuhnya menimpa kamus saat ini dengan konten cadangan.</string>
+    <string name="dictionaries_installing">Menginstal Kamus…</string>
+    <string name="dictionaries_restoring">Memulihkan Kamus…</string>
+    <string name="dictionaries_backing_up">Mencadangkan Kamus…</string>
+    <string name="dictionaries_delete_title">Hapus Kamus</string>
+    <string name="dictionaries_delete_message">Apakah Anda yakin ingin menghapus \'%s\'?</string>
+    <string name="dictionaries_rename_title">Ubah Nama Kamus</string>
+    <plurals name="dictionaries_word_count">
+        <item quantity="other">%d kata</item>
+    </plurals>
+    <string name="dictionaries_select">Pilih Kamus</string>
+    <string name="dictionaries_none_installed">Kamus tidak terinstal. Instal kamus dari laci navigasi.</string>
+    <string name="dictionaries_invalid_format">Format file tidak valid. Silakan pilih file .pinedict.</string>
+    <string name="dictionaries_install_success">Kamus berhasil diinstal</string>
+    <string name="dictionaries_restore_success">Kamus berhasil dipulihkan</string>
+    <string name="dictionaries_backup_success">Kamus berhasil dicadangkan</string>
+    <string name="dictionaries_no_to_backup">Tidak ada kamus terinstal untuk dicadangkan</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Pengaturan</string>
+    <string name="settings_general">Umum</string>
+    <string name="settings_theme_mode">Mode Tema</string>
+    <string name="settings_color_palette">Palet Warna</string>
+    <string name="settings_theme_contrast">Kontras Tema</string>
+    <string name="settings_language">Bahasa</string>
+    <string name="settings_backup">Cadangan</string>
+    <string name="settings_auto_backup_freq">Frekuensi Cadangan Otomatis</string>
+    <string name="settings_backup_location">Lokasi Cadangan</string>
+    <string name="settings_option_system">Sistem</string>
+    <string name="settings_option_light">Terang</string>
+    <string name="settings_option_dark">Gelap</string>
+    <string name="settings_option_standard">Standar</string>
+    <string name="settings_option_medium">Sedang</string>
+    <string name="settings_option_high">Tinggi</string>
+    <string name="settings_option_never">Jangan Pernah</string>
+    <string name="settings_option_dynamic">Dinamis</string>
+    <string name="settings_theme_pine">Pine</string>
+    <string name="settings_theme_neutral">Netral</string>
+    <string name="settings_option_selected">Dipilih</string>
+    <string name="settings_option_not_selected">Belum dipilih (Cadangan otomatis dinonaktifkan)</string>
+
+    <!-- Navigation Drawer -->
+    <string name="nav_book_import">Impor Buku</string>
+    <string name="nav_local_backup">Cadangan Lokal</string>
+    <string name="nav_import_files">Impor File</string>
+    <string name="nav_scan_folder">Pindai Folder</string>
+    <string name="nav_backup_now">Cadangkan Sekarang</string>
+    <string name="nav_backup_not_setup">Cadangan belum dikonfigurasi</string>
+    <string name="nav_setup_now">Konfigurasi sekarang</string>
+    <string name="nav_starting_backup">Memulai pencadangan…</string>
+    <string name="nav_backup_success">Cadangan berhasil</string>
+    <string name="nav_backup_failed">Cadangan gagal</string>
+
+</resources>

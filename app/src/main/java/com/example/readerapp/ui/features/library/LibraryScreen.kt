@@ -14,6 +14,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import com.example.readerapp.ui.features.library.components.*
 import com.example.readerapp.ui.features.library.components.book.*
 import com.example.readerapp.ui.theme.spacing
@@ -91,8 +93,8 @@ fun LibraryScreen(
                             pagerState.animateScrollToPage(0)
                         }
                     },
-                    icon = { Icon(MaterialSymbols.Outlined.Book, contentDescription = "Books") },
-                    label = { Text("Books") }
+                    icon = { Icon(MaterialSymbols.Outlined.Book, contentDescription = stringResource(R.string.library_tab_books)) },
+                    label = { Text(stringResource(R.string.library_tab_books)) }
                 )
                 ShortNavigationBarItem(
                     selected = pagerState.currentPage == 1,
@@ -101,8 +103,8 @@ fun LibraryScreen(
                             pagerState.animateScrollToPage(1)
                         }
                     },
-                    icon = { Icon(MaterialSymbols.Outlined.Folder, contentDescription = "Shelves") },
-                    label = { Text("Shelves") }
+                    icon = { Icon(MaterialSymbols.Outlined.Folder, contentDescription = stringResource(R.string.library_tab_shelves)) },
+                    label = { Text(stringResource(R.string.library_tab_shelves)) }
                 )
             }
         }
@@ -118,7 +120,7 @@ fun LibraryScreen(
                         if (filteredBooks.isEmpty()) {
                             EmptyState(
                                 icon = MaterialSymbols.Outlined.Book,
-                                text = "No books found",
+                                text = stringResource(R.string.library_empty_books),
                                 modifier = Modifier.fillMaxSize().padding(16.dp)
                             )
                         } else {
@@ -144,7 +146,7 @@ fun LibraryScreen(
                                         horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
                                         CircularProgressIndicator()
-                                        Text("Importing...", style = MaterialTheme.typography.bodyLarge)
+                                        Text(stringResource(R.string.library_importing), style = MaterialTheme.typography.bodyLarge)
                                     }
                                 }
                             }
@@ -180,11 +182,11 @@ fun LibraryScreen(
         }
 
         // Context Menu
-        if (selectedBookContext != null) {
+        selectedBookContext?.let { context ->
             BookContextMenu(
                 viewModel = viewModel,
-                bookId = selectedBookContext!!.first,
-                shelfId = selectedBookContext!!.second,
+                bookId = context.first,
+                shelfId = context.second,
                 onNavigateToBookInfo = onNavigateToBookInfo,
                 onDismiss = { selectedBookContext = null }
             )

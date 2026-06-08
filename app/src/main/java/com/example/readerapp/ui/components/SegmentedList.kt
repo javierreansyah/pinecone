@@ -120,9 +120,9 @@ class SegmentedListBuilder : SegmentedListScope {
 @Composable
 fun SegmentedColumn(
     modifier: Modifier = Modifier,
-    content: SegmentedListScope.() -> Unit
+    content: @Composable SegmentedListScope.() -> Unit
 ) {
-    val builder = SegmentedListBuilder().apply(content)
+    val builder = SegmentedListBuilder().apply { content() }
     val items = builder.items
     val count = items.size
 
@@ -152,9 +152,9 @@ fun SegmentedColumn(
 fun SegmentedLazyColumn(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
-    content: SegmentedListScope.() -> Unit
+    content: @Composable SegmentedListScope.() -> Unit
 ) {
-    val builder = SegmentedListBuilder().apply(content)
+    val builder = SegmentedListBuilder().apply { content() }
     val items = builder.items
     val count = items.size
 

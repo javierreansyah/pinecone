@@ -25,4 +25,8 @@ class SettingsViewModel(
             readerPreferences.updateAllSettings(newSettings)
         }
     }
+
+    suspend fun updateSettingsSuspended(newSettings: ReaderSettings) {
+        readerPreferences.updateAllSettings(newSettings)
+    }
 }

@@ -9,6 +9,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import com.example.readerapp.data.local.ShelfWithCovers
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.features.library.components.book.CoverImage
@@ -68,10 +70,11 @@ fun ShelfListItem(
                 maxLines = 2,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
-            val countText = when (booksCount) {
-                1 -> "1 book"
-                else -> "$booksCount books"
-            }
+            val countText = androidx.compose.ui.res.pluralStringResource(
+                R.plurals.library_shelf_count, 
+                booksCount, 
+                booksCount
+            )
             Text(
                 text = countText,
                 style = MaterialTheme.typography.bodySmall,

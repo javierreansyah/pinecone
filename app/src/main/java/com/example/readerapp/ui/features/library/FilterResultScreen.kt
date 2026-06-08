@@ -17,6 +17,8 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.More_vert
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import com.example.readerapp.ui.features.library.components.*
 import com.example.readerapp.ui.features.library.components.book.*
 
@@ -78,27 +80,27 @@ fun FilterResultScreen(
                         colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                         onClick = onNavigateBack
                     ) {
-                        Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = "Back")
+                        Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = stringResource(R.string.action_back))
                     }
                 },
                 actions = {
                     IconButton(shapes = IconButtonDefaults.shapes(), onClick = { showFilterSheet = true }) {
-                        Icon(MaterialSymbols.Outlined.Tune, contentDescription = "Filter")
+                        Icon(MaterialSymbols.Outlined.Tune, contentDescription = stringResource(R.string.action_filter))
                     }
                     Box {
                         IconButton(onClick = { showMenu = !showMenu }) {
-                            Icon(MaterialSymbols.Outlined.More_vert, contentDescription = "More options")
+                            Icon(MaterialSymbols.Outlined.More_vert, contentDescription = stringResource(R.string.action_more))
                         }
                         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                             DropdownMenuItem(
-                                text = { Text("Rename") },
+                                text = { Text(stringResource(R.string.action_rename)) },
                                 onClick = {
                                     showMenu = false
                                     showRenameDialog = true
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Delete") },
+                                text = { Text(stringResource(R.string.action_delete)) },
                                 onClick = {
                                     showMenu = false
                                     showDeleteConfirm = true
@@ -117,7 +119,7 @@ fun FilterResultScreen(
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             if (books.isEmpty()) {
-                Text("No books found.", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(16.dp))
+                Text(stringResource(R.string.library_empty_books), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(16.dp))
             } else {
                 BookCollection(
                     books = books,
@@ -138,21 +140,22 @@ fun FilterResultScreen(
             )
         }
 
-        if (selectedBookContext != null) {
+        selectedBookContext?.let { context ->
             BookContextMenu(
                 viewModel = viewModel,
-                bookId = selectedBookContext!!.first,
-                shelfId = selectedBookContext!!.second,
+                bookId = context.first,
+                shelfId = context.second,
                 onNavigateToBookInfo = onNavigateToBookInfo,
                 onDismiss = { selectedBookContext = null }
             )
         }
 
         if (showDeleteConfirm) {
+            val titleType = if (filterType == "author") stringResource(R.string.library_sort_author) else stringResource(R.string.library_sort_label)
             AlertDialog(
                 onDismissRequest = { showDeleteConfirm = false },
-                title = { Text("Delete $filterType") },
-                text = { Text("Are you sure you want to delete '$filterValue'? This will remove it from all books.") },
+                title = { Text(stringResource(R.string.library_delete_item_title, titleType)) },
+                text = { Text(stringResource(R.string.library_delete_item_message, filterValue)) },
                 confirmButton = {
                     TextButton(onClick = {
                         showDeleteConfirm = false
@@ -160,12 +163,12 @@ fun FilterResultScreen(
                             onNavigateBack()
                         }
                     }) {
-                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showDeleteConfirm = false }) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.action_cancel))
                     }
                 }
             )

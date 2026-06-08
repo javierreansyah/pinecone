@@ -21,12 +21,13 @@ import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.services.positions
 import org.readium.r2.shared.publication.services.search.search
 import androidx.core.graphics.toColorInt
-
-
+import android.app.Application
+import com.example.readerapp.R
 import com.example.readerapp.data.local.dictionary.DictionaryRepository
 import com.example.readerapp.data.local.dictionary.DictionaryEntry
 
 class ReaderViewModel(
+    private val application: Application,
     private val bookId: String,
     private val repository: BookRepository,
     private val readerPreferences: ReaderPreferences,
@@ -158,7 +159,8 @@ class ReaderViewModel(
                 // Get book entity
                 val book = repository.getBook(bookId)
                 if (book == null) {
-                    _uiState.update { it.copy(isLoading = false, error = "Book not found") }
+                    val errorMsg = application.getString(R.string.book_not_found)
+                    _uiState.update { it.copy(isLoading = false, error = errorMsg) }
                     return@launch
                 }
 
@@ -239,9 +241,9 @@ class ReaderViewModel(
         }.takeIf { it != -1 }
 
         return when {
-            posIndex != null -> "page ${posIndex + 1}"
+            posIndex != null -> application.resources.getQuantityString(R.plurals.reader_page_num, posIndex + 1, posIndex + 1)
             locator.locations.totalProgression != null ->
-                "at ${(locator.locations.totalProgression!! * 100).toInt()}%"
+                application.getString(R.string.reader_position_at, "${(locator.locations.totalProgression!! * 100).toInt()}%")
             else -> ""
         }
     }
@@ -253,7 +255,7 @@ class ReaderViewModel(
         val posIndex = allPositions.indexOfFirst {
             it.href.toString().substringBefore("#") == linkHref
         }
-        return if (posIndex != -1) "Page ${posIndex + 1}" else ""
+        return if (posIndex != -1) application.resources.getQuantityString(R.plurals.reader_page_num, posIndex + 1, posIndex + 1) else ""
     }
 
     fun savePosition(locator: Locator) {
@@ -459,9 +461,9 @@ class ReaderViewModel(
                         }.takeIf { it != -1 }
 
                         val positionLabel = when {
-                            posIndex != null -> "page ${posIndex + 1}"
+                            posIndex != null -> application.resources.getQuantityString(R.plurals.reader_page_num, posIndex + 1, posIndex + 1)
                             locator.locations.totalProgression != null ->
-                                "at ${(locator.locations.totalProgression!! * 100).toInt()}%"
+                                application.getString(R.string.reader_position_at, "${(locator.locations.totalProgression!! * 100).toInt()}%")
                             else -> ""
                         }
 
@@ -540,6 +542,7 @@ class ReaderViewModel(
     }
 
     class Factory(
+        private val application: Application,
         private val bookId: String,
         private val repository: BookRepository,
         private val readerPreferences: ReaderPreferences,
@@ -547,7 +550,7 @@ class ReaderViewModel(
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return ReaderViewModel(bookId, repository, readerPreferences, dictionaryRepository) as T
+            return ReaderViewModel(application, bookId, repository, readerPreferences, dictionaryRepository) as T
         }
     }
 }

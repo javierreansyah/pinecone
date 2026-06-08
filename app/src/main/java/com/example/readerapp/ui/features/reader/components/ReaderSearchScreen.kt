@@ -24,6 +24,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.example.readerapp.R
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Close
@@ -88,7 +90,7 @@ fun SearchScreen(
                     IconButton(onClick = onClose) {
                         Icon(
                             MaterialSymbols.Outlined.Arrow_back,
-                            contentDescription = "Close search",
+                            contentDescription = stringResource(R.string.action_close),
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -98,7 +100,7 @@ fun SearchScreen(
                         onValueChange = { onQueryChange(it) },
                         placeholder = {
                             Text(
-                                "Search in book…",
+                                stringResource(R.string.reader_search_in_book),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodyLarge
                             )
@@ -109,7 +111,7 @@ fun SearchScreen(
                                     IconButton(onClick = { onQueryChange("") }) {
                                         Icon(
                                             MaterialSymbols.Outlined.Close,
-                                            contentDescription = "Clear",
+                                            contentDescription = stringResource(R.string.action_clear),
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
@@ -117,7 +119,7 @@ fun SearchScreen(
                                     IconButton(onClick = { launchVoiceSearch() }) {
                                         Icon(
                                             MaterialSymbols.Outlined.Mic,
-                                            contentDescription = "Voice Search",
+                                            contentDescription = stringResource(R.string.action_voice_search),
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
@@ -152,7 +154,7 @@ fun SearchScreen(
                     ) {
                         Icon(
                             MaterialSymbols.Outlined.Search,
-                            contentDescription = "Search",
+                            contentDescription = stringResource(R.string.action_search),
                             tint = if (query.isNotBlank())
                                 MaterialTheme.colorScheme.primary
                             else
@@ -179,8 +181,17 @@ fun SearchScreen(
                 color = backgroundColor,
                 modifier = Modifier.fillMaxWidth()
             ) {
+                val resultsText = if (results.isEmpty()) {
+                    stringResource(R.string.reader_search_no_results)
+                } else {
+                    androidx.compose.ui.res.pluralStringResource(
+                        R.plurals.reader_search_results_count,
+                        results.size,
+                        results.size
+                    )
+                }
                 Text(
-                    text = if (results.isEmpty()) "No results found" else "${results.size} result${if (results.size != 1) "s" else ""}",
+                    text = resultsText,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
@@ -221,7 +232,7 @@ fun SearchScreen(
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                             )
                             Text(
-                                "No results for \"$query\"",
+                                stringResource(R.string.reader_search_no_results_for, query),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
