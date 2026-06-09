@@ -1,9 +1,13 @@
-package com.example.readerapp.data.local.dictionary
+package com.example.readerapp.data.repository.dictionary
 
 import android.content.Context
 import android.net.Uri
-import com.example.readerapp.data.local.InstalledDictionary
-import com.example.readerapp.data.local.ReaderPreferences
+import androidx.core.net.toUri
+import androidx.documentfile.provider.DocumentFile
+import com.example.readerapp.data.local.preferences.ReaderPreferences
+import com.example.readerapp.data.local.database.dictionary.DictionaryDatabase
+import com.example.readerapp.data.model.DictionaryBackupPayload
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,34 +18,20 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStreamReader
+import java.util.zip.Deflater
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
-import androidx.core.net.toUri
-import kotlinx.coroutines.Dispatchers
-import com.example.readerapp.data.model.DictionaryBackupPayload
 
-sealed class ImportState {
-    object Idle : ImportState()
-    data class Loading(val progress: Int) : ImportState()
-    object Success : ImportState()
-    data class Error(val message: String) : ImportState()
-}
-
-class DictionaryRepository(
+class DictionaryBackupManager(
     private val context: Context,
     private val preferences: ReaderPreferences
 ) {
-    private val parser = StardictParser(context)
-    
-    private val _importState = MutableStateFlow<ImportState>(ImportState.Idle)
-    val importState: StateFlow<ImportState> = _importState.asStateFlow()
+    private val _restoreState = MutableStateFlow<DictionaryState>(DictionaryState.Idle)
+    val restoreState: StateFlow<DictionaryState> = _restoreState.asStateFlow()
 
-    private val _restoreState = MutableStateFlow<ImportState>(ImportState.Idle)
-    val restoreState: StateFlow<ImportState> = _restoreState.asStateFlow()
-
-    private val _backupState = MutableStateFlow<ImportState>(ImportState.Idle)
-    val backupState: StateFlow<ImportState> = _backupState.asStateFlow()
+    private val _backupState = MutableStateFlow<DictionaryState>(DictionaryState.Idle)
+    val backupState: StateFlow<DictionaryState> = _backupState.asStateFlow()
 
     private val json = Json { 
         ignoreUnknownKeys = true
@@ -49,125 +39,28 @@ class DictionaryRepository(
         isLenient = true 
     }
 
-    suspend fun importDictionary(uri: Uri) {
-        _importState.value = ImportState.Loading(0)
-        try {
-            val (dictId, info) = parser.parseDictionary(uri) { progress ->
-                _importState.value = ImportState.Loading(progress)
-            }
-
-            // Update installed dictionaries
-            val currentSettings = preferences.readerSettings.first()
-            val newInstalled = currentSettings.installedDictionaries + InstalledDictionary(
-                id = dictId,
-                name = info.name,
-                wordCount = info.wordCount
-            )
-            
-            // Set as active if it's the first one
-            val newActiveId = currentSettings.activeDictionaryId.ifEmpty { dictId }
-
-            preferences.updateSettings(
-                currentSettings.copy(
-                    installedDictionaries = newInstalled,
-                    activeDictionaryId = newActiveId
-                )
-            )
-
-            _importState.value = ImportState.Success
-        } catch (e: Exception) {
-            e.printStackTrace()
-            _importState.value = ImportState.Error(e.message ?: "Unknown error occurred")
-        }
-    }
-
-    fun resetImportState() {
-        _importState.value = ImportState.Idle
-    }
-
     fun resetRestoreState() {
-        _restoreState.value = ImportState.Idle
+        _restoreState.value = DictionaryState.Idle
     }
 
     fun resetBackupState() {
-        _backupState.value = ImportState.Idle
-    }
-
-    suspend fun lookupWord(dictionaryId: String, word: String): List<DictionaryEntry> {
-        if (dictionaryId.isEmpty()) return emptyList()
-        val db = DictionaryDatabase.getDatabase(context, dictionaryId)
-        val dao = db.dictionaryDao()
-        
-        val results = mutableListOf<DictionaryEntry>()
-        
-        // Exact match
-        results.addAll(dao.getDefinitions(word))
-        
-        // Synonyms
-        val synonyms = dao.getSynonyms(word)
-        for (syn in synonyms) {
-            val baseEntries = dao.getDefinitionsByIndex(syn.originalWordIndex)
-            results.addAll(baseEntries)
-        }
-        
-        // If not found, try partial/prefix
-        if (results.isEmpty()) {
-            results.addAll(dao.getPrefixDefinitions(word))
-        }
-        
-        // Return distinct definitions to avoid duplicates
-        return results.distinctBy { it.definition }
-    }
-    
-    suspend fun deleteDictionary(dictionaryId: String) {
-        // Remove from settings
-        val currentSettings = preferences.readerSettings.first()
-        val newInstalled = currentSettings.installedDictionaries.filter { it.id != dictionaryId }
-        val newActiveId = if (currentSettings.activeDictionaryId == dictionaryId) {
-            newInstalled.firstOrNull()?.id ?: ""
-        } else {
-            currentSettings.activeDictionaryId
-        }
-        preferences.updateSettings(
-            currentSettings.copy(
-                installedDictionaries = newInstalled,
-                activeDictionaryId = newActiveId
-            )
-        )
-        
-        // Delete database files
-        val dbFile = context.getDatabasePath("dict_$dictionaryId.db")
-        if (dbFile.exists()) dbFile.delete()
-        val walFile = context.getDatabasePath("dict_$dictionaryId.db-wal")
-        if (walFile.exists()) walFile.delete()
-        val shmFile = context.getDatabasePath("dict_$dictionaryId.db-shm")
-        if (shmFile.exists()) shmFile.delete()
-    }
-
-    suspend fun renameDictionary(dictionaryId: String, newName: String) {
-        val currentSettings = preferences.readerSettings.first()
-        val newInstalled = currentSettings.installedDictionaries.map {
-            if (it.id == dictionaryId) it.copy(name = newName) else it
-        }
-        preferences.updateSettings(
-            currentSettings.copy(installedDictionaries = newInstalled)
-        )
+        _backupState.value = DictionaryState.Idle
     }
 
     suspend fun backupDictionaries() = withContext(Dispatchers.IO) {
-        _backupState.value = ImportState.Loading(0)
+        _backupState.value = DictionaryState.Loading(0)
         val settings = preferences.readerSettings.first()
         val backupFolderUriString = settings.backupFolderUri
         if (backupFolderUriString.isEmpty()) {
-            _backupState.value = ImportState.Error("Backup folder not set in Settings")
+            _backupState.value = DictionaryState.Error("Backup folder not set in Settings")
             return@withContext
         }
 
         try {
             val backupFolderUri = backupFolderUriString.toUri()
-            val backupFolder = androidx.documentfile.provider.DocumentFile.fromTreeUri(context, backupFolderUri)
+            val backupFolder = DocumentFile.fromTreeUri(context, backupFolderUri)
             if (backupFolder == null || !backupFolder.canWrite()) {
-                _backupState.value = ImportState.Error("Cannot write to backup folder")
+                _backupState.value = DictionaryState.Error("Cannot write to backup folder")
                 return@withContext
             }
 
@@ -186,19 +79,19 @@ class DictionaryRepository(
                 backupFile = backupFolder.createFile("application/octet-stream", backupFileName)
             }
             if (backupFile == null) {
-                _backupState.value = ImportState.Error("Failed to create backup file")
+                _backupState.value = DictionaryState.Error("Failed to create backup file")
                 return@withContext
             }
 
             val resolver = context.contentResolver
             val outputStream = resolver.openOutputStream(backupFile.uri, "wt")
             if (outputStream == null) {
-                _backupState.value = ImportState.Error("Failed to open output stream")
+                _backupState.value = DictionaryState.Error("Failed to open output stream")
                 return@withContext
             }
             outputStream.use { os ->
                 ZipOutputStream(os).use { zos ->
-                    zos.setLevel(java.util.zip.Deflater.BEST_SPEED)
+                    zos.setLevel(Deflater.BEST_SPEED)
                     
                     // JSON
                     zos.putNextEntry(ZipEntry("metadata.json"))
@@ -217,15 +110,15 @@ class DictionaryRepository(
                     }
                 }
             }
-            _backupState.value = ImportState.Success
+            _backupState.value = DictionaryState.Success
         } catch (e: Exception) {
             e.printStackTrace()
-            _backupState.value = ImportState.Error(e.message ?: "Failed to backup dictionaries")
+            _backupState.value = DictionaryState.Error(e.message ?: "Failed to backup dictionaries")
         }
     }
 
     suspend fun restoreDictionaries(uri: Uri) = withContext(Dispatchers.IO) {
-        _restoreState.value = ImportState.Loading(0)
+        _restoreState.value = DictionaryState.Loading(0)
         try {
             val resolver = context.contentResolver
             
@@ -256,7 +149,7 @@ class DictionaryRepository(
             val metadataFile = File(tempDir, "metadata.json")
             if (!metadataFile.exists()) {
                 tempDir.deleteRecursively()
-                _restoreState.value = ImportState.Error("Invalid dictionary backup format")
+                _restoreState.value = DictionaryState.Error("Invalid dictionary backup format")
                 return@withContext
             }
 
@@ -266,6 +159,7 @@ class DictionaryRepository(
             // Delete existing dictionary DBs before copying new ones
             val settings = preferences.readerSettings.first()
             for (dict in settings.installedDictionaries) {
+                DictionaryDatabase.closeDatabase(dict.id)
                 context.getDatabasePath("dict_${dict.id}.db").takeIf { it.exists() }?.delete()
                 context.getDatabasePath("dict_${dict.id}.db-wal").takeIf { it.exists() }?.delete()
                 context.getDatabasePath("dict_${dict.id}.db-shm").takeIf { it.exists() }?.delete()
@@ -288,10 +182,10 @@ class DictionaryRepository(
             )
 
             tempDir.deleteRecursively()
-            _restoreState.value = ImportState.Success
+            _restoreState.value = DictionaryState.Success
         } catch (e: Exception) {
             e.printStackTrace()
-            _restoreState.value = ImportState.Error(e.message ?: "Failed to restore dictionaries")
+            _restoreState.value = DictionaryState.Error(e.message ?: "Failed to restore dictionaries")
         }
     }
 

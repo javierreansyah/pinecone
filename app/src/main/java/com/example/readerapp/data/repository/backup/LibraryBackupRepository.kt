@@ -1,15 +1,18 @@
-package com.example.readerapp.data.repository
+package com.example.readerapp.data.repository.backup
 
 import android.content.Context
 import android.net.Uri
+import androidx.core.net.toUri
+import androidx.documentfile.provider.DocumentFile
 import androidx.room.withTransaction
 import com.example.readerapp.ReaderApplication
-import com.example.readerapp.data.local.ReaderPreferences
-import com.example.readerapp.data.model.BackupPayload
+import com.example.readerapp.data.local.preferences.ReaderPreferences
+import com.example.readerapp.data.local.preferences.ReaderSettings
+import com.example.readerapp.data.model.LibraryBackupPayload
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
-import kotlinx.serialization.json.Json
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -17,19 +20,19 @@ import java.io.InputStreamReader
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.zip.Deflater
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
-import androidx.core.net.toUri
 
-class BackupRepository(private val context: Context) {
+class LibraryBackupRepository(private val context: Context) {
 
     private val readerPreferences = ReaderPreferences(context)
-    
-    private val json = Json { 
+
+    private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
-        isLenient = true 
+        isLenient = true
     }
 
     suspend fun performBackup(force: Boolean = false): Boolean = withContext(Dispatchers.IO) {
@@ -48,7 +51,7 @@ class BackupRepository(private val context: Context) {
 
         try {
             val database = (context.applicationContext as ReaderApplication).database
-            
+
             // If not forced, check if changes were made since last backup
             if (!force && lastModified <= lastBackupTime) {
                 return@withContext true // Skip backup, but consider it "successful"
@@ -57,7 +60,7 @@ class BackupRepository(private val context: Context) {
             // 1. Fetch all data synchronously in an atomic transaction
             val payload = database.withTransaction {
                 val books = database.bookDao().getAllBooksSync()
-                
+
                 // Safety Guard: Never backup an empty library
                 if (books.isEmpty()) {
                     return@withTransaction null
@@ -67,13 +70,13 @@ class BackupRepository(private val context: Context) {
                 val shelves = database.shelfDao().getAllShelvesSync()
                 val crossRefs = database.shelfDao().getAllShelfBookCrossRefsSync()
                 val notes = database.noteDao().getAllNotesSync()
-                
+
                 val authors = database.bookDao().getAllAuthorsSync()
                 val tags = database.bookDao().getAllTagsSync()
                 val bookAuthorCrossRefs = database.bookDao().getAllBookAuthorCrossRefsSync()
                 val bookTagCrossRefs = database.bookDao().getAllBookTagCrossRefsSync()
-                
-                BackupPayload(
+
+                LibraryBackupPayload(
                     version = 1,
                     books = books,
                     bookmarks = bookmarks,
@@ -86,30 +89,31 @@ class BackupRepository(private val context: Context) {
                     bookTagCrossRefs = bookTagCrossRefs
                 )
             } ?: return@withContext false
-            
+
             val jsonString = json.encodeToString(payload)
-            
+
             val backupFolderUriString = settings.backupFolderUri
             if (backupFolderUriString.isEmpty()) {
                 return@withContext false
             }
             val backupFolderUri = backupFolderUriString.toUri()
-            val backupFolder = androidx.documentfile.provider.DocumentFile.fromTreeUri(context, backupFolderUri)
+            val backupFolder = DocumentFile.fromTreeUri(context, backupFolderUri)
             if (backupFolder == null || !backupFolder.canWrite()) {
                 return@withContext false
             }
-            
+
             val typeIndicator = if (force) "M" else "A"
             val timeStamp = SimpleDateFormat("yyMMdd_HHmmss", Locale.US).format(Date())
             val backupFileName = "${timeStamp}_${typeIndicator}.pine"
 
-            val backupFile = backupFolder.createFile("application/octet-stream", backupFileName) ?: return@withContext false
+            val backupFile = backupFolder.createFile("application/octet-stream", backupFileName)
+                ?: return@withContext false
 
             val resolver = context.contentResolver
             resolver.openOutputStream(backupFile.uri, "wt")?.use { outputStream ->
                 ZipOutputStream(outputStream).use { zos ->
-                    zos.setLevel(java.util.zip.Deflater.BEST_SPEED) // Fast zip
-                    
+                    zos.setLevel(Deflater.BEST_SPEED) // Fast zip
+
                     // Backup JSON data
                     zos.putNextEntry(ZipEntry("data.json"))
                     zos.write(jsonString.toByteArray(Charsets.UTF_8))
@@ -162,15 +166,15 @@ class BackupRepository(private val context: Context) {
         try {
             if (backupFolderUriString.isEmpty()) return
             val backupFolderUri = backupFolderUriString.toUri()
-            val backupFolder = androidx.documentfile.provider.DocumentFile.fromTreeUri(context, backupFolderUri) ?: return
-            
+            val backupFolder = DocumentFile.fromTreeUri(context, backupFolderUri) ?: return
+
             // List all files in the backup folder
             val files = backupFolder.listFiles()
-            
+
             // Filter files by type indicator (.pine)
             val backupFiles = files.filter { it.name?.endsWith("_${typeIndicator}.pine") == true }
                 .sortedByDescending { it.name } // Newest first based on timestamp in name
-            
+
             // Delete oldest files beyond the limit of 3
             if (backupFiles.size > 3) {
                 for (i in 3 until backupFiles.size) {
@@ -185,13 +189,13 @@ class BackupRepository(private val context: Context) {
     suspend fun restoreBackup(uri: Uri): Boolean = withContext(Dispatchers.IO) {
         try {
             val resolver = context.contentResolver
-            
+
             // Temporary directory for extraction
             val tempDir = File(context.cacheDir, "restore_temp").apply {
                 if (exists()) deleteRecursively()
                 mkdirs()
             }
-            
+
             resolver.openInputStream(uri)?.use { inputStream ->
                 ZipInputStream(inputStream).use { zis ->
                     var entry: ZipEntry? = zis.nextEntry
@@ -210,23 +214,33 @@ class BackupRepository(private val context: Context) {
                     }
                 }
             }
-            
+
             val dataJsonFile = File(tempDir, "data.json")
             if (!dataJsonFile.exists()) {
                 // If it's the old SQLite backup format, this will fail gracefully.
                 tempDir.deleteRecursively()
                 return@withContext false
             }
-            
-            val jsonString = FileInputStream(dataJsonFile).use { InputStreamReader(it, Charsets.UTF_8).readText() }
-            val payload = json.decodeFromString<BackupPayload>(jsonString)
+
+            val jsonString = FileInputStream(dataJsonFile).use {
+                InputStreamReader(
+                    it,
+                    Charsets.UTF_8
+                ).readText()
+            }
+            val payload = json.decodeFromString<LibraryBackupPayload>(jsonString)
 
             // Restore Settings
             val settingsJsonFile = File(tempDir, "settings.json")
             if (settingsJsonFile.exists()) {
                 try {
-                    val settingsJsonString = FileInputStream(settingsJsonFile).use { InputStreamReader(it, Charsets.UTF_8).readText() }
-                    val restoredSettings = json.decodeFromString<com.example.readerapp.data.local.ReaderSettings>(settingsJsonString)
+                    val settingsJsonString = FileInputStream(settingsJsonFile).use {
+                        InputStreamReader(
+                            it,
+                            Charsets.UTF_8
+                        ).readText()
+                    }
+                    val restoredSettings = json.decodeFromString<ReaderSettings>(settingsJsonString)
                     // Preserve the current backup folder URI because permissions are tied to the current installation,
                     // and preserve dictionary settings (backed up separately)
                     val currentSettings = readerPreferences.readerSettings.first()
@@ -242,7 +256,7 @@ class BackupRepository(private val context: Context) {
             }
 
             val database = (context.applicationContext as ReaderApplication).database
-            
+
             // 1. Atomic Transaction: Clear all data and insert new data
             database.withTransaction {
                 // Clear tables
@@ -255,7 +269,7 @@ class BackupRepository(private val context: Context) {
                 database.bookDao().deleteAllTags()
                 database.bookDao().deleteAllBookAuthorCrossRefs()
                 database.bookDao().deleteAllBookTagCrossRefs()
-                
+
                 // Insert from payload
                 database.bookDao().insertAll(payload.books)
                 database.bookmarkDao().insertAll(payload.bookmarks)
@@ -266,11 +280,11 @@ class BackupRepository(private val context: Context) {
                 database.bookDao().insertAllTags(payload.tags)
                 database.bookDao().insertAllBookAuthorCrossRefs(payload.bookAuthorCrossRefs)
                 database.bookDao().insertAllBookTagCrossRefs(payload.bookTagCrossRefs)
-                
-                // 2. Move files while inside the transaction lock. 
-                // This guarantees that Room will NOT emit the new database state to the UI 
+
+                // 2. Move files while inside the transaction lock.
+                // This guarantees that Room will NOT emit the new database state to the UI
                 // until all physical files are safely in place, eliminating the Coil caching race condition.
-                
+
                 // Move books
                 val extractedBooksDir = File(tempDir, "books")
                 if (extractedBooksDir.exists()) {
@@ -293,8 +307,8 @@ class BackupRepository(private val context: Context) {
                     }
                 }
             }
-            
-            
+
+
             tempDir.deleteRecursively()
 
             return@withContext true

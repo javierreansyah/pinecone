@@ -5,11 +5,11 @@ package com.example.readerapp.ui.features.reader
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.readerapp.data.local.BookmarkEntity
-import com.example.readerapp.data.local.NoteEntity
-import com.example.readerapp.data.local.ReaderPreferences
-import com.example.readerapp.data.local.ReaderSettings
-import com.example.readerapp.data.repository.BookRepository
+import com.example.readerapp.data.local.database.library.BookmarkEntity
+import com.example.readerapp.data.local.database.library.NoteEntity
+import com.example.readerapp.data.local.preferences.ReaderPreferences
+import com.example.readerapp.data.local.preferences.ReaderSettings
+import com.example.readerapp.data.repository.library.LibraryRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -23,13 +23,13 @@ import org.readium.r2.shared.publication.services.search.search
 import androidx.core.graphics.toColorInt
 import android.app.Application
 import com.example.readerapp.R
-import com.example.readerapp.data.local.dictionary.DictionaryRepository
-import com.example.readerapp.data.local.dictionary.DictionaryEntry
+import com.example.readerapp.data.repository.dictionary.DictionaryRepository
+import com.example.readerapp.data.local.database.dictionary.DictionaryEntry
 
 class ReaderViewModel(
     private val application: Application,
     private val bookId: String,
-    private val repository: BookRepository,
+    private val repository: LibraryRepository,
     private val readerPreferences: ReaderPreferences,
     private val dictionaryRepository: DictionaryRepository
 ) : ViewModel() {
@@ -544,7 +544,7 @@ class ReaderViewModel(
     class Factory(
         private val application: Application,
         private val bookId: String,
-        private val repository: BookRepository,
+        private val repository: LibraryRepository,
         private val readerPreferences: ReaderPreferences,
         private val dictionaryRepository: DictionaryRepository
     ) : ViewModelProvider.Factory {

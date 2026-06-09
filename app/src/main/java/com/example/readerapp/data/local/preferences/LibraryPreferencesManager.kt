@@ -1,12 +1,12 @@
-package com.example.readerapp.data.local
+package com.example.readerapp.data.local.preferences
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.example.readerapp.ui.features.library.FilterSortPreferences
 import com.example.readerapp.ui.features.library.LayoutMode
+import com.example.readerapp.ui.features.library.ShelfFilter
 import com.example.readerapp.ui.features.library.SortType
 import com.example.readerapp.ui.features.library.StatusFilter
-import com.example.readerapp.ui.features.library.ShelfFilter
-import com.example.readerapp.ui.features.library.FilterSortPreferences
 
 class LibraryPreferencesManager(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("library_prefs", Context.MODE_PRIVATE)
@@ -17,16 +17,32 @@ class LibraryPreferencesManager(context: Context) {
         val isAscending = prefs.getBoolean("${screenKey}_asc", defaultAscending)
         val statusSetStr = prefs.getStringSet("${screenKey}_status", setOf(StatusFilter.NotStarted.name, StatusFilter.Reading.name, StatusFilter.Finished.name)) ?: setOf()
         val shelfFilterSetStr = prefs.getStringSet("${screenKey}_shelf_filter", setOf(ShelfFilter.Shelves.name, ShelfFilter.Unshelved.name)) ?: setOf()
-        
+
         return FilterSortPreferences(
-            layoutMode = try { LayoutMode.valueOf(layoutModeStr) } catch (e: Exception) { defaultLayout },
-            sortType = try { SortType.valueOf(sortTypeStr) } catch (e: Exception) { defaultSort },
+            layoutMode = try {
+                LayoutMode.valueOf(layoutModeStr)
+            } catch (e: Exception) {
+                defaultLayout
+            },
+            sortType = try {
+                SortType.valueOf(sortTypeStr)
+            } catch (e: Exception) {
+                defaultSort
+            },
             isAscending = isAscending,
-            selectedStatus = statusSetStr.mapNotNull { 
-                try { StatusFilter.valueOf(it) } catch (e: Exception) { null } 
+            selectedStatus = statusSetStr.mapNotNull {
+                try {
+                    StatusFilter.valueOf(it)
+                } catch (e: Exception) {
+                    null
+                }
             }.toSet(),
-            selectedShelfFilter = shelfFilterSetStr.mapNotNull { 
-                try { ShelfFilter.valueOf(it) } catch (e: Exception) { null } 
+            selectedShelfFilter = shelfFilterSetStr.mapNotNull {
+                try {
+                    ShelfFilter.valueOf(it)
+                } catch (e: Exception) {
+                    null
+                }
             }.toSet()
         )
     }

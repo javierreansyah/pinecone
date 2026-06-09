@@ -1,4 +1,4 @@
-package com.example.readerapp.data.local
+package com.example.readerapp.data.local.preferences
 
 import android.content.Context
 import androidx.datastore.core.DataStore
@@ -18,6 +18,7 @@ import androidx.core.graphics.toColorInt
 import org.readium.r2.shared.ExperimentalReadiumApi
 import kotlin.math.roundToInt
 import kotlinx.serialization.Serializable
+import org.readium.r2.navigator.preferences.Color
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "reader_settings")
 
@@ -106,13 +107,13 @@ data class ReaderSettings(
 
         val bgColor = if (readerThemePreset !in listOf("Light", "Dark", "Warm", "Auto")) {
             try {
-                org.readium.r2.navigator.preferences.Color(customBackgroundColor.toColorInt())
+                Color(customBackgroundColor.toColorInt())
             } catch (_: Exception) { null }
         } else null
 
         val txtColor = if (readerThemePreset !in listOf("Light", "Dark", "Warm", "Auto")) {
             try {
-                org.readium.r2.navigator.preferences.Color(customTextColor.toColorInt())
+                Color(customTextColor.toColorInt())
             } catch (_: Exception) { null }
         } else null
 

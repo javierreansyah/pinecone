@@ -203,6 +203,8 @@ fun NavGraph(
         composable(Screen.Dictionaries.route) {
             val factory = DictionariesViewModel.Factory(
                 app.dictionaryRepository,
+                app.dictionaryImportManager,
+                app.dictionaryBackupManager,
                 readerPreferences
             )
             val dictViewModel: DictionariesViewModel = viewModel(factory = factory)

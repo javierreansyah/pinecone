@@ -16,7 +16,7 @@ import androidx.compose.ui.res.stringResource
 import com.example.readerapp.R
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.*
-import com.example.readerapp.data.local.ShelfWithCovers
+import com.example.readerapp.data.local.database.library.ShelfWithCovers
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.features.library.components.ShelfListItem
 import com.example.readerapp.ui.components.EmptyState

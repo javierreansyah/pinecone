@@ -29,8 +29,8 @@ import com.composables.icons.materialsymbols.outlined.Add
 import com.composables.icons.materialsymbols.outlined.History
 import com.composables.icons.materialsymbols.outlined.More_vert
 import com.composables.icons.materialsymbols.outlined.Save
-import com.example.readerapp.data.local.dictionary.ImportState
-import com.example.readerapp.data.local.InstalledDictionary
+import com.example.readerapp.data.repository.dictionary.DictionaryState
+import com.example.readerapp.data.local.preferences.InstalledDictionary
 import com.example.readerapp.ui.components.SegmentedLazyColumn
 import com.example.readerapp.ui.components.EmptyState
 
@@ -48,7 +48,7 @@ fun DictionariesScreen(
     val backupState by viewModel.backupState.collectAsStateWithLifecycle()
 
     val progressTarget = when (val state = importState) {
-        is ImportState.Loading -> state.progress / 100f
+        is DictionaryState.Loading -> state.progress / 100f
         else -> 0f
     }
     val animatedProgress by animateFloatAsState(
@@ -103,11 +103,11 @@ fun DictionariesScreen(
     val installSuccessMsg = stringResource(R.string.dictionaries_install_success)
     val commonErrorMsg = stringResource(R.string.common_error)
     LaunchedEffect(importState) {
-        if (importState is ImportState.Success) {
+        if (importState is DictionaryState.Success) {
             Toast.makeText(context, installSuccessMsg, Toast.LENGTH_SHORT).show()
             viewModel.resetImportState()
-        } else if (importState is ImportState.Error) {
-            val errorMsg = (importState as ImportState.Error).message
+        } else if (importState is DictionaryState.Error) {
+            val errorMsg = (importState as DictionaryState.Error).message
             val formattedMsg = String.format(commonErrorMsg, errorMsg)
             Toast.makeText(context, formattedMsg, Toast.LENGTH_LONG).show()
             viewModel.resetImportState()
@@ -117,11 +117,11 @@ fun DictionariesScreen(
     val commonRestoreErrorMsg = stringResource(R.string.common_restore_error)
     val restoreSuccessMsg = stringResource(R.string.dictionaries_restore_success)
     LaunchedEffect(restoreState) {
-        if (restoreState is ImportState.Success) {
+        if (restoreState is DictionaryState.Success) {
             Toast.makeText(context, restoreSuccessMsg, Toast.LENGTH_SHORT).show()
             viewModel.resetRestoreState()
-        } else if (restoreState is ImportState.Error) {
-            val errorMsg = (restoreState as ImportState.Error).message
+        } else if (restoreState is DictionaryState.Error) {
+            val errorMsg = (restoreState as DictionaryState.Error).message
             val formattedMsg = String.format(commonRestoreErrorMsg, errorMsg)
             Toast.makeText(context, formattedMsg, Toast.LENGTH_LONG).show()
             viewModel.resetRestoreState()
@@ -131,11 +131,11 @@ fun DictionariesScreen(
     val commonBackupErrorMsg = stringResource(R.string.common_backup_error)
     val backupSuccessMsg = stringResource(R.string.dictionaries_backup_success)
     LaunchedEffect(backupState) {
-        if (backupState is ImportState.Success) {
+        if (backupState is DictionaryState.Success) {
             Toast.makeText(context, backupSuccessMsg, Toast.LENGTH_SHORT).show()
             viewModel.resetBackupState()
-        } else if (backupState is ImportState.Error) {
-            val errorMsg = (backupState as ImportState.Error).message
+        } else if (backupState is DictionaryState.Error) {
+            val errorMsg = (backupState as DictionaryState.Error).message
             val formattedMsg = String.format(commonBackupErrorMsg, errorMsg)
             Toast.makeText(context, formattedMsg, Toast.LENGTH_LONG).show()
             viewModel.resetBackupState()
@@ -245,9 +245,9 @@ fun DictionariesScreen(
         }
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            val isLoadingImport = importState is ImportState.Loading
-            val isLoadingRestore = restoreState is ImportState.Loading
-            val isLoadingBackup = backupState is ImportState.Loading
+            val isLoadingImport = importState is DictionaryState.Loading
+            val isLoadingRestore = restoreState is DictionaryState.Loading
+            val isLoadingBackup = backupState is DictionaryState.Loading
             val totalCount = installedDictionaries.size + (if (isLoadingImport) 1 else 0) + (if (isLoadingRestore) 1 else 0) + (if (isLoadingBackup) 1 else 0)
 
             if (totalCount == 0) {

@@ -41,8 +41,8 @@ import androidx.core.graphics.toColorInt
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.res.stringResource
 import com.example.readerapp.R
-import com.example.readerapp.data.local.ReaderSettings
-import com.example.readerapp.data.local.dictionary.DictionaryEntry
+import com.example.readerapp.data.local.preferences.ReaderSettings
+import com.example.readerapp.data.local.database.dictionary.DictionaryEntry
 import com.example.readerapp.ui.features.dictionary.utils.DefinitionWebView
 import com.example.readerapp.ui.features.dictionary.utils.DictionaryFormatter
 import com.example.readerapp.ui.features.reader.ReaderViewModel

@@ -30,7 +30,7 @@ class MainActivity : AppCompatActivity() {
             this,
             MainViewModel.Factory(
                 application = app,
-                bookRepository = app.bookRepository,
+                libraryRepository = app.libraryRepository,
                 readerPreferences = app.readerPreferences
             )
         )[MainViewModel::class.java]

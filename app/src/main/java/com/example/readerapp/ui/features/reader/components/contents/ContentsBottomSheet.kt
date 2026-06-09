@@ -17,8 +17,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import com.example.readerapp.R
-import com.example.readerapp.data.local.BookmarkEntity
-import com.example.readerapp.data.local.NoteEntity
+import com.example.readerapp.data.local.database.library.BookmarkEntity
+import com.example.readerapp.data.local.database.library.NoteEntity
 import kotlinx.coroutines.launch
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator

@@ -25,8 +25,8 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.*
 import com.example.readerapp.R
 import androidx.compose.ui.res.stringResource
-import com.example.readerapp.data.local.CustomReaderTheme
-import com.example.readerapp.data.local.ReaderSettings
+import com.example.readerapp.data.local.preferences.CustomReaderTheme
+import com.example.readerapp.data.local.preferences.ReaderSettings
 import java.util.Locale
 import kotlin.math.roundToInt
 import androidx.core.graphics.toColorInt

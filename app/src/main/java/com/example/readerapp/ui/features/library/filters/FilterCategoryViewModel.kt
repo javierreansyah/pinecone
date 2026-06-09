@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class FilterCategoryViewModel(application: Application) : AndroidViewModel(application) {
-    private val bookRepository = (application as ReaderApplication).bookRepository
+    private val bookRepository = (application as ReaderApplication).libraryRepository
 
     private val booksFlow: Flow<List<Book>> = bookRepository.getAllBooks()
         .map { entities -> entities.map { Book.fromEntity(it) } }

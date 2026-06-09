@@ -1,4 +1,4 @@
-package com.example.readerapp.data.local
+package com.example.readerapp.data.local.database.library
 
 import androidx.room.Database
 import androidx.room.RoomDatabase

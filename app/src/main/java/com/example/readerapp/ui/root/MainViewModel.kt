@@ -12,10 +12,10 @@ import androidx.lifecycle.viewModelScope
 import coil.annotation.ExperimentalCoilApi
 import coil.imageLoader
 import com.example.readerapp.R
-import com.example.readerapp.data.local.ReaderPreferences
-import com.example.readerapp.data.local.ReaderSettings
-import com.example.readerapp.data.repository.BackupRepository
-import com.example.readerapp.data.repository.BookRepository
+import com.example.readerapp.data.local.preferences.ReaderPreferences
+import com.example.readerapp.data.local.preferences.ReaderSettings
+import com.example.readerapp.data.repository.backup.LibraryBackupRepository
+import com.example.readerapp.data.repository.library.LibraryRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 
 class MainViewModel(
     application: Application,
-    private val bookRepository: BookRepository,
+    private val libraryRepository: LibraryRepository,
     private val readerPreferences: ReaderPreferences
 ) : AndroidViewModel(application) {
 
@@ -36,7 +36,7 @@ class MainViewModel(
 
     fun importBook(uri: Uri) {
         viewModelScope.launch {
-            val result = bookRepository.importBook(uri)
+            val result = libraryRepository.importBook(uri)
             if (result != null) {
                 Toast.makeText(getApplication(), "Import complete", Toast.LENGTH_SHORT).show()
             }
@@ -48,7 +48,7 @@ class MainViewModel(
         Toast.makeText(getApplication(), "Importing ${uris.size} files...", Toast.LENGTH_SHORT).show()
         viewModelScope.launch {
             uris.forEach { uri ->
-                bookRepository.importBook(uri)
+                libraryRepository.importBook(uri)
             }
             Toast.makeText(getApplication(), "Import complete", Toast.LENGTH_SHORT).show()
         }
@@ -74,7 +74,7 @@ class MainViewModel(
             val name = file.name?.lowercase() ?: ""
             val supportedExtensions = listOf(".epub", ".cbz", ".cbr", ".cb7", ".cbt", ".webpub")
             if (supportedExtensions.any { name.endsWith(it) }) {
-                bookRepository.importBook(file.uri)
+                libraryRepository.importBook(file.uri)
             }
         }
     }
@@ -104,7 +104,7 @@ class MainViewModel(
 
         Toast.makeText(context, restoringMsg, Toast.LENGTH_SHORT).show()
         viewModelScope.launch {
-            val success = BackupRepository(context).restoreBackup(uri)
+            val success = LibraryBackupRepository(context).restoreBackup(uri)
             if (success) {
                 context.imageLoader.memoryCache?.clear()
                 context.imageLoader.diskCache?.clear()
@@ -117,12 +117,12 @@ class MainViewModel(
 
     class Factory(
         private val application: Application,
-        private val bookRepository: BookRepository,
+        private val libraryRepository: LibraryRepository,
         private val readerPreferences: ReaderPreferences
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return MainViewModel(application, bookRepository, readerPreferences) as T
+            return MainViewModel(application, libraryRepository, readerPreferences) as T
         }
     }
 }
