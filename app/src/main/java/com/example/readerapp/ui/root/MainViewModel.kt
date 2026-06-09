@@ -45,7 +45,8 @@ class MainViewModel(
 
     fun importBooks(uris: List<Uri>) {
         if (uris.isEmpty()) return
-        Toast.makeText(getApplication(), "Importing ${uris.size} files...", Toast.LENGTH_SHORT).show()
+        Toast.makeText(getApplication(), "Importing ${uris.size} files...", Toast.LENGTH_SHORT)
+            .show()
         viewModelScope.launch {
             uris.forEach { uri ->
                 libraryRepository.importBook(uri)
@@ -80,9 +81,13 @@ class MainViewModel(
     }
 
     fun updateBackupFolderUri(uri: Uri) {
-        val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+        val takeFlags: Int =
+            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
         try {
-            getApplication<Application>().contentResolver.takePersistableUriPermission(uri, takeFlags)
+            getApplication<Application>().contentResolver.takePersistableUriPermission(
+                uri,
+                takeFlags
+            )
         } catch (e: Exception) {
             e.printStackTrace()
         }

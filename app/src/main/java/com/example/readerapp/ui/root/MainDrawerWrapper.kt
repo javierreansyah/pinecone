@@ -54,17 +54,22 @@ fun MainDrawerWrapper(
     }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
-        contract = object : ActivityResultContract<Array<String>, List<@JvmSuppressWildcards Uri>>() {
+        contract = object :
+            ActivityResultContract<Array<String>, List<@JvmSuppressWildcards Uri>>() {
             override fun createIntent(context: Context, input: Array<String>): Intent {
                 return Intent(Intent.ACTION_GET_CONTENT).apply {
                     type = "*/*"
                     putExtra(Intent.EXTRA_MIME_TYPES, input)
                     putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
                     addCategory(Intent.CATEGORY_OPENABLE)
-                    val uri = DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Download")
+                    val uri = DocumentsContract.buildDocumentUri(
+                        "com.android.externalstorage.documents",
+                        "primary:Download"
+                    )
                     putExtra(DocumentsContract.EXTRA_INITIAL_URI, uri)
                 }
             }
+
             override fun parseResult(resultCode: Int, intent: Intent?): List<Uri> {
                 if (resultCode != Activity.RESULT_OK || intent == null) return emptyList()
                 val clipData = intent.clipData
@@ -83,7 +88,10 @@ fun MainDrawerWrapper(
         contract = object : ActivityResultContracts.OpenDocumentTree() {
             override fun createIntent(context: Context, input: Uri?): Intent {
                 val intent = super.createIntent(context, input)
-                val uri = DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:")
+                val uri = DocumentsContract.buildDocumentUri(
+                    "com.android.externalstorage.documents",
+                    "primary:"
+                )
                 intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, uri)
                 return intent
             }
@@ -99,7 +107,10 @@ fun MainDrawerWrapper(
         contract = object : ActivityResultContracts.OpenDocumentTree() {
             override fun createIntent(context: Context, input: Uri?): Intent {
                 val intent = super.createIntent(context, input)
-                val pineconeDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "Pinecone")
+                val pineconeDir = File(
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+                    "Pinecone"
+                )
                 if (!pineconeDir.exists()) pineconeDir.mkdirs()
                 if (input != null) {
                     intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, input)
@@ -118,10 +129,16 @@ fun MainDrawerWrapper(
         contract = object : ActivityResultContracts.OpenDocument() {
             override fun createIntent(context: Context, input: Array<String>): Intent {
                 val intent = super.createIntent(context, input)
-                val pineconeDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "Pinecone")
+                val pineconeDir = File(
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+                    "Pinecone"
+                )
                 if (!pineconeDir.exists()) pineconeDir.mkdirs()
 
-                val uri = DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Documents/Pinecone")
+                val uri = DocumentsContract.buildDocumentUri(
+                    "com.android.externalstorage.documents",
+                    "primary:Documents/Pinecone"
+                )
                 intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, uri)
                 return intent
             }
