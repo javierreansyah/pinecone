@@ -1,41 +1,41 @@
-package com.example.readerapp.data.repository
+package com.example.readerapp.data.repository.library
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
+import androidx.room.withTransaction
+import com.example.readerapp.data.local.database.library.AppDatabase
+import com.example.readerapp.data.local.database.library.AuthorEntity
+import com.example.readerapp.data.local.database.library.BookAuthorCrossRef
+import com.example.readerapp.data.local.database.library.BookDao
+import com.example.readerapp.data.local.database.library.BookEntity
+import com.example.readerapp.data.local.database.library.BookTagCrossRef
+import com.example.readerapp.data.local.database.library.BookWithDetails
+import com.example.readerapp.data.local.database.library.BookmarkDao
+import com.example.readerapp.data.local.database.library.BookmarkEntity
+import com.example.readerapp.data.local.database.library.NoteDao
+import com.example.readerapp.data.local.database.library.NoteEntity
+import com.example.readerapp.data.local.database.library.ShelfBookCrossRefEntity
+import com.example.readerapp.data.local.database.library.ShelfDao
+import com.example.readerapp.data.local.database.library.ShelfEntity
+import com.example.readerapp.data.local.database.library.ShelfWithCovers
+import com.example.readerapp.data.local.database.library.TagEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
+import org.readium.r2.shared.util.asset.AssetRetriever
 import org.readium.r2.shared.util.toUrl
 import org.readium.r2.streamer.PublicationOpener
-import com.example.readerapp.data.local.BookDao
-import com.example.readerapp.data.local.BookEntity
-import com.example.readerapp.data.local.BookmarkDao
-import com.example.readerapp.data.local.BookmarkEntity
-import com.example.readerapp.data.local.AuthorEntity
-import com.example.readerapp.data.local.TagEntity
-import com.example.readerapp.data.local.BookAuthorCrossRef
-import com.example.readerapp.data.local.BookTagCrossRef
-import com.example.readerapp.data.local.BookWithDetails
 import java.io.File
 import java.io.FileOutputStream
 import java.security.MessageDigest
-import org.readium.r2.shared.util.asset.AssetRetriever
-import android.graphics.BitmapFactory
-import com.example.readerapp.data.local.ShelfDao
-import com.example.readerapp.data.local.ShelfEntity
-import com.example.readerapp.data.local.ShelfWithCovers
-import com.example.readerapp.data.local.ShelfBookCrossRefEntity
-import com.example.readerapp.data.local.NoteDao
-import com.example.readerapp.data.local.NoteEntity
+import java.util.UUID
 
-import com.example.readerapp.data.local.AppDatabase
-import androidx.room.withTransaction
-
-class BookRepository(
+class LibraryRepository(
     private val context: Context,
     private val database: AppDatabase,
     private val bookDao: BookDao,
@@ -200,7 +200,7 @@ class BookRepository(
     ) = withContext(Dispatchers.IO) {
         val bookDetails = bookDao.getById(bookId) ?: return@withContext
         val book = bookDetails.book
-        
+
         var newCoverPath = book.coverPath
         if (coverUri != null) {
             val coverFile = File(coversDir, "${bookId}_custom_${System.currentTimeMillis()}.png")
@@ -220,7 +220,7 @@ class BookRepository(
                 e.printStackTrace()
             }
         }
-        
+
         database.withTransaction {
             bookDao.update(
                 book.copy(
@@ -229,7 +229,7 @@ class BookRepository(
                     coverPath = newCoverPath
                 )
             )
-            
+
             bookDao.deleteBookAuthorCrossRefs(bookId)
             authors.forEach { authorName ->
                 var authorId = bookDao.insertAuthor(AuthorEntity(name = authorName.trim()))
@@ -238,7 +238,7 @@ class BookRepository(
                 }
                 bookDao.insertBookAuthorCrossRef(BookAuthorCrossRef(bookId, authorId))
             }
-            
+
             bookDao.deleteBookTagCrossRefs(bookId)
             tags.forEach { tagName ->
                 var tagId = bookDao.insertTag(TagEntity(name = tagName.trim()))
@@ -247,14 +247,14 @@ class BookRepository(
                 }
                 bookDao.insertBookTagCrossRef(BookTagCrossRef(bookId, tagId))
             }
-            
+
             bookDao.deleteOrphanAuthors()
             bookDao.deleteOrphanTags()
         }
     }
 
     fun getAllAuthors(): Flow<List<AuthorEntity>> = bookDao.getAllAuthors()
-    
+
     fun getAllTags(): Flow<List<TagEntity>> = bookDao.getAllTags()
 
     suspend fun deleteFilterItem(type: String, name: String) = withContext(Dispatchers.IO) {
@@ -265,29 +265,30 @@ class BookRepository(
         }
     }
 
-    suspend fun renameFilterItem(type: String, oldName: String, newName: String) = withContext(Dispatchers.IO) {
-        val trimmedNewName = newName.trim()
-        if (oldName == trimmedNewName) return@withContext
-        if (type == "author") {
-            val existingDest = bookDao.getAuthorByName(trimmedNewName)
-            val source = bookDao.getAuthorByName(oldName)
-            if (existingDest != null && source != null) {
-                bookDao.mergeBookAuthorCrossRef(source.id, existingDest.id)
-                bookDao.deleteAuthorByName(oldName)
-            } else {
-                bookDao.renameAuthor(oldName, trimmedNewName)
-            }
-        } else if (type == "tag") {
-            val existingDest = bookDao.getTagByName(trimmedNewName)
-            val source = bookDao.getTagByName(oldName)
-            if (existingDest != null && source != null) {
-                bookDao.mergeBookTagCrossRef(source.id, existingDest.id)
-                bookDao.deleteTagByName(oldName)
-            } else {
-                bookDao.renameTag(oldName, trimmedNewName)
+    suspend fun renameFilterItem(type: String, oldName: String, newName: String) =
+        withContext(Dispatchers.IO) {
+            val trimmedNewName = newName.trim()
+            if (oldName == trimmedNewName) return@withContext
+            if (type == "author") {
+                val existingDest = bookDao.getAuthorByName(trimmedNewName)
+                val source = bookDao.getAuthorByName(oldName)
+                if (existingDest != null && source != null) {
+                    bookDao.mergeBookAuthorCrossRef(source.id, existingDest.id)
+                    bookDao.deleteAuthorByName(oldName)
+                } else {
+                    bookDao.renameAuthor(oldName, trimmedNewName)
+                }
+            } else if (type == "tag") {
+                val existingDest = bookDao.getTagByName(trimmedNewName)
+                val source = bookDao.getTagByName(oldName)
+                if (existingDest != null && source != null) {
+                    bookDao.mergeBookTagCrossRef(source.id, existingDest.id)
+                    bookDao.deleteTagByName(oldName)
+                } else {
+                    bookDao.renameTag(oldName, trimmedNewName)
+                }
             }
         }
-    }
 
     // --- Archive & Read Status Methods ---
 
@@ -306,7 +307,7 @@ class BookRepository(
     fun getAllShelvesWithBooks(): Flow<List<ShelfWithCovers>> = shelfDao.getAllShelvesWithBooks()
 
     suspend fun createShelf(name: String): String {
-        val id = java.util.UUID.randomUUID().toString()
+        val id = UUID.randomUUID().toString()
         shelfDao.insertShelf(ShelfEntity(id = id, name = name))
         return id
     }
@@ -326,7 +327,12 @@ class BookRepository(
     }
 
     suspend fun addBookToShelf(shelfId: String, bookId: String) {
-        shelfDao.insertShelfBookCrossRef(ShelfBookCrossRefEntity(shelfId = shelfId, bookId = bookId))
+        shelfDao.insertShelfBookCrossRef(
+            ShelfBookCrossRefEntity(
+                shelfId = shelfId,
+                bookId = bookId
+            )
+        )
     }
 
     suspend fun removeBookFromShelf(shelfId: String, bookId: String) {
@@ -336,11 +342,12 @@ class BookRepository(
 
     fun getAllShelfBookCrossRefs(): Flow<List<ShelfBookCrossRefEntity>> = shelfDao.getAllShelfBookCrossRefs()
 
-    suspend fun updateShelfOrder(shelfId: String, newBookIdsOrder: List<String>) = withContext(Dispatchers.IO) {
-        newBookIdsOrder.forEachIndexed { index, bookId ->
-            shelfDao.updateShelfBookOrderIndex(shelfId, bookId, index)
+    suspend fun updateShelfOrder(shelfId: String, newBookIdsOrder: List<String>) =
+        withContext(Dispatchers.IO) {
+            newBookIdsOrder.forEachIndexed { index, bookId ->
+                shelfDao.updateShelfBookOrderIndex(shelfId, bookId, index)
+            }
         }
-    }
 
     // --- Note Methods ---
 
@@ -394,7 +401,7 @@ class BookRepository(
                 val bytes = resource!!.read().getOrNull()
                 if (bytes != null) BitmapFactory.decodeByteArray(bytes, 0, bytes.size) else null
             }
-            
+
             if (coverBitmap != null) {
                 val coverFile = File(coversDir, "$bookId.png")
                 withContext(Dispatchers.IO) {
@@ -422,7 +429,8 @@ class BookRepository(
             lastReadDate = null,
             isArchived = false,
             description = metadata.description,
-            publisher = metadata.publishers.joinToString(", ") { it.name }.takeIf { it.isNotEmpty() },
+            publisher = metadata.publishers.joinToString(", ") { it.name }
+                .takeIf { it.isNotEmpty() },
             published = metadata.published?.toString(),
             isRead = false
         )

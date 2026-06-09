@@ -4,7 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.readerapp.ReaderApplication
-import com.example.readerapp.data.local.ShelfWithCovers
+import com.example.readerapp.data.local.database.library.ShelfWithCovers
 import com.example.readerapp.data.model.Book
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class ArchiveViewModel(application: Application) : AndroidViewModel(application) {
-    private val bookRepository = (application as ReaderApplication).bookRepository
+    private val bookRepository = (application as ReaderApplication).libraryRepository
 
     private val booksFlow: Flow<List<Book>> = bookRepository.getAllBooks()
         .map { entities -> entities.map { Book.fromEntity(it) } }

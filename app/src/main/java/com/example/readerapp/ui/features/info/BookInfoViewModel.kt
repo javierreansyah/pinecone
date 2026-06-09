@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.readerapp.ReaderApplication
 import com.example.readerapp.data.model.Book
-import com.example.readerapp.data.repository.BookRepository
+import com.example.readerapp.data.repository.library.LibraryRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,7 +24,7 @@ class BookInfoViewModel(
     private val bookId: String
 ) : AndroidViewModel(application) {
 
-    private val repository: BookRepository = (application as ReaderApplication).bookRepository
+    private val repository: LibraryRepository = (application as ReaderApplication).libraryRepository
 
     private val _uiState = MutableStateFlow(BookInfoUiState())
     val uiState: StateFlow<BookInfoUiState> = _uiState.asStateFlow()

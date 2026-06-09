@@ -4,8 +4,10 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.readerapp.ReaderApplication
-import com.example.readerapp.data.local.LibraryPreferencesManager
-import com.example.readerapp.data.local.ShelfWithCovers
+import com.example.readerapp.R
+import com.example.readerapp.data.local.database.library.ShelfEntity
+import com.example.readerapp.data.local.preferences.LibraryPreferencesManager
+import com.example.readerapp.data.local.database.library.ShelfWithCovers
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.features.library.LayoutMode
 import com.example.readerapp.ui.features.library.LibraryUiState
@@ -25,7 +27,7 @@ import kotlinx.coroutines.launch
 class ShelfDetailViewModel(
     application: Application
 ) : AndroidViewModel(application) {
-    private val bookRepository = (application as ReaderApplication).bookRepository
+    private val bookRepository = (application as ReaderApplication).libraryRepository
     private val prefsManager = LibraryPreferencesManager(application)
     private val screenKey = "shelf_detail"
 
@@ -51,9 +53,10 @@ class ShelfDetailViewModel(
 
     val shelves: StateFlow<List<ShelfWithCovers>> = combine(
         bookRepository.getAllShelvesWithBooks(),
-        bookRepository.getAllShelfBookCrossRefs()
-    ) { shelvesList, crossRefs ->
-        shelvesList.map { shelfWithCovers ->
+        bookRepository.getAllShelfBookCrossRefs(),
+        bookRepository.getAllBooks()
+    ) { shelvesList, crossRefs, allBooksEntities ->
+        val mappedShelves = shelvesList.map { shelfWithCovers ->
             val shelfId = shelfWithCovers.shelf.id
             val shelfCrossRefs = crossRefs.filter { it.shelfId == shelfId }
             val sortedBooks = shelfWithCovers.books.sortedBy { book ->
@@ -61,6 +64,20 @@ class ShelfDetailViewModel(
             }
             shelfWithCovers.copy(books = sortedBooks)
         }
+
+        val shelvedBookIds = crossRefs.map { it.bookId }.toSet()
+        val unshelvedBooks = allBooksEntities.filter { it.book.id !in shelvedBookIds }
+
+        val unshelvedShelf = ShelfWithCovers(
+            shelf = ShelfEntity(
+                id = "unshelved",
+                name = application.getString(R.string.library_label_unshelved),
+                createdAt = 0L
+            ),
+            books = unshelvedBooks
+        )
+
+        mappedShelves + unshelvedShelf
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun getFilteredAndSortedBooks(baseFlow: Flow<List<Book>>): Flow<List<Book>> {

@@ -1,6 +1,6 @@
 package com.example.readerapp.data.model
 
-import com.example.readerapp.data.local.BookWithDetails
+import com.example.readerapp.data.local.database.library.BookWithDetails
 
 /**
  * UI-layer model for displaying books in the library.

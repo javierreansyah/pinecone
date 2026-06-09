@@ -4,8 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.readerapp.ReaderApplication
-import com.example.readerapp.data.local.LibraryPreferencesManager
-import com.example.readerapp.data.local.ShelfWithCovers
+import com.example.readerapp.data.local.preferences.LibraryPreferencesManager
+import com.example.readerapp.data.local.database.library.ShelfWithCovers
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.features.library.LayoutMode
 import com.example.readerapp.ui.features.library.LibraryUiState
@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
 class FilterResultViewModel(
     application: Application
 ) : AndroidViewModel(application) {
-    private val bookRepository = (application as ReaderApplication).bookRepository
+    private val bookRepository = (application as ReaderApplication).libraryRepository
     private val prefsManager = LibraryPreferencesManager(application)
     private val screenKey = "filter_result"
 

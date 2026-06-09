@@ -1,6 +1,6 @@
 package com.example.readerapp.ui.features.library
 
-import com.example.readerapp.data.local.ShelfEntity
+import com.example.readerapp.data.local.database.library.ShelfEntity
 import com.example.readerapp.data.model.Book
 
 enum class LayoutMode { Grid, BigGrid, List, BigList }

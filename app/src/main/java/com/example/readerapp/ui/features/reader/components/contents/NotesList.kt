@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import com.example.readerapp.R
-import com.example.readerapp.data.local.NoteEntity
+import com.example.readerapp.data.local.database.library.NoteEntity
 import com.example.readerapp.ui.theme.spacing
 import org.json.JSONObject
 import org.readium.r2.shared.publication.Link

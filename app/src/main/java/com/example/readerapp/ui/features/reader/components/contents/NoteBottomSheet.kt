@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import androidx.compose.ui.res.stringResource
 import com.example.readerapp.R
-import com.example.readerapp.data.local.NoteEntity
+import com.example.readerapp.data.local.database.library.NoteEntity
 import com.example.readerapp.ui.theme.spacing
 
 @OptIn(ExperimentalMaterial3Api::class)

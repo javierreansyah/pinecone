@@ -4,10 +4,12 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.readerapp.data.local.InstalledDictionary
-import com.example.readerapp.data.local.ReaderPreferences
-import com.example.readerapp.data.local.dictionary.DictionaryRepository
-import com.example.readerapp.data.local.dictionary.ImportState
+import com.example.readerapp.data.local.preferences.InstalledDictionary
+import com.example.readerapp.data.local.preferences.ReaderPreferences
+import com.example.readerapp.data.repository.dictionary.DictionaryRepository
+import com.example.readerapp.data.repository.dictionary.DictionaryImportManager
+import com.example.readerapp.data.repository.dictionary.DictionaryBackupManager
+import com.example.readerapp.data.repository.dictionary.DictionaryState
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -16,11 +18,14 @@ import kotlinx.coroutines.launch
 
 class DictionariesViewModel(
     private val repository: DictionaryRepository,
+    private val importManager: DictionaryImportManager,
+    private val backupManager: DictionaryBackupManager,
     preferences: ReaderPreferences
 ) : ViewModel() {
 
-    val importState: StateFlow<ImportState> = repository.importState
-    val restoreState: StateFlow<ImportState> = repository.restoreState
+    val importState: StateFlow<DictionaryState> = importManager.importState
+    val restoreState: StateFlow<DictionaryState> = backupManager.restoreState
+    val backupState: StateFlow<DictionaryState> = backupManager.backupState
     
     val installedDictionaries: StateFlow<List<InstalledDictionary>> = preferences.readerSettings
         .map { it.installedDictionaries }
@@ -28,33 +33,31 @@ class DictionariesViewModel(
 
     fun importDictionary(uri: Uri) {
         viewModelScope.launch {
-            repository.importDictionary(uri)
+            importManager.importDictionary(uri)
         }
     }
 
     fun resetImportState() {
-        repository.resetImportState()
+        importManager.resetImportState()
     }
 
     fun resetRestoreState() {
-        repository.resetRestoreState()
+        backupManager.resetRestoreState()
     }
 
-    val backupState: StateFlow<ImportState> = repository.backupState
-
     fun resetBackupState() {
-        repository.resetBackupState()
+        backupManager.resetBackupState()
     }
 
     fun backupDictionaries() {
         viewModelScope.launch {
-            repository.backupDictionaries()
+            backupManager.backupDictionaries()
         }
     }
 
     fun restoreDictionary(uri: Uri) {
         viewModelScope.launch {
-            repository.restoreDictionaries(uri)
+            backupManager.restoreDictionaries(uri)
         }
     }
 
@@ -72,11 +75,13 @@ class DictionariesViewModel(
 
     class Factory(
         private val repository: DictionaryRepository,
+        private val importManager: DictionaryImportManager,
+        private val backupManager: DictionaryBackupManager,
         private val preferences: ReaderPreferences
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return DictionariesViewModel(repository, preferences) as T
+            return DictionariesViewModel(repository, importManager, backupManager, preferences) as T
         }
     }
 }

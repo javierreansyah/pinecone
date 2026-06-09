@@ -7,9 +7,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.readerapp.ReaderApplication
-import com.example.readerapp.data.local.AuthorEntity
-import com.example.readerapp.data.local.TagEntity
-import com.example.readerapp.data.repository.BookRepository
+import com.example.readerapp.data.local.database.library.AuthorEntity
+import com.example.readerapp.data.local.database.library.TagEntity
+import com.example.readerapp.data.repository.library.LibraryRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -31,7 +31,7 @@ class EditBookViewModel(
     private val bookId: String
 ) : AndroidViewModel(application) {
 
-    private val repository: BookRepository = (application as ReaderApplication).bookRepository
+    private val repository: LibraryRepository = (application as ReaderApplication).libraryRepository
 
     private val _uiState = MutableStateFlow(EditBookUiState())
     val uiState: StateFlow<EditBookUiState> = _uiState.asStateFlow()

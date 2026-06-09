@@ -1,4 +1,4 @@
-package com.example.readerapp.data.local
+package com.example.readerapp.data.local.database.library
 
 
 import kotlinx.serialization.Serializable

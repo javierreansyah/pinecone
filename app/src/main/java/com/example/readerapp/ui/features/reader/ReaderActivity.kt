@@ -11,7 +11,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.lifecycle.*
 import androidx.fragment.app.FragmentContainerView
 import com.example.readerapp.ReaderApplication
-import com.example.readerapp.data.local.ReaderPreferences
+import com.example.readerapp.data.local.preferences.ReaderPreferences
 import com.example.readerapp.ui.theme.ReaderTheme
 import com.example.readerapp.ui.features.reader.components.overlay.ReaderOverlay
 import kotlinx.coroutines.flow.filterNotNull
@@ -33,6 +33,7 @@ import org.readium.r2.shared.publication.Publication
 import androidx.core.graphics.toColorInt
 import kotlin.time.Duration.Companion.milliseconds
 import androidx.core.net.toUri
+import com.example.readerapp.data.local.preferences.ReaderSettings
 
 class ReaderActivity : AppCompatActivity() {
 
@@ -47,7 +48,7 @@ class ReaderActivity : AppCompatActivity() {
         ReaderViewModel.Factory(
             application = app,
             bookId = bookId,
-            repository = app.bookRepository,
+            repository = app.libraryRepository,
             readerPreferences = ReaderPreferences(applicationContext),
             dictionaryRepository = app.dictionaryRepository
         )
@@ -290,7 +291,7 @@ class ReaderActivity : AppCompatActivity() {
             // The overlay theme is driven by the reader's own theme setting so that
             // icon/text colours always contrast with the reader background.
             val settingsState = viewModel.settingsFlow.collectAsState(
-                initial = com.example.readerapp.data.local.ReaderSettings()
+                initial = ReaderSettings()
             )
             val overlaySettings = settingsState.value
             val isSystemDark = isSystemInDarkTheme()

@@ -36,8 +36,8 @@ import com.composables.icons.materialsymbols.outlined.Book
 import com.composables.icons.materialsymbols.outlined.Drive_folder_upload
 import com.composables.icons.materialsymbols.outlined.History
 import com.example.readerapp.R
-import com.example.readerapp.data.local.ReaderSettings
-import com.example.readerapp.data.repository.BackupRepository
+import com.example.readerapp.data.local.preferences.ReaderSettings
+import com.example.readerapp.data.repository.backup.LibraryBackupRepository
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -167,7 +167,7 @@ fun AppDrawer(
                             onBackupFolderSetupClick()
                         } else {
                             Toast.makeText(context, startingMsg, Toast.LENGTH_SHORT).show()
-                            val success = BackupRepository(context).performBackup(force = true)
+                            val success = LibraryBackupRepository(context).performBackup(force = true)
                             if (success) {
                                 Toast.makeText(context, successMsg, Toast.LENGTH_SHORT).show()
                             } else {

@@ -23,7 +23,7 @@ import com.composables.icons.materialsymbols.outlined.Tune
 import com.composables.icons.materialsymbols.outlined.Translate
 import com.composables.icons.materialsymbols.outlined.Sync
 import com.composables.icons.materialsymbols.outlined.Folder
-import com.example.readerapp.data.local.ReaderPreferences
+import com.example.readerapp.data.local.preferences.ReaderPreferences
 import com.example.readerapp.ui.features.settings.components.settingsItem
 import com.example.readerapp.worker.WorkerUtils
 import androidx.activity.compose.rememberLauncherForActivityResult

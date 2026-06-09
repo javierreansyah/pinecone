@@ -1,6 +1,6 @@
 package com.example.readerapp.data.model
 
-import com.example.readerapp.data.local.InstalledDictionary
+import com.example.readerapp.data.local.preferences.InstalledDictionary
 import kotlinx.serialization.Serializable
 
 @Serializable
