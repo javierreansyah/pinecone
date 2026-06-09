@@ -1,7 +1,6 @@
 package com.example.readerapp.data.model
 
 
-import kotlinx.serialization.Serializable
 import com.example.readerapp.data.local.database.library.AuthorEntity
 import com.example.readerapp.data.local.database.library.BookAuthorCrossRef
 import com.example.readerapp.data.local.database.library.BookEntity
@@ -11,6 +10,7 @@ import com.example.readerapp.data.local.database.library.NoteEntity
 import com.example.readerapp.data.local.database.library.ShelfBookCrossRefEntity
 import com.example.readerapp.data.local.database.library.ShelfEntity
 import com.example.readerapp.data.local.database.library.TagEntity
+import kotlinx.serialization.Serializable
 
 @Serializable
 data class LibraryBackupPayload(

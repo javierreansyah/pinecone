@@ -1,9 +1,9 @@
 package com.example.readerapp.data.local.database.library
 
 
-import kotlinx.serialization.Serializable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 @Entity(tableName = "books")
 @Serializable

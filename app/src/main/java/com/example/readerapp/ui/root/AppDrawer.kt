@@ -29,12 +29,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Archive
-import com.composables.icons.materialsymbols.outlined.Folder
-import com.composables.icons.materialsymbols.outlined.Settings
-import com.composables.icons.materialsymbols.outlined.Upload
 import com.composables.icons.materialsymbols.outlined.Book
 import com.composables.icons.materialsymbols.outlined.Drive_folder_upload
+import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.History
+import com.composables.icons.materialsymbols.outlined.Settings
+import com.composables.icons.materialsymbols.outlined.Upload
 import com.example.readerapp.R
 import com.example.readerapp.data.local.preferences.ReaderSettings
 import com.example.readerapp.data.repository.backup.LibraryBackupRepository
@@ -60,23 +60,23 @@ fun AppDrawer(
 
     ModalDrawerSheet {
         Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                painter = painterResource(
-                    id = if (darkTheme) R.drawable.dark_mode_icon else R.drawable.light_mode_icon
-                ),
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = Color.Unspecified
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = stringResource(id = R.string.app_name),
-                style = MaterialTheme.typography.headlineMedium
-            )
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    painter = painterResource(
+                        id = if (darkTheme) R.drawable.dark_mode_icon else R.drawable.light_mode_icon
+                    ),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = Color.Unspecified
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(id = R.string.app_name),
+                    style = MaterialTheme.typography.headlineMedium
+                )
             }
 
             NavigationDrawerItem(
@@ -135,13 +135,15 @@ fun AppDrawer(
             )
 
             val lastBackupTimeText = if (settings.lastBackupTime > 0) {
-                val formatter = SimpleDateFormat("MMM dd, HH:mm", LocalLocale.current.platformLocale)
+                val formatter =
+                    SimpleDateFormat("MMM dd, HH:mm", LocalLocale.current.platformLocale)
                 "Last: ${formatter.format(Date(settings.lastBackupTime))}"
             } else {
                 "Never"
             }
 
-            val hasPermission = settings.backupFolderUri.isNotEmpty() && context.contentResolver.persistedUriPermissions.any { it.uri.toString() == settings.backupFolderUri }
+            val hasPermission =
+                settings.backupFolderUri.isNotEmpty() && context.contentResolver.persistedUriPermissions.any { it.uri.toString() == settings.backupFolderUri }
             val startingMsg = stringResource(R.string.nav_starting_backup)
             val successMsg = stringResource(R.string.nav_backup_success)
             val failedMsg = stringResource(R.string.nav_backup_failed)
@@ -151,14 +153,27 @@ fun AppDrawer(
                     Column {
                         if (hasPermission) {
                             Text(stringResource(R.string.nav_backup_now))
-                            Text(lastBackupTimeText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                lastBackupTimeText,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         } else {
                             Text(stringResource(R.string.nav_backup_not_setup))
-                            Text(stringResource(R.string.nav_setup_now), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                stringResource(R.string.nav_setup_now),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 },
-                icon = { Icon(if (hasPermission) MaterialSymbols.Outlined.Drive_folder_upload else MaterialSymbols.Outlined.Folder, contentDescription = null) },
+                icon = {
+                    Icon(
+                        if (hasPermission) MaterialSymbols.Outlined.Drive_folder_upload else MaterialSymbols.Outlined.Folder,
+                        contentDescription = null
+                    )
+                },
                 selected = false,
                 onClick = {
                     scope.launch {
@@ -167,7 +182,8 @@ fun AppDrawer(
                             onBackupFolderSetupClick()
                         } else {
                             Toast.makeText(context, startingMsg, Toast.LENGTH_SHORT).show()
-                            val success = LibraryBackupRepository(context).performBackup(force = true)
+                            val success =
+                                LibraryBackupRepository(context).performBackup(force = true)
                             if (success) {
                                 Toast.makeText(context, successMsg, Toast.LENGTH_SHORT).show()
                             } else {

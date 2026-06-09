@@ -2,29 +2,43 @@
 
 package com.example.readerapp.ui.features.reader
 
+import android.app.Application
+import androidx.core.graphics.toColorInt
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.readerapp.R
+import com.example.readerapp.data.local.database.dictionary.DictionaryEntry
 import com.example.readerapp.data.local.database.library.BookmarkEntity
 import com.example.readerapp.data.local.database.library.NoteEntity
 import com.example.readerapp.data.local.preferences.ReaderPreferences
 import com.example.readerapp.data.local.preferences.ReaderSettings
+import com.example.readerapp.data.repository.dictionary.DictionaryRepository
 import com.example.readerapp.data.repository.library.LibraryRepository
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.math.abs
+import org.json.JSONObject
 import org.readium.r2.navigator.epub.EpubPreferences
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
+import org.readium.r2.shared.publication.Locator.Companion.fromJSON
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.services.positions
 import org.readium.r2.shared.publication.services.search.search
-import androidx.core.graphics.toColorInt
-import android.app.Application
-import com.example.readerapp.R
-import com.example.readerapp.data.repository.dictionary.DictionaryRepository
-import com.example.readerapp.data.local.database.dictionary.DictionaryEntry
+import kotlin.math.abs
 
 class ReaderViewModel(
     private val application: Application,
@@ -93,16 +107,16 @@ class ReaderViewModel(
 
     // Bookmarks for the current book
     val bookmarks: StateFlow<List<BookmarkEntity>> = repository.getBookmarks(bookId)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, WhileSubscribed(5000), emptyList())
 
     // All raw notes from DB
     private val allNotes: StateFlow<List<NoteEntity>> = repository.getNotes(bookId)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, WhileSubscribed(5000), emptyList())
 
     // Notes for the current book (text is not empty)
     val notes: StateFlow<List<NoteEntity>> =
         allNotes.map { list -> list.filter { it.noteText.isNotBlank() } }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+            .stateIn(viewModelScope, WhileSubscribed(5000), emptyList())
 
     // The combined flow for applying decorations in UI
     val allNotesAndHighlights = allNotes
@@ -113,16 +127,16 @@ class ReaderViewModel(
             if (locator == null) return@combine false
             bookmarksList.any { bookmark ->
                 try {
-                    val bmLocator = org.json.JSONObject(bookmark.locatorJson).let {
-                        Locator.fromJSON(it)
+                    val bmLocator = JSONObject(bookmark.locatorJson).let {
+                        fromJSON(it)
                     }
                     // Check for similar position (Readium standard comparison)
-                    bmLocator?.href == locator.href && bmLocator?.locations?.totalProgression == locator.locations.totalProgression
+                    (bmLocator?.href == locator.href) && (bmLocator.locations.totalProgression == locator.locations.totalProgression)
                 } catch (e: Exception) {
                     false
                 }
             }
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+        }.stateIn(viewModelScope, WhileSubscribed(5000), false)
 
     // Settings flow from DataStore
     val settingsFlow: Flow<ReaderSettings> = readerPreferences.readerSettings
@@ -130,7 +144,7 @@ class ReaderViewModel(
     // Brightness (app-level setting)
     val brightness: StateFlow<Float> =
         readerPreferences.readerSettings.map { if (it.autoBrightness) -1.0f else it.brightness }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1.0f)
+            .stateIn(viewModelScope, WhileSubscribed(5000), 1.0f)
 
     // System dark theme state (set by activity)
     val systemDarkThemeFlow = MutableStateFlow(false)
@@ -140,7 +154,7 @@ class ReaderViewModel(
         readerPreferences.readerSettings, systemDarkThemeFlow
     ) { settings, isDark ->
         settings.toEpubPreferences(isDark)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), EpubPreferences())
+    }.stateIn(viewModelScope, WhileSubscribed(5000), EpubPreferences())
 
     // Table of contents from publication
     val tableOfContents: List<Link>
@@ -280,10 +294,10 @@ class ReaderViewModel(
             // Find existing bookmark at this position
             val existing = bookmarks.value.find { bookmark ->
                 try {
-                    val bmLocator = org.json.JSONObject(bookmark.locatorJson).let {
-                        Locator.fromJSON(it)
+                    val bmLocator = JSONObject(bookmark.locatorJson).let {
+                        fromJSON(it)
                     }
-                    bmLocator?.href == locator.href && bmLocator?.locations?.totalProgression == locator.locations.totalProgression
+                    (bmLocator?.href == locator.href) && (bmLocator.locations.totalProgression == locator.locations.totalProgression)
                 } catch (e: Exception) {
                     false
                 }
@@ -363,7 +377,7 @@ class ReaderViewModel(
             if (note.id == 0L) {
                 repository.addNote(
                     bookId = bookId,
-                    locator = Locator.fromJSON(org.json.JSONObject(note.locatorJson))!!,
+                    locator = fromJSON(JSONObject(note.locatorJson))!!,
                     noteText = note.noteText,
                     color = note.color,
                     chapterTitle = note.chapterTitle

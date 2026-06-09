@@ -1,12 +1,11 @@
 package com.example.readerapp.data.local.database.library
 
 
-import kotlinx.serialization.Serializable
 import androidx.room.Entity
-import androidx.room.PrimaryKey
-
 import androidx.room.ForeignKey
 import androidx.room.Index
+import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 @Entity(
     tableName = "bookmarks", foreignKeys = [ForeignKey(

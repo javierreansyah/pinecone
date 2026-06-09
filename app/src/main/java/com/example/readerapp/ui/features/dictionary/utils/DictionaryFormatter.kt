@@ -1,6 +1,7 @@
 package com.example.readerapp.ui.features.dictionary.utils
 
 import com.example.readerapp.data.local.database.dictionary.DictionaryEntry
+import com.example.readerapp.ui.features.dictionary.utils.DictionaryFormatter.PARTS_OF_SPEECH
 
 /**
  * Utility for preparing dictionary definition content for WebView rendering.

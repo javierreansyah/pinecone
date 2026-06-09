@@ -3,18 +3,18 @@ package com.example.readerapp
 import android.app.Application
 import androidx.room.Room
 import com.example.readerapp.data.local.database.library.AppDatabase
-import com.example.readerapp.data.repository.library.LibraryRepository
-import org.readium.r2.shared.util.http.DefaultHttpClient
-import org.readium.r2.streamer.PublicationOpener
-import org.readium.r2.shared.util.asset.AssetRetriever
-import org.readium.r2.streamer.parser.DefaultPublicationParser
-import com.example.readerapp.worker.WorkerUtils
 import com.example.readerapp.data.local.preferences.ReaderPreferences
+import com.example.readerapp.data.repository.dictionary.DictionaryBackupManager
+import com.example.readerapp.data.repository.dictionary.DictionaryImportManager
+import com.example.readerapp.data.repository.dictionary.DictionaryRepository
+import com.example.readerapp.data.repository.library.LibraryRepository
+import com.example.readerapp.worker.WorkerUtils
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import com.example.readerapp.data.repository.dictionary.DictionaryRepository
-import com.example.readerapp.data.repository.dictionary.DictionaryImportManager
-import com.example.readerapp.data.repository.dictionary.DictionaryBackupManager
+import org.readium.r2.shared.util.asset.AssetRetriever
+import org.readium.r2.shared.util.http.DefaultHttpClient
+import org.readium.r2.streamer.PublicationOpener
+import org.readium.r2.streamer.parser.DefaultPublicationParser
 
 class ReaderApplication : Application() {
 

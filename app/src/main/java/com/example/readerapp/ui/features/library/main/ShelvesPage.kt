@@ -1,7 +1,15 @@
 package com.example.readerapp.ui.features.library.main
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -11,18 +19,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Book
+import com.composables.icons.materialsymbols.outlined.Folder
 import com.example.readerapp.R
 import com.example.readerapp.data.local.database.library.ShelfWithCovers
 import com.example.readerapp.data.model.Book
-import com.example.readerapp.ui.features.library.components.book.BookItem
-import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Folder
-import com.composables.icons.materialsymbols.outlined.Book
 import com.example.readerapp.ui.components.EmptyState
 import com.example.readerapp.ui.features.library.LayoutMode
 import com.example.readerapp.ui.features.library.components.ShelfListItem
+import com.example.readerapp.ui.features.library.components.book.BookItem
 
 @Composable
 fun ShelvesPage(
@@ -57,15 +65,15 @@ fun ShelvesPage(
                     } else {
                         Column(
                             modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onShelfClick(
-                                    shelfWithCovers.shelf.id,
-                                    shelfWithCovers.shelf.name,
-                                    booksCount
-                                )
-                            }
-                            .padding(vertical = 4.dp)) {
+                                .fillMaxWidth()
+                                .clickable {
+                                    onShelfClick(
+                                        shelfWithCovers.shelf.id,
+                                        shelfWithCovers.shelf.name,
+                                        booksCount
+                                    )
+                                }
+                                .padding(vertical = 4.dp)) {
                             // Header Column
                             Column(
                                 modifier = Modifier

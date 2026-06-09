@@ -18,15 +18,15 @@ import androidx.navigation.navDeepLink
 import com.example.readerapp.ReaderApplication
 import com.example.readerapp.ui.features.dictionary.DictionariesScreen
 import com.example.readerapp.ui.features.dictionary.DictionariesViewModel
-import com.example.readerapp.ui.features.library.main.LibraryScreen
-import com.example.readerapp.ui.features.settings.SettingsScreen
 import com.example.readerapp.ui.features.library.archive.ArchiveScreen
-import com.example.readerapp.ui.features.library.shelf.ShelfDetailScreen
+import com.example.readerapp.ui.features.library.filters.AllFilterItemsScreen
 import com.example.readerapp.ui.features.library.filters.FilterResultScreen
 import com.example.readerapp.ui.features.library.info.BookInfoScreen
 import com.example.readerapp.ui.features.library.info.EditBookScreen
-import com.example.readerapp.ui.features.library.filters.AllFilterItemsScreen
+import com.example.readerapp.ui.features.library.main.LibraryScreen
+import com.example.readerapp.ui.features.library.shelf.ShelfDetailScreen
 import com.example.readerapp.ui.features.reader.ReaderActivity
+import com.example.readerapp.ui.features.settings.SettingsScreen
 import kotlinx.coroutines.launch
 
 @Composable

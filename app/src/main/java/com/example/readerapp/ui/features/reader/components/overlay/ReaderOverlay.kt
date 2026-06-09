@@ -36,24 +36,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.ui.res.stringResource
 import com.example.readerapp.R
-import com.example.readerapp.data.local.preferences.ReaderSettings
 import com.example.readerapp.data.local.database.dictionary.DictionaryEntry
+import com.example.readerapp.data.local.preferences.ReaderSettings
 import com.example.readerapp.ui.features.dictionary.utils.DefinitionWebView
 import com.example.readerapp.ui.features.dictionary.utils.DictionaryFormatter
 import com.example.readerapp.ui.features.reader.ReaderViewModel
+import com.example.readerapp.ui.features.reader.components.SearchScreen
 import com.example.readerapp.ui.features.reader.components.contents.NoteBottomSheet
 import com.example.readerapp.ui.features.reader.components.contents.ReaderBottomSheet
 import com.example.readerapp.ui.features.reader.components.settings.ReaderSettingsContent
-import com.example.readerapp.ui.features.reader.components.SearchScreen
 import com.example.readerapp.ui.theme.AppTheme
+import org.json.JSONObject
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
-import org.json.JSONObject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

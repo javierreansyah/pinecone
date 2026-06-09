@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -45,7 +44,12 @@ fun SegmentedListScope.settingsItem(
         leadingContent = leadingIcon,
         content = { Text(label, style = MaterialTheme.typography.titleMedium) },
         supportingContent = { Text(value, style = MaterialTheme.typography.bodyMedium) },
-        trailingContent = { Icon(MaterialSymbols.Outlined.Keyboard_arrow_right, contentDescription = null) },
+        trailingContent = {
+            Icon(
+                MaterialSymbols.Outlined.Keyboard_arrow_right,
+                contentDescription = null
+            )
+        },
         wrapper = { itemContent ->
             var showDialog by remember { mutableStateOf(false) }
             onListItemClick = { showDialog = true }

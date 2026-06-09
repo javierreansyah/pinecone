@@ -1,21 +1,27 @@
 package com.example.readerapp.ui.features.reader.components.contents
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
-import com.example.readerapp.R
-import org.readium.r2.shared.publication.Link
-import org.readium.r2.shared.publication.Locator
+import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Format_list_bulleted
+import com.example.readerapp.R
 import com.example.readerapp.ui.components.EmptyState
+import org.readium.r2.shared.publication.Link
+import org.readium.r2.shared.publication.Locator
 
 @Composable
 fun TocList(

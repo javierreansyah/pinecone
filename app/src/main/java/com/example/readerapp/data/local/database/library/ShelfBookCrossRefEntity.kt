@@ -1,10 +1,10 @@
 package com.example.readerapp.data.local.database.library
 
 
-import kotlinx.serialization.Serializable
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
+import kotlinx.serialization.Serializable
 
 @Entity(
     tableName = "shelf_book_cross_ref",
