@@ -1,11 +1,13 @@
-package com.example.readerapp.ui.features.library
+package com.example.readerapp.ui.features.library.filters
 
+import android.app.Application
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -17,6 +19,7 @@ import com.composables.icons.materialsymbols.outlined.More_vert
 import androidx.compose.ui.res.stringResource
 import com.example.readerapp.R
 import com.example.readerapp.ui.components.SegmentedLazyColumn
+import com.example.readerapp.ui.features.library.filters.FilterCategoryViewModel
 import com.example.readerapp.ui.features.library.components.*
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -27,12 +30,14 @@ fun AllFilterItemsScreen(
     onNavigateToDetail: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val viewModel: LibraryViewModel = viewModel(
-        factory = object : ViewModelProvider.AndroidViewModelFactory(context.applicationContext as android.app.Application) {
+    val viewModel: FilterCategoryViewModel = viewModel(
+        factory = object : ViewModelProvider.AndroidViewModelFactory(context.applicationContext as Application) {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                if (modelClass.isAssignableFrom(LibraryViewModel::class.java)) {
+                if (modelClass.isAssignableFrom(FilterCategoryViewModel::class.java)) {
                     @Suppress("UNCHECKED_CAST")
-                    return LibraryViewModel(context.applicationContext as android.app.Application, "all_filter_items") as T
+                    return FilterCategoryViewModel(
+                        context.applicationContext as Application
+                    ) as T
                 }
                 throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             }
@@ -124,7 +129,7 @@ fun AllFilterItemsScreen(
                         content = { Text(item.first) },
                         supportingContent = { 
                             Text(
-                                androidx.compose.ui.res.pluralStringResource(
+                                pluralStringResource(
                                     R.plurals.library_books_count, 
                                     item.second, 
                                     item.second

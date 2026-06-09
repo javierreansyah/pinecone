@@ -1,4 +1,4 @@
-package com.example.readerapp.ui.navigation
+package com.example.readerapp.ui.root
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
@@ -39,6 +39,8 @@ import com.example.readerapp.R
 import com.example.readerapp.data.local.ReaderSettings
 import com.example.readerapp.data.repository.BackupRepository
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
 
 @Composable
 fun AppDrawer(
@@ -133,8 +135,8 @@ fun AppDrawer(
             )
 
             val lastBackupTimeText = if (settings.lastBackupTime > 0) {
-                val formatter = java.text.SimpleDateFormat("MMM dd, HH:mm", LocalLocale.current.platformLocale)
-                "Last: ${formatter.format(java.util.Date(settings.lastBackupTime))}"
+                val formatter = SimpleDateFormat("MMM dd, HH:mm", LocalLocale.current.platformLocale)
+                "Last: ${formatter.format(Date(settings.lastBackupTime))}"
             } else {
                 "Never"
             }

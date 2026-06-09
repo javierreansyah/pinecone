@@ -1,4 +1,4 @@
-package com.example.readerapp.ui.features.library.components
+package com.example.readerapp.ui.features.library.main
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState

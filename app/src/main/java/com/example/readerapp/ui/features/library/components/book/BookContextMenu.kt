@@ -10,14 +10,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import com.example.readerapp.R
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.*
-import com.example.readerapp.ui.features.library.LibraryViewModel
+import com.example.readerapp.data.local.ShelfWithCovers
+import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.features.library.components.ShelfListItem
 import com.example.readerapp.ui.components.EmptyState
 
@@ -29,15 +29,19 @@ enum class MenuState {
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun BookContextMenu(
-    viewModel: LibraryViewModel,
     bookId: String,
     shelfId: String? = null,
+    shelves: List<ShelfWithCovers>,
+    allBooks: List<Book>,
     onNavigateToBookInfo: (String) -> Unit,
+    onToggleArchive: () -> Unit,
+    onToggleReadStatus: () -> Unit,
+    onRemoveFromShelf: () -> Unit,
+    onAddToShelf: (String) -> Unit,
+    onDeleteBook: () -> Unit,
+    onCreateShelfAndAdd: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val shelves by viewModel.shelves.collectAsState()
-    val allBooks by viewModel.allBooks.collectAsState()
-
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     var showCreateShelfDialog by remember { mutableStateOf(false) }
     var menuState by remember { mutableStateOf(MenuState.Main) }
@@ -103,7 +107,7 @@ fun BookContextMenu(
                     leadingContent = { Icon(MaterialSymbols.Outlined.Archive, contentDescription = null) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable {
-                        viewModel.toggleArchive(bookId)
+                        onToggleArchive()
                         onDismiss()
                     }
                 )
@@ -117,7 +121,7 @@ fun BookContextMenu(
                     },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable {
-                        viewModel.toggleReadStatus(bookId)
+                        onToggleReadStatus()
                         onDismiss()
                     }
                 )
@@ -135,7 +139,7 @@ fun BookContextMenu(
                         leadingContent = { Icon(MaterialSymbols.Outlined.Bookmark_remove, contentDescription = null) },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         modifier = Modifier.clickable {
-                            viewModel.removeBookFromShelf(shelfId, bookId)
+                            onRemoveFromShelf()
                             onDismiss()
                         }
                     )
@@ -203,7 +207,7 @@ fun BookContextMenu(
                                     ShelfListItem(
                                         shelfWithCovers = shelfWithCovers,
                                         onClick = {
-                                            viewModel.addBookToShelf(shelfWithCovers.shelf.id, bookId)
+                                            onAddToShelf(shelfWithCovers.shelf.id)
                                             menuState = MenuState.Main
                                             onDismiss()
                                         }
@@ -226,7 +230,7 @@ fun BookContextMenu(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        viewModel.deleteBook(bookId)
+                        onDeleteBook()
                         showDeleteConfirmation = false
                         onDismiss()
                     },
@@ -260,7 +264,7 @@ fun BookContextMenu(
             confirmButton = {
                 TextButton(onClick = {
                     if (newShelfName.isNotBlank()) {
-                        viewModel.createShelfAndAddBook(newShelfName, bookId)
+                        onCreateShelfAndAdd(newShelfName)
                         newShelfName = ""
                         showCreateShelfDialog = false
                         onDismiss()

@@ -1,4 +1,6 @@
-package com.example.readerapp.ui.navigation
+package com.example.readerapp.ui.root
+
+import android.net.Uri
 
 sealed class Screen(val route: String) {
     object Library : Screen("library")
@@ -6,7 +8,7 @@ sealed class Screen(val route: String) {
     object Settings : Screen("settings")
     object ShelfDetail : Screen("shelf_detail/{shelfId}?name={name}&count={count}") {
         fun createRoute(shelfId: String, name: String = "", count: Int = 0): String {
-            val encodedName = android.net.Uri.encode(name)
+            val encodedName = Uri.encode(name)
             return "shelf_detail/$shelfId?name=$encodedName&count=$count"
         }
     }

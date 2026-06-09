@@ -25,8 +25,8 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Edit
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.readerapp.R
-import com.example.readerapp.ReaderApplication
 import com.example.readerapp.data.model.Book
 import java.io.File
 import java.time.OffsetDateTime
@@ -42,19 +42,14 @@ fun BookInfoScreen(
     onNavigateToEdit: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val app = context.applicationContext as ReaderApplication
-    val repository = app.bookRepository
+    val application = context.applicationContext as android.app.Application
+    val viewModel: BookInfoViewModel = viewModel(
+        factory = BookInfoViewModel.Factory(application, bookId)
+    )
 
-    var book by remember { mutableStateOf<Book?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
-
-    LaunchedEffect(bookId) {
-        val entity = repository.getBook(bookId)
-        if (entity != null) {
-            book = Book.fromEntity(entity)
-        }
-        isLoading = false
-    }
+    val uiState by viewModel.uiState.collectAsState()
+    val book = uiState.book
+    val isLoading = uiState.isLoading
 
     Scaffold(
         topBar = {
@@ -107,7 +102,7 @@ fun BookInfoScreen(
                     Text(stringResource(R.string.book_not_found), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.error)
                 }
             } else {
-                val currentBook = book!!
+                val currentBook = book
                 SelectionContainer {
                     Column(
                         modifier = Modifier
