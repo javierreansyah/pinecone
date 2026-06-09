@@ -52,14 +52,12 @@ fun ReaderBottomSheet(
     )
     val pagerState = rememberPagerState(pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
-    
+
     var showAddNoteDialog by remember { mutableStateOf(false) }
     var noteText by remember { mutableStateOf("") }
 
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        modifier = modifier
+        onDismissRequest = onDismiss, sheetState = sheetState, modifier = modifier
     ) {
         Column(
             modifier = Modifier
@@ -68,28 +66,38 @@ fun ReaderBottomSheet(
                 .padding(bottom = 32.dp)
         ) {
             PrimaryTabRow(
-                selectedTabIndex = pagerState.currentPage,
-                containerColor = Color.Transparent
+                selectedTabIndex = pagerState.currentPage, containerColor = Color.Transparent
             ) {
                 Tab(
                     selected = pagerState.currentPage == 0,
                     onClick = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
-                    text = { Text(stringResource(R.string.reader_chapters_title), style = MaterialTheme.typography.titleMedium) }
-                )
+                    text = {
+                        Text(
+                            stringResource(R.string.reader_chapters_title),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    })
                 Tab(
                     selected = pagerState.currentPage == 1,
                     onClick = { coroutineScope.launch { pagerState.animateScrollToPage(1) } },
-                    text = { Text(stringResource(R.string.reader_bookmarks_title), style = MaterialTheme.typography.titleMedium) }
-                )
+                    text = {
+                        Text(
+                            stringResource(R.string.reader_bookmarks_title),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    })
                 Tab(
                     selected = pagerState.currentPage == 2,
                     onClick = { coroutineScope.launch { pagerState.animateScrollToPage(2) } },
-                    text = { Text(stringResource(R.string.reader_notes_title), style = MaterialTheme.typography.titleMedium) }
-                )
+                    text = {
+                        Text(
+                            stringResource(R.string.reader_notes_title),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    })
             }
 
-            @OptIn(ExperimentalFoundationApi::class)
-            CompositionLocalProvider(
+            @OptIn(ExperimentalFoundationApi::class) CompositionLocalProvider(
                 LocalOverscrollFactory provides null
             ) {
                 HorizontalPager(
@@ -102,11 +110,9 @@ fun ReaderBottomSheet(
                 ) { page ->
                     when (page) {
                         0 -> TocList(
-                            tableOfContents,
-                            currentLocator,
-                            getChapterPageLabel,
-                            onChapterClick
+                            tableOfContents, currentLocator, getChapterPageLabel, onChapterClick
                         )
+
                         1 -> BookmarksList(
                             bookmarks,
                             tableOfContents,
@@ -114,12 +120,9 @@ fun ReaderBottomSheet(
                             onBookmarkClick,
                             onDeleteBookmark
                         )
+
                         2 -> NotesList(
-                            notes,
-                            tableOfContents,
-                            getPositionLabel,
-                            onNoteClick,
-                            onDeleteNote
+                            notes, tableOfContents, getPositionLabel, onNoteClick, onDeleteNote
                         )
                     }
                 }
@@ -128,38 +131,48 @@ fun ReaderBottomSheet(
     }
 
     if (showAddNoteDialog) {
-        AlertDialog(
-            onDismissRequest = { showAddNoteDialog = false },
-            title = { Text(stringResource(R.string.reader_add_note), style = MaterialTheme.typography.titleLarge) },
-            text = {
-                OutlinedTextField(
-                    value = noteText,
-                    onValueChange = { noteText = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text(stringResource(R.string.reader_enter_note_placeholder), style = MaterialTheme.typography.bodyLarge) },
-                    minLines = 3
+        AlertDialog(onDismissRequest = { showAddNoteDialog = false }, title = {
+            Text(
+                stringResource(R.string.reader_add_note),
+                style = MaterialTheme.typography.titleLarge
+            )
+        }, text = {
+            OutlinedTextField(
+                value = noteText,
+                onValueChange = { noteText = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = {
+                    Text(
+                        stringResource(R.string.reader_enter_note_placeholder),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                },
+                minLines = 3
+            )
+        }, confirmButton = {
+            TextButton(onClick = {
+                if (noteText.isNotBlank()) {
+                    onAddNote(noteText)
+                }
+                noteText = ""
+                showAddNoteDialog = false
+            }) {
+                Text(
+                    stringResource(R.string.action_save),
+                    style = MaterialTheme.typography.labelLarge
                 )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    if (noteText.isNotBlank()) {
-                        onAddNote(noteText)
-                    }
-                    noteText = ""
-                    showAddNoteDialog = false
-                }) {
-                    Text(stringResource(R.string.action_save), style = MaterialTheme.typography.labelLarge)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    noteText = ""
-                    showAddNoteDialog = false
-                }) {
-                    Text(stringResource(R.string.action_cancel), style = MaterialTheme.typography.labelLarge)
-                }
             }
-        )
+        }, dismissButton = {
+            TextButton(onClick = {
+                noteText = ""
+                showAddNoteDialog = false
+            }) {
+                Text(
+                    stringResource(R.string.action_cancel),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        })
     }
 }
 

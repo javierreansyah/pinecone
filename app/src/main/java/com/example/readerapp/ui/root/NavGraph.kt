@@ -23,8 +23,8 @@ import com.example.readerapp.ui.features.settings.SettingsScreen
 import com.example.readerapp.ui.features.library.archive.ArchiveScreen
 import com.example.readerapp.ui.features.library.shelf.ShelfDetailScreen
 import com.example.readerapp.ui.features.library.filters.FilterResultScreen
-import com.example.readerapp.ui.features.info.BookInfoScreen
-import com.example.readerapp.ui.features.info.EditBookScreen
+import com.example.readerapp.ui.features.library.info.BookInfoScreen
+import com.example.readerapp.ui.features.library.info.EditBookScreen
 import com.example.readerapp.ui.features.library.filters.AllFilterItemsScreen
 import com.example.readerapp.ui.features.reader.ReaderActivity
 import kotlinx.coroutines.launch

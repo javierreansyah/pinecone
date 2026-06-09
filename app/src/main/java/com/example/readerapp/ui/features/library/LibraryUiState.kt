@@ -14,7 +14,9 @@ data class FilterSortPreferences(
     val layoutMode: LayoutMode = LayoutMode.Grid,
     val sortType: SortType = SortType.Added,
     val isAscending: Boolean = false,
-    val selectedStatus: Set<StatusFilter> = setOf(StatusFilter.NotStarted, StatusFilter.Reading, StatusFilter.Finished),
+    val selectedStatus: Set<StatusFilter> = setOf(
+        StatusFilter.NotStarted, StatusFilter.Reading, StatusFilter.Finished
+    ),
     val selectedShelfFilter: Set<ShelfFilter> = setOf(ShelfFilter.Shelves, ShelfFilter.Unshelved)
 )
 
@@ -23,7 +25,9 @@ data class LibraryUiState(
     val searchCategory: SearchCategory = SearchCategory.All,
     val isImporting: Boolean = false,
     val bookPreferences: FilterSortPreferences = FilterSortPreferences(sortType = SortType.LastRead),
-    val shelvesPreferences: FilterSortPreferences = FilterSortPreferences(layoutMode = LayoutMode.BigList, sortType = SortType.Title, isAscending = true)
+    val shelvesPreferences: FilterSortPreferences = FilterSortPreferences(
+        layoutMode = LayoutMode.BigList, sortType = SortType.Title, isAscending = true
+    )
 )
 
 data class SearchResults(

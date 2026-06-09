@@ -29,33 +29,38 @@ fun BookmarksList(
         EmptyState(
             icon = MaterialSymbols.Outlined.Bookmark,
             text = stringResource(R.string.reader_no_bookmarks),
-            modifier = Modifier.fillMaxWidth().padding(32.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp)
         )
     } else {
         LazyColumn(
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(vertical = 8.dp)
+            modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 8.dp)
         ) {
             items(bookmarks) { bookmark ->
-                val locator = try { Locator.fromJSON(JSONObject(bookmark.locatorJson)) } catch (_: Exception) { null }
+                val locator = try {
+                    Locator.fromJSON(JSONObject(bookmark.locatorJson))
+                } catch (_: Exception) {
+                    null
+                }
                 if (locator != null) {
                     val inDocument = stringResource(R.string.reader_in_document)
-                    val chapterTitle = bookmark.chapterTitle
-                        ?.takeIf { it.isNotBlank() && it != inDocument }
-                        ?: tableOfContents.find { it.href.toString().substringBefore("#") == locator.href.toString().substringBefore("#") }?.title
-                        ?: inDocument
-                        
+                    val chapterTitle =
+                        bookmark.chapterTitle?.takeIf { it.isNotBlank() && it != inDocument }
+                            ?: tableOfContents.find {
+                                it.href.toString().substringBefore("#") == locator.href.toString()
+                                    .substringBefore("#")
+                            }?.title ?: inDocument
+
                     Column(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onBookmarkClick(locator) }
-                            .padding(horizontal = 20.dp, vertical = 12.dp)
-                    ) {
+                        .fillMaxWidth()
+                        .clickable { onBookmarkClick(locator) }
+                        .padding(horizontal = 20.dp, vertical = 12.dp)) {
                         EntryHeader(
                             title = chapterTitle,
                             positionLabel = getPositionLabel(locator),
-                            onDelete = { onDeleteBookmark(bookmark.id) }
-                        )
+                            onDelete = { onDeleteBookmark(bookmark.id) })
                     }
                 }
             }

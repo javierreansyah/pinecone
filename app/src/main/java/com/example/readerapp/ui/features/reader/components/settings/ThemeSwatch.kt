@@ -52,44 +52,35 @@ fun ThemeSwatch(
     ) {
         Box(
             modifier = Modifier
-                .size(68.dp)
-                .padding(2.dp)
-                .let { m ->
-                    if (isSelected) {
-                        m.border(
-                            width = 2.dp,
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = CircleShape
-                        )
-                    } else m
-                }
-                .padding(4.dp)
-                .clip(CircleShape)
-                .background(if (isAuto || isCustom || iconRes != null) Color.Transparent else color)
-                .border(
-                    width = 1.5.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant,
-                    shape = CircleShape
-                )
-                .combinedClickable(
-                    onClick = onClick,
-                    onLongClick = onLongClick
-                ),
-            contentAlignment = Alignment.Center
-        ) {
+            .size(68.dp)
+            .padding(2.dp)
+            .let { m ->
+                if (isSelected) {
+                    m.border(
+                        width = 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = CircleShape
+                    )
+                } else m
+            }
+            .padding(4.dp)
+            .clip(CircleShape)
+            .background(if (isAuto || isCustom || iconRes != null) Color.Transparent else color)
+            .border(
+                width = 1.5.dp,
+                color = MaterialTheme.colorScheme.outlineVariant,
+                shape = CircleShape
+            )
+            .combinedClickable(
+                onClick = onClick, onLongClick = onLongClick
+            ), contentAlignment = Alignment.Center) {
             if (isAuto) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     drawArc(
-                        color = Color.White,
-                        startAngle = 90f,
-                        sweepAngle = 180f,
-                        useCenter = true
+                        color = Color.White, startAngle = 90f, sweepAngle = 180f, useCenter = true
                     )
                     drawArc(
-                        color = Color.Black,
-                        startAngle = 270f,
-                        sweepAngle = 180f,
-                        useCenter = true
+                        color = Color.Black, startAngle = 270f, sweepAngle = 180f, useCenter = true
                     )
                 }
             } else if (iconRes != null) {
@@ -101,7 +92,7 @@ fun ThemeSwatch(
                 )
             } else if (isCustom) {
                 Icon(
-                    imageVector = MaterialSymbols.Outlined.Add, 
+                    imageVector = MaterialSymbols.Outlined.Add,
                     contentDescription = stringResource(R.string.reader_settings_add_theme),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )

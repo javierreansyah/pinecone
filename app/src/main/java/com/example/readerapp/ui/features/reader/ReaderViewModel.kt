@@ -84,7 +84,6 @@ class ReaderViewModel(
     val clearSelectionEvent: SharedFlow<Unit> = _clearSelectionEvent.asSharedFlow()
 
 
-
     // Active search job (cancelled when a new search starts or search is closed)
     private var searchJob: Job? = null
 
@@ -101,45 +100,44 @@ class ReaderViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Notes for the current book (text is not empty)
-    val notes: StateFlow<List<NoteEntity>> = allNotes
-        .map { list -> list.filter { it.noteText.isNotBlank() } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val notes: StateFlow<List<NoteEntity>> =
+        allNotes.map { list -> list.filter { it.noteText.isNotBlank() } }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // The combined flow for applying decorations in UI
     val allNotesAndHighlights = allNotes
 
     // Derived bookmark status
-    val isBookmarked: StateFlow<Boolean> = combine(_currentLocator, bookmarks) { locator, bookmarksList ->
-        if (locator == null) return@combine false
-        bookmarksList.any { bookmark ->
-            try {
-                val bmLocator = org.json.JSONObject(bookmark.locatorJson).let {
-                    Locator.fromJSON(it)
+    val isBookmarked: StateFlow<Boolean> =
+        combine(_currentLocator, bookmarks) { locator, bookmarksList ->
+            if (locator == null) return@combine false
+            bookmarksList.any { bookmark ->
+                try {
+                    val bmLocator = org.json.JSONObject(bookmark.locatorJson).let {
+                        Locator.fromJSON(it)
+                    }
+                    // Check for similar position (Readium standard comparison)
+                    bmLocator?.href == locator.href && bmLocator?.locations?.totalProgression == locator.locations.totalProgression
+                } catch (e: Exception) {
+                    false
                 }
-                // Check for similar position (Readium standard comparison)
-                bmLocator?.href == locator.href && 
-                bmLocator?.locations?.totalProgression == locator.locations.totalProgression
-            } catch (e: Exception) {
-                false
             }
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     // Settings flow from DataStore
     val settingsFlow: Flow<ReaderSettings> = readerPreferences.readerSettings
 
     // Brightness (app-level setting)
-    val brightness: StateFlow<Float> = readerPreferences.readerSettings
-        .map { if (it.autoBrightness) -1.0f else it.brightness }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1.0f)
+    val brightness: StateFlow<Float> =
+        readerPreferences.readerSettings.map { if (it.autoBrightness) -1.0f else it.brightness }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1.0f)
 
     // System dark theme state (set by activity)
     val systemDarkThemeFlow = MutableStateFlow(false)
 
     // EpubPreferences built from settings
     val epubPreferences: StateFlow<EpubPreferences> = combine(
-        readerPreferences.readerSettings,
-        systemDarkThemeFlow
+        readerPreferences.readerSettings, systemDarkThemeFlow
     ) { settings, isDark ->
         settings.toEpubPreferences(isDark)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), EpubPreferences())
@@ -183,8 +181,7 @@ class ReaderViewModel(
 
                 _uiState.update {
                     it.copy(
-                        isLoading = false,
-                        bookTitle = pub.metadata.title ?: book.book.title
+                        isLoading = false, bookTitle = pub.metadata.title ?: book.book.title
                     )
                 }
             } catch (e: Exception) {
@@ -197,7 +194,7 @@ class ReaderViewModel(
 
     fun onLocatorChanged(locator: Locator) {
         _currentLocator.value = locator
-        
+
         val allPositions = _positions.value
         val pageIndex = if (allPositions.isNotEmpty()) {
             // 1. Try to find by total progression (more robust across chapters)
@@ -206,9 +203,10 @@ class ReaderViewModel(
             }?.takeIf { it != -1 }
 
             // 2. Fallback to href + internal progression
-            byTotal ?: allPositions.indexOfLast { it.href == locator.href && (it.locations.progression ?: 0.0) <= (locator.locations.progression ?: 0.0) }
-                .takeIf { it != -1 } 
-                ?: allPositions.indexOfFirst { it.href == locator.href }
+            byTotal ?: allPositions.indexOfLast {
+                it.href == locator.href && (it.locations.progression
+                    ?: 0.0) <= (locator.locations.progression ?: 0.0)
+            }.takeIf { it != -1 } ?: allPositions.indexOfFirst { it.href == locator.href }
         } else -1
 
         _uiState.update {
@@ -232,18 +230,24 @@ class ReaderViewModel(
 
     fun getPositionLabel(locator: Locator): String {
         val allPositions = _positions.value
-        
+
         val posIndex = locator.locations.totalProgression?.let { target ->
             allPositions.indexOfLast { (it.locations.totalProgression ?: -1.0) <= target }
         }?.takeIf { it != -1 } ?: allPositions.indexOfLast { pos ->
-            pos.href == locator.href &&
-            (pos.locations.progression ?: 0.0) <= (locator.locations.progression ?: 0.0)
+            pos.href == locator.href && (pos.locations.progression
+                ?: 0.0) <= (locator.locations.progression ?: 0.0)
         }.takeIf { it != -1 }
 
         return when {
-            posIndex != null -> application.resources.getQuantityString(R.plurals.reader_page_num, posIndex + 1, posIndex + 1)
-            locator.locations.totalProgression != null ->
-                application.getString(R.string.reader_position_at, "${(locator.locations.totalProgression!! * 100).toInt()}%")
+            posIndex != null -> application.resources.getQuantityString(
+                R.plurals.reader_page_num, posIndex + 1, posIndex + 1
+            )
+
+            locator.locations.totalProgression != null -> application.getString(
+                R.string.reader_position_at,
+                "${(locator.locations.totalProgression!! * 100).toInt()}%"
+            )
+
             else -> ""
         }
     }
@@ -255,7 +259,9 @@ class ReaderViewModel(
         val posIndex = allPositions.indexOfFirst {
             it.href.toString().substringBefore("#") == linkHref
         }
-        return if (posIndex != -1) application.resources.getQuantityString(R.plurals.reader_page_num, posIndex + 1, posIndex + 1) else ""
+        return if (posIndex != -1) application.resources.getQuantityString(
+            R.plurals.reader_page_num, posIndex + 1, posIndex + 1
+        ) else ""
     }
 
     fun savePosition(locator: Locator) {
@@ -277,8 +283,7 @@ class ReaderViewModel(
                     val bmLocator = org.json.JSONObject(bookmark.locatorJson).let {
                         Locator.fromJSON(it)
                     }
-                    bmLocator?.href == locator.href && 
-                    bmLocator?.locations?.totalProgression == locator.locations.totalProgression
+                    bmLocator?.href == locator.href && bmLocator?.locations?.totalProgression == locator.locations.totalProgression
                 } catch (e: Exception) {
                     false
                 }
@@ -301,7 +306,9 @@ class ReaderViewModel(
     fun addNote(noteText: String, color: Int = "#40FFEB3B".toColorInt()) {
         val locator = _currentLocator.value ?: return
         viewModelScope.launch {
-            repository.addNote(bookId, locator, noteText, color, locator.title ?: _uiState.value.currentChapter)
+            repository.addNote(
+                bookId, locator, noteText, color, locator.title ?: _uiState.value.currentChapter
+            )
         }
     }
 
@@ -339,7 +346,9 @@ class ReaderViewModel(
 
     fun addHighlight(locator: Locator, color: Int = "#4003A9F4".toColorInt()) {
         viewModelScope.launch {
-            repository.addNote(bookId, locator, "", color, locator.title ?: _uiState.value.currentChapter)
+            repository.addNote(
+                bookId, locator, "", color, locator.title ?: _uiState.value.currentChapter
+            )
         }
     }
 
@@ -353,9 +362,9 @@ class ReaderViewModel(
         viewModelScope.launch {
             if (note.id == 0L) {
                 repository.addNote(
-                    bookId = bookId, 
+                    bookId = bookId,
                     locator = Locator.fromJSON(org.json.JSONObject(note.locatorJson))!!,
-                    noteText = note.noteText, 
+                    noteText = note.noteText,
                     color = note.color,
                     chapterTitle = note.chapterTitle
                 )
@@ -384,14 +393,18 @@ class ReaderViewModel(
     fun lookupDefinition(word: String) {
         val cleanWord = word.trim().replace(Regex("[^\\w\\s-]"), "")
         if (cleanWord.isBlank()) return
-        
+
         viewModelScope.launch {
             val activeDictId = readerPreferences.readerSettings.first().activeDictionaryId
             val results = dictionaryRepository.lookupWord(activeDictId, cleanWord)
-            _uiState.update { it.copy(showDefinition = true, definitionWord = cleanWord, definitionResults = results) }
+            _uiState.update {
+                it.copy(
+                    showDefinition = true, definitionWord = cleanWord, definitionResults = results
+                )
+            }
         }
     }
-    
+
     fun hideDefinition() {
         _uiState.update { it.copy(showDefinition = false) }
     }
@@ -415,12 +428,26 @@ class ReaderViewModel(
     // ── Search ────────────────────────────────────────────────────────────────
 
     fun showSearch() {
-        _uiState.update { it.copy(showSearch = true, searchQuery = "", searchResults = emptyList(), searchLoading = false, searchPerformed = false, activeSearchIndex = null, isInSearchNavigationMode = false) }
+        _uiState.update {
+            it.copy(
+                showSearch = true,
+                searchQuery = "",
+                searchResults = emptyList(),
+                searchLoading = false,
+                searchPerformed = false,
+                activeSearchIndex = null,
+                isInSearchNavigationMode = false
+            )
+        }
     }
 
     fun hideSearch() {
         searchJob?.cancel()
-        _uiState.update { it.copy(showSearch = false, isInSearchNavigationMode = false, activeSearchIndex = null) }
+        _uiState.update {
+            it.copy(
+                showSearch = false, isInSearchNavigationMode = false, activeSearchIndex = null
+            )
+        }
     }
 
     fun updateSearchQuery(query: String) {
@@ -430,13 +457,27 @@ class ReaderViewModel(
     fun performSearch(query: String) {
         val publication = _publication.value ?: return
         if (query.isBlank()) {
-            _uiState.update { it.copy(searchQuery = query, searchResults = emptyList(), searchLoading = false, searchPerformed = false) }
+            _uiState.update {
+                it.copy(
+                    searchQuery = query,
+                    searchResults = emptyList(),
+                    searchLoading = false,
+                    searchPerformed = false
+                )
+            }
             return
         }
 
         // Cancel any in-flight search
         searchJob?.cancel()
-        _uiState.update { it.copy(searchQuery = query, searchResults = emptyList(), searchLoading = true, searchPerformed = true) }
+        _uiState.update {
+            it.copy(
+                searchQuery = query,
+                searchResults = emptyList(),
+                searchLoading = true,
+                searchPerformed = true
+            )
+        }
 
         searchJob = viewModelScope.launch {
             try {
@@ -454,16 +495,24 @@ class ReaderViewModel(
                     val page = result.getOrNull() ?: break
                     val newItems = page.locators.map { locator ->
                         val posIndex = locator.locations.totalProgression?.let { target ->
-                            allPositions.indexOfLast { (it.locations.totalProgression ?: -1.0) <= target }
+                            allPositions.indexOfLast {
+                                (it.locations.totalProgression ?: -1.0) <= target
+                            }
                         }?.takeIf { it != -1 } ?: allPositions.indexOfLast { pos ->
-                            pos.href == locator.href &&
-                            (pos.locations.progression ?: 0.0) <= (locator.locations.progression ?: 0.0)
+                            pos.href == locator.href && (pos.locations.progression
+                                ?: 0.0) <= (locator.locations.progression ?: 0.0)
                         }.takeIf { it != -1 }
 
                         val positionLabel = when {
-                            posIndex != null -> application.resources.getQuantityString(R.plurals.reader_page_num, posIndex + 1, posIndex + 1)
-                            locator.locations.totalProgression != null ->
-                                application.getString(R.string.reader_position_at, "${(locator.locations.totalProgression!! * 100).toInt()}%")
+                            posIndex != null -> application.resources.getQuantityString(
+                                R.plurals.reader_page_num, posIndex + 1, posIndex + 1
+                            )
+
+                            locator.locations.totalProgression != null -> application.getString(
+                                R.string.reader_position_at,
+                                "${(locator.locations.totalProgression!! * 100).toInt()}%"
+                            )
+
                             else -> ""
                         }
 
@@ -550,7 +599,9 @@ class ReaderViewModel(
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return ReaderViewModel(application, bookId, repository, readerPreferences, dictionaryRepository) as T
+            return ReaderViewModel(
+                application, bookId, repository, readerPreferences, dictionaryRepository
+            ) as T
         }
     }
 }

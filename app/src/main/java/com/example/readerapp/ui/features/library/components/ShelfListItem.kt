@@ -16,13 +16,11 @@ import com.example.readerapp.ui.features.library.components.book.CoverImage
 
 @Composable
 fun ShelfListItem(
-    shelfWithCovers: ShelfWithCovers,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    shelfWithCovers: ShelfWithCovers, onClick: () -> Unit, modifier: Modifier = Modifier
 ) {
     val visibleBooks = shelfWithCovers.books.filter { !it.book.isArchived }
     val booksCount = visibleBooks.size
-    
+
     // We only need up to 2 covers for the thumbnail
     val booksForThumbnail = visibleBooks.take(2).map { Book.fromEntity(it) }
 
@@ -51,8 +49,7 @@ fun ShelfListItem(
                         .zIndex(3f - index)
                 ) {
                     CoverImage(
-                        book = book,
-                        modifier = Modifier.fillMaxSize()
+                        book = book, modifier = Modifier.fillMaxSize()
                     )
                 }
             }
@@ -60,8 +57,7 @@ fun ShelfListItem(
 
         // Details
         Column(
-            modifier = Modifier.height(100.dp),
-            verticalArrangement = Arrangement.Top
+            modifier = Modifier.height(100.dp), verticalArrangement = Arrangement.Top
         ) {
             Text(
                 text = shelfWithCovers.shelf.name,
@@ -70,9 +66,7 @@ fun ShelfListItem(
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
             val countText = androidx.compose.ui.res.pluralStringResource(
-                R.plurals.library_shelf_count, 
-                booksCount, 
-                booksCount
+                R.plurals.library_shelf_count, booksCount, booksCount
             )
             Text(
                 text = countText,

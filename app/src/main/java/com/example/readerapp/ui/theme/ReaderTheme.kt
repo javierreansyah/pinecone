@@ -14,10 +14,10 @@ fun ReaderTheme(
     content: @Composable () -> Unit
 ) {
     val isDarkBackground = readerBackgroundColor.luminance() < 0.5f
-    
+
     // Check if the parent theme is dark or light based on background luminance
     val parentIsDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    
+
     // Resolve primary/onPrimary to respect light/dark mismatch between reader page and app theme
     val primaryColor = when {
         isDarkBackground && parentIsDark -> MaterialTheme.colorScheme.primary
@@ -25,7 +25,7 @@ fun ReaderTheme(
         !isDarkBackground && parentIsDark -> MaterialTheme.colorScheme.inversePrimary
         else -> MaterialTheme.colorScheme.primary
     }
-    
+
     val onPrimaryColor = if (primaryColor.luminance() < 0.5f) Color.White else Color.Black
 
     val colorScheme = if (isDarkBackground) {

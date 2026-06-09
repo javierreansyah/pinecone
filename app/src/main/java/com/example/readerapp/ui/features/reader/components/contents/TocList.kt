@@ -28,16 +28,20 @@ fun TocList(
         EmptyState(
             icon = MaterialSymbols.Outlined.Format_list_bulleted,
             text = stringResource(R.string.reader_no_toc),
-            modifier = Modifier.fillMaxWidth().padding(32.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp)
         )
     } else {
         val currentChapterIndex = remember(tableOfContents, currentLocator) {
             if (currentLocator == null) return@remember 0
             val currentHref = currentLocator.href.toString().substringBefore("#")
-            val index = tableOfContents.indexOfFirst { it.href.toString().substringBefore("#") == currentHref }
+            val index = tableOfContents.indexOfFirst {
+                it.href.toString().substringBefore("#") == currentHref
+            }
             if (index >= 0) index else 0
         }
-        
+
         val listState = rememberLazyListState(
             initialFirstVisibleItemIndex = currentChapterIndex
         )

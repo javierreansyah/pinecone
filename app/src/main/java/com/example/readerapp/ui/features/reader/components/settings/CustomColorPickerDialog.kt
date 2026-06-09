@@ -68,8 +68,9 @@ fun CustomColorPickerDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            shape = RoundedCornerShape(16.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp), shape = RoundedCornerShape(16.dp)
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -77,7 +78,9 @@ fun CustomColorPickerDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = if (onDelete != null) stringResource(R.string.reader_settings_edit_theme) else stringResource(R.string.reader_settings_new_theme), 
+                    text = if (onDelete != null) stringResource(R.string.reader_settings_edit_theme) else stringResource(
+                        R.string.reader_settings_new_theme
+                    ),
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.align(Alignment.Start)
                 )
@@ -91,8 +94,7 @@ fun CustomColorPickerDialog(
                             width = 2.dp,
                             color = MaterialTheme.colorScheme.outlineVariant,
                             shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
+                        ), contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "Aa",
@@ -136,21 +138,27 @@ fun CustomColorPickerDialog(
                     if (onDelete != null) {
                         TextButton(
                             onClick = onDelete,
-                        ) { Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error) }
+                        ) {
+                            Text(
+                                stringResource(R.string.action_delete),
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
                     } else {
                         // Spacer to keep Save button on the right when Delete is not present
                         Box(modifier = Modifier.weight(1f))
                     }
-                    
+
                     Row(horizontalArrangement = Arrangement.End) {
                         TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
                         Button(
                             onClick = {
                                 if (isValid) {
-                                    onConfirm(name, bgColorInput.uppercase(), textColorInput.uppercase())
+                                    onConfirm(
+                                        name, bgColorInput.uppercase(), textColorInput.uppercase()
+                                    )
                                 }
-                            },
-                            enabled = isValid
+                            }, enabled = isValid
                         ) { Text(stringResource(R.string.action_save)) }
                     }
                 }

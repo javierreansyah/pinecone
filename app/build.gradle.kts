@@ -37,8 +37,7 @@ android {
             manifestPlaceholders["appName"] = "Pinecone"
 
             proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
 
             signingConfig = signingConfigs.getByName("debug")

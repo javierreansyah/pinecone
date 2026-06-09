@@ -55,32 +55,28 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 enum class BottomBarMode {
-    PROGRESS,
-    SEARCH_NAV,
-    TEXT_SELECTION
+    PROGRESS, SEARCH_NAV, TEXT_SELECTION
 }
 
 @Composable
 fun ReaderBottomBarContainer(
-    modifier: Modifier = Modifier,
-    readerBgColor: Color,
-    content: @Composable () -> Unit
+    modifier: Modifier = Modifier, readerBgColor: Color, content: @Composable () -> Unit
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color.Transparent, readerBgColor),
-                    startY = 0f
+                    colors = listOf(Color.Transparent, readerBgColor), startY = 0f
                 )
             )
             .padding(horizontal = 8.dp)
             .padding(
                 top = 8.dp,
-                bottom = if (WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() > 0.dp) 2.dp else 12.dp
-            ),
-        contentAlignment = Alignment.Center
+                bottom = if (WindowInsets.navigationBars.asPaddingValues()
+                        .calculateBottomPadding() > 0.dp
+                ) 2.dp else 12.dp
+            ), contentAlignment = Alignment.Center
     ) {
         content()
     }
@@ -139,28 +135,22 @@ fun ReaderProgressTracker(
                     }
                 }
                 .pointerInput(Unit) {
-                    detectDragGestures(
-                        onDragStart = { offset ->
-                            isSeeking = true
-                            val p = (offset.x / seekBarWidthPx).coerceIn(0f, 1f)
-                            sliderPosition = p
-                        },
-                        onDrag = { change, _ ->
-                            change.consume()
-                            val p = (change.position.x / seekBarWidthPx).coerceIn(0f, 1f)
-                            sliderPosition = p
-                        },
-                        onDragEnd = {
-                            isSeeking = false
-                            pendingSeek = sliderPosition.toDouble()
-                            onSeekToProgression(sliderPosition.toDouble())
-                        },
-                        onDragCancel = {
-                            isSeeking = false
-                        }
-                    )
-                },
-            contentAlignment = Alignment.CenterStart
+                    detectDragGestures(onDragStart = { offset ->
+                        isSeeking = true
+                        val p = (offset.x / seekBarWidthPx).coerceIn(0f, 1f)
+                        sliderPosition = p
+                    }, onDrag = { change, _ ->
+                        change.consume()
+                        val p = (change.position.x / seekBarWidthPx).coerceIn(0f, 1f)
+                        sliderPosition = p
+                    }, onDragEnd = {
+                        isSeeking = false
+                        pendingSeek = sliderPosition.toDouble()
+                        onSeekToProgression(sliderPosition.toDouble())
+                    }, onDragCancel = {
+                        isSeeking = false
+                    })
+                }, contentAlignment = Alignment.CenterStart
         ) {
             Canvas(
                 modifier = Modifier
@@ -223,22 +213,24 @@ fun ReaderProgressTracker(
         val pageText = if (isSeeking || pendingSeek != null) {
             if (totalPages != null) {
                 val page = (sliderPosition * totalPages).roundToInt().coerceIn(1, totalPages)
-                androidx.compose.ui.res.pluralStringResource(R.plurals.reader_page_of, totalPages, page, totalPages)
+                androidx.compose.ui.res.pluralStringResource(
+                    R.plurals.reader_page_of, totalPages, page, totalPages
+                )
             } else {
                 "${(sliderPosition * 100).toInt()}%"
             }
         } else {
             if (currentPage != null && totalPages != null) {
-                androidx.compose.ui.res.pluralStringResource(R.plurals.reader_page_of, totalPages, currentPage, totalPages)
+                androidx.compose.ui.res.pluralStringResource(
+                    R.plurals.reader_page_of, totalPages, currentPage, totalPages
+                )
             } else {
                 "${(progression * 100).toInt()}%"
             }
         }
 
         Text(
-            text = pageText,
-            style = MaterialTheme.typography.labelMedium,
-            color = readerTextColor
+            text = pageText, style = MaterialTheme.typography.labelMedium, color = readerTextColor
         )
     }
 }
@@ -261,8 +253,7 @@ fun ReaderSearchNavigator(
             .padding(vertical = 4.dp)
     ) {
         IconButton(
-            onClick = onExit,
-            modifier = Modifier
+            onClick = onExit, modifier = Modifier
                 .size(40.dp)
                 .align(Alignment.CenterStart)
         ) {
@@ -275,9 +266,9 @@ fun ReaderSearchNavigator(
         }
 
         Text(
-            text = if (totalResults == 0) stringResource(R.string.reader_no_matches) else stringResource(R.string.reader_result_num_of, currentNum, totalResults),
-            style = MaterialTheme.typography.labelMedium,
-            color = textColor
+            text = if (totalResults == 0) stringResource(R.string.reader_no_matches) else stringResource(
+                R.string.reader_result_num_of, currentNum, totalResults
+            ), style = MaterialTheme.typography.labelMedium, color = textColor
         )
 
         Row(
@@ -293,10 +284,8 @@ fun ReaderSearchNavigator(
                     MaterialSymbols.Outlined.Arrow_back,
                     contentDescription = stringResource(R.string.action_back),
                     modifier = Modifier.size(20.dp),
-                    tint = if (activeIndex != null && activeIndex > 0)
-                        textColor
-                    else
-                        textColor.copy(alpha = 0.3f)
+                    tint = if (activeIndex != null && activeIndex > 0) textColor
+                    else textColor.copy(alpha = 0.3f)
                 )
             }
             IconButton(
@@ -308,10 +297,8 @@ fun ReaderSearchNavigator(
                     MaterialSymbols.Outlined.Arrow_forward,
                     contentDescription = stringResource(R.string.action_more),
                     modifier = Modifier.size(20.dp),
-                    tint = if (activeIndex != null && activeIndex < totalResults - 1)
-                        textColor
-                    else
-                        textColor.copy(alpha = 0.3f)
+                    tint = if (activeIndex != null && activeIndex < totalResults - 1) textColor
+                    else textColor.copy(alpha = 0.3f)
                 )
             }
         }
@@ -332,7 +319,9 @@ fun ReaderTextSelectionControl(
     onColorSelected: (Int) -> Unit
 ) {
     Row(
-        modifier = modifier.fillMaxWidth().padding(vertical = 4.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -341,20 +330,45 @@ fun ReaderTextSelectionControl(
             horizontalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             IconButton(onClick = onCopy, modifier = Modifier.size(40.dp)) {
-                Icon(MaterialSymbols.Outlined.Content_copy, contentDescription = stringResource(R.string.action_copy), tint = readerTextColor, modifier = Modifier.size(20.dp))
+                Icon(
+                    MaterialSymbols.Outlined.Content_copy,
+                    contentDescription = stringResource(R.string.action_copy),
+                    tint = readerTextColor,
+                    modifier = Modifier.size(20.dp)
+                )
             }
             IconButton(onClick = onSearch, modifier = Modifier.size(40.dp)) {
-                Icon(MaterialSymbols.Outlined.Search, contentDescription = stringResource(R.string.action_search), tint = readerTextColor, modifier = Modifier.size(20.dp))
+                Icon(
+                    MaterialSymbols.Outlined.Search,
+                    contentDescription = stringResource(R.string.action_search),
+                    tint = readerTextColor,
+                    modifier = Modifier.size(20.dp)
+                )
             }
             IconButton(onClick = onMakeNote, modifier = Modifier.size(40.dp)) {
-                Icon(MaterialSymbols.Outlined.Edit, contentDescription = stringResource(R.string.reader_make_note), tint = readerTextColor, modifier = Modifier.size(20.dp))
+                Icon(
+                    MaterialSymbols.Outlined.Edit,
+                    contentDescription = stringResource(R.string.reader_make_note),
+                    tint = readerTextColor,
+                    modifier = Modifier.size(20.dp)
+                )
             }
             IconButton(onClick = onDefine, modifier = Modifier.size(40.dp)) {
-                Icon(MaterialSymbols.Outlined.Book_3, contentDescription = stringResource(R.string.action_define), tint = readerTextColor, modifier = Modifier.size(20.dp))
+                Icon(
+                    MaterialSymbols.Outlined.Book_3,
+                    contentDescription = stringResource(R.string.action_define),
+                    tint = readerTextColor,
+                    modifier = Modifier.size(20.dp)
+                )
             }
             if (showDeleteOption) {
                 IconButton(onClick = onDelete, modifier = Modifier.size(40.dp)) {
-                    Icon(MaterialSymbols.Outlined.Delete, contentDescription = stringResource(R.string.action_delete), tint = readerTextColor, modifier = Modifier.size(20.dp))
+                    Icon(
+                        MaterialSymbols.Outlined.Delete,
+                        contentDescription = stringResource(R.string.action_delete),
+                        tint = readerTextColor,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         }
@@ -379,16 +393,14 @@ fun ReaderTextSelectionControl(
                         modifier = Modifier
                             .size(24.dp)
                             .background(
-                                color = Color(colorInt).copy(alpha = 1f),
-                                shape = CircleShape
+                                color = Color(colorInt).copy(alpha = 1f), shape = CircleShape
                             )
                             .border(
                                 width = if (isSelected) 2.dp else 0.dp,
                                 color = if (isSelected) readerTextColor else Color.Transparent,
                                 shape = CircleShape
                             )
-                            .clickable { onColorSelected(colorInt) }
-                    )
+                            .clickable { onColorSelected(colorInt) })
                 }
             }
         }

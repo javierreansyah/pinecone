@@ -27,34 +27,29 @@ fun SegmentedButtonGroup(
             modifier = if (title == null) modifier else Modifier,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-        options.forEachIndexed { index, option ->
-            val isSelected = option == selected
-            val icon = icons.getOrNull(index)
+            options.forEachIndexed { index, option ->
+                val isSelected = option == selected
+                val icon = icons.getOrNull(index)
 
-            FilterChip(
-                selected = isSelected,
-                onClick = { onSelected(option) },
-                label = {
-                    Text(
-                        text = option,
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                },
-                leadingIcon = icon?.let {
-                    {
-                        Icon(
-                            imageVector = it,
-                            contentDescription = null,
-                            modifier = Modifier.size(FilterChipDefaults.IconSize)
+                FilterChip(
+                    selected = isSelected, onClick = { onSelected(option) }, label = {
+                        Text(
+                            text = option, style = MaterialTheme.typography.labelLarge
                         )
-                    }
-                },
-                enabled = enabled
-                // Removed custom shape, colors, and border to use M3 defaults
-            )
+                    }, leadingIcon = icon?.let {
+                        {
+                            Icon(
+                                imageVector = it,
+                                contentDescription = null,
+                                modifier = Modifier.size(FilterChipDefaults.IconSize)
+                            )
+                        }
+                    }, enabled = enabled
+                    // Removed custom shape, colors, and border to use M3 defaults
+                )
+            }
         }
     }
-}
 
     if (title != null) {
         Column(
@@ -65,7 +60,9 @@ fun SegmentedButtonGroup(
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelMedium,
-                color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(
+                    alpha = 0.38f
+                )
             )
             buttonRow()
         }

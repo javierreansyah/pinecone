@@ -111,8 +111,7 @@ fun ReaderOverlay(
         // Loading state
         if (uiState.isLoading) {
             Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
@@ -121,8 +120,7 @@ fun ReaderOverlay(
         // Error state
         uiState.error?.let { error ->
             Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = error,
@@ -134,10 +132,11 @@ fun ReaderOverlay(
 
         // Animated controls overlay — top bar
         AnimatedVisibility(
-            visible = uiState.showControls && !uiState.showSearch,
-            enter = slideInVertically(initialOffsetY = { -20 }, animationSpec = tween(250)) + fadeIn(animationSpec = tween(250)),
-            exit = slideOutVertically(targetOffsetY = { -20 }, animationSpec = tween(250)) + fadeOut(animationSpec = tween(250)),
-            modifier = Modifier.align(Alignment.TopCenter)
+            visible = uiState.showControls && !uiState.showSearch, enter = slideInVertically(
+                initialOffsetY = { -20 }, animationSpec = tween(250)
+            ) + fadeIn(animationSpec = tween(250)), exit = slideOutVertically(
+                targetOffsetY = { -20 }, animationSpec = tween(250)
+            ) + fadeOut(animationSpec = tween(250)), modifier = Modifier.align(Alignment.TopCenter)
         ) {
             ReaderTopBar(
                 isBookmarked = isBookmarked,
@@ -160,13 +159,16 @@ fun ReaderOverlay(
 
         AnimatedVisibility(
             visible = showBottomBar,
-            enter = slideInVertically(initialOffsetY = { 40 }, animationSpec = tween(250)) + fadeIn(animationSpec = tween(250)),
-            exit = slideOutVertically(targetOffsetY = { 40 }, animationSpec = tween(250)) + fadeOut(animationSpec = tween(250)),
+            enter = slideInVertically(initialOffsetY = { 40 }, animationSpec = tween(250)) + fadeIn(
+                animationSpec = tween(250)
+            ),
+            exit = slideOutVertically(targetOffsetY = { 40 }, animationSpec = tween(250)) + fadeOut(
+                animationSpec = tween(250)
+            ),
             modifier = Modifier.align(Alignment.BottomCenter)
         ) {
             ReaderBottomBarContainer(
-                modifier = Modifier.navigationBarsPadding(),
-                readerBgColor = readerBgColor
+                modifier = Modifier.navigationBarsPadding(), readerBgColor = readerBgColor
             ) {
                 val currentMode = when {
                     isSelectionActive -> BottomBarMode.TEXT_SELECTION
@@ -198,8 +200,7 @@ fun ReaderOverlay(
                                 textColor = readerTextColor,
                                 onExit = { viewModel.exitSearchNavigation() },
                                 onPrev = { viewModel.prevSearchResult() },
-                                onNext = { viewModel.nextSearchResult() }
-                            )
+                                onNext = { viewModel.nextSearchResult() })
                         }
 
                         BottomBarMode.TEXT_SELECTION -> {
@@ -266,8 +267,7 @@ fun ReaderOverlay(
                                         viewModel.updateNote(menuHighlight.copy(color = colorInt))
                                         viewModel.hideViewHighlight()
                                     }
-                                }
-                            )
+                                })
                         }
                     }
                 }
@@ -316,8 +316,7 @@ fun ReaderOverlay(
                     onDeleteNote = { id ->
                         viewModel.deleteNote(id)
                     },
-                    onDismiss = { viewModel.hideToc() }
-                )
+                    onDismiss = { viewModel.hideToc() })
             }
         }
 
@@ -329,15 +328,12 @@ fun ReaderOverlay(
                 themeContrast = settings.themeContrast
             ) {
                 ModalBottomSheet(
-                    onDismissRequest = { viewModel.hideSettings() },
-                    sheetState = settingsSheetState
+                    onDismissRequest = { viewModel.hideSettings() }, sheetState = settingsSheetState
                 ) {
                     ReaderSettingsContent(
-                        settings = settings,
-                        onSettingsChange = { newSettings ->
+                        settings = settings, onSettingsChange = { newSettings ->
                             viewModel.updateSettings(newSettings)
-                        }
-                    )
+                        })
                 }
             }
         }
@@ -346,8 +342,7 @@ fun ReaderOverlay(
         AnimatedVisibility(
             visible = uiState.showSearch,
             enter = slideInVertically(animationSpec = tween(280)) { it } + fadeIn(tween(200)),
-            exit = slideOutVertically(animationSpec = tween(220)) { it } + fadeOut(tween(180))
-        ) {
+            exit = slideOutVertically(animationSpec = tween(220)) { it } + fadeOut(tween(180))) {
             AppTheme(
                 darkTheme = uiDarkTheme,
                 colorPalette = settings.colorPalette,
@@ -361,8 +356,7 @@ fun ReaderOverlay(
                     onQueryChange = { q -> viewModel.updateSearchQuery(q) },
                     onSearch = { q -> viewModel.performSearch(q) },
                     onResultClick = { index -> viewModel.selectSearchResult(index) },
-                    onClose = { viewModel.hideSearch() }
-                )
+                    onClose = { viewModel.hideSearch() })
             }
         }
 
@@ -377,8 +371,7 @@ fun ReaderOverlay(
                     note = note,
                     onUpdateNote = { viewModel.updateNote(it) },
                     onDeleteNote = { viewModel.deleteNote(it) },
-                    onDismiss = { viewModel.hideEditNote() }
-                )
+                    onDismiss = { viewModel.hideEditNote() })
             }
         }
 
@@ -392,8 +385,7 @@ fun ReaderOverlay(
                 ReaderDefinitionBottomSheet(
                     definitionWord = uiState.definitionWord,
                     definitionResults = uiState.definitionResults,
-                    onDismiss = { viewModel.hideDefinition() }
-                )
+                    onDismiss = { viewModel.hideDefinition() })
             }
         }
     }
@@ -403,9 +395,7 @@ fun ReaderOverlay(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ReaderDefinitionBottomSheet(
-    definitionWord: String,
-    definitionResults: List<DictionaryEntry>,
-    onDismiss: () -> Unit
+    definitionWord: String, definitionResults: List<DictionaryEntry>, onDismiss: () -> Unit
 ) {
     val configuration = LocalConfiguration.current
     val maxSheetHeight = configuration.screenHeightDp.dp * 0.6f
@@ -434,18 +424,19 @@ private fun ReaderDefinitionBottomSheet(
                         .weight(1f, fill = false)
                         .verticalScroll(scrollState)
                 ) {
-                    val sortedResults = definitionResults.sortedWith(compareBy<DictionaryEntry> { entry ->
-                        when {
-                            entry.word == definitionWord -> 0
-                            entry.word.firstOrNull()?.isLowerCase() == true -> 1
-                            else -> 2
-                        }
-                    }.thenBy { it.word })
+                    val sortedResults =
+                        definitionResults.sortedWith(compareBy<DictionaryEntry> { entry ->
+                            when {
+                                entry.word == definitionWord -> 0
+                                entry.word.firstOrNull()?.isLowerCase() == true -> 1
+                                else -> 2
+                            }
+                        }.thenBy { it.word })
 
-                    val combinedHtmlContent = DictionaryFormatter.prepareHtmlForMultipleEntries(sortedResults)
+                    val combinedHtmlContent =
+                        DictionaryFormatter.prepareHtmlForMultipleEntries(sortedResults)
                     DefinitionWebView(
-                        htmlContent = combinedHtmlContent,
-                        modifier = Modifier.fillMaxWidth()
+                        htmlContent = combinedHtmlContent, modifier = Modifier.fillMaxWidth()
                     )
                 }
             }

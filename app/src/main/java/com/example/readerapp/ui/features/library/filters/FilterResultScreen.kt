@@ -32,19 +32,17 @@ fun FilterResultScreen(
     onNavigateToBookInfo: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val viewModel: FilterResultViewModel = viewModel(
-        factory = object : ViewModelProvider.AndroidViewModelFactory(context.applicationContext as Application) {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                if (modelClass.isAssignableFrom(FilterResultViewModel::class.java)) {
-                    @Suppress("UNCHECKED_CAST")
-                    return FilterResultViewModel(
-                        context.applicationContext as Application
-                    ) as T
-                }
-                throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
+    val viewModel: FilterResultViewModel = viewModel(factory = object :
+        ViewModelProvider.AndroidViewModelFactory(context.applicationContext as Application) {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(FilterResultViewModel::class.java)) {
+                @Suppress("UNCHECKED_CAST") return FilterResultViewModel(
+                    context.applicationContext as Application
+                ) as T
             }
+            throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }
-    )
+    })
 
     val uiState by viewModel.uiState.collectAsState()
     val shelves by viewModel.shelves.collectAsState()
@@ -73,26 +71,34 @@ fun FilterResultScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text(filterValue) },
-                navigationIcon = {
+                title = { Text(filterValue) }, navigationIcon = {
                     FilledTonalIconButton(
                         shapes = IconButtonDefaults.shapes(),
                         colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                         onClick = onNavigateBack
                     ) {
-                        Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = stringResource(R.string.action_back))
+                        Icon(
+                            MaterialSymbols.Outlined.Arrow_back,
+                            contentDescription = stringResource(R.string.action_back)
+                        )
                     }
-                },
-                actions = {
-                    IconButton(shapes = IconButtonDefaults.shapes(), onClick = { showFilterSheet = true }) {
-                        Icon(MaterialSymbols.Outlined.Tune, contentDescription = stringResource(R.string.action_filter))
+                }, actions = {
+                    IconButton(
+                        shapes = IconButtonDefaults.shapes(),
+                        onClick = { showFilterSheet = true }) {
+                        Icon(
+                            MaterialSymbols.Outlined.Tune,
+                            contentDescription = stringResource(R.string.action_filter)
+                        )
                     }
                     Box {
                         IconButton(onClick = { showMenu = !showMenu }) {
-                            Icon(MaterialSymbols.Outlined.More_vert, contentDescription = stringResource(R.string.action_more))
+                            Icon(
+                                MaterialSymbols.Outlined.More_vert,
+                                contentDescription = stringResource(R.string.action_more)
+                            )
                         }
                         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                             DropdownMenuItem(
@@ -100,36 +106,38 @@ fun FilterResultScreen(
                                 onClick = {
                                     showMenu = false
                                     showRenameDialog = true
-                                }
-                            )
+                                })
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.action_delete)) },
                                 onClick = {
                                     showMenu = false
                                     showDeleteConfirm = true
-                                }
-                            )
+                                })
                         }
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
+                }, colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     scrolledContainerColor = MaterialTheme.colorScheme.surface,
-                ),
-                scrollBehavior = scrollBehavior
+                ), scrollBehavior = scrollBehavior
             )
-        }
-    ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+        }) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+        ) {
             if (books.isEmpty()) {
-                Text(stringResource(R.string.library_empty_books), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(16.dp))
+                Text(
+                    stringResource(R.string.library_empty_books),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(16.dp)
+                )
             } else {
                 BookCollection(
                     books = books,
                     layoutMode = uiState.bookPreferences.layoutMode,
                     onBookClick = onNavigateToReader,
-                    onBookLongClick = { selectedBookContext = it to null }
-                )
+                    onBookLongClick = { selectedBookContext = it to null })
             }
         }
 
@@ -139,8 +147,7 @@ fun FilterResultScreen(
                 onLayoutModeChange = viewModel::onLayoutModeChange,
                 onSortTypeChange = viewModel::onSortTypeChange,
                 onStatusToggle = viewModel::toggleStatusFilter,
-                onDismiss = { showFilterSheet = false }
-            )
+                onDismiss = { showFilterSheet = false })
         }
 
         selectedBookContext?.let { context ->
@@ -154,16 +161,24 @@ fun FilterResultScreen(
                 onNavigateToBookInfo = onNavigateToBookInfo,
                 onToggleArchive = { viewModel.toggleArchive(bookId) },
                 onToggleReadStatus = { viewModel.toggleReadStatus(bookId) },
-                onRemoveFromShelf = { contextShelfId?.let { viewModel.removeBookFromShelf(it, bookId) } },
+                onRemoveFromShelf = {
+                    contextShelfId?.let {
+                        viewModel.removeBookFromShelf(
+                            it, bookId
+                        )
+                    }
+                },
                 onAddToShelf = { shelfId -> viewModel.addBookToShelf(shelfId, bookId) },
                 onDeleteBook = { viewModel.deleteBook(bookId) },
                 onCreateShelfAndAdd = { name -> viewModel.createShelfAndAddBook(name, bookId) },
-                onDismiss = { selectedBookContext = null }
-            )
+                onDismiss = { selectedBookContext = null })
         }
 
         if (showDeleteConfirm) {
-            val titleType = if (filterType == "author") stringResource(R.string.library_sort_author) else stringResource(R.string.library_sort_label)
+            val titleType =
+                if (filterType == "author") stringResource(R.string.library_sort_author) else stringResource(
+                    R.string.library_sort_label
+                )
             AlertDialog(
                 onDismissRequest = { showDeleteConfirm = false },
                 title = { Text(stringResource(R.string.library_delete_item_title, titleType)) },
@@ -175,15 +190,17 @@ fun FilterResultScreen(
                             onNavigateBack()
                         }
                     }) {
-                        Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error)
+                        Text(
+                            stringResource(R.string.action_delete),
+                            color = MaterialTheme.colorScheme.error
+                        )
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showDeleteConfirm = false }) {
                         Text(stringResource(R.string.action_cancel))
                     }
-                }
-            )
+                })
         }
 
         if (showRenameDialog) {
@@ -196,8 +213,7 @@ fun FilterResultScreen(
                     viewModel.renameFilterItem(filterType, filterValue, newName) { confirmedName ->
                         onNavigateToMerged(confirmedName)
                     }
-                }
-            )
+                })
         }
     }
 }

@@ -76,8 +76,7 @@ fun SearchScreen(
     ) {
         // ── Search bar ────────────────────────────────────────────────────────
         Surface(
-            color = backgroundColor,
-            modifier = Modifier.fillMaxWidth()
+            color = backgroundColor, modifier = Modifier.fillMaxWidth()
         ) {
             Column {
                 Row(
@@ -128,7 +127,7 @@ fun SearchScreen(
                         },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        keyboardActions = KeyboardActions(onSearch = { 
+                        keyboardActions = KeyboardActions(onSearch = {
                             onSearch(query)
                             keyboardController?.hide()
                         }),
@@ -146,19 +145,16 @@ fun SearchScreen(
                     )
 
                     IconButton(
-                        onClick = { 
+                        onClick = {
                             onSearch(query)
                             keyboardController?.hide()
-                        },
-                        enabled = query.isNotBlank()
+                        }, enabled = query.isNotBlank()
                     ) {
                         Icon(
                             MaterialSymbols.Outlined.Search,
                             contentDescription = stringResource(R.string.action_search),
-                            tint = if (query.isNotBlank())
-                                MaterialTheme.colorScheme.primary
-                            else
-                                MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = if (query.isNotBlank()) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -178,16 +174,13 @@ fun SearchScreen(
         // Only show if a search was performed and we have results or are not loading
         if (searchPerformed && (results.isNotEmpty() || !isLoading)) {
             Surface(
-                color = backgroundColor,
-                modifier = Modifier.fillMaxWidth()
+                color = backgroundColor, modifier = Modifier.fillMaxWidth()
             ) {
                 val resultsText = if (results.isEmpty()) {
                     stringResource(R.string.reader_search_no_results)
                 } else {
                     androidx.compose.ui.res.pluralStringResource(
-                        R.plurals.reader_search_results_count,
-                        results.size,
-                        results.size
+                        R.plurals.reader_search_results_count, results.size, results.size
                     )
                 }
                 Text(
@@ -201,15 +194,11 @@ fun SearchScreen(
 
         // ── Result list ───────────────────────────────────────────────────────
         LazyColumn(
-            contentPadding = PaddingValues(bottom = 8.dp),
-            modifier = Modifier.fillMaxSize()
+            contentPadding = PaddingValues(bottom = 8.dp), modifier = Modifier.fillMaxSize()
         ) {
             itemsIndexed(results) { index, item ->
                 SearchResultCard(
-                    item = item,
-                    query = query,
-                    onClick = { onResultClick(index) }
-                )
+                    item = item, query = query, onClick = { onResultClick(index) })
             }
 
             // Empty state when search done with no results
@@ -246,10 +235,7 @@ fun SearchScreen(
 
 @Composable
 fun SearchResultCard(
-    item: SearchResultItem,
-    query: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    item: SearchResultItem, query: String, onClick: () -> Unit, modifier: Modifier = Modifier
 ) {
     val primary = MaterialTheme.colorScheme.primary
     val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
@@ -264,19 +250,19 @@ fun SearchResultCard(
         Column {
             // Line 1: chapter name
             Text(
-            text = item.chapterTitle ?: "Unknown Chapter",
-            style = MaterialTheme.typography.titleMedium,
-            color = primary
-        )
-
-        // Line 2: position
-        if (item.positionLabel.isNotBlank()) {
-            Text(
-                text = item.positionLabel,
-                style = MaterialTheme.typography.bodySmall,
-                color = onSurfaceVariant
+                text = item.chapterTitle ?: "Unknown Chapter",
+                style = MaterialTheme.typography.titleMedium,
+                color = primary
             )
-        }
+
+            // Line 2: position
+            if (item.positionLabel.isNotBlank()) {
+                Text(
+                    text = item.positionLabel,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = onSurfaceVariant
+                )
+            }
 
         }
 
@@ -311,9 +297,7 @@ fun SearchResultCard(
         }
 
         Text(
-            text = snippet,
-            style = MaterialTheme.typography.bodyMedium,
-            lineHeight = 20.sp
+            text = snippet, style = MaterialTheme.typography.bodyMedium, lineHeight = 20.sp
         )
 
     }

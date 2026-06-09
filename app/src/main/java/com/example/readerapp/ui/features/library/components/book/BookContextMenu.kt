@@ -22,8 +22,7 @@ import com.example.readerapp.ui.features.library.components.ShelfListItem
 import com.example.readerapp.ui.components.EmptyState
 
 enum class MenuState {
-    Main,
-    AddToShelf
+    Main, AddToShelf
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -51,7 +50,11 @@ fun BookContextMenu(
         val book = allBooks.find { it.id == bookId }
 
         ModalBottomSheet(onDismissRequest = onDismiss) {
-            Column(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp)
+            ) {
                 if (book != null) {
                     Row(
                         modifier = Modifier
@@ -66,8 +69,7 @@ fun BookContextMenu(
                                 .clip(MaterialTheme.shapes.small)
                         ) {
                             CoverImage(
-                                book = book,
-                                modifier = Modifier.fillMaxSize()
+                                book = book, modifier = Modifier.fillMaxSize()
                             )
                         }
                         Spacer(modifier = Modifier.width(16.dp))
@@ -79,7 +81,9 @@ fun BookContextMenu(
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = if (book.authors.isNotEmpty()) book.authors.joinToString(", ") else stringResource(R.string.book_unknown_author),
+                                text = if (book.authors.isNotEmpty()) book.authors.joinToString(", ") else stringResource(
+                                    R.string.book_unknown_author
+                                ),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
@@ -87,116 +91,175 @@ fun BookContextMenu(
                             )
                         }
                     }
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                    HorizontalDivider(
+                        modifier = Modifier.padding(
+                            horizontal = 16.dp, vertical = 8.dp
+                        )
+                    )
                 }
 
                 ListItem(
-                    headlineContent = { Text(stringResource(R.string.book_info_title), style = MaterialTheme.typography.titleMedium) },
-                    leadingContent = { Icon(MaterialSymbols.Outlined.Info, contentDescription = null) },
+                    headlineContent = {
+                        Text(
+                            stringResource(R.string.book_info_title),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    },
+                    leadingContent = {
+                        Icon(
+                            MaterialSymbols.Outlined.Info, contentDescription = null
+                        )
+                    },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable {
                         onNavigateToBookInfo(bookId)
                         onDismiss()
-                    }
-                )
+                    })
                 ListItem(
-                    headlineContent = { 
-                        val labelText = if (book?.isArchived == true) stringResource(R.string.book_unarchive) else stringResource(R.string.book_archive)
-                        Text(labelText, style = MaterialTheme.typography.titleMedium) 
+                    headlineContent = {
+                        val labelText =
+                            if (book?.isArchived == true) stringResource(R.string.book_unarchive) else stringResource(
+                                R.string.book_archive
+                            )
+                        Text(labelText, style = MaterialTheme.typography.titleMedium)
                     },
-                    leadingContent = { Icon(MaterialSymbols.Outlined.Archive, contentDescription = null) },
+                    leadingContent = {
+                        Icon(
+                            MaterialSymbols.Outlined.Archive, contentDescription = null
+                        )
+                    },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable {
                         onToggleArchive()
                         onDismiss()
-                    }
-                )
+                    })
                 ListItem(
-                    headlineContent = { 
-                        val labelText = if (book?.isRead == true) stringResource(R.string.book_mark_as_unread) else stringResource(R.string.book_mark_as_read)
-                        Text(labelText, style = MaterialTheme.typography.titleMedium) 
+                    headlineContent = {
+                        val labelText =
+                            if (book?.isRead == true) stringResource(R.string.book_mark_as_unread) else stringResource(
+                                R.string.book_mark_as_read
+                            )
+                        Text(labelText, style = MaterialTheme.typography.titleMedium)
                     },
-                    leadingContent = { 
-                        Icon(if (book?.isRead == true) MaterialSymbols.Outlined.Radio_button_unchecked else MaterialSymbols.Outlined.Check_circle, contentDescription = null) 
+                    leadingContent = {
+                        Icon(
+                            if (book?.isRead == true) MaterialSymbols.Outlined.Radio_button_unchecked else MaterialSymbols.Outlined.Check_circle,
+                            contentDescription = null
+                        )
                     },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable {
                         onToggleReadStatus()
                         onDismiss()
-                    }
-                )
+                    })
                 ListItem(
-                    headlineContent = { Text(stringResource(R.string.library_label_add_to_shelf), style = MaterialTheme.typography.titleMedium) },
-                    leadingContent = { Icon(MaterialSymbols.Outlined.Bookmark_add, contentDescription = null) },
+                    headlineContent = {
+                        Text(
+                            stringResource(R.string.library_label_add_to_shelf),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    },
+                    leadingContent = {
+                        Icon(
+                            MaterialSymbols.Outlined.Bookmark_add, contentDescription = null
+                        )
+                    },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable {
                         menuState = MenuState.AddToShelf
-                    }
-                )
+                    })
                 if (shelfId != null && shelfId != "unshelved") {
                     ListItem(
-                        headlineContent = { Text(stringResource(R.string.library_label_remove_from_shelf), style = MaterialTheme.typography.titleMedium) },
-                        leadingContent = { Icon(MaterialSymbols.Outlined.Bookmark_remove, contentDescription = null) },
+                        headlineContent = {
+                            Text(
+                                stringResource(R.string.library_label_remove_from_shelf),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        },
+                        leadingContent = {
+                            Icon(
+                                MaterialSymbols.Outlined.Bookmark_remove, contentDescription = null
+                            )
+                        },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         modifier = Modifier.clickable {
                             onRemoveFromShelf()
                             onDismiss()
-                        }
-                    )
+                        })
                 }
                 ListItem(
-                    headlineContent = { Text(stringResource(R.string.action_delete), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error) },
-                    leadingContent = { Icon(MaterialSymbols.Outlined.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                    headlineContent = {
+                        Text(
+                            stringResource(R.string.action_delete),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    },
+                    leadingContent = {
+                        Icon(
+                            MaterialSymbols.Outlined.Delete,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable {
                         showDeleteConfirmation = true
-                    }
-                )
+                    })
             }
         }
     } else if (menuState == MenuState.AddToShelf) {
         androidx.compose.ui.window.Dialog(
-            onDismissRequest = onDismiss,
-            properties = androidx.compose.ui.window.DialogProperties(
-                usePlatformDefaultWidth = false,
-                decorFitsSystemWindows = false
+            onDismissRequest = onDismiss, properties = androidx.compose.ui.window.DialogProperties(
+                usePlatformDefaultWidth = false, decorFitsSystemWindows = false
             )
         ) {
-            Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                Scaffold(
-                    topBar = {
-                        TopAppBar(
-                            title = { Text(stringResource(R.string.library_select_shelf_title)) },
-                            navigationIcon = {
-                                FilledTonalIconButton(
-                                    shapes = IconButtonDefaults.shapes(),
-                                    colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                                    onClick = { menuState = MenuState.Main }
-                                ) {
-                                    Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = stringResource(R.string.action_back))
-                                }
-                            },
-                            colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = MaterialTheme.colorScheme.surface,
-                                scrolledContainerColor = MaterialTheme.colorScheme.surface,
-                            ),
+            Surface(
+                modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
+            ) {
+                Scaffold(topBar = {
+                    TopAppBar(
+                        title = { Text(stringResource(R.string.library_select_shelf_title)) },
+                        navigationIcon = {
+                            FilledTonalIconButton(
+                                shapes = IconButtonDefaults.shapes(),
+                                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                                ),
+                                onClick = { menuState = MenuState.Main }) {
+                                Icon(
+                                    MaterialSymbols.Outlined.Arrow_back,
+                                    contentDescription = stringResource(R.string.action_back)
+                                )
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            scrolledContainerColor = MaterialTheme.colorScheme.surface,
+                        ),
+                    )
+                }, floatingActionButton = {
+                    FloatingActionButton(
+                        onClick = { showCreateShelfDialog = true }) {
+                        Icon(
+                            MaterialSymbols.Outlined.Add,
+                            contentDescription = stringResource(R.string.action_create)
                         )
-                    },
-                    floatingActionButton = {
-                        FloatingActionButton(
-                            onClick = { showCreateShelfDialog = true }
-                        ) {
-                            Icon(MaterialSymbols.Outlined.Add, contentDescription = stringResource(R.string.action_create))
-                        }
                     }
-                ) { paddingValues ->
-                    Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
+                }) { paddingValues ->
+                    Box(
+                        modifier = Modifier
+                            .padding(paddingValues)
+                            .fillMaxSize()
+                    ) {
                         val validShelves = shelves.filter { it.shelf.id != "unshelved" }
                         if (validShelves.isEmpty()) {
                             EmptyState(
                                 icon = MaterialSymbols.Outlined.Folder,
                                 text = stringResource(R.string.library_empty_shelves),
-                                modifier = Modifier.fillMaxSize().padding(16.dp)
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp)
                             )
                         } else {
                             LazyColumn(
@@ -205,13 +268,11 @@ fun BookContextMenu(
                             ) {
                                 items(validShelves) { shelfWithCovers ->
                                     ShelfListItem(
-                                        shelfWithCovers = shelfWithCovers,
-                                        onClick = {
+                                        shelfWithCovers = shelfWithCovers, onClick = {
                                             onAddToShelf(shelfWithCovers.shelf.id)
                                             menuState = MenuState.Main
                                             onDismiss()
-                                        }
-                                    )
+                                        })
                                 }
                             }
                         }
@@ -223,61 +284,77 @@ fun BookContextMenu(
 
     // Delete Confirmation Dialog
     if (showDeleteConfirmation) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirmation = false },
-            title = { Text(stringResource(R.string.book_delete_title), style = MaterialTheme.typography.titleLarge) },
-            text = { Text(stringResource(R.string.book_delete_message), style = MaterialTheme.typography.bodyMedium) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDeleteBook()
-                        showDeleteConfirmation = false
-                        onDismiss()
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text(stringResource(R.string.action_delete), style = MaterialTheme.typography.labelLarge)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirmation = false }) {
-                    Text(stringResource(R.string.action_cancel), style = MaterialTheme.typography.labelLarge)
-                }
+        AlertDialog(onDismissRequest = { showDeleteConfirmation = false }, title = {
+            Text(
+                stringResource(R.string.book_delete_title),
+                style = MaterialTheme.typography.titleLarge
+            )
+        }, text = {
+            Text(
+                stringResource(R.string.book_delete_message),
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }, confirmButton = {
+            TextButton(
+                onClick = {
+                    onDeleteBook()
+                    showDeleteConfirmation = false
+                    onDismiss()
+                },
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+            ) {
+                Text(
+                    stringResource(R.string.action_delete),
+                    style = MaterialTheme.typography.labelLarge
+                )
             }
-        )
+        }, dismissButton = {
+            TextButton(onClick = { showDeleteConfirmation = false }) {
+                Text(
+                    stringResource(R.string.action_cancel),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        })
     }
 
     // Create Shelf Dialog
     if (showCreateShelfDialog) {
-        AlertDialog(
-            onDismissRequest = { showCreateShelfDialog = false },
-            title = { Text(stringResource(R.string.library_create_shelf_title), style = MaterialTheme.typography.titleLarge) },
-            text = {
-                OutlinedTextField(
-                    value = newShelfName,
-                    onValueChange = { newShelfName = it },
-                    label = { Text(stringResource(R.string.library_shelf_name_label), style = MaterialTheme.typography.labelMedium) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+        AlertDialog(onDismissRequest = { showCreateShelfDialog = false }, title = {
+            Text(
+                stringResource(R.string.library_create_shelf_title),
+                style = MaterialTheme.typography.titleLarge
+            )
+        }, text = {
+            OutlinedTextField(
+                value = newShelfName, onValueChange = { newShelfName = it }, label = {
+                    Text(
+                        stringResource(R.string.library_shelf_name_label),
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                }, singleLine = true, modifier = Modifier.fillMaxWidth()
+            )
+        }, confirmButton = {
+            TextButton(onClick = {
+                if (newShelfName.isNotBlank()) {
+                    onCreateShelfAndAdd(newShelfName)
+                    newShelfName = ""
+                    showCreateShelfDialog = false
+                    onDismiss()
+                }
+            }) {
+                Text(
+                    stringResource(R.string.action_create),
+                    style = MaterialTheme.typography.labelLarge
                 )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    if (newShelfName.isNotBlank()) {
-                        onCreateShelfAndAdd(newShelfName)
-                        newShelfName = ""
-                        showCreateShelfDialog = false
-                        onDismiss()
-                    }
-                }) {
-                    Text(stringResource(R.string.action_create), style = MaterialTheme.typography.labelLarge)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showCreateShelfDialog = false }) {
-                    Text(stringResource(R.string.action_cancel), style = MaterialTheme.typography.labelLarge)
-                }
             }
-        )
+        }, dismissButton = {
+            TextButton(onClick = { showCreateShelfDialog = false }) {
+                Text(
+                    stringResource(R.string.action_cancel),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        })
     }
 }

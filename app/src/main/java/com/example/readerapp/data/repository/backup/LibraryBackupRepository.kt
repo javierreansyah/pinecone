@@ -44,9 +44,7 @@ class LibraryBackupRepository(private val context: Context) {
         val coversDir = File(context.filesDir, "covers")
 
         val lastModified = maxOf(
-            dbFile.lastModified(),
-            booksDir.lastModified(),
-            coversDir.lastModified()
+            dbFile.lastModified(), booksDir.lastModified(), coversDir.lastModified()
         )
 
         try {
@@ -121,8 +119,7 @@ class LibraryBackupRepository(private val context: Context) {
 
                     // Backup Settings
                     val settingsToBackup = settings.copy(
-                        installedDictionaries = emptyList(),
-                        activeDictionaryId = ""
+                        installedDictionaries = emptyList(), activeDictionaryId = ""
                     )
                     val settingsJsonString = json.encodeToString(settingsToBackup)
                     zos.putNextEntry(ZipEntry("settings.json"))
@@ -224,8 +221,7 @@ class LibraryBackupRepository(private val context: Context) {
 
             val jsonString = FileInputStream(dataJsonFile).use {
                 InputStreamReader(
-                    it,
-                    Charsets.UTF_8
+                    it, Charsets.UTF_8
                 ).readText()
             }
             val payload = json.decodeFromString<LibraryBackupPayload>(jsonString)
@@ -236,8 +232,7 @@ class LibraryBackupRepository(private val context: Context) {
                 try {
                     val settingsJsonString = FileInputStream(settingsJsonFile).use {
                         InputStreamReader(
-                            it,
-                            Charsets.UTF_8
+                            it, Charsets.UTF_8
                         ).readText()
                     }
                     val restoredSettings = json.decodeFromString<ReaderSettings>(settingsJsonString)

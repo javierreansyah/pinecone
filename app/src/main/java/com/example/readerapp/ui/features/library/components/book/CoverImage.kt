@@ -18,13 +18,11 @@ import androidx.compose.ui.draw.clip
 
 @Composable
 fun CoverImage(
-    book: Book,
-    modifier: Modifier = Modifier
+    book: Book, modifier: Modifier = Modifier
 ) {
     if (book.coverPath != null) {
         Box(
-            modifier = modifier,
-            contentAlignment = Alignment.BottomCenter
+            modifier = modifier, contentAlignment = Alignment.BottomCenter
         ) {
             AsyncImage(
                 model = File(book.coverPath),
@@ -36,7 +34,9 @@ fun CoverImage(
     } else {
         Surface(
             color = MaterialTheme.colorScheme.secondaryContainer,
-            modifier = modifier.fillMaxSize().clip(MaterialTheme.shapes.small)
+            modifier = modifier
+                .fillMaxSize()
+                .clip(MaterialTheme.shapes.small)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Text(text = book.title.take(1), style = MaterialTheme.typography.displayMedium)

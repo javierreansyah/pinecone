@@ -40,23 +40,25 @@ fun BookItem(
             modifier = modifier
                 .fillMaxWidth()
                 .combinedClickable(
-                    onClick = onClick,
-                    onLongClick = onLongClick
+                    onClick = onClick, onLongClick = onLongClick
                 )
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(spacing.space16)
         ) {
-            Box(modifier = Modifier
-                .height(100.dp)
-                .aspectRatio(2f / 3f)) {
+            Box(
+                modifier = Modifier
+                    .height(100.dp)
+                    .aspectRatio(2f / 3f)
+            ) {
                 CoverImage(
-                    book = book,
-                    modifier = Modifier.fillMaxSize()
+                    book = book, modifier = Modifier.fillMaxSize()
                 )
             }
             Column(
-                modifier = Modifier.weight(1f).height(100.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(100.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
@@ -67,7 +69,9 @@ fun BookItem(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = if (book.authors.isNotEmpty()) book.authors.joinToString(", ") else stringResource(R.string.book_unknown_author),
+                        text = if (book.authors.isNotEmpty()) book.authors.joinToString(", ") else stringResource(
+                            R.string.book_unknown_author
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -95,14 +99,12 @@ fun BookItem(
             modifier = modifier
                 .clip(MaterialTheme.shapes.small)
                 .combinedClickable(
-                    onClick = onClick,
-                    onLongClick = onLongClick
+                    onClick = onClick, onLongClick = onLongClick
                 )
                 .padding(8.dp)
         ) {
             CoverImage(
-                book = book,
-                modifier = Modifier
+                book = book, modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(2f / 3f)
             )
@@ -119,7 +121,9 @@ fun BookItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = if (book.authors.isNotEmpty()) book.authors.joinToString(", ") else stringResource(R.string.book_unknown_author),
+                    text = if (book.authors.isNotEmpty()) book.authors.joinToString(", ") else stringResource(
+                        R.string.book_unknown_author
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

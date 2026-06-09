@@ -9,24 +9,18 @@ import androidx.room.Index
 @Entity(
     tableName = "shelf_book_cross_ref",
     primaryKeys = ["shelfId", "bookId"],
-    foreignKeys = [
-        ForeignKey(
-            entity = ShelfEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["shelfId"],
-            onDelete = ForeignKey.CASCADE
-        ),
-        ForeignKey(
-            entity = BookEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["bookId"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ],
-    indices = [
-        Index("shelfId"),
-        Index("bookId")
-    ]
+    foreignKeys = [ForeignKey(
+        entity = ShelfEntity::class,
+        parentColumns = ["id"],
+        childColumns = ["shelfId"],
+        onDelete = ForeignKey.CASCADE
+    ), ForeignKey(
+        entity = BookEntity::class,
+        parentColumns = ["id"],
+        childColumns = ["bookId"],
+        onDelete = ForeignKey.CASCADE
+    )],
+    indices = [Index("shelfId"), Index("bookId")]
 )
 @Serializable
 data class ShelfBookCrossRefEntity(

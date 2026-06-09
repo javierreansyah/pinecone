@@ -10,17 +10,42 @@ import com.example.readerapp.data.local.database.dictionary.DictionaryEntry
  */
 object DictionaryFormatter {
 
-    private val HTML_TAG_REGEX = Regex("<(?:p|div|span|ol|ul|li|table|br|h[1-6]|a |dl|dt|dd|blockquote|em|strong)[ >/]", RegexOption.IGNORE_CASE)
+    private val HTML_TAG_REGEX = Regex(
+        "<(?:p|div|span|ol|ul|li|table|br|h[1-6]|a |dl|dt|dd|blockquote|em|strong)[ >/]",
+        RegexOption.IGNORE_CASE
+    )
 
     private val PARTS_OF_SPEECH = setOf(
-        "Noun", "Proper Noun", "Verb", "Adjective", "Adverb",
-        "Pronoun", "Preposition", "Conjunction", "Interjection",
-        "Idiom", "Phrase", "Synonyms", "Antonyms",
-        "Derived terms", "Related terms", "Translations", "Usage notes",
-        "Article", "Particle", "Numeral", "Symbol",
-        "Prefix", "Suffix", "Infix", "Circumfix",
-        "Etymology", "Pronunciation", "Alternative forms",
-        "Determiner", "Contraction"
+        "Noun",
+        "Proper Noun",
+        "Verb",
+        "Adjective",
+        "Adverb",
+        "Pronoun",
+        "Preposition",
+        "Conjunction",
+        "Interjection",
+        "Idiom",
+        "Phrase",
+        "Synonyms",
+        "Antonyms",
+        "Derived terms",
+        "Related terms",
+        "Translations",
+        "Usage notes",
+        "Article",
+        "Particle",
+        "Numeral",
+        "Symbol",
+        "Prefix",
+        "Suffix",
+        "Infix",
+        "Circumfix",
+        "Etymology",
+        "Pronunciation",
+        "Alternative forms",
+        "Determiner",
+        "Contraction"
     )
 
     /**
@@ -153,10 +178,7 @@ object DictionaryFormatter {
 
     /** Minimal HTML entity escaping for plain text content. */
     private fun escapeHtml(text: String): String {
-        return text
-            .replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
             .replace("\"", "&quot;")
     }
 }

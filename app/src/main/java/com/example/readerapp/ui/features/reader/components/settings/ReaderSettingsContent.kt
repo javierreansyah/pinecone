@@ -37,8 +37,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ReaderSettingsContent(
-    settings: ReaderSettings,
-    onSettingsChange: (ReaderSettings) -> Unit
+    settings: ReaderSettings, onSettingsChange: (ReaderSettings) -> Unit
 ) {
     val configuration = LocalConfiguration.current
     val locale = configuration.locales[0]
@@ -62,17 +61,12 @@ fun ReaderSettingsContent(
             .padding(bottom = 4.dp)
     ) {
         PrimaryTabRow(
-            selectedTabIndex = pagerState.currentPage,
-            containerColor = Color.Transparent
+            selectedTabIndex = pagerState.currentPage, containerColor = Color.Transparent
         ) {
             tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = pagerState.currentPage == index,
-                    onClick = {
-                        scope.launch { pagerState.animateScrollToPage(index) }
-                    },
-                    text = { Text(title, style = MaterialTheme.typography.titleMedium) }
-                )
+                Tab(selected = pagerState.currentPage == index, onClick = {
+                    scope.launch { pagerState.animateScrollToPage(index) }
+                }, text = { Text(title, style = MaterialTheme.typography.titleMedium) })
             }
         }
 
@@ -101,15 +95,15 @@ fun ReaderSettingsContent(
                         1 -> LightingTabContent(
                             settings = settings,
                             onSettingsChange = onSettingsChange,
-                            onAddThemeClick = { 
+                            onAddThemeClick = {
                                 themeToEdit = null
-                                showColorPicker = true 
+                                showColorPicker = true
                             },
-                            onThemeLongClick = { 
+                            onThemeLongClick = {
                                 themeToEdit = it
                                 showColorPicker = true
-                            }
-                        )
+                            })
+
                         2 -> AdvancedTabContent(settings, onSettingsChange)
                     }
                 }
@@ -122,22 +116,27 @@ fun ReaderSettingsContent(
             initialName = themeToEdit?.name ?: "",
             initialBgColor = themeToEdit?.backgroundColor ?: "#",
             initialTextColor = themeToEdit?.textColor ?: "#",
-            onDismiss = { 
-                showColorPicker = false 
+            onDismiss = {
+                showColorPicker = false
                 themeToEdit = null
             },
             onDelete = if (themeToEdit != null) {
                 {
                     val newThemes = settings.customThemes.filter { it.name != themeToEdit?.name }
-                    val newPreset = if (settings.readerThemePreset == themeToEdit?.name) "Auto" else settings.readerThemePreset
-                    onSettingsChange(settings.copy(customThemes = newThemes, readerThemePreset = newPreset))
+                    val newPreset =
+                        if (settings.readerThemePreset == themeToEdit?.name) "Auto" else settings.readerThemePreset
+                    onSettingsChange(
+                        settings.copy(
+                            customThemes = newThemes, readerThemePreset = newPreset
+                        )
+                    )
                     showColorPicker = false
                     themeToEdit = null
                 }
             } else null,
             onConfirm = { name, bgColor, textColor ->
                 val newTheme = CustomReaderTheme(name, bgColor, textColor)
-                
+
                 val updatedThemes = if (themeToEdit != null) {
                     // Update existing theme, keeping its position
                     settings.customThemes.map { if (it.name == themeToEdit?.name) newTheme else it }
@@ -146,7 +145,8 @@ fun ReaderSettingsContent(
                     settings.customThemes + newTheme
                 }
 
-                val newPreset = if (settings.readerThemePreset == themeToEdit?.name || themeToEdit == null) name else settings.readerThemePreset
+                val newPreset =
+                    if (settings.readerThemePreset == themeToEdit?.name || themeToEdit == null) name else settings.readerThemePreset
 
                 onSettingsChange(
                     settings.copy(
@@ -158,20 +158,23 @@ fun ReaderSettingsContent(
                 )
                 showColorPicker = false
                 themeToEdit = null
-            }
-        )
+            })
     }
 }
 
 @Composable
 private fun TextTabContent(
-    settings: ReaderSettings,
-    onSettingsChange: (ReaderSettings) -> Unit,
-    locale: Locale
+    settings: ReaderSettings, onSettingsChange: (ReaderSettings) -> Unit, locale: Locale
 ) {
     // Font Selection
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
-        Text(stringResource(R.string.reader_settings_font), style = MaterialTheme.typography.titleMedium)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(horizontal = 16.dp)
+    ) {
+        Text(
+            stringResource(R.string.reader_settings_font),
+            style = MaterialTheme.typography.titleMedium
+        )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -198,10 +201,17 @@ private fun TextTabContent(
 
     // Typography
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(stringResource(R.string.reader_settings_typography), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 16.dp))
-        
+        Text(
+            stringResource(R.string.reader_settings_typography),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+
         // Text Size, Font Weight
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(horizontal = 16.dp)
+        ) {
             IncrementDecrementControl(
                 label = stringResource(R.string.reader_settings_text_size),
                 value = "${(settings.fontSize * 100).roundToInt()}%",
@@ -209,8 +219,7 @@ private fun TextTabContent(
                     onSettingsChange(
                         settings.copy(
                             fontSize = (((settings.fontSize + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
-                                0.5,
-                                3.0
+                                0.5, 3.0
                             )
                         )
                     )
@@ -219,8 +228,7 @@ private fun TextTabContent(
                     onSettingsChange(
                         settings.copy(
                             fontSize = (((settings.fontSize - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
-                                0.5,
-                                3.0
+                                0.5, 3.0
                             )
                         )
                     )
@@ -234,16 +242,14 @@ private fun TextTabContent(
                 onIncrement = {
                     val newWeight =
                         (((currentFontWeight + 0.25) * 100.0).roundToInt() / 100.0).coerceIn(
-                            0.5,
-                            2.25
+                            0.5, 2.25
                         )
                     onSettingsChange(settings.copy(fontWeights = settings.fontWeights + (settings.fontFamily to newWeight)))
                 },
                 onDecrement = {
                     val newWeight =
                         (((currentFontWeight - 0.25) * 100.0).roundToInt() / 100.0).coerceIn(
-                            0.5,
-                            2.25
+                            0.5, 2.25
                         )
                     onSettingsChange(settings.copy(fontWeights = settings.fontWeights + (settings.fontFamily to newWeight)))
                 },
@@ -252,7 +258,10 @@ private fun TextTabContent(
         }
 
         // Horizontal Margin, Vertical Margin
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(horizontal = 16.dp)
+        ) {
             IncrementDecrementControl(
                 label = stringResource(R.string.reader_settings_horizontal_margin),
                 value = String.format(locale, "%.1f", settings.pageMargins),
@@ -260,8 +269,7 @@ private fun TextTabContent(
                     onSettingsChange(
                         settings.copy(
                             pageMargins = (((settings.pageMargins + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
-                                0.0,
-                                3.0
+                                0.0, 3.0
                             )
                         )
                     )
@@ -270,8 +278,7 @@ private fun TextTabContent(
                     onSettingsChange(
                         settings.copy(
                             pageMargins = (((settings.pageMargins - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
-                                0.0,
-                                3.0
+                                0.0, 3.0
                             )
                         )
                     )
@@ -285,8 +292,7 @@ private fun TextTabContent(
                     onSettingsChange(
                         settings.copy(
                             verticalMargin = (((settings.verticalMargin + 3.2) * 10.0).roundToInt() / 10.0).coerceIn(
-                                0.0,
-                                128.0
+                                0.0, 128.0
                             )
                         )
                     )
@@ -295,8 +301,7 @@ private fun TextTabContent(
                     onSettingsChange(
                         settings.copy(
                             verticalMargin = (((settings.verticalMargin - 3.2) * 10.0).roundToInt() / 10.0).coerceIn(
-                                0.0,
-                                128.0
+                                0.0, 128.0
                             )
                         )
                     )
@@ -309,8 +314,7 @@ private fun TextTabContent(
         SettingsSwitchRow(
             title = stringResource(R.string.reader_settings_publisher_style),
             isChecked = settings.publisherStyles,
-            onCheckedChange = { onSettingsChange(settings.copy(publisherStyles = it)) }
-        )
+            onCheckedChange = { onSettingsChange(settings.copy(publisherStyles = it)) })
 
         // Alignment
         val alignmentOptionsMap = mapOf(
@@ -328,7 +332,8 @@ private fun TextTabContent(
             ),
             selected = alignmentOptionsMap[settings.textAlign] ?: settings.textAlign,
             onSelected = { localizedValue ->
-                val key = alignmentOptionsMap.entries.find { it.value == localizedValue }?.key ?: localizedValue
+                val key = alignmentOptionsMap.entries.find { it.value == localizedValue }?.key
+                    ?: localizedValue
                 onSettingsChange(settings.copy(textAlign = key))
             },
             enabled = !settings.publisherStyles,
@@ -336,7 +341,10 @@ private fun TextTabContent(
         )
 
         // Line Spacing, Letter Spacing
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(horizontal = 16.dp)
+        ) {
             IncrementDecrementControl(
                 label = stringResource(R.string.reader_settings_line_spacing),
                 value = String.format(locale, "%.1f", settings.lineHeight),
@@ -344,8 +352,7 @@ private fun TextTabContent(
                     onSettingsChange(
                         settings.copy(
                             lineHeight = (((settings.lineHeight + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
-                                1.0,
-                                2.5
+                                1.0, 2.5
                             )
                         )
                     )
@@ -354,8 +361,7 @@ private fun TextTabContent(
                     onSettingsChange(
                         settings.copy(
                             lineHeight = (((settings.lineHeight - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
-                                1.0,
-                                2.5
+                                1.0, 2.5
                             )
                         )
                     )
@@ -370,8 +376,7 @@ private fun TextTabContent(
                     onSettingsChange(
                         settings.copy(
                             letterSpacing = (((settings.letterSpacing + 0.025) * 1000.0).roundToInt() / 1000.0).coerceIn(
-                                0.0,
-                                0.25
+                                0.0, 0.25
                             )
                         )
                     )
@@ -380,8 +385,7 @@ private fun TextTabContent(
                     onSettingsChange(
                         settings.copy(
                             letterSpacing = (((settings.letterSpacing - 0.025) * 1000.0).roundToInt() / 1000.0).coerceIn(
-                                0.0,
-                                0.25
+                                0.0, 0.25
                             )
                         )
                     )
@@ -392,7 +396,10 @@ private fun TextTabContent(
         }
 
         // Word Spacing, Paragraph Spacing
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(horizontal = 16.dp)
+        ) {
             IncrementDecrementControl(
                 label = stringResource(R.string.reader_settings_word_spacing),
                 value = String.format(locale, "%.1f", settings.wordSpacing),
@@ -400,8 +407,7 @@ private fun TextTabContent(
                     onSettingsChange(
                         settings.copy(
                             wordSpacing = (((settings.wordSpacing + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
-                                0.0,
-                                1.0
+                                0.0, 1.0
                             )
                         )
                     )
@@ -410,8 +416,7 @@ private fun TextTabContent(
                     onSettingsChange(
                         settings.copy(
                             wordSpacing = (((settings.wordSpacing - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
-                                0.0,
-                                1.0
+                                0.0, 1.0
                             )
                         )
                     )
@@ -426,8 +431,7 @@ private fun TextTabContent(
                     onSettingsChange(
                         settings.copy(
                             paragraphSpacing = (((settings.paragraphSpacing + 0.2) * 10.0).roundToInt() / 10.0).coerceIn(
-                                0.0,
-                                2.0
+                                0.0, 2.0
                             )
                         )
                     )
@@ -436,8 +440,7 @@ private fun TextTabContent(
                     onSettingsChange(
                         settings.copy(
                             paragraphSpacing = (((settings.paragraphSpacing - 0.2) * 10.0).roundToInt() / 10.0).coerceIn(
-                                0.0,
-                                2.0
+                                0.0, 2.0
                             )
                         )
                     )
@@ -448,7 +451,10 @@ private fun TextTabContent(
         }
 
         // Paragraph Indent
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(horizontal = 16.dp)
+        ) {
             IncrementDecrementControl(
                 label = stringResource(R.string.reader_settings_paragraph_indent),
                 value = String.format(locale, "%.1f", settings.paragraphIndent / 2.0),
@@ -456,8 +462,7 @@ private fun TextTabContent(
                     onSettingsChange(
                         settings.copy(
                             paragraphIndent = (((settings.paragraphIndent + 0.2) * 10.0).roundToInt() / 10.0).coerceIn(
-                                0.0,
-                                4.0
+                                0.0, 4.0
                             )
                         )
                     )
@@ -466,8 +471,7 @@ private fun TextTabContent(
                     onSettingsChange(
                         settings.copy(
                             paragraphIndent = (((settings.paragraphIndent - 0.2) * 10.0).roundToInt() / 10.0).coerceIn(
-                                0.0,
-                                4.0
+                                0.0, 4.0
                             )
                         )
                     )
@@ -488,8 +492,14 @@ private fun LightingTabContent(
     onThemeLongClick: (CustomReaderTheme) -> Unit
 ) {
     // Brightness
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
-        Text(stringResource(R.string.reader_settings_brightness), style = MaterialTheme.typography.titleMedium)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(horizontal = 16.dp)
+    ) {
+        Text(
+            stringResource(R.string.reader_settings_brightness),
+            style = MaterialTheme.typography.titleMedium
+        )
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -515,14 +525,19 @@ private fun LightingTabContent(
                         sliderState = sliderState,
                         enabled = !settings.autoBrightness,
                     )
-                }
-            )
+                })
         }
     }
 
     // Theme Selection
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
-        Text(stringResource(R.string.reader_settings_theme), style = MaterialTheme.typography.titleMedium)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(horizontal = 16.dp)
+    ) {
+        Text(
+            stringResource(R.string.reader_settings_theme),
+            style = MaterialTheme.typography.titleMedium
+        )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -558,8 +573,7 @@ private fun LightingTabContent(
             // Custom Saved Themes
             settings.customThemes.forEach { theme ->
                 ThemeSwatch(
-                    isSelected = settings.readerThemePreset == theme.name,
-                    onClick = {
+                    isSelected = settings.readerThemePreset == theme.name, onClick = {
                         onSettingsChange(
                             settings.copy(
                                 readerThemePreset = theme.name,
@@ -567,14 +581,11 @@ private fun LightingTabContent(
                                 customTextColor = theme.textColor
                             )
                         )
-                    },
-                    onLongClick = { onThemeLongClick(theme) },
-                    color = try {
+                    }, onLongClick = { onThemeLongClick(theme) }, color = try {
                         Color(theme.backgroundColor.toColorInt())
                     } catch (_: Exception) {
                         Color.White
-                    },
-                    label = theme.name
+                    }, label = theme.name
                 )
             }
 
@@ -589,8 +600,14 @@ private fun LightingTabContent(
     }
 
     // Image Filter
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
-        Text(stringResource(R.string.reader_settings_image_filter), style = MaterialTheme.typography.titleMedium)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(horizontal = 16.dp)
+    ) {
+        Text(
+            stringResource(R.string.reader_settings_image_filter),
+            style = MaterialTheme.typography.titleMedium
+        )
         val imageFilterOptionsMap = mapOf(
             "None" to stringResource(R.string.reader_settings_image_filter_none),
             "Darken" to stringResource(R.string.reader_settings_image_filter_darken),
@@ -605,17 +622,16 @@ private fun LightingTabContent(
             ),
             selected = imageFilterOptionsMap[settings.imageFilter] ?: settings.imageFilter,
             onSelected = { localizedValue ->
-                val key = imageFilterOptionsMap.entries.find { it.value == localizedValue }?.key ?: localizedValue
+                val key = imageFilterOptionsMap.entries.find { it.value == localizedValue }?.key
+                    ?: localizedValue
                 onSettingsChange(settings.copy(imageFilter = key))
-            }
-        )
+            })
     }
 }
 
 @Composable
 private fun AdvancedTabContent(
-    settings: ReaderSettings,
-    onSettingsChange: (ReaderSettings) -> Unit
+    settings: ReaderSettings, onSettingsChange: (ReaderSettings) -> Unit
 ) {
     var showDictionaryDialog by remember { mutableStateOf(false) }
     var showOrientationDialog by remember { mutableStateOf(false) }
@@ -624,16 +640,22 @@ private fun AdvancedTabContent(
         // Active Dictionary
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .clickable { showDictionaryDialog = true }
-                .padding(horizontal = 16.dp, vertical = 16.dp),
+            .fillMaxWidth()
+            .clickable { showDictionaryDialog = true }
+            .padding(horizontal = 16.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(stringResource(R.string.action_define), style = MaterialTheme.typography.titleMedium)
-            val activeName = settings.installedDictionaries.find { it.id == settings.activeDictionaryId }?.name 
-                ?: stringResource(R.string.reader_settings_image_filter_none)
-            Text(activeName, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.action_define), style = MaterialTheme.typography.titleMedium
+            )
+            val activeName =
+                settings.installedDictionaries.find { it.id == settings.activeDictionaryId }?.name
+                    ?: stringResource(R.string.reader_settings_image_filter_none)
+            Text(
+                activeName,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
 
         if (showDictionaryDialog) {
@@ -653,16 +675,14 @@ private fun AdvancedTabContent(
                                         .clickable {
                                             onSettingsChange(settings.copy(activeDictionaryId = dict.id))
                                             showDictionaryDialog = false
-                                        },
-                                    verticalAlignment = Alignment.CenterVertically
+                                        }, verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     RadioButton(
                                         selected = settings.activeDictionaryId == dict.id,
                                         onClick = {
                                             onSettingsChange(settings.copy(activeDictionaryId = dict.id))
                                             showDictionaryDialog = false
-                                        }
-                                    )
+                                        })
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(dict.name)
                                 }
@@ -674,8 +694,7 @@ private fun AdvancedTabContent(
                     TextButton(onClick = { showDictionaryDialog = false }) {
                         Text(stringResource(R.string.action_close))
                     }
-                }
-            )
+                })
         }
 
         // Force Orientation
@@ -687,15 +706,22 @@ private fun AdvancedTabContent(
 
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .clickable { showOrientationDialog = true }
-                .padding(horizontal = 16.dp, vertical = 16.dp),
+            .fillMaxWidth()
+            .clickable { showOrientationDialog = true }
+            .padding(horizontal = 16.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(stringResource(R.string.reader_settings_force_orientation), style = MaterialTheme.typography.titleMedium)
-            val activeOrientationName = orientationOptionsMap[settings.forceOrientation] ?: settings.forceOrientation
-            Text(activeOrientationName, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.reader_settings_force_orientation),
+                style = MaterialTheme.typography.titleMedium
+            )
+            val activeOrientationName =
+                orientationOptionsMap[settings.forceOrientation] ?: settings.forceOrientation
+            Text(
+                activeOrientationName,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
 
         if (showOrientationDialog) {
@@ -712,16 +738,13 @@ private fun AdvancedTabContent(
                                     .clickable {
                                         onSettingsChange(settings.copy(forceOrientation = key))
                                         showOrientationDialog = false
-                                    },
-                                verticalAlignment = Alignment.CenterVertically
+                                    }, verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
-                                    selected = settings.forceOrientation == key,
-                                    onClick = {
+                                    selected = settings.forceOrientation == key, onClick = {
                                         onSettingsChange(settings.copy(forceOrientation = key))
                                         showOrientationDialog = false
-                                    }
-                                )
+                                    })
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(name)
                             }
@@ -732,16 +755,14 @@ private fun AdvancedTabContent(
                     TextButton(onClick = { showOrientationDialog = false }) {
                         Text(stringResource(R.string.action_close))
                     }
-                }
-            )
+                })
         }
 
         // Vertical Scroll
         SettingsSwitchRow(
             title = stringResource(R.string.reader_settings_vertical_scroll),
             isChecked = settings.scroll,
-            onCheckedChange = { onSettingsChange(settings.copy(scroll = it)) }
-        )
+            onCheckedChange = { onSettingsChange(settings.copy(scroll = it)) })
 
         // Hyphens
         SettingsSwitchRow(
@@ -755,22 +776,19 @@ private fun AdvancedTabContent(
         SettingsSwitchRow(
             title = stringResource(R.string.reader_settings_text_normalization),
             isChecked = settings.textNormalization,
-            onCheckedChange = { onSettingsChange(settings.copy(textNormalization = it)) }
-        )
+            onCheckedChange = { onSettingsChange(settings.copy(textNormalization = it)) })
 
         // Prevent Screen Timeout
         SettingsSwitchRow(
             title = stringResource(R.string.reader_settings_prevent_timeout),
             isChecked = settings.preventScreenTimeout,
-            onCheckedChange = { onSettingsChange(settings.copy(preventScreenTimeout = it)) }
-        )
+            onCheckedChange = { onSettingsChange(settings.copy(preventScreenTimeout = it)) })
 
         // Always Shows Status Bar
         SettingsSwitchRow(
             title = stringResource(R.string.reader_settings_always_status_bar),
             isChecked = settings.alwaysShowStatusBar,
-            onCheckedChange = { onSettingsChange(settings.copy(alwaysShowStatusBar = it)) }
-        )
+            onCheckedChange = { onSettingsChange(settings.copy(alwaysShowStatusBar = it)) })
     }
 }
 
@@ -788,13 +806,10 @@ private fun SettingsSwitchRow(
             .clickable(enabled = enabled) { onCheckedChange(!isChecked) }
             .padding(horizontal = 16.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+        verticalAlignment = Alignment.CenterVertically) {
         Text(title, style = MaterialTheme.typography.titleMedium)
         Switch(
-            checked = isChecked,
-            onCheckedChange = onCheckedChange,
-            enabled = enabled
+            checked = isChecked, onCheckedChange = onCheckedChange, enabled = enabled
         )
     }
 }
@@ -819,11 +834,10 @@ private fun FontSwatch(
     val fontFamily = remember(fontName) {
         try {
             val googleFontName = if (fontName == "Source Code") "Source Code Pro" else fontName
-            
+
             FontFamily(
                 Font(
-                    googleFont = GoogleFont(googleFontName),
-                    fontProvider = provider
+                    googleFont = GoogleFont(googleFontName), fontProvider = provider
                 )
             )
         } catch (e: Exception) {
@@ -858,13 +872,12 @@ private fun FontSwatch(
                     color = MaterialTheme.colorScheme.outlineVariant,
                     shape = CircleShape
                 )
-                .clickable { onClick() },
-            contentAlignment = Alignment.Center
+                .clickable { onClick() }, contentAlignment = Alignment.Center
         ) {
             // Literata's internal glyph metrics have extra padding at the top, pushing it down visually.
             // We apply a tiny negative offset just to visually center it in the swatch box.
             val yOffset = if (fontName == "Literata") (-2).dp else 0.dp
-            
+
             Text(
                 text = "Aa",
                 fontFamily = fontFamily,

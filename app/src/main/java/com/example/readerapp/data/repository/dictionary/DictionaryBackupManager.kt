@@ -24,8 +24,7 @@ import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 class DictionaryBackupManager(
-    private val context: Context,
-    private val preferences: ReaderPreferences
+    private val context: Context, private val preferences: ReaderPreferences
 ) {
     private val _restoreState = MutableStateFlow<DictionaryState>(DictionaryState.Idle)
     val restoreState: StateFlow<DictionaryState> = _restoreState.asStateFlow()
@@ -33,10 +32,10 @@ class DictionaryBackupManager(
     private val _backupState = MutableStateFlow<DictionaryState>(DictionaryState.Idle)
     val backupState: StateFlow<DictionaryState> = _backupState.asStateFlow()
 
-    private val json = Json { 
+    private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
-        isLenient = true 
+        isLenient = true
     }
 
     fun resetRestoreState() {
@@ -66,13 +65,12 @@ class DictionaryBackupManager(
 
             val installed = settings.installedDictionaries
             val payload = DictionaryBackupPayload(
-                installedDictionaries = installed,
-                activeDictionaryId = settings.activeDictionaryId
+                installedDictionaries = installed, activeDictionaryId = settings.activeDictionaryId
             )
             val jsonString = json.encodeToString(payload)
 
             val backupFileName = "dictionary_backup.pinedict"
-            
+
             // Find existing to overwrite, or create new
             var backupFile = backupFolder.findFile(backupFileName)
             if (backupFile == null) {
@@ -92,7 +90,7 @@ class DictionaryBackupManager(
             outputStream.use { os ->
                 ZipOutputStream(os).use { zos ->
                     zos.setLevel(Deflater.BEST_SPEED)
-                    
+
                     // JSON
                     zos.putNextEntry(ZipEntry("metadata.json"))
                     zos.write(jsonString.toByteArray(Charsets.UTF_8))
@@ -121,12 +119,12 @@ class DictionaryBackupManager(
         _restoreState.value = DictionaryState.Loading(0)
         try {
             val resolver = context.contentResolver
-            
+
             val tempDir = File(context.cacheDir, "dict_restore_temp").apply {
                 if (exists()) deleteRecursively()
                 mkdirs()
             }
-            
+
             resolver.openInputStream(uri)?.use { inputStream ->
                 ZipInputStream(inputStream).use { zis ->
                     var entry: ZipEntry? = zis.nextEntry
@@ -153,7 +151,11 @@ class DictionaryBackupManager(
                 return@withContext
             }
 
-            val jsonString = FileInputStream(metadataFile).use { InputStreamReader(it, Charsets.UTF_8).readText() }
+            val jsonString = FileInputStream(metadataFile).use {
+                InputStreamReader(
+                    it, Charsets.UTF_8
+                ).readText()
+            }
             val payload = json.decodeFromString<DictionaryBackupPayload>(jsonString)
 
             // Delete existing dictionary DBs before copying new ones
@@ -185,7 +187,8 @@ class DictionaryBackupManager(
             _restoreState.value = DictionaryState.Success
         } catch (e: Exception) {
             e.printStackTrace()
-            _restoreState.value = DictionaryState.Error(e.message ?: "Failed to restore dictionaries")
+            _restoreState.value =
+                DictionaryState.Error(e.message ?: "Failed to restore dictionaries")
         }
     }
 

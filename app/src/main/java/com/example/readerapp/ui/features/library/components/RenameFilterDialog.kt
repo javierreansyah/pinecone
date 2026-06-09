@@ -39,7 +39,7 @@ fun RenameFilterDialog(
             Column {
                 OutlinedTextField(
                     value = text,
-                    onValueChange = { 
+                    onValueChange = {
                         text = it
                         expanded = true
                     },
@@ -47,21 +47,17 @@ fun RenameFilterDialog(
                         .fillMaxWidth()
                         .focusRequester(focusRequester),
                     singleLine = true,
-                    label = { Text(stringResource(R.string.dictionaries_rename_title)) }
-                )
+                    label = { Text(stringResource(R.string.dictionaries_rename_title)) })
                 DropdownMenu(
                     expanded = expanded && filteredSuggestions.isNotEmpty(),
                     onDismissRequest = { expanded = false },
                     properties = PopupProperties(focusable = false)
                 ) {
                     filteredSuggestions.forEach { suggestion ->
-                        DropdownMenuItem(
-                            text = { Text(suggestion) },
-                            onClick = {
-                                text = suggestion
-                                expanded = false
-                            }
-                        )
+                        DropdownMenuItem(text = { Text(suggestion) }, onClick = {
+                            text = suggestion
+                            expanded = false
+                        })
                     }
                 }
                 if (text.isNotBlank() && suggestions.contains(text) && text != initialName) {
@@ -76,8 +72,7 @@ fun RenameFilterDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(text) },
-                enabled = text.isNotBlank()
+                onClick = { onConfirm(text) }, enabled = text.isNotBlank()
             ) {
                 Text(stringResource(R.string.action_save))
             }
@@ -86,6 +81,5 @@ fun RenameFilterDialog(
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.action_cancel))
             }
-        }
-    )
+        })
 }

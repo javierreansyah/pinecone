@@ -50,9 +50,7 @@ fun OptionsBottomSheet(
     content: @Composable ColumnScope.() -> Unit
 ) {
     ModalBottomSheet(
-        onDismissRequest = onDismissRequest,
-        dragHandle = { BottomSheetDefaults.DragHandle() }
-    ) {
+        onDismissRequest = onDismissRequest, dragHandle = { BottomSheetDefaults.DragHandle() }) {
         Column(
             modifier = modifier
                 .fillMaxWidth()
@@ -68,13 +66,10 @@ fun OptionsBottomSheet(
 
 @Composable
 fun OptionsBottomSheetSection(
-    title: String,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
+    title: String, modifier: Modifier = Modifier, content: @Composable () -> Unit
 ) {
     Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(spacing.space8)
+        modifier = modifier, verticalArrangement = Arrangement.spacedBy(spacing.space8)
     ) {
         Text(title, style = MaterialTheme.typography.titleMedium)
         content()
@@ -109,8 +104,7 @@ fun <T> SortRadioGroup(
                         )
                     }
                 },
-                content = { Text(optionLabel(type), style = MaterialTheme.typography.bodyLarge) }
-            )
+                content = { Text(optionLabel(type), style = MaterialTheme.typography.bodyLarge) })
         }
     }
 }
@@ -160,8 +154,9 @@ fun <T> SingleToggleGroupSection(
                         options.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
                         else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
                     },
-                    modifier = Modifier.weight(1f).semantics { role = Role.RadioButton }
-                ) {
+                    modifier = Modifier
+                        .weight(1f)
+                        .semantics { role = Role.RadioButton }) {
                     optionContent(option)
                 }
             }
@@ -215,18 +210,21 @@ fun LibraryFilterBottomSheet(
 ) {
     OptionsBottomSheet(onDismissRequest = onDismiss) {
         val layoutModes = if (isShelvesTab) listOf(LayoutMode.List, LayoutMode.BigList)
-                          else listOf(LayoutMode.Grid, LayoutMode.BigGrid, LayoutMode.List)
-        
+        else listOf(LayoutMode.Grid, LayoutMode.BigGrid, LayoutMode.List)
+
         SingleToggleGroupSection(
             title = stringResource(R.string.library_label_view),
             options = layoutModes,
             selectedOption = preferences.layoutMode,
             onOptionSelected = onLayoutModeChange,
-            optionContent = { mode -> Icon(layoutModeIcon(mode), contentDescription = null) }
-        )
+            optionContent = { mode -> Icon(layoutModeIcon(mode), contentDescription = null) })
 
-        val sortTypes = if (isShelvesTab) listOf(SortType.Title, SortType.LastRead, SortType.Added, SortType.Progress) 
-                        else listOf(SortType.Title, SortType.Author, SortType.LastRead, SortType.Added, SortType.Progress)
+        val sortTypes = if (isShelvesTab) listOf(
+            SortType.Title, SortType.LastRead, SortType.Added, SortType.Progress
+        )
+        else listOf(
+            SortType.Title, SortType.Author, SortType.LastRead, SortType.Added, SortType.Progress
+        )
 
         SortSection(
             options = sortTypes,
@@ -234,8 +232,7 @@ fun LibraryFilterBottomSheet(
             isAscending = preferences.isAscending,
             onOptionSelected = onSortTypeChange,
             optionLabel = { stringResource(sortTypeLabelRes(it)) },
-            isAscendingVisualModifier = { type, asc -> if (type == SortType.LastRead) !asc else asc }
-        )
+            isAscendingVisualModifier = { type, asc -> if (type == SortType.LastRead) !asc else asc })
 
         if (!isShelvesTab) {
             MultiToggleGroupSection(
@@ -243,16 +240,25 @@ fun LibraryFilterBottomSheet(
                 options = StatusFilter.entries,
                 selectedOptions = preferences.selectedStatus,
                 onOptionToggled = onStatusToggle,
-                optionContent = { status -> Text(stringResource(statusLabelRes(status)), style = MaterialTheme.typography.labelLarge) }
-            )
+                optionContent = { status ->
+                    Text(
+                        stringResource(statusLabelRes(status)),
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                })
         } else {
             MultiToggleGroupSection(
                 title = stringResource(R.string.action_filter),
                 options = ShelfFilter.entries,
                 selectedOptions = preferences.selectedShelfFilter,
                 onOptionToggled = onShelfFilterToggle,
-                optionContent = { filter -> Text(if (filter == ShelfFilter.Shelves) stringResource(R.string.library_tab_shelves) else stringResource(R.string.library_label_unshelved), style = MaterialTheme.typography.labelLarge) }
-            )
+                optionContent = { filter ->
+                    Text(
+                        if (filter == ShelfFilter.Shelves) stringResource(R.string.library_tab_shelves) else stringResource(
+                            R.string.library_label_unshelved
+                        ), style = MaterialTheme.typography.labelLarge
+                    )
+                })
         }
     }
 }
@@ -273,26 +279,29 @@ fun ShelfDetailFilterBottomSheet(
             options = layoutModes,
             selectedOption = preferences.layoutMode,
             onOptionSelected = onLayoutModeChange,
-            optionContent = { mode -> Icon(layoutModeIcon(mode), contentDescription = null) }
-        )
+            optionContent = { mode -> Icon(layoutModeIcon(mode), contentDescription = null) })
 
-        val sortTypes = if (shelfId == "unshelved") SortType.entries.filter { it != SortType.Custom } else SortType.entries
+        val sortTypes =
+            if (shelfId == "unshelved") SortType.entries.filter { it != SortType.Custom } else SortType.entries
         SortSection(
             options = sortTypes,
             selectedOption = preferences.sortType,
             isAscending = preferences.isAscending,
             onOptionSelected = onSortTypeChange,
             optionLabel = { stringResource(sortTypeLabelRes(it)) },
-            isAscendingVisualModifier = { type, asc -> if (type == SortType.LastRead) !asc else asc }
-        )
+            isAscendingVisualModifier = { type, asc -> if (type == SortType.LastRead) !asc else asc })
 
         MultiToggleGroupSection(
             title = stringResource(R.string.library_label_status),
             options = StatusFilter.entries,
             selectedOptions = preferences.selectedStatus,
             onOptionToggled = onStatusToggle,
-            optionContent = { status -> Text(stringResource(statusLabelRes(status)), style = MaterialTheme.typography.labelLarge) }
-        )
+            optionContent = { status ->
+                Text(
+                    stringResource(statusLabelRes(status)),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            })
     }
 }
 
@@ -311,26 +320,30 @@ fun FilterResultBottomSheet(
             options = layoutModes,
             selectedOption = preferences.layoutMode,
             onOptionSelected = onLayoutModeChange,
-            optionContent = { mode -> Icon(layoutModeIcon(mode), contentDescription = null) }
-        )
+            optionContent = { mode -> Icon(layoutModeIcon(mode), contentDescription = null) })
 
-        val sortTypes = listOf(SortType.Title, SortType.Author, SortType.LastRead, SortType.Added, SortType.Progress)
+        val sortTypes = listOf(
+            SortType.Title, SortType.Author, SortType.LastRead, SortType.Added, SortType.Progress
+        )
         SortSection(
             options = sortTypes,
             selectedOption = preferences.sortType,
             isAscending = preferences.isAscending,
             onOptionSelected = onSortTypeChange,
             optionLabel = { stringResource(sortTypeLabelRes(it)) },
-            isAscendingVisualModifier = { type, asc -> if (type == SortType.LastRead) !asc else asc }
-        )
+            isAscendingVisualModifier = { type, asc -> if (type == SortType.LastRead) !asc else asc })
 
         MultiToggleGroupSection(
             title = stringResource(R.string.library_label_status),
             options = StatusFilter.entries,
             selectedOptions = preferences.selectedStatus,
             onOptionToggled = onStatusToggle,
-            optionContent = { status -> Text(stringResource(statusLabelRes(status)), style = MaterialTheme.typography.labelLarge) }
-        )
+            optionContent = { status ->
+                Text(
+                    stringResource(statusLabelRes(status)),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            })
     }
 }
 
@@ -349,8 +362,11 @@ fun FilterItemSortBottomSheet(
             selectedOption = currentSortType,
             isAscending = isAscending,
             onOptionSelected = onSortTypeChange,
-            optionLabel = { if (it == FilterItemSortType.Label) stringResource(R.string.library_sort_label) else stringResource(R.string.library_sort_size) }
-        )
+            optionLabel = {
+                if (it == FilterItemSortType.Label) stringResource(R.string.library_sort_label) else stringResource(
+                    R.string.library_sort_size
+                )
+            })
     }
 }
 
