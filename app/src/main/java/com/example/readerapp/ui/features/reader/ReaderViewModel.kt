@@ -7,6 +7,7 @@ import androidx.core.graphics.toColorInt
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.readerapp.ReaderApplication
 import com.example.readerapp.R
 import com.example.readerapp.data.local.database.dictionary.DictionaryEntry
 import com.example.readerapp.data.local.database.library.BookmarkEntity
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.SharingStarted.Companion.WhileSubscribed
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -39,13 +41,61 @@ import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.services.positions
 import org.readium.r2.shared.publication.services.search.search
 import kotlin.math.abs
+import androidx.compose.ui.graphics.Color
+
+data class ReaderThemeColors(
+    val backgroundColor: Color,
+    val textColor: Color,
+    val backgroundColorInt: Int
+)
+
+data class BookState(
+    val title: String = "",
+    val chapter: String? = null,
+    val progression: Double = 0.0,
+    val currentPage: Int? = null,
+    val totalPages: Int? = null,
+    val isLoading: Boolean = false,
+    val error: String? = null
+)
+
+data class ControlsState(
+    val showControls: Boolean = false,
+    val showToc: Boolean = false,
+    val showSettings: Boolean = false,
+    val showSearch: Boolean = false
+)
+
+data class SelectionState(
+    val selectionLocator: Locator? = null,
+    val editingNote: NoteEntity? = null,
+    val viewingHighlight: NoteEntity? = null
+)
+
+data class SearchState(
+    val query: String = "",
+    val results: List<SearchResultItem> = emptyList(),
+    val isLoading: Boolean = false,
+    val searchPerformed: Boolean = false,
+    val isInNavMode: Boolean = false,
+    val activeIndex: Int? = null
+)
+
+data class DefinitionState(
+    val showDefinition: Boolean = false,
+    val definitionWord: String = "",
+    val definitionResults: List<DictionaryEntry> = emptyList()
+)
 
 class ReaderViewModel(
     private val application: Application,
     private val bookId: String,
     private val repository: LibraryRepository,
     private val readerPreferences: ReaderPreferences,
-    private val dictionaryRepository: DictionaryRepository
+    private val dictionaryRepository: DictionaryRepository,
+    // Passed from the activity so the initial StateFlow values are dark-aware
+    // from construction — prevents the white flash before DataStore emits.
+    initialSystemDark: Boolean = false
 ) : ViewModel() {
 
     // Publication (opened by openBook, closed by closeBook)
@@ -59,35 +109,21 @@ class ReaderViewModel(
     var initialLocator: Locator? = null
         private set
 
-    // UI state
-    data class ReaderUiState(
-        val isLoading: Boolean = false,
-        val error: String? = null,
-        val bookTitle: String = "",
-        val currentChapter: String? = null,
-        val progression: Double = 0.0,
-        val currentPage: Int? = null,
-        val totalPages: Int? = null,
-        val showControls: Boolean = false,
-        val showToc: Boolean = false,
-        val showSettings: Boolean = false,
-        val selectionLocator: Locator? = null,
-        val editingNote: NoteEntity? = null,
-        val viewingHighlight: NoteEntity? = null,
-        val showSearch: Boolean = false,
-        val searchQuery: String = "",
-        val searchResults: List<SearchResultItem> = emptyList(),
-        val searchLoading: Boolean = false,
-        val searchPerformed: Boolean = false,
-        val isInSearchNavigationMode: Boolean = false,
-        val activeSearchIndex: Int? = null,
-        val showDefinition: Boolean = false,
-        val definitionWord: String = "",
-        val definitionResults: List<DictionaryEntry> = emptyList()
-    )
+    // Split UI states
+    private val _bookState = MutableStateFlow(BookState())
+    val bookState: StateFlow<BookState> = _bookState.asStateFlow()
 
-    private val _uiState = MutableStateFlow(ReaderUiState())
-    val uiState: StateFlow<ReaderUiState> = _uiState.asStateFlow()
+    private val _controlsState = MutableStateFlow(ControlsState())
+    val controlsState: StateFlow<ControlsState> = _controlsState.asStateFlow()
+
+    private val _selectionState = MutableStateFlow(SelectionState())
+    val selectionState: StateFlow<SelectionState> = _selectionState.asStateFlow()
+
+    private val _searchState = MutableStateFlow(SearchState())
+    val searchState: StateFlow<SearchState> = _searchState.asStateFlow()
+
+    private val _definitionState = MutableStateFlow(DefinitionState())
+    val definitionState: StateFlow<DefinitionState> = _definitionState.asStateFlow()
 
     // Search — one-shot navigation events; buffered so emission before
     // the collector is ready is not lost (but NOT replayed on reconnect).
@@ -96,7 +132,6 @@ class ReaderViewModel(
 
     private val _clearSelectionEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val clearSelectionEvent: SharedFlow<Unit> = _clearSelectionEvent.asSharedFlow()
-
 
     // Active search job (cancelled when a new search starts or search is closed)
     private var searchJob: Job? = null
@@ -144,15 +179,74 @@ class ReaderViewModel(
         readerPreferences.readerSettings.map { if (it.autoBrightness) -1.0f else it.brightness }
             .stateIn(viewModelScope, WhileSubscribed(5000), 1.0f)
 
-    // System dark theme state (set by activity)
-    val systemDarkThemeFlow = MutableStateFlow(false)
+    // System dark theme state — initialised to the value at activity creation so the
+    // StateFlows that depend on it have a correct initial value before DataStore emits.
+    val systemDarkThemeFlow = MutableStateFlow(initialSystemDark)
 
-    // EpubPreferences built from settings
+    // Combined theme colors flow
+    val themeColors: StateFlow<ReaderThemeColors> = combine(
+        settingsFlow, systemDarkThemeFlow
+    ) { settings, isSystemDark ->
+        val uiDarkTheme = when (settings.themeMode) {
+            "Dark" -> true
+            "Light" -> false
+            else -> isSystemDark
+        }
+
+        val bgColorInt = when (settings.readerThemePreset) {
+            "Light" -> 0xFFFFFFFF.toInt()
+            "Warm" -> 0xFFFAF4E8.toInt()
+            "Dark" -> 0xFF000000.toInt()
+            "Auto" -> if (uiDarkTheme) 0xFF000000.toInt() else 0xFFFFFFFF.toInt()
+            else -> try {
+                settings.customBackgroundColor.toColorInt()
+            } catch (_: Exception) {
+                android.graphics.Color.WHITE
+            }
+        }
+
+        val textColorInt = when (settings.readerThemePreset) {
+            "Light" -> 0xFF000000.toInt()
+            "Warm" -> 0xFF121212.toInt()
+            "Dark" -> 0xFFFFFFFF.toInt()
+            "Auto" -> if (uiDarkTheme) 0xFFFFFFFF.toInt() else 0xFF000000.toInt()
+            else -> try {
+                settings.customTextColor.toColorInt()
+            } catch (_: Exception) {
+                if (uiDarkTheme) 0xFFFFFFFF.toInt() else 0xFF000000.toInt()
+            }
+        }
+
+        ReaderThemeColors(
+            backgroundColor = Color(bgColorInt),
+            textColor = Color(textColorInt),
+            backgroundColorInt = bgColorInt
+        )
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        // Dark-aware initial value: prevents the Compose overlay and window background
+        // from briefly flashing white while DataStore emits the real settings.
+        run {
+            val bgColorInt = if (initialSystemDark) 0xFF000000.toInt() else 0xFFFFFFFF.toInt()
+            val textColorInt = if (initialSystemDark) 0xFFFFFFFF.toInt() else 0xFF000000.toInt()
+            ReaderThemeColors(Color(bgColorInt), Color(textColorInt), bgColorInt)
+        }
+    )
+
+    // EpubPreferences built from settings.
+    // Uses Eagerly so the DataStore read starts immediately at ViewModel construction —
+    // this ensures epubPreferences.value holds the real (dark-mode-correct) preferences
+    // by the time setupNavigator() reads it synchronously as initialPreferences.
     val epubPreferences: StateFlow<EpubPreferences> = combine(
         readerPreferences.readerSettings, systemDarkThemeFlow
     ) { settings, isDark ->
         settings.toEpubPreferences(isDark)
-    }.stateIn(viewModelScope, WhileSubscribed(5000), EpubPreferences())
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.Eagerly,
+        ReaderSettings().toEpubPreferences(initialSystemDark)
+    )
 
     // Table of contents from publication
     val tableOfContents: List<Link>
@@ -160,7 +254,7 @@ class ReaderViewModel(
 
     fun openBook() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _bookState.update { it.copy(isLoading = true, error = null) }
 
             try {
                 // Load initial locator
@@ -170,14 +264,14 @@ class ReaderViewModel(
                 val book = repository.getBook(bookId)
                 if (book == null) {
                     val errorMsg = application.getString(R.string.book_not_found)
-                    _uiState.update { it.copy(isLoading = false, error = errorMsg) }
+                    _bookState.update { it.copy(isLoading = false, error = errorMsg) }
                     return@launch
                 }
 
                 // Open publication
                 val pub = repository.openPublication(book)
                 if (pub == null) {
-                    _uiState.update { it.copy(isLoading = false, error = "Could not open book") }
+                    _bookState.update { it.copy(isLoading = false, error = "Could not open book") }
                     return@launch
                 }
 
@@ -191,13 +285,13 @@ class ReaderViewModel(
                     _currentLocator.value?.let { onLocatorChanged(it) }
                 }
 
-                _uiState.update {
+                _bookState.update {
                     it.copy(
-                        isLoading = false, bookTitle = pub.metadata.title ?: book.book.title
+                        isLoading = false, title = pub.metadata.title ?: book.book.title
                     )
                 }
             } catch (e: Exception) {
-                _uiState.update {
+                _bookState.update {
                     it.copy(isLoading = false, error = "Error: ${e.message}")
                 }
             }
@@ -221,9 +315,9 @@ class ReaderViewModel(
             }.takeIf { it != -1 } ?: allPositions.indexOfFirst { it.href == locator.href }
         } else -1
 
-        _uiState.update {
+        _bookState.update {
             it.copy(
-                currentChapter = locator.title,
+                chapter = locator.title,
                 progression = locator.locations.totalProgression ?: 0.0,
                 currentPage = if (pageIndex != -1) pageIndex + 1 else null,
                 totalPages = if (allPositions.isNotEmpty()) allPositions.size else null
@@ -247,7 +341,7 @@ class ReaderViewModel(
             allPositions.indexOfLast { (it.locations.totalProgression ?: -1.0) <= target }
         }?.takeIf { it != -1 } ?: allPositions.indexOfLast { pos ->
             pos.href == locator.href && (pos.locations.progression
-                ?: 0.0) <= (locator.locations.progression ?: 0.0)
+                ?: 0.0) <= (pos.locations.progression ?: 0.0)
         }.takeIf { it != -1 }
 
         return when {
@@ -283,7 +377,7 @@ class ReaderViewModel(
     }
 
     fun toggleControls() {
-        _uiState.update { it.copy(showControls = !it.showControls) }
+        _controlsState.update { it.copy(showControls = !it.showControls) }
     }
 
     fun toggleBookmark() {
@@ -317,7 +411,7 @@ class ReaderViewModel(
         val locator = _currentLocator.value ?: return
         viewModelScope.launch {
             repository.addNote(
-                bookId, locator, noteText, color, locator.title ?: _uiState.value.currentChapter
+                bookId, locator, noteText, color, locator.title ?: _bookState.value.chapter
             )
         }
     }
@@ -327,7 +421,7 @@ class ReaderViewModel(
             id = 0, // Unsaved
             bookId = bookId,
             locatorJson = locator.toJSON().toString(),
-            chapterTitle = locator.title ?: _uiState.value.currentChapter,
+            chapterTitle = locator.title ?: _bookState.value.chapter,
             noteText = "",
             color = "#40FFEB3B".toColorInt()
         )
@@ -335,29 +429,22 @@ class ReaderViewModel(
     }
 
     fun showSelectionMenu(locator: Locator) {
-        _uiState.update { it.copy(selectionLocator = locator) }
+        _selectionState.update { it.copy(selectionLocator = locator) }
     }
 
     fun hideSelectionMenu() {
-        _uiState.update { it.copy(selectionLocator = null) }
+        _selectionState.update { it.copy(selectionLocator = null) }
         _clearSelectionEvent.tryEmit(Unit)
     }
 
-    /**
-     * Hides the custom selection action bar WITHOUT clearing the WebView's
-     * native selection.  Used by the ActionMode lifecycle callbacks —
-     * the ActionMode may be temporarily destroyed and re-created during
-     * cross-column paragraph selection, and calling [clearSelection] at that
-     * point would fight the active drag and cause jitter / page-flip attempts.
-     */
     fun dismissSelectionBar() {
-        _uiState.update { it.copy(selectionLocator = null) }
+        _selectionState.update { it.copy(selectionLocator = null) }
     }
 
     fun addHighlight(locator: Locator, color: Int = "#4003A9F4".toColorInt()) {
         viewModelScope.launch {
             repository.addNote(
-                bookId, locator, "", color, locator.title ?: _uiState.value.currentChapter
+                bookId, locator, "", color, locator.title ?: _bookState.value.chapter
             )
         }
     }
@@ -385,19 +472,19 @@ class ReaderViewModel(
     }
 
     fun editNote(note: NoteEntity) {
-        _uiState.update { it.copy(editingNote = note) }
+        _selectionState.update { it.copy(editingNote = note) }
     }
 
     fun hideEditNote() {
-        _uiState.update { it.copy(editingNote = null) }
+        _selectionState.update { it.copy(editingNote = null) }
     }
 
     fun viewHighlight(note: NoteEntity) {
-        _uiState.update { it.copy(viewingHighlight = note) }
+        _selectionState.update { it.copy(viewingHighlight = note) }
     }
 
     fun hideViewHighlight() {
-        _uiState.update { it.copy(viewingHighlight = null) }
+        _selectionState.update { it.copy(viewingHighlight = null) }
     }
 
     fun lookupDefinition(word: String) {
@@ -407,7 +494,7 @@ class ReaderViewModel(
         viewModelScope.launch {
             val activeDictId = readerPreferences.readerSettings.first().activeDictionaryId
             val results = dictionaryRepository.lookupWord(activeDictId, cleanWord)
-            _uiState.update {
+            _definitionState.update {
                 it.copy(
                     showDefinition = true, definitionWord = cleanWord, definitionResults = results
                 )
@@ -416,62 +503,61 @@ class ReaderViewModel(
     }
 
     fun hideDefinition() {
-        _uiState.update { it.copy(showDefinition = false) }
+        _definitionState.update { it.copy(showDefinition = false) }
     }
 
     fun showToc() {
-        _uiState.update { it.copy(showToc = true) }
+        _controlsState.update { it.copy(showToc = true) }
     }
 
     fun hideToc() {
-        _uiState.update { it.copy(showToc = false) }
+        _controlsState.update { it.copy(showToc = false) }
     }
 
     fun showSettings() {
-        _uiState.update { it.copy(showSettings = true) }
+        _controlsState.update { it.copy(showSettings = true) }
     }
 
     fun hideSettings() {
-        _uiState.update { it.copy(showSettings = false) }
+        _controlsState.update { it.copy(showSettings = false) }
     }
 
     // ── Search ────────────────────────────────────────────────────────────────
 
     fun showSearch() {
-        _uiState.update {
+        _controlsState.update { it.copy(showSearch = true) }
+        _searchState.update {
             it.copy(
-                showSearch = true,
-                searchQuery = "",
-                searchResults = emptyList(),
-                searchLoading = false,
+                query = "",
+                results = emptyList(),
+                isLoading = false,
                 searchPerformed = false,
-                activeSearchIndex = null,
-                isInSearchNavigationMode = false
+                activeIndex = null,
+                isInNavMode = false
             )
         }
     }
 
     fun hideSearch() {
         searchJob?.cancel()
-        _uiState.update {
-            it.copy(
-                showSearch = false, isInSearchNavigationMode = false, activeSearchIndex = null
-            )
+        _controlsState.update { it.copy(showSearch = false) }
+        _searchState.update {
+            it.copy(isInNavMode = false, activeIndex = null)
         }
     }
 
     fun updateSearchQuery(query: String) {
-        _uiState.update { it.copy(searchQuery = query, searchPerformed = false) }
+        _searchState.update { it.copy(query = query, searchPerformed = false) }
     }
 
     fun performSearch(query: String) {
         val publication = _publication.value ?: return
         if (query.isBlank()) {
-            _uiState.update {
+            _searchState.update {
                 it.copy(
-                    searchQuery = query,
-                    searchResults = emptyList(),
-                    searchLoading = false,
+                    query = query,
+                    results = emptyList(),
+                    isLoading = false,
                     searchPerformed = false
                 )
             }
@@ -480,11 +566,11 @@ class ReaderViewModel(
 
         // Cancel any in-flight search
         searchJob?.cancel()
-        _uiState.update {
+        _searchState.update {
             it.copy(
-                searchQuery = query,
-                searchResults = emptyList(),
-                searchLoading = true,
+                query = query,
+                results = emptyList(),
+                isLoading = true,
                 searchPerformed = true
             )
         }
@@ -493,7 +579,7 @@ class ReaderViewModel(
             try {
                 val iterator = publication.search(query)
                 if (iterator == null) {
-                    _uiState.update { it.copy(searchLoading = false) }
+                    _searchState.update { it.copy(isLoading = false) }
                     return@launch
                 }
 
@@ -510,7 +596,7 @@ class ReaderViewModel(
                             }
                         }?.takeIf { it != -1 } ?: allPositions.indexOfLast { pos ->
                             pos.href == locator.href && (pos.locations.progression
-                                ?: 0.0) <= (locator.locations.progression ?: 0.0)
+                                ?: 0.0) <= (pos.locations.progression ?: 0.0)
                         }.takeIf { it != -1 }
 
                         val positionLabel = when {
@@ -536,25 +622,29 @@ class ReaderViewModel(
                         )
                     }
 
-                    _uiState.update { state ->
-                        state.copy(searchResults = state.searchResults + newItems)
+                    _searchState.update { state ->
+                        state.copy(results = state.results + newItems)
                     }
                 }
 
-                _uiState.update { it.copy(searchLoading = false) }
+                _searchState.update { it.copy(isLoading = false) }
             } catch (_: Exception) {
-                _uiState.update { it.copy(searchLoading = false) }
+                _searchState.update { it.copy(isLoading = false) }
             }
         }
     }
 
     fun selectSearchResult(index: Int) {
-        val results = _uiState.value.searchResults
+        val results = _searchState.value.results
         if (index < 0 || index >= results.size) return
-        _uiState.update {
+        _searchState.update {
             it.copy(
-                activeSearchIndex = index,
-                isInSearchNavigationMode = true,
+                activeIndex = index,
+                isInNavMode = true
+            )
+        }
+        _controlsState.update {
+            it.copy(
                 showSearch = false,
                 showControls = true   // show controls so search helper bar is visible
             )
@@ -563,25 +653,25 @@ class ReaderViewModel(
     }
 
     fun nextSearchResult() {
-        val state = _uiState.value
-        val results = state.searchResults
+        val state = _searchState.value
+        val results = state.results
         if (results.isEmpty()) return
-        val next = ((state.activeSearchIndex ?: -1) + 1).coerceAtMost(results.size - 1)
-        _uiState.update { it.copy(activeSearchIndex = next) }
+        val next = ((state.activeIndex ?: -1) + 1).coerceAtMost(results.size - 1)
+        _searchState.update { it.copy(activeIndex = next) }
         _navigateToLocator.tryEmit(results[next].locator)
     }
 
     fun prevSearchResult() {
-        val state = _uiState.value
-        val results = state.searchResults
+        val state = _searchState.value
+        val results = state.results
         if (results.isEmpty()) return
-        val prev = ((state.activeSearchIndex ?: 1) - 1).coerceAtLeast(0)
-        _uiState.update { it.copy(activeSearchIndex = prev) }
+        val prev = ((state.activeIndex ?: 1) - 1).coerceAtLeast(0)
+        _searchState.update { it.copy(activeIndex = prev) }
         _navigateToLocator.tryEmit(results[prev].locator)
     }
 
     fun exitSearchNavigation() {
-        _uiState.update { it.copy(isInSearchNavigationMode = false, activeSearchIndex = null) }
+        _searchState.update { it.copy(isInNavMode = false, activeIndex = null) }
     }
 
     fun updateSettings(settings: ReaderSettings) {
@@ -603,14 +693,18 @@ class ReaderViewModel(
     class Factory(
         private val application: Application,
         private val bookId: String,
-        private val repository: LibraryRepository,
-        private val readerPreferences: ReaderPreferences,
-        private val dictionaryRepository: DictionaryRepository
+        private val initialSystemDark: Boolean = false
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            val app = application as ReaderApplication
             return ReaderViewModel(
-                application, bookId, repository, readerPreferences, dictionaryRepository
+                application = app,
+                bookId = bookId,
+                repository = app.libraryRepository,
+                readerPreferences = app.readerPreferences,
+                dictionaryRepository = app.dictionaryRepository,
+                initialSystemDark = initialSystemDark
             ) as T
         }
     }
