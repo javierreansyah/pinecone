@@ -3,12 +3,13 @@
 package com.example.readerapp.ui.features.reader
 
 import android.app.Application
+import androidx.compose.ui.graphics.Color
 import androidx.core.graphics.toColorInt
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.readerapp.ReaderApplication
 import com.example.readerapp.R
+import com.example.readerapp.ReaderApplication
 import com.example.readerapp.data.local.database.dictionary.DictionaryEntry
 import com.example.readerapp.data.local.database.library.BookmarkEntity
 import com.example.readerapp.data.local.database.library.NoteEntity
@@ -41,7 +42,6 @@ import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.services.positions
 import org.readium.r2.shared.publication.services.search.search
 import kotlin.math.abs
-import androidx.compose.ui.graphics.Color
 
 data class ReaderThemeColors(
     val backgroundColor: Color,
@@ -174,10 +174,13 @@ class ReaderViewModel(
     // Settings flow from DataStore
     val settingsFlow: Flow<ReaderSettings> = readerPreferences.readerSettings
 
-    // Brightness (app-level setting)
+    // Brightness (app-level setting).
+    // Initial value is -1.0f ("use system brightness") — the correct value for the default
+    // autoBrightness=true setting — to prevent the screen spiking to full brightness on launch
+    // before DataStore emits. Eagerly starts the DataStore read at ViewModel construction.
     val brightness: StateFlow<Float> =
         readerPreferences.readerSettings.map { if (it.autoBrightness) -1.0f else it.brightness }
-            .stateIn(viewModelScope, WhileSubscribed(5000), 1.0f)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, -1.0f)
 
     // System dark theme state — initialised to the value at activity creation so the
     // StateFlows that depend on it have a correct initial value before DataStore emits.
