@@ -1,24 +1,31 @@
 package com.example.readerapp.data.local.preferences
 
 import android.content.Context
+import androidx.core.graphics.toColorInt
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.*
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.doublePreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.Serializable
 import org.readium.r2.navigator.epub.EpubPreferences
-import org.readium.r2.navigator.preferences.ReadingProgression
-import org.readium.r2.navigator.preferences.TextAlign
-import org.readium.r2.navigator.preferences.Theme
+import org.readium.r2.navigator.preferences.Color
 import org.readium.r2.navigator.preferences.ColumnCount
 import org.readium.r2.navigator.preferences.FontFamily
 import org.readium.r2.navigator.preferences.ImageFilter
-import org.readium.r2.shared.util.Language
-import androidx.core.graphics.toColorInt
+import org.readium.r2.navigator.preferences.ReadingProgression
+import org.readium.r2.navigator.preferences.TextAlign
+import org.readium.r2.navigator.preferences.Theme
 import org.readium.r2.shared.ExperimentalReadiumApi
+import org.readium.r2.shared.util.Language
 import kotlin.math.roundToInt
-import kotlinx.serialization.Serializable
-import org.readium.r2.navigator.preferences.Color
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "reader_settings")
 

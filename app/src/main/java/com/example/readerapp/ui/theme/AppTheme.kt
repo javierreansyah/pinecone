@@ -7,8 +7,8 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalContext
-import com.example.readerapp.ui.theme.custom.PineTheme
 import com.example.readerapp.ui.theme.custom.NeutralTheme
+import com.example.readerapp.ui.theme.custom.PineTheme
 
 object ThemeRegistry {
     val themes = listOf(

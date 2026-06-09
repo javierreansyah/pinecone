@@ -24,13 +24,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
-import com.example.readerapp.R
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Add
+import com.example.readerapp.R
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -52,28 +52,28 @@ fun ThemeSwatch(
     ) {
         Box(
             modifier = Modifier
-            .size(68.dp)
-            .padding(2.dp)
-            .let { m ->
-                if (isSelected) {
-                    m.border(
-                        width = 2.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = CircleShape
-                    )
-                } else m
-            }
-            .padding(4.dp)
-            .clip(CircleShape)
-            .background(if (isAuto || isCustom || iconRes != null) Color.Transparent else color)
-            .border(
-                width = 1.5.dp,
-                color = MaterialTheme.colorScheme.outlineVariant,
-                shape = CircleShape
-            )
-            .combinedClickable(
-                onClick = onClick, onLongClick = onLongClick
-            ), contentAlignment = Alignment.Center) {
+                .size(68.dp)
+                .padding(2.dp)
+                .let { m ->
+                    if (isSelected) {
+                        m.border(
+                            width = 2.dp,
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = CircleShape
+                        )
+                    } else m
+                }
+                .padding(4.dp)
+                .clip(CircleShape)
+                .background(if (isAuto || isCustom || iconRes != null) Color.Transparent else color)
+                .border(
+                    width = 1.5.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                    shape = CircleShape
+                )
+                .combinedClickable(
+                    onClick = onClick, onLongClick = onLongClick
+                ), contentAlignment = Alignment.Center) {
             if (isAuto) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     drawArc(

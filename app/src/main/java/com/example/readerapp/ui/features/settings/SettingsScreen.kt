@@ -1,40 +1,56 @@
 package com.example.readerapp.ui.features.settings
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.ui.res.stringResource
-import com.example.readerapp.R
-import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Arrow_back
-import com.composables.icons.materialsymbols.outlined.Keyboard_arrow_right
-import com.composables.icons.materialsymbols.outlined.Contrast
-import com.composables.icons.materialsymbols.outlined.Palette
-import com.composables.icons.materialsymbols.outlined.Tune
-import com.composables.icons.materialsymbols.outlined.Translate
-import com.composables.icons.materialsymbols.outlined.Sync
-import com.composables.icons.materialsymbols.outlined.Folder
-import com.example.readerapp.data.local.preferences.ReaderPreferences
-import com.example.readerapp.ui.features.settings.components.settingsItem
-import com.example.readerapp.worker.WorkerUtils
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import android.content.Intent
 import android.net.Uri
 import android.os.Environment
 import android.provider.DocumentsContract
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Arrow_back
+import com.composables.icons.materialsymbols.outlined.Contrast
+import com.composables.icons.materialsymbols.outlined.Folder
+import com.composables.icons.materialsymbols.outlined.Keyboard_arrow_right
+import com.composables.icons.materialsymbols.outlined.Palette
+import com.composables.icons.materialsymbols.outlined.Sync
+import com.composables.icons.materialsymbols.outlined.Translate
+import com.composables.icons.materialsymbols.outlined.Tune
+import com.example.readerapp.R
+import com.example.readerapp.data.local.preferences.ReaderPreferences
 import com.example.readerapp.ui.components.SegmentedColumn
-import java.io.File
+import com.example.readerapp.ui.features.settings.components.settingsItem
+import com.example.readerapp.worker.WorkerUtils
 import kotlinx.coroutines.launch
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -69,7 +85,8 @@ fun SettingsScreen(
         },
         onResult = { uri ->
             uri?.let {
-                val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                val takeFlags: Int =
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                 context.contentResolver.takePersistableUriPermission(it, takeFlags)
                 viewModel.updateSettings(settings.copy(backupFolderUri = it.toString()))
             }
@@ -80,14 +97,17 @@ fun SettingsScreen(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text(stringResource(R.string.settings_title))},
+                title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     FilledTonalIconButton(
                         shapes = IconButtonDefaults.shapes(),
                         colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                         onClick = onNavigateBack
                     ) {
-                        Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = stringResource(R.string.action_back))
+                        Icon(
+                            MaterialSymbols.Outlined.Arrow_back,
+                            contentDescription = stringResource(R.string.action_back)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -118,7 +138,7 @@ fun SettingsScreen(
                 "Pine" to stringResource(R.string.settings_theme_pine),
                 "Neutral" to stringResource(R.string.settings_theme_neutral)
             )
-            
+
             SegmentedColumn(modifier = Modifier.padding(bottom = 16.dp)) {
                 val themeModeLabel = stringResource(R.string.settings_theme_mode)
                 val themeModeOptionsMap = mapOf(
@@ -130,9 +150,10 @@ fun SettingsScreen(
                     label = themeModeLabel,
                     value = themeModeOptionsMap[settings.themeMode] ?: settings.themeMode,
                     options = themeModeOptionsMap.values.toList(),
-                    onSelected = { label -> 
-                        val key = themeModeOptionsMap.entries.find { it.value == label }?.key ?: label
-                        viewModel.updateSettings(settings.copy(themeMode = key)) 
+                    onSelected = { label ->
+                        val key =
+                            themeModeOptionsMap.entries.find { it.value == label }?.key ?: label
+                        viewModel.updateSettings(settings.copy(themeMode = key))
                     },
                     leadingIcon = {
                         Icon(
@@ -147,7 +168,8 @@ fun SettingsScreen(
                     value = colorPaletteOptionsMap[settings.colorPalette] ?: settings.colorPalette,
                     options = colorPaletteOptionsMap.values.toList(),
                     onSelected = { label ->
-                        val key = colorPaletteOptionsMap.entries.find { it.value == label }?.key ?: label
+                        val key =
+                            colorPaletteOptionsMap.entries.find { it.value == label }?.key ?: label
                         viewModel.updateSettings(settings.copy(colorPalette = key))
                     },
                     leadingIcon = {
@@ -165,10 +187,12 @@ fun SettingsScreen(
                 )
                 settingsItem(
                     label = themeContrastLabel,
-                    value = themeContrastOptionsMap[settings.themeContrast] ?: settings.themeContrast,
+                    value = themeContrastOptionsMap[settings.themeContrast]
+                        ?: settings.themeContrast,
                     options = themeContrastOptionsMap.values.toList(),
                     onSelected = { label ->
-                        val key = themeContrastOptionsMap.entries.find { it.value == label }?.key ?: label
+                        val key =
+                            themeContrastOptionsMap.entries.find { it.value == label }?.key ?: label
                         viewModel.updateSettings(settings.copy(themeContrast = key))
                     },
                     enabled = settings.colorPalette != "Dynamic",
@@ -185,23 +209,29 @@ fun SettingsScreen(
                     "en" to "English",
                     "id" to "Indonesian"
                 )
-                
+
                 val appLocales = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()
-                var currentTag = if (appLocales.isEmpty) "System" else appLocales.get(0)?.language ?: "System"
+                var currentTag =
+                    if (appLocales.isEmpty) "System" else appLocales.get(0)?.language ?: "System"
                 if (currentTag == "in") currentTag = "id"
 
                 settingsItem(
                     label = languageLabel,
                     value = languageOptionsMap[currentTag] ?: currentTag,
                     options = languageOptionsMap.values.toList(),
-                    onSelected = { label -> 
-                        val key = languageOptionsMap.entries.find { it.value == label }?.key ?: label
+                    onSelected = { label ->
+                        val key =
+                            languageOptionsMap.entries.find { it.value == label }?.key ?: label
                         scope.launch {
                             viewModel.updateSettingsSuspended(settings.copy(locale = key))
                             if (key == "System") {
-                                androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(androidx.core.os.LocaleListCompat.getEmptyLocaleList())
+                                androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
+                                    androidx.core.os.LocaleListCompat.getEmptyLocaleList()
+                                )
                             } else {
-                                androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(androidx.core.os.LocaleListCompat.forLanguageTags(key))
+                                androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
+                                    androidx.core.os.LocaleListCompat.forLanguageTags(key)
+                                )
                             }
                         }
                     },
@@ -236,11 +266,13 @@ fun SettingsScreen(
                 )
                 settingsItem(
                     label = autoBackupLabel,
-                    value = autoBackupOptionsMap[settings.autoBackupFrequency] ?: settings.autoBackupFrequency,
+                    value = autoBackupOptionsMap[settings.autoBackupFrequency]
+                        ?: settings.autoBackupFrequency,
                     options = autoBackupOptionsMap.values.toList(),
                     onSelected = { label ->
-                        val key = autoBackupOptionsMap.entries.find { it.value == label }?.key ?: label
-                        viewModel.updateSettings(settings.copy(autoBackupFrequency = key)) 
+                        val key =
+                            autoBackupOptionsMap.entries.find { it.value == label }?.key ?: label
+                        viewModel.updateSettings(settings.copy(autoBackupFrequency = key))
                         WorkerUtils.scheduleBackupWork(context, key)
                     },
                     leadingIcon = {
@@ -250,16 +282,22 @@ fun SettingsScreen(
                         )
                     }
                 )
-                
+
                 // Backup Location Button
                 item(
-                    onClick = { 
-                        val pineconeDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "Pinecone")
+                    onClick = {
+                        val pineconeDir = File(
+                            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+                            "Pinecone"
+                        )
                         if (!pineconeDir.exists()) {
                             pineconeDir.mkdirs()
                         }
                         val initialUri =
-                            DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Documents/Pinecone")
+                            DocumentsContract.buildDocumentUri(
+                                "com.android.externalstorage.documents",
+                                "primary:Documents/Pinecone"
+                            )
                         folderPickerLauncher.launch(initialUri)
                     },
                     leadingContent = {
@@ -269,13 +307,13 @@ fun SettingsScreen(
                         )
                     },
                     content = { Text(stringResource(R.string.settings_backup_location)) },
-                    supportingContent = { 
+                    supportingContent = {
                         val selectedText = stringResource(R.string.settings_option_selected)
                         val notSelectedText = stringResource(R.string.settings_option_not_selected)
                         Text(
-                            if (settings.backupFolderUri.isNotEmpty()) selectedText 
+                            if (settings.backupFolderUri.isNotEmpty()) selectedText
                             else notSelectedText
-                        ) 
+                        )
                     },
                     trailingContent = {
                         Icon(

@@ -21,12 +21,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
-import com.example.readerapp.R
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_drop_down
 import com.composables.icons.materialsymbols.outlined.Arrow_drop_up
@@ -34,12 +33,13 @@ import com.composables.icons.materialsymbols.outlined.Border_all
 import com.composables.icons.materialsymbols.outlined.Calendar_view_month
 import com.composables.icons.materialsymbols.outlined.View_carousel
 import com.composables.icons.materialsymbols.outlined.View_list
+import com.example.readerapp.R
 import com.example.readerapp.ui.components.SegmentedColumn
 import com.example.readerapp.ui.features.library.FilterSortPreferences
 import com.example.readerapp.ui.features.library.LayoutMode
+import com.example.readerapp.ui.features.library.ShelfFilter
 import com.example.readerapp.ui.features.library.SortType
 import com.example.readerapp.ui.features.library.StatusFilter
-import com.example.readerapp.ui.features.library.ShelfFilter
 import com.example.readerapp.ui.theme.spacing
 
 @OptIn(ExperimentalMaterial3Api::class)

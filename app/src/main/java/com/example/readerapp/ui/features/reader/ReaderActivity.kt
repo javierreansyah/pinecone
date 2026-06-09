@@ -1,39 +1,54 @@
 package com.example.readerapp.ui.features.reader
 
 import android.content.Intent
+import android.graphics.Color.colorToHSV
 import android.os.Bundle
+import android.view.ActionMode
+import android.view.Menu
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.runtime.*
-import androidx.compose.ui.platform.ComposeView
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.lifecycle.*
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ComposeView
+import androidx.core.graphics.toColorInt
+import androidx.core.net.toUri
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentContainerView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import com.example.readerapp.R
 import com.example.readerapp.ReaderApplication
 import com.example.readerapp.data.local.preferences.ReaderPreferences
-import com.example.readerapp.ui.theme.ReaderTheme
+import com.example.readerapp.data.local.preferences.ReaderSettings
 import com.example.readerapp.ui.features.reader.components.overlay.ReaderOverlay
-import kotlinx.coroutines.flow.filterNotNull
+import com.example.readerapp.ui.theme.ReaderTheme
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import org.readium.r2.navigator.DecorableNavigator
 import org.readium.r2.navigator.Decoration
+import org.readium.r2.navigator.Decoration.Style
+import org.readium.r2.navigator.OverflowableNavigator
+import org.readium.r2.navigator.SelectableNavigator
 import org.readium.r2.navigator.epub.EpubNavigatorFactory
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.css.FontStyle
 import org.readium.r2.navigator.input.InputListener
 import org.readium.r2.navigator.input.TapEvent
 import org.readium.r2.navigator.preferences.FontFamily
+import org.readium.r2.navigator.util.DirectionalNavigationAdapter
 import org.readium.r2.shared.ExperimentalReadiumApi
+import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
-import androidx.core.graphics.toColorInt
 import kotlin.time.Duration.Companion.milliseconds
-import androidx.core.net.toUri
-import com.example.readerapp.data.local.preferences.ReaderSettings
 
 class ReaderActivity : AppCompatActivity() {
 
@@ -57,16 +72,16 @@ class ReaderActivity : AppCompatActivity() {
     private var navigator: EpubNavigatorFragment? = null
     private var navigatorContainer: FragmentContainerView? = null
     private val navigatorFlow = MutableStateFlow<EpubNavigatorFragment?>(null)
-    private var currentActionMode: android.view.ActionMode? = null
+    private var currentActionMode: ActionMode? = null
     private var selectionUpdateJob: kotlinx.coroutines.Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        setContentView(com.example.readerapp.R.layout.activity_reader)
+        setContentView(R.layout.activity_reader)
 
-        val composeView = findViewById<ComposeView>(com.example.readerapp.R.id.compose_overlay)
-        navigatorContainer = findViewById(com.example.readerapp.R.id.navigator_container)
+        val composeView = findViewById<ComposeView>(R.id.compose_overlay)
+        navigatorContainer = findViewById(R.id.navigator_container)
 
         // Ensure the navigator container doesn't shift when bars toggle or keyboard appears
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(navigatorContainer!!) { _, insets ->
@@ -76,7 +91,7 @@ class ReaderActivity : AppCompatActivity() {
         }
 
         val rootLayout =
-            findViewById<android.widget.FrameLayout>(com.example.readerapp.R.id.reader_root)
+            findViewById<android.widget.FrameLayout>(R.id.reader_root)
 
         // Open the book
         if (savedInstanceState == null) {
@@ -185,7 +200,7 @@ class ReaderActivity : AppCompatActivity() {
                         // Re-inject ::selection CSS on every page change — the
                         // WebView reloads HTML for each new resource/chapter.
                         lifecycleScope.launch {
-                            kotlinx.coroutines.delay(300.milliseconds)
+                            delay(300.milliseconds)
                             reapplySelectionCss()
                         }
                     }
@@ -197,7 +212,7 @@ class ReaderActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.clearSelectionEvent.collect {
-                    (navigator as? org.readium.r2.navigator.SelectableNavigator)?.clearSelection()
+                    (navigator as? SelectableNavigator)?.clearSelection()
                 }
             }
         }
@@ -214,31 +229,29 @@ class ReaderActivity : AppCompatActivity() {
                 ) { nav, notes ->
                     nav to notes
                 }.collectLatest { (nav, notes) ->
-                    if (nav is DecorableNavigator) {
-                        val decorations = notes.mapNotNull { note ->
-                            try {
-                                val locator = org.readium.r2.shared.publication.Locator.fromJSON(
-                                    org.json.JSONObject(note.locatorJson)
-                                )
-                                if (locator != null) {
-                                    val isHighlight = note.noteText.isEmpty()
-                                    val tintColor = if (note.color != -1) note.color else {
-                                        if (isHighlight) "#4003A9F4".toColorInt() else "#40FFEB3B".toColorInt()
-                                    }
-                                    Decoration(
-                                        id = "note_${note.id}",
-                                        locator = locator,
-                                        style = Decoration.Style.Highlight(
-                                            tint = tintColor, isActive = false
-                                        )
+                    val decorations = notes.mapNotNull { note ->
+                        try {
+                            val locator = Locator.fromJSON(
+                                org.json.JSONObject(note.locatorJson)
+                            )
+                            if (locator != null) {
+                                val isHighlight = note.noteText.isEmpty()
+                                val tintColor = if (note.color != -1) note.color else {
+                                    if (isHighlight) "#4003A9F4".toColorInt() else "#40FFEB3B".toColorInt()
+                                }
+                                Decoration(
+                                    id = "note_${note.id}",
+                                    locator = locator,
+                                    style = Style.Highlight(
+                                        tint = tintColor, isActive = false
                                     )
-                                } else null
-                            } catch (e: Exception) {
-                                null
-                            }
+                                )
+                            } else null
+                        } catch (_: Exception) {
+                            null
                         }
-                        nav.applyDecorations(decorations, group = "notes")
                     }
+                    nav.applyDecorations(decorations, group = "notes")
                 }
             }
         }
@@ -265,7 +278,7 @@ class ReaderActivity : AppCompatActivity() {
                     // the WebView may not have fully rendered the target cssSelector, causing the navigator
                     // to fall back to the end of the chapter (progression 1.0).
                     // A second go() with animated=false forces it to snap to the exact text once loaded.
-                    kotlinx.coroutines.delay(100.milliseconds)
+                    delay(100.milliseconds)
                     navigator?.go(locator, animated = false)
 
                     // Apply a highlight decoration at the matched text location
@@ -281,7 +294,7 @@ class ReaderActivity : AppCompatActivity() {
                     state to settings
                 }.collect { (state, settings) ->
                     val windowInsetsController =
-                        androidx.core.view.WindowCompat.getInsetsController(
+                        WindowCompat.getInsetsController(
                             window, window.decorView
                         )
                     if (state.showControls || settings.alwaysShowStatusBar) {
@@ -289,7 +302,7 @@ class ReaderActivity : AppCompatActivity() {
                     } else {
                         windowInsetsController.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
                         windowInsetsController.systemBarsBehavior =
-                            androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
+                            WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
                     }
 
                     if (!state.isInSearchNavigationMode) {
@@ -302,31 +315,31 @@ class ReaderActivity : AppCompatActivity() {
         // Set up Compose overlay
         composeView.setContent {
             // The overlay theme is driven by the reader's own theme setting so that
-            // icon/text colours always contrast with the reader background.
+            // icon/text colors always contrast with the reader background.
             val settingsState = viewModel.settingsFlow.collectAsState(
                 initial = ReaderSettings()
             )
             val overlaySettings = settingsState.value
             val isSystemDark = isSystemInDarkTheme()
             val readerBgColor = when (overlaySettings.readerThemePreset) {
-                "Light" -> androidx.compose.ui.graphics.Color(0xFFFFFFFF)
-                "Warm" -> androidx.compose.ui.graphics.Color(0xFFFAF4E8)
-                "Dark" -> androidx.compose.ui.graphics.Color(0xFF000000)
+                "Light" -> Color(0xFFFFFFFF)
+                "Warm" -> Color(0xFFFAF4E8)
+                "Dark" -> Color(0xFF000000)
                 "Auto" -> {
                     val uiDarkTheme = when (overlaySettings.themeMode) {
                         "Dark" -> true
                         "Light" -> false
                         else -> isSystemDark
                     }
-                    if (uiDarkTheme) androidx.compose.ui.graphics.Color(0xFF000000) else androidx.compose.ui.graphics.Color(
+                    if (uiDarkTheme) Color(0xFF000000) else Color(
                         0xFFFFFFFF
                     )
                 }
 
                 else -> try {
-                    androidx.compose.ui.graphics.Color(overlaySettings.customBackgroundColor.toColorInt())
+                    Color(overlaySettings.customBackgroundColor.toColorInt())
                 } catch (_: Exception) {
-                    androidx.compose.ui.graphics.Color.White
+                    Color.White
                 }
             }
             ReaderTheme(readerBackgroundColor = readerBgColor) {
@@ -378,9 +391,9 @@ class ReaderActivity : AppCompatActivity() {
 
         val configuration = EpubNavigatorFragment.Configuration {
             // Custom selection callback for our Compose action bar.
-            selectionActionModeCallback = object : android.view.ActionMode.Callback {
+            selectionActionModeCallback = object : ActionMode.Callback {
                 override fun onCreateActionMode(
-                    mode: android.view.ActionMode?, menu: android.view.Menu?
+                    mode: ActionMode?, menu: Menu?
                 ): Boolean {
                     // Clear all native menu items so the default context toolbar
                     // never renders — our custom Compose bar replaces it.
@@ -388,7 +401,7 @@ class ReaderActivity : AppCompatActivity() {
                     currentActionMode = mode
 
                     // Show our custom Compose action bar
-                    val nav = navigator as? org.readium.r2.navigator.SelectableNavigator
+                    val nav = navigator as? SelectableNavigator
                     if (nav != null) {
                         selectionUpdateJob?.cancel()
                         selectionUpdateJob = lifecycleScope.launch {
@@ -403,7 +416,7 @@ class ReaderActivity : AppCompatActivity() {
                                         viewModel.showSelectionMenu(selection.locator)
                                     }
                                 }
-                                kotlinx.coroutines.delay(300.milliseconds)
+                                delay(300.milliseconds)
                             }
                         }
                     }
@@ -411,7 +424,7 @@ class ReaderActivity : AppCompatActivity() {
                 }
 
                 override fun onPrepareActionMode(
-                    mode: android.view.ActionMode?, menu: android.view.Menu?
+                    mode: ActionMode?, menu: Menu?
                 ): Boolean {
                     // Keep clearing — onPrepare is called on every invalidation.
                     menu?.clear()
@@ -419,10 +432,10 @@ class ReaderActivity : AppCompatActivity() {
                 }
 
                 override fun onActionItemClicked(
-                    mode: android.view.ActionMode?, item: android.view.MenuItem?
+                    mode: ActionMode?, item: android.view.MenuItem?
                 ): Boolean = false
 
-                override fun onDestroyActionMode(mode: android.view.ActionMode?) {
+                override fun onDestroyActionMode(mode: ActionMode?) {
                     if (mode == currentActionMode) {
                         currentActionMode = null
                         // dismissSelectionBar() only hides the UI bar.
@@ -525,7 +538,7 @@ class ReaderActivity : AppCompatActivity() {
         )
 
         supportFragmentManager.beginTransaction().replace(
-            com.example.readerapp.R.id.navigator_container,
+            R.id.navigator_container,
             EpubNavigatorFragment::class.java,
             Bundle(),
             NAVIGATOR_TAG
@@ -546,16 +559,16 @@ class ReaderActivity : AppCompatActivity() {
         //    It handles both swipe gestures and edge taps out of the box:
         //      • Swipe left / right edge tap  → goForward()  (next page or chapter)
         //      • Swipe right / left edge tap  → goBackward() (prev page or chapter)
-        (nav as? org.readium.r2.navigator.OverflowableNavigator)?.let { overflowableNav ->
+        (nav as? OverflowableNavigator)?.let { overflowableNav ->
             nav.addInputListener(
-                org.readium.r2.navigator.util.DirectionalNavigationAdapter(
+                DirectionalNavigationAdapter(
                     navigator = overflowableNav, animatedTransition = true
                 )
             )
         }
 
         // 2) Tap listener — registered SECOND so edge taps consumed above never reach here.
-        //    Only un-consumed taps (centre area) toggle the controls overlay.
+        //    Only un-consumed taps (center area) toggle the controls overlay.
         nav.addInputListener(object : InputListener {
             override fun onTap(event: TapEvent): Boolean {
                 if (viewModel.uiState.value.selectionLocator != null || viewModel.uiState.value.viewingHighlight != null) {
@@ -587,9 +600,9 @@ class ReaderActivity : AppCompatActivity() {
         })
     }
 
-    // ── Dynamic ::selection colour injection ──────────────────────────────
+    // ── Dynamic ::selection color injection ──────────────────────────────
 
-    /** The last CSS colour string injected — avoids redundant JS calls. */
+    /** The last CSS color string injected — avoids redundant JS calls. */
     private var lastSelectionCssColor: String? = null
 
     /**
@@ -604,7 +617,7 @@ class ReaderActivity : AppCompatActivity() {
         // Chromium `color: inherit` cross-column jitter bug, while still forcing
         // the custom background color to be respected instead of the default blue.
         val hsv = FloatArray(3)
-        android.graphics.Color.colorToHSV(bgColor, hsv)
+        colorToHSV(bgColor, hsv)
         val isDark = hsv[2] < 0.5f
         val cssTextColor = if (isDark) "#ffffff" else "#000000"
 
@@ -661,10 +674,10 @@ class ReaderActivity : AppCompatActivity() {
     // ── Search highlight helpers ─────────────────────────────────────────────
 
     @OptIn(ExperimentalReadiumApi::class)
-    private suspend fun applySearchHighlight(locator: org.readium.r2.shared.publication.Locator) {
+    private suspend fun applySearchHighlight(locator: Locator) {
         val nav = navigator as? DecorableNavigator ?: return
         val decoration = Decoration(
-            id = "search_current", locator = locator, style = Decoration.Style.Highlight(
+            id = "search_current", locator = locator, style = Style.Highlight(
                 tint = "#FFEB3B".toColorInt(), // yellow
                 isActive = false
             )

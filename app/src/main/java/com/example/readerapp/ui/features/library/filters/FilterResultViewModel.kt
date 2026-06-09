@@ -4,8 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.readerapp.ReaderApplication
-import com.example.readerapp.data.local.preferences.LibraryPreferencesManager
 import com.example.readerapp.data.local.database.library.ShelfWithCovers
+import com.example.readerapp.data.local.preferences.LibraryPreferencesManager
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.features.library.LayoutMode
 import com.example.readerapp.ui.features.library.LibraryUiState

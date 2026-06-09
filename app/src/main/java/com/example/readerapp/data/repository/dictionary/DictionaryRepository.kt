@@ -1,10 +1,10 @@
 package com.example.readerapp.data.repository.dictionary
 
 import android.content.Context
-import com.example.readerapp.data.local.preferences.ReaderPreferences
-import kotlinx.coroutines.flow.first
 import com.example.readerapp.data.local.database.dictionary.DictionaryDatabase
 import com.example.readerapp.data.local.database.dictionary.DictionaryEntry
+import com.example.readerapp.data.local.preferences.ReaderPreferences
+import kotlinx.coroutines.flow.first
 
 class DictionaryRepository(
     private val context: Context, private val preferences: ReaderPreferences

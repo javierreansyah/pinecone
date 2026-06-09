@@ -6,9 +6,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.readerapp.data.local.preferences.InstalledDictionary
 import com.example.readerapp.data.local.preferences.ReaderPreferences
-import com.example.readerapp.data.repository.dictionary.DictionaryRepository
-import com.example.readerapp.data.repository.dictionary.DictionaryImportManager
 import com.example.readerapp.data.repository.dictionary.DictionaryBackupManager
+import com.example.readerapp.data.repository.dictionary.DictionaryImportManager
+import com.example.readerapp.data.repository.dictionary.DictionaryRepository
 import com.example.readerapp.data.repository.dictionary.DictionaryState
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +26,7 @@ class DictionariesViewModel(
     val importState: StateFlow<DictionaryState> = importManager.importState
     val restoreState: StateFlow<DictionaryState> = backupManager.restoreState
     val backupState: StateFlow<DictionaryState> = backupManager.backupState
-    
+
     val installedDictionaries: StateFlow<List<InstalledDictionary>> = preferences.readerSettings
         .map { it.installedDictionaries }
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())

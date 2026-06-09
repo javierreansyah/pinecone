@@ -13,8 +13,8 @@ import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.rememberNavController
-import com.example.readerapp.ui.root.MainViewModel
 import com.example.readerapp.ui.root.MainDrawerWrapper
+import com.example.readerapp.ui.root.MainViewModel
 import com.example.readerapp.ui.root.NavGraph
 import com.example.readerapp.ui.theme.AppTheme
 
