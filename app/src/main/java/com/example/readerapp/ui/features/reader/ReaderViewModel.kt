@@ -127,9 +127,7 @@ class ReaderViewModel(
             if (locator == null) return@combine false
             bookmarksList.any { bookmark ->
                 try {
-                    val bmLocator = JSONObject(bookmark.locatorJson).let {
-                        fromJSON(it)
-                    }
+                    val bmLocator = fromJSON(JSONObject(bookmark.locatorJson))
                     // Check for similar position (Readium standard comparison)
                     (bmLocator?.href == locator.href) && (bmLocator.locations.totalProgression == locator.locations.totalProgression)
                 } catch (e: Exception) {
@@ -294,9 +292,7 @@ class ReaderViewModel(
             // Find existing bookmark at this position
             val existing = bookmarks.value.find { bookmark ->
                 try {
-                    val bmLocator = JSONObject(bookmark.locatorJson).let {
-                        fromJSON(it)
-                    }
+                    val bmLocator = fromJSON(JSONObject(bookmark.locatorJson))
                     (bmLocator?.href == locator.href) && (bmLocator.locations.totalProgression == locator.locations.totalProgression)
                 } catch (e: Exception) {
                     false
