@@ -1,5 +1,6 @@
-package com.example.readerapp.ui.features.library
+package com.example.readerapp.ui.features.library.archive
 
+import android.app.Application
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import com.composables.icons.materialsymbols.MaterialSymbols
@@ -17,6 +18,8 @@ import androidx.compose.ui.res.stringResource
 import com.example.readerapp.R
 import com.example.readerapp.ui.features.library.components.book.BookGrid
 import com.example.readerapp.ui.components.EmptyState
+import com.example.readerapp.ui.features.library.archive.ArchiveViewModel
+import com.example.readerapp.ui.features.library.components.book.BookContextMenu
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -26,12 +29,12 @@ fun ArchiveScreen(
     onNavigateToBookInfo: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val viewModel: LibraryViewModel = viewModel(
-        factory = object : ViewModelProvider.AndroidViewModelFactory(context.applicationContext as android.app.Application) {
+    val viewModel: ArchiveViewModel = viewModel(
+        factory = object : ViewModelProvider.AndroidViewModelFactory(context.applicationContext as Application) {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                if (modelClass.isAssignableFrom(LibraryViewModel::class.java)) {
+                if (modelClass.isAssignableFrom(ArchiveViewModel::class.java)) {
                     @Suppress("UNCHECKED_CAST")
-                    return LibraryViewModel(context.applicationContext as android.app.Application) as T
+                    return ArchiveViewModel(context.applicationContext as Application) as T
                 }
                 throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             }
@@ -39,6 +42,8 @@ fun ArchiveScreen(
     )
 
     val archivedBooks by viewModel.archivedBooks.collectAsState()
+    val shelves by viewModel.shelves.collectAsState()
+    val allBooks by viewModel.allBooks.collectAsState()
     var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -82,11 +87,18 @@ fun ArchiveScreen(
         }
 
         selectedBookForMenu?.let { bookId ->
-            com.example.readerapp.ui.features.library.components.book.BookContextMenu(
-                viewModel = viewModel,
+            BookContextMenu(
                 bookId = bookId,
                 shelfId = null,
+                shelves = shelves,
+                allBooks = allBooks,
                 onNavigateToBookInfo = onNavigateToBookInfo,
+                onToggleArchive = { viewModel.toggleArchive(bookId) },
+                onToggleReadStatus = { viewModel.toggleReadStatus(bookId) },
+                onRemoveFromShelf = {},
+                onAddToShelf = { shelfId -> viewModel.addBookToShelf(shelfId, bookId) },
+                onDeleteBook = { viewModel.deleteBook(bookId) },
+                onCreateShelfAndAdd = { name -> viewModel.createShelfAndAddBook(name, bookId) },
                 onDismiss = { selectedBookForMenu = null }
             )
         }

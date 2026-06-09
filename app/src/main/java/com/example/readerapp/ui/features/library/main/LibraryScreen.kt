@@ -1,5 +1,6 @@
-package com.example.readerapp.ui.features.library
+package com.example.readerapp.ui.features.library.main
 
+import android.app.Application
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -39,11 +40,11 @@ fun LibraryScreen(
 ) {
     val context = LocalContext.current
     val viewModel: LibraryViewModel = viewModel(
-        factory = object : ViewModelProvider.AndroidViewModelFactory(context.applicationContext as android.app.Application) {
+        factory = object : ViewModelProvider.AndroidViewModelFactory(context.applicationContext as Application) {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 if (modelClass.isAssignableFrom(LibraryViewModel::class.java)) {
                     @Suppress("UNCHECKED_CAST")
-                    return LibraryViewModel(context.applicationContext as android.app.Application) as T
+                    return LibraryViewModel(context.applicationContext as Application) as T
                 }
                 throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             }
@@ -53,6 +54,7 @@ fun LibraryScreen(
     val uiState by viewModel.uiState.collectAsState()
     val filteredBooks by viewModel.filteredBooks.collectAsState()
     val shelves by viewModel.shelves.collectAsState()
+    val allBooks by viewModel.allBooks.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val isBooksLoading by viewModel.isBooksLoading.collectAsState()
     val isShelvesLoading by viewModel.isShelvesLoading.collectAsState()
@@ -191,11 +193,20 @@ fun LibraryScreen(
 
         // Context Menu
         selectedBookContext?.let { context ->
+            val bookId = context.first
+            val contextShelfId = context.second
             BookContextMenu(
-                viewModel = viewModel,
-                bookId = context.first,
-                shelfId = context.second,
+                bookId = bookId,
+                shelfId = contextShelfId,
+                shelves = shelves,
+                allBooks = allBooks,
                 onNavigateToBookInfo = onNavigateToBookInfo,
+                onToggleArchive = { viewModel.toggleArchive(bookId) },
+                onToggleReadStatus = { viewModel.toggleReadStatus(bookId) },
+                onRemoveFromShelf = { contextShelfId?.let { viewModel.removeBookFromShelf(it, bookId) } },
+                onAddToShelf = { shelfId -> viewModel.addBookToShelf(shelfId, bookId) },
+                onDeleteBook = { viewModel.deleteBook(bookId) },
+                onCreateShelfAndAdd = { name -> viewModel.createShelfAndAddBook(name, bookId) },
                 onDismiss = { selectedBookContext = null }
             )
         }

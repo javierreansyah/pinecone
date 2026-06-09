@@ -1,4 +1,4 @@
-package com.example.readerapp.ui.features.library.components
+package com.example.readerapp.ui.features.library.main
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -10,17 +10,19 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import com.example.readerapp.R
 import com.example.readerapp.data.local.ShelfWithCovers
 import com.example.readerapp.data.model.Book
-import com.example.readerapp.ui.features.library.LayoutMode
 import com.example.readerapp.ui.features.library.components.book.BookItem
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Book
 import com.example.readerapp.ui.components.EmptyState
+import com.example.readerapp.ui.features.library.LayoutMode
+import com.example.readerapp.ui.features.library.components.ShelfListItem
 
 @Composable
 fun ShelvesPage(
@@ -49,7 +51,13 @@ fun ShelvesPage(
                     if (layoutMode == LayoutMode.List) {
                         ShelfListItem(
                             shelfWithCovers = shelfWithCovers,
-                            onClick = { onShelfClick(shelfWithCovers.shelf.id, shelfWithCovers.shelf.name, booksCount) }
+                            onClick = {
+                                onShelfClick(
+                                    shelfWithCovers.shelf.id,
+                                    shelfWithCovers.shelf.name,
+                                    booksCount
+                                )
+                            }
                         )
                     } else {
                         Column(
@@ -69,7 +77,7 @@ fun ShelvesPage(
                                     text = shelfWithCovers.shelf.name,
                                     style = MaterialTheme.typography.titleMedium
                                 )
-                                val countText = androidx.compose.ui.res.pluralStringResource(
+                                val countText = pluralStringResource(
                                     R.plurals.library_shelf_count, 
                                     booksCount, 
                                     booksCount

@@ -1,5 +1,6 @@
-package com.example.readerapp.ui.features.library
+package com.example.readerapp.ui.features.library.shelf
 
+import android.app.Application
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,6 +29,9 @@ import com.example.readerapp.ui.features.library.components.*
 import com.example.readerapp.ui.features.library.components.book.*
 import kotlinx.coroutines.flow.flowOf
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.res.pluralStringResource
+import com.example.readerapp.ui.features.library.SortType
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
@@ -42,12 +46,14 @@ fun ShelfDetailScreen(
     onNavigateToBookInfo: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val viewModel: LibraryViewModel = viewModel(
-        factory = object : ViewModelProvider.AndroidViewModelFactory(context.applicationContext as android.app.Application) {
+    val viewModel: ShelfDetailViewModel = viewModel(
+        factory = object : ViewModelProvider.AndroidViewModelFactory(context.applicationContext as Application) {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                if (modelClass.isAssignableFrom(LibraryViewModel::class.java)) {
+                if (modelClass.isAssignableFrom(ShelfDetailViewModel::class.java)) {
                     @Suppress("UNCHECKED_CAST")
-                    return LibraryViewModel(context.applicationContext as android.app.Application, "shelf_detail") as T
+                    return ShelfDetailViewModel(
+                        context.applicationContext as Application
+                    ) as T
                 }
                 throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             }
@@ -64,6 +70,7 @@ fun ShelfDetailScreen(
     var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
 
     val shelves by viewModel.shelves.collectAsState()
+    val allBooks by viewModel.allBooks.collectAsState()
     val shelfWithCovers = shelves.find { it.shelf.id == shelfId }
 
     // Use a flow to get filtered and sorted books
@@ -89,7 +96,7 @@ fun ShelfDetailScreen(
                 title = { Text(displayTitle) },
                 subtitle = { 
                     Text(
-                        androidx.compose.ui.res.pluralStringResource(
+                        pluralStringResource(
                             R.plurals.library_shelf_count, 
                             displayCount, 
                             displayCount
@@ -202,7 +209,7 @@ fun ShelfDetailScreen(
                                 val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp)
                                 Surface(
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = if (isDragging) MaterialTheme.shapes.small else androidx.compose.ui.graphics.RectangleShape,
+                                    shape = if (isDragging) MaterialTheme.shapes.small else RectangleShape,
                                     tonalElevation = elevation,
                                     shadowElevation = elevation
                                 ) {
@@ -305,10 +312,17 @@ fun ShelfDetailScreen(
 
         selectedBookForMenu?.let { bookId ->
             BookContextMenu(
-                viewModel = viewModel,
                 bookId = bookId,
                 shelfId = shelfId,
+                shelves = shelves,
+                allBooks = allBooks,
                 onNavigateToBookInfo = onNavigateToBookInfo,
+                onToggleArchive = { viewModel.toggleArchive(bookId) },
+                onToggleReadStatus = { viewModel.toggleReadStatus(bookId) },
+                onRemoveFromShelf = { viewModel.removeBookFromShelf(shelfId, bookId) },
+                onAddToShelf = { targetShelfId -> viewModel.addBookToShelf(targetShelfId, bookId) },
+                onDeleteBook = { viewModel.deleteBook(bookId) },
+                onCreateShelfAndAdd = { name -> viewModel.createShelfAndAddBook(name, bookId) },
                 onDismiss = { selectedBookForMenu = null }
             )
         }

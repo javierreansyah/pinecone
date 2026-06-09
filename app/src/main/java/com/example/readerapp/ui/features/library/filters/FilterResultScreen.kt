@@ -1,5 +1,6 @@
-package com.example.readerapp.ui.features.library
+package com.example.readerapp.ui.features.library.filters
 
+import android.app.Application
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,6 +17,7 @@ import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.More_vert
 import androidx.compose.ui.res.stringResource
 import com.example.readerapp.R
+import com.example.readerapp.ui.features.library.filters.FilterResultViewModel
 import com.example.readerapp.ui.features.library.components.*
 import com.example.readerapp.ui.features.library.components.book.*
 
@@ -30,12 +32,14 @@ fun FilterResultScreen(
     onNavigateToBookInfo: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val viewModel: LibraryViewModel = viewModel(
-        factory = object : ViewModelProvider.AndroidViewModelFactory(context.applicationContext as android.app.Application) {
+    val viewModel: FilterResultViewModel = viewModel(
+        factory = object : ViewModelProvider.AndroidViewModelFactory(context.applicationContext as Application) {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                if (modelClass.isAssignableFrom(LibraryViewModel::class.java)) {
+                if (modelClass.isAssignableFrom(FilterResultViewModel::class.java)) {
                     @Suppress("UNCHECKED_CAST")
-                    return LibraryViewModel(context.applicationContext as android.app.Application, "filter_result") as T
+                    return FilterResultViewModel(
+                        context.applicationContext as Application
+                    ) as T
                 }
                 throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             }
@@ -43,6 +47,8 @@ fun FilterResultScreen(
     )
 
     val uiState by viewModel.uiState.collectAsState()
+    val shelves by viewModel.shelves.collectAsState()
+    val allBooks by viewModel.allBooks.collectAsState()
     var selectedBookContext by remember { mutableStateOf<Pair<String, String?>?>(null) }
 
     val allAuthors by viewModel.allAuthors.collectAsState()
@@ -138,11 +144,20 @@ fun FilterResultScreen(
         }
 
         selectedBookContext?.let { context ->
+            val bookId = context.first
+            val contextShelfId = context.second
             BookContextMenu(
-                viewModel = viewModel,
-                bookId = context.first,
-                shelfId = context.second,
+                bookId = bookId,
+                shelfId = contextShelfId,
+                shelves = shelves,
+                allBooks = allBooks,
                 onNavigateToBookInfo = onNavigateToBookInfo,
+                onToggleArchive = { viewModel.toggleArchive(bookId) },
+                onToggleReadStatus = { viewModel.toggleReadStatus(bookId) },
+                onRemoveFromShelf = { contextShelfId?.let { viewModel.removeBookFromShelf(it, bookId) } },
+                onAddToShelf = { shelfId -> viewModel.addBookToShelf(shelfId, bookId) },
+                onDeleteBook = { viewModel.deleteBook(bookId) },
+                onCreateShelfAndAdd = { name -> viewModel.createShelfAndAddBook(name, bookId) },
                 onDismiss = { selectedBookContext = null }
             )
         }
