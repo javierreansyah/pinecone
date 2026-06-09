@@ -55,7 +55,7 @@
         </activity>
         <activity
             android:name=".ui.features.reader.ReaderActivity"
-            android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize"
+            android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize|uiMode"
             android:theme="@style/Theme.ReaderApp" />
     </application>
 
