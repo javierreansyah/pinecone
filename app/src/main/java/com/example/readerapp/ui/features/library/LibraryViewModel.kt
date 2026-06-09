@@ -41,6 +41,12 @@ class LibraryViewModel(
     private val booksFlow: Flow<List<Book>> = bookRepository.getAllBooks()
         .map { entities -> entities.map { Book.fromEntity(it) } }
 
+    val allBooks: StateFlow<List<Book>> = booksFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
     fun getFilteredAndSortedBooks(baseFlow: Flow<List<Book>>): Flow<List<Book>> {
         return combine(baseFlow, _uiState) { books, state ->
             books

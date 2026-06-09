@@ -36,6 +36,7 @@ fun BookContextMenu(
     onDismiss: () -> Unit
 ) {
     val shelves by viewModel.shelves.collectAsState()
+    val allBooks by viewModel.allBooks.collectAsState()
 
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     var showCreateShelfDialog by remember { mutableStateOf(false) }
@@ -43,8 +44,7 @@ fun BookContextMenu(
     var newShelfName by remember { mutableStateOf("") }
 
     if (menuState == MenuState.Main) {
-        val bookEntity = shelves.flatMap { it.books }.find { it.book.id == bookId }
-        val book = bookEntity?.let { com.example.readerapp.data.model.Book.fromEntity(it) }
+        val book = allBooks.find { it.id == bookId }
 
         ModalBottomSheet(onDismissRequest = onDismiss) {
             Column(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)) {
