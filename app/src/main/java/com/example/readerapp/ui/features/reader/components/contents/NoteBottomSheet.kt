@@ -42,9 +42,7 @@ fun NoteBottomSheet(
     )
 
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        modifier = modifier
+        onDismissRequest = onDismiss, sheetState = sheetState, modifier = modifier
     ) {
         Column(
             modifier = Modifier
@@ -55,14 +53,14 @@ fun NoteBottomSheet(
         ) {
             // Text field for editing note text
             OutlinedTextField(
-                value = editText,
-                onValueChange = {
+                value = editText, onValueChange = {
                     editText = it
-                },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(stringResource(R.string.reader_note_text_placeholder), style = MaterialTheme.typography.bodyLarge) },
-                textStyle = MaterialTheme.typography.bodyLarge,
-                minLines = 2
+                }, modifier = Modifier.fillMaxWidth(), placeholder = {
+                    Text(
+                        stringResource(R.string.reader_note_text_placeholder),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }, textStyle = MaterialTheme.typography.bodyLarge, minLines = 2
             )
 
             // Color Swatches: smaller, outline and ring look, justified left
@@ -75,28 +73,27 @@ fun NoteBottomSheet(
                     val isSelected = editColor == colorInt
                     Box(
                         modifier = Modifier
-                            .size(32.dp)
-                            .let { m ->
-                                if (isSelected) {
-                                    m.border(
-                                        width = 2.dp,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        shape = CircleShape
-                                    )
-                                } else m
-                            }
-                            .padding(4.dp)
-                            .clip(CircleShape)
-                            .background(Color(colorInt).copy(alpha = 1f))
-                            .border(
-                                width = 1.dp,
-                                color = MaterialTheme.colorScheme.outlineVariant,
-                                shape = CircleShape
-                            )
-                            .clickable {
-                                editColor = colorInt
-                            }
-                    )
+                        .size(32.dp)
+                        .let { m ->
+                            if (isSelected) {
+                                m.border(
+                                    width = 2.dp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = CircleShape
+                                )
+                            } else m
+                        }
+                        .padding(4.dp)
+                        .clip(CircleShape)
+                        .background(Color(colorInt).copy(alpha = 1f))
+                        .border(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                            shape = CircleShape
+                        )
+                        .clickable {
+                            editColor = colorInt
+                        })
                 }
             }
 
@@ -109,22 +106,24 @@ fun NoteBottomSheet(
                     onClick = {
                         onDeleteNote(note.id)
                         onDismiss()
-                    },
-                    modifier = Modifier.weight(1f),
-                    shape = ButtonDefaults.shape
+                    }, modifier = Modifier.weight(1f), shape = ButtonDefaults.shape
                 ) {
-                    Text(stringResource(R.string.action_delete), style = MaterialTheme.typography.labelLarge)
+                    Text(
+                        stringResource(R.string.action_delete),
+                        style = MaterialTheme.typography.labelLarge
+                    )
                 }
 
                 Button(
                     onClick = {
                         onUpdateNote(note.copy(noteText = editText, color = editColor))
                         onDismiss()
-                    },
-                    modifier = Modifier.weight(1f),
-                    shape = ButtonDefaults.shape
+                    }, modifier = Modifier.weight(1f), shape = ButtonDefaults.shape
                 ) {
-                    Text(stringResource(R.string.action_save), style = MaterialTheme.typography.labelLarge)
+                    Text(
+                        stringResource(R.string.action_save),
+                        style = MaterialTheme.typography.labelLarge
+                    )
                 }
             }
         }

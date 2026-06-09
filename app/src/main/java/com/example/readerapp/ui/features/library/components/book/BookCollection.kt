@@ -20,9 +20,7 @@ fun BookCollection(
         )
     } else {
         BookList(
-            books = books,
-            onBookClick = onBookClick,
-            onBookLongClick = onBookLongClick
+            books = books, onBookClick = onBookClick, onBookLongClick = onBookLongClick
         )
     }
 }

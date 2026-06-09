@@ -35,16 +35,14 @@ class FilterResultViewModel(
     private val _uiState = MutableStateFlow(
         LibraryUiState(
             bookPreferences = prefsManager.getPreferences(
-                screenKey = screenKey,
-                defaultSort = SortType.Added,
-                defaultAscending = false
+                screenKey = screenKey, defaultSort = SortType.Added, defaultAscending = false
             )
         )
     )
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 
-    private val booksFlow: Flow<List<Book>> = bookRepository.getAllBooks()
-        .map { entities -> entities.map { Book.fromEntity(it) } }
+    private val booksFlow: Flow<List<Book>> =
+        bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }
 
     val allBooks: StateFlow<List<Book>> = booksFlow.stateIn(
         scope = viewModelScope,
@@ -53,8 +51,7 @@ class FilterResultViewModel(
     )
 
     val shelves: StateFlow<List<ShelfWithCovers>> = combine(
-        bookRepository.getAllShelvesWithBooks(),
-        bookRepository.getAllShelfBookCrossRefs()
+        bookRepository.getAllShelvesWithBooks(), bookRepository.getAllShelfBookCrossRefs()
     ) { shelvesList, crossRefs ->
         shelvesList.map { shelfWithCovers ->
             val shelfId = shelfWithCovers.shelf.id
@@ -66,8 +63,10 @@ class FilterResultViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val allAuthors = bookRepository.getAllAuthors().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
-    val allTags = bookRepository.getAllTags().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val allAuthors =
+        bookRepository.getAllAuthors().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val allTags =
+        bookRepository.getAllTags().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     fun getBooksByAuthor(author: String): Flow<List<Book>> = booksFlow.map { books ->
         books.filter { it.authors.contains(author) }
@@ -79,41 +78,38 @@ class FilterResultViewModel(
 
     fun getFilteredAndSortedBooks(baseFlow: Flow<List<Book>>): Flow<List<Book>> {
         return combine(baseFlow, _uiState) { books, state ->
-            books
-                .filter { !it.isArchived }
-                .filter { book ->
-                    val status = when {
-                        book.isRead -> StatusFilter.Finished
-                        book.progress <= 0.0 -> StatusFilter.NotStarted
-                        else -> StatusFilter.Reading
-                    }
-                    state.bookPreferences.selectedStatus.contains(status)
+            books.filter { !it.isArchived }.filter { book ->
+                val status = when {
+                    book.isRead -> StatusFilter.Finished
+                    book.progress <= 0.0 -> StatusFilter.NotStarted
+                    else -> StatusFilter.Reading
                 }
-                .let { filtered ->
-                    val baseComparator = when (state.bookPreferences.sortType) {
-                        SortType.Title -> compareBy { it.title.lowercase() }
-                        SortType.Author -> compareBy { it.authors.firstOrNull()?.lowercase() ?: "" }
-                        SortType.LastRead -> compareBy { it.lastOpened ?: 0L }
-                        SortType.Added -> compareBy { it.addedDate }
-                        SortType.Progress -> compareBy { it.progress }
-                        SortType.Custom -> {
-                            val indexMap = books.withIndex().associate { it.value.id to it.index }
-                            compareBy<Book> { indexMap[it.id] ?: 0 }
-                        }
+                state.bookPreferences.selectedStatus.contains(status)
+            }.let { filtered ->
+                val baseComparator = when (state.bookPreferences.sortType) {
+                    SortType.Title -> compareBy { it.title.lowercase() }
+                    SortType.Author -> compareBy { it.authors.firstOrNull()?.lowercase() ?: "" }
+                    SortType.LastRead -> compareBy { it.lastOpened ?: 0L }
+                    SortType.Added -> compareBy { it.addedDate }
+                    SortType.Progress -> compareBy { it.progress }
+                    SortType.Custom -> {
+                        val indexMap = books.withIndex().associate { it.value.id to it.index }
+                        compareBy<Book> { indexMap[it.id] ?: 0 }
                     }
-
-                    val finalComparator = if (state.bookPreferences.sortType == SortType.Title) {
-                        if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
-                    } else if (state.bookPreferences.sortType == SortType.Custom) {
-                        if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
-                    } else {
-                        val mainComp =
-                            if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
-                        mainComp.thenBy { it.title.lowercase() }
-                    }
-
-                    filtered.sortedWith(finalComparator)
                 }
+
+                val finalComparator = if (state.bookPreferences.sortType == SortType.Title) {
+                    if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
+                } else if (state.bookPreferences.sortType == SortType.Custom) {
+                    if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
+                } else {
+                    val mainComp =
+                        if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
+                    mainComp.thenBy { it.title.lowercase() }
+                }
+
+                filtered.sortedWith(finalComparator)
+            }
         }
     }
 
@@ -160,7 +156,9 @@ class FilterResultViewModel(
     }
 
     @OptIn(DelicateCoroutinesApi::class)
-    fun renameFilterItem(type: String, oldName: String, newName: String, onSuccess: (String) -> Unit) {
+    fun renameFilterItem(
+        type: String, oldName: String, newName: String, onSuccess: (String) -> Unit
+    ) {
         onSuccess(newName.trim())
         GlobalScope.launch(Dispatchers.IO) {
             bookRepository.renameFilterItem(type, oldName, newName)

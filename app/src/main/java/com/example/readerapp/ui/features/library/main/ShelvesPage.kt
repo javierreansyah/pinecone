@@ -41,8 +41,7 @@ fun ShelvesPage(
                     .then(
                         if (layoutMode != LayoutMode.List) Modifier.padding(vertical = 4.dp)
                         else Modifier
-                    ),
-                contentPadding = PaddingValues(top = 8.dp)
+                    ), contentPadding = PaddingValues(top = 8.dp)
             ) {
                 items(shelves, key = { it.shelf.id }) { shelfWithCovers ->
                     val visibleBooks = shelfWithCovers.books.filter { !it.book.isArchived }
@@ -50,22 +49,23 @@ fun ShelvesPage(
 
                     if (layoutMode == LayoutMode.List) {
                         ShelfListItem(
-                            shelfWithCovers = shelfWithCovers,
-                            onClick = {
+                            shelfWithCovers = shelfWithCovers, onClick = {
+                                onShelfClick(
+                                    shelfWithCovers.shelf.id, shelfWithCovers.shelf.name, booksCount
+                                )
+                            })
+                    } else {
+                        Column(
+                            modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
                                 onShelfClick(
                                     shelfWithCovers.shelf.id,
                                     shelfWithCovers.shelf.name,
                                     booksCount
                                 )
                             }
-                        )
-                    } else {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onShelfClick(shelfWithCovers.shelf.id, shelfWithCovers.shelf.name, booksCount) }
-                                .padding(vertical = 4.dp)
-                        ) {
+                            .padding(vertical = 4.dp)) {
                             // Header Column
                             Column(
                                 modifier = Modifier
@@ -78,9 +78,7 @@ fun ShelvesPage(
                                     style = MaterialTheme.typography.titleMedium
                                 )
                                 val countText = pluralStringResource(
-                                    R.plurals.library_shelf_count, 
-                                    booksCount, 
-                                    booksCount
+                                    R.plurals.library_shelf_count, booksCount, booksCount
                                 )
                                 Text(
                                     text = countText,
@@ -103,7 +101,7 @@ fun ShelvesPage(
                                 BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
                                     val maxW = maxWidth
                                     val fitsOnScreen = (120.dp * visibleBooks.size + 16.dp) <= maxW
-                                    
+
                                     LazyRow(
                                         userScrollEnabled = !fitsOnScreen,
                                         contentPadding = PaddingValues(horizontal = 8.dp),
@@ -114,7 +112,11 @@ fun ShelvesPage(
                                             BookItem(
                                                 book = book,
                                                 onClick = { onBookClick(book.id) },
-                                                onLongClick = { onBookLongClick?.invoke(book.id, shelfWithCovers.shelf.id) },
+                                                onLongClick = {
+                                                    onBookLongClick?.invoke(
+                                                        book.id, shelfWithCovers.shelf.id
+                                                    )
+                                                },
                                                 modifier = Modifier.width(120.dp)
                                             )
                                         }
@@ -129,7 +131,9 @@ fun ShelvesPage(
             EmptyState(
                 icon = MaterialSymbols.Outlined.Folder,
                 text = stringResource(R.string.library_empty_shelves),
-                modifier = Modifier.fillMaxSize().padding(16.dp)
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
             )
         }
     }

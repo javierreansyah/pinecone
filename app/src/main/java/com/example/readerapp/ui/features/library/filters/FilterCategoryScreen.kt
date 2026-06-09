@@ -26,23 +26,20 @@ import com.example.readerapp.ui.features.library.components.*
 @Composable
 fun AllFilterItemsScreen(
     filterType: String, // "author" or "tag"
-    onNavigateBack: () -> Unit,
-    onNavigateToDetail: (String) -> Unit
+    onNavigateBack: () -> Unit, onNavigateToDetail: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val viewModel: FilterCategoryViewModel = viewModel(
-        factory = object : ViewModelProvider.AndroidViewModelFactory(context.applicationContext as Application) {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                if (modelClass.isAssignableFrom(FilterCategoryViewModel::class.java)) {
-                    @Suppress("UNCHECKED_CAST")
-                    return FilterCategoryViewModel(
-                        context.applicationContext as Application
-                    ) as T
-                }
-                throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
+    val viewModel: FilterCategoryViewModel = viewModel(factory = object :
+        ViewModelProvider.AndroidViewModelFactory(context.applicationContext as Application) {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(FilterCategoryViewModel::class.java)) {
+                @Suppress("UNCHECKED_CAST") return FilterCategoryViewModel(
+                    context.applicationContext as Application
+                ) as T
             }
+            throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }
-    )
+    })
 
     val itemsWithCounts by if (filterType == "author") {
         viewModel.authorsWithCounts.collectAsState()
@@ -73,6 +70,7 @@ fun AllFilterItemsScreen(
                     val comp = a.first.lowercase().compareTo(b.first.lowercase())
                     if (sortAscending) comp else -comp
                 }
+
                 FilterItemSortType.Size -> {
                     val comp = a.second.compareTo(b.second)
                     if (comp != 0) {
@@ -88,53 +86,68 @@ fun AllFilterItemsScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text(if (filterType == "author") stringResource(R.string.library_authors_title) else stringResource(R.string.library_tags_title)) },
-                navigationIcon = {
+                title = {
+                    Text(
+                        if (filterType == "author") stringResource(R.string.library_authors_title) else stringResource(
+                            R.string.library_tags_title
+                        )
+                    )
+                }, navigationIcon = {
                     FilledTonalIconButton(
                         shapes = IconButtonDefaults.shapes(),
                         colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                         onClick = onNavigateBack
                     ) {
-                        Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = stringResource(R.string.action_back))
+                        Icon(
+                            MaterialSymbols.Outlined.Arrow_back,
+                            contentDescription = stringResource(R.string.action_back)
+                        )
                     }
-                },
-                actions = {
+                }, actions = {
                     IconButton(onClick = { showSortSheet = true }) {
-                        Icon(MaterialSymbols.Outlined.Tune, contentDescription = stringResource(R.string.action_sort))
+                        Icon(
+                            MaterialSymbols.Outlined.Tune,
+                            contentDescription = stringResource(R.string.action_sort)
+                        )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
+                }, colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     scrolledContainerColor = MaterialTheme.colorScheme.surface,
-                ),
-                scrollBehavior = scrollBehavior
+                ), scrollBehavior = scrollBehavior
             )
-        }
-    ) { innerPadding ->
+        }) { innerPadding ->
         if (itemsWithCounts.isEmpty()) {
-            Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
-                Text(stringResource(R.string.library_empty_items), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(16.dp))
+            Box(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+            ) {
+                Text(
+                    stringResource(R.string.library_empty_items),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(16.dp)
+                )
             }
         } else {
             SegmentedLazyColumn(
-                modifier = Modifier.padding(innerPadding).fillMaxSize().padding(horizontal = 16.dp),
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
                 contentPadding = PaddingValues(bottom = 16.dp)
             ) {
                 sortedItems.forEach { item ->
                     item(
                         onClick = { onNavigateToDetail(item.first) },
                         content = { Text(item.first) },
-                        supportingContent = { 
+                        supportingContent = {
                             Text(
                                 pluralStringResource(
-                                    R.plurals.library_books_count, 
-                                    item.second, 
-                                    item.second
+                                    R.plurals.library_books_count, item.second, item.second
                                 )
-                            ) 
+                            )
                         },
                         trailingContent = {
                             Box {
@@ -146,32 +159,31 @@ fun AllFilterItemsScreen(
                                 }
                                 DropdownMenu(
                                     expanded = selectedItemForMenu == item.first,
-                                    onDismissRequest = { selectedItemForMenu = null }
-                                ) {
+                                    onDismissRequest = { selectedItemForMenu = null }) {
                                     DropdownMenuItem(
                                         text = { Text(stringResource(R.string.action_rename)) },
                                         onClick = {
                                             selectedItemForMenu = null
                                             itemToRename = item.first
-                                        }
-                                    )
+                                        })
                                     DropdownMenuItem(
                                         text = { Text(stringResource(R.string.action_delete)) },
                                         onClick = {
                                             selectedItemForMenu = null
                                             itemToDelete = item.first
-                                        }
-                                    )
+                                        })
                                 }
                             }
-                        }
-                    )
+                        })
                 }
             }
         }
 
         itemToDelete?.let { name ->
-            val titleType = if (filterType == "author") stringResource(R.string.library_sort_author) else stringResource(R.string.library_sort_label)
+            val titleType =
+                if (filterType == "author") stringResource(R.string.library_sort_author) else stringResource(
+                    R.string.library_sort_label
+                )
             AlertDialog(
                 onDismissRequest = { itemToDelete = null },
                 title = { Text(stringResource(R.string.library_delete_item_title, titleType)) },
@@ -181,15 +193,17 @@ fun AllFilterItemsScreen(
                         itemToDelete = null
                         viewModel.deleteFilterItem(filterType, name) {}
                     }) {
-                        Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error)
+                        Text(
+                            stringResource(R.string.action_delete),
+                            color = MaterialTheme.colorScheme.error
+                        )
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { itemToDelete = null }) {
                         Text(stringResource(R.string.action_cancel))
                     }
-                }
-            )
+                })
         }
 
         itemToRename?.let { oldName ->
@@ -200,8 +214,7 @@ fun AllFilterItemsScreen(
                 onConfirm = { newName ->
                     itemToRename = null
                     viewModel.renameFilterItem(filterType, oldName, newName) {}
-                }
-            )
+                })
         }
 
         if (showSortSheet) {
@@ -216,8 +229,7 @@ fun AllFilterItemsScreen(
                         sortAscending = true
                     }
                 },
-                onDismiss = { showSortSheet = false }
-            )
+                onDismiss = { showSortSheet = false })
         }
     }
 }

@@ -10,9 +10,7 @@ import com.example.readerapp.data.model.Book
 
 @Composable
 fun BookList(
-    books: List<Book>,
-    onBookClick: (String) -> Unit,
-    onBookLongClick: ((String) -> Unit)? = null
+    books: List<Book>, onBookClick: (String) -> Unit, onBookLongClick: ((String) -> Unit)? = null
 ) {
     Column(
         modifier = Modifier

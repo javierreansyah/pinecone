@@ -1,4 +1,4 @@
-package com.example.readerapp.ui.features.info
+package com.example.readerapp.ui.features.library.info
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -15,13 +15,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class BookInfoUiState(
-    val book: Book? = null,
-    val isLoading: Boolean = true
+    val book: Book? = null, val isLoading: Boolean = true
 )
 
 class BookInfoViewModel(
-    application: Application,
-    private val bookId: String
+    application: Application, private val bookId: String
 ) : AndroidViewModel(application) {
 
     private val repository: LibraryRepository = (application as ReaderApplication).libraryRepository
@@ -39,16 +37,14 @@ class BookInfoViewModel(
             val entity = repository.getBook(bookId)
             _uiState.update {
                 it.copy(
-                    book = entity?.let { Book.fromEntity(it) },
-                    isLoading = false
+                    book = entity?.let { Book.fromEntity(it) }, isLoading = false
                 )
             }
         }
     }
 
     class Factory(
-        private val application: Application,
-        private val bookId: String
+        private val application: Application, private val bookId: String
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {

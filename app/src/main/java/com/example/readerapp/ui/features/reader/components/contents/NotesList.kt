@@ -35,35 +35,40 @@ fun NotesList(
         EmptyState(
             icon = MaterialSymbols.Outlined.Edit,
             text = stringResource(R.string.reader_no_notes),
-            modifier = Modifier.fillMaxWidth().padding(32.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp)
         )
     } else {
         LazyColumn(
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(vertical = 8.dp)
+            modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 8.dp)
         ) {
             items(notes) { note ->
-                val locator = try { Locator.fromJSON(JSONObject(note.locatorJson)) } catch (_: Exception) { null }
+                val locator = try {
+                    Locator.fromJSON(JSONObject(note.locatorJson))
+                } catch (_: Exception) {
+                    null
+                }
                 if (locator != null) {
                     val inDocument = stringResource(R.string.reader_in_document)
-                    val chapterTitle = note.chapterTitle
-                        ?.takeIf { it.isNotBlank() && it != inDocument }
-                        ?: tableOfContents.find { it.href.toString().substringBefore("#") == locator.href.toString().substringBefore("#") }?.title
-                        ?: inDocument
-                    
+                    val chapterTitle =
+                        note.chapterTitle?.takeIf { it.isNotBlank() && it != inDocument }
+                            ?: tableOfContents.find {
+                                it.href.toString().substringBefore("#") == locator.href.toString()
+                                    .substringBefore("#")
+                            }?.title ?: inDocument
+
                     Column(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onNoteClick(locator) }
-                            .padding(horizontal = 20.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(spacing.space8)
-                    ) {
+                        .fillMaxWidth()
+                        .clickable { onNoteClick(locator) }
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(spacing.space8)) {
                         EntryHeader(
                             title = chapterTitle,
                             positionLabel = getPositionLabel(locator),
-                            onDelete = { onDeleteNote(note.id) }
-                        )
-                        
+                            onDelete = { onDeleteNote(note.id) })
+
                         // Display the highlighted text if available
                         locator.text.highlight?.takeIf { it.isNotBlank() }?.let { highlight ->
                             Row(
@@ -86,7 +91,7 @@ fun NotesList(
                                 )
                             }
                         }
-                        
+
                         if (note.noteText.isNotBlank()) {
                             Text(
                                 text = note.noteText,

@@ -14,17 +14,18 @@ import com.composables.icons.materialsymbols.outlined.Delete
 
 @Composable
 fun EntryHeader(
-    title: String,
-    positionLabel: String,
-    onDelete: () -> Unit,
-    modifier: Modifier = Modifier
+    title: String, positionLabel: String, onDelete: () -> Unit, modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 16.dp)
+        ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
@@ -41,8 +42,7 @@ fun EntryHeader(
             }
         }
         IconButton(
-            onClick = onDelete,
-            modifier = Modifier.size(24.dp)
+            onClick = onDelete, modifier = Modifier.size(24.dp)
         ) {
             Icon(
                 imageVector = MaterialSymbols.Outlined.Delete,

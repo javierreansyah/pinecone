@@ -50,7 +50,11 @@ import com.example.readerapp.ui.features.library.components.book.BookItem
 import com.example.readerapp.ui.theme.spacing
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalFoundationApi::class)
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3ExpressiveApi::class,
+    ExperimentalFoundationApi::class
+)
 @Composable
 fun LibrarySearchTopBar(
     modifier: Modifier = Modifier,
@@ -91,7 +95,7 @@ fun LibrarySearchTopBar(
         targetValue = if (isExpandedTarget) MaterialTheme.colorScheme.surfaceContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
         label = "searchBarColor"
     )
-    
+
     val appBarWithSearchColors = SearchBarDefaults.appBarWithSearchColors(
         searchBarColors = SearchBarDefaults.colors(containerColor = searchBarContainerColor),
         scrolledSearchBarContainerColor = searchBarContainerColor,
@@ -115,16 +119,22 @@ fun LibrarySearchTopBar(
             },
             navigationIcon = {
                 IconButton(onClick = onOpenDrawerClick) {
-                    Icon(MaterialSymbols.Outlined.Menu, contentDescription = stringResource(R.string.action_menu))
+                    Icon(
+                        MaterialSymbols.Outlined.Menu,
+                        contentDescription = stringResource(R.string.action_menu)
+                    )
                 }
             },
             actions = {
                 IconButton(onClick = onFilterClick) {
-                    Icon(MaterialSymbols.Outlined.Tune, contentDescription = stringResource(R.string.action_filter))
+                    Icon(
+                        MaterialSymbols.Outlined.Tune,
+                        contentDescription = stringResource(R.string.action_filter)
+                    )
                 }
             },
         )
-        
+
         ExpandedFullScreenSearchBar(
             state = searchBarState,
             inputField = {
@@ -138,7 +148,8 @@ fun LibrarySearchTopBar(
             },
             colors = appBarWithSearchColors.searchBarColors.copy(dividerColor = Color.Transparent)
         ) {
-            val isFullyExpanded = searchBarState.currentValue == SearchBarValue.Expanded && searchBarState.targetValue == SearchBarValue.Expanded
+            val isFullyExpanded =
+                searchBarState.currentValue == SearchBarValue.Expanded && searchBarState.targetValue == SearchBarValue.Expanded
             AnimatedVisibility(visible = isFullyExpanded, enter = fadeIn(), exit = fadeOut()) {
                 ExpandedSearchContent(
                     searchCategory = searchCategory,
@@ -159,9 +170,7 @@ fun LibrarySearchTopBar(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HandleSearchBarStateChanges(
-    searchBarState: SearchBarState,
-    textFieldState: TextFieldState,
-    focusRequester: FocusRequester
+    searchBarState: SearchBarState, textFieldState: TextFieldState, focusRequester: FocusRequester
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -213,10 +222,9 @@ private fun SearchInputField(
     val isExpanded = searchBarState.targetValue == SearchBarValue.Expanded
     val focusManager = LocalFocusManager.current
     val scope = rememberCoroutineScope()
-    
+
     val alignmentBias by animateFloatAsState(
-        targetValue = if (isExpanded) -1f else 0f,
-        label = "placeholderAlignment"
+        targetValue = if (isExpanded) -1f else 0f, label = "placeholderAlignment"
     )
 
     val launchVoiceSearch = rememberVoiceSearchLauncher { spokenText ->
@@ -240,8 +248,8 @@ private fun SearchInputField(
                 contentAlignment = BiasAlignment(horizontalBias = alignmentBias, verticalBias = 0f)
             ) {
                 Text(
-                    modifier = Modifier.clearAndSetSemantics {}, 
-                    text = stringResource(R.string.library_search_placeholder), 
+                    modifier = Modifier.clearAndSetSemantics {},
+                    text = stringResource(R.string.library_search_placeholder),
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
@@ -256,7 +264,10 @@ private fun SearchInputField(
                     focusManager.clearFocus()
                     scope.launch { searchBarState.animateToCollapsed() }
                 }) {
-                    Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = stringResource(R.string.action_back))
+                    Icon(
+                        MaterialSymbols.Outlined.Arrow_back,
+                        contentDescription = stringResource(R.string.action_back)
+                    )
                 }
             }
         },
@@ -267,7 +278,10 @@ private fun SearchInputField(
                 exit = fadeOut(animationSpec = tween(durationMillis = 50))
             ) {
                 IconButton(onClick = { launchVoiceSearch() }) {
-                    Icon(MaterialSymbols.Outlined.Mic, contentDescription = stringResource(R.string.action_voice_search))
+                    Icon(
+                        MaterialSymbols.Outlined.Mic,
+                        contentDescription = stringResource(R.string.action_voice_search)
+                    )
                 }
             }
         },
@@ -298,13 +312,14 @@ private fun ExpandedSearchContent(
             SearchCategory.Authors to stringResource(R.string.library_authors_title),
             SearchCategory.Tags to stringResource(R.string.library_tags_title)
         )
-        
+
         SegmentedButtonGroup(
             options = SearchCategory.entries.map { categoryLabels[it] ?: it.name },
             icons = emptyList(),
             selected = categoryLabels[searchCategory] ?: searchCategory.name,
             onSelected = { selectedLabel ->
-                val category = categoryLabels.entries.find { it.value == selectedLabel }?.key ?: SearchCategory.All
+                val category = categoryLabels.entries.find { it.value == selectedLabel }?.key
+                    ?: SearchCategory.All
                 onSearchCategoryChange(category)
             },
             modifier = Modifier
@@ -345,7 +360,7 @@ private fun SearchResultsContent(
         keyboardController?.hide()
         action()
     }
-    
+
     val isAll = searchCategory == SearchCategory.All
     val maxItemForAll = 8
 
@@ -390,8 +405,7 @@ private fun SearchResultsContent(
                     icon = MaterialSymbols.Outlined.Person,
                     nameSelector = { it },
                     onClick = { handleAction { onAuthorClick(it) } },
-                    onHeaderClick = { handleAction { onAuthorsHeaderClick() } }
-                )
+                    onHeaderClick = { handleAction { onAuthorsHeaderClick() } })
             }
         }
 
@@ -403,8 +417,7 @@ private fun SearchResultsContent(
                     icon = MaterialSymbols.Outlined.Label,
                     nameSelector = { it },
                     onClick = { handleAction { onTagClick(it) } },
-                    onHeaderClick = { handleAction { onTagsHeaderClick() } }
-                )
+                    onHeaderClick = { handleAction { onTagsHeaderClick() } })
             }
         }
     }
@@ -412,9 +425,7 @@ private fun SearchResultsContent(
 
 @Composable
 private fun BooksSection(
-    books: List<Book>,
-    onBookClick: (Book) -> Unit,
-    onHeaderClick: (() -> Unit)? = null
+    books: List<Book>, onBookClick: (Book) -> Unit, onHeaderClick: (() -> Unit)? = null
 ) {
     SectionHeader(
         title = stringResource(R.string.library_tab_books),
@@ -426,9 +437,7 @@ private fun BooksSection(
     ) {
         items(books) { book ->
             BookItem(
-                book = book,
-                onClick = { onBookClick(book) },
-                modifier = Modifier.width(120.dp)
+                book = book, onClick = { onBookClick(book) }, modifier = Modifier.width(120.dp)
             )
         }
     }
@@ -448,7 +457,7 @@ private fun <T> GridFilterSection(
         onHeaderClick = onHeaderClick,
         modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 10.dp)
     )
-    
+
     Column(
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -476,9 +485,7 @@ private fun <T> GridFilterSection(
 
 @Composable
 private fun SectionHeader(
-    title: String,
-    onHeaderClick: (() -> Unit)?,
-    modifier: Modifier = Modifier
+    title: String, onHeaderClick: (() -> Unit)?, modifier: Modifier = Modifier
 ) {
     val clickableModifier = if (onHeaderClick != null) {
         Modifier
@@ -497,8 +504,7 @@ private fun SectionHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium
+            text = title, style = MaterialTheme.typography.titleMedium
         )
         if (onHeaderClick != null) {
             Icon(
@@ -513,10 +519,7 @@ private fun SectionHeader(
 
 @Composable
 private fun SearchFilterItem(
-    text: String,
-    icon: ImageVector,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    text: String, icon: ImageVector, onClick: () -> Unit, modifier: Modifier = Modifier
 ) {
     Surface(
         modifier = modifier.clickable { onClick() },
@@ -529,9 +532,7 @@ private fun SearchFilterItem(
             horizontalArrangement = Arrangement.spacedBy(spacing.space8)
         ) {
             Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp)
+                imageVector = icon, contentDescription = null, modifier = Modifier.size(16.dp)
             )
             Text(
                 text = text,

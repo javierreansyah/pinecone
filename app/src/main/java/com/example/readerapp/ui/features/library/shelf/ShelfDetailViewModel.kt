@@ -34,16 +34,14 @@ class ShelfDetailViewModel(
     private val _uiState = MutableStateFlow(
         LibraryUiState(
             bookPreferences = prefsManager.getPreferences(
-                screenKey = screenKey,
-                defaultSort = SortType.Custom,
-                defaultAscending = true
+                screenKey = screenKey, defaultSort = SortType.Custom, defaultAscending = true
             )
         )
     )
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 
-    private val booksFlow: Flow<List<Book>> = bookRepository.getAllBooks()
-        .map { entities -> entities.map { Book.fromEntity(it) } }
+    private val booksFlow: Flow<List<Book>> =
+        bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }
 
     val allBooks: StateFlow<List<Book>> = booksFlow.stateIn(
         scope = viewModelScope,
@@ -73,8 +71,7 @@ class ShelfDetailViewModel(
                 id = "unshelved",
                 name = application.getString(R.string.library_label_unshelved),
                 createdAt = 0L
-            ),
-            books = unshelvedBooks
+            ), books = unshelvedBooks
         )
 
         mappedShelves + unshelvedShelf
@@ -82,41 +79,38 @@ class ShelfDetailViewModel(
 
     fun getFilteredAndSortedBooks(baseFlow: Flow<List<Book>>): Flow<List<Book>> {
         return combine(baseFlow, _uiState) { books, state ->
-            books
-                .filter { !it.isArchived }
-                .filter { book ->
-                    val status = when {
-                        book.isRead -> StatusFilter.Finished
-                        book.progress <= 0.0 -> StatusFilter.NotStarted
-                        else -> StatusFilter.Reading
-                    }
-                    state.bookPreferences.selectedStatus.contains(status)
+            books.filter { !it.isArchived }.filter { book ->
+                val status = when {
+                    book.isRead -> StatusFilter.Finished
+                    book.progress <= 0.0 -> StatusFilter.NotStarted
+                    else -> StatusFilter.Reading
                 }
-                .let { filtered ->
-                    val baseComparator = when (state.bookPreferences.sortType) {
-                        SortType.Title -> compareBy { it.title.lowercase() }
-                        SortType.Author -> compareBy { it.authors.firstOrNull()?.lowercase() ?: "" }
-                        SortType.LastRead -> compareBy { it.lastOpened ?: 0L }
-                        SortType.Added -> compareBy { it.addedDate }
-                        SortType.Progress -> compareBy { it.progress }
-                        SortType.Custom -> {
-                            val indexMap = books.withIndex().associate { it.value.id to it.index }
-                            compareBy<Book> { indexMap[it.id] ?: 0 }
-                        }
+                state.bookPreferences.selectedStatus.contains(status)
+            }.let { filtered ->
+                val baseComparator = when (state.bookPreferences.sortType) {
+                    SortType.Title -> compareBy { it.title.lowercase() }
+                    SortType.Author -> compareBy { it.authors.firstOrNull()?.lowercase() ?: "" }
+                    SortType.LastRead -> compareBy { it.lastOpened ?: 0L }
+                    SortType.Added -> compareBy { it.addedDate }
+                    SortType.Progress -> compareBy { it.progress }
+                    SortType.Custom -> {
+                        val indexMap = books.withIndex().associate { it.value.id to it.index }
+                        compareBy<Book> { indexMap[it.id] ?: 0 }
                     }
-
-                    val finalComparator = if (state.bookPreferences.sortType == SortType.Title) {
-                        if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
-                    } else if (state.bookPreferences.sortType == SortType.Custom) {
-                        if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
-                    } else {
-                        val mainComp =
-                            if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
-                        mainComp.thenBy { it.title.lowercase() }
-                    }
-
-                    filtered.sortedWith(finalComparator)
                 }
+
+                val finalComparator = if (state.bookPreferences.sortType == SortType.Title) {
+                    if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
+                } else if (state.bookPreferences.sortType == SortType.Custom) {
+                    if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
+                } else {
+                    val mainComp =
+                        if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
+                    mainComp.thenBy { it.title.lowercase() }
+                }
+
+                filtered.sortedWith(finalComparator)
+            }
         }
     }
 

@@ -31,9 +31,11 @@ fun IncrementDecrementControl(
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
-            color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+            color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(
+                alpha = 0.38f
+            )
         )
-        
+
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start
@@ -51,16 +53,18 @@ fun IncrementDecrementControl(
                     modifier = Modifier.size(18.dp)
                 )
             }
-            
+
             Text(
                 text = value,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center,
-                color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(
+                    alpha = 0.38f
+                ),
                 modifier = Modifier.widthIn(min = 60.dp)
             )
-            
+
             OutlinedButton(
                 onClick = onIncrement,
                 enabled = enabled,

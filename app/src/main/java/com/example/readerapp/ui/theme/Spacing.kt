@@ -20,7 +20,7 @@ data class Spacing(
     val space48: Dp = 48.dp,
     val space56: Dp = 56.dp,
     val space64: Dp = 64.dp,
-    
+
     // Component specific standard paddings
     val screenPadding: Dp = 16.dp,
     val itemSpacing: Dp = 12.dp,

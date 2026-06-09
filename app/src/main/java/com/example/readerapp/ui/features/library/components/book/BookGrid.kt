@@ -33,8 +33,7 @@ fun BookGrid(
                 BookItem(
                     book = book,
                     onClick = { onBookClick(book.id) },
-                    onLongClick = { onBookLongClick?.invoke(book.id) }
-                )
+                    onLongClick = { onBookLongClick?.invoke(book.id) })
             }
         }
     }

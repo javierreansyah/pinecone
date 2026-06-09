@@ -37,8 +37,7 @@ import com.example.readerapp.ui.components.EmptyState
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun DictionariesScreen(
-    viewModel: DictionariesViewModel,
-    onBack: () -> Unit
+    viewModel: DictionariesViewModel, onBack: () -> Unit
 ) {
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -61,35 +60,44 @@ fun DictionariesScreen(
     var itemToDelete by remember { mutableStateOf<InstalledDictionary?>(null) }
     var itemToRename by remember { mutableStateOf<InstalledDictionary?>(null) }
 
-    val filePicker = rememberLauncherForActivityResult(
-        contract = object : ActivityResultContracts.OpenDocument() {
-            override fun createIntent(context: android.content.Context, input: Array<String>): android.content.Intent {
-                val intent = super.createIntent(context, input)
-                val uri = android.provider.DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Download")
-                intent.putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, uri)
-                return intent
-            }
+    val filePicker = rememberLauncherForActivityResult(contract = object :
+        ActivityResultContracts.OpenDocument() {
+        override fun createIntent(
+            context: android.content.Context, input: Array<String>
+        ): android.content.Intent {
+            val intent = super.createIntent(context, input)
+            val uri = android.provider.DocumentsContract.buildDocumentUri(
+                "com.android.externalstorage.documents", "primary:Download"
+            )
+            intent.putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, uri)
+            return intent
         }
-    ) { uri ->
+    }) { uri ->
         if (uri != null) {
             viewModel.importDictionary(uri)
         }
     }
 
     val invalidFormatMsg = stringResource(R.string.dictionaries_invalid_format)
-    val restorePicker = rememberLauncherForActivityResult(
-        contract = object : ActivityResultContracts.OpenDocument() {
-            override fun createIntent(context: android.content.Context, input: Array<String>): android.content.Intent {
-                val intent = super.createIntent(context, input)
-                val pineconeDir = java.io.File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOCUMENTS), "Pinecone")
-                if (!pineconeDir.exists()) pineconeDir.mkdirs()
+    val restorePicker = rememberLauncherForActivityResult(contract = object :
+        ActivityResultContracts.OpenDocument() {
+        override fun createIntent(
+            context: android.content.Context, input: Array<String>
+        ): android.content.Intent {
+            val intent = super.createIntent(context, input)
+            val pineconeDir = java.io.File(
+                android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOCUMENTS),
+                "Pinecone"
+            )
+            if (!pineconeDir.exists()) pineconeDir.mkdirs()
 
-                val uri = android.provider.DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Documents/Pinecone")
-                intent.putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, uri)
-                return intent
-            }
+            val uri = android.provider.DocumentsContract.buildDocumentUri(
+                "com.android.externalstorage.documents", "primary:Documents/Pinecone"
+            )
+            intent.putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, uri)
+            return intent
         }
-    ) { uri ->
+    }) { uri ->
         if (uri != null) {
             val name = androidx.documentfile.provider.DocumentFile.fromSingleUri(context, uri)?.name
             if (name != null && name.endsWith(".pinedict")) {
@@ -142,113 +150,108 @@ fun DictionariesScreen(
         }
     }
 
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            LargeFlexibleTopAppBar(
-                title = { Text(stringResource(R.string.dictionaries_title)) },
-                navigationIcon = {
-                    FilledTonalIconButton(
-                        shapes = IconButtonDefaults.shapes(),
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                        onClick = onBack
-                    ) {
-                        Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = stringResource(R.string.action_back))
+    Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
+        LargeFlexibleTopAppBar(
+            title = { Text(stringResource(R.string.dictionaries_title)) },
+            navigationIcon = {
+                FilledTonalIconButton(
+                    shapes = IconButtonDefaults.shapes(),
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                    onClick = onBack
+                ) {
+                    Icon(
+                        MaterialSymbols.Outlined.Arrow_back,
+                        contentDescription = stringResource(R.string.action_back)
+                    )
+                }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                scrolledContainerColor = MaterialTheme.colorScheme.surface,
+            ),
+            scrollBehavior = scrollBehavior
+        )
+    }, floatingActionButton = {
+        var expanded by rememberSaveable { mutableStateOf(false) }
+        var showRestoreWarning by remember { mutableStateOf(false) }
+
+        if (showRestoreWarning) {
+            AlertDialog(
+                onDismissRequest = { showRestoreWarning = false },
+                title = { Text(stringResource(R.string.dictionaries_restore)) },
+                text = { Text(stringResource(R.string.dictionaries_restore_warning)) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showRestoreWarning = false
+                            restorePicker.launch(arrayOf("application/octet-stream"))
+                        }) {
+                        Text(stringResource(R.string.action_proceed))
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
-                ),
-                scrollBehavior = scrollBehavior
-            )
-        },
-        floatingActionButton = {
-            var expanded by rememberSaveable { mutableStateOf(false) }
-            var showRestoreWarning by remember { mutableStateOf(false) }
-
-            if (showRestoreWarning) {
-                AlertDialog(
-                    onDismissRequest = { showRestoreWarning = false },
-                    title = { Text(stringResource(R.string.dictionaries_restore)) },
-                    text = { Text(stringResource(R.string.dictionaries_restore_warning)) },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                showRestoreWarning = false
-                                restorePicker.launch(arrayOf("application/octet-stream"))
-                            }
-                        ) {
-                            Text(stringResource(R.string.action_proceed))
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showRestoreWarning = false }) {
-                            Text(stringResource(R.string.action_cancel))
-                        }
+                dismissButton = {
+                    TextButton(onClick = { showRestoreWarning = false }) {
+                        Text(stringResource(R.string.action_cancel))
                     }
-                )
-            }
-
-            BackHandler(expanded) { expanded = false }
-
-            val backupNoDictMsg = stringResource(R.string.dictionaries_no_to_backup)
-            FloatingActionButtonMenu(
-                expanded = expanded,
-                button = {
-                    ToggleFloatingActionButton(
-                        checked = expanded,
-                        onCheckedChange = { expanded = !expanded }
-                    ) {
-                        val imageVector by remember {
-                            derivedStateOf {
-                                if (checkedProgress > 0.5f) MaterialSymbols.Outlined.Close else MaterialSymbols.Outlined.Add
-                            }
-                        }
-                        Icon(
-                            painter = rememberVectorPainter(imageVector),
-                            contentDescription = stringResource(R.string.action_options),
-                            modifier = Modifier.animateIcon({ checkedProgress })
-                        )
-                    }
-                }
-            ) {
-                FloatingActionButtonMenuItem(
-                    onClick = {
-                        expanded = false
-                        if (installedDictionaries.isEmpty()) {
-                            Toast.makeText(context, backupNoDictMsg, Toast.LENGTH_SHORT).show()
-                        } else {
-                            viewModel.backupDictionaries()
-                        }
-                    },
-                    icon = { Icon(MaterialSymbols.Outlined.Save, contentDescription = null) },
-                    text = { Text(stringResource(R.string.dictionaries_backup)) }
-                )
-                FloatingActionButtonMenuItem(
-                    onClick = {
-                        expanded = false
-                        showRestoreWarning = true
-                    },
-                    icon = { Icon(MaterialSymbols.Outlined.History, contentDescription = null) },
-                    text = { Text(stringResource(R.string.dictionaries_restore)) }
-                )
-                FloatingActionButtonMenuItem(
-                    onClick = {
-                        expanded = false
-                        filePicker.launch(arrayOf("application/zip"))
-                    },
-                    icon = { Icon(MaterialSymbols.Outlined.Download, contentDescription = null) },
-                    text = { Text(stringResource(R.string.dictionaries_import_stardict)) }
-                )
-            }
+                })
         }
-    ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+
+        BackHandler(expanded) { expanded = false }
+
+        val backupNoDictMsg = stringResource(R.string.dictionaries_no_to_backup)
+        FloatingActionButtonMenu(
+            expanded = expanded, button = {
+                ToggleFloatingActionButton(
+                    checked = expanded, onCheckedChange = { expanded = !expanded }) {
+                    val imageVector by remember {
+                        derivedStateOf {
+                            if (checkedProgress > 0.5f) MaterialSymbols.Outlined.Close else MaterialSymbols.Outlined.Add
+                        }
+                    }
+                    Icon(
+                        painter = rememberVectorPainter(imageVector),
+                        contentDescription = stringResource(R.string.action_options),
+                        modifier = Modifier.animateIcon({ checkedProgress })
+                    )
+                }
+            }) {
+            FloatingActionButtonMenuItem(
+                onClick = {
+                    expanded = false
+                    if (installedDictionaries.isEmpty()) {
+                        Toast.makeText(context, backupNoDictMsg, Toast.LENGTH_SHORT).show()
+                    } else {
+                        viewModel.backupDictionaries()
+                    }
+                },
+                icon = { Icon(MaterialSymbols.Outlined.Save, contentDescription = null) },
+                text = { Text(stringResource(R.string.dictionaries_backup)) })
+            FloatingActionButtonMenuItem(
+                onClick = {
+                    expanded = false
+                    showRestoreWarning = true
+                },
+                icon = { Icon(MaterialSymbols.Outlined.History, contentDescription = null) },
+                text = { Text(stringResource(R.string.dictionaries_restore)) })
+            FloatingActionButtonMenuItem(
+                onClick = {
+                    expanded = false
+                    filePicker.launch(arrayOf("application/zip"))
+                },
+                icon = { Icon(MaterialSymbols.Outlined.Download, contentDescription = null) },
+                text = { Text(stringResource(R.string.dictionaries_import_stardict)) })
+        }
+    }) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
             val isLoadingImport = importState is DictionaryState.Loading
             val isLoadingRestore = restoreState is DictionaryState.Loading
             val isLoadingBackup = backupState is DictionaryState.Loading
-            val totalCount = installedDictionaries.size + (if (isLoadingImport) 1 else 0) + (if (isLoadingRestore) 1 else 0) + (if (isLoadingBackup) 1 else 0)
+            val totalCount =
+                installedDictionaries.size + (if (isLoadingImport) 1 else 0) + (if (isLoadingRestore) 1 else 0) + (if (isLoadingBackup) 1 else 0)
 
             if (totalCount == 0) {
                 EmptyState(
@@ -258,41 +261,44 @@ fun DictionariesScreen(
                 )
             } else {
                 SegmentedLazyColumn(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp)
-                    ) {
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp)
+                ) {
                     installedDictionaries.forEach { dict ->
-                        item(
-                            key = dict.id,
-                            content = { Text(dict.name) },
-                            supportingContent = { Text(androidx.compose.ui.res.pluralStringResource(R.plurals.dictionaries_word_count, dict.wordCount, dict.wordCount)) },
-                            trailingContent = {
-                                Box {
-                                    IconButton(onClick = { selectedItemForMenu = dict.id }) {
-                                        Icon(MaterialSymbols.Outlined.More_vert, contentDescription = stringResource(R.string.action_more))
-                                    }
-                                    DropdownMenu(
-                                        expanded = selectedItemForMenu == dict.id,
-                                        onDismissRequest = { selectedItemForMenu = null }
-                                    ) {
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.action_rename)) },
-                                            onClick = {
-                                                selectedItemForMenu = null
-                                                itemToRename = dict
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.action_delete)) },
-                                            onClick = {
-                                                selectedItemForMenu = null
-                                                itemToDelete = dict
-                                            }
-                                        )
-                                    }
+                        item(key = dict.id, content = { Text(dict.name) }, supportingContent = {
+                            Text(
+                                androidx.compose.ui.res.pluralStringResource(
+                                    R.plurals.dictionaries_word_count,
+                                    dict.wordCount,
+                                    dict.wordCount
+                                )
+                            )
+                        }, trailingContent = {
+                            Box {
+                                IconButton(onClick = { selectedItemForMenu = dict.id }) {
+                                    Icon(
+                                        MaterialSymbols.Outlined.More_vert,
+                                        contentDescription = stringResource(R.string.action_more)
+                                    )
+                                }
+                                DropdownMenu(
+                                    expanded = selectedItemForMenu == dict.id,
+                                    onDismissRequest = { selectedItemForMenu = null }) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.action_rename)) },
+                                        onClick = {
+                                            selectedItemForMenu = null
+                                            itemToRename = dict
+                                        })
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.action_delete)) },
+                                        onClick = {
+                                            selectedItemForMenu = null
+                                            itemToDelete = dict
+                                        })
                                 }
                             }
-                        )
+                        })
                     }
 
                     if (isLoadingImport) {
@@ -302,11 +308,12 @@ fun DictionariesScreen(
                             supportingContent = {
                                 LinearWavyProgressIndicator(
                                     progress = { animatedProgress },
-                                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 8.dp)
                                 )
                             },
-                            trailingContent = { Text("${(animatedProgress * 100).toInt()}%") }
-                        )
+                            trailingContent = { Text("${(animatedProgress * 100).toInt()}%") })
                     }
 
                     if (isLoadingRestore) {
@@ -315,10 +322,11 @@ fun DictionariesScreen(
                             content = { Text(stringResource(R.string.dictionaries_restoring)) },
                             supportingContent = {
                                 LinearWavyProgressIndicator(
-                                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 8.dp)
                                 )
-                            }
-                        )
+                            })
                     }
 
                     if (isLoadingBackup) {
@@ -327,10 +335,11 @@ fun DictionariesScreen(
                             content = { Text(stringResource(R.string.dictionaries_backing_up)) },
                             supportingContent = {
                                 LinearWavyProgressIndicator(
-                                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 8.dp)
                                 )
-                            }
-                        )
+                            })
                     }
                 }
             }
@@ -339,22 +348,30 @@ fun DictionariesScreen(
                 AlertDialog(
                     onDismissRequest = { itemToDelete = null },
                     title = { Text(stringResource(R.string.dictionaries_delete_title)) },
-                    text = { Text(stringResource(R.string.dictionaries_delete_message, dict.name)) },
+                    text = {
+                        Text(
+                            stringResource(
+                                R.string.dictionaries_delete_message, dict.name
+                            )
+                        )
+                    },
                     confirmButton = {
                         TextButton(onClick = {
                             val dictId = dict.id
                             itemToDelete = null
                             viewModel.deleteDictionary(dictId)
                         }) {
-                            Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error)
+                            Text(
+                                stringResource(R.string.action_delete),
+                                color = MaterialTheme.colorScheme.error
+                            )
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { itemToDelete = null }) {
                             Text(stringResource(R.string.action_cancel))
                         }
-                    }
-                )
+                    })
             }
 
             itemToRename?.let { dict ->
@@ -386,8 +403,7 @@ fun DictionariesScreen(
                         TextButton(onClick = { itemToRename = null }) {
                             Text(stringResource(R.string.action_cancel))
                         }
-                    }
-                )
+                    })
             }
 
         }

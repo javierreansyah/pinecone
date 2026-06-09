@@ -2,6 +2,7 @@
     androidx.compose.material3.ExperimentalMaterial3Api::class,
     androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class
 )
+
 package com.example.readerapp.ui.components
 
 import androidx.compose.animation.animateColorAsState
@@ -117,24 +118,21 @@ class SegmentedListBuilder : SegmentedListScope {
                 trailingContent = trailingContent?.let { { it(item) } },
                 supportingContent = supportingContent?.let { { it(item) } },
                 wrapper = { wrapper(item, it) },
-                content = { content(item) }
-            )
+                content = { content(item) })
         }
     }
 }
 
 @Composable
 inline fun SegmentedColumn(
-    modifier: Modifier = Modifier,
-    content: @Composable SegmentedListScope.() -> Unit
+    modifier: Modifier = Modifier, content: @Composable SegmentedListScope.() -> Unit
 ) {
     val builder = SegmentedListBuilder().apply { content() }
     val items = builder.items
     val count = items.size
 
     Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         items.forEachIndexed { index, item ->
             item.wrapper {
@@ -170,9 +168,7 @@ inline fun SegmentedLazyColumn(
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         items(
-            count = count,
-            key = { index -> items[index].key ?: index }
-        ) { index ->
+            count = count, key = { index -> items[index].key ?: index }) { index ->
             val item = items[index]
             item.wrapper {
                 SegmentedListItem(
@@ -206,19 +202,24 @@ fun SegmentedListItem(
     val defaultRadius = 16.dp
     val innerRadius = 4.dp
     val springSpec = spring<Dp>(
-        dampingRatio = Spring.DampingRatioMediumBouncy,
-        stiffness = Spring.StiffnessMediumLow
+        dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow
     )
 
     val targetTop = if (selected || index == 0) defaultRadius else innerRadius
     val targetBottom = if (selected || index == count - 1) defaultRadius else innerRadius
 
-    val topRadius by animateDpAsState(targetValue = targetTop, animationSpec = springSpec, label = "topRadius")
-    val bottomRadius by animateDpAsState(targetValue = targetBottom, animationSpec = springSpec, label = "bottomRadius")
+    val topRadius by animateDpAsState(
+        targetValue = targetTop, animationSpec = springSpec, label = "topRadius"
+    )
+    val bottomRadius by animateDpAsState(
+        targetValue = targetBottom, animationSpec = springSpec, label = "bottomRadius"
+    )
 
     val shape = RoundedCornerShape(
-        topStart = topRadius, topEnd = topRadius,
-        bottomStart = bottomRadius, bottomEnd = bottomRadius
+        topStart = topRadius,
+        topEnd = topRadius,
+        bottomStart = bottomRadius,
+        bottomEnd = bottomRadius
     )
 
     val containerColor by animateColorAsState(

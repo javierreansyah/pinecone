@@ -38,7 +38,7 @@ class ReaderApplication : Application() {
 
     lateinit var publicationOpener: PublicationOpener
         private set
-        
+
     lateinit var assetRetriever: AssetRetriever
         private set
 
@@ -50,18 +50,18 @@ class ReaderApplication : Application() {
             AppDatabase::class.java,
             "reader_database"
         )
-        .addMigrations(
-            AppDatabase.MIGRATION_1_2,
-            AppDatabase.MIGRATION_2_3,
-            AppDatabase.MIGRATION_3_4,
-            AppDatabase.MIGRATION_4_5,
-            AppDatabase.MIGRATION_5_6
-        )
-        .fallbackToDestructiveMigration()
-        .build()
+            .addMigrations(
+                AppDatabase.MIGRATION_1_2,
+                AppDatabase.MIGRATION_2_3,
+                AppDatabase.MIGRATION_3_4,
+                AppDatabase.MIGRATION_4_5,
+                AppDatabase.MIGRATION_5_6
+            )
+            .fallbackToDestructiveMigration()
+            .build()
 
         val httpClient = DefaultHttpClient()
-        
+
         assetRetriever = AssetRetriever(
             contentResolver = contentResolver,
             httpClient = httpClient
@@ -89,7 +89,7 @@ class ReaderApplication : Application() {
 
         // Schedule initial backup based on preferences
         readerPreferences = ReaderPreferences(applicationContext)
-        
+
         dictionaryRepository = DictionaryRepository(
             context = applicationContext,
             preferences = readerPreferences

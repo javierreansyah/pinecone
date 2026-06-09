@@ -17,8 +17,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import java.util.concurrent.ConcurrentHashMap
 
 @Entity(
-    tableName = "dictionary_entries",
-    indices = [Index(value = ["word"])]
+    tableName = "dictionary_entries", indices = [Index(value = ["word"])]
 )
 data class DictionaryEntry(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
@@ -28,8 +27,7 @@ data class DictionaryEntry(
 )
 
 @Entity(
-    tableName = "synonym_entries",
-    indices = [Index(value = ["synonym"])]
+    tableName = "synonym_entries", indices = [Index(value = ["synonym"])]
 )
 data class SynonymEntry(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
@@ -84,7 +82,9 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
     }
 }
 
-@Database(entities = [DictionaryEntry::class, SynonymEntry::class], version = 3, exportSchema = false)
+@Database(
+    entities = [DictionaryEntry::class, SynonymEntry::class], version = 3, exportSchema = false
+)
 abstract class DictionaryDatabase : RoomDatabase() {
     abstract fun dictionaryDao(): DictionaryDao
 
@@ -98,10 +98,8 @@ abstract class DictionaryDatabase : RoomDatabase() {
                     context.applicationContext,
                     DictionaryDatabase::class.java,
                     "dict_$dictionaryId.db"
-                )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
-                .fallbackToDestructiveMigration()
-                .build()
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).fallbackToDestructiveMigration()
+                    .build()
             }
         }
 

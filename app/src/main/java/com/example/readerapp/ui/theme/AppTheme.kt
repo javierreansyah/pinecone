@@ -30,7 +30,7 @@ fun AppTheme(
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
-    
+
     // Check if dynamic color is supported (Android 12+)
     val isDynamicSupported = true
     val resolvedPalette = if (colorPalette == "Dynamic" && !isDynamicSupported) {
@@ -43,6 +43,7 @@ fun AppTheme(
         resolvedPalette == "Dynamic" -> {
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
+
         else -> {
             val theme = ThemeRegistry.getTheme(resolvedPalette)
             if (darkTheme) {

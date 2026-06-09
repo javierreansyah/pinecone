@@ -44,8 +44,20 @@ fun DefinitionWebView(
     val density = LocalDensity.current
     val fontSizeCss = with(density) { baseFontSize.toPx() / density.density }
 
-    val fullHtml = remember(htmlContent, onSurface, primary, primaryContainer, onPrimaryContainer,
-        onSurfaceVariant, surfaceContainerHigh, outline, outlineVariant, secondary, tertiary, fontSizeCss) {
+    val fullHtml = remember(
+        htmlContent,
+        onSurface,
+        primary,
+        primaryContainer,
+        onPrimaryContainer,
+        onSurfaceVariant,
+        surfaceContainerHigh,
+        outline,
+        outlineVariant,
+        secondary,
+        tertiary,
+        fontSizeCss
+    ) {
         buildDefinitionHtml(
             body = htmlContent,
             fontSizeCss = fontSizeCss,
@@ -62,42 +74,33 @@ fun DefinitionWebView(
         )
     }
 
-    AndroidView(
-        modifier = modifier.fillMaxWidth(),
-        factory = { context ->
-            WebView(context).apply {
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-                setBackgroundColor(AndroidColor.TRANSPARENT)
-                // Disable scrolling — let the parent handle it
-                isVerticalScrollBarEnabled = false
-                isHorizontalScrollBarEnabled = false
-                overScrollMode = WebView.OVER_SCROLL_NEVER
-                settings.apply {
-                    // No JS needed for static definitions
-                    javaScriptEnabled = false
-                    // Allow text to reflow
-                    loadWithOverviewMode = false
-                    useWideViewPort = false
-                    // Disable zoom
-                    setSupportZoom(false)
-                    builtInZoomControls = false
-                    displayZoomControls = false
-                }
-            }
-        },
-        update = { webView ->
-            webView.loadDataWithBaseURL(
-                null,
-                fullHtml,
-                "text/html",
-                "UTF-8",
-                null
+    AndroidView(modifier = modifier.fillMaxWidth(), factory = { context ->
+        WebView(context).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
             )
+            setBackgroundColor(AndroidColor.TRANSPARENT)
+            // Disable scrolling — let the parent handle it
+            isVerticalScrollBarEnabled = false
+            isHorizontalScrollBarEnabled = false
+            overScrollMode = WebView.OVER_SCROLL_NEVER
+            settings.apply {
+                // No JS needed for static definitions
+                javaScriptEnabled = false
+                // Allow text to reflow
+                loadWithOverviewMode = false
+                useWideViewPort = false
+                // Disable zoom
+                setSupportZoom(false)
+                builtInZoomControls = false
+                displayZoomControls = false
+            }
         }
-    )
+    }, update = { webView ->
+        webView.loadDataWithBaseURL(
+            null, fullHtml, "text/html", "UTF-8", null
+        )
+    })
 }
 
 /**

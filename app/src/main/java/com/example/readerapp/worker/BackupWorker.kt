@@ -6,8 +6,7 @@ import androidx.work.WorkerParameters
 import com.example.readerapp.data.repository.backup.LibraryBackupRepository
 
 class BackupWorker(
-    appContext: Context,
-    workerParams: WorkerParameters
+    appContext: Context, workerParams: WorkerParameters
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {

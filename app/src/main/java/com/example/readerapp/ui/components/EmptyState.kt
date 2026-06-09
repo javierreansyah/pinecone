@@ -17,9 +17,7 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun EmptyState(
-    icon: ImageVector,
-    text: String,
-    modifier: Modifier = Modifier
+    icon: ImageVector, text: String, modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier,

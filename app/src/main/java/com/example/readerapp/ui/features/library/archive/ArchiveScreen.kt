@@ -29,17 +29,15 @@ fun ArchiveScreen(
     onNavigateToBookInfo: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val viewModel: ArchiveViewModel = viewModel(
-        factory = object : ViewModelProvider.AndroidViewModelFactory(context.applicationContext as Application) {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                if (modelClass.isAssignableFrom(ArchiveViewModel::class.java)) {
-                    @Suppress("UNCHECKED_CAST")
-                    return ArchiveViewModel(context.applicationContext as Application) as T
-                }
-                throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
+    val viewModel: ArchiveViewModel = viewModel(factory = object :
+        ViewModelProvider.AndroidViewModelFactory(context.applicationContext as Application) {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(ArchiveViewModel::class.java)) {
+                @Suppress("UNCHECKED_CAST") return ArchiveViewModel(context.applicationContext as Application) as T
             }
+            throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }
-    )
+    })
 
     val archivedBooks by viewModel.archivedBooks.collectAsState()
     val shelves by viewModel.shelves.collectAsState()
@@ -49,8 +47,7 @@ fun ArchiveScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
             LargeFlexibleTopAppBar(
                 title = { Text(stringResource(R.string.library_archives_title)) },
                 navigationIcon = {
@@ -59,7 +56,10 @@ fun ArchiveScreen(
                         colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                         onClick = onNavigateBack
                     ) {
-                        Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = stringResource(R.string.action_back))
+                        Icon(
+                            MaterialSymbols.Outlined.Arrow_back,
+                            contentDescription = stringResource(R.string.action_back)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -68,21 +68,25 @@ fun ArchiveScreen(
                 ),
                 scrollBehavior = scrollBehavior
             )
-        }
-    ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+        }) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+        ) {
             if (archivedBooks.isEmpty()) {
                 EmptyState(
                     icon = MaterialSymbols.Outlined.Book,
                     text = stringResource(R.string.library_empty_archives),
-                    modifier = Modifier.fillMaxSize().padding(16.dp)
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
                 )
             } else {
                 BookGrid(
                     books = archivedBooks,
                     onBookClick = onNavigateToReader,
-                    onBookLongClick = { selectedBookForMenu = it }
-                )
+                    onBookLongClick = { selectedBookForMenu = it })
             }
         }
 
@@ -99,8 +103,7 @@ fun ArchiveScreen(
                 onAddToShelf = { shelfId -> viewModel.addBookToShelf(shelfId, bookId) },
                 onDeleteBook = { viewModel.deleteBook(bookId) },
                 onCreateShelfAndAdd = { name -> viewModel.createShelfAndAddBook(name, bookId) },
-                onDismiss = { selectedBookForMenu = null }
-            )
+                onDismiss = { selectedBookForMenu = null })
         }
     }
 }

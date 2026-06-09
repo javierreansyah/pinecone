@@ -18,11 +18,13 @@ import kotlinx.coroutines.launch
 class FilterCategoryViewModel(application: Application) : AndroidViewModel(application) {
     private val bookRepository = (application as ReaderApplication).libraryRepository
 
-    private val booksFlow: Flow<List<Book>> = bookRepository.getAllBooks()
-        .map { entities -> entities.map { Book.fromEntity(it) } }
+    private val booksFlow: Flow<List<Book>> =
+        bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }
 
-    val allAuthors = bookRepository.getAllAuthors().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
-    val allTags = bookRepository.getAllTags().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val allAuthors =
+        bookRepository.getAllAuthors().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val allTags =
+        bookRepository.getAllTags().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val authorsWithCounts = combine(allAuthors, booksFlow) { authors, books ->
         authors.map { author ->
@@ -47,7 +49,9 @@ class FilterCategoryViewModel(application: Application) : AndroidViewModel(appli
     }
 
     @OptIn(DelicateCoroutinesApi::class)
-    fun renameFilterItem(type: String, oldName: String, newName: String, onSuccess: (String) -> Unit) {
+    fun renameFilterItem(
+        type: String, oldName: String, newName: String, onSuccess: (String) -> Unit
+    ) {
         onSuccess(newName.trim())
         GlobalScope.launch(Dispatchers.IO) {
             bookRepository.renameFilterItem(type, oldName, newName)

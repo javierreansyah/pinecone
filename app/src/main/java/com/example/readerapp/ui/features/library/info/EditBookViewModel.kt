@@ -1,4 +1,4 @@
-package com.example.readerapp.ui.features.info
+package com.example.readerapp.ui.features.library.info
 
 import android.app.Application
 import android.net.Uri
@@ -27,8 +27,7 @@ data class EditBookUiState(
 )
 
 class EditBookViewModel(
-    application: Application,
-    private val bookId: String
+    application: Application, private val bookId: String
 ) : AndroidViewModel(application) {
 
     private val repository: LibraryRepository = (application as ReaderApplication).libraryRepository
@@ -59,8 +58,7 @@ class EditBookViewModel(
                         description = book.description ?: "",
                         existingCoverPath = book.coverPath,
                         tags = bookDetails.tags.map { tag -> tag.name },
-                        authors = bookDetails.authors.map { author -> author.name }
-                    )
+                        authors = bookDetails.authors.map { author -> author.name })
                 }
             } else {
                 _uiState.update { it.copy(isLoading = false, error = "Book not found") }
@@ -123,8 +121,7 @@ class EditBookViewModel(
     }
 
     class Factory(
-        private val application: Application,
-        private val bookId: String
+        private val application: Application, private val bookId: String
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {

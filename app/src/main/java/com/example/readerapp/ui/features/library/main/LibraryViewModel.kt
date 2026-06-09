@@ -29,8 +29,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class LibraryViewModel(
-    application: Application,
-    private val screenKey: String = "library_books"
+    application: Application, private val screenKey: String = "library_books"
 ) : AndroidViewModel(application) {
     private val bookRepository = (application as ReaderApplication).libraryRepository
     private val prefsManager = LibraryPreferencesManager(application)
@@ -38,15 +37,12 @@ class LibraryViewModel(
     private val _uiState = MutableStateFlow(
         LibraryUiState(
             bookPreferences = prefsManager.getPreferences(
-                screenKey = screenKey,
-                defaultSort = when (screenKey) {
+                screenKey = screenKey, defaultSort = when (screenKey) {
                     "shelf_detail" -> SortType.Custom
                     "library_books" -> SortType.LastRead
                     else -> SortType.Added
-                },
-                defaultAscending = screenKey == "shelf_detail"
-            ),
-            shelvesPreferences = prefsManager.getPreferences(
+                }, defaultAscending = screenKey == "shelf_detail"
+            ), shelvesPreferences = prefsManager.getPreferences(
                 "library_shelves",
                 defaultLayout = LayoutMode.BigList,
                 defaultSort = SortType.Title,
@@ -62,8 +58,8 @@ class LibraryViewModel(
     private val _isShelvesLoading = MutableStateFlow(true)
     val isShelvesLoading: StateFlow<Boolean> = _isShelvesLoading.asStateFlow()
 
-    private val booksFlow: Flow<List<Book>> = bookRepository.getAllBooks()
-        .map { entities -> entities.map { Book.fromEntity(it) } }
+    private val booksFlow: Flow<List<Book>> =
+        bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }
 
     val allBooks: StateFlow<List<Book>> = booksFlow.stateIn(
         scope = viewModelScope,
@@ -73,47 +69,43 @@ class LibraryViewModel(
 
     fun getFilteredAndSortedBooks(baseFlow: Flow<List<Book>>): Flow<List<Book>> {
         return combine(baseFlow, _uiState) { books, state ->
-            books
-                .filter { !it.isArchived }
-                .filter { book ->
-                    val status = when {
-                        book.isRead -> StatusFilter.Finished
-                        book.progress <= 0.0 -> StatusFilter.NotStarted
-                        else -> StatusFilter.Reading
-                    }
-                    state.bookPreferences.selectedStatus.contains(status)
+            books.filter { !it.isArchived }.filter { book ->
+                val status = when {
+                    book.isRead -> StatusFilter.Finished
+                    book.progress <= 0.0 -> StatusFilter.NotStarted
+                    else -> StatusFilter.Reading
                 }
-                .let { filtered ->
-                    val baseComparator = when (state.bookPreferences.sortType) {
-                        SortType.Title -> compareBy { it.title.lowercase() }
-                        SortType.Author -> compareBy { it.authors.firstOrNull()?.lowercase() ?: "" }
-                        SortType.LastRead -> compareBy { it.lastOpened ?: 0L }
-                        SortType.Added -> compareBy { it.addedDate }
-                        SortType.Progress -> compareBy { it.progress }
-                        SortType.Custom -> {
-                            val indexMap = books.withIndex().associate { it.value.id to it.index }
-                            compareBy<Book> { indexMap[it.id] ?: 0 }
-                        }
+                state.bookPreferences.selectedStatus.contains(status)
+            }.let { filtered ->
+                val baseComparator = when (state.bookPreferences.sortType) {
+                    SortType.Title -> compareBy { it.title.lowercase() }
+                    SortType.Author -> compareBy { it.authors.firstOrNull()?.lowercase() ?: "" }
+                    SortType.LastRead -> compareBy { it.lastOpened ?: 0L }
+                    SortType.Added -> compareBy { it.addedDate }
+                    SortType.Progress -> compareBy { it.progress }
+                    SortType.Custom -> {
+                        val indexMap = books.withIndex().associate { it.value.id to it.index }
+                        compareBy<Book> { indexMap[it.id] ?: 0 }
                     }
-
-                    val finalComparator = if (state.bookPreferences.sortType == SortType.Title) {
-                        if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
-                    } else if (state.bookPreferences.sortType == SortType.Custom) {
-                        if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
-                    } else {
-                        val mainComp =
-                            if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
-                        mainComp.thenBy { it.title.lowercase() }
-                    }
-
-                    filtered.sortedWith(finalComparator)
                 }
+
+                val finalComparator = if (state.bookPreferences.sortType == SortType.Title) {
+                    if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
+                } else if (state.bookPreferences.sortType == SortType.Custom) {
+                    if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
+                } else {
+                    val mainComp =
+                        if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
+                    mainComp.thenBy { it.title.lowercase() }
+                }
+
+                filtered.sortedWith(finalComparator)
+            }
         }
     }
 
-    val filteredBooks: StateFlow<List<Book>> = getFilteredAndSortedBooks(booksFlow)
-        .onEach { _isBooksLoading.value = false }
-        .stateIn(
+    val filteredBooks: StateFlow<List<Book>> =
+        getFilteredAndSortedBooks(booksFlow).onEach { _isBooksLoading.value = false }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
@@ -174,8 +166,7 @@ class LibraryViewModel(
                     id = "unshelved",
                     name = application.getString(R.string.library_label_unshelved),
                     createdAt = 0L
-                ),
-                books = unshelvedBooks
+                ), books = unshelvedBooks
             )
             finalShelves + unshelvedShelf
         } else {
@@ -185,9 +176,7 @@ class LibraryViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val searchResults: StateFlow<SearchResults> = combine(
-        booksFlow,
-        shelves,
-        _uiState
+        booksFlow, shelves, _uiState
     ) { books, shelvesList, state ->
         val query = state.searchQuery
         val category = state.searchCategory
@@ -195,8 +184,10 @@ class LibraryViewModel(
         val matchedBooks =
             if (category != SearchCategory.All && category != SearchCategory.Books) emptyList()
             else if (query.isBlank()) books else books.filter {
-                it.title.contains(query, ignoreCase = true) ||
-                        it.authors.any { author -> author.contains(query, ignoreCase = true) }
+                it.title.contains(
+                    query,
+                    ignoreCase = true
+                ) || it.authors.any { author -> author.contains(query, ignoreCase = true) }
             }
 
         val matchedShelves =
@@ -206,29 +197,23 @@ class LibraryViewModel(
 
         val matchedAuthors =
             if (category != SearchCategory.All && category != SearchCategory.Authors) emptyList()
-            else books.flatMap { it.authors }
-                .distinct()
-                .let { authors ->
-                    if (query.isBlank()) authors else authors.filter {
-                        it.contains(
-                            query,
-                            ignoreCase = true
-                        )
-                    }
+            else books.flatMap { it.authors }.distinct().let { authors ->
+                if (query.isBlank()) authors else authors.filter {
+                    it.contains(
+                        query, ignoreCase = true
+                    )
                 }
+            }
 
         val matchedTags =
             if (category != SearchCategory.All && category != SearchCategory.Tags) emptyList()
-            else books.flatMap { it.tags }
-                .distinct()
-                .let { tags ->
-                    if (query.isBlank()) tags else tags.filter {
-                        it.contains(
-                            query,
-                            ignoreCase = true
-                        )
-                    }
+            else books.flatMap { it.tags }.distinct().let { tags ->
+                if (query.isBlank()) tags else tags.filter {
+                    it.contains(
+                        query, ignoreCase = true
+                    )
                 }
+            }
 
         SearchResults(matchedBooks, matchedShelves, matchedAuthors, matchedTags)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SearchResults())
@@ -282,7 +267,10 @@ class LibraryViewModel(
 
     fun onLayoutModeChange(mode: LayoutMode, isShelvesTab: Boolean = false) {
         _uiState.update { state ->
-            val prefs = if (isShelvesTab) state.shelvesPreferences.copy(layoutMode = mode) else state.bookPreferences.copy(layoutMode = mode)
+            val prefs =
+                if (isShelvesTab) state.shelvesPreferences.copy(layoutMode = mode) else state.bookPreferences.copy(
+                    layoutMode = mode
+                )
             prefsManager.savePreferences(if (isShelvesTab) "library_shelves" else screenKey, prefs)
             if (isShelvesTab) state.copy(shelvesPreferences = prefs) else state.copy(bookPreferences = prefs)
         }
@@ -297,8 +285,12 @@ class LibraryViewModel(
                 val initialAscending = sortType != SortType.LastRead
                 currentPrefs.copy(sortType = sortType, isAscending = initialAscending)
             }
-            prefsManager.savePreferences(if (isShelvesTab) "library_shelves" else screenKey, newPrefs)
-            if (isShelvesTab) state.copy(shelvesPreferences = newPrefs) else state.copy(bookPreferences = newPrefs)
+            prefsManager.savePreferences(
+                if (isShelvesTab) "library_shelves" else screenKey, newPrefs
+            )
+            if (isShelvesTab) state.copy(shelvesPreferences = newPrefs) else state.copy(
+                bookPreferences = newPrefs
+            )
         }
     }
 
@@ -309,8 +301,12 @@ class LibraryViewModel(
                 if (contains(status)) remove(status) else add(status)
             }
             val newPrefs = currentPrefs.copy(selectedStatus = updatedStatus)
-            prefsManager.savePreferences(if (isShelvesTab) "library_shelves" else screenKey, newPrefs)
-            if (isShelvesTab) state.copy(shelvesPreferences = newPrefs) else state.copy(bookPreferences = newPrefs)
+            prefsManager.savePreferences(
+                if (isShelvesTab) "library_shelves" else screenKey, newPrefs
+            )
+            if (isShelvesTab) state.copy(shelvesPreferences = newPrefs) else state.copy(
+                bookPreferences = newPrefs
+            )
         }
     }
 
@@ -321,8 +317,12 @@ class LibraryViewModel(
                 if (contains(filter)) remove(filter) else add(filter)
             }
             val newPrefs = currentPrefs.copy(selectedShelfFilter = updatedFilter)
-            prefsManager.savePreferences(if (isShelvesTab) "library_shelves" else screenKey, newPrefs)
-            if (isShelvesTab) state.copy(shelvesPreferences = newPrefs) else state.copy(bookPreferences = newPrefs)
+            prefsManager.savePreferences(
+                if (isShelvesTab) "library_shelves" else screenKey, newPrefs
+            )
+            if (isShelvesTab) state.copy(shelvesPreferences = newPrefs) else state.copy(
+                bookPreferences = newPrefs
+            )
         }
     }
 }

@@ -24,16 +24,12 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "re
 
 @Serializable
 data class CustomReaderTheme(
-    val name: String,
-    val backgroundColor: String,
-    val textColor: String
+    val name: String, val backgroundColor: String, val textColor: String
 )
 
 @Serializable
 data class InstalledDictionary(
-    val id: String,
-    val name: String,
-    val wordCount: Int
+    val id: String, val name: String, val wordCount: Int
 )
 
 @Serializable
@@ -80,7 +76,7 @@ data class ReaderSettings(
     val autoBackupFrequency: String = "12h",
     val lastBackupTime: Long = 0L,
     val backupFolderUri: String = "",
-    
+
     // Dictionaries
     val activeDictionaryId: String = "",
     val installedDictionaries: List<InstalledDictionary> = emptyList()
@@ -102,19 +98,24 @@ data class ReaderSettings(
                 }
                 if (isDark) Theme.DARK else Theme.LIGHT
             }
+
             else -> null // Custom will be handled by backgroundColor/textColor
         }
 
         val bgColor = if (readerThemePreset !in listOf("Light", "Dark", "Warm", "Auto")) {
             try {
                 Color(customBackgroundColor.toColorInt())
-            } catch (_: Exception) { null }
+            } catch (_: Exception) {
+                null
+            }
         } else null
 
         val txtColor = if (readerThemePreset !in listOf("Light", "Dark", "Warm", "Auto")) {
             try {
                 Color(customTextColor.toColorInt())
-            } catch (_: Exception) { null }
+            } catch (_: Exception) {
+                null
+            }
         } else null
 
         return EpubPreferences(
@@ -238,10 +239,14 @@ class ReaderPreferences(private val context: Context) {
             fontFamily = preferences[FONT_FAMILY] ?: "Source Serif 4",
             textAlign = preferences[TEXT_ALIGN] ?: "Start",
             lineHeight = (preferences[LINE_HEIGHT] ?: 1.5).let { (it * 10.0).roundToInt() / 10.0 },
-            paragraphSpacing = (preferences[PARAGRAPH_SPACING] ?: 0.0).let { (it * 100.0).roundToInt() / 100.0 },
-            paragraphIndent = (preferences[PARAGRAPH_INDENT] ?: 0.0).let { (it * 100.0).roundToInt() / 100.0 },
-            wordSpacing = (preferences[WORD_SPACING] ?: 0.0).let { (it * 100.0).roundToInt() / 100.0 },
-            letterSpacing = (preferences[LETTER_SPACING] ?: 0.0).let { (it * 1000.0).roundToInt() / 1000.0 },
+            paragraphSpacing = (preferences[PARAGRAPH_SPACING]
+                ?: 0.0).let { (it * 100.0).roundToInt() / 100.0 },
+            paragraphIndent = (preferences[PARAGRAPH_INDENT]
+                ?: 0.0).let { (it * 100.0).roundToInt() / 100.0 },
+            wordSpacing = (preferences[WORD_SPACING]
+                ?: 0.0).let { (it * 100.0).roundToInt() / 100.0 },
+            letterSpacing = (preferences[LETTER_SPACING]
+                ?: 0.0).let { (it * 1000.0).roundToInt() / 1000.0 },
             fontWeights = preferences[FONT_WEIGHTS]?.let { str ->
                 if (str.isNotBlank()) {
                     str.split(",").associate { pair ->
@@ -254,10 +259,12 @@ class ReaderPreferences(private val context: Context) {
             hyphens = preferences[HYPHENS] ?: false,
             scroll = preferences[SCROLL] ?: false,
             columnCount = preferences[COLUMN_COUNT] ?: "Auto",
-            pageMargins = (preferences[PAGE_MARGINS] ?: 1.0).let { (it * 100.0).roundToInt() / 100.0 },
+            pageMargins = (preferences[PAGE_MARGINS]
+                ?: 1.0).let { (it * 100.0).roundToInt() / 100.0 },
             imageFilter = preferences[IMAGE_FILTER] ?: "None",
             typeScale = (preferences[TYPE_SCALE] ?: 1.0).let { (it * 100.0).roundToInt() / 100.0 },
-            verticalMargin = (preferences[VERTICAL_MARGIN] ?: 32.0).let { (it * 10.0).roundToInt() / 10.0 },
+            verticalMargin = (preferences[VERTICAL_MARGIN]
+                ?: 32.0).let { (it * 10.0).roundToInt() / 10.0 },
             readingProgression = preferences[READING_PROGRESSION] ?: "LTR",
             textNormalization = preferences[TEXT_NORMALIZATION] ?: false,
 
@@ -272,7 +279,7 @@ class ReaderPreferences(private val context: Context) {
             autoBackupFrequency = preferences[AUTO_BACKUP_FREQUENCY] ?: "12h",
             lastBackupTime = preferences[LAST_BACKUP_TIME] ?: 0L,
             backupFolderUri = preferences[BACKUP_FOLDER_URI] ?: "",
-            
+
             activeDictionaryId = preferences[ACTIVE_DICTIONARY_ID] ?: "",
             installedDictionaries = preferences[INSTALLED_DICTIONARIES]?.map {
                 val parts = it.split("|")
@@ -281,8 +288,7 @@ class ReaderPreferences(private val context: Context) {
                 } else {
                     InstalledDictionary("", "", 0)
                 }
-            }?.filter { it.id.isNotEmpty() } ?: emptyList()
-        )
+            }?.filter { it.id.isNotEmpty() } ?: emptyList())
     }
 
     suspend fun updateSettings(settings: ReaderSettings) {
@@ -302,12 +308,14 @@ class ReaderPreferences(private val context: Context) {
             preferences[FONT_FAMILY] = settings.fontFamily
             preferences[TEXT_ALIGN] = settings.textAlign
             preferences[LINE_HEIGHT] = (settings.lineHeight * 10.0).roundToInt() / 10.0
-            preferences[PARAGRAPH_SPACING] = (settings.paragraphSpacing * 100.0).roundToInt() / 100.0
+            preferences[PARAGRAPH_SPACING] =
+                (settings.paragraphSpacing * 100.0).roundToInt() / 100.0
             preferences[PARAGRAPH_INDENT] = (settings.paragraphIndent * 100.0).roundToInt() / 100.0
             preferences[WORD_SPACING] = (settings.wordSpacing * 100.0).roundToInt() / 100.0
             preferences[LETTER_SPACING] = (settings.letterSpacing * 1000.0).roundToInt() / 1000.0
             if (settings.fontWeights.isNotEmpty()) {
-                preferences[FONT_WEIGHTS] = settings.fontWeights.entries.joinToString(",") { "${it.key}:${it.value}" }
+                preferences[FONT_WEIGHTS] =
+                    settings.fontWeights.entries.joinToString(",") { "${it.key}:${it.value}" }
             } else {
                 preferences.remove(FONT_WEIGHTS)
             }
@@ -327,11 +335,11 @@ class ReaderPreferences(private val context: Context) {
             preferences[CUSTOM_THEMES] = settings.customThemes.map {
                 "${it.name}|${it.backgroundColor}|${it.textColor}"
             }.toSet()
-            
+
             preferences[AUTO_BACKUP_FREQUENCY] = settings.autoBackupFrequency
             preferences[LAST_BACKUP_TIME] = settings.lastBackupTime
             preferences[BACKUP_FOLDER_URI] = settings.backupFolderUri
-            
+
             preferences[ACTIVE_DICTIONARY_ID] = settings.activeDictionaryId
             preferences[INSTALLED_DICTIONARIES] = settings.installedDictionaries.map {
                 "${it.id}|${it.name}|${it.wordCount}"

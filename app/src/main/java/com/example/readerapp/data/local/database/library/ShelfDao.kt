@@ -4,8 +4,7 @@ import androidx.room.*
 import kotlinx.coroutines.flow.Flow
 
 data class ShelfWithCovers(
-    @Embedded val shelf: ShelfEntity,
-    @Relation(
+    @Embedded val shelf: ShelfEntity, @Relation(
         entity = BookEntity::class,
         parentColumn = "id",
         entityColumn = "id",
@@ -14,8 +13,7 @@ data class ShelfWithCovers(
             parentColumn = "shelfId",
             entityColumn = "bookId"
         )
-    )
-    val books: List<BookWithDetails>
+    ) val books: List<BookWithDetails>
 )
 
 @Dao

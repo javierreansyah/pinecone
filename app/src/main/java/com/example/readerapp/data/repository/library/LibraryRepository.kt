@@ -165,8 +165,7 @@ class LibraryRepository(
         )
     }
 
-    fun getBookmarks(bookId: String): Flow<List<BookmarkEntity>> =
-        bookmarkDao.getByBookId(bookId)
+    fun getBookmarks(bookId: String): Flow<List<BookmarkEntity>> = bookmarkDao.getByBookId(bookId)
 
     suspend fun removeBookmark(id: Long) {
         bookmarkDao.deleteById(id)
@@ -224,9 +223,7 @@ class LibraryRepository(
         database.withTransaction {
             bookDao.update(
                 book.copy(
-                    title = title,
-                    description = description,
-                    coverPath = newCoverPath
+                    title = title, description = description, coverPath = newCoverPath
                 )
             )
 
@@ -329,8 +326,7 @@ class LibraryRepository(
     suspend fun addBookToShelf(shelfId: String, bookId: String) {
         shelfDao.insertShelfBookCrossRef(
             ShelfBookCrossRefEntity(
-                shelfId = shelfId,
-                bookId = bookId
+                shelfId = shelfId, bookId = bookId
             )
         )
     }
@@ -340,7 +336,8 @@ class LibraryRepository(
         shelfDao.deleteOrphanShelves()
     }
 
-    fun getAllShelfBookCrossRefs(): Flow<List<ShelfBookCrossRefEntity>> = shelfDao.getAllShelfBookCrossRefs()
+    fun getAllShelfBookCrossRefs(): Flow<List<ShelfBookCrossRefEntity>> =
+        shelfDao.getAllShelfBookCrossRefs()
 
     suspend fun updateShelfOrder(shelfId: String, newBookIdsOrder: List<String>) =
         withContext(Dispatchers.IO) {
@@ -351,7 +348,13 @@ class LibraryRepository(
 
     // --- Note Methods ---
 
-    suspend fun addNote(bookId: String, locator: Locator, noteText: String, color: Int = -1, chapterTitle: String? = null) {
+    suspend fun addNote(
+        bookId: String,
+        locator: Locator,
+        noteText: String,
+        color: Int = -1,
+        chapterTitle: String? = null
+    ) {
         noteDao.insert(
             NoteEntity(
                 bookId = bookId,
@@ -386,10 +389,7 @@ class LibraryRepository(
     }
 
     private suspend fun createBookEntity(
-        bookId: String,
-        file: File,
-        publication: Publication,
-        mediaType: String? = null
+        bookId: String, file: File, publication: Publication, mediaType: String? = null
     ): BookEntity {
         val metadata = publication.metadata
 

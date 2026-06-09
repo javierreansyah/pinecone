@@ -57,62 +57,75 @@ fun ReaderTopBar(
             )
     ) {
         TopAppBar(
-            title = { },
-            navigationIcon = {
+            title = { }, navigationIcon = {
                 IconButton(onClick = onBack) {
-                    Icon(MaterialSymbols.Outlined.Arrow_back, contentDescription = stringResource(R.string.action_back))
+                    Icon(
+                        MaterialSymbols.Outlined.Arrow_back,
+                        contentDescription = stringResource(R.string.action_back)
+                    )
                 }
-            },
-            actions = {
+            }, actions = {
                 IconButton(onClick = onSearchClick) {
-                    Icon(MaterialSymbols.Outlined.Search, contentDescription = stringResource(R.string.action_search))
+                    Icon(
+                        MaterialSymbols.Outlined.Search,
+                        contentDescription = stringResource(R.string.action_search)
+                    )
                 }
                 IconButton(onClick = onTocClick) {
-                    Icon(MaterialSymbols.Outlined.List, contentDescription = stringResource(R.string.reader_toc_title), modifier = Modifier.size(28.dp))
+                    Icon(
+                        MaterialSymbols.Outlined.List,
+                        contentDescription = stringResource(R.string.reader_toc_title),
+                        modifier = Modifier.size(28.dp)
+                    )
                 }
                 IconButton(onClick = onSettingsClick) {
-                    Icon(MaterialSymbols.Outlined.Match_case, contentDescription = stringResource(R.string.reader_settings_typography), modifier = Modifier.size(28.dp))
+                    Icon(
+                        MaterialSymbols.Outlined.Match_case,
+                        contentDescription = stringResource(R.string.reader_settings_typography),
+                        modifier = Modifier.size(28.dp)
+                    )
                 }
 
                 var showMoreMenu by remember { mutableStateOf(false) }
                 Box {
                     IconButton(onClick = { showMoreMenu = true }) {
-                        Icon(MaterialSymbols.Outlined.More_vert, contentDescription = stringResource(R.string.action_more))
+                        Icon(
+                            MaterialSymbols.Outlined.More_vert,
+                            contentDescription = stringResource(R.string.action_more)
+                        )
                     }
                     DropdownMenu(
-                        expanded = showMoreMenu,
-                        onDismissRequest = { showMoreMenu = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(if (isBookmarked) stringResource(R.string.reader_remove_bookmark) else stringResource(R.string.reader_add_bookmark), style = MaterialTheme.typography.titleMedium) },
-                            onClick = {
-                                onToggleBookmark()
-                                showMoreMenu = false
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    MaterialSymbols.Outlined.Bookmark,
-                                    contentDescription = null
-                                )
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.book_info_title), style = MaterialTheme.typography.titleMedium) },
-                            onClick = {
-                                onInfoClick()
-                                showMoreMenu = false
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    MaterialSymbols.Outlined.Info,
-                                    contentDescription = null
-                                )
-                            }
-                        )
+                        expanded = showMoreMenu, onDismissRequest = { showMoreMenu = false }) {
+                        DropdownMenuItem(text = {
+                            Text(
+                                if (isBookmarked) stringResource(R.string.reader_remove_bookmark) else stringResource(
+                                    R.string.reader_add_bookmark
+                                ), style = MaterialTheme.typography.titleMedium
+                            )
+                        }, onClick = {
+                            onToggleBookmark()
+                            showMoreMenu = false
+                        }, leadingIcon = {
+                            Icon(
+                                MaterialSymbols.Outlined.Bookmark, contentDescription = null
+                            )
+                        })
+                        DropdownMenuItem(text = {
+                            Text(
+                                stringResource(R.string.book_info_title),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }, onClick = {
+                            onInfoClick()
+                            showMoreMenu = false
+                        }, leadingIcon = {
+                            Icon(
+                                MaterialSymbols.Outlined.Info, contentDescription = null
+                            )
+                        })
                     }
                 }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
+            }, colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = Color.Transparent,
                 navigationIconContentColor = readerTextColor,
                 actionIconContentColor = readerTextColor
