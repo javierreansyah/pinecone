@@ -35,7 +35,7 @@ class BookInfoViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             val entity = repository.getBook(bookId)
-            _uiState.update {
+            _uiState.update { it ->
                 it.copy(
                     book = entity?.let { Book.fromEntity(it) }, isLoading = false
                 )
