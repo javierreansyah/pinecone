@@ -5,12 +5,12 @@
     android:viewportWidth="1000"
     android:viewportHeight="1000">
     <group
-        android:translateX="300"
-        android:translateY="225"
         android:pivotX="200"
         android:pivotY="275"
         android:scaleX="0.8"
-        android:scaleY="0.8">
+        android:scaleY="0.8"
+        android:translateX="300"
+        android:translateY="225">
         <path
             android:fillColor="#0A0A0A"
             android:pathData="M150,450h100v100h-100z" />

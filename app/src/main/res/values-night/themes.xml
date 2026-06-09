@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
     <style name="Theme.ReaderApp" parent="Theme.AppCompat.NoActionBar">
         <item name="android:textColorHighlight">@color/text_selection_grey_dark</item>
     </style>
