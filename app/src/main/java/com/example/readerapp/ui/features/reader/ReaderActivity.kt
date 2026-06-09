@@ -116,7 +116,9 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.themeColors.collect { colors ->
                     window.decorView.setBackgroundColor(colors.backgroundColorInt)
-                    findViewById<android.widget.FrameLayout>(R.id.reader_root)?.setBackgroundColor(colors.backgroundColorInt)
+                    findViewById<android.widget.FrameLayout>(R.id.reader_root)?.setBackgroundColor(
+                        colors.backgroundColorInt
+                    )
                 }
             }
         }
@@ -127,8 +129,12 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.settingsFlow.collect { settings ->
                     val density = resources.displayMetrics.density
-                    val newTop = if (settings.scroll) 0 else (settings.verticalMargin * density).toInt()
-                    val newBottom = if (settings.scroll) 0 else (maxOf(0.0, settings.verticalMargin - 16) * density).toInt()
+                    val newTop =
+                        if (settings.scroll) 0 else (settings.verticalMargin * density).toInt()
+                    val newBottom = if (settings.scroll) 0 else (maxOf(
+                        0.0,
+                        settings.verticalMargin - 16
+                    ) * density).toInt()
 
                     navigatorContainer?.let { container ->
                         val lp = container.layoutParams as android.widget.FrameLayout.LayoutParams
@@ -194,12 +200,14 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
                 ) { controls, settings ->
                     controls to settings
                 }.collect { (controls, settings) ->
-                    val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+                    val windowInsetsController =
+                        WindowCompat.getInsetsController(window, window.decorView)
                     if (controls.showControls || settings.alwaysShowStatusBar) {
                         windowInsetsController.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
                     } else {
                         windowInsetsController.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
-                        windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
+                        windowInsetsController.systemBarsBehavior =
+                            WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
                     }
                 }
             }

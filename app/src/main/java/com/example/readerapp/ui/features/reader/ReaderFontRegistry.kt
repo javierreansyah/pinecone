@@ -2,7 +2,6 @@ package com.example.readerapp.ui.features.reader
 
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.css.FontStyle
-import org.readium.r2.navigator.epub.css.*
 import org.readium.r2.navigator.preferences.FontFamily
 import org.readium.r2.shared.ExperimentalReadiumApi
 

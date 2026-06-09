@@ -4,6 +4,7 @@ import android.graphics.Color.colorToHSV
 import android.os.Bundle
 import android.view.ActionMode
 import android.view.Menu
+import androidx.core.graphics.toColorInt
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
@@ -36,7 +37,6 @@ import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
 import kotlin.time.Duration.Companion.milliseconds
-import androidx.core.graphics.toColorInt
 
 // Fix 1: Accept LifecycleOwner + FragmentManager instead of the whole AppCompatActivity.
 //         This prevents leaking the activity reference through configuration changes.
@@ -114,7 +114,10 @@ class NavigatorController(
                     return false
                 }
 
-                override fun onActionItemClicked(mode: ActionMode?, item: android.view.MenuItem?): Boolean = false
+                override fun onActionItemClicked(
+                    mode: ActionMode?,
+                    item: android.view.MenuItem?
+                ): Boolean = false
 
                 override fun onDestroyActionMode(mode: ActionMode?) {
                     if (mode == currentActionMode) {
@@ -185,7 +188,8 @@ class NavigatorController(
             override fun onDecorationActivated(event: DecorableNavigator.OnActivatedEvent): Boolean {
                 val noteIdStr = event.decoration.id.removePrefix("note_")
                 val noteId = noteIdStr.toLongOrNull() ?: return false
-                val note = viewModel.allNotesAndHighlights.value.find { it.id == noteId } ?: return false
+                val note =
+                    viewModel.allNotesAndHighlights.value.find { it.id == noteId } ?: return false
 
                 if (note.noteText.isBlank()) {
                     viewModel.viewHighlight(note)

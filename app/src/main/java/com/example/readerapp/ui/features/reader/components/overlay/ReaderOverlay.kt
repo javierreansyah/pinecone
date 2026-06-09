@@ -46,8 +46,8 @@ import com.example.readerapp.data.local.database.library.NoteEntity
 import com.example.readerapp.data.local.preferences.ReaderSettings
 import com.example.readerapp.ui.features.dictionary.utils.DefinitionWebView
 import com.example.readerapp.ui.features.dictionary.utils.DictionaryFormatter
-import com.example.readerapp.ui.features.reader.ReaderViewModel
 import com.example.readerapp.ui.features.reader.ReaderNavigationRouter
+import com.example.readerapp.ui.features.reader.ReaderViewModel
 import com.example.readerapp.ui.features.reader.SearchResultItem
 import com.example.readerapp.ui.features.reader.components.SearchScreen
 import com.example.readerapp.ui.features.reader.components.contents.NoteBottomSheet
@@ -152,7 +152,8 @@ fun ReaderOverlay(
             onPrevSearchResult = { viewModel.prevSearchResult() },
             onNextSearchResult = { viewModel.nextSearchResult() },
             onCopy = { highlightText ->
-                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                val clipboard =
+                    context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                 val clip = ClipData.newPlainText("highlight", highlightText)
                 clipboard.setPrimaryClip(clip)
                 viewModel.hideSelectionMenu()
@@ -359,7 +360,8 @@ fun ReaderBottomBarSection(
                         val highlightText = try {
                             Locator.fromJSON(
                                 JSONObject(
-                                    viewingHighlight?.locatorJson ?: selectionLocator?.toJSON()?.toString() ?: ""
+                                    viewingHighlight?.locatorJson ?: selectionLocator?.toJSON()
+                                        ?.toString() ?: ""
                                 )
                             )?.text?.highlight ?: ""
                         } catch (_: Exception) {
