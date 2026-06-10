@@ -77,7 +77,9 @@ class MainActivity : AppCompatActivity() {
     private fun handleIntent(intent: Intent) {
         if (intent.action == Intent.ACTION_VIEW) {
             val uri = intent.data ?: return
-            viewModel.importBook(uri)
+            if (uri.scheme == "file" || uri.scheme == "content") {
+                viewModel.importBook(uri)
+            }
         }
     }
 }

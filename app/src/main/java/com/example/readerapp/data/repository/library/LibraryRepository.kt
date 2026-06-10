@@ -23,6 +23,7 @@ import com.example.readerapp.data.local.database.library.ShelfWithCovers
 import com.example.readerapp.data.local.database.library.TagEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.readium.r2.shared.publication.Locator
@@ -53,6 +54,16 @@ class LibraryRepository(
         get() = File(context.filesDir, "covers").also { it.mkdirs() }
 
     fun getAllBooks(): Flow<List<BookWithDetails>> = bookDao.getAllBooks()
+
+    fun getArchivedBooks(): Flow<List<BookWithDetails>> = bookDao.getArchivedBooks()
+
+    fun searchBooks(query: String): Flow<List<BookWithDetails>> = bookDao.searchBooks(query)
+
+    fun searchShelves(query: String): Flow<List<ShelfEntity>> = shelfDao.searchShelves(query)
+
+    fun searchAuthors(query: String): Flow<List<String>> = bookDao.searchAuthors(query)
+
+    fun searchTags(query: String): Flow<List<String>> = bookDao.searchTags(query)
 
     suspend fun getBook(id: String): BookWithDetails? = bookDao.getById(id)
 
@@ -301,7 +312,12 @@ class LibraryRepository(
 
     // --- Shelf Methods ---
 
-    fun getAllShelvesWithBooks(): Flow<List<ShelfWithCovers>> = shelfDao.getAllShelvesWithBooks()
+    fun getAllShelvesWithBooks(): Flow<List<ShelfWithCovers>> =
+        shelfDao.getAllShelvesWithBooks().map { shelves ->
+            shelves.map { shelf ->
+                shelf.copy(books = shelf.books.filter { !it.book.isArchived })
+            }
+        }
 
     suspend fun createShelf(name: String): String {
         val id = UUID.randomUUID().toString()

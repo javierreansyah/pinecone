@@ -18,7 +18,7 @@ class ArchiveViewModel(application: Application) : AndroidViewModel(application)
     private val bookRepository = (application as ReaderApplication).libraryRepository
 
     private val booksFlow: Flow<List<Book>> =
-        bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }
+        bookRepository.getArchivedBooks().map { entities -> entities.map { Book.fromEntity(it) } }
 
     val allBooks: StateFlow<List<Book>> = booksFlow.stateIn(
         scope = viewModelScope,
@@ -26,9 +26,7 @@ class ArchiveViewModel(application: Application) : AndroidViewModel(application)
         initialValue = emptyList()
     )
 
-    val archivedBooks: StateFlow<List<Book>> =
-        booksFlow.map { books -> books.filter { it.isArchived } }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val archivedBooks: StateFlow<List<Book>> = allBooks
 
     val shelves: StateFlow<List<ShelfWithCovers>> = combine(
         bookRepository.getAllShelvesWithBooks(), bookRepository.getAllShelfBookCrossRefs()
