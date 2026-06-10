@@ -44,8 +44,8 @@ import com.example.readerapp.data.local.database.dictionary.DictionaryEntry
 import com.example.readerapp.data.local.database.library.BookmarkEntity
 import com.example.readerapp.data.local.database.library.NoteEntity
 import com.example.readerapp.data.local.preferences.ReaderSettings
-import com.example.readerapp.ui.features.dictionary.utils.DefinitionWebView
-import com.example.readerapp.ui.features.dictionary.utils.DictionaryFormatter
+import com.example.readerapp.ui.features.reader.components.dictionary.DefinitionWebView
+import com.example.readerapp.ui.features.reader.components.dictionary.DictionaryFormatter
 import com.example.readerapp.ui.features.reader.ReaderNavigationRouter
 import com.example.readerapp.ui.features.reader.ReaderViewModel
 import com.example.readerapp.ui.features.reader.SearchResultItem

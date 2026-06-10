@@ -157,24 +157,7 @@ fun BookContextMenu(
                         onNavigateToBookInfo(bookId)
                         onDismiss()
                     })
-                ListItem(
-                    headlineContent = {
-                        val labelText =
-                            if (book?.isArchived == true) stringResource(R.string.book_unarchive) else stringResource(
-                                R.string.book_archive
-                            )
-                        Text(labelText, style = MaterialTheme.typography.titleMedium)
-                    },
-                    leadingContent = {
-                        Icon(
-                            MaterialSymbols.Outlined.Archive, contentDescription = null
-                        )
-                    },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                    modifier = Modifier.clickable {
-                        onToggleArchive()
-                        onDismiss()
-                    })
+
                 ListItem(
                     headlineContent = {
                         val labelText =
@@ -229,6 +212,24 @@ fun BookContextMenu(
                             onDismiss()
                         })
                 }
+                ListItem(
+                    headlineContent = {
+                        val labelText =
+                            if (book?.isArchived == true) stringResource(R.string.book_unarchive) else stringResource(
+                                R.string.book_archive
+                            )
+                        Text(labelText, style = MaterialTheme.typography.titleMedium)
+                    },
+                    leadingContent = {
+                        Icon(
+                            MaterialSymbols.Outlined.Archive, contentDescription = null
+                        )
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    modifier = Modifier.clickable {
+                        onToggleArchive()
+                        onDismiss()
+                    })
                 ListItem(
                     headlineContent = {
                         Text(

@@ -33,6 +33,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
@@ -73,6 +75,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
+import com.composables.icons.materialsymbols.outlined.Check
 import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Image
@@ -80,7 +83,11 @@ import com.example.readerapp.R
 import com.example.readerapp.ui.theme.spacing
 import java.io.File
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalLayoutApi::class,
+    ExperimentalMaterial3ExpressiveApi::class
+)
 @Composable
 fun EditBookScreen(
     bookId: String, onNavigateBack: () -> Unit
@@ -106,6 +113,7 @@ fun EditBookScreen(
         topBar = {
             TopAppBar(title = { Text(stringResource(R.string.book_edit_title)) }, navigationIcon = {
                 FilledTonalIconButton(
+                    shapes = IconButtonDefaults.shapes(),
                     onClick = onNavigateBack,
                     colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
                 ) {
@@ -115,12 +123,19 @@ fun EditBookScreen(
                     )
                 }
             }, actions = {
-                TextButton(
-                    onClick = { viewModel.saveChanges() }, enabled = !uiState.isSaving
+                FilledIconButton(
+                    modifier = Modifier.size(
+                        IconButtonDefaults.smallContainerSize(
+                            widthOption = IconButtonDefaults.IconButtonWidthOption.Wide
+                        )
+                    ),
+                    shapes = IconButtonDefaults.shapes(),
+                    onClick = { viewModel.saveChanges() },
+                    enabled = !uiState.isSaving
                 ) {
-                    Text(
-                        stringResource(R.string.action_save),
-                        style = MaterialTheme.typography.labelLarge
+                    Icon(
+                        imageVector = MaterialSymbols.Outlined.Check,
+                        contentDescription = stringResource(R.string.action_save)
                     )
                 }
             })
