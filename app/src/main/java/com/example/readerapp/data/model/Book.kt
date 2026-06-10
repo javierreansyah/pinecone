@@ -28,7 +28,7 @@ data class Book(
         fun fromEntity(entity: BookWithDetails): Book = Book(
             id = entity.book.id,
             title = entity.book.title,
-            authors = entity.authors.map { it.name },
+            authors = entity.sortedAuthors.map { it.name },
             coverPath = entity.book.coverPath,
             progress = entity.book.progression,
             lastOpened = entity.book.lastReadDate,

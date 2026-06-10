@@ -110,12 +110,12 @@ class LibraryRepository(
                 bookDao.insert(entity)
 
                 val authors = publication.metadata.authors.map { it.name }
-                authors.forEach { authorName ->
+                authors.forEachIndexed { index, authorName ->
                     var authorId = bookDao.insertAuthor(AuthorEntity(name = authorName))
                     if (authorId == -1L) {
-                        authorId = bookDao.getAuthorByName(authorName)?.id ?: return@forEach
+                        authorId = bookDao.getAuthorByName(authorName)?.id ?: return@forEachIndexed
                     }
-                    bookDao.insertBookAuthorCrossRef(BookAuthorCrossRef(bookId, authorId))
+                    bookDao.insertBookAuthorCrossRef(BookAuthorCrossRef(bookId, authorId, index))
                 }
 
                 val tags = publication.metadata.subjects.map { it.name }
@@ -239,12 +239,12 @@ class LibraryRepository(
             )
 
             bookDao.deleteBookAuthorCrossRefs(bookId)
-            authors.forEach { authorName ->
+            authors.forEachIndexed { index, authorName ->
                 var authorId = bookDao.insertAuthor(AuthorEntity(name = authorName.trim()))
                 if (authorId == -1L) {
-                    authorId = bookDao.getAuthorByName(authorName.trim())?.id ?: return@forEach
+                    authorId = bookDao.getAuthorByName(authorName.trim())?.id ?: return@forEachIndexed
                 }
-                bookDao.insertBookAuthorCrossRef(BookAuthorCrossRef(bookId, authorId))
+                bookDao.insertBookAuthorCrossRef(BookAuthorCrossRef(bookId, authorId, index))
             }
 
             bookDao.deleteBookTagCrossRefs(bookId)

@@ -14,8 +14,18 @@ data class BookWithDetails(
     ) val authors: List<AuthorEntity>,
 
     @Relation(
+        parentColumn = "id", entityColumn = "bookId"
+    ) val authorCrossRefs: List<BookAuthorCrossRef>,
+
+    @Relation(
         parentColumn = "id", entityColumn = "id", associateBy = Junction(
             value = BookTagCrossRef::class, parentColumn = "bookId", entityColumn = "tagId"
         )
     ) val tags: List<TagEntity>
-)
+) {
+    val sortedAuthors: List<AuthorEntity>
+        get() {
+            val orderMap = authorCrossRefs.associate { it.authorId to it.authorOrder }
+            return authors.sortedBy { orderMap[it.id] ?: 0 }
+        }
+}
