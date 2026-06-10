@@ -2,6 +2,7 @@ package com.example.readerapp.ui.features.library.filters
 
 import android.app.Application
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
@@ -38,6 +39,7 @@ import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.More_vert
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.example.readerapp.R
+import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.features.library.components.FilterResultBottomSheet
 import com.example.readerapp.ui.features.library.components.RenameFilterDialog
 import com.example.readerapp.ui.features.library.components.book.BookCollection
@@ -69,14 +71,9 @@ fun FilterResultScreen(
     val uiState by viewModel.uiState.collectAsState()
     val shelves by viewModel.shelves.collectAsState()
     val allBooks by viewModel.allBooks.collectAsState()
-    var selectedBookContext by remember { mutableStateOf<Pair<String, String?>?>(null) }
 
     val allAuthors by viewModel.allAuthors.collectAsState()
     val allTags by viewModel.allTags.collectAsState()
-    var showMenu by remember { mutableStateOf(false) }
-    var showFilterSheet by remember { mutableStateOf(false) }
-    var showDeleteConfirm by remember { mutableStateOf(false) }
-    var showRenameDialog by remember { mutableStateOf(false) }
 
     val suggestionList = remember(filterType, allAuthors, allTags) {
         if (filterType == "author") allAuthors.map { it.name }
@@ -90,153 +87,332 @@ fun FilterResultScreen(
     val books by viewModel.getFilteredAndSortedBooks(baseBooksFlow)
         .collectAsState(initial = emptyList())
 
+    FilterResultContent(
+        filterType = filterType,
+        filterValue = filterValue,
+        uiState = uiState,
+        shelves = shelves,
+        allBooks = allBooks,
+        books = books,
+        suggestionList = suggestionList,
+        onNavigateBack = onNavigateBack,
+        onNavigateToReader = onNavigateToReader,
+        onNavigateToMerged = onNavigateToMerged,
+        onNavigateToBookInfo = onNavigateToBookInfo,
+        onLayoutModeChange = { mode -> viewModel.onLayoutModeChange(mode) },
+        onSortTypeChange = { sort -> viewModel.onSortTypeChange(sort) },
+        onStatusToggle = { status -> viewModel.toggleStatusFilter(status) },
+        onDeleteFilterItem = {
+            viewModel.deleteFilterItem(filterType, filterValue) {
+                onNavigateBack()
+            }
+        },
+        onRenameFilterItem = { newName ->
+            viewModel.renameFilterItem(filterType, filterValue, newName) { confirmedName ->
+                onNavigateToMerged(confirmedName)
+            }
+        },
+        onToggleArchive = { bookId -> viewModel.toggleArchive(bookId) },
+        onToggleReadStatus = { bookId -> viewModel.toggleReadStatus(bookId) },
+        onRemoveFromShelf = { shelfId, bookId -> viewModel.removeBookFromShelf(shelfId, bookId) },
+        onAddToShelf = { shelfId, bookId -> viewModel.addBookToShelf(shelfId, bookId) },
+        onDeleteBook = { bookId -> viewModel.deleteBook(bookId) },
+        onCreateShelfAndAdd = { name, bookId -> viewModel.createShelfAndAddBook(name, bookId) }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun FilterResultContent(
+    filterType: String,
+    filterValue: String,
+    uiState: FilterResultUiState,
+    shelves: List<com.example.readerapp.data.local.database.library.ShelfWithCovers>,
+    allBooks: List<Book>,
+    books: List<Book>,
+    suggestionList: List<String>,
+    onNavigateBack: () -> Unit,
+    onNavigateToReader: (String) -> Unit,
+    onNavigateToMerged: (String) -> Unit,
+    onNavigateToBookInfo: (String) -> Unit,
+    onLayoutModeChange: (com.example.readerapp.ui.features.library.LayoutMode) -> Unit,
+    onSortTypeChange: (com.example.readerapp.ui.features.library.SortType) -> Unit,
+    onStatusToggle: (com.example.readerapp.ui.features.library.StatusFilter) -> Unit,
+    onDeleteFilterItem: () -> Unit,
+    onRenameFilterItem: (String) -> Unit,
+    onToggleArchive: (String) -> Unit,
+    onToggleReadStatus: (String) -> Unit,
+    onRemoveFromShelf: (String, String) -> Unit,
+    onAddToShelf: (String, String) -> Unit,
+    onDeleteBook: (String) -> Unit,
+    onCreateShelfAndAdd: (String, String?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var selectedBookContext by remember { mutableStateOf<Pair<String, String?>?>(null) }
+    var showMenu by remember { mutableStateOf(false) }
+    var showFilterSheet by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showRenameDialog by remember { mutableStateOf(false) }
+
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
-            LargeFlexibleTopAppBar(
-                title = { Text(filterValue) }, navigationIcon = {
-                    FilledTonalIconButton(
-                        shapes = IconButtonDefaults.shapes(),
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                        onClick = onNavigateBack
-                    ) {
-                        Icon(
-                            MaterialSymbols.Outlined.Arrow_back,
-                            contentDescription = stringResource(R.string.action_back)
-                        )
-                    }
-                }, actions = {
-                    IconButton(
-                        shapes = IconButtonDefaults.shapes(),
-                        onClick = { showFilterSheet = true }) {
-                        Icon(
-                            MaterialSymbols.Outlined.Tune,
-                            contentDescription = stringResource(R.string.action_filter)
-                        )
-                    }
-                    Box {
-                        IconButton(onClick = { showMenu = !showMenu }) {
-                            Icon(
-                                MaterialSymbols.Outlined.More_vert,
-                                contentDescription = stringResource(R.string.action_more)
-                            )
-                        }
-                        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.action_rename)) },
-                                onClick = {
-                                    showMenu = false
-                                    showRenameDialog = true
-                                })
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.action_delete)) },
-                                onClick = {
-                                    showMenu = false
-                                    showDeleteConfirm = true
-                                })
-                        }
-                    }
-                }, colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
-                ), scrollBehavior = scrollBehavior
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            FilterResultTopAppBar(
+                filterValue = filterValue,
+                showMenu = showMenu,
+                onNavigateBack = onNavigateBack,
+                onFilterClick = { showFilterSheet = true },
+                onMenuToggle = { showMenu = !showMenu },
+                onMenuDismiss = { showMenu = false },
+                onRenameClick = {
+                    showMenu = false
+                    showRenameDialog = true
+                },
+                onDeleteClick = {
+                    showMenu = false
+                    showDeleteConfirm = true
+                },
+                scrollBehavior = scrollBehavior
             )
-        }) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-        ) {
-            if (books.isEmpty()) {
-                Text(
-                    stringResource(R.string.library_empty_books),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(16.dp)
+        }
+    ) { innerPadding ->
+        FilterResultBookContent(
+            books = books,
+            layoutMode = uiState.bookPreferences.layoutMode,
+            innerPadding = innerPadding,
+            onNavigateToReader = onNavigateToReader,
+            onBookLongClick = { selectedBookContext = it to null }
+        )
+
+        FilterResultDialogsAndSheets(
+            filterType = filterType,
+            filterValue = filterValue,
+            uiState = uiState,
+            shelves = shelves,
+            allBooks = allBooks,
+            selectedBookContext = selectedBookContext,
+            suggestionList = suggestionList,
+            showFilterSheet = showFilterSheet,
+            showDeleteConfirm = showDeleteConfirm,
+            showRenameDialog = showRenameDialog,
+            onFilterDismiss = { showFilterSheet = false },
+            onLayoutModeChange = onLayoutModeChange,
+            onSortTypeChange = onSortTypeChange,
+            onStatusToggle = onStatusToggle,
+            onDeleteDismiss = { showDeleteConfirm = false },
+            onDeleteConfirm = {
+                showDeleteConfirm = false
+                onDeleteFilterItem()
+            },
+            onRenameDismiss = { showRenameDialog = false },
+            onRenameConfirm = { newName ->
+                showRenameDialog = false
+                onRenameFilterItem(newName)
+            },
+            onBookMenuDismiss = { selectedBookContext = null },
+            onNavigateToBookInfo = onNavigateToBookInfo,
+            onToggleArchive = onToggleArchive,
+            onToggleReadStatus = onToggleReadStatus,
+            onRemoveFromShelf = onRemoveFromShelf,
+            onAddToShelf = onAddToShelf,
+            onDeleteBook = onDeleteBook,
+            onCreateShelfAndAdd = onCreateShelfAndAdd
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun FilterResultTopAppBar(
+    filterValue: String,
+    showMenu: Boolean,
+    onNavigateBack: () -> Unit,
+    onFilterClick: () -> Unit,
+    onMenuToggle: () -> Unit,
+    onMenuDismiss: () -> Unit,
+    onRenameClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    scrollBehavior: androidx.compose.material3.TopAppBarScrollBehavior,
+    modifier: Modifier = Modifier
+) {
+    LargeFlexibleTopAppBar(
+        title = { Text(filterValue) },
+        navigationIcon = {
+            FilledTonalIconButton(
+                shapes = IconButtonDefaults.shapes(),
+                colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                onClick = onNavigateBack
+            ) {
+                Icon(
+                    MaterialSymbols.Outlined.Arrow_back,
+                    contentDescription = stringResource(R.string.action_back)
                 )
-            } else {
-                BookCollection(
-                    books = books,
-                    layoutMode = uiState.bookPreferences.layoutMode,
-                    onBookClick = onNavigateToReader,
-                    onBookLongClick = { selectedBookContext = it to null })
             }
-        }
-
-        if (showFilterSheet) {
-            FilterResultBottomSheet(
-                preferences = uiState.bookPreferences,
-                onLayoutModeChange = viewModel::onLayoutModeChange,
-                onSortTypeChange = viewModel::onSortTypeChange,
-                onStatusToggle = viewModel::toggleStatusFilter,
-                onDismiss = { showFilterSheet = false })
-        }
-
-        selectedBookContext?.let { context ->
-            val bookId = context.first
-            val contextShelfId = context.second
-            BookContextMenu(
-                bookId = bookId,
-                shelfId = contextShelfId,
-                shelves = shelves,
-                allBooks = allBooks,
-                onNavigateToBookInfo = onNavigateToBookInfo,
-                onToggleArchive = { viewModel.toggleArchive(bookId) },
-                onToggleReadStatus = { viewModel.toggleReadStatus(bookId) },
-                onRemoveFromShelf = {
-                    contextShelfId?.let {
-                        viewModel.removeBookFromShelf(
-                            it, bookId
-                        )
-                    }
-                },
-                onAddToShelf = { shelfId -> viewModel.addBookToShelf(shelfId, bookId) },
-                onDeleteBook = { viewModel.deleteBook(bookId) },
-                onCreateShelfAndAdd = { name -> viewModel.createShelfAndAddBook(name, bookId) },
-                onDismiss = { selectedBookContext = null })
-        }
-
-        if (showDeleteConfirm) {
-            val titleType =
-                if (filterType == "author") stringResource(R.string.library_sort_author) else stringResource(
-                    R.string.library_sort_label
+        },
+        actions = {
+            IconButton(
+                shapes = IconButtonDefaults.shapes(),
+                onClick = onFilterClick
+            ) {
+                Icon(
+                    MaterialSymbols.Outlined.Tune,
+                    contentDescription = stringResource(R.string.action_filter)
                 )
-            AlertDialog(
-                onDismissRequest = { showDeleteConfirm = false },
-                title = { Text(stringResource(R.string.library_delete_item_title, titleType)) },
-                text = { Text(stringResource(R.string.library_delete_item_message, filterValue)) },
-                confirmButton = {
-                    TextButton(onClick = {
-                        showDeleteConfirm = false
-                        viewModel.deleteFilterItem(filterType, filterValue) {
-                            onNavigateBack()
-                        }
-                    }) {
-                        Text(
-                            stringResource(R.string.action_delete),
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showDeleteConfirm = false }) {
-                        Text(stringResource(R.string.action_cancel))
-                    }
-                })
-        }
+            }
+            Box {
+                IconButton(onClick = onMenuToggle) {
+                    Icon(
+                        MaterialSymbols.Outlined.More_vert,
+                        contentDescription = stringResource(R.string.action_more)
+                    )
+                }
+                DropdownMenu(expanded = showMenu, onDismissRequest = onMenuDismiss) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.action_rename)) },
+                        onClick = onRenameClick
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.action_delete)) },
+                        onClick = onDeleteClick
+                    )
+                }
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            scrolledContainerColor = MaterialTheme.colorScheme.surface,
+        ),
+        scrollBehavior = scrollBehavior,
+        modifier = modifier
+    )
+}
 
-        if (showRenameDialog) {
-            RenameFilterDialog(
-                initialName = filterValue,
-                suggestions = suggestionList,
-                onDismiss = { showRenameDialog = false },
-                onConfirm = { newName ->
-                    showRenameDialog = false
-                    viewModel.renameFilterItem(filterType, filterValue, newName) { confirmedName ->
-                        onNavigateToMerged(confirmedName)
-                    }
-                })
+@Composable
+private fun FilterResultBookContent(
+    books: List<Book>,
+    layoutMode: com.example.readerapp.ui.features.library.LayoutMode,
+    innerPadding: PaddingValues,
+    onNavigateToReader: (String) -> Unit,
+    onBookLongClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .padding(innerPadding)
+            .fillMaxSize()
+    ) {
+        if (books.isEmpty()) {
+            Text(
+                stringResource(R.string.library_empty_books),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(16.dp)
+            )
+        } else {
+            BookCollection(
+                books = books,
+                layoutMode = layoutMode,
+                onBookClick = onNavigateToReader,
+                onBookLongClick = onBookLongClick
+            )
         }
+    }
+}
+
+@Composable
+private fun FilterResultDialogsAndSheets(
+    filterType: String,
+    filterValue: String,
+    uiState: FilterResultUiState,
+    shelves: List<com.example.readerapp.data.local.database.library.ShelfWithCovers>,
+    allBooks: List<Book>,
+    selectedBookContext: Pair<String, String?>?,
+    suggestionList: List<String>,
+    showFilterSheet: Boolean,
+    showDeleteConfirm: Boolean,
+    showRenameDialog: Boolean,
+    onFilterDismiss: () -> Unit,
+    onLayoutModeChange: (com.example.readerapp.ui.features.library.LayoutMode) -> Unit,
+    onSortTypeChange: (com.example.readerapp.ui.features.library.SortType) -> Unit,
+    onStatusToggle: (com.example.readerapp.ui.features.library.StatusFilter) -> Unit,
+    onDeleteDismiss: () -> Unit,
+    onDeleteConfirm: () -> Unit,
+    onRenameDismiss: () -> Unit,
+    onRenameConfirm: (String) -> Unit,
+    onBookMenuDismiss: () -> Unit,
+    onNavigateToBookInfo: (String) -> Unit,
+    onToggleArchive: (String) -> Unit,
+    onToggleReadStatus: (String) -> Unit,
+    onRemoveFromShelf: (String, String) -> Unit,
+    onAddToShelf: (String, String) -> Unit,
+    onDeleteBook: (String) -> Unit,
+    onCreateShelfAndAdd: (String, String?) -> Unit
+) {
+    if (showFilterSheet) {
+        FilterResultBottomSheet(
+            preferences = uiState.bookPreferences,
+            onLayoutModeChange = onLayoutModeChange,
+            onSortTypeChange = onSortTypeChange,
+            onStatusToggle = onStatusToggle,
+            onDismiss = onFilterDismiss
+        )
+    }
+
+    selectedBookContext?.let { context ->
+        val bookId = context.first
+        val contextShelfId = context.second
+        BookContextMenu(
+            bookId = bookId,
+            shelfId = contextShelfId,
+            shelves = shelves,
+            allBooks = allBooks,
+            onNavigateToBookInfo = onNavigateToBookInfo,
+            onToggleArchive = { onToggleArchive(bookId) },
+            onToggleReadStatus = { onToggleReadStatus(bookId) },
+            onRemoveFromShelf = {
+                contextShelfId?.let {
+                    onRemoveFromShelf(it, bookId)
+                }
+            },
+            onAddToShelf = { shelfId -> onAddToShelf(shelfId, bookId) },
+            onDeleteBook = { onDeleteBook(bookId) },
+            onCreateShelfAndAdd = { name -> onCreateShelfAndAdd(name, bookId) },
+            onDismiss = onBookMenuDismiss
+        )
+    }
+
+    if (showDeleteConfirm) {
+        val titleType =
+            if (filterType == "author") stringResource(R.string.library_sort_author) else stringResource(
+                R.string.library_sort_label
+            )
+        AlertDialog(
+            onDismissRequest = onDeleteDismiss,
+            title = { Text(stringResource(R.string.library_delete_item_title, titleType)) },
+            text = { Text(stringResource(R.string.library_delete_item_message, filterValue)) },
+            confirmButton = {
+                TextButton(onClick = onDeleteConfirm) {
+                    Text(
+                        stringResource(R.string.action_delete),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDeleteDismiss) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            })
+    }
+
+    if (showRenameDialog) {
+        RenameFilterDialog(
+            initialName = filterValue,
+            suggestions = suggestionList,
+            onDismiss = onRenameDismiss,
+            onConfirm = onRenameConfirm
+        )
     }
 }
 

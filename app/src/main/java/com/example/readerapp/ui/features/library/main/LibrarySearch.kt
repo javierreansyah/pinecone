@@ -85,9 +85,7 @@ import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.components.SegmentedButtonGroup
 import com.example.readerapp.ui.components.rememberVoiceSearchLauncher
 import com.example.readerapp.ui.features.library.SearchCategory
-import com.example.readerapp.ui.features.library.SearchResults
 import com.example.readerapp.ui.features.library.components.book.BookItem
-import com.example.readerapp.ui.theme.spacing
 import kotlinx.coroutines.launch
 
 @OptIn(
@@ -610,13 +608,13 @@ private fun SearchFilterItem(
 ) {
     Surface(
         modifier = modifier.clickable { onClick() },
-        shape = RoundedCornerShape(spacing.space8),
+        shape = RoundedCornerShape(8.dp),
         color = MaterialTheme.colorScheme.surface,
     ) {
         Row(
-            modifier = Modifier.padding(spacing.itemSpacing),
+            modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(spacing.space8)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Icon(
                 imageVector = icon, contentDescription = null, modifier = Modifier.size(16.dp)

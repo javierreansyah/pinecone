@@ -45,7 +45,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -80,7 +79,6 @@ import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Image
 import com.example.readerapp.R
-import com.example.readerapp.ui.theme.spacing
 import java.io.File
 
 @OptIn(
@@ -111,34 +109,11 @@ fun EditBookScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.book_edit_title)) }, navigationIcon = {
-                FilledTonalIconButton(
-                    shapes = IconButtonDefaults.shapes(),
-                    onClick = onNavigateBack,
-                    colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
-                ) {
-                    Icon(
-                        MaterialSymbols.Outlined.Arrow_back,
-                        contentDescription = stringResource(R.string.action_back)
-                    )
-                }
-            }, actions = {
-                FilledIconButton(
-                    modifier = Modifier.size(
-                        IconButtonDefaults.smallContainerSize(
-                            widthOption = IconButtonDefaults.IconButtonWidthOption.Wide
-                        )
-                    ),
-                    shapes = IconButtonDefaults.shapes(),
-                    onClick = { viewModel.saveChanges() },
-                    enabled = !uiState.isSaving
-                ) {
-                    Icon(
-                        imageVector = MaterialSymbols.Outlined.Check,
-                        contentDescription = stringResource(R.string.action_save)
-                    )
-                }
-            })
+            EditBookTopAppBar(
+                isSaving = uiState.isSaving,
+                onNavigateBack = onNavigateBack,
+                onSave = { viewModel.saveChanges() }
+            )
         }) { innerPadding ->
         if (uiState.isLoading) {
             Box(
@@ -162,134 +137,223 @@ fun EditBookScreen(
                 )
             }
         } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .consumeWindowInsets(innerPadding)
-                    .imePadding()
-                    .verticalScroll(rememberScrollState())
-                    .padding(spacing.screenPadding),
-                verticalArrangement = Arrangement.spacedBy(spacing.space24),
-                horizontalAlignment = Alignment.CenterHorizontally
+            EditBookContent(
+                uiState = uiState,
+                allAuthors = allAuthors.map { it.name },
+                allTags = allTags.map { it.name },
+                onTitleChange = { viewModel.updateTitle(it) },
+                onDescriptionChange = { viewModel.updateDescription(it) },
+                onCoverUriChange = { viewModel.updateCoverUri(it) },
+                onAddAuthor = { viewModel.addAuthor(it) },
+                onRemoveAuthor = { viewModel.removeAuthor(it) },
+                onAddTag = { viewModel.addTag(it) },
+                onRemoveTag = { viewModel.removeTag(it) },
+                innerPadding = innerPadding
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun EditBookTopAppBar(
+    isSaving: Boolean,
+    onNavigateBack: () -> Unit,
+    onSave: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    TopAppBar(
+        title = { Text(stringResource(R.string.book_edit_title)) },
+        navigationIcon = {
+            FilledTonalIconButton(
+                shapes = IconButtonDefaults.shapes(),
+                onClick = onNavigateBack,
+                colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
             ) {
-                var isImagePickerOpen by remember { mutableStateOf(false) }
-                val launcher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.GetContent()
-                ) { uri: Uri? ->
-                    isImagePickerOpen = false
-                    viewModel.updateCoverUri(uri)
-                }
-
-                // Cover Image Picker
-                Box(
-                    modifier = Modifier
-                        .width(160.dp)
-                        .aspectRatio(1f / 1.5f)
-                        .shadow(8.dp, RoundedCornerShape(12.dp))
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .clickable {
-                            if (!isImagePickerOpen) {
-                                isImagePickerOpen = true
-                                launcher.launch("image/*")
-                            }
-                        }) {
-                    if (uiState.coverUri != null) {
-                        AsyncImage(
-                            model = uiState.coverUri,
-                            contentDescription = stringResource(R.string.book_info_title),
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else if (uiState.existingCoverPath != null) {
-                        AsyncImage(
-                            model = File(uiState.existingCoverPath!!),
-                            contentDescription = stringResource(R.string.book_info_title),
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    Brush.verticalGradient(
-                                        colors = listOf(
-                                            MaterialTheme.colorScheme.primaryContainer,
-                                            MaterialTheme.colorScheme.secondaryContainer
-                                        )
-                                    )
-                                ), contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = MaterialSymbols.Outlined.Image,
-                                contentDescription = stringResource(R.string.book_info_title),
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                            )
-                        }
-                    }
-
-                    // Edit Indicator Overlay
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(8.dp)
-                            .background(
-                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
-                                shape = CircleShape
-                            )
-                            .padding(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.Edit,
-                            contentDescription = stringResource(R.string.action_edit),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                }
-
-                // Title
-                OutlinedTextField(
-                    value = uiState.title,
-                    onValueChange = { viewModel.updateTitle(it) },
-                    label = { Text(stringResource(R.string.library_sort_title)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                // Authors Autocomplete
-                AutocompleteChipTextField(
-                    label = stringResource(R.string.book_label_authors),
-                    items = uiState.authors,
-                    suggestions = allAuthors.map { it.name },
-                    onAdd = { viewModel.addAuthor(it) },
-                    onRemove = { viewModel.removeAuthor(it) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                // Tags Autocomplete
-                AutocompleteChipTextField(
-                    label = stringResource(R.string.book_label_tags),
-                    items = uiState.tags,
-                    suggestions = allTags.map { it.name },
-                    onAdd = { viewModel.addTag(it) },
-                    onRemove = { viewModel.removeTag(it) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                // Description
-                OutlinedTextField(
-                    value = uiState.description,
-                    onValueChange = { viewModel.updateDescription(it) },
-                    label = { Text(stringResource(R.string.book_description)) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .defaultMinSize(minHeight = 160.dp)
+                Icon(
+                    MaterialSymbols.Outlined.Arrow_back,
+                    contentDescription = stringResource(R.string.action_back)
                 )
             }
+        },
+        actions = {
+            FilledIconButton(
+                modifier = Modifier
+                    .padding(end = 6.dp)
+                    .size(
+                        IconButtonDefaults.smallContainerSize(
+                            widthOption = IconButtonDefaults.IconButtonWidthOption.Wide
+                        )
+                    ),
+                shapes = IconButtonDefaults.shapes(),
+                onClick = onSave,
+                enabled = !isSaving
+            ) {
+                Icon(
+                    imageVector = MaterialSymbols.Outlined.Check,
+                    contentDescription = stringResource(R.string.action_save)
+                )
+            }
+        },
+        modifier = modifier
+    )
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun EditBookContent(
+    uiState: EditBookUiState,
+    allAuthors: List<String>,
+    allTags: List<String>,
+    onTitleChange: (String) -> Unit,
+    onDescriptionChange: (String) -> Unit,
+    onCoverUriChange: (Uri?) -> Unit,
+    onAddAuthor: (String) -> Unit,
+    onRemoveAuthor: (String) -> Unit,
+    onAddTag: (String) -> Unit,
+    onRemoveTag: (String) -> Unit,
+    innerPadding: PaddingValues,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(innerPadding)
+            .consumeWindowInsets(innerPadding)
+            .imePadding()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        BookCoverPicker(
+            coverUri = uiState.coverUri,
+            existingCoverPath = uiState.existingCoverPath,
+            onCoverUriChange = onCoverUriChange
+        )
+
+        // Title
+        OutlinedTextField(
+            value = uiState.title,
+            onValueChange = onTitleChange,
+            label = { Text(stringResource(R.string.library_sort_title)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+
+        // Authors Autocomplete
+        AutocompleteChipTextField(
+            label = stringResource(R.string.book_label_authors),
+            items = uiState.authors,
+            suggestions = allAuthors,
+            onAdd = onAddAuthor,
+            onRemove = onRemoveAuthor,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        // Tags Autocomplete
+        AutocompleteChipTextField(
+            label = stringResource(R.string.book_label_tags),
+            items = uiState.tags,
+            suggestions = allTags,
+            onAdd = onAddTag,
+            onRemove = onRemoveTag,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        // Description
+        OutlinedTextField(
+            value = uiState.description,
+            onValueChange = onDescriptionChange,
+            label = { Text(stringResource(R.string.book_description)) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .defaultMinSize(minHeight = 160.dp)
+        )
+    }
+}
+
+@Composable
+private fun BookCoverPicker(
+    coverUri: Uri?,
+    existingCoverPath: String?,
+    onCoverUriChange: (Uri?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var isImagePickerOpen by remember { mutableStateOf(false) }
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        isImagePickerOpen = false
+        onCoverUriChange(uri)
+    }
+
+    Box(
+        modifier = modifier
+            .width(160.dp)
+            .aspectRatio(1f / 1.5f)
+            .shadow(8.dp, RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clickable {
+                if (!isImagePickerOpen) {
+                    isImagePickerOpen = true
+                    launcher.launch("image/*")
+                }
+            }) {
+        if (coverUri != null) {
+            AsyncImage(
+                model = coverUri,
+                contentDescription = stringResource(R.string.book_info_title),
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else if (existingCoverPath != null) {
+            AsyncImage(
+                model = File(existingCoverPath),
+                contentDescription = stringResource(R.string.book_info_title),
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primaryContainer,
+                                MaterialTheme.colorScheme.secondaryContainer
+                            )
+                        )
+                    ), contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = MaterialSymbols.Outlined.Image,
+                    contentDescription = stringResource(R.string.book_info_title),
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                )
+            }
+        }
+
+        // Edit Indicator Overlay
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(8.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                    shape = CircleShape
+                )
+                .padding(6.dp)
+        ) {
+            Icon(
+                imageVector = MaterialSymbols.Outlined.Edit,
+                contentDescription = stringResource(R.string.action_edit),
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(16.dp)
+            )
         }
     }
 }

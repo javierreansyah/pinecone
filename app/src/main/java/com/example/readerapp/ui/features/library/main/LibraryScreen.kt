@@ -44,7 +44,6 @@ import com.composables.icons.materialsymbols.outlined.Folder
 import com.example.readerapp.R
 import com.example.readerapp.ui.components.EmptyState
 import com.example.readerapp.ui.features.library.LayoutMode
-import com.example.readerapp.ui.features.library.LibraryScreenUiState
 import com.example.readerapp.ui.features.library.SearchCategory
 import com.example.readerapp.ui.features.library.ShelfFilter
 import com.example.readerapp.ui.features.library.SortType
@@ -52,7 +51,6 @@ import com.example.readerapp.ui.features.library.StatusFilter
 import com.example.readerapp.ui.features.library.components.LibraryFilterBottomSheet
 import com.example.readerapp.ui.features.library.components.book.BookCollection
 import com.example.readerapp.ui.features.library.components.book.BookContextMenu
-import com.example.readerapp.ui.theme.spacing
 import kotlinx.coroutines.launch
 
 @OptIn(
@@ -181,28 +179,14 @@ fun LibraryScreen(
             scrollBehavior = scrollBehavior
         )
     }, bottomBar = {
-        ShortNavigationBar {
-            ShortNavigationBarItem(selected = pagerState.currentPage == 0, onClick = {
+        LibraryShortBottomNavigation(
+            currentPage = pagerState.currentPage,
+            onTabSelected = { page ->
                 scope.launch {
-                    pagerState.animateScrollToPage(0)
+                    pagerState.animateScrollToPage(page)
                 }
-            }, icon = {
-                Icon(
-                    MaterialSymbols.Outlined.Book,
-                    contentDescription = stringResource(R.string.library_tab_books)
-                )
-            }, label = { Text(stringResource(R.string.library_tab_books)) })
-            ShortNavigationBarItem(selected = pagerState.currentPage == 1, onClick = {
-                scope.launch {
-                    pagerState.animateScrollToPage(1)
-                }
-            }, icon = {
-                Icon(
-                    MaterialSymbols.Outlined.Folder,
-                    contentDescription = stringResource(R.string.library_tab_shelves)
-                )
-            }, label = { Text(stringResource(R.string.library_tab_shelves)) })
-        }
+            }
+        )
     }) { innerPadding ->
         HorizontalPager(
             state = pagerState, modifier = Modifier
@@ -211,57 +195,14 @@ fun LibraryScreen(
         ) { page ->
             when (page) {
                 0 -> {
-                    // Books Page
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(top = 8.dp),
-                        contentAlignment = Alignment.TopStart
-                    ) {
-                        if (showEmptyState) {
-                            EmptyState(
-                                icon = MaterialSymbols.Outlined.Book,
-                                text = stringResource(R.string.library_empty_books),
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(16.dp)
-                            )
-                        } else {
-                            BookCollection(
-                                books = uiState.filteredBooks,
-                                layoutMode = uiState.bookPreferences.layoutMode,
-                                onBookClick = onNavigateToReader,
-                                onBookLongClick = { selectedBookContext = Pair(it, null) })
-                        }
-
-                        if (uiState.isImporting) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Surface(
-                                    modifier = Modifier.size(150.dp),
-                                    shape = MaterialTheme.shapes.large,
-                                    color = MaterialTheme.colorScheme.surfaceVariant,
-                                    tonalElevation = 8.dp
-                                ) {
-                                    Column(
-                                        modifier = Modifier.fillMaxSize(),
-                                        verticalArrangement = Arrangement.spacedBy(
-                                            spacing.space16, Alignment.CenterVertically
-                                        ),
-                                        horizontalAlignment = Alignment.CenterHorizontally
-                                    ) {
-                                        CircularProgressIndicator()
-                                        Text(
-                                            stringResource(R.string.library_importing),
-                                            style = MaterialTheme.typography.bodyLarge
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    LibraryBooksTabContent(
+                        showEmptyState = showEmptyState,
+                        books = uiState.filteredBooks,
+                        layoutMode = uiState.bookPreferences.layoutMode,
+                        isImporting = uiState.isImporting,
+                        onNavigateToReader = onNavigateToReader,
+                        onBookLongClick = { selectedBookContext = Pair(it, null) }
+                    )
                 }
 
                 1 -> {
@@ -321,6 +262,103 @@ fun LibraryScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun LibraryShortBottomNavigation(
+    currentPage: Int,
+    onTabSelected: (Int) -> Unit
+) {
+    ShortNavigationBar {
+        ShortNavigationBarItem(
+            selected = currentPage == 0,
+            onClick = { onTabSelected(0) },
+            icon = {
+                Icon(
+                    MaterialSymbols.Outlined.Book,
+                    contentDescription = stringResource(R.string.library_tab_books)
+                )
+            },
+            label = { Text(stringResource(R.string.library_tab_books)) }
+        )
+        ShortNavigationBarItem(
+            selected = currentPage == 1,
+            onClick = { onTabSelected(1) },
+            icon = {
+                Icon(
+                    MaterialSymbols.Outlined.Folder,
+                    contentDescription = stringResource(R.string.library_tab_shelves)
+                )
+            },
+            label = { Text(stringResource(R.string.library_tab_shelves)) }
+        )
+    }
+}
 
+@Composable
+private fun LibraryBooksTabContent(
+    showEmptyState: Boolean,
+    books: List<com.example.readerapp.data.model.Book>,
+    layoutMode: LayoutMode,
+    isImporting: Boolean,
+    onNavigateToReader: (String) -> Unit,
+    onBookLongClick: (String) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 8.dp),
+        contentAlignment = Alignment.TopStart
+    ) {
+        if (showEmptyState) {
+            EmptyState(
+                icon = MaterialSymbols.Outlined.Book,
+                text = stringResource(R.string.library_empty_books),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            )
+        } else {
+            BookCollection(
+                books = books,
+                layoutMode = layoutMode,
+                onBookClick = onNavigateToReader,
+                onBookLongClick = onBookLongClick
+            )
+        }
 
+        LibraryImportProgressOverlay(isImporting = isImporting)
+    }
+}
 
+@Composable
+private fun LibraryImportProgressOverlay(
+    isImporting: Boolean
+) {
+    if (isImporting) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                modifier = Modifier.size(150.dp),
+                shape = MaterialTheme.shapes.large,
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                tonalElevation = 8.dp
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(
+                        16.dp, Alignment.CenterVertically
+                    ),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator()
+                    Text(
+                        stringResource(R.string.library_importing),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+            }
+        }
+    }
+}

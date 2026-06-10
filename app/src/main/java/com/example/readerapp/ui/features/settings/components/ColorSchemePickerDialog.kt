@@ -64,6 +64,7 @@ fun ColorPickerButton(
                     tint = iconTint,
                     contentDescription = null
                 )
+
                 else ->
                     if (color == Color.White) Icon(
                         imageVector = MaterialSymbols.Outlined.Palette,

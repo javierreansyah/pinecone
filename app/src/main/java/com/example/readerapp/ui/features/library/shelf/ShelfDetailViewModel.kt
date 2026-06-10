@@ -10,7 +10,6 @@ import com.example.readerapp.data.local.database.library.ShelfWithCovers
 import com.example.readerapp.data.local.preferences.LibraryPreferencesManager
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.features.library.LayoutMode
-import com.example.readerapp.ui.features.library.LibraryUiState
 import com.example.readerapp.ui.features.library.SortType
 import com.example.readerapp.ui.features.library.StatusFilter
 import kotlinx.coroutines.flow.Flow
@@ -32,13 +31,13 @@ class ShelfDetailViewModel(
     private val screenKey = "shelf_detail"
 
     private val _uiState = MutableStateFlow(
-        LibraryUiState(
+        ShelfDetailUiState(
             bookPreferences = prefsManager.getPreferences(
                 screenKey = screenKey, defaultSort = SortType.Custom, defaultAscending = true
             )
         )
     )
-    val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<ShelfDetailUiState> = _uiState.asStateFlow()
 
     private val booksFlow: Flow<List<Book>> =
         bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }

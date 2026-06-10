@@ -5,7 +5,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -58,13 +57,9 @@ fun AppTheme(
     val resolvedColorScheme =
         if (seedColor == Color.White) systemColorScheme else dynamicColorScheme
 
-    CompositionLocalProvider(
-        LocalSpacing provides Spacing()
-    ) {
-        MaterialTheme(
-            colorScheme = resolvedColorScheme,
-            typography = AppTypography,
-            content = content
-        )
-    }
+    MaterialTheme(
+        colorScheme = resolvedColorScheme,
+        typography = AppTypography,
+        content = content
+    )
 }

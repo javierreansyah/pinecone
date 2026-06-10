@@ -78,6 +78,33 @@ fun AllFilterItemsScreen(
         else allTags.map { it.name }
     }
 
+    AllFilterItemsContent(
+        filterType = filterType,
+        items = itemsWithCounts,
+        suggestions = suggestionList,
+        onNavigateBack = onNavigateBack,
+        onNavigateToDetail = onNavigateToDetail,
+        onDeleteConfirm = { name ->
+            viewModel.deleteFilterItem(filterType, name) {}
+        },
+        onRenameConfirm = { oldName, newName ->
+            viewModel.renameFilterItem(filterType, oldName, newName) {}
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun AllFilterItemsContent(
+    filterType: String,
+    items: List<Pair<String, Int>>,
+    suggestions: List<String>,
+    onNavigateBack: () -> Unit,
+    onNavigateToDetail: (String) -> Unit,
+    onDeleteConfirm: (String) -> Unit,
+    onRenameConfirm: (String, String) -> Unit,
+    modifier: Modifier = Modifier
+) {
     var selectedItemForMenu by remember { mutableStateOf<String?>(null) }
     var itemToDelete by remember { mutableStateOf<String?>(null) }
     var itemToRename by remember { mutableStateOf<String?>(null) }
@@ -86,8 +113,8 @@ fun AllFilterItemsScreen(
     var sortAscending by remember { mutableStateOf(true) }
     var showSortSheet by remember { mutableStateOf(false) }
 
-    val sortedItems = remember(itemsWithCounts, sortType, sortAscending) {
-        itemsWithCounts.sortedWith { a, b ->
+    val sortedItems = remember(items, sortType, sortAscending) {
+        items.sortedWith { a, b ->
             when (sortType) {
                 FilterItemSortType.Label -> {
                     val comp = a.first.lowercase().compareTo(b.first.lowercase())
@@ -109,150 +136,265 @@ fun AllFilterItemsScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
-            LargeFlexibleTopAppBar(
-                title = {
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            AllFilterItemsTopAppBar(
+                filterType = filterType,
+                onNavigateBack = onNavigateBack,
+                onSortClick = { showSortSheet = true },
+                scrollBehavior = scrollBehavior
+            )
+        }
+    ) { innerPadding ->
+        if (items.isEmpty()) {
+            AllFilterItemsEmptyState(innerPadding = innerPadding)
+        } else {
+            AllFilterItemsList(
+                sortedItems = sortedItems,
+                selectedItemForMenu = selectedItemForMenu,
+                innerPadding = innerPadding,
+                onNavigateToDetail = onNavigateToDetail,
+                onMoreClick = { selectedItemForMenu = it },
+                onMenuDismiss = { selectedItemForMenu = null },
+                onRenameClick = { name ->
+                    selectedItemForMenu = null
+                    itemToRename = name
+                },
+                onDeleteClick = { name ->
+                    selectedItemForMenu = null
+                    itemToDelete = name
+                }
+            )
+        }
+
+        AllFilterItemsDialogs(
+            filterType = filterType,
+            itemToDelete = itemToDelete,
+            itemToRename = itemToRename,
+            suggestionList = suggestions,
+            showSortSheet = showSortSheet,
+            sortType = sortType,
+            sortAscending = sortAscending,
+            onDeleteDismiss = { itemToDelete = null },
+            onDeleteConfirm = { name ->
+                itemToDelete = null
+                onDeleteConfirm(name)
+            },
+            onRenameDismiss = { itemToRename = null },
+            onRenameConfirm = { oldName, newName ->
+                itemToRename = null
+                onRenameConfirm(oldName, newName)
+            },
+            onSortTypeChange = { newType ->
+                if (sortType == newType) {
+                    sortAscending = !sortAscending
+                } else {
+                    sortType = newType
+                    sortAscending = true
+                }
+            },
+            onSortDismiss = { showSortSheet = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun AllFilterItemsTopAppBar(
+    filterType: String,
+    onNavigateBack: () -> Unit,
+    onSortClick: () -> Unit,
+    scrollBehavior: androidx.compose.material3.TopAppBarScrollBehavior,
+    modifier: Modifier = Modifier
+) {
+    LargeFlexibleTopAppBar(
+        title = {
+            Text(
+                if (filterType == "author") stringResource(R.string.library_authors_title) else stringResource(
+                    R.string.library_tags_title
+                )
+            )
+        },
+        navigationIcon = {
+            FilledTonalIconButton(
+                shapes = IconButtonDefaults.shapes(),
+                colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                onClick = onNavigateBack
+            ) {
+                Icon(
+                    MaterialSymbols.Outlined.Arrow_back,
+                    contentDescription = stringResource(R.string.action_back)
+                )
+            }
+        },
+        actions = {
+            IconButton(onClick = onSortClick) {
+                Icon(
+                    MaterialSymbols.Outlined.Tune,
+                    contentDescription = stringResource(R.string.action_sort)
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            scrolledContainerColor = MaterialTheme.colorScheme.surface,
+        ),
+        scrollBehavior = scrollBehavior,
+        modifier = modifier
+    )
+}
+
+@Composable
+private fun AllFilterItemsEmptyState(
+    innerPadding: PaddingValues,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .padding(innerPadding)
+            .fillMaxSize()
+    ) {
+        Text(
+            stringResource(R.string.library_empty_items),
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(16.dp)
+        )
+    }
+}
+
+@Composable
+private fun AllFilterItemsList(
+    sortedItems: List<Pair<String, Int>>,
+    selectedItemForMenu: String?,
+    innerPadding: PaddingValues,
+    onNavigateToDetail: (String) -> Unit,
+    onMoreClick: (String) -> Unit,
+    onMenuDismiss: () -> Unit,
+    onRenameClick: (String) -> Unit,
+    onDeleteClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    SegmentedLazyColumn(
+        modifier = modifier
+            .padding(innerPadding)
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        contentPadding = PaddingValues(bottom = 16.dp)
+    ) {
+        sortedItems.forEach { item ->
+            item(
+                onClick = { onNavigateToDetail(item.first) },
+                content = { Text(item.first) },
+                supportingContent = {
                     Text(
-                        if (filterType == "author") stringResource(R.string.library_authors_title) else stringResource(
-                            R.string.library_tags_title
+                        pluralStringResource(
+                            R.plurals.library_books_count, item.second, item.second
                         )
                     )
-                }, navigationIcon = {
-                    FilledTonalIconButton(
-                        shapes = IconButtonDefaults.shapes(),
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                        onClick = onNavigateBack
-                    ) {
-                        Icon(
-                            MaterialSymbols.Outlined.Arrow_back,
-                            contentDescription = stringResource(R.string.action_back)
-                        )
-                    }
-                }, actions = {
-                    IconButton(onClick = { showSortSheet = true }) {
-                        Icon(
-                            MaterialSymbols.Outlined.Tune,
-                            contentDescription = stringResource(R.string.action_sort)
-                        )
-                    }
-                }, colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
-                ), scrollBehavior = scrollBehavior
-            )
-        }) { innerPadding ->
-        if (itemsWithCounts.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .fillMaxSize()
-            ) {
-                Text(
-                    stringResource(R.string.library_empty_items),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-        } else {
-            SegmentedLazyColumn(
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                contentPadding = PaddingValues(bottom = 16.dp)
-            ) {
-                sortedItems.forEach { item ->
-                    item(
-                        onClick = { onNavigateToDetail(item.first) },
-                        content = { Text(item.first) },
-                        supportingContent = {
-                            Text(
-                                pluralStringResource(
-                                    R.plurals.library_books_count, item.second, item.second
-                                )
-                            )
-                        },
-                        trailingContent = {
-                            Box {
-                                IconButton(onClick = { selectedItemForMenu = item.first }) {
-                                    Icon(
-                                        MaterialSymbols.Outlined.More_vert,
-                                        contentDescription = stringResource(R.string.action_more)
-                                    )
-                                }
-                                DropdownMenu(
-                                    expanded = selectedItemForMenu == item.first,
-                                    onDismissRequest = { selectedItemForMenu = null }) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.action_rename)) },
-                                        onClick = {
-                                            selectedItemForMenu = null
-                                            itemToRename = item.first
-                                        })
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.action_delete)) },
-                                        onClick = {
-                                            selectedItemForMenu = null
-                                            itemToDelete = item.first
-                                        })
-                                }
-                            }
-                        })
+                },
+                trailingContent = {
+                    AllFilterItemsItemActions(
+                        item = item,
+                        isMenuExpanded = selectedItemForMenu == item.first,
+                        onMoreClick = { onMoreClick(item.first) },
+                        onMenuDismiss = onMenuDismiss,
+                        onRenameClick = { onRenameClick(item.first) },
+                        onDeleteClick = { onDeleteClick(item.first) }
+                    )
                 }
-            }
+            )
         }
+    }
+}
 
-        itemToDelete?.let { name ->
-            val titleType =
-                if (filterType == "author") stringResource(R.string.library_sort_author) else stringResource(
-                    R.string.library_sort_label
-                )
-            AlertDialog(
-                onDismissRequest = { itemToDelete = null },
-                title = { Text(stringResource(R.string.library_delete_item_title, titleType)) },
-                text = { Text(stringResource(R.string.library_delete_item_message, name)) },
-                confirmButton = {
-                    TextButton(onClick = {
-                        itemToDelete = null
-                        viewModel.deleteFilterItem(filterType, name) {}
-                    }) {
-                        Text(
-                            stringResource(R.string.action_delete),
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { itemToDelete = null }) {
-                        Text(stringResource(R.string.action_cancel))
-                    }
-                })
+@Composable
+private fun AllFilterItemsItemActions(
+    item: Pair<String, Int>,
+    isMenuExpanded: Boolean,
+    onMoreClick: () -> Unit,
+    onMenuDismiss: () -> Unit,
+    onRenameClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(modifier = modifier) {
+        IconButton(onClick = onMoreClick) {
+            Icon(
+                MaterialSymbols.Outlined.More_vert,
+                contentDescription = stringResource(R.string.action_more)
+            )
         }
+        DropdownMenu(
+            expanded = isMenuExpanded,
+            onDismissRequest = onMenuDismiss
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.action_rename)) },
+                onClick = onRenameClick
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.action_delete)) },
+                onClick = onDeleteClick
+            )
+        }
+    }
+}
 
-        itemToRename?.let { oldName ->
-            RenameFilterDialog(
-                initialName = oldName,
-                suggestions = suggestionList,
-                onDismiss = { itemToRename = null },
-                onConfirm = { newName ->
-                    itemToRename = null
-                    viewModel.renameFilterItem(filterType, oldName, newName) {}
-                })
-        }
+@Composable
+private fun AllFilterItemsDialogs(
+    filterType: String,
+    itemToDelete: String?,
+    itemToRename: String?,
+    suggestionList: List<String>,
+    showSortSheet: Boolean,
+    sortType: FilterItemSortType,
+    sortAscending: Boolean,
+    onDeleteDismiss: () -> Unit,
+    onDeleteConfirm: (String) -> Unit,
+    onRenameDismiss: () -> Unit,
+    onRenameConfirm: (String, String) -> Unit,
+    onSortTypeChange: (FilterItemSortType) -> Unit,
+    onSortDismiss: () -> Unit
+) {
+    itemToDelete?.let { name ->
+        val titleType =
+            if (filterType == "author") stringResource(R.string.library_sort_author) else stringResource(
+                R.string.library_sort_label
+            )
+        AlertDialog(
+            onDismissRequest = onDeleteDismiss,
+            title = { Text(stringResource(R.string.library_delete_item_title, titleType)) },
+            text = { Text(stringResource(R.string.library_delete_item_message, name)) },
+            confirmButton = {
+                TextButton(onClick = { onDeleteConfirm(name) }) {
+                    Text(
+                        stringResource(R.string.action_delete),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDeleteDismiss) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            })
+    }
 
-        if (showSortSheet) {
-            FilterItemSortBottomSheet(
-                currentSortType = sortType,
-                isAscending = sortAscending,
-                onSortTypeChange = { newType ->
-                    if (sortType == newType) {
-                        sortAscending = !sortAscending
-                    } else {
-                        sortType = newType
-                        sortAscending = true
-                    }
-                },
-                onDismiss = { showSortSheet = false })
-        }
+    itemToRename?.let { oldName ->
+        RenameFilterDialog(
+            initialName = oldName,
+            suggestions = suggestionList,
+            onDismiss = onRenameDismiss,
+            onConfirm = { newName -> onRenameConfirm(oldName, newName) }
+        )
+    }
+
+    if (showSortSheet) {
+        FilterItemSortBottomSheet(
+            currentSortType = sortType,
+            isAscending = sortAscending,
+            onSortTypeChange = onSortTypeChange,
+            onDismiss = onSortDismiss
+        )
     }
 }

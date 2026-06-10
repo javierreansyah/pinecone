@@ -18,6 +18,8 @@ import com.example.readerapp.data.local.preferences.ReaderSettings
 import com.example.readerapp.data.repository.dictionary.DictionaryRepository
 import com.example.readerapp.data.repository.library.LibraryRepository
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -260,11 +262,14 @@ class ReaderViewModel(
             _bookState.update { it.copy(isLoading = true, error = null) }
 
             try {
-                // Load initial locator
-                initialLocator = repository.getLastLocator(bookId)
+                // Load initial locator and book entity in parallel — both are independent DB hits
+                val (resolvedLocator, book) = coroutineScope {
+                    val locatorDeferred = async { repository.getLastLocator(bookId) }
+                    val bookDeferred = async { repository.getBook(bookId) }
+                    locatorDeferred.await() to bookDeferred.await()
+                }
+                initialLocator = resolvedLocator
 
-                // Get book entity
-                val book = repository.getBook(bookId)
                 if (book == null) {
                     val errorMsg = application.getString(R.string.book_not_found)
                     _bookState.update { it.copy(isLoading = false, error = errorMsg) }
