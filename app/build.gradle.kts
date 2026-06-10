@@ -80,6 +80,7 @@ dependencies {
     implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.compose.animation.core)
     implementation(libs.reorderable)
+    implementation(libs.materialKolor)
     implementation(libs.androidx.documentfile)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)

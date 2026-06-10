@@ -234,6 +234,8 @@
     <string name="settings_option_dynamic">Dinamis</string>
     <string name="settings_theme_pine">Pine</string>
     <string name="settings_theme_neutral">Netral</string>
+    <string name="chooseColorScheme">Pilih Skema Warna</string>
+    <string name="ok">OK</string>
     <string name="settings_option_selected">Dipilih</string>
     <string name="settings_option_not_selected">Belum dipilih (Cadangan otomatis dinonaktifkan)</string>
     <string name="settings_backup_freq_3h">3 jam</string>
