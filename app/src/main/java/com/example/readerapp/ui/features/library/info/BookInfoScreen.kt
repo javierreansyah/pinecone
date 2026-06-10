@@ -311,6 +311,7 @@ fun BookInfoScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 FilledTonalIconButton(
+                    shapes = IconButtonDefaults.shapes(),
                     onClick = onNavigateBack,
                     colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
                 ) {
@@ -321,6 +322,7 @@ fun BookInfoScreen(
                 }
 
                 FilledTonalIconButton(
+                    shapes = IconButtonDefaults.shapes(),
                     onClick = { onNavigateToEdit(bookId) },
                     colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
                 ) {

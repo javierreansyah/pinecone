@@ -1,4 +1,4 @@
-package com.example.readerapp.ui.features.dictionary.utils
+package com.example.readerapp.ui.features.reader.components.dictionary
 
 import android.annotation.SuppressLint
 import android.view.ViewGroup
@@ -162,7 +162,7 @@ private fun buildDefinitionHtml(
 body {
     font-family: 'Roboto', 'Noto Sans', system-ui, -apple-system, sans-serif;
     font-size: ${fontSizeCss}px;
-    line-height: 1.6;
+    line-height: 1.5;
     color: var(--on-surface);
     background: transparent;
     word-wrap: break-word;
