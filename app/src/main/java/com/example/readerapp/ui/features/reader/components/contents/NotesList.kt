@@ -29,7 +29,6 @@ import com.composables.icons.materialsymbols.outlined.Edit
 import com.example.readerapp.R
 import com.example.readerapp.data.local.database.library.NoteEntity
 import com.example.readerapp.ui.components.EmptyState
-import com.example.readerapp.ui.theme.spacing
 import org.json.JSONObject
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
@@ -74,7 +73,7 @@ fun NotesList(
                             .fillMaxWidth()
                             .clickable { onNoteClick(locator) }
                             .padding(horizontal = 20.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(spacing.space8)) {
+                        verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         EntryHeader(
                             title = chapterTitle,
                             positionLabel = getPositionLabel(locator),

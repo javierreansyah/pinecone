@@ -69,7 +69,6 @@ fun DictionariesScreen(
     viewModel: DictionariesViewModel, onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val installedDictionaries by viewModel.installedDictionaries.collectAsStateWithLifecycle()
     val importState by viewModel.importState.collectAsStateWithLifecycle()
     val restoreState by viewModel.restoreState.collectAsStateWithLifecycle()
@@ -84,10 +83,6 @@ fun DictionariesScreen(
         animationSpec = tween(durationMillis = 250, easing = LinearOutSlowInEasing),
         label = "ImportProgress"
     )
-
-    var selectedItemForMenu by remember { mutableStateOf<String?>(null) }
-    var itemToDelete by remember { mutableStateOf<InstalledDictionary?>(null) }
-    var itemToRename by remember { mutableStateOf<InstalledDictionary?>(null) }
 
     val filePicker = rememberLauncherForActivityResult(contract = object :
         ActivityResultContracts.OpenDocument() {
@@ -179,108 +174,93 @@ fun DictionariesScreen(
         }
     }
 
-    Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
-        LargeFlexibleTopAppBar(
-            title = { Text(stringResource(R.string.dictionaries_title)) },
-            navigationIcon = {
-                FilledTonalIconButton(
-                    shapes = IconButtonDefaults.shapes(),
-                    colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                    onClick = onBack
-                ) {
-                    Icon(
-                        MaterialSymbols.Outlined.Arrow_back,
-                        contentDescription = stringResource(R.string.action_back)
-                    )
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                scrolledContainerColor = MaterialTheme.colorScheme.surface,
-            ),
-            scrollBehavior = scrollBehavior
+    val backupNoDictMsg = stringResource(R.string.dictionaries_no_to_backup)
+
+    val uiState = remember(installedDictionaries, importState, restoreState, backupState) {
+        DictionariesUiState(
+            installedDictionaries = installedDictionaries,
+            importState = importState,
+            restoreState = restoreState,
+            backupState = backupState
         )
-    }, floatingActionButton = {
-        var expanded by rememberSaveable { mutableStateOf(false) }
-        var showRestoreWarning by remember { mutableStateOf(false) }
+    }
 
-        if (showRestoreWarning) {
-            AlertDialog(
-                onDismissRequest = { showRestoreWarning = false },
-                title = { Text(stringResource(R.string.dictionaries_restore)) },
-                text = { Text(stringResource(R.string.dictionaries_restore_warning)) },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            showRestoreWarning = false
-                            restorePicker.launch(arrayOf("application/octet-stream"))
-                        }) {
-                        Text(stringResource(R.string.action_proceed))
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showRestoreWarning = false }) {
-                        Text(stringResource(R.string.action_cancel))
-                    }
-                })
+    DictionariesContent(
+        uiState = uiState,
+        animatedProgress = animatedProgress,
+        onBack = onBack,
+        onBackupClick = {
+            if (installedDictionaries.isEmpty()) {
+                Toast.makeText(context, backupNoDictMsg, Toast.LENGTH_SHORT).show()
+            } else {
+                viewModel.backupDictionaries()
+            }
+        },
+        onRestoreClick = {
+            restorePicker.launch(arrayOf("application/octet-stream"))
+        },
+        onImportClick = {
+            filePicker.launch(arrayOf("application/zip"))
+        },
+        onRenameDictionary = { id, name ->
+            viewModel.renameDictionary(id, name)
+        },
+        onDeleteDictionary = { id ->
+            viewModel.deleteDictionary(id)
         }
+    )
+}
 
-        BackHandler(expanded) { expanded = false }
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun DictionariesContent(
+    uiState: DictionariesUiState,
+    animatedProgress: Float,
+    onBack: () -> Unit,
+    onBackupClick: () -> Unit,
+    onRestoreClick: () -> Unit,
+    onImportClick: () -> Unit,
+    onRenameDictionary: (String, String) -> Unit,
+    onDeleteDictionary: (String) -> Unit
+) {
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-        val backupNoDictMsg = stringResource(R.string.dictionaries_no_to_backup)
-        FloatingActionButtonMenu(
-            expanded = expanded, button = {
-                ToggleFloatingActionButton(
-                    checked = expanded, onCheckedChange = { expanded = !expanded }) {
-                    val imageVector by remember {
-                        derivedStateOf {
-                            if (checkedProgress > 0.5f) MaterialSymbols.Outlined.Close else MaterialSymbols.Outlined.Add
-                        }
-                    }
-                    Icon(
-                        painter = rememberVectorPainter(imageVector),
-                        contentDescription = stringResource(R.string.action_options),
-                        modifier = Modifier.animateIcon({ checkedProgress })
-                    )
-                }
-            }) {
-            FloatingActionButtonMenuItem(
-                onClick = {
-                    expanded = false
-                    if (installedDictionaries.isEmpty()) {
-                        Toast.makeText(context, backupNoDictMsg, Toast.LENGTH_SHORT).show()
-                    } else {
-                        viewModel.backupDictionaries()
-                    }
-                },
-                icon = { Icon(MaterialSymbols.Outlined.Save, contentDescription = null) },
-                text = { Text(stringResource(R.string.dictionaries_backup)) })
-            FloatingActionButtonMenuItem(
-                onClick = {
-                    expanded = false
-                    showRestoreWarning = true
-                },
-                icon = { Icon(MaterialSymbols.Outlined.History, contentDescription = null) },
-                text = { Text(stringResource(R.string.dictionaries_restore)) })
-            FloatingActionButtonMenuItem(
-                onClick = {
-                    expanded = false
-                    filePicker.launch(arrayOf("application/zip"))
-                },
-                icon = { Icon(MaterialSymbols.Outlined.Download, contentDescription = null) },
-                text = { Text(stringResource(R.string.dictionaries_import_stardict)) })
+    var selectedItemForMenu by remember { mutableStateOf<String?>(null) }
+    var itemToDelete by remember { mutableStateOf<InstalledDictionary?>(null) }
+    var itemToRename by remember { mutableStateOf<InstalledDictionary?>(null) }
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    var showRestoreWarning by remember { mutableStateOf(false) }
+
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            DictionariesTopAppBar(
+                onBack = onBack,
+                scrollBehavior = scrollBehavior
+            )
+        },
+        floatingActionButton = {
+            DictionariesFloatingActionButton(
+                expanded = expanded,
+                onExpandedChange = { expanded = it },
+                onBackupClick = onBackupClick,
+                onRestoreClick = { showRestoreWarning = true },
+                onImportClick = onImportClick
+            )
         }
-    }) { padding ->
+    ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            val isLoadingImport = importState is DictionaryState.Loading
-            val isLoadingRestore = restoreState is DictionaryState.Loading
-            val isLoadingBackup = backupState is DictionaryState.Loading
-            val totalCount =
-                installedDictionaries.size + (if (isLoadingImport) 1 else 0) + (if (isLoadingRestore) 1 else 0) + (if (isLoadingBackup) 1 else 0)
+            val isLoadingImport = uiState.importState is DictionaryState.Loading
+            val isLoadingRestore = uiState.restoreState is DictionaryState.Loading
+            val isLoadingBackup = uiState.backupState is DictionaryState.Loading
+            val totalCount = uiState.installedDictionaries.size +
+                    (if (isLoadingImport) 1 else 0) +
+                    (if (isLoadingRestore) 1 else 0) +
+                    (if (isLoadingBackup) 1 else 0)
 
             if (totalCount == 0) {
                 EmptyState(
@@ -289,152 +269,362 @@ fun DictionariesScreen(
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
-                SegmentedLazyColumn(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp)
-                ) {
-                    installedDictionaries.forEach { dict ->
-                        item(key = dict.id, content = { Text(dict.name) }, supportingContent = {
-                            Text(
-                                androidx.compose.ui.res.pluralStringResource(
-                                    R.plurals.dictionaries_word_count,
-                                    dict.wordCount,
-                                    dict.wordCount
-                                )
-                            )
-                        }, trailingContent = {
-                            Box {
-                                IconButton(onClick = { selectedItemForMenu = dict.id }) {
-                                    Icon(
-                                        MaterialSymbols.Outlined.More_vert,
-                                        contentDescription = stringResource(R.string.action_more)
-                                    )
-                                }
-                                DropdownMenu(
-                                    expanded = selectedItemForMenu == dict.id,
-                                    onDismissRequest = { selectedItemForMenu = null }) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.action_rename)) },
-                                        onClick = {
-                                            selectedItemForMenu = null
-                                            itemToRename = dict
-                                        })
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.action_delete)) },
-                                        onClick = {
-                                            selectedItemForMenu = null
-                                            itemToDelete = dict
-                                        })
-                                }
-                            }
-                        })
-                    }
+                DictionariesList(
+                    uiState = uiState,
+                    animatedProgress = animatedProgress,
+                    selectedItemForMenu = selectedItemForMenu,
+                    onMenuDismiss = { selectedItemForMenu = null },
+                    onMoreClick = { selectedItemForMenu = it },
+                    onRenameClick = { dict ->
+                        selectedItemForMenu = null
+                        itemToRename = dict
+                    },
+                    onDeleteClick = { dict ->
+                        selectedItemForMenu = null
+                        itemToDelete = dict
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
 
-                    if (isLoadingImport) {
-                        item(
-                            key = "import",
-                            content = { Text(stringResource(R.string.dictionaries_installing)) },
-                            supportingContent = {
-                                LinearWavyProgressIndicator(
-                                    progress = { animatedProgress },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 8.dp)
-                                )
-                            },
-                            trailingContent = { Text("${(animatedProgress * 100).toInt()}%") })
+            if (showRestoreWarning) {
+                RestoreWarningDialog(
+                    onDismissRequest = { showRestoreWarning = false },
+                    onConfirm = {
+                        showRestoreWarning = false
+                        onRestoreClick()
                     }
-
-                    if (isLoadingRestore) {
-                        item(
-                            key = "restore",
-                            content = { Text(stringResource(R.string.dictionaries_restoring)) },
-                            supportingContent = {
-                                LinearWavyProgressIndicator(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 8.dp)
-                                )
-                            })
-                    }
-
-                    if (isLoadingBackup) {
-                        item(
-                            key = "backup",
-                            content = { Text(stringResource(R.string.dictionaries_backing_up)) },
-                            supportingContent = {
-                                LinearWavyProgressIndicator(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 8.dp)
-                                )
-                            })
-                    }
-                }
+                )
             }
 
             itemToDelete?.let { dict ->
-                AlertDialog(
+                DeleteDictionaryDialog(
+                    dictName = dict.name,
                     onDismissRequest = { itemToDelete = null },
-                    title = { Text(stringResource(R.string.dictionaries_delete_title)) },
-                    text = {
-                        Text(
-                            stringResource(
-                                R.string.dictionaries_delete_message, dict.name
-                            )
-                        )
-                    },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            val dictId = dict.id
-                            itemToDelete = null
-                            viewModel.deleteDictionary(dictId)
-                        }) {
-                            Text(
-                                stringResource(R.string.action_delete),
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { itemToDelete = null }) {
-                            Text(stringResource(R.string.action_cancel))
-                        }
-                    })
+                    onConfirm = {
+                        val dictId = dict.id
+                        itemToDelete = null
+                        onDeleteDictionary(dictId)
+                    }
+                )
             }
 
             itemToRename?.let { dict ->
-                var newName by remember(dict.id) { mutableStateOf(dict.name) }
-                AlertDialog(
+                RenameDictionaryDialog(
+                    initialName = dict.name,
                     onDismissRequest = { itemToRename = null },
-                    title = { Text(stringResource(R.string.dictionaries_rename_title)) },
-                    text = {
-                        OutlinedTextField(
-                            value = newName,
-                            onValueChange = { newName = it },
-                            singleLine = true,
-                            label = { Text(stringResource(R.string.dictionaries_rename_title)) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            if (newName.isNotBlank()) {
-                                val dictId = dict.id
-                                itemToRename = null
-                                viewModel.renameDictionary(dictId, newName.trim())
-                            }
-                        }) {
-                            Text(stringResource(R.string.action_rename))
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { itemToRename = null }) {
-                            Text(stringResource(R.string.action_cancel))
-                        }
-                    })
+                    onConfirm = { newName ->
+                        val dictId = dict.id
+                        itemToRename = null
+                        onRenameDictionary(dictId, newName)
+                    }
+                )
             }
-
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun DictionariesTopAppBar(
+    onBack: () -> Unit,
+    scrollBehavior: androidx.compose.material3.TopAppBarScrollBehavior,
+    modifier: Modifier = Modifier
+) {
+    LargeFlexibleTopAppBar(
+        title = { Text(stringResource(R.string.dictionaries_title)) },
+        navigationIcon = {
+            FilledTonalIconButton(
+                shapes = IconButtonDefaults.shapes(),
+                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                ),
+                onClick = onBack
+            ) {
+                Icon(
+                    MaterialSymbols.Outlined.Arrow_back,
+                    contentDescription = stringResource(R.string.action_back)
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            scrolledContainerColor = MaterialTheme.colorScheme.surface,
+        ),
+        scrollBehavior = scrollBehavior,
+        modifier = modifier
+    )
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun DictionariesFloatingActionButton(
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    onBackupClick: () -> Unit,
+    onRestoreClick: () -> Unit,
+    onImportClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    BackHandler(expanded) { onExpandedChange(false) }
+
+    FloatingActionButtonMenu(
+        expanded = expanded,
+        button = {
+            ToggleFloatingActionButton(
+                checked = expanded,
+                onCheckedChange = onExpandedChange
+            ) {
+                val imageVector by remember {
+                    derivedStateOf {
+                        if (checkedProgress > 0.5f) MaterialSymbols.Outlined.Close else MaterialSymbols.Outlined.Add
+                    }
+                }
+                Icon(
+                    painter = rememberVectorPainter(imageVector),
+                    contentDescription = stringResource(R.string.action_options),
+                    modifier = Modifier.animateIcon({ checkedProgress })
+                )
+            }
+        },
+        modifier = modifier
+    ) {
+        FloatingActionButtonMenuItem(
+            onClick = {
+                onExpandedChange(false)
+                onBackupClick()
+            },
+            icon = { Icon(MaterialSymbols.Outlined.Save, contentDescription = null) },
+            text = { Text(stringResource(R.string.dictionaries_backup)) }
+        )
+        FloatingActionButtonMenuItem(
+            onClick = {
+                onExpandedChange(false)
+                onRestoreClick()
+            },
+            icon = { Icon(MaterialSymbols.Outlined.History, contentDescription = null) },
+            text = { Text(stringResource(R.string.dictionaries_restore)) }
+        )
+        FloatingActionButtonMenuItem(
+            onClick = {
+                onExpandedChange(false)
+                onImportClick()
+            },
+            icon = { Icon(MaterialSymbols.Outlined.Download, contentDescription = null) },
+            text = { Text(stringResource(R.string.dictionaries_import_stardict)) }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun DictionariesList(
+    uiState: DictionariesUiState,
+    animatedProgress: Float,
+    selectedItemForMenu: String?,
+    onMenuDismiss: () -> Unit,
+    onMoreClick: (String) -> Unit,
+    onRenameClick: (InstalledDictionary) -> Unit,
+    onDeleteClick: (InstalledDictionary) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    SegmentedLazyColumn(
+        modifier = modifier.padding(horizontal = 16.dp),
+        contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp)
+    ) {
+        uiState.installedDictionaries.forEach { dict ->
+            item(
+                key = dict.id,
+                content = { Text(dict.name) },
+                supportingContent = {
+                    Text(
+                        androidx.compose.ui.res.pluralStringResource(
+                            R.plurals.dictionaries_word_count,
+                            dict.wordCount,
+                            dict.wordCount
+                        )
+                    )
+                },
+                trailingContent = {
+                    DictionaryItemActions(
+                        dict = dict,
+                        isMenuExpanded = selectedItemForMenu == dict.id,
+                        onMoreClick = { onMoreClick(dict.id) },
+                        onMenuDismiss = onMenuDismiss,
+                        onRenameClick = { onRenameClick(dict) },
+                        onDeleteClick = { onDeleteClick(dict) }
+                    )
+                }
+            )
+        }
+
+        if (uiState.importState is DictionaryState.Loading) {
+            item(
+                key = "import",
+                content = { Text(stringResource(R.string.dictionaries_installing)) },
+                supportingContent = {
+                    LinearWavyProgressIndicator(
+                        progress = { animatedProgress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                    )
+                },
+                trailingContent = { Text("${(animatedProgress * 100).toInt()}%") }
+            )
+        }
+
+        if (uiState.restoreState is DictionaryState.Loading) {
+            item(
+                key = "restore",
+                content = { Text(stringResource(R.string.dictionaries_restoring)) },
+                supportingContent = {
+                    LinearWavyProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                    )
+                }
+            )
+        }
+
+        if (uiState.backupState is DictionaryState.Loading) {
+            item(
+                key = "backup",
+                content = { Text(stringResource(R.string.dictionaries_backing_up)) },
+                supportingContent = {
+                    LinearWavyProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                    )
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun DictionaryItemActions(
+    dict: InstalledDictionary,
+    isMenuExpanded: Boolean,
+    onMoreClick: () -> Unit,
+    onMenuDismiss: () -> Unit,
+    onRenameClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(modifier = modifier) {
+        IconButton(onClick = onMoreClick) {
+            Icon(
+                MaterialSymbols.Outlined.More_vert,
+                contentDescription = stringResource(R.string.action_more)
+            )
+        }
+        DropdownMenu(
+            expanded = isMenuExpanded,
+            onDismissRequest = onMenuDismiss
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.action_rename)) },
+                onClick = onRenameClick
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.action_delete)) },
+                onClick = onDeleteClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun RestoreWarningDialog(
+    onDismissRequest: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text(stringResource(R.string.dictionaries_restore)) },
+        text = { Text(stringResource(R.string.dictionaries_restore_warning)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(stringResource(R.string.action_proceed))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        }
+    )
+}
+
+@Composable
+private fun DeleteDictionaryDialog(
+    dictName: String,
+    onDismissRequest: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text(stringResource(R.string.dictionaries_delete_title)) },
+        text = {
+            Text(
+                stringResource(
+                    R.string.dictionaries_delete_message, dictName
+                )
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(
+                    stringResource(R.string.action_delete),
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        }
+    )
+}
+
+@Composable
+private fun RenameDictionaryDialog(
+    initialName: String,
+    onDismissRequest: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var newName by remember(initialName) { mutableStateOf(initialName) }
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text(stringResource(R.string.dictionaries_rename_title)) },
+        text = {
+            OutlinedTextField(
+                value = newName,
+                onValueChange = { newName = it },
+                singleLine = true,
+                label = { Text(stringResource(R.string.dictionaries_rename_title)) },
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (newName.isNotBlank()) {
+                        onConfirm(newName.trim())
+                    }
+                }
+            ) {
+                Text(stringResource(R.string.action_rename))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        }
+    )
 }

@@ -36,7 +36,6 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import com.example.readerapp.R
 import com.example.readerapp.data.local.database.library.NoteEntity
-import com.example.readerapp.ui.theme.spacing
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,7 +68,7 @@ fun NoteBottomSheet(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(spacing.space16)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Text field for editing note text
             OutlinedTextField(

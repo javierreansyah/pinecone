@@ -8,7 +8,6 @@ import com.example.readerapp.data.local.database.library.ShelfWithCovers
 import com.example.readerapp.data.local.preferences.LibraryPreferencesManager
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.features.library.LayoutMode
-import com.example.readerapp.ui.features.library.LibraryUiState
 import com.example.readerapp.ui.features.library.SortType
 import com.example.readerapp.ui.features.library.StatusFilter
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -33,13 +32,13 @@ class FilterResultViewModel(
     private val screenKey = "filter_result"
 
     private val _uiState = MutableStateFlow(
-        LibraryUiState(
+        FilterResultUiState(
             bookPreferences = prefsManager.getPreferences(
                 screenKey = screenKey, defaultSort = SortType.Added, defaultAscending = false
             )
         )
     )
-    val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<FilterResultUiState> = _uiState.asStateFlow()
 
     private val booksFlow: Flow<List<Book>> =
         bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }

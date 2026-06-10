@@ -242,7 +242,8 @@ class LibraryRepository(
             authors.forEachIndexed { index, authorName ->
                 var authorId = bookDao.insertAuthor(AuthorEntity(name = authorName.trim()))
                 if (authorId == -1L) {
-                    authorId = bookDao.getAuthorByName(authorName.trim())?.id ?: return@forEachIndexed
+                    authorId =
+                        bookDao.getAuthorByName(authorName.trim())?.id ?: return@forEachIndexed
                 }
                 bookDao.insertBookAuthorCrossRef(BookAuthorCrossRef(bookId, authorId, index))
             }

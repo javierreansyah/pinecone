@@ -52,7 +52,6 @@ import com.composables.icons.materialsymbols.outlined.Search
 import com.example.readerapp.R
 import com.example.readerapp.ui.components.rememberVoiceSearchLauncher
 import com.example.readerapp.ui.features.reader.SearchResultItem
-import com.example.readerapp.ui.theme.spacing
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -231,7 +230,7 @@ fun SearchScreen(
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(spacing.space16)
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             Icon(
                                 MaterialSymbols.Outlined.Search,
@@ -264,7 +263,7 @@ fun SearchResultCard(
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(spacing.space8)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Column {
             // Line 1: chapter name

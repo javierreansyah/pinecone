@@ -14,9 +14,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-data class BookInfoUiState(
-    val book: Book? = null, val isLoading: Boolean = true
-)
 
 class BookInfoViewModel(
     application: Application, private val bookId: String

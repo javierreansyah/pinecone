@@ -23,7 +23,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.readerapp.R
 import com.example.readerapp.data.model.Book
-import com.example.readerapp.ui.theme.spacing
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -44,7 +43,7 @@ fun BookItem(
                 )
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(spacing.space16)
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Box(
                 modifier = Modifier

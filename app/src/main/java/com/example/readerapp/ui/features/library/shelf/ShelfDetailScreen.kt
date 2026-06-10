@@ -29,6 +29,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -55,7 +56,9 @@ import com.composables.icons.materialsymbols.outlined.Format_list_numbered
 import com.composables.icons.materialsymbols.outlined.More_vert
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.example.readerapp.R
+import com.example.readerapp.data.local.database.library.ShelfWithCovers
 import com.example.readerapp.data.model.Book
+import com.example.readerapp.ui.features.library.LayoutMode
 import com.example.readerapp.ui.features.library.SortType
 import com.example.readerapp.ui.features.library.components.ShelfDetailFilterBottomSheet
 import com.example.readerapp.ui.features.library.components.book.BookCollection
@@ -93,7 +96,6 @@ fun ShelfDetailScreen(
     var isReordering by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf(false) }
-    var showMoreMenu by remember { mutableStateOf(false) }
     var newShelfName by remember { mutableStateOf("") }
     var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
 
@@ -119,195 +121,49 @@ fun ShelfDetailScreen(
     val displayCount = shelfWithCovers?.books?.size ?: initialBookCount
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
-            LargeFlexibleTopAppBar(
-                title = { Text(displayTitle) }, subtitle = {
-                    Text(
-                        pluralStringResource(
-                            R.plurals.library_shelf_count, displayCount, displayCount
-                        )
-                    )
-                }, navigationIcon = {
-                    if (isReordering) {
-                        FilledTonalIconButton(
-                            shapes = IconButtonDefaults.shapes(),
-                            colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                            onClick = { isReordering = false }) {
-                            Icon(
-                                MaterialSymbols.Outlined.Close,
-                                contentDescription = stringResource(R.string.action_cancel)
-                            )
-                        }
-                    } else {
-                        FilledTonalIconButton(
-                            shapes = IconButtonDefaults.shapes(),
-                            colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                            onClick = onNavigateBack
-                        ) {
-                            Icon(
-                                MaterialSymbols.Outlined.Arrow_back,
-                                contentDescription = stringResource(R.string.action_back)
-                            )
-                        }
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            ShelfDetailTopAppBar(
+                displayTitle = displayTitle,
+                displayCount = displayCount,
+                isReordering = isReordering,
+                shelfId = shelfId,
+                scrollBehavior = scrollBehavior,
+                onNavigateBack = onNavigateBack,
+                onCancelReorder = { isReordering = false },
+                onSaveReorder = {
+                    viewModel.updateShelfOrder(shelfId, reorderBooks.map { it.id })
+                    if (uiState.bookPreferences.sortType != SortType.Custom) {
+                        viewModel.onSortTypeChange(SortType.Custom)
                     }
-                }, actions = {
-                    if (isReordering) {
-                        FilledIconButton(
-                            modifier = Modifier.size(
-                                IconButtonDefaults.smallContainerSize(
-                                    widthOption = IconButtonDefaults.IconButtonWidthOption.Wide
-                                )
-                            ),
-                            shapes = IconButtonDefaults.shapes(), onClick = {
-                                viewModel.updateShelfOrder(shelfId, reorderBooks.map { it.id })
-                                if (uiState.bookPreferences.sortType != SortType.Custom) {
-                                    viewModel.onSortTypeChange(SortType.Custom)
-                                }
-                                isReordering = false
-                            }) {
-                            Icon(
-                                imageVector = MaterialSymbols.Outlined.Check,
-                                contentDescription = stringResource(R.string.action_save)
-                            )
-                        }
-                    } else {
-                        if (shelfId != "unshelved") {
-                            IconButton(shapes = IconButtonDefaults.shapes(), onClick = {
-                                if (shelfWithCovers != null) {
-                                    reorderBooks = shelfWithCovers.books.map { Book.fromEntity(it) }
-                                    isReordering = true
-                                }
-                            }) {
-                                Icon(
-                                    MaterialSymbols.Outlined.Format_list_numbered,
-                                    contentDescription = stringResource(R.string.action_sort)
-                                )
-                            }
-                        }
-                        IconButton(
-                            shapes = IconButtonDefaults.shapes(),
-                            onClick = { showFilterSheet = true }) {
-                            Icon(
-                                MaterialSymbols.Outlined.Tune,
-                                contentDescription = stringResource(R.string.action_filter)
-                            )
-                        }
-                        if (shelfId != "unshelved") {
-                            Box {
-                                IconButton(
-                                    shapes = IconButtonDefaults.shapes(),
-                                    onClick = { showMoreMenu = true }) {
-                                    Icon(
-                                        MaterialSymbols.Outlined.More_vert,
-                                        contentDescription = stringResource(R.string.action_more)
-                                    )
-                                }
-                                DropdownMenu(
-                                    expanded = showMoreMenu,
-                                    onDismissRequest = { showMoreMenu = false }) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.action_rename)) },
-                                        onClick = {
-                                            newShelfName = shelfWithCovers?.shelf?.name ?: ""
-                                            showRenameDialog = true
-                                            showMoreMenu = false
-                                        })
-                                    DropdownMenuItem(text = {
-                                        Text(
-                                            stringResource(R.string.action_delete),
-                                            color = MaterialTheme.colorScheme.error
-                                        )
-                                    }, onClick = {
-                                        showDeleteDialog = true
-                                        showMoreMenu = false
-                                    })
-                                }
-                            }
-                        }
+                    isReordering = false
+                },
+                onStartReordering = {
+                    if (shelfWithCovers != null) {
+                        reorderBooks = shelfWithCovers.books.map { Book.fromEntity(it) }
+                        isReordering = true
                     }
-                }, colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface
-                ), scrollBehavior = scrollBehavior
+                },
+                onShowFilterSheet = { showFilterSheet = true },
+                onRenameClick = {
+                    newShelfName = shelfWithCovers?.shelf?.name ?: ""
+                    showRenameDialog = true
+                },
+                onDeleteClick = { showDeleteDialog = true }
             )
-        }) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-        ) {
-            if (shelfWithCovers == null) {
-                Text(
-                    stringResource(R.string.library_empty_shelves),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(16.dp)
-                )
-            } else if (books.isEmpty() && !isReordering) {
-                Text(
-                    stringResource(R.string.library_empty_books),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(16.dp)
-                )
-            } else if (reorderBooks.isEmpty() && isReordering) {
-                Text(
-                    stringResource(R.string.library_empty_books),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(16.dp)
-                )
-            } else {
-                if (isReordering) {
-                    val lazyListState = rememberLazyListState()
-                    val reorderState = rememberReorderableLazyListState(lazyListState) { from, to ->
-                        reorderBooks = reorderBooks.toMutableList().apply {
-                            add(to.index, removeAt(from.index))
-                        }
-                    }
-
-                    LazyColumn(
-                        state = lazyListState, modifier = Modifier.fillMaxSize()
-                    ) {
-                        items(reorderBooks, { it.id }) { item ->
-                            ReorderableItem(reorderState, key = item.id) { isDragging ->
-                                val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp)
-                                Surface(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = if (isDragging) MaterialTheme.shapes.small else RectangleShape,
-                                    tonalElevation = elevation,
-                                    shadowElevation = elevation
-                                ) {
-                                    BookItem(
-                                        book = item,
-                                        onClick = {},
-                                        onLongClick = { selectedBookForMenu = item.id },
-                                        isList = true,
-                                        trailingContent = {
-                                            Box(
-                                                modifier = Modifier.height(100.dp),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Icon(
-                                                    imageVector = MaterialSymbols.Outlined.Drag_handle,
-                                                    contentDescription = stringResource(R.string.action_sort),
-                                                    modifier = Modifier.draggableHandle(
-                                                        onDragStarted = {},
-                                                        onDragStopped = {},
-                                                    )
-                                                )
-                                            }
-                                        })
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    BookCollection(
-                        books = books,
-                        layoutMode = uiState.bookPreferences.layoutMode,
-                        onBookClick = onNavigateToReader,
-                        onBookLongClick = { selectedBookForMenu = it })
-                }
-            }
         }
+    ) { innerPadding ->
+        ShelfDetailContent(
+            shelfWithCovers = shelfWithCovers,
+            books = books,
+            reorderBooks = reorderBooks,
+            isReordering = isReordering,
+            layoutMode = uiState.bookPreferences.layoutMode,
+            onReorderBooksChange = { reorderBooks = it },
+            onBookClick = onNavigateToReader,
+            onBookLongClick = { selectedBookForMenu = it },
+            modifier = Modifier.padding(innerPadding)
+        )
 
         if (showFilterSheet) {
             ShelfDetailFilterBottomSheet(
@@ -316,66 +172,31 @@ fun ShelfDetailScreen(
                 onLayoutModeChange = viewModel::onLayoutModeChange,
                 onSortTypeChange = viewModel::onSortTypeChange,
                 onStatusToggle = viewModel::toggleStatusFilter,
-                onDismiss = { showFilterSheet = false })
+                onDismiss = { showFilterSheet = false }
+            )
         }
+
         if (showDeleteDialog && shelfWithCovers != null) {
-            AlertDialog(
-                onDismissRequest = { showDeleteDialog = false },
-                title = { Text(stringResource(R.string.library_delete_shelf_title)) },
-                text = {
-                    Text(
-                        stringResource(
-                            R.string.library_delete_shelf_message, shelfWithCovers.shelf.name
-                        )
-                    )
+            DeleteShelfDialog(
+                shelfName = shelfWithCovers.shelf.name,
+                onConfirm = {
+                    viewModel.deleteShelf(shelfId)
+                    showDeleteDialog = false
+                    onNavigateBack()
                 },
-                confirmButton = {
-                    TextButton(onClick = {
-                        viewModel.deleteShelf(shelfId)
-                        showDeleteDialog = false
-                        onNavigateBack()
-                    }) {
-                        Text(
-                            stringResource(R.string.action_delete),
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showDeleteDialog = false }) {
-                        Text(stringResource(R.string.action_cancel))
-                    }
-                })
+                onDismiss = { showDeleteDialog = false }
+            )
         }
 
         if (showRenameDialog && shelfWithCovers != null) {
-            AlertDialog(
-                onDismissRequest = { showRenameDialog = false },
-                title = { Text(stringResource(R.string.library_rename_shelf_title)) },
-                text = {
-                    OutlinedTextField(
-                        value = newShelfName,
-                        onValueChange = { newShelfName = it },
-                        label = { Text(stringResource(R.string.library_shelf_name_label)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+            RenameShelfDialog(
+                initialName = newShelfName,
+                onConfirm = { name ->
+                    viewModel.renameShelf(shelfId, name)
+                    showRenameDialog = false
                 },
-                confirmButton = {
-                    TextButton(onClick = {
-                        if (newShelfName.isNotBlank()) {
-                            viewModel.renameShelf(shelfId, newShelfName)
-                            showRenameDialog = false
-                        }
-                    }) {
-                        Text(stringResource(R.string.action_save))
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showRenameDialog = false }) {
-                        Text(stringResource(R.string.action_cancel))
-                    }
-                })
+                onDismiss = { showRenameDialog = false }
+            )
         }
 
         selectedBookForMenu?.let { bookId ->
@@ -391,7 +212,308 @@ fun ShelfDetailScreen(
                 onAddToShelf = { targetShelfId -> viewModel.addBookToShelf(targetShelfId, bookId) },
                 onDeleteBook = { viewModel.deleteBook(bookId) },
                 onCreateShelfAndAdd = { name -> viewModel.createShelfAndAddBook(name, bookId) },
-                onDismiss = { selectedBookForMenu = null })
+                onDismiss = { selectedBookForMenu = null }
+            )
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ShelfDetailTopAppBar(
+    displayTitle: String,
+    displayCount: Int,
+    isReordering: Boolean,
+    shelfId: String,
+    scrollBehavior: TopAppBarScrollBehavior,
+    onNavigateBack: () -> Unit,
+    onCancelReorder: () -> Unit,
+    onSaveReorder: () -> Unit,
+    onStartReordering: () -> Unit,
+    onShowFilterSheet: () -> Unit,
+    onRenameClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var showMoreMenu by remember { mutableStateOf(false) }
+
+    LargeFlexibleTopAppBar(
+        modifier = modifier,
+        title = { Text(displayTitle) },
+        subtitle = {
+            Text(
+                pluralStringResource(
+                    R.plurals.library_shelf_count, displayCount, displayCount
+                )
+            )
+        },
+        navigationIcon = {
+            if (isReordering) {
+                FilledTonalIconButton(
+                    shapes = IconButtonDefaults.shapes(),
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                    onClick = onCancelReorder
+                ) {
+                    Icon(
+                        MaterialSymbols.Outlined.Close,
+                        contentDescription = stringResource(R.string.action_cancel)
+                    )
+                }
+            } else {
+                FilledTonalIconButton(
+                    shapes = IconButtonDefaults.shapes(),
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                    onClick = onNavigateBack
+                ) {
+                    Icon(
+                        MaterialSymbols.Outlined.Arrow_back,
+                        contentDescription = stringResource(R.string.action_back)
+                    )
+                }
+            }
+        },
+        actions = {
+            if (isReordering) {
+                FilledIconButton(
+                    modifier = Modifier
+                        .padding(end = 6.dp)
+                        .size(
+                            IconButtonDefaults.smallContainerSize(
+                                widthOption = IconButtonDefaults.IconButtonWidthOption.Wide
+                            )
+                        ),
+                    shapes = IconButtonDefaults.shapes(),
+                    onClick = onSaveReorder
+                ) {
+                    Icon(
+                        imageVector = MaterialSymbols.Outlined.Check,
+                        contentDescription = stringResource(R.string.action_save)
+                    )
+                }
+            } else {
+                if (shelfId != "unshelved") {
+                    IconButton(
+                        shapes = IconButtonDefaults.shapes(),
+                        onClick = onStartReordering
+                    ) {
+                        Icon(
+                            MaterialSymbols.Outlined.Format_list_numbered,
+                            contentDescription = stringResource(R.string.action_sort)
+                        )
+                    }
+                }
+                IconButton(
+                    shapes = IconButtonDefaults.shapes(),
+                    onClick = onShowFilterSheet
+                ) {
+                    Icon(
+                        MaterialSymbols.Outlined.Tune,
+                        contentDescription = stringResource(R.string.action_filter)
+                    )
+                }
+                if (shelfId != "unshelved") {
+                    Box {
+                        IconButton(
+                            shapes = IconButtonDefaults.shapes(),
+                            onClick = { showMoreMenu = true }
+                        ) {
+                            Icon(
+                                MaterialSymbols.Outlined.More_vert,
+                                contentDescription = stringResource(R.string.action_more)
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showMoreMenu,
+                            onDismissRequest = { showMoreMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.action_rename)) },
+                                onClick = {
+                                    onRenameClick()
+                                    showMoreMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        stringResource(R.string.action_delete),
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                },
+                                onClick = {
+                                    onDeleteClick()
+                                    showMoreMenu = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            scrolledContainerColor = MaterialTheme.colorScheme.surface
+        ),
+        scrollBehavior = scrollBehavior
+    )
+}
+
+@Composable
+private fun ShelfDetailContent(
+    shelfWithCovers: ShelfWithCovers?,
+    books: List<Book>,
+    reorderBooks: List<Book>,
+    isReordering: Boolean,
+    layoutMode: LayoutMode,
+    onReorderBooksChange: (List<Book>) -> Unit,
+    onBookClick: (String) -> Unit,
+    onBookLongClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier.fillMaxSize()
+    ) {
+        if (shelfWithCovers == null) {
+            Text(
+                stringResource(R.string.library_empty_shelves),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(16.dp)
+            )
+        } else if (books.isEmpty() && !isReordering) {
+            Text(
+                stringResource(R.string.library_empty_books),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(16.dp)
+            )
+        } else if (reorderBooks.isEmpty() && isReordering) {
+            Text(
+                stringResource(R.string.library_empty_books),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(16.dp)
+            )
+        } else {
+            if (isReordering) {
+                val lazyListState = rememberLazyListState()
+                val reorderState = rememberReorderableLazyListState(lazyListState) { from, to ->
+                    onReorderBooksChange(reorderBooks.toMutableList().apply {
+                        add(to.index, removeAt(from.index))
+                    })
+                }
+
+                LazyColumn(
+                    state = lazyListState,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(reorderBooks, { it.id }) { item ->
+                        ReorderableItem(reorderState, key = item.id) { isDragging ->
+                            val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp)
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = if (isDragging) MaterialTheme.shapes.small else RectangleShape,
+                                tonalElevation = elevation,
+                                shadowElevation = elevation
+                            ) {
+                                BookItem(
+                                    book = item,
+                                    onClick = {},
+                                    onLongClick = { onBookLongClick(item.id) },
+                                    isList = true,
+                                    trailingContent = {
+                                        Box(
+                                            modifier = Modifier.height(100.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = MaterialSymbols.Outlined.Drag_handle,
+                                                contentDescription = stringResource(R.string.action_sort),
+                                                modifier = Modifier.draggableHandle(
+                                                    onDragStarted = {},
+                                                    onDragStopped = {},
+                                                )
+                                            )
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            } else {
+                BookCollection(
+                    books = books,
+                    layoutMode = layoutMode,
+                    onBookClick = onBookClick,
+                    onBookLongClick = onBookLongClick
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeleteShelfDialog(
+    shelfName: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.library_delete_shelf_title)) },
+        text = {
+            Text(
+                stringResource(
+                    R.string.library_delete_shelf_message, shelfName
+                )
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(
+                    stringResource(R.string.action_delete),
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        }
+    )
+}
+
+@Composable
+private fun RenameShelfDialog(
+    initialName: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var name by remember { mutableStateOf(initialName) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.library_rename_shelf_title)) },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text(stringResource(R.string.library_shelf_name_label)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                if (name.isNotBlank()) {
+                    onConfirm(name)
+                }
+            }) {
+                Text(stringResource(R.string.action_save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { onDismiss() }) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        }
+    )
 }

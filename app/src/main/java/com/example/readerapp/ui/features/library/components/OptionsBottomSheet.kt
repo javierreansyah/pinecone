@@ -40,7 +40,6 @@ import com.example.readerapp.ui.features.library.LayoutMode
 import com.example.readerapp.ui.features.library.ShelfFilter
 import com.example.readerapp.ui.features.library.SortType
 import com.example.readerapp.ui.features.library.StatusFilter
-import com.example.readerapp.ui.theme.spacing
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,7 +56,7 @@ fun OptionsBottomSheet(
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 32.dp)
                 .navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(spacing.space24)
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             content()
         }
@@ -69,7 +68,7 @@ fun OptionsBottomSheetSection(
     title: String, modifier: Modifier = Modifier, content: @Composable () -> Unit
 ) {
     Column(
-        modifier = modifier, verticalArrangement = Arrangement.spacedBy(spacing.space8)
+        modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(title, style = MaterialTheme.typography.titleMedium)
         content()

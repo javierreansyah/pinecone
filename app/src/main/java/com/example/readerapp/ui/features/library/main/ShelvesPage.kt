@@ -63,75 +63,14 @@ fun ShelvesPage(
                                 )
                             })
                     } else {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    onShelfClick(
-                                        shelfWithCovers.shelf.id,
-                                        shelfWithCovers.shelf.name,
-                                        booksCount
-                                    )
-                                }
-                                .padding(vertical = 4.dp)) {
-                            // Header Column
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp)
-                                    .padding(bottom = 2.dp)
-                            ) {
-                                Text(
-                                    text = shelfWithCovers.shelf.name,
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                val countText = pluralStringResource(
-                                    R.plurals.library_shelf_count, booksCount, booksCount
-                                )
-                                Text(
-                                    text = countText,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-
-                            // Books horizontal scroll
-                            if (visibleBooks.isEmpty()) {
-                                EmptyState(
-                                    icon = MaterialSymbols.Outlined.Book,
-                                    text = stringResource(R.string.library_empty_shelf),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(140.dp)
-                                        .padding(horizontal = 8.dp)
-                                )
-                            } else {
-                                val configuration = LocalConfiguration.current
-                                val screenWidth = configuration.screenWidthDp.dp
-                                val fitsOnScreen =
-                                    (120.dp * visibleBooks.size + 16.dp) <= screenWidth
-
-                                LazyRow(
-                                    userScrollEnabled = !fitsOnScreen,
-                                    contentPadding = PaddingValues(horizontal = 8.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    items(visibleBooks, key = { it.book.id }) { bookEntity ->
-                                        val book = Book.fromEntity(bookEntity)
-                                        BookItem(
-                                            book = book,
-                                            onClick = { onBookClick(book.id) },
-                                            onLongClick = {
-                                                onBookLongClick?.invoke(
-                                                    book.id, shelfWithCovers.shelf.id
-                                                )
-                                            },
-                                            modifier = Modifier.width(120.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                        ShelfRowItem(
+                            shelfWithCovers = shelfWithCovers,
+                            booksCount = booksCount,
+                            visibleBooks = visibleBooks,
+                            onShelfClick = onShelfClick,
+                            onBookClick = onBookClick,
+                            onBookLongClick = onBookLongClick
+                        )
                     }
                 }
             }
@@ -143,6 +82,107 @@ fun ShelvesPage(
                     .fillMaxSize()
                     .padding(16.dp)
             )
+        }
+    }
+}
+
+@Composable
+private fun ShelfRowItem(
+    shelfWithCovers: ShelfWithCovers,
+    booksCount: Int,
+    visibleBooks: List<com.example.readerapp.data.local.database.library.BookWithDetails>,
+    onShelfClick: (String, String, Int) -> Unit,
+    onBookClick: (String) -> Unit,
+    onBookLongClick: ((String, String) -> Unit)?
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                onShelfClick(
+                    shelfWithCovers.shelf.id,
+                    shelfWithCovers.shelf.name,
+                    booksCount
+                )
+            }
+            .padding(vertical = 4.dp)
+    ) {
+        ShelfRowHeader(
+            shelfName = shelfWithCovers.shelf.name,
+            booksCount = booksCount
+        )
+        ShelfBooksHorizontalRow(
+            shelfId = shelfWithCovers.shelf.id,
+            visibleBooks = visibleBooks,
+            onBookClick = onBookClick,
+            onBookLongClick = onBookLongClick
+        )
+    }
+}
+
+@Composable
+private fun ShelfRowHeader(
+    shelfName: String,
+    booksCount: Int
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 2.dp)
+    ) {
+        Text(
+            text = shelfName,
+            style = MaterialTheme.typography.titleMedium
+        )
+        val countText = pluralStringResource(
+            R.plurals.library_shelf_count, booksCount, booksCount
+        )
+        Text(
+            text = countText,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+private fun ShelfBooksHorizontalRow(
+    shelfId: String,
+    visibleBooks: List<com.example.readerapp.data.local.database.library.BookWithDetails>,
+    onBookClick: (String) -> Unit,
+    onBookLongClick: ((String, String) -> Unit)?
+) {
+    if (visibleBooks.isEmpty()) {
+        EmptyState(
+            icon = MaterialSymbols.Outlined.Book,
+            text = stringResource(R.string.library_empty_shelf),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(140.dp)
+                .padding(horizontal = 8.dp)
+        )
+    } else {
+        val configuration = LocalConfiguration.current
+        val screenWidth = configuration.screenWidthDp.dp
+        val fitsOnScreen = (120.dp * visibleBooks.size + 16.dp) <= screenWidth
+
+        LazyRow(
+            userScrollEnabled = !fitsOnScreen,
+            contentPadding = PaddingValues(horizontal = 8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(visibleBooks, key = { it.book.id }) { bookEntity ->
+                val book = Book.fromEntity(bookEntity)
+                BookItem(
+                    book = book,
+                    onClick = { onBookClick(book.id) },
+                    onLongClick = {
+                        onBookLongClick?.invoke(book.id, shelfId)
+                    },
+                    modifier = Modifier.width(120.dp)
+                )
+            }
         }
     }
 }

@@ -10,10 +10,7 @@ import com.example.readerapp.data.local.database.library.ShelfWithCovers
 import com.example.readerapp.data.local.preferences.LibraryPreferencesManager
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.features.library.LayoutMode
-import com.example.readerapp.ui.features.library.LibraryScreenUiState
-import com.example.readerapp.ui.features.library.LibraryUiState
 import com.example.readerapp.ui.features.library.SearchCategory
-import com.example.readerapp.ui.features.library.SearchResults
 import com.example.readerapp.ui.features.library.ShelfFilter
 import com.example.readerapp.ui.features.library.SortType
 import com.example.readerapp.ui.features.library.StatusFilter
