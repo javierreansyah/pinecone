@@ -45,6 +45,13 @@ import com.example.readerapp.ui.components.EmptyState
 import com.example.readerapp.ui.features.library.components.LibraryFilterBottomSheet
 import com.example.readerapp.ui.features.library.components.book.BookCollection
 import com.example.readerapp.ui.features.library.components.book.BookContextMenu
+import com.example.readerapp.ui.features.library.LibraryScreenUiState
+import com.example.readerapp.ui.features.library.SearchCategory
+import com.example.readerapp.ui.features.library.LayoutMode
+import com.example.readerapp.ui.features.library.SortType
+import com.example.readerapp.ui.features.library.StatusFilter
+import com.example.readerapp.ui.features.library.ShelfFilter
+import androidx.compose.runtime.derivedStateOf
 import com.example.readerapp.ui.theme.spacing
 import kotlinx.coroutines.launch
 
@@ -54,7 +61,7 @@ import kotlinx.coroutines.launch
     ExperimentalMaterial3ExpressiveApi::class
 )
 @Composable
-fun LibraryScreen(
+fun LibraryRoute(
     onNavigateToReader: (String) -> Unit,
     onOpenDrawerClick: () -> Unit,
     onNavigateToShelf: (String, String, Int) -> Unit,
@@ -76,13 +83,62 @@ fun LibraryScreen(
     })
 
     val uiState by viewModel.uiState.collectAsState()
-    val filteredBooks by viewModel.filteredBooks.collectAsState()
-    val shelves by viewModel.shelves.collectAsState()
-    val allBooks by viewModel.allBooks.collectAsState()
-    val searchResults by viewModel.searchResults.collectAsState()
-    val isBooksLoading by viewModel.isBooksLoading.collectAsState()
-    val isShelvesLoading by viewModel.isShelvesLoading.collectAsState()
-    var showFilterSheet by remember { mutableStateOf(false) }
+
+    LibraryScreen(
+        uiState = uiState,
+        onSearchQueryChange = viewModel::onSearchQueryChange,
+        onSearchCategoryChange = viewModel::onSearchCategoryChange,
+        onLayoutModeChange = viewModel::onLayoutModeChange,
+        onSortTypeChange = viewModel::onSortTypeChange,
+        toggleStatusFilter = viewModel::toggleStatusFilter,
+        toggleShelfFilter = viewModel::toggleShelfFilter,
+        toggleArchive = viewModel::toggleArchive,
+        toggleReadStatus = viewModel::toggleReadStatus,
+        removeBookFromShelf = viewModel::removeBookFromShelf,
+        addBookToShelf = viewModel::addBookToShelf,
+        deleteBook = viewModel::deleteBook,
+        createShelfAndAddBook = viewModel::createShelfAndAddBook,
+        onNavigateToReader = onNavigateToReader,
+        onOpenDrawerClick = onOpenDrawerClick,
+        onNavigateToShelf = onNavigateToShelf,
+        onNavigateToAuthor = onNavigateToAuthor,
+        onNavigateToTag = onNavigateToTag,
+        onNavigateToAllAuthors = onNavigateToAllAuthors,
+        onNavigateToAllTags = onNavigateToAllTags,
+        onNavigateToBookInfo = onNavigateToBookInfo
+    )
+}
+
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalFoundationApi::class,
+    ExperimentalMaterial3ExpressiveApi::class
+)
+@Composable
+fun LibraryScreen(
+    uiState: LibraryScreenUiState,
+    onSearchQueryChange: (String) -> Unit,
+    onSearchCategoryChange: (SearchCategory) -> Unit,
+    onLayoutModeChange: (LayoutMode, Boolean) -> Unit,
+    onSortTypeChange: (SortType, Boolean) -> Unit,
+    toggleStatusFilter: (StatusFilter, Boolean) -> Unit,
+    toggleShelfFilter: (ShelfFilter, Boolean) -> Unit,
+    toggleArchive: (String) -> Unit,
+    toggleReadStatus: (String) -> Unit,
+    removeBookFromShelf: (String, String) -> Unit,
+    addBookToShelf: (String, String) -> Unit,
+    deleteBook: (String) -> Unit,
+    createShelfAndAddBook: (String, String?) -> Unit,
+    onNavigateToReader: (String) -> Unit,
+    onOpenDrawerClick: () -> Unit,
+    onNavigateToShelf: (String, String, Int) -> Unit,
+    onNavigateToAuthor: (String) -> Unit = {},
+    onNavigateToTag: (String) -> Unit = {},
+    onNavigateToAllAuthors: () -> Unit = {},
+    onNavigateToAllTags: () -> Unit = {},
+    onNavigateToBookInfo: (String) -> Unit
+) {
+    val showFilterSheet = remember { mutableStateOf(false) }
 
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
 
@@ -92,15 +148,30 @@ fun LibraryScreen(
     val pagerState = rememberPagerState(pageCount = { 2 })
     val scope = rememberCoroutineScope()
 
+    // Derived States for Performance optimization
+    val showEmptyState by remember(uiState.filteredBooks, uiState.isBooksLoading) {
+        derivedStateOf { uiState.filteredBooks.isEmpty() && !uiState.isBooksLoading }
+    }
+
+    val isShelvesTab by remember(pagerState.currentPage) {
+        derivedStateOf { pagerState.currentPage == 1 }
+    }
+
+    val prefs by remember(isShelvesTab, uiState.shelvesPreferences, uiState.bookPreferences) {
+        derivedStateOf {
+            if (isShelvesTab) uiState.shelvesPreferences else uiState.bookPreferences
+        }
+    }
+
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         LibrarySearchTopBar(
             searchQuery = uiState.searchQuery,
             searchCategory = uiState.searchCategory,
-            searchResults = searchResults,
-            onSearchQueryChange = viewModel::onSearchQueryChange,
-            onSearchCategoryChange = viewModel::onSearchCategoryChange,
+            searchResults = uiState.searchResults,
+            onSearchQueryChange = onSearchQueryChange,
+            onSearchCategoryChange = onSearchCategoryChange,
             onOpenDrawerClick = onOpenDrawerClick,
-            onFilterClick = { showFilterSheet = true },
+            onFilterClick = { showFilterSheet.value = true },
             onNavigateToReader = onNavigateToReader,
             onNavigateToShelf = onNavigateToShelf,
             onNavigateToAuthor = onNavigateToAuthor,
@@ -147,19 +218,17 @@ fun LibraryScreen(
                             .padding(top = 8.dp),
                         contentAlignment = Alignment.TopStart
                     ) {
-                        if (filteredBooks.isEmpty()) {
-                            if (!isBooksLoading) {
-                                EmptyState(
-                                    icon = MaterialSymbols.Outlined.Book,
-                                    text = stringResource(R.string.library_empty_books),
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(16.dp)
-                                )
-                            }
+                        if (showEmptyState) {
+                            EmptyState(
+                                icon = MaterialSymbols.Outlined.Book,
+                                text = stringResource(R.string.library_empty_books),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp)
+                            )
                         } else {
                             BookCollection(
-                                books = filteredBooks,
+                                books = uiState.filteredBooks,
                                 layoutMode = uiState.bookPreferences.layoutMode,
                                 onBookClick = onNavigateToReader,
                                 onBookLongClick = { selectedBookContext = Pair(it, null) })
@@ -197,11 +266,11 @@ fun LibraryScreen(
 
                 1 -> {
                     // Shelves Page
-                    if (shelves.isEmpty() && isShelvesLoading) {
+                    if (uiState.shelves.isEmpty() && uiState.isShelvesLoading) {
                         // Display nothing while fetching
                     } else {
                         ShelvesPage(
-                            shelves = shelves,
+                            shelves = uiState.shelves,
                             onShelfClick = onNavigateToShelf,
                             onBookClick = onNavigateToReader,
                             onBookLongClick = { bookId, shelfId ->
@@ -214,18 +283,15 @@ fun LibraryScreen(
             }
         }
 
-        if (showFilterSheet) {
-            val isShelvesTab = pagerState.currentPage == 1
-            val prefs = if (isShelvesTab) uiState.shelvesPreferences else uiState.bookPreferences
-
+        if (showFilterSheet.value) {
             LibraryFilterBottomSheet(
                 isShelvesTab = isShelvesTab,
                 preferences = prefs,
-                onLayoutModeChange = { viewModel.onLayoutModeChange(it, isShelvesTab) },
-                onSortTypeChange = { viewModel.onSortTypeChange(it, isShelvesTab) },
-                onStatusToggle = { viewModel.toggleStatusFilter(it, isShelvesTab) },
-                onShelfFilterToggle = { viewModel.toggleShelfFilter(it, isShelvesTab) },
-                onDismiss = { showFilterSheet = false })
+                onLayoutModeChange = { onLayoutModeChange(it, isShelvesTab) },
+                onSortTypeChange = { onSortTypeChange(it, isShelvesTab) },
+                onStatusToggle = { toggleStatusFilter(it, isShelvesTab) },
+                onShelfFilterToggle = { toggleShelfFilter(it, isShelvesTab) },
+                onDismiss = { showFilterSheet.value = false })
         }
 
         // Context Menu
@@ -235,21 +301,21 @@ fun LibraryScreen(
             BookContextMenu(
                 bookId = bookId,
                 shelfId = contextShelfId,
-                shelves = shelves,
-                allBooks = allBooks,
+                shelves = uiState.shelves,
+                allBooks = uiState.allBooks,
                 onNavigateToBookInfo = onNavigateToBookInfo,
-                onToggleArchive = { viewModel.toggleArchive(bookId) },
-                onToggleReadStatus = { viewModel.toggleReadStatus(bookId) },
+                onToggleArchive = { toggleArchive(bookId) },
+                onToggleReadStatus = { toggleReadStatus(bookId) },
                 onRemoveFromShelf = {
                     contextShelfId?.let {
-                        viewModel.removeBookFromShelf(
+                        removeBookFromShelf(
                             it, bookId
                         )
                     }
                 },
-                onAddToShelf = { shelfId -> viewModel.addBookToShelf(shelfId, bookId) },
-                onDeleteBook = { viewModel.deleteBook(bookId) },
-                onCreateShelfAndAdd = { name -> viewModel.createShelfAndAddBook(name, bookId) },
+                onAddToShelf = { shelfId -> addBookToShelf(shelfId, bookId) },
+                onDeleteBook = { deleteBook(bookId) },
+                onCreateShelfAndAdd = { name -> createShelfAndAddBook(name, bookId) },
                 onDismiss = { selectedBookContext = null })
         }
     }

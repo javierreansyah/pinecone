@@ -57,6 +57,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
@@ -65,6 +66,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.whenResumed
 import com.composables.icons.materialsymbols.MaterialSymbols
@@ -113,6 +116,9 @@ fun LibrarySearchTopBar(
 ) {
     val textFieldState = rememberTextFieldState(searchQuery)
     val focusRequester = remember { FocusRequester() }
+    var isRestoring by remember {
+        mutableStateOf(searchBarState.currentValue == SearchBarValue.Expanded)
+    }
 
     // Sync state to parent
     LaunchedEffect(textFieldState.text) {
@@ -123,7 +129,9 @@ fun LibrarySearchTopBar(
     HandleSearchBarStateChanges(
         searchBarState = searchBarState,
         textFieldState = textFieldState,
-        focusRequester = focusRequester
+        focusRequester = focusRequester,
+        isRestoring = isRestoring,
+        onRestoringChange = { isRestoring = it }
     )
 
     // Colors
@@ -150,6 +158,8 @@ fun LibrarySearchTopBar(
                     searchBarState = searchBarState,
                     textFieldState = textFieldState,
                     focusRequester = focusRequester,
+                    isRestoring = isRestoring,
+                    onRestoringChange = { isRestoring = it },
                     colors = appBarWithSearchColors.searchBarColors.inputFieldColors,
                     onSearchQueryChange = onSearchQueryChange
                 )
@@ -179,6 +189,8 @@ fun LibrarySearchTopBar(
                     searchBarState = searchBarState,
                     textFieldState = textFieldState,
                     focusRequester = focusRequester,
+                    isRestoring = isRestoring,
+                    onRestoringChange = { isRestoring = it },
                     colors = appBarWithSearchColors.searchBarColors.inputFieldColors,
                     onSearchQueryChange = onSearchQueryChange
                 )
@@ -187,7 +199,7 @@ fun LibrarySearchTopBar(
         ) {
             val isFullyExpanded =
                 searchBarState.currentValue == SearchBarValue.Expanded && searchBarState.targetValue == SearchBarValue.Expanded
-            AnimatedVisibility(visible = isFullyExpanded, enter = fadeIn(), exit = fadeOut()) {
+            if (isFullyExpanded) {
                 ExpandedSearchContent(
                     searchCategory = searchCategory,
                     searchResults = searchResults,
@@ -207,34 +219,62 @@ fun LibrarySearchTopBar(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HandleSearchBarStateChanges(
-    searchBarState: SearchBarState, textFieldState: TextFieldState, focusRequester: FocusRequester
+    searchBarState: SearchBarState,
+    textFieldState: TextFieldState,
+    focusRequester: FocusRequester,
+    isRestoring: Boolean,
+    onRestoringChange: (Boolean) -> Unit
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val scope = rememberCoroutineScope()
 
-    val wasRestoredExpanded = remember { searchBarState.currentValue == SearchBarValue.Expanded }
-    var hasHandledRestoredExpansion by remember { mutableStateOf(false) }
+    var previousValue by remember { mutableStateOf<SearchBarValue?>(null) }
+
+    // Listen to lifecycle resume events to clear focus and keyboard when returning to the screen
+    val lifecycle = lifecycleOwner.lifecycle
+    DisposableEffect(lifecycle) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                if (searchBarState.currentValue == SearchBarValue.Expanded) {
+                    onRestoringChange(true)
+                    scope.launch {
+                        // Small delay/yield to let Compose focus restoration complete first
+                        kotlinx.coroutines.yield()
+                        focusManager.clearFocus(force = true)
+                        keyboardController?.hide()
+                        // Reset the restoring flag to false once the restoration pass is complete
+                        onRestoringChange(false)
+                    }
+                }
+            }
+        }
+        lifecycle.addObserver(observer)
+        onDispose {
+            lifecycle.removeObserver(observer)
+        }
+    }
 
     LaunchedEffect(searchBarState.currentValue) {
         if (searchBarState.currentValue == SearchBarValue.Collapsed) {
+            onRestoringChange(false) // Reset flag when collapsed
             focusManager.clearFocus()
             keyboardController?.hide()
             if (textFieldState.text.isNotEmpty()) {
                 textFieldState.edit { replace(0, length, "") }
             }
         } else if (searchBarState.currentValue == SearchBarValue.Expanded) {
-            if (wasRestoredExpanded && !hasHandledRestoredExpansion) {
-                hasHandledRestoredExpansion = true
-                focusManager.clearFocus()
-                keyboardController?.hide()
-            } else {
+            // Only request focus/keyboard if we transitioned from Collapsed to Expanded (user clicked search)
+            if (previousValue == SearchBarValue.Collapsed) {
+                onRestoringChange(false) // Reset flag when explicitly expanding
                 lifecycleOwner.lifecycle.whenResumed {
                     focusRequester.requestFocus()
                     keyboardController?.show()
                 }
             }
         }
+        previousValue = searchBarState.currentValue
     }
 
     DisposableEffect(Unit) {
@@ -253,11 +293,14 @@ private fun SearchInputField(
     searchBarState: SearchBarState,
     textFieldState: TextFieldState,
     focusRequester: FocusRequester,
+    isRestoring: Boolean,
+    onRestoringChange: (Boolean) -> Unit,
     colors: TextFieldColors,
     onSearchQueryChange: (String) -> Unit
 ) {
     val isExpanded = searchBarState.targetValue == SearchBarValue.Expanded
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     val scope = rememberCoroutineScope()
 
     val alignmentBias by animateFloatAsState(
@@ -274,6 +317,13 @@ private fun SearchInputField(
             .focusRequester(focusRequester)
             .focusProperties {
                 canFocus = searchBarState.currentValue == SearchBarValue.Expanded
+            }
+            .onFocusChanged { focusState ->
+                if (focusState.isFocused && isRestoring) {
+                    onRestoringChange(false)
+                    focusManager.clearFocus(force = true)
+                    keyboardController?.hide()
+                }
             },
         textFieldState = textFieldState,
         searchBarState = searchBarState,
@@ -472,7 +522,7 @@ private fun BooksSection(
     LazyRow(
         contentPadding = PaddingValues(horizontal = 8.dp)
     ) {
-        items(books) { book ->
+        items(books, key = { it.id }) { book ->
             BookItem(
                 book = book, onClick = { onBookClick(book) }, modifier = Modifier.width(120.dp)
             )

@@ -2,7 +2,6 @@ package com.example.readerapp.ui.features.library.main
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Book
@@ -52,7 +52,7 @@ fun ShelvesPage(
                     ), contentPadding = PaddingValues(top = 8.dp)
             ) {
                 items(shelves, key = { it.shelf.id }) { shelfWithCovers ->
-                    val visibleBooks = shelfWithCovers.books.filter { !it.book.isArchived }
+                    val visibleBooks = shelfWithCovers.books
                     val booksCount = visibleBooks.size
 
                     if (layoutMode == LayoutMode.List) {
@@ -106,28 +106,27 @@ fun ShelvesPage(
                                         .padding(horizontal = 8.dp)
                                 )
                             } else {
-                                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                                    val maxW = maxWidth
-                                    val fitsOnScreen = (120.dp * visibleBooks.size + 16.dp) <= maxW
+                                val configuration = LocalConfiguration.current
+                                val screenWidth = configuration.screenWidthDp.dp
+                                val fitsOnScreen = (120.dp * visibleBooks.size + 16.dp) <= screenWidth
 
-                                    LazyRow(
-                                        userScrollEnabled = !fitsOnScreen,
-                                        contentPadding = PaddingValues(horizontal = 8.dp),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        items(visibleBooks) { bookEntity ->
-                                            val book = Book.fromEntity(bookEntity)
-                                            BookItem(
-                                                book = book,
-                                                onClick = { onBookClick(book.id) },
-                                                onLongClick = {
-                                                    onBookLongClick?.invoke(
-                                                        book.id, shelfWithCovers.shelf.id
-                                                    )
-                                                },
-                                                modifier = Modifier.width(120.dp)
-                                            )
-                                        }
+                                LazyRow(
+                                    userScrollEnabled = !fitsOnScreen,
+                                    contentPadding = PaddingValues(horizontal = 8.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    items(visibleBooks, key = { it.book.id }) { bookEntity ->
+                                        val book = Book.fromEntity(bookEntity)
+                                        BookItem(
+                                            book = book,
+                                            onClick = { onBookClick(book.id) },
+                                            onLongClick = {
+                                                onBookLongClick?.invoke(
+                                                    book.id, shelfWithCovers.shelf.id
+                                                )
+                                            },
+                                            modifier = Modifier.width(120.dp)
+                                        )
                                     }
                                 }
                             }
