@@ -114,7 +114,7 @@ fun ShelfDetailScreen(
     val displayTitle = shelfWithCovers?.shelf?.name
         ?: initialShelfName.ifEmpty { stringResource(R.string.library_tab_shelves) }
     val displayCount =
-        shelfWithCovers?.books?.filter { !it.book.isArchived }?.size ?: initialBookCount
+        shelfWithCovers?.books?.size ?: initialBookCount
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {

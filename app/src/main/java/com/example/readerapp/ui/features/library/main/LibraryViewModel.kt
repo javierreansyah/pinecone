@@ -10,18 +10,23 @@ import com.example.readerapp.data.local.database.library.ShelfWithCovers
 import com.example.readerapp.data.local.preferences.LibraryPreferencesManager
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.features.library.LayoutMode
+import com.example.readerapp.ui.features.library.LibraryScreenUiState
 import com.example.readerapp.ui.features.library.LibraryUiState
 import com.example.readerapp.ui.features.library.SearchCategory
 import com.example.readerapp.ui.features.library.SearchResults
 import com.example.readerapp.ui.features.library.ShelfFilter
 import com.example.readerapp.ui.features.library.SortType
 import com.example.readerapp.ui.features.library.StatusFilter
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
@@ -50,18 +55,13 @@ class LibraryViewModel(
             )
         )
     )
-    val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
-
     private val _isBooksLoading = MutableStateFlow(true)
-    val isBooksLoading: StateFlow<Boolean> = _isBooksLoading.asStateFlow()
-
     private val _isShelvesLoading = MutableStateFlow(true)
-    val isShelvesLoading: StateFlow<Boolean> = _isShelvesLoading.asStateFlow()
 
     private val booksFlow: Flow<List<Book>> =
         bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }
 
-    val allBooks: StateFlow<List<Book>> = booksFlow.stateIn(
+    private val allBooks: StateFlow<List<Book>> = booksFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
@@ -69,7 +69,7 @@ class LibraryViewModel(
 
     fun getFilteredAndSortedBooks(baseFlow: Flow<List<Book>>): Flow<List<Book>> {
         return combine(baseFlow, _uiState) { books, state ->
-            books.filter { !it.isArchived }.filter { book ->
+            books.filter { book ->
                 val status = when {
                     book.isRead -> StatusFilter.Finished
                     book.progress <= 0.0 -> StatusFilter.NotStarted
@@ -104,14 +104,14 @@ class LibraryViewModel(
         }
     }
 
-    val filteredBooks: StateFlow<List<Book>> =
+    private val filteredBooks: StateFlow<List<Book>> =
         getFilteredAndSortedBooks(booksFlow).onEach { _isBooksLoading.value = false }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
 
-    val shelves: StateFlow<List<ShelfWithCovers>> = combine(
+    private val shelves: StateFlow<List<ShelfWithCovers>> = combine(
         bookRepository.getAllShelvesWithBooks(),
         bookRepository.getAllShelfBookCrossRefs(),
         bookRepository.getAllBooks(),
@@ -175,48 +175,94 @@ class LibraryViewModel(
     }.onEach { _isShelvesLoading.value = false }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val searchResults: StateFlow<SearchResults> = combine(
-        booksFlow, shelves, _uiState
-    ) { books, shelvesList, state ->
-        val query = state.searchQuery
-        val category = state.searchCategory
+    @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
+    private val debouncedSearchQuery: Flow<String> = _uiState
+        .map { it.searchQuery }
+        .debounce(300L)
+        .distinctUntilChanged()
 
-        val matchedBooks =
-            if (category != SearchCategory.All && category != SearchCategory.Books) emptyList()
-            else if (query.isBlank()) books else books.filter {
-                it.title.contains(
-                    query,
-                    ignoreCase = true
-                ) || it.authors.any { author -> author.contains(query, ignoreCase = true) }
+    @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
+    private val searchResults: StateFlow<SearchResults> = combine(
+        debouncedSearchQuery,
+        _uiState.map { it.searchCategory }.distinctUntilChanged()
+    ) { query, category ->
+        query to category
+    }.flatMapLatest { (query, category) ->
+        if (query.isBlank()) {
+            combine(allBooks, shelves) { books, shelfList ->
+                val matchedBooks =
+                    if (category == SearchCategory.All || category == SearchCategory.Books) books else emptyList()
+                val matchedShelves =
+                    if (category == SearchCategory.All || category == SearchCategory.Shelves) shelfList.map { it.shelf } else emptyList()
+                val matchedAuthors =
+                    if (category == SearchCategory.All || category == SearchCategory.Authors) books.flatMap { it.authors }
+                        .distinct() else emptyList()
+                val matchedTags =
+                    if (category == SearchCategory.All || category == SearchCategory.Tags) books.flatMap { it.tags }
+                        .distinct() else emptyList()
+                SearchResults(matchedBooks, matchedShelves, matchedAuthors, matchedTags)
             }
-
-        val matchedShelves =
-            if (category != SearchCategory.All && category != SearchCategory.Shelves) emptyList()
-            else if (query.isBlank()) shelvesList.map { it.shelf } else shelvesList.map { it.shelf }
-                .filter { it.name.contains(query, ignoreCase = true) }
-
-        val matchedAuthors =
-            if (category != SearchCategory.All && category != SearchCategory.Authors) emptyList()
-            else books.flatMap { it.authors }.distinct().let { authors ->
-                if (query.isBlank()) authors else authors.filter {
-                    it.contains(
-                        query, ignoreCase = true
-                    )
-                }
+        } else {
+            combine(
+                bookRepository.searchBooks(query)
+                    .map { entities -> entities.map { Book.fromEntity(it) } },
+                bookRepository.searchShelves(query),
+                bookRepository.searchAuthors(query),
+                bookRepository.searchTags(query)
+            ) { books, shelvesList, authors, tags ->
+                val matchedBooks =
+                    if (category == SearchCategory.All || category == SearchCategory.Books) books else emptyList()
+                val matchedShelves =
+                    if (category == SearchCategory.All || category == SearchCategory.Shelves) shelvesList else emptyList()
+                val matchedAuthors =
+                    if (category == SearchCategory.All || category == SearchCategory.Authors) authors else emptyList()
+                val matchedTags =
+                    if (category == SearchCategory.All || category == SearchCategory.Tags) tags else emptyList()
+                SearchResults(matchedBooks, matchedShelves, matchedAuthors, matchedTags)
             }
-
-        val matchedTags =
-            if (category != SearchCategory.All && category != SearchCategory.Tags) emptyList()
-            else books.flatMap { it.tags }.distinct().let { tags ->
-                if (query.isBlank()) tags else tags.filter {
-                    it.contains(
-                        query, ignoreCase = true
-                    )
-                }
-            }
-
-        SearchResults(matchedBooks, matchedShelves, matchedAuthors, matchedTags)
+        }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SearchResults())
+
+    val uiState: StateFlow<LibraryScreenUiState> = combine(
+        _uiState,
+        filteredBooks,
+        shelves,
+        allBooks,
+        searchResults,
+        _isBooksLoading,
+        _isShelvesLoading
+    ) { array ->
+        @Suppress("UNCHECKED_CAST")
+        val baseState = array[0] as LibraryUiState
+
+        @Suppress("UNCHECKED_CAST")
+        val books = array[1] as List<Book>
+
+        @Suppress("UNCHECKED_CAST")
+        val shelfList = array[2] as List<ShelfWithCovers>
+
+        @Suppress("UNCHECKED_CAST")
+        val booksList = array[3] as List<Book>
+
+        @Suppress("UNCHECKED_CAST")
+        val searchRes = array[4] as SearchResults
+        val booksLoading = array[5] as Boolean
+        val shelvesLoading = array[6] as Boolean
+
+        LibraryScreenUiState(
+            searchQuery = baseState.searchQuery,
+            searchCategory = baseState.searchCategory,
+            isImporting = baseState.isImporting,
+            bookPreferences = baseState.bookPreferences,
+            shelvesPreferences = baseState.shelvesPreferences,
+            filteredBooks = books,
+            shelves = shelfList,
+            allBooks = booksList,
+            searchResults = searchRes,
+            isBooksLoading = booksLoading,
+            isShelvesLoading = shelvesLoading
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LibraryScreenUiState())
 
     fun deleteBook(bookId: String) {
         viewModelScope.launch {

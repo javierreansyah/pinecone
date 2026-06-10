@@ -79,7 +79,7 @@ class ShelfDetailViewModel(
 
     fun getFilteredAndSortedBooks(baseFlow: Flow<List<Book>>): Flow<List<Book>> {
         return combine(baseFlow, _uiState) { books, state ->
-            books.filter { !it.isArchived }.filter { book ->
+            books.filter { book ->
                 val status = when {
                     book.isRead -> StatusFilter.Finished
                     book.progress <= 0.0 -> StatusFilter.NotStarted
