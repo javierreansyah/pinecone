@@ -23,7 +23,7 @@ import com.example.readerapp.ui.features.library.filters.AllFilterItemsScreen
 import com.example.readerapp.ui.features.library.filters.FilterResultScreen
 import com.example.readerapp.ui.features.library.info.BookInfoScreen
 import com.example.readerapp.ui.features.library.info.EditBookScreen
-import com.example.readerapp.ui.features.library.main.LibraryScreen
+import com.example.readerapp.ui.features.library.main.LibraryRoute
 import com.example.readerapp.ui.features.library.shelf.ShelfDetailScreen
 import com.example.readerapp.ui.features.reader.ReaderActivity
 import com.example.readerapp.ui.features.settings.SettingsScreen
@@ -46,7 +46,7 @@ fun NavGraph(
         modifier = modifier
     ) {
         composable(Screen.Library.route) {
-            LibraryScreen(
+            LibraryRoute(
                 onNavigateToReader = { bookId ->
                     val intent = Intent(context, ReaderActivity::class.java).apply {
                         putExtra(ReaderActivity.EXTRA_BOOK_ID, bookId)

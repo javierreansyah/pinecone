@@ -29,7 +29,7 @@ import com.example.readerapp.ui.features.library.components.book.CoverImage
 fun ShelfListItem(
     shelfWithCovers: ShelfWithCovers, onClick: () -> Unit, modifier: Modifier = Modifier
 ) {
-    val visibleBooks = shelfWithCovers.books.filter { !it.book.isArchived }
+    val visibleBooks = shelfWithCovers.books
     val booksCount = visibleBooks.size
 
     // We only need up to 2 covers for the thumbnail

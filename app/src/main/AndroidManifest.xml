@@ -52,6 +52,12 @@
                 <data android:pathPattern=".*\\.cb7" />
                 <data android:pathPattern=".*\\.cbt" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="pinecone" android:host="book_info" />
+            </intent-filter>
         </activity>
         <activity
             android:name=".ui.features.reader.ReaderActivity"
