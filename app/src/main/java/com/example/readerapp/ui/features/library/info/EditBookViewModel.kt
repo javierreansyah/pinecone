@@ -63,7 +63,7 @@ class EditBookViewModel(
                         description = book.description ?: "",
                         existingCoverPath = book.coverPath,
                         tags = bookDetails.tags.map { tag -> tag.name },
-                        authors = bookDetails.authors.map { author -> author.name })
+                        authors = bookDetails.sortedAuthors.map { author -> author.name })
                 }
             } else {
                 _uiState.update { it.copy(isLoading = false, error = "Book not found") }

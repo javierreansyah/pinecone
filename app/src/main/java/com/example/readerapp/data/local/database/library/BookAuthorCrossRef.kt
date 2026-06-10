@@ -23,5 +23,5 @@ import kotlinx.serialization.Serializable
 )
 @Serializable
 data class BookAuthorCrossRef(
-    val bookId: String, val authorId: Long
+    val bookId: String, val authorId: Long, val authorOrder: Int = 0
 )
