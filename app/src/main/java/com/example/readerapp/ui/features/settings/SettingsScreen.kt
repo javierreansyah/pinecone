@@ -48,7 +48,23 @@ import com.example.readerapp.R
 import com.example.readerapp.data.local.preferences.ReaderPreferences
 import com.example.readerapp.ui.components.SegmentedColumn
 import com.example.readerapp.ui.features.settings.components.settingsItem
+import com.example.readerapp.ui.features.settings.components.ColorSchemePickerDialog
 import com.example.readerapp.worker.WorkerUtils
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.draw.clip
+import androidx.core.graphics.toColorInt
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -70,6 +86,7 @@ fun SettingsScreen(
     )
 
     val settings by viewModel.settings.collectAsState()
+    var showColorPicker by remember { mutableStateOf(false) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -133,12 +150,6 @@ fun SettingsScreen(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            val colorPaletteOptionsMap = mapOf(
-                "Dynamic" to stringResource(R.string.settings_option_dynamic),
-                "Pine" to stringResource(R.string.settings_theme_pine),
-                "Neutral" to stringResource(R.string.settings_theme_neutral)
-            )
-
             SegmentedColumn(modifier = Modifier.padding(bottom = 16.dp)) {
                 val themeModeLabel = stringResource(R.string.settings_theme_mode)
                 val themeModeOptionsMap = mapOf(
@@ -162,21 +173,46 @@ fun SettingsScreen(
                         )
                     }
                 )
-                val colorPaletteLabel = stringResource(R.string.settings_color_palette)
-                settingsItem(
-                    label = colorPaletteLabel,
-                    value = colorPaletteOptionsMap[settings.colorPalette] ?: settings.colorPalette,
-                    options = colorPaletteOptionsMap.values.toList(),
-                    onSelected = { label ->
-                        val key =
-                            colorPaletteOptionsMap.entries.find { it.value == label }?.key ?: label
-                        viewModel.updateSettings(settings.copy(colorPalette = key))
-                    },
-                    leadingIcon = {
+                item(
+                    onClick = { showColorPicker = true },
+                    leadingContent = {
                         Icon(
                             imageVector = MaterialSymbols.Outlined.Palette,
                             contentDescription = null
                         )
+                    },
+                    content = { Text(stringResource(R.string.settings_color_palette), style = MaterialTheme.typography.titleMedium) },
+                    supportingContent = {
+                        Text(
+                            if (settings.colorPalette == "Dynamic") stringResource(R.string.settings_option_dynamic)
+                            else settings.colorPalette,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
+                    trailingContent = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (settings.colorPalette != "Dynamic") {
+                                val resolvedColor = try {
+                                    Color(settings.colorPalette.toColorInt())
+                                } catch (_: Exception) {
+                                    null
+                                }
+                                if (resolvedColor != null) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(24.dp)
+                                            .clip(CircleShape)
+                                            .background(resolvedColor)
+                                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            Icon(
+                                imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
+                                contentDescription = null
+                            )
+                        }
                     }
                 )
                 val themeContrastLabel = stringResource(R.string.settings_theme_contrast)
@@ -325,5 +361,30 @@ fun SettingsScreen(
             }
 
         }
+    }
+
+    if (showColorPicker) {
+        val currentPaletteColor = remember(settings.colorPalette) {
+            if (settings.colorPalette == "Dynamic") Color.White
+            else {
+                try {
+                    Color(settings.colorPalette.toColorInt())
+                } catch (_: Exception) {
+                    Color.White
+                }
+            }
+        }
+        ColorSchemePickerDialog(
+            currentColor = currentPaletteColor,
+            setShowDialog = { showColorPicker = it },
+            onColorChange = { color ->
+                val newPalette = if (color == Color.White) {
+                    "Dynamic"
+                } else {
+                    String.format("#%06X", 0xFFFFFF and color.toArgb())
+                }
+                viewModel.updateSettings(settings.copy(colorPalette = newPalette))
+            }
+        )
     }
 }

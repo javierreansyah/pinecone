@@ -240,6 +240,8 @@
     <string name="settings_option_dynamic">Dynamic</string>
     <string name="settings_theme_pine">Pine</string>
     <string name="settings_theme_neutral">Neutral</string>
+    <string name="chooseColorScheme">Choose Color Scheme</string>
+    <string name="ok">OK</string>
     <string name="settings_option_selected">Selected</string>
     <string name="settings_option_not_selected">Not selected (Auto-backup disabled)</string>
     <string name="settings_backup_freq_3h">3 hours</string>

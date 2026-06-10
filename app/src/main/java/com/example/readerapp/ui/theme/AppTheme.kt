@@ -6,21 +6,13 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import com.example.readerapp.ui.theme.custom.NeutralTheme
-import com.example.readerapp.ui.theme.custom.PineTheme
-
-object ThemeRegistry {
-    val themes = listOf(
-        PineTheme,
-        NeutralTheme
-    )
-
-    fun getTheme(name: String): AppThemeColors {
-        return themes.find { it.name.equals(name, ignoreCase = true) } ?: themes.first()
-    }
-
-}
+import androidx.core.graphics.toColorInt
+import com.materialkolor.PaletteStyle
+import com.materialkolor.dynamiccolor.ColorSpec
+import com.materialkolor.rememberDynamicColorScheme
 
 @Composable
 fun AppTheme(
@@ -31,42 +23,46 @@ fun AppTheme(
 ) {
     val context = LocalContext.current
 
-    // Check if dynamic color is supported (Android 12+)
-    val isDynamicSupported = true
-    val resolvedPalette = if (colorPalette == "Dynamic" && !isDynamicSupported) {
-        "Pine"
-    } else {
-        colorPalette
-    }
-
-    val colorScheme = when {
-        resolvedPalette == "Dynamic" -> {
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        else -> {
-            val theme = ThemeRegistry.getTheme(resolvedPalette)
-            if (darkTheme) {
-                when (themeContrast) {
-                    "Medium" -> theme.mediumContrastDarkColorScheme
-                    "High" -> theme.highContrastDarkColorScheme
-                    else -> theme.darkColorScheme
-                }
-            } else {
-                when (themeContrast) {
-                    "Medium" -> theme.mediumContrastLightColorScheme
-                    "High" -> theme.highContrastLightColorScheme
-                    else -> theme.lightColorScheme
-                }
+    val seedColor = remember(colorPalette) {
+        if (colorPalette == "Dynamic") {
+            Color.White
+        } else {
+            try {
+                Color(colorPalette.toColorInt())
+            } catch (_: Exception) {
+                Color.White
             }
         }
     }
+
+    val systemColorScheme = remember(darkTheme) {
+        if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+    }
+
+    val contrastLevel = remember(themeContrast) {
+        when (themeContrast) {
+            "Medium" -> 0.5
+            "High" -> 1.0
+            else -> 0.0
+        }
+    }
+
+    val dynamicColorScheme = rememberDynamicColorScheme(
+        isDark = darkTheme,
+        style = PaletteStyle.TonalSpot,
+        specVersion = ColorSpec.SpecVersion.SPEC_2025,
+        contrastLevel = contrastLevel,
+        seedColor = if (seedColor == Color.White) systemColorScheme.primary else seedColor,
+    )
+
+    val resolvedColorScheme =
+        if (seedColor == Color.White) systemColorScheme else dynamicColorScheme
 
     CompositionLocalProvider(
         LocalSpacing provides Spacing()
     ) {
         MaterialTheme(
-            colorScheme = colorScheme,
+            colorScheme = resolvedColorScheme,
             typography = AppTypography,
             content = content
         )

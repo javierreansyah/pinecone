@@ -24,6 +24,7 @@ fragmentKtx = "1.8.9"
 coreSplashscreen = "1.2.0"
 documentfile = "1.1.0"
 reorderable = "3.1.0"
+materialKolor = "4.1.1"
 
 [libraries]
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashscreen" }
@@ -59,6 +60,7 @@ androidx-compose-animation = { group = "androidx.compose.animation", name = "ani
 androidx-compose-animation-core = { group = "androidx.compose.animation", name = "animation-core" }
 androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version.ref = "documentfile" }
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
+materialKolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 
 [plugins]

@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Archive
@@ -65,17 +66,16 @@ fun AppDrawer(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    painter = painterResource(
-                        id = if (darkTheme) R.drawable.dark_mode_icon else R.drawable.light_mode_icon
-                    ),
+                    painter = painterResource(id = R.drawable.app_logo),
                     contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = Color.Unspecified
+                    modifier = Modifier.size(26.dp),
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = stringResource(id = R.string.app_name),
-                    style = MaterialTheme.typography.headlineMedium
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
 
@@ -217,3 +217,6 @@ fun AppDrawer(
         }
     }
 }
+
+
+
