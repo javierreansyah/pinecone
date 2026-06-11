@@ -8,10 +8,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.readerapp.ReaderApplication
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.data.repository.library.LibraryRepository
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.example.readerapp.data.local.database.library.ShelfWithCovers
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 
@@ -21,22 +22,51 @@ class BookInfoViewModel(
 
     private val repository: LibraryRepository = (application as ReaderApplication).libraryRepository
 
-    private val _uiState = MutableStateFlow(BookInfoUiState())
-    val uiState: StateFlow<BookInfoUiState> = _uiState.asStateFlow()
+    val shelves: StateFlow<List<ShelfWithCovers>> = repository.getAllShelvesWithBooks()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    init {
-        loadBook()
+    val uiState: StateFlow<BookInfoUiState> = repository.getBookFlow(bookId)
+        .map { entity ->
+            BookInfoUiState(
+                book = entity?.let { Book.fromEntity(it) },
+                isLoading = false
+            )
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = BookInfoUiState(isLoading = true)
+        )
+
+    fun toggleReadStatus() {
+        viewModelScope.launch {
+            repository.toggleReadStatus(bookId)
+        }
     }
 
-    private fun loadBook() {
+    fun toggleArchive() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            val entity = repository.getBook(bookId)
-            _uiState.update { it ->
-                it.copy(
-                    book = entity?.let { Book.fromEntity(it) }, isLoading = false
-                )
-            }
+            repository.toggleArchive(bookId)
+        }
+    }
+
+    fun deleteBook(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            repository.deleteBook(bookId)
+            onSuccess()
+        }
+    }
+
+    fun addBookToShelf(shelfId: String) {
+        viewModelScope.launch {
+            repository.addBookToShelf(shelfId, bookId)
+        }
+    }
+
+    fun createShelfAndAddBook(name: String) {
+        viewModelScope.launch {
+            val shelfId = repository.createShelf(name)
+            repository.addBookToShelf(shelfId, bookId)
         }
     }
 

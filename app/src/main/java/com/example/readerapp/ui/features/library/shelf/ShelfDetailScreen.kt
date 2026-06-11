@@ -162,7 +162,8 @@ fun ShelfDetailScreen(
             onReorderBooksChange = { reorderBooks = it },
             onBookClick = onNavigateToReader,
             onBookLongClick = { selectedBookForMenu = it },
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
+            scrollKey = Triple(uiState.bookPreferences.sortType, uiState.bookPreferences.isAscending, uiState.bookPreferences.selectedStatus)
         )
 
         if (showFilterSheet) {
@@ -368,7 +369,8 @@ private fun ShelfDetailContent(
     onReorderBooksChange: (List<Book>) -> Unit,
     onBookClick: (String) -> Unit,
     onBookLongClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    scrollKey: Any? = null
 ) {
     Box(
         modifier = modifier.fillMaxSize()
@@ -443,7 +445,8 @@ private fun ShelfDetailContent(
                     books = books,
                     layoutMode = layoutMode,
                     onBookClick = onBookClick,
-                    onBookLongClick = onBookLongClick
+                    onBookLongClick = onBookLongClick,
+                    scrollKey = scrollKey
                 )
             }
         }

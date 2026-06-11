@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -40,9 +41,11 @@ fun ShelvesPage(
     onBookClick: (String) -> Unit,
     onBookLongClick: ((String, String) -> Unit)? = null,
     layoutMode: LayoutMode = LayoutMode.BigList,
+    scrollKey: Any? = null
 ) {
-    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.TopStart) {
-        if (shelves.isNotEmpty()) {
+    key(scrollKey) {
+        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.TopStart) {
+            if (shelves.isNotEmpty()) {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -84,6 +87,7 @@ fun ShelvesPage(
             )
         }
     }
+}
 }
 
 @Composable

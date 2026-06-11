@@ -309,8 +309,9 @@ private fun BookCoverPicker(
                 contentScale = ContentScale.Crop
             )
         } else if (existingCoverPath != null) {
+            val coverModel = remember(existingCoverPath) { File(existingCoverPath) }
             AsyncImage(
-                model = File(existingCoverPath),
+                model = coverModel,
                 contentDescription = stringResource(R.string.book_info_title),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop

@@ -47,6 +47,11 @@ android {
             initWith(getByName("release"))
             applicationIdSuffix = ".dev"
             manifestPlaceholders["appName"] = "Pinecone Dev"
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+                "proguard-rules-staging.pro"
+            )
         }
     }
     compileOptions {

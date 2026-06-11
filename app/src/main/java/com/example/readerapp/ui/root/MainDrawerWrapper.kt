@@ -103,86 +103,13 @@ fun MainDrawerWrapper(
         }
     )
 
-    val backupFolderPickerLauncher = rememberLauncherForActivityResult(
-        contract = object : ActivityResultContracts.OpenDocumentTree() {
-            override fun createIntent(context: Context, input: Uri?): Intent {
-                val intent = super.createIntent(context, input)
-                val pineconeDir = File(
-                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-                    "Pinecone"
-                )
-                if (!pineconeDir.exists()) pineconeDir.mkdirs()
-                if (input != null) {
-                    intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, input)
-                }
-                return intent
-            }
-        },
-        onResult = { uri ->
-            uri?.let {
-                viewModel.updateBackupFolderUri(it)
-            }
-        }
-    )
-
-    val restoreBackupLauncher = rememberLauncherForActivityResult(
-        contract = object : ActivityResultContracts.OpenDocument() {
-            override fun createIntent(context: Context, input: Array<String>): Intent {
-                val intent = super.createIntent(context, input)
-                val pineconeDir = File(
-                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-                    "Pinecone"
-                )
-                if (!pineconeDir.exists()) pineconeDir.mkdirs()
-
-                val uri = DocumentsContract.buildDocumentUri(
-                    "com.android.externalstorage.documents",
-                    "primary:Documents/Pinecone"
-                )
-                intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, uri)
-                return intent
-            }
-        },
-        onResult = { uri ->
-            uri?.let {
-                viewModel.restoreBackup(it)
-            }
-        }
-    )
-
-    var showRestoreWarning by remember { mutableStateOf(false) }
-
-    if (showRestoreWarning) {
-        AlertDialog(
-            onDismissRequest = { showRestoreWarning = false },
-            title = { Text(stringResource(R.string.nav_restore_backup)) },
-            text = { Text(stringResource(R.string.nav_restore_backup_warning)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showRestoreWarning = false
-                        restoreBackupLauncher.launch(arrayOf("*/*"))
-                        scope.launch { drawerState.close() }
-                    }
-                ) {
-                    Text(stringResource(R.string.action_proceed))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showRestoreWarning = false }) {
-                    Text(stringResource(R.string.action_cancel))
-                }
-            }
-        )
-    }
-
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
 
     // Safety net: force-close drawer if it's somehow open on a non-Library route
     LaunchedEffect(currentRoute) {
         if (currentRoute != null && currentRoute != Screen.Library.route) {
-            drawerState.snapTo(DrawerValue.Closed)
+            drawerState.close()
         }
     }
 
@@ -230,15 +157,7 @@ fun MainDrawerWrapper(
                         )
                     )
                 },
-                onScanFolderClick = { folderPickerLauncher.launch(null) },
-                onBackupFolderSetupClick = {
-                    val initialUri = DocumentsContract.buildDocumentUri(
-                        "com.android.externalstorage.documents",
-                        "primary:Documents/Pinecone"
-                    )
-                    backupFolderPickerLauncher.launch(initialUri)
-                },
-                onRestoreBackupClick = { showRestoreWarning = true }
+                onScanFolderClick = { folderPickerLauncher.launch(null) }
             )
         }
     ) {

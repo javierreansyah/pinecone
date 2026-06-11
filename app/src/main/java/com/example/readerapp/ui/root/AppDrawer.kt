@@ -22,7 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -30,17 +29,12 @@ import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Archive
 import com.composables.icons.materialsymbols.outlined.Book
-import com.composables.icons.materialsymbols.outlined.Drive_folder_upload
 import com.composables.icons.materialsymbols.outlined.Folder
-import com.composables.icons.materialsymbols.outlined.History
 import com.composables.icons.materialsymbols.outlined.Settings
 import com.composables.icons.materialsymbols.outlined.Upload
 import com.example.readerapp.R
 import com.example.readerapp.data.local.preferences.ReaderSettings
-import com.example.readerapp.data.repository.backup.LibraryBackupRepository
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
 
 @Composable
 fun AppDrawer(
@@ -51,8 +45,6 @@ fun AppDrawer(
     onNavigateToSettings: () -> Unit,
     onImportFilesClick: () -> Unit,
     onScanFolderClick: () -> Unit,
-    onBackupFolderSetupClick: () -> Unit,
-    onRestoreBackupClick: () -> Unit,
     onNavigateToDictionaries: () -> Unit
 ) {
     val context = LocalContext.current
@@ -120,86 +112,6 @@ fun AppDrawer(
                 onClick = {
                     onScanFolderClick()
                     scope.launch { drawerState.close() }
-                },
-                shape = RectangleShape
-            )
-
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-            Text(
-                text = stringResource(R.string.nav_local_backup),
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
-                color = MaterialTheme.colorScheme.primary,
-            )
-
-            val lastBackupTimeText = if (settings.lastBackupTime > 0) {
-                val formatter =
-                    SimpleDateFormat("MMM dd, HH:mm", LocalLocale.current.platformLocale)
-                "Last: ${formatter.format(Date(settings.lastBackupTime))}"
-            } else {
-                "Never"
-            }
-
-            val hasPermission =
-                settings.backupFolderUri.isNotEmpty() && context.contentResolver.persistedUriPermissions.any { it.uri.toString() == settings.backupFolderUri }
-            val startingMsg = stringResource(R.string.nav_starting_backup)
-            val successMsg = stringResource(R.string.nav_backup_success)
-            val failedMsg = stringResource(R.string.nav_backup_failed)
-
-            NavigationDrawerItem(
-                label = {
-                    Column {
-                        if (hasPermission) {
-                            Text(stringResource(R.string.nav_backup_now))
-                            Text(
-                                lastBackupTimeText,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        } else {
-                            Text(stringResource(R.string.nav_backup_not_setup))
-                            Text(
-                                stringResource(R.string.nav_setup_now),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                },
-                icon = {
-                    Icon(
-                        if (hasPermission) MaterialSymbols.Outlined.Drive_folder_upload else MaterialSymbols.Outlined.Folder,
-                        contentDescription = null
-                    )
-                },
-                selected = false,
-                onClick = {
-                    scope.launch {
-                        drawerState.close()
-                        if (!hasPermission) {
-                            onBackupFolderSetupClick()
-                        } else {
-                            Toast.makeText(context, startingMsg, Toast.LENGTH_SHORT).show()
-                            val success =
-                                LibraryBackupRepository(context).performBackup(force = true)
-                            if (success) {
-                                Toast.makeText(context, successMsg, Toast.LENGTH_SHORT).show()
-                            } else {
-                                Toast.makeText(context, failedMsg, Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    }
-                },
-                shape = RectangleShape
-            )
-
-            NavigationDrawerItem(
-                label = { Text(stringResource(R.string.nav_restore_backup)) },
-                icon = { Icon(MaterialSymbols.Outlined.History, contentDescription = null) },
-                selected = false,
-                onClick = {
-                    onRestoreBackupClick()
                 },
                 shape = RectangleShape
             )

@@ -2,7 +2,9 @@ package com.example.readerapp.ui.root
 
 import android.app.Activity
 import android.content.Intent
+import androidx.compose.foundation.background
 import androidx.compose.material3.DrawerState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -13,6 +15,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import com.example.readerapp.ReaderApplication
@@ -43,7 +50,19 @@ fun NavGraph(
     NavHost(
         navController = navController,
         startDestination = Screen.Library.route,
-        modifier = modifier
+        modifier = modifier.background(MaterialTheme.colorScheme.background),
+        enterTransition = {
+            fadeIn(animationSpec = tween(300)) + scaleIn(initialScale = 0.9f, animationSpec = tween(300))
+        },
+        exitTransition = {
+            fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.9f, animationSpec = tween(300))
+        },
+        popEnterTransition = {
+            fadeIn(animationSpec = tween(300)) + scaleIn(initialScale = 0.9f, animationSpec = tween(300))
+        },
+        popExitTransition = {
+            fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.9f, animationSpec = tween(300))
+        }
     ) {
         composable(Screen.Library.route) {
             LibraryRoute(
@@ -204,7 +223,6 @@ fun NavGraph(
             val factory = DictionariesViewModel.Factory(
                 app.dictionaryRepository,
                 app.dictionaryImportManager,
-                app.dictionaryBackupManager,
                 readerPreferences
             )
             val dictViewModel: DictionariesViewModel = viewModel(factory = factory)
@@ -228,6 +246,9 @@ fun NavGraph(
                 },
                 onNavigateToEdit = { id ->
                     navController.navigate(Screen.EditBook.createRoute(id))
+                },
+                onNavigateToTag = { tagName ->
+                    navController.navigate(Screen.TagDetail.createRoute(tagName))
                 }
             )
         }

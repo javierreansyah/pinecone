@@ -9,6 +9,7 @@
     <string name="action_delete">Hapus</string>
     <string name="action_rename">Ubah Nama</string>
     <string name="action_edit">Edit</string>
+    <string name="action_read">Baca</string>
     <string name="action_more">Lainnya</string>
     <string name="action_options">Opsi</string>
     <string name="action_search">Cari</string>
@@ -222,6 +223,12 @@
     <string name="settings_theme_contrast">Kontras Tema</string>
     <string name="settings_language">Bahasa</string>
     <string name="settings_backup">Cadangan</string>
+    <string name="settings_library_backup">Cadangan Perpustakaan</string>
+    <string name="settings_dictionary_backup">Cadangan Kamus</string>
+    <string name="settings_backup_preferences">Preferensi Cadangan</string>
+    <string name="settings_backup_library">Cadangkan Perpustakaan</string>
+    <string name="settings_restore_library">Pulihkan Perpustakaan</string>
+    <string name="settings_restore_dictionaries">Pulihkan Kamus</string>
     <string name="settings_auto_backup_freq">Frekuensi Cadangan Otomatis</string>
     <string name="settings_backup_location">Lokasi Cadangan</string>
     <string name="settings_option_system">Sistem</string>
@@ -245,6 +252,12 @@
     <string name="settings_backup_freq_2d">2 hari</string>
     <string name="settings_backup_freq_3d">3 hari</string>
     <string name="settings_backup_freq_1w">1 minggu</string>
+    <string name="settings_restore_defaults">Pulihkan Setelan Awal</string>
+    <string name="settings_restore_defaults_warning">Apakah Anda yakin ingin memulihkan pengaturan ke nilai default? Tindakan ini akan mereset tema, palet warna, bahasa, dan pengaturan cadangan otomatis Anda.\n\nPengaturan pembaca (seperti ukuran font, kecerahan, dll.) tidak akan diubah.</string>
+    <string name="settings_restore_defaults_success">Pengaturan dipulihkan ke default</string>
+    <string name="reader_settings_restore_defaults">Pulihkan Setelan Awal Pembaca</string>
+    <string name="reader_settings_restore_defaults_warning">Apakah Anda yakin ingin memulihkan pengaturan pembaca ke nilai default? Tindakan ini akan mereset semua preferensi tipografi, tata letak, tema, dan kecerahan.\n\nPengaturan umum (seperti mode tema, bahasa, dll.) tidak akan diubah.</string>
+    <string name="reader_settings_restore_defaults_success">Pengaturan pembaca dipulihkan ke default</string>
 
     <!-- Navigation Drawer -->
     <string name="nav_book_import">Impor Buku</string>
