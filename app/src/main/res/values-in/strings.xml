@@ -11,7 +11,7 @@
     <string name="action_edit">Edit</string>
     <string name="action_read">Baca</string>
     <string name="action_more">Lainnya</string>
-    <string name="action_options">Opsi</string>
+
     <string name="action_search">Cari</string>
     <string name="action_clear">Bersihkan</string>
     <string name="action_proceed">Lanjutkan</string>
@@ -20,7 +20,7 @@
     <string name="action_create">Buat</string>
     <string name="action_copy">Salin</string>
     <string name="action_define">Definisikan</string>
-    <string name="action_share">Bagikan</string>
+
     <string name="action_close">Tutup</string>
     <string name="action_menu">Menu</string>
     <string name="action_filter">Filter</string>
@@ -57,9 +57,7 @@
     <plurals name="library_books_count">
         <item quantity="other">%d buku</item>
     </plurals>
-    <plurals name="library_item_count">
-        <item quantity="other">%1$d %2$s</item>
-    </plurals>
+
     <string name="library_warning_merge">Peringatan: Item yang cocok sudah ada. Menyimpan akan menggabungkan item ini dan bukunya ke dalam item yang sudah ada.</string>
     <string name="library_importing">Mengimpor…</string>
     <string name="library_empty_items">Item tidak ditemukan.</string>
@@ -132,7 +130,7 @@
         <item quantity="other">%d hasil</item>
     </plurals>
     <plurals name="reader_page_of">
-        <item quantity="other">%1$s dari %2$s halaman</item>
+        <item quantity="other">%1$s dari %2$s</item>
     </plurals>
     <string name="reader_position_at">pada %s</string>
     <plurals name="reader_page_num">
@@ -222,7 +220,7 @@
     <string name="settings_color_palette">Palet Warna</string>
     <string name="settings_theme_contrast">Kontras Tema</string>
     <string name="settings_language">Bahasa</string>
-    <string name="settings_backup">Cadangan</string>
+
     <string name="settings_library_backup">Cadangan Perpustakaan</string>
     <string name="settings_dictionary_backup">Cadangan Kamus</string>
     <string name="settings_backup_preferences">Preferensi Cadangan</string>
@@ -239,8 +237,7 @@
     <string name="settings_option_high">Tinggi</string>
     <string name="settings_option_never">Jangan Pernah</string>
     <string name="settings_option_dynamic">Dinamis</string>
-    <string name="settings_theme_pine">Pine</string>
-    <string name="settings_theme_neutral">Netral</string>
+
     <string name="chooseColorScheme">Pilih Skema Warna</string>
     <string name="ok">OK</string>
     <string name="settings_option_selected">Dipilih</string>
@@ -261,11 +258,10 @@
 
     <!-- Navigation Drawer -->
     <string name="nav_book_import">Impor Buku</string>
-    <string name="nav_local_backup">Cadangan Lokal</string>
+
     <string name="nav_import_files">Impor File</string>
     <string name="nav_scan_folder">Pindai Folder</string>
-    <string name="nav_backup_now">Cadangkan Sekarang</string>
-    <string name="nav_backup_not_setup">Cadangan belum dikonfigurasi</string>
+
     <string name="nav_setup_now">Konfigurasi sekarang</string>
     <string name="nav_starting_backup">Memulai pencadangan…</string>
     <string name="nav_backup_success">Cadangan berhasil</string>

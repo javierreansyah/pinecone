@@ -3,6 +3,9 @@ package com.example.readerapp.ui.features.library.main
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import coil.imageLoader
+import coil.request.ImageRequest
+import coil.size.Scale
 import com.example.readerapp.R
 import com.example.readerapp.ReaderApplication
 import com.example.readerapp.data.local.database.library.ShelfEntity
@@ -30,10 +33,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import coil.imageLoader
-import coil.request.ImageRequest
-import coil.size.Scale
 import java.io.File
+import kotlin.time.Duration.Companion.milliseconds
 
 class LibraryViewModel(
     application: Application, private val screenKey: String = "library_books"
@@ -202,7 +203,7 @@ class LibraryViewModel(
     @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
     private val debouncedSearchQuery: Flow<String> = _uiState
         .map { it.searchQuery }
-        .debounce(300L)
+        .debounce(300L.milliseconds)
         .distinctUntilChanged()
 
     @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)

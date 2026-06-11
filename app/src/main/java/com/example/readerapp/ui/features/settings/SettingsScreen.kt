@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Environment
 import android.provider.DocumentsContract
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalIconButton
@@ -28,12 +30,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,20 +52,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import android.widget.Toast
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.LinearWavyProgressIndicator
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.platform.LocalLocale
-import com.example.readerapp.data.repository.dictionary.DictionaryState
-import com.composables.icons.materialsymbols.outlined.History
-import com.composables.icons.materialsymbols.outlined.Restart_alt
-import com.composables.icons.materialsymbols.outlined.Save
-import java.text.SimpleDateFormat
-import java.util.Date
 import androidx.core.graphics.toColorInt
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -69,20 +63,26 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Contrast
 import com.composables.icons.materialsymbols.outlined.Folder
+import com.composables.icons.materialsymbols.outlined.History
 import com.composables.icons.materialsymbols.outlined.Keyboard_arrow_right
 import com.composables.icons.materialsymbols.outlined.Palette
+import com.composables.icons.materialsymbols.outlined.Restart_alt
+import com.composables.icons.materialsymbols.outlined.Save
 import com.composables.icons.materialsymbols.outlined.Sync
 import com.composables.icons.materialsymbols.outlined.Translate
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.example.readerapp.R
 import com.example.readerapp.data.local.preferences.ReaderPreferences
 import com.example.readerapp.data.local.preferences.ReaderSettings
+import com.example.readerapp.data.repository.dictionary.DictionaryState
 import com.example.readerapp.ui.components.SegmentedColumn
 import com.example.readerapp.ui.features.settings.components.ColorSchemePickerDialog
 import com.example.readerapp.ui.features.settings.components.settingsItem
 import com.example.readerapp.worker.WorkerUtils
 import kotlinx.coroutines.launch
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -90,6 +90,21 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val dictBackingUpMsg = stringResource(R.string.dictionaries_backing_up)
+    val dictBackupSuccessMsg = stringResource(R.string.dictionaries_backup_success)
+    val commonBackupErrorMsg = stringResource(R.string.common_backup_error)
+    val dictRestoringMsg = stringResource(R.string.dictionaries_restoring)
+    val dictRestoreSuccessMsg = stringResource(R.string.dictionaries_restore_success)
+    val commonRestoreErrorMsg = stringResource(R.string.common_restore_error)
+    val navRestoringBackupMsg = stringResource(R.string.nav_restoring_backup)
+    val navRestoreSuccessMsg = stringResource(R.string.nav_restore_success)
+    val navRestoreFailedMsg = stringResource(R.string.nav_restore_failed)
+    val dictInvalidFormatMsg = stringResource(R.string.dictionaries_invalid_format)
+    val navStartingBackupMsg = stringResource(R.string.nav_starting_backup)
+    val navBackupSuccessMsg = stringResource(R.string.nav_backup_success)
+    val navBackupFailedMsg = stringResource(R.string.nav_backup_failed)
+    val dictNoToBackupMsg = stringResource(R.string.dictionaries_no_to_backup)
+    val restoreSuccessMsg = stringResource(R.string.settings_restore_defaults_success)
     val scope = rememberCoroutineScope()
     val app = context.applicationContext as com.example.readerapp.ReaderApplication
     val readerPreferences = remember { ReaderPreferences(context) }
@@ -134,7 +149,8 @@ fun SettingsScreen(
         }
     )
 
-    val hasPermission = settings.backupFolderUri.isNotEmpty() && context.contentResolver.persistedUriPermissions.any { it.uri.toString() == settings.backupFolderUri }
+    val hasPermission =
+        settings.backupFolderUri.isNotEmpty() && context.contentResolver.persistedUriPermissions.any { it.uri.toString() == settings.backupFolderUri }
 
     val dictBackupState by viewModel.dictBackupState.collectAsState()
     val dictRestoreState by viewModel.dictRestoreState.collectAsState()
@@ -142,37 +158,56 @@ fun SettingsScreen(
     val isDictRestoring = dictRestoreState is DictionaryState.Loading
 
     LaunchedEffect(dictBackupState) {
-        if (dictBackupState is DictionaryState.Loading) {
-            Toast.makeText(context, context.getString(R.string.dictionaries_backing_up), Toast.LENGTH_SHORT).show()
-        } else if (dictBackupState is DictionaryState.Success) {
-            Toast.makeText(context, context.getString(R.string.dictionaries_backup_success), Toast.LENGTH_SHORT).show()
-            viewModel.resetDictBackupState()
-        } else if (dictBackupState is DictionaryState.Error) {
-            val errorMsg = (dictBackupState as DictionaryState.Error).message
-            val formattedMsg = String.format(context.getString(R.string.common_backup_error), errorMsg)
-            Toast.makeText(context, formattedMsg, Toast.LENGTH_LONG).show()
-            viewModel.resetDictBackupState()
+        when (dictBackupState) {
+            is DictionaryState.Loading -> {
+                Toast.makeText(context, dictBackingUpMsg, Toast.LENGTH_SHORT).show()
+            }
+
+            is DictionaryState.Success -> {
+                Toast.makeText(context, dictBackupSuccessMsg, Toast.LENGTH_SHORT).show()
+                viewModel.resetDictBackupState()
+            }
+
+            is DictionaryState.Error -> {
+                val errorMsg = (dictBackupState as DictionaryState.Error).message
+                val formattedMsg = String.format(commonBackupErrorMsg, errorMsg)
+                Toast.makeText(context, formattedMsg, Toast.LENGTH_LONG).show()
+                viewModel.resetDictBackupState()
+            }
+
+            else -> {}
         }
     }
 
     LaunchedEffect(dictRestoreState) {
-        if (dictRestoreState is DictionaryState.Loading) {
-            Toast.makeText(context, context.getString(R.string.dictionaries_restoring), Toast.LENGTH_SHORT).show()
-        } else if (dictRestoreState is DictionaryState.Success) {
-            Toast.makeText(context, context.getString(R.string.dictionaries_restore_success), Toast.LENGTH_SHORT).show()
-            viewModel.resetDictRestoreState()
-        } else if (dictRestoreState is DictionaryState.Error) {
-            val errorMsg = (dictRestoreState as DictionaryState.Error).message
-            val formattedMsg = String.format(context.getString(R.string.common_restore_error), errorMsg)
-            Toast.makeText(context, formattedMsg, Toast.LENGTH_LONG).show()
-            viewModel.resetDictRestoreState()
+        when (dictRestoreState) {
+            is DictionaryState.Loading -> {
+                Toast.makeText(context, dictRestoringMsg, Toast.LENGTH_SHORT).show()
+            }
+
+            is DictionaryState.Success -> {
+                Toast.makeText(context, dictRestoreSuccessMsg, Toast.LENGTH_SHORT).show()
+                viewModel.resetDictRestoreState()
+            }
+
+            is DictionaryState.Error -> {
+                val errorMsg = (dictRestoreState as DictionaryState.Error).message
+                val formattedMsg = String.format(commonRestoreErrorMsg, errorMsg)
+                Toast.makeText(context, formattedMsg, Toast.LENGTH_LONG).show()
+                viewModel.resetDictRestoreState()
+            }
+
+            else -> {}
         }
     }
 
     var showLibraryRestoreWarning by remember { mutableStateOf(false) }
     val libraryRestoreLauncher = rememberLauncherForActivityResult(
         contract = object : ActivityResultContracts.OpenDocument() {
-            override fun createIntent(context: android.content.Context, input: Array<String>): Intent {
+            override fun createIntent(
+                context: android.content.Context,
+                input: Array<String>
+            ): Intent {
                 val intent = super.createIntent(context, input)
                 val pineconeDir = File(
                     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
@@ -190,19 +225,16 @@ fun SettingsScreen(
         },
         onResult = { uri ->
             uri?.let {
-                val startingMsg = context.getString(R.string.nav_restoring_backup)
-                val successMsg = context.getString(R.string.nav_restore_success)
-                val failedMsg = context.getString(R.string.nav_restore_failed)
                 viewModel.restoreLibraryBackup(
                     uri = it,
                     onStart = {
-                        Toast.makeText(context, startingMsg, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, navRestoringBackupMsg, Toast.LENGTH_SHORT).show()
                     },
                     onSuccess = {
-                        Toast.makeText(context, successMsg, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, navRestoreSuccessMsg, Toast.LENGTH_SHORT).show()
                     },
                     onFailure = {
-                        Toast.makeText(context, failedMsg, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, navRestoreFailedMsg, Toast.LENGTH_SHORT).show()
                     }
                 )
             }
@@ -212,7 +244,10 @@ fun SettingsScreen(
     var showDictionaryRestoreWarning by remember { mutableStateOf(false) }
     val dictionaryRestoreLauncher = rememberLauncherForActivityResult(
         contract = object : ActivityResultContracts.OpenDocument() {
-            override fun createIntent(context: android.content.Context, input: Array<String>): Intent {
+            override fun createIntent(
+                context: android.content.Context,
+                input: Array<String>
+            ): Intent {
                 val intent = super.createIntent(context, input)
                 val pineconeDir = File(
                     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
@@ -230,11 +265,12 @@ fun SettingsScreen(
         },
         onResult = { uri ->
             uri?.let {
-                val name = androidx.documentfile.provider.DocumentFile.fromSingleUri(context, it)?.name
+                val name =
+                    androidx.documentfile.provider.DocumentFile.fromSingleUri(context, it)?.name
                 if (name != null && name.endsWith(".pinedict")) {
                     viewModel.restoreDictionaries(it)
                 } else {
-                    Toast.makeText(context, context.getString(R.string.dictionaries_invalid_format), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, dictInvalidFormatMsg, Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -325,13 +361,16 @@ fun SettingsScreen(
                     } else {
                         viewModel.performLibraryBackup(
                             onStart = {
-                                Toast.makeText(context, context.getString(R.string.nav_starting_backup), Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, navStartingBackupMsg, Toast.LENGTH_SHORT)
+                                    .show()
                             },
                             onSuccess = {
-                                Toast.makeText(context, context.getString(R.string.nav_backup_success), Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, navBackupSuccessMsg, Toast.LENGTH_SHORT)
+                                    .show()
                             },
                             onFailure = {
-                                Toast.makeText(context, context.getString(R.string.nav_backup_failed), Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, navBackupFailedMsg, Toast.LENGTH_SHORT)
+                                    .show()
                             }
                         )
                     }
@@ -341,7 +380,7 @@ fun SettingsScreen(
                 },
                 onDictionaryBackupClick = {
                     if (settings.installedDictionaries.isEmpty()) {
-                        Toast.makeText(context, context.getString(R.string.dictionaries_no_to_backup), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, dictNoToBackupMsg, Toast.LENGTH_SHORT).show()
                     } else if (!hasPermission) {
                         val pineconeDir = File(
                             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
@@ -466,7 +505,7 @@ fun SettingsScreen(
 
                         Toast.makeText(
                             context,
-                            context.getString(R.string.settings_restore_defaults_success),
+                            restoreSuccessMsg,
                             Toast.LENGTH_SHORT
                         ).show()
                     }

@@ -1,7 +1,6 @@
 package com.example.readerapp.ui.features.dictionary
 
 import android.widget.Toast
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.LinearOutSlowInEasing
@@ -32,14 +31,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -49,11 +45,7 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Add
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Book
-import com.composables.icons.materialsymbols.outlined.Close
-import com.composables.icons.materialsymbols.outlined.Download
-import com.composables.icons.materialsymbols.outlined.History
 import com.composables.icons.materialsymbols.outlined.More_vert
-import com.composables.icons.materialsymbols.outlined.Save
 import com.example.readerapp.R
 import com.example.readerapp.data.local.preferences.InstalledDictionary
 import com.example.readerapp.data.repository.dictionary.DictionaryState
@@ -265,7 +257,6 @@ private fun DictionariesTopAppBar(
 }
 
 
-
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DictionariesList(
@@ -297,7 +288,6 @@ private fun DictionariesList(
                 },
                 trailingContent = {
                     DictionaryItemActions(
-                        dict = dict,
                         isMenuExpanded = selectedItemForMenu == dict.id,
                         onMoreClick = { onMoreClick(dict.id) },
                         onMenuDismiss = onMenuDismiss,
@@ -330,7 +320,6 @@ private fun DictionariesList(
 
 @Composable
 private fun DictionaryItemActions(
-    dict: InstalledDictionary,
     isMenuExpanded: Boolean,
     onMoreClick: () -> Unit,
     onMenuDismiss: () -> Unit,
@@ -360,7 +349,6 @@ private fun DictionaryItemActions(
         }
     }
 }
-
 
 
 @Composable

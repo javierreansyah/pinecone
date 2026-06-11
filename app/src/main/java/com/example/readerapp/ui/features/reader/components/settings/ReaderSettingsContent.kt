@@ -3,7 +3,6 @@ package com.example.readerapp.ui.features.reader.components.settings
 import android.annotation.SuppressLint
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.background
@@ -53,6 +52,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.googlefonts.Font
@@ -86,6 +86,8 @@ fun ReaderSettingsContent(
     settings: ReaderSettings, onSettingsChange: (ReaderSettings) -> Unit
 ) {
     val context = LocalContext.current
+    val restoreDefaultsSuccessMsg =
+        stringResource(R.string.reader_settings_restore_defaults_success)
     val configuration = LocalConfiguration.current
     val locale = configuration.locales[0]
     val screenHeight = configuration.screenHeightDp.dp
@@ -255,7 +257,7 @@ fun ReaderSettingsContent(
                         onSettingsChange(defaultReaderSettings)
                         Toast.makeText(
                             context,
-                            context.getString(R.string.reader_settings_restore_defaults_success),
+                            restoreDefaultsSuccessMsg,
                             Toast.LENGTH_SHORT
                         ).show()
                     }

@@ -36,8 +36,8 @@ import com.composables.icons.materialsymbols.outlined.Tune
 import com.example.readerapp.R
 import com.example.readerapp.ui.components.EmptyState
 import com.example.readerapp.ui.features.library.components.FilterResultBottomSheet
-import com.example.readerapp.ui.features.library.components.book.BookContextMenu
 import com.example.readerapp.ui.features.library.components.book.BookCollection
+import com.example.readerapp.ui.features.library.components.book.BookContextMenu
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -119,7 +119,11 @@ fun ArchiveScreen(
                     layoutMode = uiState.bookPreferences.layoutMode,
                     onBookClick = onNavigateToReader,
                     onBookLongClick = { selectedBookForMenu = it },
-                    scrollKey = Triple(uiState.bookPreferences.sortType, uiState.bookPreferences.isAscending, uiState.bookPreferences.selectedStatus)
+                    scrollKey = Triple(
+                        uiState.bookPreferences.sortType,
+                        uiState.bookPreferences.isAscending,
+                        uiState.bookPreferences.selectedStatus
+                    )
                 )
             }
         }

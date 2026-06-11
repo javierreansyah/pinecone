@@ -18,7 +18,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -46,48 +47,50 @@ fun ShelvesPage(
     key(scrollKey) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.TopStart) {
             if (shelves.isNotEmpty()) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(
-                        if (layoutMode != LayoutMode.List) Modifier.padding(vertical = 4.dp)
-                        else Modifier
-                    ), contentPadding = PaddingValues(top = 8.dp)
-            ) {
-                items(shelves, key = { it.shelf.id }) { shelfWithCovers ->
-                    val visibleBooks = shelfWithCovers.books
-                    val booksCount = visibleBooks.size
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(
+                            if (layoutMode != LayoutMode.List) Modifier.padding(vertical = 4.dp)
+                            else Modifier
+                        ), contentPadding = PaddingValues(top = 8.dp)
+                ) {
+                    items(shelves, key = { it.shelf.id }) { shelfWithCovers ->
+                        val visibleBooks = shelfWithCovers.books
+                        val booksCount = visibleBooks.size
 
-                    if (layoutMode == LayoutMode.List) {
-                        ShelfListItem(
-                            shelfWithCovers = shelfWithCovers, onClick = {
-                                onShelfClick(
-                                    shelfWithCovers.shelf.id, shelfWithCovers.shelf.name, booksCount
-                                )
-                            })
-                    } else {
-                        ShelfRowItem(
-                            shelfWithCovers = shelfWithCovers,
-                            booksCount = booksCount,
-                            visibleBooks = visibleBooks,
-                            onShelfClick = onShelfClick,
-                            onBookClick = onBookClick,
-                            onBookLongClick = onBookLongClick
-                        )
+                        if (layoutMode == LayoutMode.List) {
+                            ShelfListItem(
+                                shelfWithCovers = shelfWithCovers, onClick = {
+                                    onShelfClick(
+                                        shelfWithCovers.shelf.id,
+                                        shelfWithCovers.shelf.name,
+                                        booksCount
+                                    )
+                                })
+                        } else {
+                            ShelfRowItem(
+                                shelfWithCovers = shelfWithCovers,
+                                booksCount = booksCount,
+                                visibleBooks = visibleBooks,
+                                onShelfClick = onShelfClick,
+                                onBookClick = onBookClick,
+                                onBookLongClick = onBookLongClick
+                            )
+                        }
                     }
                 }
+            } else {
+                EmptyState(
+                    icon = MaterialSymbols.Outlined.Folder,
+                    text = stringResource(R.string.library_empty_shelves),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                )
             }
-        } else {
-            EmptyState(
-                icon = MaterialSymbols.Outlined.Folder,
-                text = stringResource(R.string.library_empty_shelves),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-            )
         }
     }
-}
 }
 
 @Composable
@@ -167,8 +170,9 @@ private fun ShelfBooksHorizontalRow(
                 .padding(horizontal = 8.dp)
         )
     } else {
-        val configuration = LocalConfiguration.current
-        val screenWidth = configuration.screenWidthDp.dp
+        val density = LocalDensity.current
+        val containerSize = LocalWindowInfo.current.containerSize
+        val screenWidth = with(density) { containerSize.width.toDp() }
         val fitsOnScreen = (120.dp * visibleBooks.size + 16.dp) <= screenWidth
 
         LazyRow(

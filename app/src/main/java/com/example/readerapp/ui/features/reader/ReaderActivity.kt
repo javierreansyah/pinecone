@@ -116,9 +116,6 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.themeColors.collect { colors ->
                     window.decorView.setBackgroundColor(colors.backgroundColorInt)
-                    findViewById<android.widget.FrameLayout>(R.id.reader_root)?.setBackgroundColor(
-                        colors.backgroundColorInt
-                    )
                 }
             }
         }

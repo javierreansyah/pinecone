@@ -159,9 +159,4 @@ class ArchiveViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun removeBookFromShelf(shelfId: String, bookId: String) {
-        viewModelScope.launch {
-            bookRepository.removeBookFromShelf(shelfId, bookId)
-        }
-    }
 }

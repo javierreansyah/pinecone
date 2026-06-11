@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 
 class DictionaryImportManager(
-    private val context: Context, private val preferences: ReaderPreferences
+    context: Context, private val preferences: ReaderPreferences
 ) {
     private val parser = StardictParser(context)
 

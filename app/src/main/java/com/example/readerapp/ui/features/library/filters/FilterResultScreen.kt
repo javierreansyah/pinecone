@@ -97,7 +97,6 @@ fun FilterResultScreen(
         suggestionList = suggestionList,
         onNavigateBack = onNavigateBack,
         onNavigateToReader = onNavigateToReader,
-        onNavigateToMerged = onNavigateToMerged,
         onNavigateToBookInfo = onNavigateToBookInfo,
         onLayoutModeChange = { mode -> viewModel.onLayoutModeChange(mode) },
         onSortTypeChange = { sort -> viewModel.onSortTypeChange(sort) },
@@ -133,7 +132,6 @@ private fun FilterResultContent(
     suggestionList: List<String>,
     onNavigateBack: () -> Unit,
     onNavigateToReader: (String) -> Unit,
-    onNavigateToMerged: (String) -> Unit,
     onNavigateToBookInfo: (String) -> Unit,
     onLayoutModeChange: (com.example.readerapp.ui.features.library.LayoutMode) -> Unit,
     onSortTypeChange: (com.example.readerapp.ui.features.library.SortType) -> Unit,
@@ -184,7 +182,11 @@ private fun FilterResultContent(
             innerPadding = innerPadding,
             onNavigateToReader = onNavigateToReader,
             onBookLongClick = { selectedBookContext = it to null },
-            scrollKey = Triple(uiState.bookPreferences.sortType, uiState.bookPreferences.isAscending, uiState.bookPreferences.selectedStatus)
+            scrollKey = Triple(
+                uiState.bookPreferences.sortType,
+                uiState.bookPreferences.isAscending,
+                uiState.bookPreferences.selectedStatus
+            )
         )
 
         FilterResultDialogsAndSheets(

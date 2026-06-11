@@ -163,7 +163,11 @@ fun ShelfDetailScreen(
             onBookClick = onNavigateToReader,
             onBookLongClick = { selectedBookForMenu = it },
             modifier = Modifier.padding(innerPadding),
-            scrollKey = Triple(uiState.bookPreferences.sortType, uiState.bookPreferences.isAscending, uiState.bookPreferences.selectedStatus)
+            scrollKey = Triple(
+                uiState.bookPreferences.sortType,
+                uiState.bookPreferences.isAscending,
+                uiState.bookPreferences.selectedStatus
+            )
         )
 
         if (showFilterSheet) {

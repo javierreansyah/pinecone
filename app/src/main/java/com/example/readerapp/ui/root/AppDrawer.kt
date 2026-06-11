@@ -1,6 +1,5 @@
 package com.example.readerapp.ui.root
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,7 +20,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -33,21 +31,17 @@ import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Settings
 import com.composables.icons.materialsymbols.outlined.Upload
 import com.example.readerapp.R
-import com.example.readerapp.data.local.preferences.ReaderSettings
 import kotlinx.coroutines.launch
 
 @Composable
 fun AppDrawer(
     drawerState: DrawerState,
-    settings: ReaderSettings,
-    darkTheme: Boolean,
     onNavigateToArchives: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onImportFilesClick: () -> Unit,
     onScanFolderClick: () -> Unit,
     onNavigateToDictionaries: () -> Unit
 ) {
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     ModalDrawerSheet {

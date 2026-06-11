@@ -15,8 +15,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.readerapp.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -56,7 +54,6 @@ class NavigatorController(
 
     // Fix 2: navigatorFlow is a properly encapsulated StateFlow.
     private val _navigatorFlow = MutableStateFlow<EpubNavigatorFragment?>(null)
-    val navigatorFlow: StateFlow<EpubNavigatorFragment?> = _navigatorFlow.asStateFlow()
 
     private var currentActionMode: ActionMode? = null
 
