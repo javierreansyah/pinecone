@@ -98,7 +98,8 @@ abstract class DictionaryDatabase : RoomDatabase() {
                     context.applicationContext,
                     DictionaryDatabase::class.java,
                     "dict_$dictionaryId.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).fallbackToDestructiveMigration()
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .fallbackToDestructiveMigration(false)
                     .build()
             }
         }
