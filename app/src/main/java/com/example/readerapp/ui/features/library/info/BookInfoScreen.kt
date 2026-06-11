@@ -620,7 +620,7 @@ private fun BookCoverImage(
             model = coverModel,
             contentDescription = stringResource(R.string.book_info_title),
             modifier = modifier
-                .width(200.dp)
+                .height(300.dp)
                 .shadow(8.dp, RoundedCornerShape(12.dp))
                 .clip(RoundedCornerShape(12.dp)),
             contentScale = ContentScale.Fit
@@ -628,7 +628,7 @@ private fun BookCoverImage(
     } else {
         Box(
             modifier = modifier
-                .width(200.dp)
+                .height(300.dp)
                 .aspectRatio(1f / 1.5f)
                 .shadow(8.dp, RoundedCornerShape(12.dp))
                 .clip(RoundedCornerShape(12.dp))
