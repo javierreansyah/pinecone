@@ -43,6 +43,8 @@ import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.OutlinedTextFieldDefaults.FocusedBorderThickness
+import androidx.compose.material3.OutlinedTextFieldDefaults.UnfocusedBorderThickness
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -447,12 +449,14 @@ private fun AutocompleteChipTextField(
                 colors = OutlinedTextFieldDefaults.colors(),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
                 container = {
-                    OutlinedTextFieldDefaults.ContainerBox(
+                    OutlinedTextFieldDefaults.Container(
                         enabled = true,
                         isError = false,
                         interactionSource = interactionSource,
                         colors = OutlinedTextFieldDefaults.colors(),
-                        shape = OutlinedTextFieldDefaults.shape
+                        shape = OutlinedTextFieldDefaults.shape,
+                        focusedBorderThickness = FocusedBorderThickness,
+                        unfocusedBorderThickness = UnfocusedBorderThickness,
                     )
                 })
         }

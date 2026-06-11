@@ -58,7 +58,7 @@ class ReaderApplication : Application() {
                 AppDatabase.MIGRATION_5_6,
                 AppDatabase.MIGRATION_8_9
             )
-            .fallbackToDestructiveMigration()
+            .fallbackToDestructiveMigration(false)
             .build()
 
         val httpClient = DefaultHttpClient()

@@ -46,11 +46,14 @@ import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
@@ -59,7 +62,6 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -197,29 +199,44 @@ fun LibrarySearchTopBar(
             },
             colors = appBarWithSearchColors.searchBarColors.copy(dividerColor = Color.Transparent)
         ) {
-            // Always compose the content so Compose can pre-measure and pre-layout
-            // the entire tree while the bar is still collapsed. We hide it with a
-            // graphicsLayer alpha fade instead of conditional composition, which
-            // eliminates the cold-compose jank on first open.
-            val isExpanded = searchBarState.targetValue == SearchBarValue.Expanded
-            val contentAlpha by animateFloatAsState(
-                targetValue = if (isExpanded) 1f else 0f,
-                animationSpec = tween(durationMillis = 180, delayMillis = 60),
-                label = "searchContentAlpha"
-            )
+            // Track whether the expansion animation has ever settled so we can
+            // defer the expensive search-content composition until the bar is
+            // fully open. This eliminates cold-start jank by keeping the UI
+            // thread free during the expansion animation.
+            var hasEverExpanded by rememberSaveable { mutableStateOf(false) }
+
+            LaunchedEffect(Unit) {
+                snapshotFlow { searchBarState.currentValue }
+                    .collect { value ->
+                        if (value == SearchBarValue.Expanded) {
+                            hasEverExpanded = true
+                        }
+                    }
+            }
+
+            // After the first expansion the flag stays true, so subsequent
+            // opens never need to re-compose from scratch.
+            val showContent by remember {
+                derivedStateOf {
+                    hasEverExpanded ||
+                            searchBarState.currentValue == SearchBarValue.Expanded
+                }
+            }
 
             // Wrapper that collapses the search bar before navigating so the
             // Library destination appears in its normal (non-expanded) state
             // during predictive back and enter transitions.
-            val navigateAfterCollapse = { action: () -> Unit ->
-                scope.launch {
-                    searchBarState.animateToCollapsed()
-                    action()
+            val navigateAfterCollapse = remember(scope, searchBarState) {
+                { action: () -> Unit ->
+                    scope.launch {
+                        searchBarState.animateToCollapsed()
+                        action()
+                    }
+                    Unit
                 }
-                Unit
             }
 
-            Box(modifier = Modifier.graphicsLayer { alpha = contentAlpha }) {
+            if (showContent) {
                 ExpandedSearchContent(
                     searchCategory = searchCategory,
                     searchResults = searchResults,
@@ -250,6 +267,16 @@ fun LibrarySearchTopBar(
                     onNavigateToTag = { tag -> navigateAfterCollapse { onNavigateToTag(tag) } },
                     onAuthorsHeaderClick = { navigateAfterCollapse { onAuthorsHeaderClick() } },
                     onTagsHeaderClick = { navigateAfterCollapse { onTagsHeaderClick() } }
+                )
+            } else {
+                // Lightweight placeholder shown during the expansion animation.
+                // Uses the same background as the real content so it looks
+                // seamless, but avoids composing the heavy LazyColumn/LazyRow
+                // tree that would cause dropped frames.
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
                 )
             }
         }
