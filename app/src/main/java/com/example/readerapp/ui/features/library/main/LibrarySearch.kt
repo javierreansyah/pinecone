@@ -59,6 +59,7 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -146,6 +147,8 @@ fun LibrarySearchTopBar(
         scrolledAppBarContainerColor = MaterialTheme.colorScheme.surface
     )
 
+    val scope = rememberCoroutineScope()
+
     Box(modifier = modifier) {
         AppBarWithSearch(
             scrollBehavior = scrollBehavior,
@@ -195,19 +198,39 @@ fun LibrarySearchTopBar(
             },
             colors = appBarWithSearchColors.searchBarColors.copy(dividerColor = Color.Transparent)
         ) {
-            val isFullyExpanded =
-                searchBarState.currentValue == SearchBarValue.Expanded && searchBarState.targetValue == SearchBarValue.Expanded
-            if (isFullyExpanded) {
+            // Always compose the content so Compose can pre-measure and pre-layout
+            // the entire tree while the bar is still collapsed. We hide it with a
+            // graphicsLayer alpha fade instead of conditional composition, which
+            // eliminates the cold-compose jank on first open.
+            val isExpanded = searchBarState.targetValue == SearchBarValue.Expanded
+            val contentAlpha by animateFloatAsState(
+                targetValue = if (isExpanded) 1f else 0f,
+                animationSpec = tween(durationMillis = 180, delayMillis = 60),
+                label = "searchContentAlpha"
+            )
+
+            // Wrapper that collapses the search bar before navigating so the
+            // Library destination appears in its normal (non-expanded) state
+            // during predictive back and enter transitions.
+            val navigateAfterCollapse = { action: () -> Unit ->
+                scope.launch {
+                    searchBarState.animateToCollapsed()
+                    action()
+                }
+                Unit
+            }
+
+            Box(modifier = Modifier.graphicsLayer { alpha = contentAlpha }) {
                 ExpandedSearchContent(
                     searchCategory = searchCategory,
                     searchResults = searchResults,
                     onSearchCategoryChange = onSearchCategoryChange,
-                    onNavigateToReader = onNavigateToReader,
-                    onNavigateToShelf = onNavigateToShelf,
-                    onNavigateToAuthor = onNavigateToAuthor,
-                    onNavigateToTag = onNavigateToTag,
-                    onAuthorsHeaderClick = onAuthorsHeaderClick,
-                    onTagsHeaderClick = onTagsHeaderClick
+                    onNavigateToReader = { bookId -> navigateAfterCollapse { onNavigateToReader(bookId) } },
+                    onNavigateToShelf = { shelfId, name, count -> navigateAfterCollapse { onNavigateToShelf(shelfId, name, count) } },
+                    onNavigateToAuthor = { author -> navigateAfterCollapse { onNavigateToAuthor(author) } },
+                    onNavigateToTag = { tag -> navigateAfterCollapse { onNavigateToTag(tag) } },
+                    onAuthorsHeaderClick = { navigateAfterCollapse { onAuthorsHeaderClick() } },
+                    onTagsHeaderClick = { navigateAfterCollapse { onTagsHeaderClick() } }
                 )
             }
         }
@@ -437,15 +460,6 @@ private fun SearchResultsContent(
     onAuthorsHeaderClick: () -> Unit,
     onTagsHeaderClick: () -> Unit
 ) {
-    val focusManager = LocalFocusManager.current
-    val keyboardController = LocalSoftwareKeyboardController.current
-
-    val handleAction = { action: () -> Unit ->
-        focusManager.clearFocus()
-        keyboardController?.hide()
-        action()
-    }
-
     val isAll = searchCategory == SearchCategory.All
     val maxItemForAll = 8
 
@@ -463,7 +477,7 @@ private fun SearchResultsContent(
             item {
                 BooksSection(
                     books = booksToShow,
-                    onBookClick = { handleAction { onBookClick(it) } },
+                    onBookClick = { onBookClick(it) },
                     onHeaderClick = null
                 )
             }
@@ -476,7 +490,7 @@ private fun SearchResultsContent(
                     items = shelvesToShow,
                     icon = MaterialSymbols.Outlined.Folder,
                     nameSelector = { it.name },
-                    onClick = { handleAction { onShelfClick(it) } },
+                    onClick = { onShelfClick(it) },
                     onHeaderClick = null
                 )
             }
@@ -489,8 +503,8 @@ private fun SearchResultsContent(
                     items = authorsToShow,
                     icon = MaterialSymbols.Outlined.Person,
                     nameSelector = { it },
-                    onClick = { handleAction { onAuthorClick(it) } },
-                    onHeaderClick = { handleAction { onAuthorsHeaderClick() } })
+                    onClick = { onAuthorClick(it) },
+                    onHeaderClick = { onAuthorsHeaderClick() })
             }
         }
 
@@ -501,8 +515,8 @@ private fun SearchResultsContent(
                     items = tagsToShow,
                     icon = MaterialSymbols.Outlined.Label,
                     nameSelector = { it },
-                    onClick = { handleAction { onTagClick(it) } },
-                    onHeaderClick = { handleAction { onTagsHeaderClick() } })
+                    onClick = { onTagClick(it) },
+                    onHeaderClick = { onTagsHeaderClick() })
             }
         }
     }

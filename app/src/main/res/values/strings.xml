@@ -8,6 +8,7 @@
     <string name="action_delete">Delete</string>
     <string name="action_rename">Rename</string>
     <string name="action_edit">Edit</string>
+    <string name="action_read">Read</string>
     <string name="action_more">More</string>
     <string name="action_options">Options</string>
     <string name="action_search">Search</string>
@@ -228,6 +229,12 @@
     <string name="settings_theme_contrast">Theme Contrast</string>
     <string name="settings_language">Language</string>
     <string name="settings_backup">Backup</string>
+    <string name="settings_library_backup">Library Backup</string>
+    <string name="settings_dictionary_backup">Dictionary Backup</string>
+    <string name="settings_backup_preferences">Backup Preferences</string>
+    <string name="settings_backup_library">Backup Library</string>
+    <string name="settings_restore_library">Restore Library</string>
+    <string name="settings_restore_dictionaries">Restore Dictionaries</string>
     <string name="settings_auto_backup_freq">Auto Backup Frequency</string>
     <string name="settings_backup_location">Backup Location</string>
     <string name="settings_option_system">System</string>
@@ -251,6 +258,12 @@
     <string name="settings_backup_freq_2d">2 days</string>
     <string name="settings_backup_freq_3d">3 days</string>
     <string name="settings_backup_freq_1w">1 week</string>
+    <string name="settings_restore_defaults">Restore Defaults</string>
+    <string name="settings_restore_defaults_warning">Are you sure you want to restore settings to their default values? This will reset your theme, color palette, language, and auto-backup settings.\n\nReader settings (like font size, brightness, etc.) will not be changed.</string>
+    <string name="settings_restore_defaults_success">Settings restored to defaults</string>
+    <string name="reader_settings_restore_defaults">Restore Reader Defaults</string>
+    <string name="reader_settings_restore_defaults_warning">Are you sure you want to restore reader settings to their default values? This will reset all typography, layout, theme, and brightness preferences.\n\nGeneral settings (like theme mode, language, etc.) will not be changed.</string>
+    <string name="reader_settings_restore_defaults_success">Reader settings restored to defaults</string>
 
     <!-- Navigation Drawer -->
     <string name="nav_book_import">Book Import</string>

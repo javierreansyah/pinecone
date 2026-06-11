@@ -67,6 +67,8 @@ class LibraryRepository(
 
     suspend fun getBook(id: String): BookWithDetails? = bookDao.getById(id)
 
+    fun getBookFlow(id: String): Flow<BookWithDetails?> = bookDao.getByIdFlow(id)
+
     /**
      * Import a book from a content URI (file picker or intent).
      * Copies to internal storage, extracts metadata via Readium, stores in Room.

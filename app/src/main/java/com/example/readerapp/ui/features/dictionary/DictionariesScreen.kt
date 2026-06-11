@@ -18,8 +18,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.FloatingActionButtonMenu
-import androidx.compose.material3.FloatingActionButtonMenuItem
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -30,8 +29,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.ToggleFloatingActionButton
-import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -71,8 +68,6 @@ fun DictionariesScreen(
     val context = LocalContext.current
     val installedDictionaries by viewModel.installedDictionaries.collectAsStateWithLifecycle()
     val importState by viewModel.importState.collectAsStateWithLifecycle()
-    val restoreState by viewModel.restoreState.collectAsStateWithLifecycle()
-    val backupState by viewModel.backupState.collectAsStateWithLifecycle()
 
     val progressTarget = when (val state = importState) {
         is DictionaryState.Loading -> state.progress / 100f
@@ -102,36 +97,6 @@ fun DictionariesScreen(
         }
     }
 
-    val invalidFormatMsg = stringResource(R.string.dictionaries_invalid_format)
-    val restorePicker = rememberLauncherForActivityResult(contract = object :
-        ActivityResultContracts.OpenDocument() {
-        override fun createIntent(
-            context: android.content.Context, input: Array<String>
-        ): android.content.Intent {
-            val intent = super.createIntent(context, input)
-            val pineconeDir = java.io.File(
-                android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOCUMENTS),
-                "Pinecone"
-            )
-            if (!pineconeDir.exists()) pineconeDir.mkdirs()
-
-            val uri = android.provider.DocumentsContract.buildDocumentUri(
-                "com.android.externalstorage.documents", "primary:Documents/Pinecone"
-            )
-            intent.putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, uri)
-            return intent
-        }
-    }) { uri ->
-        if (uri != null) {
-            val name = androidx.documentfile.provider.DocumentFile.fromSingleUri(context, uri)?.name
-            if (name != null && name.endsWith(".pinedict")) {
-                viewModel.restoreDictionary(uri)
-            } else {
-                Toast.makeText(context, invalidFormatMsg, Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
     val installSuccessMsg = stringResource(R.string.dictionaries_install_success)
     val commonErrorMsg = stringResource(R.string.common_error)
     LaunchedEffect(importState) {
@@ -146,42 +111,10 @@ fun DictionariesScreen(
         }
     }
 
-    val commonRestoreErrorMsg = stringResource(R.string.common_restore_error)
-    val restoreSuccessMsg = stringResource(R.string.dictionaries_restore_success)
-    LaunchedEffect(restoreState) {
-        if (restoreState is DictionaryState.Success) {
-            Toast.makeText(context, restoreSuccessMsg, Toast.LENGTH_SHORT).show()
-            viewModel.resetRestoreState()
-        } else if (restoreState is DictionaryState.Error) {
-            val errorMsg = (restoreState as DictionaryState.Error).message
-            val formattedMsg = String.format(commonRestoreErrorMsg, errorMsg)
-            Toast.makeText(context, formattedMsg, Toast.LENGTH_LONG).show()
-            viewModel.resetRestoreState()
-        }
-    }
-
-    val commonBackupErrorMsg = stringResource(R.string.common_backup_error)
-    val backupSuccessMsg = stringResource(R.string.dictionaries_backup_success)
-    LaunchedEffect(backupState) {
-        if (backupState is DictionaryState.Success) {
-            Toast.makeText(context, backupSuccessMsg, Toast.LENGTH_SHORT).show()
-            viewModel.resetBackupState()
-        } else if (backupState is DictionaryState.Error) {
-            val errorMsg = (backupState as DictionaryState.Error).message
-            val formattedMsg = String.format(commonBackupErrorMsg, errorMsg)
-            Toast.makeText(context, formattedMsg, Toast.LENGTH_LONG).show()
-            viewModel.resetBackupState()
-        }
-    }
-
-    val backupNoDictMsg = stringResource(R.string.dictionaries_no_to_backup)
-
-    val uiState = remember(installedDictionaries, importState, restoreState, backupState) {
+    val uiState = remember(installedDictionaries, importState) {
         DictionariesUiState(
             installedDictionaries = installedDictionaries,
-            importState = importState,
-            restoreState = restoreState,
-            backupState = backupState
+            importState = importState
         )
     }
 
@@ -189,16 +122,6 @@ fun DictionariesScreen(
         uiState = uiState,
         animatedProgress = animatedProgress,
         onBack = onBack,
-        onBackupClick = {
-            if (installedDictionaries.isEmpty()) {
-                Toast.makeText(context, backupNoDictMsg, Toast.LENGTH_SHORT).show()
-            } else {
-                viewModel.backupDictionaries()
-            }
-        },
-        onRestoreClick = {
-            restorePicker.launch(arrayOf("application/octet-stream"))
-        },
         onImportClick = {
             filePicker.launch(arrayOf("application/zip"))
         },
@@ -217,8 +140,6 @@ private fun DictionariesContent(
     uiState: DictionariesUiState,
     animatedProgress: Float,
     onBack: () -> Unit,
-    onBackupClick: () -> Unit,
-    onRestoreClick: () -> Unit,
     onImportClick: () -> Unit,
     onRenameDictionary: (String, String) -> Unit,
     onDeleteDictionary: (String) -> Unit
@@ -228,8 +149,6 @@ private fun DictionariesContent(
     var selectedItemForMenu by remember { mutableStateOf<String?>(null) }
     var itemToDelete by remember { mutableStateOf<InstalledDictionary?>(null) }
     var itemToRename by remember { mutableStateOf<InstalledDictionary?>(null) }
-    var expanded by rememberSaveable { mutableStateOf(false) }
-    var showRestoreWarning by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -240,13 +159,14 @@ private fun DictionariesContent(
             )
         },
         floatingActionButton = {
-            DictionariesFloatingActionButton(
-                expanded = expanded,
-                onExpandedChange = { expanded = it },
-                onBackupClick = onBackupClick,
-                onRestoreClick = { showRestoreWarning = true },
-                onImportClick = onImportClick
-            )
+            FloatingActionButton(
+                onClick = onImportClick
+            ) {
+                Icon(
+                    MaterialSymbols.Outlined.Add,
+                    contentDescription = stringResource(R.string.dictionaries_import_stardict)
+                )
+            }
         }
     ) { padding ->
         Box(
@@ -255,12 +175,8 @@ private fun DictionariesContent(
                 .padding(padding)
         ) {
             val isLoadingImport = uiState.importState is DictionaryState.Loading
-            val isLoadingRestore = uiState.restoreState is DictionaryState.Loading
-            val isLoadingBackup = uiState.backupState is DictionaryState.Loading
             val totalCount = uiState.installedDictionaries.size +
-                    (if (isLoadingImport) 1 else 0) +
-                    (if (isLoadingRestore) 1 else 0) +
-                    (if (isLoadingBackup) 1 else 0)
+                    (if (isLoadingImport) 1 else 0)
 
             if (totalCount == 0) {
                 EmptyState(
@@ -287,15 +203,7 @@ private fun DictionariesContent(
                 )
             }
 
-            if (showRestoreWarning) {
-                RestoreWarningDialog(
-                    onDismissRequest = { showRestoreWarning = false },
-                    onConfirm = {
-                        showRestoreWarning = false
-                        onRestoreClick()
-                    }
-                )
-            }
+
 
             itemToDelete?.let { dict ->
                 DeleteDictionaryDialog(
@@ -356,65 +264,7 @@ private fun DictionariesTopAppBar(
     )
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun DictionariesFloatingActionButton(
-    expanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
-    onBackupClick: () -> Unit,
-    onRestoreClick: () -> Unit,
-    onImportClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    BackHandler(expanded) { onExpandedChange(false) }
 
-    FloatingActionButtonMenu(
-        expanded = expanded,
-        button = {
-            ToggleFloatingActionButton(
-                checked = expanded,
-                onCheckedChange = onExpandedChange
-            ) {
-                val imageVector by remember {
-                    derivedStateOf {
-                        if (checkedProgress > 0.5f) MaterialSymbols.Outlined.Close else MaterialSymbols.Outlined.Add
-                    }
-                }
-                Icon(
-                    painter = rememberVectorPainter(imageVector),
-                    contentDescription = stringResource(R.string.action_options),
-                    modifier = Modifier.animateIcon({ checkedProgress })
-                )
-            }
-        },
-        modifier = modifier
-    ) {
-        FloatingActionButtonMenuItem(
-            onClick = {
-                onExpandedChange(false)
-                onBackupClick()
-            },
-            icon = { Icon(MaterialSymbols.Outlined.Save, contentDescription = null) },
-            text = { Text(stringResource(R.string.dictionaries_backup)) }
-        )
-        FloatingActionButtonMenuItem(
-            onClick = {
-                onExpandedChange(false)
-                onRestoreClick()
-            },
-            icon = { Icon(MaterialSymbols.Outlined.History, contentDescription = null) },
-            text = { Text(stringResource(R.string.dictionaries_restore)) }
-        )
-        FloatingActionButtonMenuItem(
-            onClick = {
-                onExpandedChange(false)
-                onImportClick()
-            },
-            icon = { Icon(MaterialSymbols.Outlined.Download, contentDescription = null) },
-            text = { Text(stringResource(R.string.dictionaries_import_stardict)) }
-        )
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -474,33 +324,7 @@ private fun DictionariesList(
             )
         }
 
-        if (uiState.restoreState is DictionaryState.Loading) {
-            item(
-                key = "restore",
-                content = { Text(stringResource(R.string.dictionaries_restoring)) },
-                supportingContent = {
-                    LinearWavyProgressIndicator(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp)
-                    )
-                }
-            )
-        }
 
-        if (uiState.backupState is DictionaryState.Loading) {
-            item(
-                key = "backup",
-                content = { Text(stringResource(R.string.dictionaries_backing_up)) },
-                supportingContent = {
-                    LinearWavyProgressIndicator(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp)
-                    )
-                }
-            )
-        }
     }
 }
 
@@ -537,27 +361,7 @@ private fun DictionaryItemActions(
     }
 }
 
-@Composable
-private fun RestoreWarningDialog(
-    onDismissRequest: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = { Text(stringResource(R.string.dictionaries_restore)) },
-        text = { Text(stringResource(R.string.dictionaries_restore_warning)) },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(stringResource(R.string.action_proceed))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text(stringResource(R.string.action_cancel))
-            }
-        }
-    )
-}
+
 
 @Composable
 private fun DeleteDictionaryDialog(

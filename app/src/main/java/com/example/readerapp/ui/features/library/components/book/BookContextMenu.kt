@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,6 +28,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -87,11 +89,15 @@ fun BookContextMenu(
     var showCreateShelfDialog by remember { mutableStateOf(false) }
     var menuState by remember { mutableStateOf(MenuState.Main) }
     var newShelfName by remember { mutableStateOf("") }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     if (menuState == MenuState.Main) {
         val book = allBooks.find { it.id == bookId }
 
-        ModalBottomSheet(onDismissRequest = onDismiss) {
+        ModalBottomSheet(
+            onDismissRequest = onDismiss,
+            sheetState = sheetState
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -104,16 +110,10 @@ fun BookContextMenu(
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.Top
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .height(72.dp)
-                                .aspectRatio(2f / 3f)
-                                .clip(MaterialTheme.shapes.small)
-                        ) {
-                            CoverImage(
-                                book = book, modifier = Modifier.fillMaxSize()
-                            )
-                        }
+                        AutoWidthCoverImage(
+                            book = book,
+                            modifier = Modifier.heightIn(max = 80.dp)
+                        )
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
                             Text(

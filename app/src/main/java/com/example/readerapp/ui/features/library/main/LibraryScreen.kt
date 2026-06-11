@@ -201,7 +201,8 @@ fun LibraryScreen(
                         layoutMode = uiState.bookPreferences.layoutMode,
                         isImporting = uiState.isImporting,
                         onNavigateToReader = onNavigateToReader,
-                        onBookLongClick = { selectedBookContext = Pair(it, null) }
+                        onBookLongClick = { selectedBookContext = Pair(it, null) },
+                        scrollKey = Pair(uiState.bookPreferences.sortType, uiState.bookPreferences.isAscending)
                     )
                 }
 
@@ -217,7 +218,8 @@ fun LibraryScreen(
                             onBookLongClick = { bookId, shelfId ->
                                 selectedBookContext = Pair(bookId, shelfId)
                             },
-                            layoutMode = uiState.shelvesPreferences.layoutMode
+                            layoutMode = uiState.shelvesPreferences.layoutMode,
+                            scrollKey = Pair(uiState.shelvesPreferences.sortType, uiState.shelvesPreferences.isAscending)
                         )
                     }
                 }
@@ -301,7 +303,8 @@ private fun LibraryBooksTabContent(
     layoutMode: LayoutMode,
     isImporting: Boolean,
     onNavigateToReader: (String) -> Unit,
-    onBookLongClick: (String) -> Unit
+    onBookLongClick: (String) -> Unit,
+    scrollKey: Any? = null
 ) {
     Box(
         modifier = Modifier
@@ -322,7 +325,8 @@ private fun LibraryBooksTabContent(
                 books = books,
                 layoutMode = layoutMode,
                 onBookClick = onNavigateToReader,
-                onBookLongClick = onBookLongClick
+                onBookLongClick = onBookLongClick,
+                scrollKey = scrollKey
             )
         }
 

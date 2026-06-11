@@ -241,7 +241,7 @@ class ReaderPreferences(private val context: Context) {
             preventScreenTimeout = preferences[PREVENT_SCREEN_TIMEOUT] ?: false,
             alwaysShowStatusBar = preferences[ALWAYS_SHOW_STATUS_BAR] ?: false,
 
-            publisherStyles = preferences[PUBLISHER_STYLES] ?: false,
+            publisherStyles = preferences[PUBLISHER_STYLES] ?: true,
             fontSize = (preferences[FONT_SIZE] ?: 1.0).let { (it * 100.0).roundToInt() / 100.0 },
             fontFamily = preferences[FONT_FAMILY] ?: "Source Serif 4",
             textAlign = preferences[TEXT_ALIGN] ?: "Start",

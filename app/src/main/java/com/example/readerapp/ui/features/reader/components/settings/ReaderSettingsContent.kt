@@ -2,6 +2,8 @@ package com.example.readerapp.ui.features.reader.components.settings
 
 import android.annotation.SuppressLint
 import android.util.Log
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.background
@@ -68,6 +70,7 @@ import com.composables.icons.materialsymbols.outlined.Format_align_left
 import com.composables.icons.materialsymbols.outlined.Format_align_right
 import com.composables.icons.materialsymbols.outlined.Image
 import com.composables.icons.materialsymbols.outlined.Invert_colors
+import com.composables.icons.materialsymbols.outlined.Restart_alt
 import com.example.readerapp.R
 import com.example.readerapp.data.local.preferences.CustomReaderTheme
 import com.example.readerapp.data.local.preferences.ReaderSettings
@@ -82,6 +85,7 @@ import kotlin.math.roundToInt
 fun ReaderSettingsContent(
     settings: ReaderSettings, onSettingsChange: (ReaderSettings) -> Unit
 ) {
+    val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val locale = configuration.locales[0]
     val screenHeight = configuration.screenHeightDp.dp
@@ -96,6 +100,7 @@ fun ReaderSettingsContent(
 
     var showColorPicker by remember { mutableStateOf(false) }
     var themeToEdit by remember { mutableStateOf<CustomReaderTheme?>(null) }
+    var showRestoreDefaultWarning by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -147,7 +152,11 @@ fun ReaderSettingsContent(
                                 showColorPicker = true
                             })
 
-                        2 -> AdvancedTabContent(settings, onSettingsChange)
+                        2 -> AdvancedTabContent(
+                            settings = settings,
+                            onSettingsChange = onSettingsChange,
+                            onRestoreDefaultsClick = { showRestoreDefaultWarning = true }
+                        )
                     }
                 }
             }
@@ -202,6 +211,64 @@ fun ReaderSettingsContent(
                 showColorPicker = false
                 themeToEdit = null
             })
+    }
+
+    if (showRestoreDefaultWarning) {
+        AlertDialog(
+            onDismissRequest = { showRestoreDefaultWarning = false },
+            title = { Text(stringResource(R.string.reader_settings_restore_defaults)) },
+            text = { Text(stringResource(R.string.reader_settings_restore_defaults_warning)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showRestoreDefaultWarning = false
+                        val defaultReaderSettings = settings.copy(
+                            brightness = 0.5f,
+                            autoBrightness = true,
+                            forceOrientation = "Auto",
+                            preventScreenTimeout = false,
+                            alwaysShowStatusBar = false,
+                            publisherStyles = true,
+                            fontSize = 1.0,
+                            fontFamily = "Source Serif 4",
+                            textAlign = "Start",
+                            lineHeight = 1.5,
+                            paragraphSpacing = 0.0,
+                            paragraphIndent = 0.0,
+                            wordSpacing = 0.0,
+                            letterSpacing = 0.0,
+                            fontWeights = emptyMap(),
+                            hyphens = false,
+                            scroll = false,
+                            columnCount = "Auto",
+                            pageMargins = 1.0,
+                            imageFilter = "None",
+                            typeScale = 1.0,
+                            verticalMargin = 32.0,
+                            readingProgression = "LTR",
+                            textNormalization = false,
+                            readerThemePreset = "Auto",
+                            customBackgroundColor = "#FFFFFF",
+                            customTextColor = "#000000",
+                            customThemes = emptyList()
+                        )
+                        onSettingsChange(defaultReaderSettings)
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.reader_settings_restore_defaults_success),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                ) {
+                    Text(stringResource(R.string.action_proceed))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRestoreDefaultWarning = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
     }
 }
 
@@ -674,7 +741,9 @@ private fun LightingTabContent(
 
 @Composable
 private fun AdvancedTabContent(
-    settings: ReaderSettings, onSettingsChange: (ReaderSettings) -> Unit
+    settings: ReaderSettings,
+    onSettingsChange: (ReaderSettings) -> Unit,
+    onRestoreDefaultsClick: () -> Unit
 ) {
     var showDictionaryDialog by remember { mutableStateOf(false) }
     var showOrientationDialog by remember { mutableStateOf(false) }
@@ -706,11 +775,15 @@ private fun AdvancedTabContent(
                 onDismissRequest = { showDictionaryDialog = false },
                 title = { Text(stringResource(R.string.dictionaries_select)) },
                 text = {
-                    Column {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         if (settings.installedDictionaries.isEmpty()) {
-                            Text(stringResource(R.string.dictionaries_none_installed))
+                            Text(
+                                text = stringResource(R.string.dictionaries_none_installed),
+                                style = MaterialTheme.typography.bodyLarge
+                            )
                         } else {
                             settings.installedDictionaries.forEach { dict ->
+                                val isSelected = settings.activeDictionaryId == dict.id
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -718,16 +791,21 @@ private fun AdvancedTabContent(
                                         .clickable {
                                             onSettingsChange(settings.copy(activeDictionaryId = dict.id))
                                             showDictionaryDialog = false
-                                        }, verticalAlignment = Alignment.CenterVertically
+                                        },
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     RadioButton(
-                                        selected = settings.activeDictionaryId == dict.id,
+                                        selected = isSelected,
                                         onClick = {
                                             onSettingsChange(settings.copy(activeDictionaryId = dict.id))
                                             showDictionaryDialog = false
-                                        })
+                                        }
+                                    )
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text(dict.name)
+                                    Text(
+                                        text = dict.name,
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
                                 }
                             }
                         }
@@ -772,8 +850,9 @@ private fun AdvancedTabContent(
                 onDismissRequest = { showOrientationDialog = false },
                 title = { Text(stringResource(R.string.reader_settings_force_orientation)) },
                 text = {
-                    Column {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         orientationOptionsMap.forEach { (key, name) ->
+                            val isSelected = settings.forceOrientation == key
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -781,15 +860,21 @@ private fun AdvancedTabContent(
                                     .clickable {
                                         onSettingsChange(settings.copy(forceOrientation = key))
                                         showOrientationDialog = false
-                                    }, verticalAlignment = Alignment.CenterVertically
+                                    },
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
-                                    selected = settings.forceOrientation == key, onClick = {
+                                    selected = isSelected,
+                                    onClick = {
                                         onSettingsChange(settings.copy(forceOrientation = key))
                                         showOrientationDialog = false
-                                    })
+                                    }
+                                )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(name)
+                                Text(
+                                    text = name,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
                             }
                         }
                     }
@@ -832,6 +917,26 @@ private fun AdvancedTabContent(
             title = stringResource(R.string.reader_settings_always_status_bar),
             isChecked = settings.alwaysShowStatusBar,
             onCheckedChange = { onSettingsChange(settings.copy(alwaysShowStatusBar = it)) })
+
+        // Restore Defaults
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onRestoreDefaultsClick() }
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.reader_settings_restore_defaults),
+                style = MaterialTheme.typography.titleMedium
+            )
+            Icon(
+                imageVector = MaterialSymbols.Outlined.Restart_alt,
+                contentDescription = stringResource(R.string.reader_settings_restore_defaults),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 

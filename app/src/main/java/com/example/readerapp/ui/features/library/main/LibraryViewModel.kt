@@ -27,8 +27,13 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import coil.imageLoader
+import coil.request.ImageRequest
+import coil.size.Scale
+import java.io.File
 
 class LibraryViewModel(
     application: Application, private val screenKey: String = "library_books"
@@ -63,6 +68,28 @@ class LibraryViewModel(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
     )
+
+    init {
+        // Pre-warm Coil's memory cache with the first 8 book covers as soon as
+        // the ViewModel is created. By the time the user taps the search bar the
+        // bitmaps are already decoded and cached, so CoverImage renders instantly
+        // and nothing competes with the expansion animation on the UI thread.
+        viewModelScope.launch {
+            allBooks.take(1).collect { books ->
+                books.take(8).forEach { book ->
+                    if (book.coverPath != null) {
+                        val request = ImageRequest.Builder(application)
+                            .data(File(book.coverPath))
+                            .size(400, 600)
+                            .scale(Scale.FILL)
+                            .memoryCacheKey(book.coverPath)
+                            .build()
+                        application.imageLoader.enqueue(request)
+                    }
+                }
+            }
+        }
+    }
 
     fun getFilteredAndSortedBooks(baseFlow: Flow<List<Book>>): Flow<List<Book>> {
         return combine(baseFlow, _uiState) { books, state ->

@@ -29,8 +29,11 @@ import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -57,6 +60,15 @@ import com.example.readerapp.ui.theme.AppTheme
 import org.json.JSONObject
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Arrow_back
+import com.composables.icons.materialsymbols.outlined.Arrow_forward
+import com.composables.icons.materialsymbols.outlined.Book_3
+import com.composables.icons.materialsymbols.outlined.Close
+import com.composables.icons.materialsymbols.outlined.Content_copy
+import com.composables.icons.materialsymbols.outlined.Delete
+import com.composables.icons.materialsymbols.outlined.Edit
+import com.composables.icons.materialsymbols.outlined.Search
 
 @Composable
 fun ReaderOverlay(
@@ -92,6 +104,23 @@ fun ReaderOverlay(
     val currentLocator by viewModel.currentLocator.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
+
+    LaunchedEffect(bookState.isLoading) {
+        if (!bookState.isLoading && bookState.error == null) {
+            launch(Dispatchers.Default) {
+                // Pre-warm material icons used in the text selection control and bottom bar.
+                // This prevents main-thread jank when they are first rendered.
+                MaterialSymbols.Outlined.Content_copy
+                MaterialSymbols.Outlined.Search
+                MaterialSymbols.Outlined.Edit
+                MaterialSymbols.Outlined.Book_3
+                MaterialSymbols.Outlined.Delete
+                MaterialSymbols.Outlined.Arrow_back
+                MaterialSymbols.Outlined.Arrow_forward
+                MaterialSymbols.Outlined.Close
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Loading state

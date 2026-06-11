@@ -5,17 +5,35 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.readerapp.ReaderApplication
 import com.example.readerapp.data.local.database.library.ShelfWithCovers
+import com.example.readerapp.data.local.preferences.LibraryPreferencesManager
 import com.example.readerapp.data.model.Book
+import com.example.readerapp.ui.features.library.LayoutMode
+import com.example.readerapp.ui.features.library.SortType
+import com.example.readerapp.ui.features.library.StatusFilter
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ArchiveViewModel(application: Application) : AndroidViewModel(application) {
     private val bookRepository = (application as ReaderApplication).libraryRepository
+    private val prefsManager = LibraryPreferencesManager(application)
+    private val screenKey = "archive"
+
+    private val _uiState = MutableStateFlow(
+        ArchiveUiState(
+            bookPreferences = prefsManager.getPreferences(
+                screenKey = screenKey, defaultSort = SortType.Added, defaultAscending = false
+            )
+        )
+    )
+    val uiState: StateFlow<ArchiveUiState> = _uiState.asStateFlow()
 
     private val booksFlow: Flow<List<Book>> =
         bookRepository.getArchivedBooks().map { entities -> entities.map { Book.fromEntity(it) } }
@@ -26,7 +44,40 @@ class ArchiveViewModel(application: Application) : AndroidViewModel(application)
         initialValue = emptyList()
     )
 
-    val archivedBooks: StateFlow<List<Book>> = allBooks
+    val archivedBooks: StateFlow<List<Book>> = combine(booksFlow, _uiState) { books, state ->
+        books.filter { book ->
+            val status = when {
+                book.isRead -> StatusFilter.Finished
+                book.progress <= 0.0 -> StatusFilter.NotStarted
+                else -> StatusFilter.Reading
+            }
+            state.bookPreferences.selectedStatus.contains(status)
+        }.let { filtered ->
+            val baseComparator = when (state.bookPreferences.sortType) {
+                SortType.Title -> compareBy { it.title.lowercase() }
+                SortType.Author -> compareBy { it.authors.firstOrNull()?.lowercase() ?: "" }
+                SortType.LastRead -> compareBy { it.lastOpened ?: 0L }
+                SortType.Added -> compareBy { it.addedDate }
+                SortType.Progress -> compareBy { it.progress }
+                SortType.Custom -> {
+                    val indexMap = books.withIndex().associate { it.value.id to it.index }
+                    compareBy<Book> { indexMap[it.id] ?: 0 }
+                }
+            }
+
+            val finalComparator = if (state.bookPreferences.sortType == SortType.Title) {
+                if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
+            } else if (state.bookPreferences.sortType == SortType.Custom) {
+                if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
+            } else {
+                val mainComp =
+                    if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
+                mainComp.thenBy { it.title.lowercase() }
+            }
+
+            filtered.sortedWith(finalComparator)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val shelves: StateFlow<List<ShelfWithCovers>> = combine(
         bookRepository.getAllShelvesWithBooks(), bookRepository.getAllShelfBookCrossRefs()
@@ -40,6 +91,40 @@ class ArchiveViewModel(application: Application) : AndroidViewModel(application)
             shelfWithCovers.copy(books = sortedBooks)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun onLayoutModeChange(mode: LayoutMode) {
+        _uiState.update { state ->
+            val prefs = state.bookPreferences.copy(layoutMode = mode)
+            prefsManager.savePreferences(screenKey, prefs)
+            state.copy(bookPreferences = prefs)
+        }
+    }
+
+    fun onSortTypeChange(sortType: SortType) {
+        _uiState.update { state ->
+            val currentPrefs = state.bookPreferences
+            val newPrefs = if (currentPrefs.sortType == sortType) {
+                currentPrefs.copy(isAscending = !currentPrefs.isAscending)
+            } else {
+                val initialAscending = sortType != SortType.LastRead
+                currentPrefs.copy(sortType = sortType, isAscending = initialAscending)
+            }
+            prefsManager.savePreferences(screenKey, newPrefs)
+            state.copy(bookPreferences = newPrefs)
+        }
+    }
+
+    fun toggleStatusFilter(status: StatusFilter) {
+        _uiState.update { state ->
+            val currentPrefs = state.bookPreferences
+            val updatedStatus = currentPrefs.selectedStatus.toMutableSet().apply {
+                if (contains(status)) remove(status) else add(status)
+            }
+            val newPrefs = currentPrefs.copy(selectedStatus = updatedStatus)
+            prefsManager.savePreferences(screenKey, newPrefs)
+            state.copy(bookPreferences = newPrefs)
+        }
+    }
 
     fun deleteBook(bookId: String) {
         viewModelScope.launch {

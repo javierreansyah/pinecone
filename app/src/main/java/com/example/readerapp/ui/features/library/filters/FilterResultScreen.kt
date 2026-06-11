@@ -183,7 +183,8 @@ private fun FilterResultContent(
             layoutMode = uiState.bookPreferences.layoutMode,
             innerPadding = innerPadding,
             onNavigateToReader = onNavigateToReader,
-            onBookLongClick = { selectedBookContext = it to null }
+            onBookLongClick = { selectedBookContext = it to null },
+            scrollKey = Triple(uiState.bookPreferences.sortType, uiState.bookPreferences.isAscending, uiState.bookPreferences.selectedStatus)
         )
 
         FilterResultDialogsAndSheets(
@@ -296,7 +297,8 @@ private fun FilterResultBookContent(
     innerPadding: PaddingValues,
     onNavigateToReader: (String) -> Unit,
     onBookLongClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    scrollKey: Any? = null
 ) {
     Box(
         modifier = modifier
@@ -314,7 +316,8 @@ private fun FilterResultBookContent(
                 books = books,
                 layoutMode = layoutMode,
                 onBookClick = onNavigateToReader,
-                onBookLongClick = onBookLongClick
+                onBookLongClick = onBookLongClick,
+                scrollKey = scrollKey
             )
         }
     }

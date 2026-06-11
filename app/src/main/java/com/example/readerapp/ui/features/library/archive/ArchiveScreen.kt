@@ -8,6 +8,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
@@ -31,10 +32,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Book
+import com.composables.icons.materialsymbols.outlined.Tune
 import com.example.readerapp.R
 import com.example.readerapp.ui.components.EmptyState
+import com.example.readerapp.ui.features.library.components.FilterResultBottomSheet
 import com.example.readerapp.ui.features.library.components.book.BookContextMenu
-import com.example.readerapp.ui.features.library.components.book.BookGrid
+import com.example.readerapp.ui.features.library.components.book.BookCollection
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -54,10 +57,12 @@ fun ArchiveScreen(
         }
     })
 
+    val uiState by viewModel.uiState.collectAsState()
     val archivedBooks by viewModel.archivedBooks.collectAsState()
     val shelves by viewModel.shelves.collectAsState()
     val allBooks by viewModel.allBooks.collectAsState()
     var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
+    var showFilterSheet by remember { mutableStateOf(false) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -74,6 +79,17 @@ fun ArchiveScreen(
                         Icon(
                             MaterialSymbols.Outlined.Arrow_back,
                             contentDescription = stringResource(R.string.action_back)
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(
+                        shapes = IconButtonDefaults.shapes(),
+                        onClick = { showFilterSheet = true }
+                    ) {
+                        Icon(
+                            MaterialSymbols.Outlined.Tune,
+                            contentDescription = stringResource(R.string.action_filter)
                         )
                     }
                 },
@@ -98,10 +114,13 @@ fun ArchiveScreen(
                         .padding(16.dp)
                 )
             } else {
-                BookGrid(
+                BookCollection(
                     books = archivedBooks,
+                    layoutMode = uiState.bookPreferences.layoutMode,
                     onBookClick = onNavigateToReader,
-                    onBookLongClick = { selectedBookForMenu = it })
+                    onBookLongClick = { selectedBookForMenu = it },
+                    scrollKey = Triple(uiState.bookPreferences.sortType, uiState.bookPreferences.isAscending, uiState.bookPreferences.selectedStatus)
+                )
             }
         }
 
@@ -119,6 +138,16 @@ fun ArchiveScreen(
                 onDeleteBook = { viewModel.deleteBook(bookId) },
                 onCreateShelfAndAdd = { name -> viewModel.createShelfAndAddBook(name, bookId) },
                 onDismiss = { selectedBookForMenu = null })
+        }
+
+        if (showFilterSheet) {
+            FilterResultBottomSheet(
+                preferences = uiState.bookPreferences,
+                onLayoutModeChange = { viewModel.onLayoutModeChange(it) },
+                onSortTypeChange = { viewModel.onSortTypeChange(it) },
+                onStatusToggle = { viewModel.toggleStatusFilter(it) },
+                onDismiss = { showFilterSheet = false }
+            )
         }
     }
 }

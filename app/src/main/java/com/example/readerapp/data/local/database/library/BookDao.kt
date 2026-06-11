@@ -54,6 +54,10 @@ interface BookDao {
     @Query("SELECT * FROM books WHERE id = :id")
     suspend fun getById(id: String): BookWithDetails?
 
+    @Transaction
+    @Query("SELECT * FROM books WHERE id = :id")
+    fun getByIdFlow(id: String): Flow<BookWithDetails?>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(book: BookEntity)
 
