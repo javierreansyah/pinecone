@@ -70,7 +70,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.whenResumed
+import androidx.lifecycle.withResumed
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Chevron_forward
@@ -307,7 +307,7 @@ private fun HandleSearchBarStateChanges(
             // Only request focus/keyboard if we transitioned from Collapsed to Expanded (user clicked search)
             if (previousValue == SearchBarValue.Collapsed) {
                 onRestoringChange(false) // Reset flag when explicitly expanding
-                lifecycleOwner.lifecycle.whenResumed {
+                lifecycleOwner.lifecycle.withResumed {
                     focusRequester.requestFocus()
                     keyboardController?.show()
                 }

@@ -167,7 +167,7 @@ class ReaderViewModel(
                     val bmLocator = fromJSON(JSONObject(bookmark.locatorJson))
                     // Check for similar position (Readium standard comparison)
                     (bmLocator?.href == locator.href) && (bmLocator.locations.totalProgression == locator.locations.totalProgression)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     false
                 }
             }
@@ -396,7 +396,7 @@ class ReaderViewModel(
                 try {
                     val bmLocator = fromJSON(JSONObject(bookmark.locatorJson))
                     (bmLocator?.href == locator.href) && (bmLocator.locations.totalProgression == locator.locations.totalProgression)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     false
                 }
             }
