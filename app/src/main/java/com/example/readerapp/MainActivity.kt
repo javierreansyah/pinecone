@@ -22,7 +22,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var viewModel: MainViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
 
         val app = application as ReaderApplication
@@ -34,6 +34,10 @@ class MainActivity : AppCompatActivity() {
                 readerPreferences = app.readerPreferences
             )
         )[MainViewModel::class.java]
+
+        // Keep splash screen visible until the real settings are loaded from DataStore,
+        // preventing a flicker from default theme (Dynamic) to the user's actual theme.
+        splashScreen.setKeepOnScreenCondition { !viewModel.isReady.value }
 
         handleIntent(intent)
 
