@@ -10,7 +10,7 @@
     <string name="action_edit">Edit</string>
     <string name="action_read">Read</string>
     <string name="action_more">More</string>
-    <string name="action_options">Options</string>
+
     <string name="action_search">Search</string>
     <string name="action_clear">Clear</string>
     <string name="action_proceed">Proceed</string>
@@ -19,7 +19,7 @@
     <string name="action_create">Create</string>
     <string name="action_copy">Copy</string>
     <string name="action_define">Define</string>
-    <string name="action_share">Share</string>
+
     <string name="action_close">Close</string>
     <string name="action_menu">Menu</string>
     <string name="action_filter">Filter</string>
@@ -58,10 +58,7 @@
         <item quantity="one">%d book</item>
         <item quantity="other">%d books</item>
     </plurals>
-    <plurals name="library_item_count">
-        <item quantity="one">%1$d %2$s</item>
-        <item quantity="other">%1$d %2$ss</item>
-    </plurals>
+
     <string name="library_warning_merge">Warning: A matching item already exists. Saving will merge this item and its books into the existing one.</string>
     <string name="library_importing">Importing…</string>
     <string name="library_empty_items">No items found.</string>
@@ -228,7 +225,7 @@
     <string name="settings_color_palette">Color Palette</string>
     <string name="settings_theme_contrast">Theme Contrast</string>
     <string name="settings_language">Language</string>
-    <string name="settings_backup">Backup</string>
+
     <string name="settings_library_backup">Library Backup</string>
     <string name="settings_dictionary_backup">Dictionary Backup</string>
     <string name="settings_backup_preferences">Backup Preferences</string>
@@ -245,8 +242,7 @@
     <string name="settings_option_high">High</string>
     <string name="settings_option_never">Never</string>
     <string name="settings_option_dynamic">Dynamic</string>
-    <string name="settings_theme_pine">Pine</string>
-    <string name="settings_theme_neutral">Neutral</string>
+
     <string name="chooseColorScheme">Choose Color Scheme</string>
     <string name="ok">OK</string>
     <string name="settings_option_selected">Selected</string>
@@ -267,11 +263,10 @@
 
     <!-- Navigation Drawer -->
     <string name="nav_book_import">Book Import</string>
-    <string name="nav_local_backup">Local Backup</string>
+
     <string name="nav_import_files">Import Files</string>
     <string name="nav_scan_folder">Scan Folder</string>
-    <string name="nav_backup_now">Backup Now</string>
-    <string name="nav_backup_not_setup">Backup not setup</string>
+
     <string name="nav_setup_now">Setup now</string>
     <string name="nav_starting_backup">Starting backup…</string>
     <string name="nav_backup_success">Backup successful</string>

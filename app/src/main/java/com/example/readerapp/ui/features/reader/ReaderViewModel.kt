@@ -229,7 +229,7 @@ class ReaderViewModel(
         )
     }.stateIn(
         viewModelScope,
-        SharingStarted.WhileSubscribed(5000),
+        WhileSubscribed(5000),
         // Dark-aware initial value: prevents the Compose overlay and window background
         // from briefly flashing white while DataStore emits the real settings.
         run {

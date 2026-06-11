@@ -129,7 +129,6 @@ fun LibrarySearchTopBar(
         searchBarState = searchBarState,
         textFieldState = textFieldState,
         focusRequester = focusRequester,
-        isRestoring = isRestoring,
         onRestoringChange = { isRestoring = it }
     )
 
@@ -225,9 +224,29 @@ fun LibrarySearchTopBar(
                     searchCategory = searchCategory,
                     searchResults = searchResults,
                     onSearchCategoryChange = onSearchCategoryChange,
-                    onNavigateToReader = { bookId -> navigateAfterCollapse { onNavigateToReader(bookId) } },
-                    onNavigateToShelf = { shelfId, name, count -> navigateAfterCollapse { onNavigateToShelf(shelfId, name, count) } },
-                    onNavigateToAuthor = { author -> navigateAfterCollapse { onNavigateToAuthor(author) } },
+                    onNavigateToReader = { bookId ->
+                        navigateAfterCollapse {
+                            onNavigateToReader(
+                                bookId
+                            )
+                        }
+                    },
+                    onNavigateToShelf = { shelfId, name, count ->
+                        navigateAfterCollapse {
+                            onNavigateToShelf(
+                                shelfId,
+                                name,
+                                count
+                            )
+                        }
+                    },
+                    onNavigateToAuthor = { author ->
+                        navigateAfterCollapse {
+                            onNavigateToAuthor(
+                                author
+                            )
+                        }
+                    },
                     onNavigateToTag = { tag -> navigateAfterCollapse { onNavigateToTag(tag) } },
                     onAuthorsHeaderClick = { navigateAfterCollapse { onAuthorsHeaderClick() } },
                     onTagsHeaderClick = { navigateAfterCollapse { onTagsHeaderClick() } }
@@ -243,7 +262,6 @@ private fun HandleSearchBarStateChanges(
     searchBarState: SearchBarState,
     textFieldState: TextFieldState,
     focusRequester: FocusRequester,
-    isRestoring: Boolean,
     onRestoringChange: (Boolean) -> Unit
 ) {
     val focusManager = LocalFocusManager.current
@@ -477,8 +495,7 @@ private fun SearchResultsContent(
             item {
                 BooksSection(
                     books = booksToShow,
-                    onBookClick = { onBookClick(it) },
-                    onHeaderClick = null
+                    onBookClick = { onBookClick(it) }
                 )
             }
         }
@@ -524,11 +541,11 @@ private fun SearchResultsContent(
 
 @Composable
 private fun BooksSection(
-    books: List<Book>, onBookClick: (Book) -> Unit, onHeaderClick: (() -> Unit)? = null
+    books: List<Book>, onBookClick: (Book) -> Unit
 ) {
     SectionHeader(
         title = stringResource(R.string.library_tab_books),
-        onHeaderClick = onHeaderClick,
+        onHeaderClick = null,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
     )
     LazyRow(

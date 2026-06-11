@@ -4,34 +4,21 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Environment
 import android.provider.DocumentsContract
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DrawerState
-import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.example.readerapp.R
 import kotlinx.coroutines.launch
-import java.io.File
 
 @Composable
 fun MainDrawerWrapper(
@@ -42,12 +29,6 @@ fun MainDrawerWrapper(
     content: @Composable () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    val settings by viewModel.settings.collectAsState()
-    val darkTheme = when (settings.themeMode) {
-        "Light" -> false
-        "Dark" -> true
-        else -> isSystemInDarkTheme()
-    }
 
     BackHandler(enabled = drawerState.isOpen) {
         scope.launch { drawerState.close() }
@@ -120,8 +101,6 @@ fun MainDrawerWrapper(
         drawerContent = {
             AppDrawer(
                 drawerState = drawerState,
-                settings = settings,
-                darkTheme = darkTheme,
                 onNavigateToArchives = {
                     navController.navigate(Screen.Archives.route) {
                         popUpTo(Screen.Library.route)

@@ -112,7 +112,7 @@ class FilterResultViewModel(
         }
     }
 
-    fun onLayoutModeChange(mode: LayoutMode, isShelvesTab: Boolean = false) {
+    fun onLayoutModeChange(mode: LayoutMode) {
         _uiState.update { state ->
             val prefs = state.bookPreferences.copy(layoutMode = mode)
             prefsManager.savePreferences(screenKey, prefs)
@@ -120,7 +120,7 @@ class FilterResultViewModel(
         }
     }
 
-    fun onSortTypeChange(sortType: SortType, isShelvesTab: Boolean = false) {
+    fun onSortTypeChange(sortType: SortType) {
         _uiState.update { state ->
             val currentPrefs = state.bookPreferences
             val newPrefs = if (currentPrefs.sortType == sortType) {
@@ -134,7 +134,7 @@ class FilterResultViewModel(
         }
     }
 
-    fun toggleStatusFilter(status: StatusFilter, isShelvesTab: Boolean = false) {
+    fun toggleStatusFilter(status: StatusFilter) {
         _uiState.update { state ->
             val currentPrefs = state.bookPreferences
             val updatedStatus = currentPrefs.selectedStatus.toMutableSet().apply {

@@ -38,7 +38,6 @@ class DictionariesViewModel(
     }
 
 
-
     fun deleteDictionary(id: String) {
         viewModelScope.launch {
             repository.deleteDictionary(id)

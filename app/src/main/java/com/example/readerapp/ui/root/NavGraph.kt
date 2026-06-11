@@ -2,6 +2,11 @@ package com.example.readerapp.ui.root
 
 import android.app.Activity
 import android.content.Intent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.MaterialTheme
@@ -15,11 +20,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import com.example.readerapp.ReaderApplication
@@ -52,16 +52,28 @@ fun NavGraph(
         startDestination = Screen.Library.route,
         modifier = modifier.background(MaterialTheme.colorScheme.background),
         enterTransition = {
-            fadeIn(animationSpec = tween(300)) + scaleIn(initialScale = 0.9f, animationSpec = tween(300))
+            fadeIn(animationSpec = tween(300)) + scaleIn(
+                initialScale = 0.9f,
+                animationSpec = tween(300)
+            )
         },
         exitTransition = {
-            fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.9f, animationSpec = tween(300))
+            fadeOut(animationSpec = tween(300)) + scaleOut(
+                targetScale = 0.9f,
+                animationSpec = tween(300)
+            )
         },
         popEnterTransition = {
-            fadeIn(animationSpec = tween(300)) + scaleIn(initialScale = 0.9f, animationSpec = tween(300))
+            fadeIn(animationSpec = tween(300)) + scaleIn(
+                initialScale = 0.9f,
+                animationSpec = tween(300)
+            )
         },
         popExitTransition = {
-            fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.9f, animationSpec = tween(300))
+            fadeOut(animationSpec = tween(300)) + scaleOut(
+                targetScale = 0.9f,
+                animationSpec = tween(300)
+            )
         }
     ) {
         composable(Screen.Library.route) {

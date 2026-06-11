@@ -32,8 +32,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,6 +40,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Arrow_back
+import com.composables.icons.materialsymbols.outlined.Arrow_forward
+import com.composables.icons.materialsymbols.outlined.Book_3
+import com.composables.icons.materialsymbols.outlined.Close
+import com.composables.icons.materialsymbols.outlined.Content_copy
+import com.composables.icons.materialsymbols.outlined.Delete
+import com.composables.icons.materialsymbols.outlined.Edit
+import com.composables.icons.materialsymbols.outlined.Search
 import com.example.readerapp.R
 import com.example.readerapp.data.local.database.dictionary.DictionaryEntry
 import com.example.readerapp.data.local.database.library.BookmarkEntity
@@ -57,18 +64,11 @@ import com.example.readerapp.ui.features.reader.components.dictionary.Definition
 import com.example.readerapp.ui.features.reader.components.dictionary.DictionaryFormatter
 import com.example.readerapp.ui.features.reader.components.settings.ReaderSettingsContent
 import com.example.readerapp.ui.theme.AppTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
-import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Arrow_back
-import com.composables.icons.materialsymbols.outlined.Arrow_forward
-import com.composables.icons.materialsymbols.outlined.Book_3
-import com.composables.icons.materialsymbols.outlined.Close
-import com.composables.icons.materialsymbols.outlined.Content_copy
-import com.composables.icons.materialsymbols.outlined.Delete
-import com.composables.icons.materialsymbols.outlined.Edit
-import com.composables.icons.materialsymbols.outlined.Search
 
 @Composable
 fun ReaderOverlay(

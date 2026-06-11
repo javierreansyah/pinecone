@@ -202,7 +202,10 @@ fun LibraryScreen(
                         isImporting = uiState.isImporting,
                         onNavigateToReader = onNavigateToReader,
                         onBookLongClick = { selectedBookContext = Pair(it, null) },
-                        scrollKey = Pair(uiState.bookPreferences.sortType, uiState.bookPreferences.isAscending)
+                        scrollKey = Pair(
+                            uiState.bookPreferences.sortType,
+                            uiState.bookPreferences.isAscending
+                        )
                     )
                 }
 
@@ -219,7 +222,10 @@ fun LibraryScreen(
                                 selectedBookContext = Pair(bookId, shelfId)
                             },
                             layoutMode = uiState.shelvesPreferences.layoutMode,
-                            scrollKey = Pair(uiState.shelvesPreferences.sortType, uiState.shelvesPreferences.isAscending)
+                            scrollKey = Pair(
+                                uiState.shelvesPreferences.sortType,
+                                uiState.shelvesPreferences.isAscending
+                            )
                         )
                     }
                 }

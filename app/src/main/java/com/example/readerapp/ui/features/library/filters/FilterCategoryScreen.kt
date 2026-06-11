@@ -294,7 +294,6 @@ private fun AllFilterItemsList(
                 },
                 trailingContent = {
                     AllFilterItemsItemActions(
-                        item = item,
                         isMenuExpanded = selectedItemForMenu == item.first,
                         onMoreClick = { onMoreClick(item.first) },
                         onMenuDismiss = onMenuDismiss,
@@ -309,7 +308,6 @@ private fun AllFilterItemsList(
 
 @Composable
 private fun AllFilterItemsItemActions(
-    item: Pair<String, Int>,
     isMenuExpanded: Boolean,
     onMoreClick: () -> Unit,
     onMenuDismiss: () -> Unit,
