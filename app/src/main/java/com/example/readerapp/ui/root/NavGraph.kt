@@ -7,21 +7,24 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.Lifecycle
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
-import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.navArgument
-import androidx.navigation.navDeepLink
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.ui.NavDisplay
 import com.example.readerapp.ReaderApplication
 import com.example.readerapp.ui.features.dictionary.DictionariesScreen
 import com.example.readerapp.ui.features.dictionary.DictionariesViewModel
@@ -38,7 +41,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun NavGraph(
-    navController: NavHostController,
+    backStack: MutableList<NavKey>,
     drawerState: DrawerState,
     modifier: Modifier = Modifier
 ) {
@@ -46,235 +49,234 @@ fun NavGraph(
     val scope = rememberCoroutineScope()
     val app = context.applicationContext as ReaderApplication
     val readerPreferences = app.readerPreferences
+    val density = LocalDensity.current
 
-    NavHost(
-        navController = navController,
-        startDestination = Screen.Library.route,
-        modifier = modifier.background(MaterialTheme.colorScheme.background),
-        enterTransition = {
-            fadeIn(animationSpec = tween(300)) + scaleIn(
-                initialScale = 0.9f,
-                animationSpec = tween(300)
-            )
-        },
-        exitTransition = {
-            fadeOut(animationSpec = tween(300)) + scaleOut(
-                targetScale = 0.9f,
-                animationSpec = tween(300)
-            )
-        },
-        popEnterTransition = {
-            fadeIn(animationSpec = tween(300)) + scaleIn(
-                initialScale = 0.9f,
-                animationSpec = tween(300)
-            )
-        },
-        popExitTransition = {
-            fadeOut(animationSpec = tween(300)) + scaleOut(
-                targetScale = 0.9f,
-                animationSpec = tween(300)
-            )
-        }
-    ) {
-        composable(Screen.Library.route) {
-            LibraryRoute(
-                onNavigateToReader = { bookId ->
-                    val intent = Intent(context, ReaderActivity::class.java).apply {
-                        putExtra(ReaderActivity.EXTRA_BOOK_ID, bookId)
-                    }
-                    context.startActivity(intent)
-                },
-                onOpenDrawerClick = {
-                    val isResumed = navController.currentBackStackEntry
-                        ?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED) == true
-                    if (isResumed) {
-                        scope.launch { drawerState.open() }
-                    }
-                },
-                onNavigateToShelf = { shelfId, name, count ->
-                    navController.navigate(Screen.ShelfDetail.createRoute(shelfId, name, count))
-                },
-                onNavigateToAuthor = { authorName ->
-                    navController.navigate(Screen.AuthorDetail.createRoute(authorName))
-                },
-                onNavigateToTag = { tagName ->
-                    navController.navigate(Screen.TagDetail.createRoute(tagName))
-                },
-                onNavigateToAllAuthors = {
-                    navController.navigate(Screen.AllAuthors.route)
-                },
-                onNavigateToAllTags = {
-                    navController.navigate(Screen.AllTags.route)
-                },
-                onNavigateToBookInfo = { bookId ->
-                    navController.navigate(Screen.BookInfo.createRoute(bookId))
-                }
-            )
-        }
-        composable(Screen.Settings.route) {
-            SettingsScreen(
-                onNavigateBack = {
-                    navController.popBackStack(Screen.Library.route, inclusive = false)
-                }
-            )
-        }
-        composable(Screen.Archives.route) {
-            ArchiveScreen(
-                onNavigateBack = {
-                    navController.popBackStack(Screen.Library.route, inclusive = false)
-                },
-                onNavigateToReader = { bookId ->
-                    val intent = Intent(context, ReaderActivity::class.java).apply {
-                        putExtra(ReaderActivity.EXTRA_BOOK_ID, bookId)
-                    }
-                    context.startActivity(intent)
-                },
-                onNavigateToBookInfo = { bookId ->
-                    navController.navigate(Screen.BookInfo.createRoute(bookId))
-                }
-            )
-        }
-        composable(
-            route = Screen.ShelfDetail.route,
-            arguments = listOf(
-                navArgument("shelfId") { type = NavType.StringType },
-                navArgument("name") { type = NavType.StringType; defaultValue = "" },
-                navArgument("count") { type = NavType.IntType; defaultValue = 0 }
-            )
-        ) { backStackEntry ->
-            val shelfId = backStackEntry.arguments?.getString("shelfId") ?: return@composable
-            val name = backStackEntry.arguments?.getString("name") ?: ""
-            val count = backStackEntry.arguments?.getInt("count") ?: 0
-            ShelfDetailScreen(
-                shelfId = shelfId,
-                initialShelfName = name,
-                initialBookCount = count,
-                onNavigateBack = {
-                    if (navController.previousBackStackEntry != null) navController.popBackStack()
-                },
-                onNavigateToReader = { bookId ->
-                    val intent = Intent(context, ReaderActivity::class.java).apply {
-                        putExtra(ReaderActivity.EXTRA_BOOK_ID, bookId)
-                    }
-                    context.startActivity(intent)
-                },
-                onNavigateToBookInfo = { bookId ->
-                    navController.navigate(Screen.BookInfo.createRoute(bookId))
-                }
-            )
-        }
-        composable(Screen.AuthorDetail.route) { backStackEntry ->
-            val authorName = backStackEntry.arguments?.getString("authorName") ?: return@composable
-            FilterResultScreen(
-                filterType = "author",
-                filterValue = authorName,
-                onNavigateBack = {
-                    if (navController.previousBackStackEntry != null) navController.popBackStack()
-                },
-                onNavigateToReader = { bookId ->
-                    val intent = Intent(context, ReaderActivity::class.java).apply {
-                        putExtra(ReaderActivity.EXTRA_BOOK_ID, bookId)
-                    }
-                    context.startActivity(intent)
-                },
-                onNavigateToMerged = { newName ->
-                    navController.popBackStack()
-                    navController.navigate(Screen.AuthorDetail.createRoute(newName))
-                },
-                onNavigateToBookInfo = { bookId ->
-                    navController.navigate(Screen.BookInfo.createRoute(bookId))
-                }
-            )
-        }
-        composable(Screen.TagDetail.route) { backStackEntry ->
-            val tagName = backStackEntry.arguments?.getString("tagName") ?: return@composable
-            FilterResultScreen(
-                filterType = "tag",
-                filterValue = tagName,
-                onNavigateBack = {
-                    if (navController.previousBackStackEntry != null) navController.popBackStack()
-                },
-                onNavigateToReader = { bookId ->
-                    val intent = Intent(context, ReaderActivity::class.java).apply {
-                        putExtra(ReaderActivity.EXTRA_BOOK_ID, bookId)
-                    }
-                    context.startActivity(intent)
-                },
-                onNavigateToMerged = { newName ->
-                    navController.popBackStack()
-                    navController.navigate(Screen.TagDetail.createRoute(newName))
-                },
-                onNavigateToBookInfo = { bookId ->
-                    navController.navigate(Screen.BookInfo.createRoute(bookId))
-                }
-            )
-        }
-        composable(Screen.AllAuthors.route) {
-            AllFilterItemsScreen(
-                filterType = "author",
-                onNavigateBack = {
-                    if (navController.previousBackStackEntry != null) navController.popBackStack()
-                },
-                onNavigateToDetail = { authorName ->
-                    navController.navigate(Screen.AuthorDetail.createRoute(authorName))
-                }
-            )
-        }
-        composable(Screen.AllTags.route) {
-            AllFilterItemsScreen(
-                filterType = "tag",
-                onNavigateBack = {
-                    if (navController.previousBackStackEntry != null) navController.popBackStack()
-                },
-                onNavigateToDetail = { tagName ->
-                    navController.navigate(Screen.TagDetail.createRoute(tagName))
-                }
-            )
-        }
-        composable(Screen.Dictionaries.route) {
-            val factory = DictionariesViewModel.Factory(
-                app.dictionaryRepository,
-                app.dictionaryImportManager,
-                readerPreferences
-            )
-            val dictViewModel: DictionariesViewModel = viewModel(factory = factory)
-            DictionariesScreen(
-                viewModel = dictViewModel,
-                onBack = { navController.popBackStack(Screen.Library.route, inclusive = false) }
-            )
-        }
-        composable(
-            route = Screen.BookInfo.route,
-            arguments = listOf(navArgument("bookId") { type = NavType.StringType }),
-            deepLinks = listOf(navDeepLink { uriPattern = "pinecone://book_info/{bookId}" })
-        ) { backStackEntry ->
-            val bookId = backStackEntry.arguments?.getString("bookId") ?: return@composable
-            BookInfoScreen(
-                bookId = bookId,
-                onNavigateBack = {
-                    if (navController.previousBackStackEntry != null) navController.popBackStack() else {
-                        (context as? Activity)?.finish()
-                    }
-                },
-                onNavigateToEdit = { id ->
-                    navController.navigate(Screen.EditBook.createRoute(id))
-                },
-                onNavigateToTag = { tagName ->
-                    navController.navigate(Screen.TagDetail.createRoute(tagName))
-                }
-            )
-        }
-        composable(
-            route = Screen.EditBook.route,
-            arguments = listOf(navArgument("bookId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val bookId = backStackEntry.arguments?.getString("bookId") ?: return@composable
-            EditBookScreen(
-                bookId = bookId,
-                onNavigateBack = {
-                    if (navController.previousBackStackEntry != null) navController.popBackStack()
-                }
-            )
+    // Debounce to prevent rapid double-clicks from crashing the transition state machine
+    var lastBackClickTime by androidx.compose.runtime.remember {
+        androidx.compose.runtime.mutableLongStateOf(
+            0L
+        )
+    }
+
+    val navigateBack: () -> Unit = {
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (now - lastBackClickTime > 300L) { // Matches the 300ms transition duration perfectly
+            lastBackClickTime = now
+            if (backStack.size > 1) {
+                backStack.removeLastOrNull()
+            } else {
+                (context as? Activity)?.finish()
+            }
         }
     }
+
+    // Exclude the top-left area where the app bar back button sits from the system's edge swipe.
+    // This prevents the user's thumb from accidentally starting a predictive back gesture while clicking.
+    val exclusionWidth = with(density) { 60.dp.toPx() }
+    val exclusionHeight = with(density) { 120.dp.toPx() }
+
+    NavDisplay(
+        backStack = backStack,
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.background)
+            .systemGestureExclusion {
+                Rect(0f, 0f, exclusionWidth, exclusionHeight)
+            },
+        onBack = {
+            val now = android.os.SystemClock.elapsedRealtime()
+            // Predictive/System back gestures also get debounced to be   safe
+            if (now - lastBackClickTime > 400L || backStack.size == 1) {
+                lastBackClickTime = now
+                if (backStack.size > 1) {
+                    backStack.removeLastOrNull()
+                } else {
+                    (context as? Activity)?.finish()
+                }
+            }
+        },
+        transitionSpec = {
+            (fadeIn(animationSpec = tween(300)) + scaleIn(
+                initialScale = 0.9f,
+                animationSpec = tween(300)
+            ) togetherWith
+                    fadeOut(animationSpec = tween(300)) + scaleOut(
+                targetScale = 0.9f,
+                animationSpec = tween(300)
+            )).apply {
+                targetContentZIndex = 1f
+            }
+        },
+        popTransitionSpec = {
+            (fadeIn(animationSpec = tween(300)) togetherWith
+                    fadeOut(animationSpec = tween(300)) + scaleOut(
+                targetScale = 0.9f,
+                animationSpec = tween(300)
+            )).apply {
+                targetContentZIndex = -1f
+            }
+        },
+        predictivePopTransitionSpec = {
+            (fadeIn() togetherWith
+                    fadeOut() + scaleOut(targetScale = 0.9f)).apply {
+                targetContentZIndex = -1f
+            }
+        },
+        entryProvider = entryProvider {
+            entry<Screen.Library> {
+                LibraryRoute(
+                    onNavigateToReader = { bookId ->
+                        val intent = Intent(context, ReaderActivity::class.java).apply {
+                            putExtra(ReaderActivity.EXTRA_BOOK_ID, bookId)
+                        }
+                        context.startActivity(intent)
+                    },
+                    onOpenDrawerClick = {
+                        scope.launch { drawerState.open() }
+                    },
+                    onNavigateToShelf = { shelfId, name, count ->
+                        backStack.add(Screen.ShelfDetail(shelfId, name, count))
+                    },
+                    onNavigateToAuthor = { authorName ->
+                        backStack.add(Screen.AuthorDetail(authorName))
+                    },
+                    onNavigateToTag = { tagName ->
+                        backStack.add(Screen.TagDetail(tagName))
+                    },
+                    onNavigateToAllAuthors = {
+                        backStack.add(Screen.AllAuthors)
+                    },
+                    onNavigateToAllTags = {
+                        backStack.add(Screen.AllTags)
+                    },
+                    onNavigateToBookInfo = { bookId ->
+                        backStack.add(Screen.BookInfo(bookId))
+                    }
+                )
+            }
+            entry<Screen.Settings> {
+                SettingsScreen(
+                    onNavigateBack = navigateBack
+                )
+            }
+            entry<Screen.Archives> {
+                ArchiveScreen(
+                    onNavigateBack = navigateBack,
+                    onNavigateToReader = { bookId ->
+                        val intent = Intent(context, ReaderActivity::class.java).apply {
+                            putExtra(ReaderActivity.EXTRA_BOOK_ID, bookId)
+                        }
+                        context.startActivity(intent)
+                    },
+                    onNavigateToBookInfo = { bookId ->
+                        backStack.add(Screen.BookInfo(bookId))
+                    }
+                )
+            }
+            entry<Screen.ShelfDetail> { args ->
+                ShelfDetailScreen(
+                    shelfId = args.shelfId,
+                    initialShelfName = args.name,
+                    initialBookCount = args.count,
+                    onNavigateBack = navigateBack,
+                    onNavigateToReader = { bookId ->
+                        val intent = Intent(context, ReaderActivity::class.java).apply {
+                            putExtra(ReaderActivity.EXTRA_BOOK_ID, bookId)
+                        }
+                        context.startActivity(intent)
+                    },
+                    onNavigateToBookInfo = { bookId ->
+                        backStack.add(Screen.BookInfo(bookId))
+                    }
+                )
+            }
+            entry<Screen.AuthorDetail> { args ->
+                FilterResultScreen(
+                    filterType = "author",
+                    filterValue = args.authorName,
+                    onNavigateBack = navigateBack,
+                    onNavigateToReader = { bookId ->
+                        val intent = Intent(context, ReaderActivity::class.java).apply {
+                            putExtra(ReaderActivity.EXTRA_BOOK_ID, bookId)
+                        }
+                        context.startActivity(intent)
+                    },
+                    onNavigateToMerged = { newName ->
+                        backStack.removeLastOrNull()
+                        backStack.add(Screen.AuthorDetail(newName))
+                    },
+                    onNavigateToBookInfo = { bookId ->
+                        backStack.add(Screen.BookInfo(bookId))
+                    }
+                )
+            }
+            entry<Screen.TagDetail> { args ->
+                FilterResultScreen(
+                    filterType = "tag",
+                    filterValue = args.tagName,
+                    onNavigateBack = navigateBack,
+                    onNavigateToReader = { bookId ->
+                        val intent = Intent(context, ReaderActivity::class.java).apply {
+                            putExtra(ReaderActivity.EXTRA_BOOK_ID, bookId)
+                        }
+                        context.startActivity(intent)
+                    },
+                    onNavigateToMerged = { newName ->
+                        backStack.removeLastOrNull()
+                        backStack.add(Screen.TagDetail(newName))
+                    },
+                    onNavigateToBookInfo = { bookId ->
+                        backStack.add(Screen.BookInfo(bookId))
+                    }
+                )
+            }
+            entry<Screen.AllAuthors> {
+                AllFilterItemsScreen(
+                    filterType = "author",
+                    onNavigateBack = navigateBack,
+                    onNavigateToDetail = { authorName ->
+                        backStack.add(Screen.AuthorDetail(authorName))
+                    }
+                )
+            }
+            entry<Screen.AllTags> {
+                AllFilterItemsScreen(
+                    filterType = "tag",
+                    onNavigateBack = navigateBack,
+                    onNavigateToDetail = { tagName ->
+                        backStack.add(Screen.TagDetail(tagName))
+                    }
+                )
+            }
+            entry<Screen.Dictionaries> {
+                val factory = DictionariesViewModel.Factory(
+                    app.dictionaryRepository,
+                    app.dictionaryImportManager,
+                    readerPreferences
+                )
+                val dictViewModel: DictionariesViewModel = viewModel(factory = factory)
+                DictionariesScreen(
+                    viewModel = dictViewModel,
+                    onBack = navigateBack
+                )
+            }
+            entry<Screen.BookInfo> { args ->
+                BookInfoScreen(
+                    bookId = args.bookId,
+                    onNavigateBack = navigateBack,
+                    onNavigateToEdit = { id ->
+                        backStack.add(Screen.EditBook(id))
+                    },
+                    onNavigateToTag = { tagName ->
+                        backStack.add(Screen.TagDetail(tagName))
+                    }
+                )
+            }
+            entry<Screen.EditBook> { args ->
+                EditBookScreen(
+                    bookId = args.bookId,
+                    onNavigateBack = navigateBack
+                )
+            }
+        }
+    )
 }

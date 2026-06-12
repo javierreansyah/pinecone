@@ -1,14 +1,18 @@
 package com.example.readerapp.ui.features.library.components
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -26,7 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import com.example.readerapp.R
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun RenameFilterDialog(
     initialName: String,
@@ -63,16 +67,27 @@ fun RenameFilterDialog(
                         .focusRequester(focusRequester),
                     singleLine = true,
                     label = { Text(stringResource(R.string.dictionaries_rename_title)) })
-                DropdownMenu(
+                DropdownMenuPopup(
                     expanded = expanded && filteredSuggestions.isNotEmpty(),
                     onDismissRequest = { expanded = false },
                     properties = PopupProperties(focusable = false)
                 ) {
-                    filteredSuggestions.forEach { suggestion ->
-                        DropdownMenuItem(text = { Text(suggestion) }, onClick = {
-                            text = suggestion
-                            expanded = false
-                        })
+                    val groupInteractionSource = remember { MutableInteractionSource() }
+                    DropdownMenuGroup(
+                        shapes = MenuDefaults.groupShape(0, 1),
+                        interactionSource = groupInteractionSource
+                    ) {
+                        filteredSuggestions.forEachIndexed { index, suggestion ->
+                            DropdownMenuItem(
+                                selected = false,
+                                text = { Text(suggestion) },
+                                shapes = MenuDefaults.itemShape(index, filteredSuggestions.size),
+                                onClick = {
+                                    text = suggestion
+                                    expanded = false
+                                }
+                            )
+                        }
                     }
                 }
                 if (text.isNotBlank() && suggestions.contains(text) && text != initialName) {

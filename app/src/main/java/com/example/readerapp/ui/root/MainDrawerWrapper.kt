@@ -13,16 +13,14 @@ import androidx.compose.material3.DrawerState
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.launch
 
 @Composable
 fun MainDrawerWrapper(
-    navController: NavHostController,
+    backStack: MutableList<NavKey>,
     drawerState: DrawerState,
     viewModel: MainViewModel,
     modifier: Modifier = Modifier,
@@ -84,42 +82,39 @@ fun MainDrawerWrapper(
         }
     )
 
-    val currentBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = currentBackStackEntry?.destination?.route
+    val currentDestination = backStack.lastOrNull()
+    val isLibraryRoute = currentDestination is Screen.Library
 
     // Safety net: force-close drawer if it's somehow open on a non-Library route
-    LaunchedEffect(currentRoute) {
-        if (currentRoute != null && currentRoute != Screen.Library.route) {
+    LaunchedEffect(isLibraryRoute, currentDestination) {
+        if (currentDestination != null && !isLibraryRoute) {
             drawerState.close()
         }
     }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
-        gesturesEnabled = currentRoute == Screen.Library.route,
+        gesturesEnabled = isLibraryRoute,
         modifier = modifier,
         drawerContent = {
             AppDrawer(
                 drawerState = drawerState,
                 onNavigateToArchives = {
-                    navController.navigate(Screen.Archives.route) {
-                        popUpTo(Screen.Library.route)
-                        launchSingleTop = true
-                    }
+                    backStack.clear()
+                    backStack.add(Screen.Library)
+                    backStack.add(Screen.Archives)
                     scope.launch { drawerState.close() }
                 },
                 onNavigateToSettings = {
-                    navController.navigate(Screen.Settings.route) {
-                        popUpTo(Screen.Library.route)
-                        launchSingleTop = true
-                    }
+                    backStack.clear()
+                    backStack.add(Screen.Library)
+                    backStack.add(Screen.Settings)
                     scope.launch { drawerState.close() }
                 },
                 onNavigateToDictionaries = {
-                    navController.navigate(Screen.Dictionaries.route) {
-                        popUpTo(Screen.Library.route)
-                        launchSingleTop = true
-                    }
+                    backStack.clear()
+                    backStack.add(Screen.Library)
+                    backStack.add(Screen.Dictionaries)
                     scope.launch { drawerState.close() }
                 },
                 onImportFilesClick = {

@@ -140,7 +140,7 @@ private fun ShelfRowHeader(
     ) {
         Text(
             text = shelfName,
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.titleMediumEmphasized
         )
         val countText = pluralStringResource(
             R.plurals.library_shelf_count, booksCount, booksCount

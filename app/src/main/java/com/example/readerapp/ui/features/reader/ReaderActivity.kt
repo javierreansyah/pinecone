@@ -101,9 +101,11 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
     }
 
     override fun navigateToBookInfo(bookId: String) {
-        val infoIntent = Intent(
-            Intent.ACTION_VIEW, "pinecone://book_info/$bookId".toUri()
-        )
+        val infoIntent = Intent(this, com.example.readerapp.MainActivity::class.java).apply {
+            action = Intent.ACTION_VIEW
+            data = "pinecone://book_info/$bookId".toUri()
+            putExtra("from_reader", true)
+        }
         startActivity(infoIntent)
     }
 

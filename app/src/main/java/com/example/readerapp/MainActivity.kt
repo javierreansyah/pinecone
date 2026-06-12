@@ -12,7 +12,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.compose.rememberNavController
 import com.example.readerapp.ui.root.MainDrawerWrapper
 import com.example.readerapp.ui.root.MainViewModel
 import com.example.readerapp.ui.root.NavGraph
@@ -43,6 +42,11 @@ class MainActivity : AppCompatActivity() {
 
         enableEdgeToEdge()
         setContent {
+            val isReady by viewModel.isReady.collectAsState()
+            if (!isReady) {
+                return@setContent
+            }
+
             val settings by viewModel.settings.collectAsState()
             val darkTheme = when (settings.themeMode) {
                 "Light" -> false
@@ -55,16 +59,27 @@ class MainActivity : AppCompatActivity() {
                 colorPalette = settings.colorPalette,
                 themeContrast = settings.themeContrast
             ) {
-                val navController = rememberNavController()
+                val initialBackStack = androidx.compose.runtime.remember {
+                    com.example.readerapp.ui.root.getInitialBackStackFromIntent(intent)
+                }
+
+                val backStack =
+                    androidx.navigation3.runtime.rememberNavBackStack(*initialBackStack.toTypedArray())
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
+                com.example.readerapp.ui.root.HandleDeepLinks(
+                    backStack = backStack,
+                    addOnNewIntentListener = { addOnNewIntentListener(it) },
+                    removeOnNewIntentListener = { removeOnNewIntentListener(it) }
+                )
+
                 MainDrawerWrapper(
-                    navController = navController,
+                    backStack = backStack,
                     drawerState = drawerState,
                     viewModel = viewModel
                 ) {
                     NavGraph(
-                        navController = navController,
+                        backStack = backStack,
                         drawerState = drawerState
                     )
                 }

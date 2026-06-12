@@ -1,13 +1,16 @@
 package com.example.readerapp.ui.features.library.filters
 
 import android.app.Application
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalIconButton
@@ -16,6 +19,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -37,6 +41,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
+import com.composables.icons.materialsymbols.outlined.Delete
+import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.More_vert
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.example.readerapp.R
@@ -306,6 +312,7 @@ private fun AllFilterItemsList(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun AllFilterItemsItemActions(
     isMenuExpanded: Boolean,
@@ -322,18 +329,48 @@ private fun AllFilterItemsItemActions(
                 contentDescription = stringResource(R.string.action_more)
             )
         }
-        DropdownMenu(
+        DropdownMenuPopup(
             expanded = isMenuExpanded,
             onDismissRequest = onMenuDismiss
         ) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.action_rename)) },
-                onClick = onRenameClick
-            )
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.action_delete)) },
-                onClick = onDeleteClick
-            )
+            val groupInteractionSource = remember { MutableInteractionSource() }
+            DropdownMenuGroup(
+                shapes = MenuDefaults.groupShape(0, 1),
+                interactionSource = groupInteractionSource
+            ) {
+                DropdownMenuItem(
+                    selected = false,
+                    text = { Text(stringResource(R.string.action_rename)) },
+                    shapes = MenuDefaults.itemShape(0, 2),
+                    leadingIcon = {
+                        Icon(
+                            MaterialSymbols.Outlined.Edit,
+                            modifier = Modifier.size(MenuDefaults.LeadingIconSize),
+                            contentDescription = null
+                        )
+                    },
+                    onClick = onRenameClick
+                )
+                DropdownMenuItem(
+                    selected = false,
+                    text = {
+                        Text(
+                            stringResource(R.string.action_delete),
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    },
+                    shapes = MenuDefaults.itemShape(1, 2),
+                    leadingIcon = {
+                        Icon(
+                            MaterialSymbols.Outlined.Delete,
+                            modifier = Modifier.size(MenuDefaults.LeadingIconSize),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    },
+                    onClick = onDeleteClick
+                )
+            }
         }
     }
 }

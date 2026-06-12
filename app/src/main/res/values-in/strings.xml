@@ -30,8 +30,6 @@
     <string name="action_decrease">Perkecil</string>
     <string name="action_all">Semua</string>
     <string name="common_error">Kesalahan: %s</string>
-    <string name="common_restore_error">Kesalahan Pemulihan: %s</string>
-    <string name="common_backup_error">Kesalahan Cadangan: %s</string>
 
     <!-- Library -->
     <string name="library_tab_books">Buku</string>
@@ -193,12 +191,7 @@
     <string name="dictionaries_title">Kamus</string>
     <string name="dictionaries_empty">Kamus tidak terinstal\nKetuk + untuk mengimpor file .zip Stardict</string>
     <string name="dictionaries_import_stardict">Impor Stardict</string>
-    <string name="dictionaries_backup">Cadangkan Kamus</string>
-    <string name="dictionaries_restore">Pulihkan Cadangan</string>
-    <string name="dictionaries_restore_warning">Peringatan: Memulihkan cadangan akan sepenuhnya menimpa kamus saat ini dengan konten cadangan.</string>
     <string name="dictionaries_installing">Menginstal Kamus…</string>
-    <string name="dictionaries_restoring">Memulihkan Kamus…</string>
-    <string name="dictionaries_backing_up">Mencadangkan Kamus…</string>
     <string name="dictionaries_delete_title">Hapus Kamus</string>
     <string name="dictionaries_delete_message">Apakah Anda yakin ingin menghapus \'%s\'?</string>
     <string name="dictionaries_rename_title">Ubah Nama Kamus</string>
@@ -207,11 +200,7 @@
     </plurals>
     <string name="dictionaries_select">Pilih Kamus</string>
     <string name="dictionaries_none_installed">Kamus tidak terinstal. Instal kamus dari laci navigasi.</string>
-    <string name="dictionaries_invalid_format">Format file tidak valid. Silakan pilih file .pinedict.</string>
     <string name="dictionaries_install_success">Kamus berhasil diinstal</string>
-    <string name="dictionaries_restore_success">Kamus berhasil dipulihkan</string>
-    <string name="dictionaries_backup_success">Kamus berhasil dicadangkan</string>
-    <string name="dictionaries_no_to_backup">Tidak ada kamus terinstal untuk dicadangkan</string>
 
     <!-- Settings -->
     <string name="settings_title">Pengaturan</string>
@@ -221,12 +210,13 @@
     <string name="settings_theme_contrast">Kontras Tema</string>
     <string name="settings_language">Bahasa</string>
 
-    <string name="settings_library_backup">Cadangan Perpustakaan</string>
-    <string name="settings_dictionary_backup">Cadangan Kamus</string>
-    <string name="settings_backup_preferences">Preferensi Cadangan</string>
-    <string name="settings_backup_library">Cadangkan Perpustakaan</string>
-    <string name="settings_restore_library">Pulihkan Perpustakaan</string>
-    <string name="settings_restore_dictionaries">Pulihkan Kamus</string>
+    <string name="settings_backup_preferences">Cadangan Lokal</string>
+    <string name="settings_backup_now">Cadangkan Sekarang</string>
+    <string name="settings_backup_now_summary">Cadangkan perpustakaan dan kamus (%s)</string>
+    <string name="settings_restore">Pulihkan</string>
+    <string name="settings_restore_summary">Pulihkan perpustakaan dan kamus</string>
+    <string name="settings_last_backup_format">Terakhir: %s</string>
+    <string name="settings_error_set_backup_location">Harap atur Lokasi Cadangan terlebih dahulu untuk memulihkan kamus</string>
     <string name="settings_auto_backup_freq">Frekuensi Cadangan Otomatis</string>
     <string name="settings_backup_location">Lokasi Cadangan</string>
     <string name="settings_option_system">Sistem</string>
@@ -242,11 +232,9 @@
     <string name="ok">OK</string>
     <string name="settings_option_selected">Dipilih</string>
     <string name="settings_option_not_selected">Belum dipilih (Cadangan otomatis dinonaktifkan)</string>
-    <string name="settings_backup_freq_3h">3 jam</string>
     <string name="settings_backup_freq_6h">6 jam</string>
     <string name="settings_backup_freq_12h">12 jam</string>
     <string name="settings_backup_freq_1d">1 hari</string>
-    <string name="settings_backup_freq_2d">2 hari</string>
     <string name="settings_backup_freq_3d">3 hari</string>
     <string name="settings_backup_freq_1w">1 minggu</string>
     <string name="settings_restore_defaults">Pulihkan Setelan Awal</string>

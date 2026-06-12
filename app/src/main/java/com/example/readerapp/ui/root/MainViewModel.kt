@@ -12,11 +12,8 @@ import com.example.readerapp.data.local.preferences.ReaderPreferences
 import com.example.readerapp.data.local.preferences.ReaderSettings
 import com.example.readerapp.data.repository.library.LibraryRepository
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class MainViewModel(
@@ -28,18 +25,18 @@ class MainViewModel(
     private val _isReady = MutableStateFlow(false)
     val isReady: StateFlow<Boolean> = _isReady.asStateFlow()
 
-    val settings: StateFlow<ReaderSettings> = readerPreferences.readerSettings
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.Eagerly,
-            initialValue = ReaderSettings()
-        )
+    private val _settings = MutableStateFlow(ReaderSettings())
+    val settings: StateFlow<ReaderSettings> = _settings.asStateFlow()
 
     init {
         viewModelScope.launch {
-            // Wait for the first real emission from DataStore so the theme is correct
-            readerPreferences.readerSettings.first()
-            _isReady.value = true
+            readerPreferences.readerSettings.collect { newSettings ->
+                _settings.value = newSettings
+                // Only set isReady to true after the first settings emission is applied
+                if (!_isReady.value) {
+                    _isReady.value = true
+                }
+            }
         }
     }
 

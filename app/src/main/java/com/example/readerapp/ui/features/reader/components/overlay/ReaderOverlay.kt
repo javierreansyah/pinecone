@@ -569,9 +569,14 @@ private fun ReaderDefinitionBottomSheet(
 ) {
     val configuration = LocalConfiguration.current
     val maxSheetHeight = configuration.screenHeightDp.dp * 0.6f
+    val sheetState = rememberBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+    )
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
+        sheetState = sheetState
     ) {
         Column(
             modifier = Modifier
