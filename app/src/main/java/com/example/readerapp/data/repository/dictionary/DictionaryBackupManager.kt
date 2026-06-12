@@ -8,9 +8,6 @@ import com.example.readerapp.data.local.database.dictionary.DictionaryDatabase
 import com.example.readerapp.data.local.preferences.ReaderPreferences
 import com.example.readerapp.data.model.DictionaryBackupPayload
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -26,67 +23,73 @@ import java.util.zip.ZipOutputStream
 class DictionaryBackupManager(
     private val context: Context, private val preferences: ReaderPreferences
 ) {
-    private val _restoreState = MutableStateFlow<DictionaryState>(DictionaryState.Idle)
-    val restoreState: StateFlow<DictionaryState> = _restoreState.asStateFlow()
-
-    private val _backupState = MutableStateFlow<DictionaryState>(DictionaryState.Idle)
-    val backupState: StateFlow<DictionaryState> = _backupState.asStateFlow()
-
     private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
         isLenient = true
     }
 
-    fun resetRestoreState() {
-        _restoreState.value = DictionaryState.Idle
-    }
-
-    fun resetBackupState() {
-        _backupState.value = DictionaryState.Idle
-    }
-
-    suspend fun backupDictionaries() = withContext(Dispatchers.IO) {
-        _backupState.value = DictionaryState.Loading(0)
+    suspend fun backupDictionaries(): Boolean = withContext(Dispatchers.IO) {
         val settings = preferences.readerSettings.first()
         val backupFolderUriString = settings.backupFolderUri
         if (backupFolderUriString.isEmpty()) {
-            _backupState.value = DictionaryState.Error("Backup folder not set in Settings")
-            return@withContext
+            return@withContext false
         }
 
         try {
             val backupFolderUri = backupFolderUriString.toUri()
             val backupFolder = DocumentFile.fromTreeUri(context, backupFolderUri)
             if (backupFolder == null || !backupFolder.canWrite()) {
-                _backupState.value = DictionaryState.Error("Cannot write to backup folder")
-                return@withContext
+                return@withContext false
             }
 
             val installed = settings.installedDictionaries
+            val backupFileName = "dictionary_backup.pinedict"
+
+            // Find existing to overwrite, or create new
+            var backupFile = backupFolder.findFile(backupFileName)
+
+            if (backupFile != null) {
+                val backupLastModified = backupFile.lastModified()
+                var maxDbModified = 0L
+                for (dict in installed) {
+                    val dbFile = context.getDatabasePath("dict_${dict.id}.db")
+                    val walFile = context.getDatabasePath("dict_${dict.id}.db-wal")
+                    val shmFile = context.getDatabasePath("dict_${dict.id}.db-shm")
+                    if (dbFile.exists()) maxDbModified = maxOf(maxDbModified, dbFile.lastModified())
+                    if (walFile.exists()) maxDbModified =
+                        maxOf(maxDbModified, walFile.lastModified())
+                    if (shmFile.exists()) maxDbModified =
+                        maxOf(maxDbModified, shmFile.lastModified())
+                }
+
+                // Verify if the dictionary configurations match the backup file
+                val backupPayload = readBackupMetadata(backupFile.uri)
+                val isMetadataUnchanged = backupPayload != null &&
+                        backupPayload.activeDictionaryId == settings.activeDictionaryId &&
+                        backupPayload.installedDictionaries == installed
+
+                if (isMetadataUnchanged && backupLastModified >= maxDbModified) {
+                    // Skip backup, dictionaries and metadata haven't changed
+                    return@withContext true
+                }
+            }
+
+            if (backupFile == null) {
+                backupFile = backupFolder.createFile("application/octet-stream", backupFileName)
+            }
+            if (backupFile == null) {
+                return@withContext false
+            }
+
             val payload = DictionaryBackupPayload(
                 installedDictionaries = installed, activeDictionaryId = settings.activeDictionaryId
             )
             val jsonString = json.encodeToString(payload)
 
-            val backupFileName = "dictionary_backup.pinedict"
-
-            // Find existing to overwrite, or create new
-            var backupFile = backupFolder.findFile(backupFileName)
-            if (backupFile == null) {
-                backupFile = backupFolder.createFile("application/octet-stream", backupFileName)
-            }
-            if (backupFile == null) {
-                _backupState.value = DictionaryState.Error("Failed to create backup file")
-                return@withContext
-            }
-
             val resolver = context.contentResolver
-            val outputStream = resolver.openOutputStream(backupFile.uri, "wt")
-            if (outputStream == null) {
-                _backupState.value = DictionaryState.Error("Failed to open output stream")
-                return@withContext
-            }
+            val outputStream =
+                resolver.openOutputStream(backupFile.uri, "wt") ?: return@withContext false
             outputStream.use { os ->
                 ZipOutputStream(os).use { zos ->
                     zos.setLevel(Deflater.BEST_SPEED)
@@ -108,15 +111,14 @@ class DictionaryBackupManager(
                     }
                 }
             }
-            _backupState.value = DictionaryState.Success
+            return@withContext true
         } catch (e: Exception) {
             e.printStackTrace()
-            _backupState.value = DictionaryState.Error(e.message ?: "Failed to backup dictionaries")
+            return@withContext false
         }
     }
 
-    suspend fun restoreDictionaries(uri: Uri) = withContext(Dispatchers.IO) {
-        _restoreState.value = DictionaryState.Loading(0)
+    suspend fun restoreDictionaries(uri: Uri): Boolean = withContext(Dispatchers.IO) {
         try {
             val resolver = context.contentResolver
 
@@ -147,8 +149,7 @@ class DictionaryBackupManager(
             val metadataFile = File(tempDir, "metadata.json")
             if (!metadataFile.exists()) {
                 tempDir.deleteRecursively()
-                _restoreState.value = DictionaryState.Error("Invalid dictionary backup format")
-                return@withContext
+                return@withContext false
             }
 
             val jsonString = FileInputStream(metadataFile).use {
@@ -184,11 +185,10 @@ class DictionaryBackupManager(
             )
 
             tempDir.deleteRecursively()
-            _restoreState.value = DictionaryState.Success
+            return@withContext true
         } catch (e: Exception) {
             e.printStackTrace()
-            _restoreState.value =
-                DictionaryState.Error(e.message ?: "Failed to restore dictionaries")
+            return@withContext false
         }
     }
 
@@ -199,5 +199,27 @@ class DictionaryBackupManager(
             fis.copyTo(zos)
             zos.closeEntry()
         }
+    }
+
+    private fun readBackupMetadata(uri: Uri): DictionaryBackupPayload? {
+        try {
+            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                ZipInputStream(inputStream).use { zis ->
+                    var entry: ZipEntry? = zis.nextEntry
+                    while (entry != null) {
+                        if (entry.name == "metadata.json") {
+                            val jsonBytes = zis.readBytes()
+                            val jsonString = jsonBytes.toString(Charsets.UTF_8)
+                            return json.decodeFromString<DictionaryBackupPayload>(jsonString)
+                        }
+                        zis.closeEntry()
+                        entry = zis.nextEntry
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return null
     }
 }

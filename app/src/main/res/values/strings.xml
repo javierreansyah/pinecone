@@ -29,8 +29,6 @@
     <string name="action_decrease">Decrease</string>
     <string name="action_all">All</string>
     <string name="common_error">Error: %s</string>
-    <string name="common_restore_error">Restore Error: %s</string>
-    <string name="common_backup_error">Backup Error: %s</string>
 
     <!-- Library -->
     <string name="library_tab_books">Books</string>
@@ -197,12 +195,7 @@
     <string name="dictionaries_title">Dictionaries</string>
     <string name="dictionaries_empty">No dictionaries installed\nTap + to import a Stardict .zip file</string>
     <string name="dictionaries_import_stardict">Import Stardict</string>
-    <string name="dictionaries_backup">Backup Dictionaries</string>
-    <string name="dictionaries_restore">Restore Backup</string>
-    <string name="dictionaries_restore_warning">Warning: Restoring a backup will completely overwrite your current dictionaries with the contents of the backup.</string>
     <string name="dictionaries_installing">Installing Dictionary…</string>
-    <string name="dictionaries_restoring">Restoring Dictionaries…</string>
-    <string name="dictionaries_backing_up">Backing up Dictionaries…</string>
     <string name="dictionaries_delete_title">Delete Dictionary</string>
     <string name="dictionaries_delete_message">Are you sure you want to delete \'%s\'?</string>
     <string name="dictionaries_rename_title">Rename Dictionary</string>
@@ -212,11 +205,7 @@
     </plurals>
     <string name="dictionaries_select">Select Dictionary</string>
     <string name="dictionaries_none_installed">No dictionaries installed. Install one from the navigation drawer.</string>
-    <string name="dictionaries_invalid_format">Invalid file format. Please select a .pinedict file.</string>
     <string name="dictionaries_install_success">Dictionary installed successfully</string>
-    <string name="dictionaries_restore_success">Dictionaries restored successfully</string>
-    <string name="dictionaries_backup_success">Dictionaries backed up successfully</string>
-    <string name="dictionaries_no_to_backup">No dictionaries installed to backup</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
@@ -226,12 +215,13 @@
     <string name="settings_theme_contrast">Theme Contrast</string>
     <string name="settings_language">Language</string>
 
-    <string name="settings_library_backup">Library Backup</string>
-    <string name="settings_dictionary_backup">Dictionary Backup</string>
-    <string name="settings_backup_preferences">Backup Preferences</string>
-    <string name="settings_backup_library">Backup Library</string>
-    <string name="settings_restore_library">Restore Library</string>
-    <string name="settings_restore_dictionaries">Restore Dictionaries</string>
+    <string name="settings_backup_preferences">Local Backup</string>
+    <string name="settings_backup_now">Backup Now</string>
+    <string name="settings_backup_now_summary">Backup library and dictionaries (%s)</string>
+    <string name="settings_restore">Restore</string>
+    <string name="settings_restore_summary">Restore library and dictionaries</string>
+    <string name="settings_last_backup_format">Last: %s</string>
+    <string name="settings_error_set_backup_location">Please set Backup Location first to restore dictionaries</string>
     <string name="settings_auto_backup_freq">Auto Backup Frequency</string>
     <string name="settings_backup_location">Backup Location</string>
     <string name="settings_option_system">System</string>
@@ -247,11 +237,9 @@
     <string name="ok">OK</string>
     <string name="settings_option_selected">Selected</string>
     <string name="settings_option_not_selected">Not selected (Auto-backup disabled)</string>
-    <string name="settings_backup_freq_3h">3 hours</string>
     <string name="settings_backup_freq_6h">6 hours</string>
     <string name="settings_backup_freq_12h">12 hours</string>
     <string name="settings_backup_freq_1d">1 day</string>
-    <string name="settings_backup_freq_2d">2 days</string>
     <string name="settings_backup_freq_3d">3 days</string>
     <string name="settings_backup_freq_1w">1 week</string>
     <string name="settings_restore_defaults">Restore Defaults</string>

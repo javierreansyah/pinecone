@@ -16,6 +16,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
@@ -25,14 +26,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_drop_down
 import com.composables.icons.materialsymbols.outlined.Arrow_drop_up
-import com.composables.icons.materialsymbols.outlined.Border_all
 import com.composables.icons.materialsymbols.outlined.Calendar_view_month
 import com.composables.icons.materialsymbols.outlined.View_carousel
 import com.composables.icons.materialsymbols.outlined.View_list
+import com.composables.icons.materialsymbols.outlined.Window
 import com.example.readerapp.R
 import com.example.readerapp.ui.components.SegmentedColumn
 import com.example.readerapp.ui.features.library.FilterSortPreferences
@@ -189,7 +191,9 @@ fun <T> MultiToggleGroupSection(
                         else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
                     }
                 ) {
-                    optionContent(option)
+                    ProvideTextStyle(value = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium)) {
+                        optionContent(option)
+                    }
                 }
             }
         }
@@ -241,8 +245,7 @@ fun LibraryFilterBottomSheet(
                 onOptionToggled = onStatusToggle,
                 optionContent = { status ->
                     Text(
-                        stringResource(statusLabelRes(status)),
-                        style = MaterialTheme.typography.labelLarge
+                        stringResource(statusLabelRes(status))
                     )
                 })
         } else {
@@ -255,7 +258,7 @@ fun LibraryFilterBottomSheet(
                     Text(
                         if (filter == ShelfFilter.Shelves) stringResource(R.string.library_tab_shelves) else stringResource(
                             R.string.library_label_unshelved
-                        ), style = MaterialTheme.typography.labelLarge
+                        )
                     )
                 })
         }
@@ -297,8 +300,7 @@ fun ShelfDetailFilterBottomSheet(
             onOptionToggled = onStatusToggle,
             optionContent = { status ->
                 Text(
-                    stringResource(statusLabelRes(status)),
-                    style = MaterialTheme.typography.labelLarge
+                    stringResource(statusLabelRes(status))
                 )
             })
     }
@@ -339,8 +341,7 @@ fun FilterResultBottomSheet(
             onOptionToggled = onStatusToggle,
             optionContent = { status ->
                 Text(
-                    stringResource(statusLabelRes(status)),
-                    style = MaterialTheme.typography.labelLarge
+                    stringResource(statusLabelRes(status))
                 )
             })
     }
@@ -371,7 +372,7 @@ fun FilterItemSortBottomSheet(
 
 private fun layoutModeIcon(mode: LayoutMode) = when (mode) {
     LayoutMode.Grid -> MaterialSymbols.Outlined.Calendar_view_month
-    LayoutMode.BigGrid -> MaterialSymbols.Outlined.Border_all
+    LayoutMode.BigGrid -> MaterialSymbols.Outlined.Window
     LayoutMode.List -> MaterialSymbols.Outlined.View_list
     LayoutMode.BigList -> MaterialSymbols.Outlined.View_carousel
 }

@@ -2,6 +2,7 @@ package com.example.readerapp.ui.features.library.shelf
 
 import android.app.Application
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,9 +12,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
@@ -22,8 +25,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -31,6 +35,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,11 +43,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -51,7 +62,9 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Check
 import com.composables.icons.materialsymbols.outlined.Close
+import com.composables.icons.materialsymbols.outlined.Delete
 import com.composables.icons.materialsymbols.outlined.Drag_handle
+import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Format_list_numbered
 import com.composables.icons.materialsymbols.outlined.More_vert
 import com.composables.icons.materialsymbols.outlined.Tune
@@ -95,8 +108,8 @@ fun ShelfDetailScreen(
     var showFilterSheet by remember { mutableStateOf(false) }
     var isReordering by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-    var showRenameDialog by remember { mutableStateOf(false) }
-    var newShelfName by remember { mutableStateOf("") }
+    var isRenaming by remember { mutableStateOf(false) }
+    var renameName by remember { mutableStateOf(TextFieldValue("")) }
     var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
 
     val shelves by viewModel.shelves.collectAsState()
@@ -127,6 +140,16 @@ fun ShelfDetailScreen(
                 displayTitle = displayTitle,
                 displayCount = displayCount,
                 isReordering = isReordering,
+                isRenaming = isRenaming,
+                renameName = renameName,
+                onRenameNameChange = { renameName = it },
+                onCancelRename = { isRenaming = false },
+                onSaveRename = {
+                    if (renameName.text.isNotBlank()) {
+                        viewModel.renameShelf(shelfId, renameName.text)
+                    }
+                    isRenaming = false
+                },
                 shelfId = shelfId,
                 scrollBehavior = scrollBehavior,
                 onNavigateBack = onNavigateBack,
@@ -146,8 +169,12 @@ fun ShelfDetailScreen(
                 },
                 onShowFilterSheet = { showFilterSheet = true },
                 onRenameClick = {
-                    newShelfName = shelfWithCovers?.shelf?.name ?: ""
-                    showRenameDialog = true
+                    val name = shelfWithCovers?.shelf?.name ?: ""
+                    renameName = TextFieldValue(
+                        text = name,
+                        selection = TextRange(name.length)
+                    )
+                    isRenaming = true
                 },
                 onDeleteClick = { showDeleteDialog = true }
             )
@@ -193,16 +220,6 @@ fun ShelfDetailScreen(
             )
         }
 
-        if (showRenameDialog && shelfWithCovers != null) {
-            RenameShelfDialog(
-                initialName = newShelfName,
-                onConfirm = { name ->
-                    viewModel.renameShelf(shelfId, name)
-                    showRenameDialog = false
-                },
-                onDismiss = { showRenameDialog = false }
-            )
-        }
 
         selectedBookForMenu?.let { bookId ->
             BookContextMenu(
@@ -229,6 +246,11 @@ private fun ShelfDetailTopAppBar(
     displayTitle: String,
     displayCount: Int,
     isReordering: Boolean,
+    isRenaming: Boolean,
+    renameName: TextFieldValue,
+    onRenameNameChange: (TextFieldValue) -> Unit,
+    onCancelRename: () -> Unit,
+    onSaveRename: () -> Unit,
     shelfId: String,
     scrollBehavior: TopAppBarScrollBehavior,
     onNavigateBack: () -> Unit,
@@ -241,10 +263,38 @@ private fun ShelfDetailTopAppBar(
     modifier: Modifier = Modifier
 ) {
     var showMoreMenu by remember { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(isRenaming) {
+        if (isRenaming) {
+            focusRequester.requestFocus()
+        }
+    }
 
     LargeFlexibleTopAppBar(
         modifier = modifier,
-        title = { Text(displayTitle) },
+        title = {
+            if (isRenaming) {
+                BasicTextField(
+                    value = renameName,
+                    onValueChange = onRenameNameChange,
+                    textStyle = LocalTextStyle.current.copy(
+                        color = MaterialTheme.colorScheme.onSurface
+                    ),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester)
+                )
+            } else {
+                Text(
+                    text = displayTitle,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        },
         subtitle = {
             Text(
                 pluralStringResource(
@@ -253,11 +303,11 @@ private fun ShelfDetailTopAppBar(
             )
         },
         navigationIcon = {
-            if (isReordering) {
+            if (isReordering || isRenaming) {
                 FilledTonalIconButton(
                     shapes = IconButtonDefaults.shapes(),
                     colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                    onClick = onCancelReorder
+                    onClick = if (isReordering) onCancelReorder else onCancelRename
                 ) {
                     Icon(
                         MaterialSymbols.Outlined.Close,
@@ -278,7 +328,7 @@ private fun ShelfDetailTopAppBar(
             }
         },
         actions = {
-            if (isReordering) {
+            if (isReordering || isRenaming) {
                 FilledIconButton(
                     modifier = Modifier
                         .padding(end = 6.dp)
@@ -288,7 +338,7 @@ private fun ShelfDetailTopAppBar(
                             )
                         ),
                     shapes = IconButtonDefaults.shapes(),
-                    onClick = onSaveReorder
+                    onClick = if (isReordering) onSaveReorder else onSaveRename
                 ) {
                     Icon(
                         imageVector = MaterialSymbols.Outlined.Check,
@@ -327,29 +377,54 @@ private fun ShelfDetailTopAppBar(
                                 contentDescription = stringResource(R.string.action_more)
                             )
                         }
-                        DropdownMenu(
+                        DropdownMenuPopup(
                             expanded = showMoreMenu,
                             onDismissRequest = { showMoreMenu = false }
                         ) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.action_rename)) },
-                                onClick = {
-                                    onRenameClick()
-                                    showMoreMenu = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        stringResource(R.string.action_delete),
-                                        color = MaterialTheme.colorScheme.error
-                                    )
-                                },
-                                onClick = {
-                                    onDeleteClick()
-                                    showMoreMenu = false
-                                }
-                            )
+                            val groupInteractionSource = remember { MutableInteractionSource() }
+                            DropdownMenuGroup(
+                                shapes = MenuDefaults.groupShape(0, 1),
+                                interactionSource = groupInteractionSource,
+                            ) {
+                                DropdownMenuItem(
+                                    selected = false,
+                                    text = { Text(stringResource(R.string.action_rename)) },
+                                    shapes = MenuDefaults.itemShape(0, 2),
+                                    leadingIcon = {
+                                        Icon(
+                                            MaterialSymbols.Outlined.Edit,
+                                            modifier = Modifier.size(MenuDefaults.LeadingIconSize),
+                                            contentDescription = null,
+                                        )
+                                    },
+                                    onClick = {
+                                        onRenameClick()
+                                        showMoreMenu = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    selected = false,
+                                    text = {
+                                        Text(
+                                            stringResource(R.string.action_delete),
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                    },
+                                    shapes = MenuDefaults.itemShape(1, 2),
+                                    leadingIcon = {
+                                        Icon(
+                                            MaterialSymbols.Outlined.Delete,
+                                            modifier = Modifier.size(MenuDefaults.LeadingIconSize),
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    },
+                                    onClick = {
+                                        onDeleteClick()
+                                        showMoreMenu = false
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -483,42 +558,6 @@ private fun DeleteShelfDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.action_cancel))
-            }
-        }
-    )
-}
-
-@Composable
-private fun RenameShelfDialog(
-    initialName: String,
-    onConfirm: (String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    var name by remember { mutableStateOf(initialName) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.library_rename_shelf_title)) },
-        text = {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text(stringResource(R.string.library_shelf_name_label)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                if (name.isNotBlank()) {
-                    onConfirm(name)
-                }
-            }) {
-                Text(stringResource(R.string.action_save))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = { onDismiss() }) {
                 Text(stringResource(R.string.action_cancel))
             }
         }

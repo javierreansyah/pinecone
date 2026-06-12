@@ -38,7 +38,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -68,13 +67,11 @@ import com.composables.icons.materialsymbols.outlined.Keyboard_arrow_right
 import com.composables.icons.materialsymbols.outlined.Palette
 import com.composables.icons.materialsymbols.outlined.Restart_alt
 import com.composables.icons.materialsymbols.outlined.Save
-import com.composables.icons.materialsymbols.outlined.Sync
 import com.composables.icons.materialsymbols.outlined.Translate
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.example.readerapp.R
 import com.example.readerapp.data.local.preferences.ReaderPreferences
 import com.example.readerapp.data.local.preferences.ReaderSettings
-import com.example.readerapp.data.repository.dictionary.DictionaryState
 import com.example.readerapp.ui.components.SegmentedColumn
 import com.example.readerapp.ui.features.settings.components.ColorSchemePickerDialog
 import com.example.readerapp.ui.features.settings.components.settingsItem
@@ -90,21 +87,14 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val dictBackingUpMsg = stringResource(R.string.dictionaries_backing_up)
-    val dictBackupSuccessMsg = stringResource(R.string.dictionaries_backup_success)
-    val commonBackupErrorMsg = stringResource(R.string.common_backup_error)
-    val dictRestoringMsg = stringResource(R.string.dictionaries_restoring)
-    val dictRestoreSuccessMsg = stringResource(R.string.dictionaries_restore_success)
-    val commonRestoreErrorMsg = stringResource(R.string.common_restore_error)
     val navRestoringBackupMsg = stringResource(R.string.nav_restoring_backup)
     val navRestoreSuccessMsg = stringResource(R.string.nav_restore_success)
     val navRestoreFailedMsg = stringResource(R.string.nav_restore_failed)
-    val dictInvalidFormatMsg = stringResource(R.string.dictionaries_invalid_format)
     val navStartingBackupMsg = stringResource(R.string.nav_starting_backup)
     val navBackupSuccessMsg = stringResource(R.string.nav_backup_success)
     val navBackupFailedMsg = stringResource(R.string.nav_backup_failed)
-    val dictNoToBackupMsg = stringResource(R.string.dictionaries_no_to_backup)
     val restoreSuccessMsg = stringResource(R.string.settings_restore_defaults_success)
+    val errorSetBackupLocationMsg = stringResource(R.string.settings_error_set_backup_location)
     val scope = rememberCoroutineScope()
     val app = context.applicationContext as com.example.readerapp.ReaderApplication
     val readerPreferences = remember { ReaderPreferences(context) }
@@ -122,8 +112,8 @@ fun SettingsScreen(
     )
 
     val settings by viewModel.settings.collectAsState()
-    val isLibraryBackingUp by viewModel.isLibraryBackingUp.collectAsState()
-    val isLibraryRestoring by viewModel.isLibraryRestoring.collectAsState()
+    val isBackingUp by viewModel.isBackingUp.collectAsState()
+    val isRestoring by viewModel.isRestoring.collectAsState()
     var showColorPicker by remember { mutableStateOf(false) }
     var showRestoreDefaultWarning by remember { mutableStateOf(false) }
 
@@ -152,57 +142,8 @@ fun SettingsScreen(
     val hasPermission =
         settings.backupFolderUri.isNotEmpty() && context.contentResolver.persistedUriPermissions.any { it.uri.toString() == settings.backupFolderUri }
 
-    val dictBackupState by viewModel.dictBackupState.collectAsState()
-    val dictRestoreState by viewModel.dictRestoreState.collectAsState()
-    val isDictBackingUp = dictBackupState is DictionaryState.Loading
-    val isDictRestoring = dictRestoreState is DictionaryState.Loading
-
-    LaunchedEffect(dictBackupState) {
-        when (dictBackupState) {
-            is DictionaryState.Loading -> {
-                Toast.makeText(context, dictBackingUpMsg, Toast.LENGTH_SHORT).show()
-            }
-
-            is DictionaryState.Success -> {
-                Toast.makeText(context, dictBackupSuccessMsg, Toast.LENGTH_SHORT).show()
-                viewModel.resetDictBackupState()
-            }
-
-            is DictionaryState.Error -> {
-                val errorMsg = (dictBackupState as DictionaryState.Error).message
-                val formattedMsg = String.format(commonBackupErrorMsg, errorMsg)
-                Toast.makeText(context, formattedMsg, Toast.LENGTH_LONG).show()
-                viewModel.resetDictBackupState()
-            }
-
-            else -> {}
-        }
-    }
-
-    LaunchedEffect(dictRestoreState) {
-        when (dictRestoreState) {
-            is DictionaryState.Loading -> {
-                Toast.makeText(context, dictRestoringMsg, Toast.LENGTH_SHORT).show()
-            }
-
-            is DictionaryState.Success -> {
-                Toast.makeText(context, dictRestoreSuccessMsg, Toast.LENGTH_SHORT).show()
-                viewModel.resetDictRestoreState()
-            }
-
-            is DictionaryState.Error -> {
-                val errorMsg = (dictRestoreState as DictionaryState.Error).message
-                val formattedMsg = String.format(commonRestoreErrorMsg, errorMsg)
-                Toast.makeText(context, formattedMsg, Toast.LENGTH_LONG).show()
-                viewModel.resetDictRestoreState()
-            }
-
-            else -> {}
-        }
-    }
-
-    var showLibraryRestoreWarning by remember { mutableStateOf(false) }
-    val libraryRestoreLauncher = rememberLauncherForActivityResult(
+    var showRestoreWarning by remember { mutableStateOf(false) }
+    val restoreLauncher = rememberLauncherForActivityResult(
         contract = object : ActivityResultContracts.OpenDocument() {
             override fun createIntent(
                 context: android.content.Context,
@@ -225,7 +166,7 @@ fun SettingsScreen(
         },
         onResult = { uri ->
             uri?.let {
-                viewModel.restoreLibraryBackup(
+                viewModel.restoreFullBackup(
                     uri = it,
                     onStart = {
                         Toast.makeText(context, navRestoringBackupMsg, Toast.LENGTH_SHORT).show()
@@ -241,40 +182,7 @@ fun SettingsScreen(
         }
     )
 
-    var showDictionaryRestoreWarning by remember { mutableStateOf(false) }
-    val dictionaryRestoreLauncher = rememberLauncherForActivityResult(
-        contract = object : ActivityResultContracts.OpenDocument() {
-            override fun createIntent(
-                context: android.content.Context,
-                input: Array<String>
-            ): Intent {
-                val intent = super.createIntent(context, input)
-                val pineconeDir = File(
-                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-                    "Pinecone"
-                )
-                if (!pineconeDir.exists()) pineconeDir.mkdirs()
 
-                val uri = DocumentsContract.buildDocumentUri(
-                    "com.android.externalstorage.documents",
-                    "primary:Documents/Pinecone"
-                )
-                intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, uri)
-                return intent
-            }
-        },
-        onResult = { uri ->
-            uri?.let {
-                val name =
-                    androidx.documentfile.provider.DocumentFile.fromSingleUri(context, it)?.name
-                if (name != null && name.endsWith(".pinedict")) {
-                    viewModel.restoreDictionaries(it)
-                } else {
-                    Toast.makeText(context, dictInvalidFormatMsg, Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-    )
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -322,10 +230,8 @@ fun SettingsScreen(
             BackupSettingsSection(
                 settings = settings,
                 hasPermission = hasPermission,
-                isLibraryBackingUp = isLibraryBackingUp,
-                isLibraryRestoring = isLibraryRestoring,
-                isDictBackingUp = isDictBackingUp,
-                isDictRestoring = isDictRestoring,
+                isBackingUp = isBackingUp,
+                isRestoring = isRestoring,
                 onAutoBackupFrequencySelected = { frequency ->
                     viewModel.updateSettings(settings.copy(autoBackupFrequency = frequency))
                     WorkerUtils.scheduleBackupWork(context, frequency)
@@ -344,7 +250,7 @@ fun SettingsScreen(
                     )
                     folderPickerLauncher.launch(initialUri)
                 },
-                onLibraryBackupClick = {
+                onBackupClick = {
                     if (!hasPermission) {
                         val pineconeDir = File(
                             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
@@ -359,7 +265,7 @@ fun SettingsScreen(
                         )
                         folderPickerLauncher.launch(initialUri)
                     } else {
-                        viewModel.performLibraryBackup(
+                        viewModel.performFullBackup(
                             onStart = {
                                 Toast.makeText(context, navStartingBackupMsg, Toast.LENGTH_SHORT)
                                     .show()
@@ -375,13 +281,9 @@ fun SettingsScreen(
                         )
                     }
                 },
-                onLibraryRestoreClick = {
-                    showLibraryRestoreWarning = true
-                },
-                onDictionaryBackupClick = {
-                    if (settings.installedDictionaries.isEmpty()) {
-                        Toast.makeText(context, dictNoToBackupMsg, Toast.LENGTH_SHORT).show()
-                    } else if (!hasPermission) {
+                onRestoreClick = {
+                    if (!hasPermission) {
+                        Toast.makeText(context, errorSetBackupLocationMsg, Toast.LENGTH_LONG).show()
                         val pineconeDir = File(
                             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
                             "Pinecone"
@@ -395,11 +297,8 @@ fun SettingsScreen(
                         )
                         folderPickerLauncher.launch(initialUri)
                     } else {
-                        viewModel.backupDictionaries()
+                        showRestoreWarning = true
                     }
-                },
-                onDictionaryRestoreClick = {
-                    showDictionaryRestoreWarning = true
                 }
             )
         }
@@ -430,46 +329,23 @@ fun SettingsScreen(
         )
     }
 
-    if (showLibraryRestoreWarning) {
+    if (showRestoreWarning) {
         AlertDialog(
-            onDismissRequest = { showLibraryRestoreWarning = false },
+            onDismissRequest = { showRestoreWarning = false },
             title = { Text(stringResource(R.string.nav_restore_backup)) },
             text = { Text(stringResource(R.string.nav_restore_backup_warning)) },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        showLibraryRestoreWarning = false
-                        libraryRestoreLauncher.launch(arrayOf("*/*"))
+                        showRestoreWarning = false
+                        restoreLauncher.launch(arrayOf("*/*"))
                     }
                 ) {
                     Text(stringResource(R.string.action_proceed))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showLibraryRestoreWarning = false }) {
-                    Text(stringResource(R.string.action_cancel))
-                }
-            }
-        )
-    }
-
-    if (showDictionaryRestoreWarning) {
-        AlertDialog(
-            onDismissRequest = { showDictionaryRestoreWarning = false },
-            title = { Text(stringResource(R.string.dictionaries_restore)) },
-            text = { Text(stringResource(R.string.dictionaries_restore_warning)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDictionaryRestoreWarning = false
-                        dictionaryRestoreLauncher.launch(arrayOf("*/*"))
-                    }
-                ) {
-                    Text(stringResource(R.string.action_proceed))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDictionaryRestoreWarning = false }) {
+                TextButton(onClick = { showRestoreWarning = false }) {
                     Text(stringResource(R.string.action_cancel))
                 }
             }
@@ -712,180 +588,19 @@ private fun GeneralSettingsSection(
 private fun BackupSettingsSection(
     settings: ReaderSettings,
     hasPermission: Boolean,
-    isLibraryBackingUp: Boolean,
-    isLibraryRestoring: Boolean,
-    isDictBackingUp: Boolean,
-    isDictRestoring: Boolean,
+    isBackingUp: Boolean,
+    isRestoring: Boolean,
     onAutoBackupFrequencySelected: (String) -> Unit,
     onBackupLocationClick: () -> Unit,
-    onLibraryBackupClick: () -> Unit,
-    onLibraryRestoreClick: () -> Unit,
-    onDictionaryBackupClick: () -> Unit,
-    onDictionaryRestoreClick: () -> Unit,
+    onBackupClick: () -> Unit,
+    onRestoreClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Section 1: Library Backup
-        Column {
-            Text(
-                text = stringResource(R.string.settings_library_backup),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-
-            SegmentedColumn {
-                val lastBackupTimeText = if (settings.lastBackupTime > 0) {
-                    val formatter =
-                        SimpleDateFormat("MMM dd, HH:mm", LocalLocale.current.platformLocale)
-                    "Last: ${formatter.format(Date(settings.lastBackupTime))}"
-                } else {
-                    "Never"
-                }
-
-                item(
-                    onClick = onLibraryBackupClick,
-                    leadingContent = {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.Save,
-                            contentDescription = null
-                        )
-                    },
-                    content = {
-                        Text(
-                            stringResource(R.string.settings_backup_library),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    },
-                    supportingContent = {
-                        Column {
-                            Text(
-                                if (hasPermission) "Backup now ($lastBackupTimeText)"
-                                else stringResource(R.string.nav_setup_now),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            if (isLibraryBackingUp) {
-                                LinearWavyProgressIndicator(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 8.dp)
-                                )
-                            }
-                        }
-                    },
-                    trailingContent = {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                            contentDescription = null
-                        )
-                    }
-                )
-
-                item(
-                    onClick = onLibraryRestoreClick,
-                    leadingContent = {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.History,
-                            contentDescription = null
-                        )
-                    },
-                    content = { Text(stringResource(R.string.settings_restore_library)) },
-                    supportingContent = {
-                        Column {
-                            Text("Restore library from backup file")
-                            if (isLibraryRestoring) {
-                                LinearWavyProgressIndicator(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 8.dp)
-                                )
-                            }
-                        }
-                    },
-                    trailingContent = {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                            contentDescription = null
-                        )
-                    }
-                )
-            }
-        }
-
-        // Section 2: Dictionary Backup
-        Column {
-            Text(
-                text = stringResource(R.string.settings_dictionary_backup),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-
-            SegmentedColumn {
-                item(
-                    onClick = onDictionaryBackupClick,
-                    leadingContent = {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.Save,
-                            contentDescription = null
-                        )
-                    },
-                    content = { Text(stringResource(R.string.dictionaries_backup)) },
-                    supportingContent = {
-                        Column {
-                            Text("Backup installed dictionaries")
-                            if (isDictBackingUp) {
-                                LinearWavyProgressIndicator(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 8.dp)
-                                )
-                            }
-                        }
-                    },
-                    trailingContent = {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                            contentDescription = null
-                        )
-                    }
-                )
-
-                item(
-                    onClick = onDictionaryRestoreClick,
-                    leadingContent = {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.History,
-                            contentDescription = null
-                        )
-                    },
-                    content = { Text(stringResource(R.string.settings_restore_dictionaries)) },
-                    supportingContent = {
-                        Column {
-                            Text("Restore dictionaries from backup file")
-                            if (isDictRestoring) {
-                                LinearWavyProgressIndicator(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 8.dp)
-                                )
-                            }
-                        }
-                    },
-                    trailingContent = {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                            contentDescription = null
-                        )
-                    }
-                )
-            }
-        }
-
-        // Section 3: Backup Preference
+        // Section 1: Backup & Restore
         Column {
             Text(
                 text = stringResource(R.string.settings_backup_preferences),
@@ -895,35 +610,8 @@ private fun BackupSettingsSection(
             )
 
             SegmentedColumn {
-                val autoBackupLabel = stringResource(R.string.settings_auto_backup_freq)
-                val autoBackupOptionsMap = mapOf(
-                    "3h" to stringResource(R.string.settings_backup_freq_3h),
-                    "6h" to stringResource(R.string.settings_backup_freq_6h),
-                    "12h" to stringResource(R.string.settings_backup_freq_12h),
-                    "1d" to stringResource(R.string.settings_backup_freq_1d),
-                    "2d" to stringResource(R.string.settings_backup_freq_2d),
-                    "3d" to stringResource(R.string.settings_backup_freq_3d),
-                    "1w" to stringResource(R.string.settings_backup_freq_1w),
-                    "never" to stringResource(R.string.settings_option_never)
-                )
-                settingsItem(
-                    label = autoBackupLabel,
-                    value = autoBackupOptionsMap[settings.autoBackupFrequency]
-                        ?: settings.autoBackupFrequency,
-                    options = autoBackupOptionsMap.values.toList(),
-                    onSelected = { label ->
-                        val key =
-                            autoBackupOptionsMap.entries.find { it.value == label }?.key ?: label
-                        onAutoBackupFrequencySelected(key)
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.Sync,
-                            contentDescription = null
-                        )
-                    }
-                )
-
+                // 1. Backup Location Item
+                val backupLocationLabel = stringResource(R.string.settings_backup_location)
                 item(
                     onClick = onBackupLocationClick,
                     leadingContent = {
@@ -932,14 +620,142 @@ private fun BackupSettingsSection(
                             contentDescription = null
                         )
                     },
-                    content = { Text(stringResource(R.string.settings_backup_location)) },
-                    supportingContent = {
-                        val selectedText = stringResource(R.string.settings_option_selected)
-                        val notSelectedText = stringResource(R.string.settings_option_not_selected)
+                    content = {
                         Text(
-                            if (settings.backupFolderUri.isNotEmpty()) selectedText
-                            else notSelectedText
+                            backupLocationLabel,
+                            style = MaterialTheme.typography.titleMedium
                         )
+                    },
+                    supportingContent = {
+                        Text(
+                            if (hasPermission) stringResource(R.string.settings_option_selected)
+                            else stringResource(R.string.settings_option_not_selected),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
+                    trailingContent = {
+                        Icon(
+                            imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
+                            contentDescription = null
+                        )
+                    }
+                )
+
+                // 2. Auto Backup Frequency Item
+                val frequencyOptionsMap = mapOf(
+                    "6h" to stringResource(R.string.settings_backup_freq_6h),
+                    "12h" to stringResource(R.string.settings_backup_freq_12h),
+                    "1d" to stringResource(R.string.settings_backup_freq_1d),
+                    "3d" to stringResource(R.string.settings_backup_freq_3d),
+                    "1w" to stringResource(R.string.settings_backup_freq_1w),
+                    "never" to stringResource(R.string.settings_option_never)
+                )
+
+                val autoBackupFrequencyLabel = stringResource(R.string.settings_auto_backup_freq)
+                settingsItem(
+                    label = autoBackupFrequencyLabel,
+                    value = frequencyOptionsMap[settings.autoBackupFrequency]
+                        ?: settings.autoBackupFrequency,
+                    options = frequencyOptionsMap.values.toList(),
+                    onSelected = { label ->
+                        val key =
+                            frequencyOptionsMap.entries.find { it.value == label }?.key ?: label
+                        onAutoBackupFrequencySelected(key)
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = MaterialSymbols.Outlined.Tune,
+                            contentDescription = null
+                        )
+                    }
+                )
+
+                // Localized last backup time computation
+                val lastBackupTimeText = if (settings.lastBackupTime > 0) {
+                    val formatter =
+                        SimpleDateFormat("MMM dd, HH:mm", LocalLocale.current.platformLocale)
+                    stringResource(
+                        R.string.settings_last_backup_format,
+                        formatter.format(Date(settings.lastBackupTime))
+                    )
+                } else {
+                    stringResource(R.string.settings_option_never)
+                }
+
+                // 3. Backup Now Item
+                item(
+                    onClick = onBackupClick,
+                    leadingContent = {
+                        Icon(
+                            imageVector = MaterialSymbols.Outlined.Save,
+                            contentDescription = null
+                        )
+                    },
+                    content = {
+                        Text(
+                            stringResource(R.string.settings_backup_now),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    },
+                    supportingContent = {
+                        Column {
+                            Text(
+                                if (hasPermission) {
+                                    stringResource(
+                                        R.string.settings_backup_now_summary,
+                                        lastBackupTimeText
+                                    ).replace(" (", "\n(")
+                                } else {
+                                    stringResource(R.string.nav_setup_now)
+                                },
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            if (isBackingUp) {
+                                LinearWavyProgressIndicator(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 8.dp)
+                                )
+                            }
+                        }
+                    },
+                    trailingContent = {
+                        Icon(
+                            imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
+                            contentDescription = null
+                        )
+                    }
+                )
+
+                // 4. Restore Item
+                item(
+                    onClick = onRestoreClick,
+                    leadingContent = {
+                        Icon(
+                            imageVector = MaterialSymbols.Outlined.History,
+                            contentDescription = null
+                        )
+                    },
+                    content = {
+                        Text(
+                            stringResource(R.string.settings_restore),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    },
+                    supportingContent = {
+                        Column {
+                            Text(
+                                stringResource(R.string.settings_restore_summary),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            if (isRestoring) {
+                                LinearWavyProgressIndicator(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 8.dp)
+                                )
+                            }
+                        }
                     },
                     trailingContent = {
                         Icon(

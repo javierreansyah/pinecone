@@ -30,8 +30,9 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
@@ -41,6 +42,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.OutlinedTextFieldDefaults.FocusedBorderThickness
@@ -96,6 +98,7 @@ fun EditBookScreen(
     val application = context.applicationContext as Application
 
     val viewModel: EditBookViewModel = viewModel(
+        key = bookId,
         factory = EditBookViewModel.Factory(application, bookId)
     )
 
@@ -361,7 +364,11 @@ private fun BookCoverPicker(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalLayoutApi::class,
+    ExperimentalMaterial3ExpressiveApi::class
+)
 @Composable
 private fun AutocompleteChipTextField(
     label: String,
@@ -461,30 +468,47 @@ private fun AutocompleteChipTextField(
                 })
         }
 
-        DropdownMenu(
+        DropdownMenuPopup(
             expanded = expanded && text.isNotBlank(),
             onDismissRequest = { expanded = false },
             modifier = Modifier.width(with(LocalDensity.current) { textFieldWidth.toDp() }),
             properties = PopupProperties(focusable = false)
         ) {
-            if (filteredSuggestions.isNotEmpty()) {
-                filteredSuggestions.take(5).forEach { suggestion ->
-                    DropdownMenuItem(text = { Text(suggestion) }, onClick = {
-                        onAdd(suggestion)
-                        text = ""
-                        expanded = false
-                    })
-                }
-            }
+            val groupInteractionSource = remember { MutableInteractionSource() }
+            DropdownMenuGroup(
+                shapes = MenuDefaults.groupShape(0, 1),
+                interactionSource = groupInteractionSource
+            ) {
+                val finalSuggestions = filteredSuggestions.take(5)
+                val showCreateNew =
+                    text.isNotBlank() && !suggestions.any { it.equals(text, ignoreCase = true) }
+                val totalCount = finalSuggestions.size + (if (showCreateNew) 1 else 0)
 
-            if (text.isNotBlank() && !suggestions.any { it.equals(text, ignoreCase = true) }) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.book_create_new, text)) },
-                    onClick = {
-                        onAdd(text)
-                        text = ""
-                        expanded = false
-                    })
+                finalSuggestions.forEachIndexed { index, suggestion ->
+                    DropdownMenuItem(
+                        selected = false,
+                        text = { Text(suggestion) },
+                        shapes = MenuDefaults.itemShape(index, totalCount),
+                        onClick = {
+                            onAdd(suggestion)
+                            text = ""
+                            expanded = false
+                        }
+                    )
+                }
+
+                if (showCreateNew) {
+                    DropdownMenuItem(
+                        selected = false,
+                        text = { Text(stringResource(R.string.book_create_new, text)) },
+                        shapes = MenuDefaults.itemShape(finalSuggestions.size, totalCount),
+                        onClick = {
+                            onAdd(text)
+                            text = ""
+                            expanded = false
+                        }
+                    )
+                }
             }
         }
     }

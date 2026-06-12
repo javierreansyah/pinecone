@@ -1,15 +1,18 @@
 package com.example.readerapp.ui.features.reader.components.overlay
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -33,7 +36,10 @@ import com.composables.icons.materialsymbols.outlined.More_vert
 import com.composables.icons.materialsymbols.outlined.Search
 import com.example.readerapp.R
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3ExpressiveApi::class
+)
 @Composable
 fun ReaderTopBar(
     isBookmarked: Boolean,
@@ -94,35 +100,56 @@ fun ReaderTopBar(
                             contentDescription = stringResource(R.string.action_more)
                         )
                     }
-                    DropdownMenu(
-                        expanded = showMoreMenu, onDismissRequest = { showMoreMenu = false }) {
-                        DropdownMenuItem(text = {
-                            Text(
-                                if (isBookmarked) stringResource(R.string.reader_remove_bookmark) else stringResource(
-                                    R.string.reader_add_bookmark
-                                ), style = MaterialTheme.typography.titleMedium
+                    DropdownMenuPopup(
+                        expanded = showMoreMenu,
+                        onDismissRequest = { showMoreMenu = false }
+                    ) {
+                        val groupInteractionSource = remember { MutableInteractionSource() }
+                        DropdownMenuGroup(
+                            shapes = MenuDefaults.groupShape(0, 1),
+                            interactionSource = groupInteractionSource
+                        ) {
+                            DropdownMenuItem(
+                                selected = false,
+                                text = {
+                                    Text(
+                                        if (isBookmarked) stringResource(R.string.reader_remove_bookmark) else stringResource(
+                                            R.string.reader_add_bookmark
+                                        )
+                                    )
+                                },
+                                onClick = {
+                                    onToggleBookmark()
+                                    showMoreMenu = false
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        MaterialSymbols.Outlined.Bookmark,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(MenuDefaults.LeadingIconSize)
+                                    )
+                                },
+                                shapes = MenuDefaults.itemShape(0, 2)
                             )
-                        }, onClick = {
-                            onToggleBookmark()
-                            showMoreMenu = false
-                        }, leadingIcon = {
-                            Icon(
-                                MaterialSymbols.Outlined.Bookmark, contentDescription = null
+                            DropdownMenuItem(
+                                selected = false,
+                                text = {
+                                    Text(stringResource(R.string.book_info_title))
+                                },
+                                onClick = {
+                                    onInfoClick()
+                                    showMoreMenu = false
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        MaterialSymbols.Outlined.Info,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(MenuDefaults.LeadingIconSize)
+                                    )
+                                },
+                                shapes = MenuDefaults.itemShape(1, 2)
                             )
-                        })
-                        DropdownMenuItem(text = {
-                            Text(
-                                stringResource(R.string.book_info_title),
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        }, onClick = {
-                            onInfoClick()
-                            showMoreMenu = false
-                        }, leadingIcon = {
-                            Icon(
-                                MaterialSymbols.Outlined.Info, contentDescription = null
-                            )
-                        })
+                        }
                     }
                 }
             }, colors = TopAppBarDefaults.topAppBarColors(

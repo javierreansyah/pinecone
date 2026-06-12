@@ -1,47 +1,67 @@
 package com.example.readerapp.ui.features.library.filters
 
 import android.app.Application
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
+import com.composables.icons.materialsymbols.outlined.Check
+import com.composables.icons.materialsymbols.outlined.Close
+import com.composables.icons.materialsymbols.outlined.Delete
+import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.More_vert
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.example.readerapp.R
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.features.library.components.FilterResultBottomSheet
-import com.example.readerapp.ui.features.library.components.RenameFilterDialog
 import com.example.readerapp.ui.features.library.components.book.BookCollection
 import com.example.readerapp.ui.features.library.components.book.BookContextMenu
 
@@ -150,7 +170,10 @@ private fun FilterResultContent(
     var showMenu by remember { mutableStateOf(false) }
     var showFilterSheet by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
-    var showRenameDialog by remember { mutableStateOf(false) }
+    var isRenaming by remember { mutableStateOf(false) }
+    var renameName by remember { mutableStateOf(TextFieldValue("")) }
+    var showMergeWarningDialog by remember { mutableStateOf(false) }
+    var pendingRenameName by remember { mutableStateOf("") }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -160,13 +183,36 @@ private fun FilterResultContent(
             FilterResultTopAppBar(
                 filterValue = filterValue,
                 showMenu = showMenu,
+                isRenaming = isRenaming,
+                renameName = renameName,
+                suggestions = suggestionList,
+                onRenameNameChange = { renameName = it },
+                onCancelRename = { isRenaming = false },
+                onSaveRename = {
+                    val newName = renameName.text.trim()
+                    if (newName.isNotBlank()) {
+                        if (suggestionList.contains(newName) && newName != filterValue) {
+                            pendingRenameName = newName
+                            showMergeWarningDialog = true
+                        } else {
+                            onRenameFilterItem(newName)
+                            isRenaming = false
+                        }
+                    } else {
+                        isRenaming = false
+                    }
+                },
                 onNavigateBack = onNavigateBack,
                 onFilterClick = { showFilterSheet = true },
                 onMenuToggle = { showMenu = !showMenu },
                 onMenuDismiss = { showMenu = false },
                 onRenameClick = {
                     showMenu = false
-                    showRenameDialog = true
+                    renameName = TextFieldValue(
+                        text = filterValue,
+                        selection = TextRange(filterValue.length)
+                    )
+                    isRenaming = true
                 },
                 onDeleteClick = {
                     showMenu = false
@@ -196,10 +242,8 @@ private fun FilterResultContent(
             shelves = shelves,
             allBooks = allBooks,
             selectedBookContext = selectedBookContext,
-            suggestionList = suggestionList,
             showFilterSheet = showFilterSheet,
             showDeleteConfirm = showDeleteConfirm,
-            showRenameDialog = showRenameDialog,
             onFilterDismiss = { showFilterSheet = false },
             onLayoutModeChange = onLayoutModeChange,
             onSortTypeChange = onSortTypeChange,
@@ -208,11 +252,6 @@ private fun FilterResultContent(
             onDeleteConfirm = {
                 showDeleteConfirm = false
                 onDeleteFilterItem()
-            },
-            onRenameDismiss = { showRenameDialog = false },
-            onRenameConfirm = { newName ->
-                showRenameDialog = false
-                onRenameFilterItem(newName)
             },
             onBookMenuDismiss = { selectedBookContext = null },
             onNavigateToBookInfo = onNavigateToBookInfo,
@@ -223,6 +262,30 @@ private fun FilterResultContent(
             onDeleteBook = onDeleteBook,
             onCreateShelfAndAdd = onCreateShelfAndAdd
         )
+
+        if (showMergeWarningDialog) {
+            AlertDialog(
+                onDismissRequest = { showMergeWarningDialog = false },
+                title = { Text(stringResource(R.string.action_rename)) },
+                text = { Text(stringResource(R.string.library_warning_merge)) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showMergeWarningDialog = false
+                            onRenameFilterItem(pendingRenameName)
+                            isRenaming = false
+                        }
+                    ) {
+                        Text(stringResource(R.string.action_save))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showMergeWarningDialog = false }) {
+                        Text(stringResource(R.string.action_cancel))
+                    }
+                }
+            )
+        }
     }
 }
 
@@ -231,6 +294,12 @@ private fun FilterResultContent(
 private fun FilterResultTopAppBar(
     filterValue: String,
     showMenu: Boolean,
+    isRenaming: Boolean,
+    renameName: TextFieldValue,
+    suggestions: List<String>,
+    onRenameNameChange: (TextFieldValue) -> Unit,
+    onCancelRename: () -> Unit,
+    onSaveRename: () -> Unit,
     onNavigateBack: () -> Unit,
     onFilterClick: () -> Unit,
     onMenuToggle: () -> Unit,
@@ -240,56 +309,202 @@ private fun FilterResultTopAppBar(
     scrollBehavior: androidx.compose.material3.TopAppBarScrollBehavior,
     modifier: Modifier = Modifier
 ) {
-    LargeFlexibleTopAppBar(
-        title = { Text(filterValue) },
-        navigationIcon = {
-            FilledTonalIconButton(
-                shapes = IconButtonDefaults.shapes(),
-                colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                onClick = onNavigateBack
-            ) {
-                Icon(
-                    MaterialSymbols.Outlined.Arrow_back,
-                    contentDescription = stringResource(R.string.action_back)
-                )
-            }
-        },
-        actions = {
-            IconButton(
-                shapes = IconButtonDefaults.shapes(),
-                onClick = onFilterClick
-            ) {
-                Icon(
-                    MaterialSymbols.Outlined.Tune,
-                    contentDescription = stringResource(R.string.action_filter)
-                )
-            }
-            Box {
-                IconButton(onClick = onMenuToggle) {
-                    Icon(
-                        MaterialSymbols.Outlined.More_vert,
-                        contentDescription = stringResource(R.string.action_more)
+    var isSuggestionsExpanded by remember { mutableStateOf(false) }
+    val filteredSuggestions = remember(renameName.text, suggestions) {
+        if (renameName.text.isBlank()) emptyList()
+        else suggestions.filter {
+            it.contains(
+                renameName.text,
+                ignoreCase = true
+            ) && it != renameName.text
+        }.take(5)
+    }
+
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(isRenaming) {
+        if (isRenaming) {
+            focusRequester.requestFocus()
+        }
+    }
+
+    Box(modifier = modifier) {
+        LargeFlexibleTopAppBar(
+            title = {
+                if (isRenaming) {
+                    BasicTextField(
+                        value = renameName,
+                        onValueChange = {
+                            onRenameNameChange(it)
+                            isSuggestionsExpanded = true
+                        },
+                        textStyle = LocalTextStyle.current.copy(
+                            color = MaterialTheme.colorScheme.onSurface
+                        ),
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                        singleLine = false,
+                        maxLines = 2,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(focusRequester)
+                    )
+                } else {
+                    Text(
+                        text = filterValue,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
-                DropdownMenu(expanded = showMenu, onDismissRequest = onMenuDismiss) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.action_rename)) },
-                        onClick = onRenameClick
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.action_delete)) },
-                        onClick = onDeleteClick
-                    )
+            },
+            navigationIcon = {
+                if (isRenaming) {
+                    FilledTonalIconButton(
+                        shapes = IconButtonDefaults.shapes(),
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                        onClick = onCancelRename
+                    ) {
+                        Icon(
+                            MaterialSymbols.Outlined.Close,
+                            contentDescription = stringResource(R.string.action_cancel)
+                        )
+                    }
+                } else {
+                    FilledTonalIconButton(
+                        shapes = IconButtonDefaults.shapes(),
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                        onClick = onNavigateBack
+                    ) {
+                        Icon(
+                            MaterialSymbols.Outlined.Arrow_back,
+                            contentDescription = stringResource(R.string.action_back)
+                        )
+                    }
+                }
+            },
+            actions = {
+                if (isRenaming) {
+                    FilledIconButton(
+                        modifier = Modifier
+                            .padding(end = 6.dp)
+                            .size(
+                                IconButtonDefaults.smallContainerSize(
+                                    widthOption = IconButtonDefaults.IconButtonWidthOption.Wide
+                                )
+                            ),
+                        shapes = IconButtonDefaults.shapes(),
+                        onClick = onSaveRename
+                    ) {
+                        Icon(
+                            imageVector = MaterialSymbols.Outlined.Check,
+                            contentDescription = stringResource(R.string.action_save)
+                        )
+                    }
+                } else {
+                    IconButton(
+                        shapes = IconButtonDefaults.shapes(),
+                        onClick = onFilterClick
+                    ) {
+                        Icon(
+                            MaterialSymbols.Outlined.Tune,
+                            contentDescription = stringResource(R.string.action_filter)
+                        )
+                    }
+                    Box {
+                        IconButton(onClick = onMenuToggle) {
+                            Icon(
+                                MaterialSymbols.Outlined.More_vert,
+                                contentDescription = stringResource(R.string.action_more)
+                            )
+                        }
+                        DropdownMenuPopup(
+                            expanded = showMenu,
+                            onDismissRequest = onMenuDismiss
+                        ) {
+                            val groupInteractionSource = remember { MutableInteractionSource() }
+                            DropdownMenuGroup(
+                                shapes = MenuDefaults.groupShape(0, 1),
+                                interactionSource = groupInteractionSource
+                            ) {
+                                DropdownMenuItem(
+                                    selected = false,
+                                    text = { Text(stringResource(R.string.action_rename)) },
+                                    shapes = MenuDefaults.itemShape(0, 2),
+                                    leadingIcon = {
+                                        Icon(
+                                            MaterialSymbols.Outlined.Edit,
+                                            modifier = Modifier.size(MenuDefaults.LeadingIconSize),
+                                            contentDescription = null
+                                        )
+                                    },
+                                    onClick = onRenameClick
+                                )
+                                DropdownMenuItem(
+                                    selected = false,
+                                    text = {
+                                        Text(
+                                            stringResource(R.string.action_delete),
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                    },
+                                    shapes = MenuDefaults.itemShape(1, 2),
+                                    leadingIcon = {
+                                        Icon(
+                                            MaterialSymbols.Outlined.Delete,
+                                            modifier = Modifier.size(MenuDefaults.LeadingIconSize),
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    },
+                                    onClick = onDeleteClick
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                scrolledContainerColor = MaterialTheme.colorScheme.surface,
+            ),
+            scrollBehavior = scrollBehavior
+        )
+
+        if (isRenaming && filteredSuggestions.isNotEmpty() && isSuggestionsExpanded) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+            ) {
+                DropdownMenuPopup(
+                    expanded = true,
+                    onDismissRequest = { isSuggestionsExpanded = false },
+                    properties = PopupProperties(focusable = false)
+                ) {
+                    val groupInteractionSource = remember { MutableInteractionSource() }
+                    DropdownMenuGroup(
+                        shapes = MenuDefaults.groupShape(0, 1),
+                        interactionSource = groupInteractionSource
+                    ) {
+                        filteredSuggestions.forEachIndexed { index, suggestion ->
+                            DropdownMenuItem(
+                                selected = false,
+                                text = { Text(suggestion) },
+                                shapes = MenuDefaults.itemShape(index, filteredSuggestions.size),
+                                onClick = {
+                                    onRenameNameChange(
+                                        TextFieldValue(
+                                            text = suggestion,
+                                            selection = TextRange(suggestion.length)
+                                        )
+                                    )
+                                    isSuggestionsExpanded = false
+                                }
+                            )
+                        }
+                    }
                 }
             }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            scrolledContainerColor = MaterialTheme.colorScheme.surface,
-        ),
-        scrollBehavior = scrollBehavior,
-        modifier = modifier
-    )
+        }
+    }
 }
 
 @Composable
@@ -333,18 +548,14 @@ private fun FilterResultDialogsAndSheets(
     shelves: List<com.example.readerapp.data.local.database.library.ShelfWithCovers>,
     allBooks: List<Book>,
     selectedBookContext: Pair<String, String?>?,
-    suggestionList: List<String>,
     showFilterSheet: Boolean,
     showDeleteConfirm: Boolean,
-    showRenameDialog: Boolean,
     onFilterDismiss: () -> Unit,
     onLayoutModeChange: (com.example.readerapp.ui.features.library.LayoutMode) -> Unit,
     onSortTypeChange: (com.example.readerapp.ui.features.library.SortType) -> Unit,
     onStatusToggle: (com.example.readerapp.ui.features.library.StatusFilter) -> Unit,
     onDeleteDismiss: () -> Unit,
     onDeleteConfirm: () -> Unit,
-    onRenameDismiss: () -> Unit,
-    onRenameConfirm: (String) -> Unit,
     onBookMenuDismiss: () -> Unit,
     onNavigateToBookInfo: (String) -> Unit,
     onToggleArchive: (String) -> Unit,
@@ -409,15 +620,6 @@ private fun FilterResultDialogsAndSheets(
                     Text(stringResource(R.string.action_cancel))
                 }
             })
-    }
-
-    if (showRenameDialog) {
-        RenameFilterDialog(
-            initialName = filterValue,
-            suggestions = suggestionList,
-            onDismiss = onRenameDismiss,
-            onConfirm = onRenameConfirm
-        )
     }
 }
 

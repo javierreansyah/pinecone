@@ -3,6 +3,7 @@ package com.example.readerapp.worker
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.example.readerapp.ReaderApplication
 import com.example.readerapp.data.repository.backup.LibraryBackupRepository
 
 class BackupWorker(
@@ -11,8 +12,13 @@ class BackupWorker(
 
     override suspend fun doWork(): Result {
         val libraryBackupRepository = LibraryBackupRepository(applicationContext)
-        val success = libraryBackupRepository.performBackup(force = false)
-        return if (success) {
+        val dictionaryBackupManager =
+            (applicationContext as ReaderApplication).dictionaryBackupManager
+
+        val libSuccess = libraryBackupRepository.performBackup(force = false)
+        val dictSuccess = dictionaryBackupManager.backupDictionaries()
+
+        return if (libSuccess && dictSuccess) {
             Result.success()
         } else {
             Result.failure()

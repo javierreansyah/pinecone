@@ -119,6 +119,7 @@ fun BookInfoScreen(
     val context = LocalContext.current
     val application = context.applicationContext as Application
     val viewModel: BookInfoViewModel = viewModel(
+        key = bookId,
         factory = BookInfoViewModel.Factory(application, bookId)
     )
 

@@ -1,34 +1,44 @@
 package com.example.readerapp.ui.root
 
-import android.net.Uri
+import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
 
-sealed class Screen(val route: String) {
-    object Library : Screen("library")
-    object Archives : Screen("archives")
-    object Settings : Screen("settings")
-    object ShelfDetail : Screen("shelf_detail/{shelfId}?name={name}&count={count}") {
-        fun createRoute(shelfId: String, name: String = "", count: Int = 0): String {
-            val encodedName = Uri.encode(name)
-            return "shelf_detail/$shelfId?name=$encodedName&count=$count"
-        }
-    }
+@Serializable
+sealed interface Screen : NavKey {
+    @Serializable
+    data object Library : Screen
 
-    object AuthorDetail : Screen("author_detail/{authorName}") {
-        fun createRoute(authorName: String) = "author_detail/$authorName"
-    }
+    @Serializable
+    data object Archives : Screen
 
-    object TagDetail : Screen("tag_detail/{tagName}") {
-        fun createRoute(tagName: String) = "tag_detail/$tagName"
-    }
+    @Serializable
+    data object Settings : Screen
 
-    object AllAuthors : Screen("all_authors")
-    object AllTags : Screen("all_tags")
-    object Dictionaries : Screen("dictionaries")
-    object BookInfo : Screen("book_info/{bookId}") {
-        fun createRoute(bookId: String) = "book_info/$bookId"
-    }
+    @Serializable
+    data class ShelfDetail(
+        val shelfId: String,
+        val name: String = "",
+        val count: Int = 0
+    ) : Screen
 
-    object EditBook : Screen("edit_book/{bookId}") {
-        fun createRoute(bookId: String) = "edit_book/$bookId"
-    }
+    @Serializable
+    data class AuthorDetail(val authorName: String) : Screen
+
+    @Serializable
+    data class TagDetail(val tagName: String) : Screen
+
+    @Serializable
+    data object AllAuthors : Screen
+
+    @Serializable
+    data object AllTags : Screen
+
+    @Serializable
+    data object Dictionaries : Screen
+
+    @Serializable
+    data class BookInfo(val bookId: String) : Screen
+
+    @Serializable
+    data class EditBook(val bookId: String) : Screen
 }
