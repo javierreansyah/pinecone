@@ -57,7 +57,11 @@ private fun BookGrid(
             .fillMaxSize()
             .padding(horizontal = horizontalPadding)
     ) {
-        items(books, key = { it.id }) { book ->
+        items(
+            items = books,
+            key = { "${it.id}-${layoutMode.name}" },
+            contentType = { layoutMode }
+        ) { book ->
             BookItem(
                 book = book,
                 onClick = { onBookClick(book.id) },
