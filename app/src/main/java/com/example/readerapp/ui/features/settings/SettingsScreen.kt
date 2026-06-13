@@ -7,6 +7,7 @@ import android.provider.DocumentsContract
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -710,7 +711,7 @@ private fun BackupSettingsSection(
                                 },
                                 style = MaterialTheme.typography.bodyMedium
                             )
-                            if (isBackingUp) {
+                            AnimatedVisibility(visible = isBackingUp) {
                                 LinearWavyProgressIndicator(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -748,7 +749,7 @@ private fun BackupSettingsSection(
                                 stringResource(R.string.settings_restore_summary),
                                 style = MaterialTheme.typography.bodyMedium
                             )
-                            if (isRestoring) {
+                            AnimatedVisibility(visible = isRestoring) {
                                 LinearWavyProgressIndicator(
                                     modifier = Modifier
                                         .fillMaxWidth()
