@@ -41,4 +41,7 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data class EditBook(val bookId: String) : Screen
+
+    @Serializable
+    data class AddToShelf(val bookId: String) : Screen
 }

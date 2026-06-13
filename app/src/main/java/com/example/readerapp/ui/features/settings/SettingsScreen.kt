@@ -26,11 +26,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -60,7 +57,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Contrast
 import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.History
@@ -73,6 +69,7 @@ import com.composables.icons.materialsymbols.outlined.Tune
 import com.example.readerapp.R
 import com.example.readerapp.data.local.preferences.ReaderPreferences
 import com.example.readerapp.data.local.preferences.ReaderSettings
+import com.example.readerapp.ui.components.LibraryTopAppBar
 import com.example.readerapp.ui.components.SegmentedColumn
 import com.example.readerapp.ui.features.settings.components.ColorSchemePickerDialog
 import com.example.readerapp.ui.features.settings.components.settingsItem
@@ -200,7 +197,7 @@ fun SettingsScreen(
                 .padding(innerPadding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 16.dp),
+                .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             GeneralSettingsSection(
@@ -399,7 +396,7 @@ fun SettingsScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SettingsTopBar(
     onNavigateBack: () -> Unit,
@@ -407,21 +404,11 @@ private fun SettingsTopBar(
     scrollBehavior: TopAppBarScrollBehavior,
     modifier: Modifier = Modifier
 ) {
-    LargeFlexibleTopAppBar(
+    LibraryTopAppBar(
         modifier = modifier,
         title = { Text(stringResource(R.string.settings_title)) },
-        navigationIcon = {
-            FilledTonalIconButton(
-                shapes = IconButtonDefaults.shapes(),
-                colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                onClick = onNavigateBack
-            ) {
-                Icon(
-                    MaterialSymbols.Outlined.Arrow_back,
-                    contentDescription = stringResource(R.string.action_back)
-                )
-            }
-        },
+        onBack = onNavigateBack,
+        scrollBehavior = scrollBehavior,
         actions = {
             IconButton(onClick = onRestoreDefaultClick) {
                 Icon(
@@ -429,12 +416,7 @@ private fun SettingsTopBar(
                     contentDescription = stringResource(R.string.settings_restore_defaults)
                 )
             }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            scrolledContainerColor = MaterialTheme.colorScheme.surface,
-        ),
-        scrollBehavior = scrollBehavior
+        }
     )
 }
 

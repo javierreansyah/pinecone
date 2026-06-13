@@ -34,6 +34,8 @@ import com.example.readerapp.ui.features.library.filters.FilterResultScreen
 import com.example.readerapp.ui.features.library.info.BookInfoScreen
 import com.example.readerapp.ui.features.library.info.EditBookScreen
 import com.example.readerapp.ui.features.library.main.LibraryRoute
+import com.example.readerapp.ui.features.library.shelf.SelectShelfScreen
+import com.example.readerapp.ui.features.library.shelf.SelectShelfViewModel
 import com.example.readerapp.ui.features.library.shelf.ShelfDetailScreen
 import com.example.readerapp.ui.features.reader.ReaderActivity
 import com.example.readerapp.ui.features.settings.SettingsScreen
@@ -150,6 +152,9 @@ fun NavGraph(
                     },
                     onNavigateToBookInfo = { bookId ->
                         backStack.add(Screen.BookInfo(bookId))
+                    },
+                    onNavigateToAddToShelf = { bookId ->
+                        backStack.add(Screen.AddToShelf(bookId))
                     }
                 )
             }
@@ -169,6 +174,9 @@ fun NavGraph(
                     },
                     onNavigateToBookInfo = { bookId ->
                         backStack.add(Screen.BookInfo(bookId))
+                    },
+                    onNavigateToAddToShelf = { bookId ->
+                        backStack.add(Screen.AddToShelf(bookId))
                     }
                 )
             }
@@ -186,6 +194,9 @@ fun NavGraph(
                     },
                     onNavigateToBookInfo = { bookId ->
                         backStack.add(Screen.BookInfo(bookId))
+                    },
+                    onNavigateToAddToShelf = { bookId ->
+                        backStack.add(Screen.AddToShelf(bookId))
                     }
                 )
             }
@@ -206,6 +217,9 @@ fun NavGraph(
                     },
                     onNavigateToBookInfo = { bookId ->
                         backStack.add(Screen.BookInfo(bookId))
+                    },
+                    onNavigateToAddToShelf = { bookId ->
+                        backStack.add(Screen.AddToShelf(bookId))
                     }
                 )
             }
@@ -226,6 +240,9 @@ fun NavGraph(
                     },
                     onNavigateToBookInfo = { bookId ->
                         backStack.add(Screen.BookInfo(bookId))
+                    },
+                    onNavigateToAddToShelf = { bookId ->
+                        backStack.add(Screen.AddToShelf(bookId))
                     }
                 )
             }
@@ -274,6 +291,24 @@ fun NavGraph(
             entry<Screen.EditBook> { args ->
                 EditBookScreen(
                     bookId = args.bookId,
+                    onNavigateBack = navigateBack
+                )
+            }
+            entry<Screen.AddToShelf> { args ->
+                val selectShelfViewModel: SelectShelfViewModel = viewModel(
+                    factory = object :
+                        androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory(app) {
+                        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                            if (modelClass.isAssignableFrom(SelectShelfViewModel::class.java)) {
+                                @Suppress("UNCHECKED_CAST") return SelectShelfViewModel(app) as T
+                            }
+                            throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
+                        }
+                    }
+                )
+                SelectShelfScreen(
+                    bookId = args.bookId,
+                    viewModel = selectShelfViewModel,
                     onNavigateBack = navigateBack
                 )
             }

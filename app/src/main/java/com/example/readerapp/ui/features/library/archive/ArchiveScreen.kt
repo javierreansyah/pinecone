@@ -6,12 +6,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LargeFlexibleTopAppBar
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -30,11 +27,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Book
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.example.readerapp.R
 import com.example.readerapp.ui.components.EmptyState
+import com.example.readerapp.ui.components.LibraryTopAppBar
 import com.example.readerapp.ui.features.library.components.FilterResultBottomSheet
 import com.example.readerapp.ui.features.library.components.book.BookCollection
 import com.example.readerapp.ui.features.library.components.book.BookContextMenu
@@ -44,7 +41,8 @@ import com.example.readerapp.ui.features.library.components.book.BookContextMenu
 fun ArchiveScreen(
     onNavigateBack: () -> Unit,
     onNavigateToReader: (String) -> Unit,
-    onNavigateToBookInfo: (String) -> Unit
+    onNavigateToBookInfo: (String) -> Unit,
+    onNavigateToAddToShelf: (String) -> Unit
 ) {
     val context = LocalContext.current
     val viewModel: ArchiveViewModel = viewModel(factory = object :
@@ -65,23 +63,16 @@ fun ArchiveScreen(
     var showFilterSheet by remember { mutableStateOf(false) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val isEmpty = archivedBooks.isEmpty()
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
-            LargeFlexibleTopAppBar(
+        modifier = if (isEmpty) Modifier else Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            LibraryTopAppBar(
                 title = { Text(stringResource(R.string.library_archives_title)) },
-                navigationIcon = {
-                    FilledTonalIconButton(
-                        shapes = IconButtonDefaults.shapes(),
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                        onClick = onNavigateBack
-                    ) {
-                        Icon(
-                            MaterialSymbols.Outlined.Arrow_back,
-                            contentDescription = stringResource(R.string.action_back)
-                        )
-                    }
-                },
+                onBack = onNavigateBack,
+                isEmpty = isEmpty,
+                scrollBehavior = scrollBehavior,
                 actions = {
                     IconButton(
                         shapes = IconButtonDefaults.shapes(),
@@ -92,12 +83,7 @@ fun ArchiveScreen(
                             contentDescription = stringResource(R.string.action_filter)
                         )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
-                ),
-                scrollBehavior = scrollBehavior
+                }
             )
         }) { innerPadding ->
         Box(
@@ -127,31 +113,29 @@ fun ArchiveScreen(
                 )
             }
         }
+    }
 
-        selectedBookForMenu?.let { bookId ->
-            BookContextMenu(
-                bookId = bookId,
-                shelfId = null,
-                shelves = shelves,
-                allBooks = allBooks,
-                onNavigateToBookInfo = onNavigateToBookInfo,
-                onToggleArchive = { viewModel.toggleArchive(bookId) },
-                onToggleReadStatus = { viewModel.toggleReadStatus(bookId) },
-                onRemoveFromShelf = {},
-                onAddToShelf = { shelfId -> viewModel.addBookToShelf(shelfId, bookId) },
-                onDeleteBook = { viewModel.deleteBook(bookId) },
-                onCreateShelfAndAdd = { name -> viewModel.createShelfAndAddBook(name, bookId) },
-                onDismiss = { selectedBookForMenu = null })
-        }
+    selectedBookForMenu?.let { bookId ->
+        BookContextMenu(
+            bookId = bookId,
+            shelfId = null,
+            allBooks = allBooks,
+            onNavigateToBookInfo = onNavigateToBookInfo,
+            onToggleArchive = { viewModel.toggleArchive(bookId) },
+            onToggleReadStatus = { viewModel.toggleReadStatus(bookId) },
+            onRemoveFromShelf = {},
+            onAddToShelf = onNavigateToAddToShelf,
+            onDeleteBook = { viewModel.deleteBook(bookId) },
+            onDismiss = { selectedBookForMenu = null })
+    }
 
-        if (showFilterSheet) {
-            FilterResultBottomSheet(
-                preferences = uiState.bookPreferences,
-                onLayoutModeChange = { viewModel.onLayoutModeChange(it) },
-                onSortTypeChange = { viewModel.onSortTypeChange(it) },
-                onStatusToggle = { viewModel.toggleStatusFilter(it) },
-                onDismiss = { showFilterSheet = false }
-            )
-        }
+    if (showFilterSheet) {
+        FilterResultBottomSheet(
+            preferences = uiState.bookPreferences,
+            onLayoutModeChange = { viewModel.onLayoutModeChange(it) },
+            onSortTypeChange = { viewModel.onSortTypeChange(it) },
+            onStatusToggle = { viewModel.toggleStatusFilter(it) },
+            onDismiss = { showFilterSheet = false }
+        )
     }
 }

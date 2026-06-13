@@ -1,7 +1,13 @@
 package com.example.readerapp.ui.features.library.components.book
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -24,19 +30,33 @@ fun BookCollection(
     scrollKey: Any? = null
 ) {
     key(scrollKey) {
-        if (layoutMode != LayoutMode.List) {
-            BookGrid(
-                books = books,
-                layoutMode = layoutMode,
-                onBookClick = onBookClick,
-                onBookLongClick = onBookLongClick
-            )
-        } else {
-            BookList(
-                books = books,
-                onBookClick = onBookClick,
-                onBookLongClick = onBookLongClick
-            )
+        AnimatedContent(
+            targetState = layoutMode,
+            transitionSpec = {
+                fadeIn(animationSpec = tween(durationMillis = 100, delayMillis = 100)) +
+                        scaleIn(
+                            initialScale = 0.9f,
+                            animationSpec = tween(durationMillis = 100, delayMillis = 100)
+                        ) togetherWith
+                        fadeOut(animationSpec = tween(durationMillis = 100)) +
+                        scaleOut(targetScale = 0.9f, animationSpec = tween(durationMillis = 100))
+            },
+            label = "bookCollectionLayoutTransition"
+        ) { targetLayoutMode ->
+            if (targetLayoutMode != LayoutMode.List) {
+                BookGrid(
+                    books = books,
+                    layoutMode = targetLayoutMode,
+                    onBookClick = onBookClick,
+                    onBookLongClick = onBookLongClick
+                )
+            } else {
+                BookList(
+                    books = books,
+                    onBookClick = onBookClick,
+                    onBookLongClick = onBookLongClick
+                )
+            }
         }
     }
 }
@@ -78,7 +98,7 @@ private fun BookList(
     onBookLongClick: ((String) -> Unit)? = null
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxSize()
     ) {
         items(books, key = { it.id }) { book ->
             BookItem(

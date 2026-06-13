@@ -67,7 +67,8 @@ fun LibraryRoute(
     onNavigateToTag: (String) -> Unit = {},
     onNavigateToAllAuthors: () -> Unit = {},
     onNavigateToAllTags: () -> Unit = {},
-    onNavigateToBookInfo: (String) -> Unit
+    onNavigateToBookInfo: (String) -> Unit,
+    onNavigateToAddToShelf: (String) -> Unit
 ) {
     val context = LocalContext.current
     val viewModel: LibraryViewModel = viewModel(factory = object :
@@ -93,9 +94,7 @@ fun LibraryRoute(
         toggleArchive = viewModel::toggleArchive,
         toggleReadStatus = viewModel::toggleReadStatus,
         removeBookFromShelf = viewModel::removeBookFromShelf,
-        addBookToShelf = viewModel::addBookToShelf,
         deleteBook = viewModel::deleteBook,
-        createShelfAndAddBook = viewModel::createShelfAndAddBook,
         onNavigateToReader = onNavigateToReader,
         onOpenDrawerClick = onOpenDrawerClick,
         onNavigateToShelf = onNavigateToShelf,
@@ -103,7 +102,8 @@ fun LibraryRoute(
         onNavigateToTag = onNavigateToTag,
         onNavigateToAllAuthors = onNavigateToAllAuthors,
         onNavigateToAllTags = onNavigateToAllTags,
-        onNavigateToBookInfo = onNavigateToBookInfo
+        onNavigateToBookInfo = onNavigateToBookInfo,
+        onNavigateToAddToShelf = onNavigateToAddToShelf
     )
 }
 
@@ -124,9 +124,7 @@ fun LibraryScreen(
     toggleArchive: (String) -> Unit,
     toggleReadStatus: (String) -> Unit,
     removeBookFromShelf: (String, String) -> Unit,
-    addBookToShelf: (String, String) -> Unit,
     deleteBook: (String) -> Unit,
-    createShelfAndAddBook: (String, String?) -> Unit,
     onNavigateToReader: (String) -> Unit,
     onOpenDrawerClick: () -> Unit,
     onNavigateToShelf: (String, String, Int) -> Unit,
@@ -134,7 +132,8 @@ fun LibraryScreen(
     onNavigateToTag: (String) -> Unit = {},
     onNavigateToAllAuthors: () -> Unit = {},
     onNavigateToAllTags: () -> Unit = {},
-    onNavigateToBookInfo: (String) -> Unit
+    onNavigateToBookInfo: (String) -> Unit,
+    onNavigateToAddToShelf: (String) -> Unit
 ) {
     val showFilterSheet = remember { mutableStateOf(false) }
 
@@ -242,31 +241,29 @@ fun LibraryScreen(
                 onShelfFilterToggle = { toggleShelfFilter(it, isShelvesTab) },
                 onDismiss = { showFilterSheet.value = false })
         }
+    }
 
-        // Context Menu
-        selectedBookContext?.let { context ->
-            val bookId = context.first
-            val contextShelfId = context.second
-            BookContextMenu(
-                bookId = bookId,
-                shelfId = contextShelfId,
-                shelves = uiState.shelves,
-                allBooks = uiState.allBooks,
-                onNavigateToBookInfo = onNavigateToBookInfo,
-                onToggleArchive = { toggleArchive(bookId) },
-                onToggleReadStatus = { toggleReadStatus(bookId) },
-                onRemoveFromShelf = {
-                    contextShelfId?.let {
-                        removeBookFromShelf(
-                            it, bookId
-                        )
-                    }
-                },
-                onAddToShelf = { shelfId -> addBookToShelf(shelfId, bookId) },
-                onDeleteBook = { deleteBook(bookId) },
-                onCreateShelfAndAdd = { name -> createShelfAndAddBook(name, bookId) },
-                onDismiss = { selectedBookContext = null })
-        }
+    // Context Menu
+    selectedBookContext?.let { context ->
+        val bookId = context.first
+        val contextShelfId = context.second
+        BookContextMenu(
+            bookId = bookId,
+            shelfId = contextShelfId,
+            allBooks = uiState.allBooks,
+            onNavigateToBookInfo = onNavigateToBookInfo,
+            onToggleArchive = { toggleArchive(bookId) },
+            onToggleReadStatus = { toggleReadStatus(bookId) },
+            onRemoveFromShelf = {
+                contextShelfId?.let {
+                    removeBookFromShelf(
+                        it, bookId
+                    )
+                }
+            },
+            onAddToShelf = onNavigateToAddToShelf,
+            onDeleteBook = { deleteBook(bookId) },
+            onDismiss = { selectedBookContext = null })
     }
 }
 

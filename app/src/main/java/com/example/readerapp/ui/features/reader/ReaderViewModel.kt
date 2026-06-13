@@ -532,26 +532,25 @@ class ReaderViewModel(
 
     // ── Search ────────────────────────────────────────────────────────────────
 
-    fun showSearch() {
+    fun showSearch(clearState: Boolean = true) {
         _controlsState.update { it.copy(showSearch = true) }
-        _searchState.update {
-            it.copy(
-                query = "",
-                results = emptyList(),
-                isLoading = false,
-                searchPerformed = false,
-                activeIndex = null,
-                isInNavMode = false
-            )
+        if (clearState) {
+            _searchState.update {
+                it.copy(
+                    query = "",
+                    results = emptyList(),
+                    isLoading = false,
+                    searchPerformed = false,
+                    activeIndex = null,
+                    isInNavMode = false
+                )
+            }
         }
     }
 
     fun hideSearch() {
         searchJob?.cancel()
         _controlsState.update { it.copy(showSearch = false) }
-        _searchState.update {
-            it.copy(isInNavMode = false, activeIndex = null)
-        }
     }
 
     fun updateSearchQuery(query: String) {
@@ -566,7 +565,9 @@ class ReaderViewModel(
                     query = query,
                     results = emptyList(),
                     isLoading = false,
-                    searchPerformed = false
+                    searchPerformed = false,
+                    isInNavMode = false,
+                    activeIndex = null
                 )
             }
             return
@@ -579,7 +580,9 @@ class ReaderViewModel(
                 query = query,
                 results = emptyList(),
                 isLoading = true,
-                searchPerformed = true
+                searchPerformed = true,
+                isInNavMode = false,
+                activeIndex = null
             )
         }
 

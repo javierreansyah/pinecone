@@ -8,7 +8,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,12 +18,9 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
@@ -47,7 +43,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Add
-import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Book
 import com.composables.icons.materialsymbols.outlined.Delete
 import com.composables.icons.materialsymbols.outlined.Edit
@@ -56,6 +51,7 @@ import com.example.readerapp.R
 import com.example.readerapp.data.local.preferences.InstalledDictionary
 import com.example.readerapp.data.repository.dictionary.DictionaryState
 import com.example.readerapp.ui.components.EmptyState
+import com.example.readerapp.ui.components.LibraryTopAppBar
 import com.example.readerapp.ui.components.SegmentedLazyColumn
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -148,10 +144,15 @@ private fun DictionariesContent(
     var itemToDelete by remember { mutableStateOf<InstalledDictionary?>(null) }
     var itemToRename by remember { mutableStateOf<InstalledDictionary?>(null) }
 
+    val isLoadingImport = uiState.importState is DictionaryState.Loading
+    val totalCount = uiState.installedDictionaries.size + (if (isLoadingImport) 1 else 0)
+    val isEmpty = totalCount == 0
+
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = if (isEmpty) Modifier else Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             DictionariesTopAppBar(
+                isEmpty = isEmpty,
                 onBack = onBack,
                 scrollBehavior = scrollBehavior
             )
@@ -230,33 +231,18 @@ private fun DictionariesContent(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DictionariesTopAppBar(
+    isEmpty: Boolean,
     onBack: () -> Unit,
     scrollBehavior: androidx.compose.material3.TopAppBarScrollBehavior,
     modifier: Modifier = Modifier
 ) {
-    LargeFlexibleTopAppBar(
+    LibraryTopAppBar(
         title = { Text(stringResource(R.string.dictionaries_title)) },
-        navigationIcon = {
-            FilledTonalIconButton(
-                shapes = IconButtonDefaults.shapes(),
-                colors = IconButtonDefaults.filledTonalIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                ),
-                onClick = onBack
-            ) {
-                Icon(
-                    MaterialSymbols.Outlined.Arrow_back,
-                    contentDescription = stringResource(R.string.action_back)
-                )
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            scrolledContainerColor = MaterialTheme.colorScheme.surface,
-        ),
+        onBack = onBack,
+        isEmpty = isEmpty,
         scrollBehavior = scrollBehavior,
         modifier = modifier
     )
@@ -277,7 +263,6 @@ private fun DictionariesList(
 ) {
     SegmentedLazyColumn(
         modifier = modifier.padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp)
     ) {
         uiState.installedDictionaries.forEach { dict ->
             item(
