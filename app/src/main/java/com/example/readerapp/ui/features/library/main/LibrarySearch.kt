@@ -12,22 +12,24 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AppBarWithSearch
 import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -87,7 +89,9 @@ import com.example.readerapp.data.local.database.library.ShelfEntity
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.components.SegmentedButtonGroup
 import com.example.readerapp.ui.components.rememberVoiceSearchLauncher
+import com.example.readerapp.ui.features.library.LayoutMode
 import com.example.readerapp.ui.features.library.SearchCategory
+import com.example.readerapp.ui.features.library.components.book.BookCollection
 import com.example.readerapp.ui.features.library.components.book.BookItem
 import kotlinx.coroutines.launch
 
@@ -131,8 +135,7 @@ fun LibrarySearchTopBar(
         searchBarState = searchBarState,
         textFieldState = textFieldState,
         focusRequester = focusRequester,
-        onRestoringChange = { isRestoring = it }
-    )
+        onRestoringChange = { isRestoring = it })
 
     // Colors
     val isExpandedTarget = searchBarState.targetValue == SearchBarValue.Expanded
@@ -206,20 +209,18 @@ fun LibrarySearchTopBar(
             var hasEverExpanded by rememberSaveable { mutableStateOf(false) }
 
             LaunchedEffect(Unit) {
-                snapshotFlow { searchBarState.currentValue }
-                    .collect { value ->
-                        if (value == SearchBarValue.Expanded) {
-                            hasEverExpanded = true
-                        }
+                snapshotFlow { searchBarState.currentValue }.collect { value ->
+                    if (value == SearchBarValue.Expanded) {
+                        hasEverExpanded = true
                     }
+                }
             }
 
             // After the first expansion the flag stays true, so subsequent
             // opens never need to re-compose from scratch.
             val showContent by remember {
                 derivedStateOf {
-                    hasEverExpanded ||
-                            searchBarState.currentValue == SearchBarValue.Expanded
+                    hasEverExpanded || searchBarState.currentValue == SearchBarValue.Expanded
                 }
             }
 
@@ -238,6 +239,7 @@ fun LibrarySearchTopBar(
 
             if (showContent) {
                 ExpandedSearchContent(
+                    isSearchEmpty = textFieldState.text.isEmpty(),
                     searchCategory = searchCategory,
                     searchResults = searchResults,
                     onSearchCategoryChange = onSearchCategoryChange,
@@ -251,9 +253,7 @@ fun LibrarySearchTopBar(
                     onNavigateToShelf = { shelfId, name, count ->
                         navigateAfterCollapse {
                             onNavigateToShelf(
-                                shelfId,
-                                name,
-                                count
+                                shelfId, name, count
                             )
                         }
                     },
@@ -266,8 +266,7 @@ fun LibrarySearchTopBar(
                     },
                     onNavigateToTag = { tag -> navigateAfterCollapse { onNavigateToTag(tag) } },
                     onAuthorsHeaderClick = { navigateAfterCollapse { onAuthorsHeaderClick() } },
-                    onTagsHeaderClick = { navigateAfterCollapse { onTagsHeaderClick() } }
-                )
+                    onTagsHeaderClick = { navigateAfterCollapse { onTagsHeaderClick() } })
             } else {
                 // Lightweight placeholder shown during the expansion animation.
                 // Uses the same background as the real content so it looks
@@ -443,6 +442,7 @@ private fun SearchInputField(
 
 @Composable
 private fun ExpandedSearchContent(
+    isSearchEmpty: Boolean,
     searchCategory: SearchCategory,
     searchResults: SearchResults,
     onSearchCategoryChange: (SearchCategory) -> Unit,
@@ -482,6 +482,7 @@ private fun ExpandedSearchContent(
         )
 
         SearchResultsContent(
+            isSearchEmpty = isSearchEmpty,
             searchCategory = searchCategory,
             results = searchResults,
             onBookClick = { book -> onNavigateToReader(book.id) },
@@ -496,6 +497,7 @@ private fun ExpandedSearchContent(
 
 @Composable
 private fun SearchResultsContent(
+    isSearchEmpty: Boolean,
     searchCategory: SearchCategory,
     results: SearchResults,
     onBookClick: (Book) -> Unit,
@@ -505,62 +507,131 @@ private fun SearchResultsContent(
     onAuthorsHeaderClick: () -> Unit,
     onTagsHeaderClick: () -> Unit
 ) {
-    val isAll = searchCategory == SearchCategory.All
-    val maxItemForAll = 8
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val columns = maxOf(1, (maxWidth / 100.dp).toInt())
+        val isAll = searchCategory == SearchCategory.All
+        val isPreview = isAll && isSearchEmpty
 
-    val booksToShow = if (isAll) results.books.take(maxItemForAll) else results.books
-    val shelvesToShow = if (isAll) results.shelves.take(maxItemForAll) else results.shelves
-    val authorsToShow = if (isAll) results.authors.take(maxItemForAll) else results.authors
-    val tagsToShow = if (isAll) results.tags.take(maxItemForAll) else results.tags
+        val maxBooks = if (isPreview) columns else Int.MAX_VALUE
+        val maxShelves = if (isPreview) 4 else Int.MAX_VALUE
+        val maxAuthors = if (isPreview) 8 else Int.MAX_VALUE
+        val maxTags = if (isPreview) 8 else Int.MAX_VALUE
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        if (booksToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Books)) {
-            item {
-                BooksSection(
-                    books = booksToShow,
-                    onBookClick = { onBookClick(it) }
-                )
-            }
+        val booksToShow = if (isPreview) {
+            results.books.sortedByDescending { it.lastOpened ?: 0L }.take(maxBooks)
+        } else if (isAll) {
+            results.books.take(maxBooks)
+        } else {
+            results.books
         }
 
-        if (shelvesToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Shelves)) {
-            item {
-                GridFilterSection(
-                    title = stringResource(R.string.library_tab_shelves),
-                    items = shelvesToShow,
-                    icon = MaterialSymbols.Outlined.Folder,
-                    nameSelector = { it.name },
-                    onClick = { onShelfClick(it) },
-                    onHeaderClick = null
-                )
-            }
+        val shelvesToShow = if (isPreview) {
+            results.shelves.sortedBy { it.name }.take(maxShelves)
+        } else if (isAll) {
+            results.shelves.take(maxShelves)
+        } else {
+            results.shelves
         }
 
-        if (authorsToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Authors)) {
-            item {
-                GridFilterSection(
-                    title = stringResource(R.string.library_authors_title),
-                    items = authorsToShow,
-                    icon = MaterialSymbols.Outlined.Person,
-                    nameSelector = { it },
-                    onClick = { onAuthorClick(it) },
-                    onHeaderClick = { onAuthorsHeaderClick() })
-            }
+        val authorsToShow = if (isPreview) {
+            results.authors.sortedBy { it }.take(maxAuthors)
+        } else if (isAll) {
+            results.authors.take(maxAuthors)
+        } else {
+            results.authors
         }
 
-        if (tagsToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Tags)) {
-            item {
-                GridFilterSection(
-                    title = stringResource(R.string.library_tags_title),
-                    items = tagsToShow,
-                    icon = MaterialSymbols.Outlined.Label,
-                    nameSelector = { it },
-                    onClick = { onTagClick(it) },
-                    onHeaderClick = { onTagsHeaderClick() })
+        val tagsToShow = if (isPreview) {
+            results.tags.sortedBy { it }.take(maxTags)
+        } else if (isAll) {
+            results.tags.take(maxTags)
+        } else {
+            results.tags
+        }
+
+        val showOnlyBooksGrid = !isAll && searchCategory == SearchCategory.Books
+
+        if (showOnlyBooksGrid) {
+            BookCollection(
+                books = booksToShow,
+                layoutMode = LayoutMode.Grid,
+                onBookClick = { id ->
+                    val book = booksToShow.find { it.id == id }
+                    if (book != null) onBookClick(book)
+                },
+                onBookLongClick = {},
+                scrollKey = results,
+                headerContent = {
+                    SectionHeader(
+                        title = stringResource(R.string.library_tab_books),
+                        onHeaderClick = null,
+                        modifier = Modifier.padding(
+                            start = 8.dp,
+                            end = 8.dp,
+                            top = 8.dp,
+                            bottom = 4.dp
+                        )
+                    )
+                }
+            )
+        } else {
+            val scrollState = rememberScrollState()
+
+            androidx.compose.runtime.LaunchedEffect(results) {
+                scrollState.scrollTo(0)
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                if (booksToShow.isNotEmpty() && isAll) {
+                    BooksSection(
+                        books = booksToShow,
+                        useLazy = false, // always false when isAll
+                        isScrollable = !isPreview,
+                        columns = columns,
+                        onBookClick = { onBookClick(it) }
+                    )
+                }
+
+                if (shelvesToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Shelves)) {
+                    GridFilterSection(
+                        title = stringResource(R.string.library_tab_shelves),
+                        items = shelvesToShow,
+                        icon = MaterialSymbols.Outlined.Folder,
+                        nameSelector = { it.name },
+                        onClick = { onShelfClick(it) },
+                        onHeaderClick = null
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                if (authorsToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Authors)) {
+                    GridFilterSection(
+                        title = stringResource(R.string.library_authors_title),
+                        items = authorsToShow,
+                        icon = MaterialSymbols.Outlined.Person,
+                        nameSelector = { it },
+                        onClick = { onAuthorClick(it) },
+                        onHeaderClick = { onAuthorsHeaderClick() })
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                if (tagsToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Tags)) {
+                    GridFilterSection(
+                        title = stringResource(R.string.library_tags_title),
+                        items = tagsToShow,
+                        icon = MaterialSymbols.Outlined.Label,
+                        nameSelector = { it },
+                        onClick = { onTagClick(it) },
+                        onHeaderClick = { onTagsHeaderClick() })
+                }
             }
         }
     }
@@ -568,20 +639,58 @@ private fun SearchResultsContent(
 
 @Composable
 private fun BooksSection(
-    books: List<Book>, onBookClick: (Book) -> Unit
+    books: List<Book>,
+    useLazy: Boolean,
+    isScrollable: Boolean = true,
+    columns: Int = 3,
+    onBookClick: (Book) -> Unit
 ) {
     SectionHeader(
         title = stringResource(R.string.library_tab_books),
         onHeaderClick = null,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 2.dp)
     )
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = 8.dp)
-    ) {
-        items(books, key = { it.id }) { book ->
-            BookItem(
-                book = book, onClick = { onBookClick(book) }, modifier = Modifier.width(120.dp)
-            )
+    if (useLazy) {
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 8.dp)
+        ) {
+            items(books, key = { it.id }) { book ->
+                BookItem(
+                    book = book, onClick = { onBookClick(book) }, modifier = Modifier.width(100.dp)
+                )
+            }
+        }
+    } else {
+        val rowModifier = if (isScrollable) {
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 8.dp)
+        } else {
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp)
+        }
+
+        Row(
+            modifier = rowModifier
+        ) {
+            books.forEach { book ->
+                androidx.compose.runtime.key("${book.id}-$isScrollable") {
+                    val itemModifier =
+                        if (isScrollable) Modifier.width(120.dp) else Modifier.weight(1f)
+                    BookItem(
+                        book = book, onClick = { onBookClick(book) }, modifier = itemModifier
+                    )
+                }
+            }
+
+            if (!isScrollable) {
+                // Keep the items appropriately sized even if there are less than columns
+                repeat(columns - books.size) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
         }
     }
 }
@@ -598,7 +707,7 @@ private fun <T> GridFilterSection(
     SectionHeader(
         title = title,
         onHeaderClick = onHeaderClick,
-        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 10.dp)
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
     )
 
     Column(
