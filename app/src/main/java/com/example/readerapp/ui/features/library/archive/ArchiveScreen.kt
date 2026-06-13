@@ -57,7 +57,6 @@ fun ArchiveScreen(
 
     val uiState by viewModel.uiState.collectAsState()
     val archivedBooks by viewModel.archivedBooks.collectAsState()
-    val shelves by viewModel.shelves.collectAsState()
     val allBooks by viewModel.allBooks.collectAsState()
     var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
     var showFilterSheet by remember { mutableStateOf(false) }

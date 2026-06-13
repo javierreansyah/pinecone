@@ -206,20 +206,6 @@ fun ReaderSearch(
                                 )
                             }
                         }
-
-                        IconButton(
-                            onClick = {
-                                onSearch(textFieldState.text.toString())
-                                keyboardController?.hide()
-                            }, enabled = textFieldState.text.isNotBlank()
-                        ) {
-                            Icon(
-                                MaterialSymbols.Outlined.Search,
-                                contentDescription = stringResource(R.string.action_search),
-                                tint = if (textFieldState.text.isNotBlank()) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
                     }
                 }
             )

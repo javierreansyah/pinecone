@@ -45,7 +45,6 @@
     <string name="library_view_all">Lihat semua %s</string>
     <string name="library_delete_shelf_title">Hapus Rak</string>
     <string name="library_delete_shelf_message">Apakah Anda yakin ingin menghapus \'%s\'? Buku di dalamnya tidak akan dihapus.</string>
-    <string name="library_rename_shelf_title">Ubah Nama Rak</string>
     <string name="library_shelf_name_label">Nama Rak</string>
     <string name="library_create_shelf_title">Buat Rak Baru</string>
     <string name="library_select_shelf_title">Pilih Rak</string>
@@ -58,7 +57,6 @@
 
     <string name="library_warning_merge">Peringatan: Item yang cocok sudah ada. Menyimpan akan menggabungkan item ini dan bukunya ke dalam item yang sudah ada.</string>
     <string name="library_importing">Mengimpor…</string>
-    <string name="library_empty_items">Item tidak ditemukan.</string>
     <string name="library_empty_authors">Penulis tidak ditemukan.</string>
     <string name="library_empty_tags">Tag tidak ditemukan.</string>
     <string name="library_delete_item_title">Hapus %s</string>

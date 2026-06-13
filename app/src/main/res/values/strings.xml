@@ -44,7 +44,6 @@
     <string name="library_view_all">View all %s</string>
     <string name="library_delete_shelf_title">Delete Shelf</string>
     <string name="library_delete_shelf_message">Are you sure you want to delete \'%s\'? The books inside will not be deleted.</string>
-    <string name="library_rename_shelf_title">Rename Shelf</string>
     <string name="library_shelf_name_label">Shelf Name</string>
     <string name="library_create_shelf_title">Create New Shelf</string>
     <string name="library_select_shelf_title">Select Shelf</string>
@@ -59,7 +58,6 @@
 
     <string name="library_warning_merge">Warning: A matching item already exists. Saving will merge this item and its books into the existing one.</string>
     <string name="library_importing">Importing…</string>
-    <string name="library_empty_items">No items found.</string>
     <string name="library_empty_authors">No authors found.</string>
     <string name="library_empty_tags">No tags found.</string>
     <string name="library_delete_item_title">Delete %s</string>
