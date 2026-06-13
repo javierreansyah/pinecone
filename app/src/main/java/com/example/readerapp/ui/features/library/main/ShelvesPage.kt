@@ -1,5 +1,12 @@
 package com.example.readerapp.ui.features.library.main
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,36 +54,53 @@ fun ShelvesPage(
     key(scrollKey) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.TopStart) {
             if (shelves.isNotEmpty()) {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .then(
-                            if (layoutMode != LayoutMode.List) Modifier.padding(vertical = 4.dp)
-                            else Modifier
-                        ), contentPadding = PaddingValues(top = 8.dp)
-                ) {
-                    items(shelves, key = { it.shelf.id }) { shelfWithCovers ->
-                        val visibleBooks = shelfWithCovers.books
-                        val booksCount = visibleBooks.size
+                AnimatedContent(
+                    targetState = layoutMode,
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(durationMillis = 100, delayMillis = 100)) +
+                                scaleIn(
+                                    initialScale = 0.9f,
+                                    animationSpec = tween(durationMillis = 100, delayMillis = 100)
+                                ) togetherWith
+                                fadeOut(animationSpec = tween(durationMillis = 100)) +
+                                scaleOut(
+                                    targetScale = 0.9f,
+                                    animationSpec = tween(durationMillis = 100)
+                                )
+                    },
+                    label = "shelvesPageLayoutTransition"
+                ) { targetLayoutMode ->
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .then(
+                                if (targetLayoutMode != LayoutMode.List) Modifier.padding(vertical = 4.dp)
+                                else Modifier
+                            ), contentPadding = PaddingValues(top = 8.dp)
+                    ) {
+                        items(shelves, key = { it.shelf.id }) { shelfWithCovers ->
+                            val visibleBooks = shelfWithCovers.books
+                            val booksCount = visibleBooks.size
 
-                        if (layoutMode == LayoutMode.List) {
-                            ShelfListItem(
-                                shelfWithCovers = shelfWithCovers, onClick = {
-                                    onShelfClick(
-                                        shelfWithCovers.shelf.id,
-                                        shelfWithCovers.shelf.name,
-                                        booksCount
-                                    )
-                                })
-                        } else {
-                            ShelfRowItem(
-                                shelfWithCovers = shelfWithCovers,
-                                booksCount = booksCount,
-                                visibleBooks = visibleBooks,
-                                onShelfClick = onShelfClick,
-                                onBookClick = onBookClick,
-                                onBookLongClick = onBookLongClick
-                            )
+                            if (targetLayoutMode == LayoutMode.List) {
+                                ShelfListItem(
+                                    shelfWithCovers = shelfWithCovers, onClick = {
+                                        onShelfClick(
+                                            shelfWithCovers.shelf.id,
+                                            shelfWithCovers.shelf.name,
+                                            booksCount
+                                        )
+                                    })
+                            } else {
+                                ShelfRowItem(
+                                    shelfWithCovers = shelfWithCovers,
+                                    booksCount = booksCount,
+                                    visibleBooks = visibleBooks,
+                                    onShelfClick = onShelfClick,
+                                    onBookClick = onBookClick,
+                                    onBookLongClick = onBookLongClick
+                                )
+                            }
                         }
                     }
                 }

@@ -57,7 +57,7 @@ import com.example.readerapp.data.local.preferences.ReaderSettings
 import com.example.readerapp.ui.features.reader.ReaderNavigationRouter
 import com.example.readerapp.ui.features.reader.ReaderViewModel
 import com.example.readerapp.ui.features.reader.SearchResultItem
-import com.example.readerapp.ui.features.reader.components.SearchScreen
+import com.example.readerapp.ui.features.reader.components.ReaderSearch
 import com.example.readerapp.ui.features.reader.components.contents.NoteBottomSheet
 import com.example.readerapp.ui.features.reader.components.contents.ReaderBottomSheet
 import com.example.readerapp.ui.features.reader.components.dictionary.DefinitionWebView
@@ -150,11 +150,15 @@ fun ReaderOverlay(
             modifier = Modifier.align(Alignment.TopCenter),
             showControls = controlsState.showControls,
             showSearch = controlsState.showSearch,
+            isInSearchNavigationMode = searchState.isInNavMode,
+            searchQuery = searchState.query,
             isBookmarked = isBookmarked,
             readerBgColor = readerBgColor,
             readerTextColor = readerTextColor,
             onBack = { router.navigateBack() },
             onSearchClick = { viewModel.showSearch() },
+            onSearchTextClick = { viewModel.showSearch(clearState = false) },
+            onExitSearchNavigation = { viewModel.exitSearchNavigation() },
             onTocClick = { viewModel.showToc() },
             onSettingsClick = { viewModel.showSettings() },
             onToggleBookmark = { viewModel.toggleBookmark() },
@@ -273,11 +277,15 @@ fun ReaderOverlay(
 fun ReaderTopBarSection(
     showControls: Boolean,
     showSearch: Boolean,
+    isInSearchNavigationMode: Boolean,
+    searchQuery: String,
     isBookmarked: Boolean,
     readerBgColor: Color,
     readerTextColor: Color,
     onBack: () -> Unit,
     onSearchClick: () -> Unit,
+    onSearchTextClick: () -> Unit,
+    onExitSearchNavigation: () -> Unit,
     onTocClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onToggleBookmark: () -> Unit,
@@ -294,17 +302,33 @@ fun ReaderTopBarSection(
         ) + fadeOut(animationSpec = tween(250)),
         modifier = modifier
     ) {
-        ReaderTopBar(
-            isBookmarked = isBookmarked,
-            onBack = onBack,
-            onSearchClick = onSearchClick,
-            onTocClick = onTocClick,
-            onSettingsClick = onSettingsClick,
-            onToggleBookmark = onToggleBookmark,
-            onInfoClick = onInfoClick,
-            readerBgColor = readerBgColor,
-            readerTextColor = readerTextColor
-        )
+        Crossfade(
+            targetState = isInSearchNavigationMode,
+            label = "ReaderTopBarMode"
+        ) { searchNavMode ->
+            if (searchNavMode) {
+                ReaderSearchTopBar(
+                    searchQuery = searchQuery,
+                    onBack = onBack,
+                    onSearchTextClick = onSearchTextClick,
+                    onCloseSearch = onExitSearchNavigation,
+                    readerBgColor = readerBgColor,
+                    readerTextColor = readerTextColor
+                )
+            } else {
+                ReaderTopBar(
+                    isBookmarked = isBookmarked,
+                    onBack = onBack,
+                    onSearchClick = onSearchClick,
+                    onTocClick = onTocClick,
+                    onSettingsClick = onSettingsClick,
+                    onToggleBookmark = onToggleBookmark,
+                    onInfoClick = onInfoClick,
+                    readerBgColor = readerBgColor,
+                    readerTextColor = readerTextColor
+                )
+            }
+        }
     }
 }
 
@@ -509,10 +533,10 @@ fun ReaderSheetsLayer(
         // Full-screen search overlay
         AnimatedVisibility(
             visible = showSearch,
-            enter = slideInVertically(animationSpec = tween(280)) { it } + fadeIn(tween(200)),
-            exit = slideOutVertically(animationSpec = tween(220)) { it } + fadeOut(tween(180))
+            enter = fadeIn(animationSpec = tween(300)),
+            exit = fadeOut(animationSpec = tween(150))
         ) {
-            SearchScreen(
+            ReaderSearch(
                 query = searchQuery,
                 results = searchResults,
                 isLoading = searchLoading,

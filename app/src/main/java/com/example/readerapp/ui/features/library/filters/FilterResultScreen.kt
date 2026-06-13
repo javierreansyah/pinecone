@@ -1,9 +1,17 @@
 package com.example.readerapp.ui.features.library.filters
 
 import android.app.Application
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -20,7 +28,6 @@ import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
@@ -40,12 +47,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.ViewModel
@@ -61,6 +71,7 @@ import com.composables.icons.materialsymbols.outlined.More_vert
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.example.readerapp.R
 import com.example.readerapp.data.model.Book
+import com.example.readerapp.ui.components.LibraryTopAppBar
 import com.example.readerapp.ui.features.library.components.FilterResultBottomSheet
 import com.example.readerapp.ui.features.library.components.book.BookCollection
 import com.example.readerapp.ui.features.library.components.book.BookContextMenu
@@ -73,7 +84,8 @@ fun FilterResultScreen(
     onNavigateBack: () -> Unit,
     onNavigateToReader: (String) -> Unit,
     onNavigateToMerged: (String) -> Unit = {},
-    onNavigateToBookInfo: (String) -> Unit
+    onNavigateToBookInfo: (String) -> Unit,
+    onNavigateToAddToShelf: (String) -> Unit
 ) {
     val context = LocalContext.current
     val viewModel: FilterResultViewModel = viewModel(factory = object :
@@ -89,7 +101,6 @@ fun FilterResultScreen(
     })
 
     val uiState by viewModel.uiState.collectAsState()
-    val shelves by viewModel.shelves.collectAsState()
     val allBooks by viewModel.allBooks.collectAsState()
 
     val allAuthors by viewModel.allAuthors.collectAsState()
@@ -111,7 +122,6 @@ fun FilterResultScreen(
         filterType = filterType,
         filterValue = filterValue,
         uiState = uiState,
-        shelves = shelves,
         allBooks = allBooks,
         books = books,
         suggestionList = suggestionList,
@@ -134,9 +144,8 @@ fun FilterResultScreen(
         onToggleArchive = { bookId -> viewModel.toggleArchive(bookId) },
         onToggleReadStatus = { bookId -> viewModel.toggleReadStatus(bookId) },
         onRemoveFromShelf = { shelfId, bookId -> viewModel.removeBookFromShelf(shelfId, bookId) },
-        onAddToShelf = { shelfId, bookId -> viewModel.addBookToShelf(shelfId, bookId) },
-        onDeleteBook = { bookId -> viewModel.deleteBook(bookId) },
-        onCreateShelfAndAdd = { name, bookId -> viewModel.createShelfAndAddBook(name, bookId) }
+        onNavigateToAddToShelf = onNavigateToAddToShelf,
+        onDeleteBook = { bookId -> viewModel.deleteBook(bookId) }
     )
 }
 
@@ -146,7 +155,6 @@ private fun FilterResultContent(
     filterType: String,
     filterValue: String,
     uiState: FilterResultUiState,
-    shelves: List<com.example.readerapp.data.local.database.library.ShelfWithCovers>,
     allBooks: List<Book>,
     books: List<Book>,
     suggestionList: List<String>,
@@ -161,9 +169,8 @@ private fun FilterResultContent(
     onToggleArchive: (String) -> Unit,
     onToggleReadStatus: (String) -> Unit,
     onRemoveFromShelf: (String, String) -> Unit,
-    onAddToShelf: (String, String) -> Unit,
+    onNavigateToAddToShelf: (String) -> Unit,
     onDeleteBook: (String) -> Unit,
-    onCreateShelfAndAdd: (String, String?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var selectedBookContext by remember { mutableStateOf<Pair<String, String?>?>(null) }
@@ -234,58 +241,56 @@ private fun FilterResultContent(
                 uiState.bookPreferences.selectedStatus
             )
         )
+    }
 
-        FilterResultDialogsAndSheets(
-            filterType = filterType,
-            filterValue = filterValue,
-            uiState = uiState,
-            shelves = shelves,
-            allBooks = allBooks,
-            selectedBookContext = selectedBookContext,
-            showFilterSheet = showFilterSheet,
-            showDeleteConfirm = showDeleteConfirm,
-            onFilterDismiss = { showFilterSheet = false },
-            onLayoutModeChange = onLayoutModeChange,
-            onSortTypeChange = onSortTypeChange,
-            onStatusToggle = onStatusToggle,
-            onDeleteDismiss = { showDeleteConfirm = false },
-            onDeleteConfirm = {
-                showDeleteConfirm = false
-                onDeleteFilterItem()
-            },
-            onBookMenuDismiss = { selectedBookContext = null },
-            onNavigateToBookInfo = onNavigateToBookInfo,
-            onToggleArchive = onToggleArchive,
-            onToggleReadStatus = onToggleReadStatus,
-            onRemoveFromShelf = onRemoveFromShelf,
-            onAddToShelf = onAddToShelf,
-            onDeleteBook = onDeleteBook,
-            onCreateShelfAndAdd = onCreateShelfAndAdd
-        )
+    FilterResultDialogsAndSheets(
+        filterType = filterType,
+        filterValue = filterValue,
+        uiState = uiState,
+        allBooks = allBooks,
+        selectedBookContext = selectedBookContext,
+        showFilterSheet = showFilterSheet,
+        showDeleteConfirm = showDeleteConfirm,
+        onFilterDismiss = { showFilterSheet = false },
+        onLayoutModeChange = onLayoutModeChange,
+        onSortTypeChange = onSortTypeChange,
+        onStatusToggle = onStatusToggle,
+        onDeleteDismiss = { showDeleteConfirm = false },
+        onDeleteConfirm = {
+            showDeleteConfirm = false
+            onDeleteFilterItem()
+        },
+        onBookMenuDismiss = { selectedBookContext = null },
+        onNavigateToBookInfo = onNavigateToBookInfo,
+        onToggleArchive = onToggleArchive,
+        onToggleReadStatus = onToggleReadStatus,
+        onRemoveFromShelf = onRemoveFromShelf,
+        onNavigateToAddToShelf = onNavigateToAddToShelf,
+        onDeleteBook = onDeleteBook
+    )
 
-        if (showMergeWarningDialog) {
-            AlertDialog(
-                onDismissRequest = { showMergeWarningDialog = false },
-                title = { Text(stringResource(R.string.action_rename)) },
-                text = { Text(stringResource(R.string.library_warning_merge)) },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            showMergeWarningDialog = false
-                            onRenameFilterItem(pendingRenameName)
-                            isRenaming = false
-                        }
-                    ) {
-                        Text(stringResource(R.string.action_save))
+    if (showMergeWarningDialog) {
+        AlertDialog(
+            onDismissRequest = { showMergeWarningDialog = false },
+            title = { Text(stringResource(R.string.action_rename)) },
+            text = { Text(stringResource(R.string.library_warning_merge)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showMergeWarningDialog = false
+                        onRenameFilterItem(pendingRenameName)
+                        isRenaming = false
                     }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showMergeWarningDialog = false }) {
-                        Text(stringResource(R.string.action_cancel))
-                    }
+                ) {
+                    Text(stringResource(R.string.action_save))
                 }
-            )
-        }
+            },
+            dismissButton = {
+                TextButton(onClick = { showMergeWarningDialog = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
     }
 }
 
@@ -329,7 +334,8 @@ private fun FilterResultTopAppBar(
     }
 
     Box(modifier = modifier) {
-        LargeFlexibleTopAppBar(
+        LibraryTopAppBar(
+            onBack = onNavigateBack,
             title = {
                 if (isRenaming) {
                     BasicTextField(
@@ -357,106 +363,159 @@ private fun FilterResultTopAppBar(
                 }
             },
             navigationIcon = {
-                if (isRenaming) {
-                    FilledTonalIconButton(
-                        shapes = IconButtonDefaults.shapes(),
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                        onClick = onCancelRename
-                    ) {
-                        Icon(
-                            MaterialSymbols.Outlined.Close,
-                            contentDescription = stringResource(R.string.action_cancel)
-                        )
+                val rotation by animateFloatAsState(
+                    targetValue = if (isRenaming) 90f else 0f,
+                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+                    label = "navigationIconRotation"
+                )
+                val navEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+
+                FilledTonalIconButton(
+                    shapes = IconButtonDefaults.shapes(),
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                    onClick = {
+                        if (isRenaming) {
+                            onCancelRename()
+                        } else {
+                            onNavigateBack()
+                        }
                     }
-                } else {
-                    FilledTonalIconButton(
-                        shapes = IconButtonDefaults.shapes(),
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                        onClick = onNavigateBack
+                ) {
+                    Box(
+                        modifier = Modifier.graphicsLayer { rotationZ = rotation },
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            MaterialSymbols.Outlined.Arrow_back,
-                            contentDescription = stringResource(R.string.action_back)
-                        )
+                        AnimatedContent(
+                            targetState = isRenaming,
+                            transitionSpec = {
+                                fadeIn(animationSpec = navEffectsSpec) togetherWith
+                                        fadeOut(animationSpec = navEffectsSpec)
+                            },
+                            label = "navigationIconContent"
+                        ) { targetIsRenaming ->
+                            if (targetIsRenaming) {
+                                Icon(
+                                    MaterialSymbols.Outlined.Close,
+                                    contentDescription = stringResource(R.string.action_cancel)
+                                )
+                            } else {
+                                Icon(
+                                    MaterialSymbols.Outlined.Arrow_back,
+                                    contentDescription = stringResource(R.string.action_back)
+                                )
+                            }
+                        }
                     }
                 }
             },
             actions = {
-                if (isRenaming) {
-                    FilledIconButton(
-                        modifier = Modifier
-                            .padding(end = 6.dp)
-                            .size(
-                                IconButtonDefaults.smallContainerSize(
-                                    widthOption = IconButtonDefaults.IconButtonWidthOption.Wide
-                                )
-                            ),
-                        shapes = IconButtonDefaults.shapes(),
-                        onClick = onSaveRename
-                    ) {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.Check,
-                            contentDescription = stringResource(R.string.action_save)
-                        )
-                    }
-                } else {
-                    IconButton(
-                        shapes = IconButtonDefaults.shapes(),
-                        onClick = onFilterClick
-                    ) {
-                        Icon(
-                            MaterialSymbols.Outlined.Tune,
-                            contentDescription = stringResource(R.string.action_filter)
-                        )
-                    }
-                    Box {
-                        IconButton(onClick = onMenuToggle) {
+                val density = LocalDensity.current
+                val slideOffsetPx = remember(density) { with(density) { 20.dp.roundToPx() } }
+                val actionsSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
+                val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+
+                AnimatedContent(
+                    targetState = isRenaming,
+                    transitionSpec = {
+                        if (targetState) {
+                            // Enter Rename Mode: Checkmark fades in, normal actions fade out and slide right by 20dp
+                            fadeIn(animationSpec = actionsEffectsSpec) togetherWith
+                                    fadeOut(animationSpec = actionsEffectsSpec) + slideOutHorizontally(
+                                targetOffsetX = { slideOffsetPx },
+                                animationSpec = actionsSpatialSpec
+                            )
+                        } else {
+                            // Exit Rename Mode: Normal actions fade in and slide in from right by 20dp, checkmark fades out
+                            fadeIn(animationSpec = actionsEffectsSpec) + slideInHorizontally(
+                                initialOffsetX = { slideOffsetPx },
+                                animationSpec = actionsSpatialSpec
+                            ) togetherWith
+                                    fadeOut(animationSpec = actionsEffectsSpec)
+                        }
+                    },
+                    label = "actionsContent"
+                ) { targetIsRenaming ->
+                    if (targetIsRenaming) {
+                        FilledIconButton(
+                            modifier = Modifier
+                                .padding(end = 6.dp)
+                                .size(
+                                    IconButtonDefaults.smallContainerSize(
+                                        widthOption = IconButtonDefaults.IconButtonWidthOption.Wide
+                                    )
+                                ),
+                            shapes = IconButtonDefaults.shapes(),
+                            onClick = onSaveRename
+                        ) {
                             Icon(
-                                MaterialSymbols.Outlined.More_vert,
-                                contentDescription = stringResource(R.string.action_more)
+                                imageVector = MaterialSymbols.Outlined.Check,
+                                contentDescription = stringResource(R.string.action_save)
                             )
                         }
-                        DropdownMenuPopup(
-                            expanded = showMenu,
-                            onDismissRequest = onMenuDismiss
+                    } else {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            val groupInteractionSource = remember { MutableInteractionSource() }
-                            DropdownMenuGroup(
-                                shapes = MenuDefaults.groupShape(0, 1),
-                                interactionSource = groupInteractionSource
+                            IconButton(
+                                shapes = IconButtonDefaults.shapes(),
+                                onClick = onFilterClick
                             ) {
-                                DropdownMenuItem(
-                                    selected = false,
-                                    text = { Text(stringResource(R.string.action_rename)) },
-                                    shapes = MenuDefaults.itemShape(0, 2),
-                                    leadingIcon = {
-                                        Icon(
-                                            MaterialSymbols.Outlined.Edit,
-                                            modifier = Modifier.size(MenuDefaults.LeadingIconSize),
-                                            contentDescription = null
-                                        )
-                                    },
-                                    onClick = onRenameClick
+                                Icon(
+                                    MaterialSymbols.Outlined.Tune,
+                                    contentDescription = stringResource(R.string.action_filter)
                                 )
-                                DropdownMenuItem(
-                                    selected = false,
-                                    text = {
-                                        Text(
-                                            stringResource(R.string.action_delete),
-                                            color = MaterialTheme.colorScheme.error
+                            }
+                            Box {
+                                IconButton(onClick = onMenuToggle) {
+                                    Icon(
+                                        MaterialSymbols.Outlined.More_vert,
+                                        contentDescription = stringResource(R.string.action_more)
+                                    )
+                                }
+                                DropdownMenuPopup(
+                                    expanded = showMenu,
+                                    onDismissRequest = onMenuDismiss
+                                ) {
+                                    val groupInteractionSource =
+                                        remember { MutableInteractionSource() }
+                                    DropdownMenuGroup(
+                                        shapes = MenuDefaults.groupShape(0, 1),
+                                        interactionSource = groupInteractionSource
+                                    ) {
+                                        DropdownMenuItem(
+                                            selected = false,
+                                            text = { Text(stringResource(R.string.action_rename)) },
+                                            shapes = MenuDefaults.itemShape(0, 2),
+                                            leadingIcon = {
+                                                Icon(
+                                                    MaterialSymbols.Outlined.Edit,
+                                                    modifier = Modifier.size(MenuDefaults.LeadingIconSize),
+                                                    contentDescription = null
+                                                )
+                                            },
+                                            onClick = onRenameClick
                                         )
-                                    },
-                                    shapes = MenuDefaults.itemShape(1, 2),
-                                    leadingIcon = {
-                                        Icon(
-                                            MaterialSymbols.Outlined.Delete,
-                                            modifier = Modifier.size(MenuDefaults.LeadingIconSize),
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.error
+                                        DropdownMenuItem(
+                                            selected = false,
+                                            text = {
+                                                Text(
+                                                    stringResource(R.string.action_delete),
+                                                    color = MaterialTheme.colorScheme.error
+                                                )
+                                            },
+                                            shapes = MenuDefaults.itemShape(1, 2),
+                                            leadingIcon = {
+                                                Icon(
+                                                    MaterialSymbols.Outlined.Delete,
+                                                    modifier = Modifier.size(MenuDefaults.LeadingIconSize),
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.error
+                                                )
+                                            },
+                                            onClick = onDeleteClick
                                         )
-                                    },
-                                    onClick = onDeleteClick
-                                )
+                                    }
+                                }
                             }
                         }
                     }
@@ -545,7 +604,6 @@ private fun FilterResultDialogsAndSheets(
     filterType: String,
     filterValue: String,
     uiState: FilterResultUiState,
-    shelves: List<com.example.readerapp.data.local.database.library.ShelfWithCovers>,
     allBooks: List<Book>,
     selectedBookContext: Pair<String, String?>?,
     showFilterSheet: Boolean,
@@ -561,9 +619,8 @@ private fun FilterResultDialogsAndSheets(
     onToggleArchive: (String) -> Unit,
     onToggleReadStatus: (String) -> Unit,
     onRemoveFromShelf: (String, String) -> Unit,
-    onAddToShelf: (String, String) -> Unit,
-    onDeleteBook: (String) -> Unit,
-    onCreateShelfAndAdd: (String, String?) -> Unit
+    onNavigateToAddToShelf: (String) -> Unit,
+    onDeleteBook: (String) -> Unit
 ) {
     if (showFilterSheet) {
         FilterResultBottomSheet(
@@ -581,7 +638,6 @@ private fun FilterResultDialogsAndSheets(
         BookContextMenu(
             bookId = bookId,
             shelfId = contextShelfId,
-            shelves = shelves,
             allBooks = allBooks,
             onNavigateToBookInfo = onNavigateToBookInfo,
             onToggleArchive = { onToggleArchive(bookId) },
@@ -591,9 +647,8 @@ private fun FilterResultDialogsAndSheets(
                     onRemoveFromShelf(it, bookId)
                 }
             },
-            onAddToShelf = { shelfId -> onAddToShelf(shelfId, bookId) },
+            onAddToShelf = onNavigateToAddToShelf,
             onDeleteBook = { onDeleteBook(bookId) },
-            onCreateShelfAndAdd = { name -> onCreateShelfAndAdd(name, bookId) },
             onDismiss = onBookMenuDismiss
         )
     }

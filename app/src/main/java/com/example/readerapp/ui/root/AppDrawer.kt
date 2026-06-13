@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.DrawerDefaults
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -19,6 +20,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -43,8 +47,17 @@ fun AppDrawer(
     onNavigateToDictionaries: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
+    val containerColor = DrawerDefaults.modalContainerColor
 
-    ModalDrawerSheet {
+    ModalDrawerSheet(
+        modifier = Modifier.drawBehind {
+            drawRect(
+                color = containerColor,
+                topLeft = Offset(-50.dp.toPx(), 0f),
+                size = Size(50.dp.toPx(), size.height)
+            )
+        }
+    ) {
         Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
             Row(
                 modifier = Modifier.padding(16.dp),

@@ -13,11 +13,8 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
@@ -40,12 +37,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Delete
 import com.composables.icons.materialsymbols.outlined.Edit
+import com.composables.icons.materialsymbols.outlined.Label
 import com.composables.icons.materialsymbols.outlined.More_vert
+import com.composables.icons.materialsymbols.outlined.Person
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.example.readerapp.R
+import com.example.readerapp.ui.components.EmptyState
+import com.example.readerapp.ui.components.LibraryTopAppBar
 import com.example.readerapp.ui.components.SegmentedLazyColumn
 import com.example.readerapp.ui.features.library.components.FilterItemSortBottomSheet
 import com.example.readerapp.ui.features.library.components.FilterItemSortType
@@ -140,20 +140,25 @@ private fun AllFilterItemsContent(
     }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val isEmpty = items.isEmpty()
 
     Scaffold(
-        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = if (isEmpty) modifier else modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             AllFilterItemsTopAppBar(
                 filterType = filterType,
+                isEmpty = isEmpty,
                 onNavigateBack = onNavigateBack,
                 onSortClick = { showSortSheet = true },
                 scrollBehavior = scrollBehavior
             )
         }
     ) { innerPadding ->
-        if (items.isEmpty()) {
-            AllFilterItemsEmptyState(innerPadding = innerPadding)
+        if (isEmpty) {
+            AllFilterItemsEmptyState(
+                filterType = filterType,
+                innerPadding = innerPadding
+            )
         } else {
             AllFilterItemsList(
                 sortedItems = sortedItems,
@@ -204,35 +209,28 @@ private fun AllFilterItemsContent(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AllFilterItemsTopAppBar(
     filterType: String,
+    isEmpty: Boolean,
     onNavigateBack: () -> Unit,
     onSortClick: () -> Unit,
     scrollBehavior: androidx.compose.material3.TopAppBarScrollBehavior,
     modifier: Modifier = Modifier
 ) {
-    LargeFlexibleTopAppBar(
-        title = {
-            Text(
-                if (filterType == "author") stringResource(R.string.library_authors_title) else stringResource(
-                    R.string.library_tags_title
-                )
-            )
-        },
-        navigationIcon = {
-            FilledTonalIconButton(
-                shapes = IconButtonDefaults.shapes(),
-                colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                onClick = onNavigateBack
-            ) {
-                Icon(
-                    MaterialSymbols.Outlined.Arrow_back,
-                    contentDescription = stringResource(R.string.action_back)
-                )
-            }
-        },
+    val titleText = if (filterType == "author") {
+        stringResource(R.string.library_authors_title)
+    } else {
+        stringResource(R.string.library_tags_title)
+    }
+
+    LibraryTopAppBar(
+        title = { Text(titleText) },
+        onBack = onNavigateBack,
+        isEmpty = isEmpty,
+        scrollBehavior = scrollBehavior,
+        modifier = modifier,
         actions = {
             IconButton(onClick = onSortClick) {
                 Icon(
@@ -240,32 +238,36 @@ private fun AllFilterItemsTopAppBar(
                     contentDescription = stringResource(R.string.action_sort)
                 )
             }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            scrolledContainerColor = MaterialTheme.colorScheme.surface,
-        ),
-        scrollBehavior = scrollBehavior,
-        modifier = modifier
+        }
     )
 }
 
 @Composable
 private fun AllFilterItemsEmptyState(
+    filterType: String,
     innerPadding: PaddingValues,
     modifier: Modifier = Modifier
 ) {
-    Box(
+    val icon = if (filterType == "author") {
+        MaterialSymbols.Outlined.Person
+    } else {
+        MaterialSymbols.Outlined.Label
+    }
+
+    val text = if (filterType == "author") {
+        stringResource(R.string.library_empty_authors)
+    } else {
+        stringResource(R.string.library_empty_tags)
+    }
+
+    EmptyState(
+        icon = icon,
+        text = text,
         modifier = modifier
             .padding(innerPadding)
             .fillMaxSize()
-    ) {
-        Text(
-            stringResource(R.string.library_empty_items),
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(16.dp)
-        )
-    }
+            .padding(16.dp)
+    )
 }
 
 @Composable
