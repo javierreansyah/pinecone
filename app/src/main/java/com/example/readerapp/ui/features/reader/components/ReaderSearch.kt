@@ -10,7 +10,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,17 +25,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberContainedSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,13 +48,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -69,7 +67,7 @@ import com.example.readerapp.ui.components.rememberVoiceSearchLauncher
 import com.example.readerapp.ui.features.reader.SearchResultItem
 import kotlin.coroutines.cancellation.CancellationException
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ReaderSearch(
     query: String,
@@ -85,7 +83,25 @@ fun ReaderSearch(
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
+    val textFieldState = rememberTextFieldState(query)
+    val searchBarState = rememberContainedSearchBarState(initialValue = SearchBarValue.Expanded)
+
+    // Sync external query changes
+    LaunchedEffect(query) {
+        if (textFieldState.text.toString() != query) {
+            textFieldState.edit {
+                replace(0, length, query)
+            }
+        }
+    }
+
+    // Sync internal query changes back to parent
+    LaunchedEffect(textFieldState.text) {
+        onQueryChange(textFieldState.text.toString())
+    }
+
     val launchVoiceSearch = rememberVoiceSearchLauncher { spokenText ->
+        textFieldState.edit { replace(0, length, spokenText) }
         onQueryChange(spokenText)
         onSearch(spokenText)
         keyboardController?.hide()
@@ -118,7 +134,6 @@ fun ReaderSearch(
         }
     }
 
-
     val backgroundColor = MaterialTheme.colorScheme.surface
 
     PredictiveBackOverlay(
@@ -134,99 +149,80 @@ fun ReaderSearch(
                 .padding(top = 8.dp)
         ) {
             // ── Contained Search Bar Capsule ──────────────────────────────────────
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+            SearchBarDefaults.InputField(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp)
-                    .padding(start = 16.dp, end = 16.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        shape = RoundedCornerShape(28.dp)
+                    .padding(horizontal = 16.dp)
+                    .focusRequester(focusRequester),
+                textFieldState = textFieldState,
+                searchBarState = searchBarState,
+                colors = SearchBarDefaults.inputFieldColors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                ),
+                onSearch = {
+                    onSearch(textFieldState.text.toString())
+                    keyboardController?.hide()
+                },
+                placeholder = {
+                    Text(
+                        stringResource(R.string.reader_search_in_book),
+                        style = MaterialTheme.typography.bodyLarge
                     )
-                    .padding(horizontal = 4.dp)
-            ) {
-                // Leading back chevron
-                IconButton(onClick = onClose) {
-                    Icon(
-                        MaterialSymbols.Outlined.Chevron_backward,
-                        contentDescription = stringResource(R.string.action_close),
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-
-                // Transparent input text field
-                BasicTextField(
-                    value = query,
-                    onValueChange = { onQueryChange(it) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(onSearch = {
-                        onSearch(query)
-                        keyboardController?.hide()
-                    }),
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(
-                        color = MaterialTheme.colorScheme.onSurface
-                    ),
-                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                    modifier = Modifier
-                        .weight(1f)
-                        .focusRequester(focusRequester),
-                    decorationBox = { innerTextField ->
-                        Box(
-                            contentAlignment = Alignment.CenterStart,
-                            modifier = Modifier.padding(horizontal = 2.dp, vertical = 4.dp)
-                        ) {
-                            if (query.isEmpty()) {
-                                Text(
-                                    stringResource(R.string.reader_search_in_book),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                            }
-                            innerTextField()
-                        }
-                    })
-
-                // Trailing icons (Mic/Clear + Search Button)
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(end = 4.dp)
-                ) {
-                    if (query.isNotEmpty()) {
-                        IconButton(onClick = { onQueryChange("") }) {
-                            Icon(
-                                MaterialSymbols.Outlined.Close,
-                                contentDescription = stringResource(R.string.action_clear),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    } else {
-                        IconButton(onClick = { launchVoiceSearch() }) {
-                            Icon(
-                                MaterialSymbols.Outlined.Mic,
-                                contentDescription = stringResource(R.string.action_voice_search),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    IconButton(
-                        onClick = {
-                            onSearch(query)
-                            keyboardController?.hide()
-                        }, enabled = query.isNotBlank()
-                    ) {
+                },
+                leadingIcon = {
+                    IconButton(onClick = onClose) {
                         Icon(
-                            MaterialSymbols.Outlined.Search,
-                            contentDescription = stringResource(R.string.action_search),
-                            tint = if (query.isNotBlank()) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant
+                            MaterialSymbols.Outlined.Chevron_backward,
+                            contentDescription = stringResource(R.string.action_close),
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(28.dp)
                         )
                     }
+                },
+                trailingIcon = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(end = 4.dp)
+                    ) {
+                        if (textFieldState.text.isNotEmpty()) {
+                            IconButton(onClick = {
+                                textFieldState.edit { replace(0, length, "") }
+                                onQueryChange("")
+                            }) {
+                                Icon(
+                                    MaterialSymbols.Outlined.Close,
+                                    contentDescription = stringResource(R.string.action_clear),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        } else {
+                            IconButton(onClick = { launchVoiceSearch() }) {
+                                Icon(
+                                    MaterialSymbols.Outlined.Mic,
+                                    contentDescription = stringResource(R.string.action_voice_search),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        IconButton(
+                            onClick = {
+                                onSearch(textFieldState.text.toString())
+                                keyboardController?.hide()
+                            }, enabled = textFieldState.text.isNotBlank()
+                        ) {
+                            Icon(
+                                MaterialSymbols.Outlined.Search,
+                                contentDescription = stringResource(R.string.action_search),
+                                tint = if (textFieldState.text.isNotBlank()) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
-            }
+            )
 
             val enterTransition: EnterTransition = fadeIn(
                 animationSpec = tween(durationMillis = 150, delayMillis = 50)
@@ -240,11 +236,20 @@ fun ReaderSearch(
                 animationSpec = tween(durationMillis = 200)
             )
 
-            AnimatedVisibility(
-                visible = isLoading, enter = enterTransition, exit = exitTransition
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Loading indicator container (fixes height to prevent layout shifts)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Column {
-                    Spacer(modifier = Modifier.height(8.dp))
+                this@Column.AnimatedVisibility(
+                    visible = isLoading,
+                    enter = fadeIn(animationSpec = tween(durationMillis = 150)),
+                    exit = fadeOut(animationSpec = tween(durationMillis = 150))
+                ) {
                     LinearWavyProgressIndicator(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -254,10 +259,10 @@ fun ReaderSearch(
                     )
                 }
             }
-            Spacer(
-                modifier = Modifier.height(16.dp)
-            )
 
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
 
             // ── Results count bar ────────────────────────────────────────────────
             // Only show if a search was performed, and we have results or are not loading
