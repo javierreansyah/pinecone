@@ -1,6 +1,7 @@
 package com.example.readerapp.ui.theme
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -50,6 +51,7 @@ fun ReaderTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = AppTypography,
+        motionScheme = MotionScheme.expressive(),
         content = content
     )
 }
