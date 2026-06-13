@@ -307,21 +307,6 @@ class LibraryViewModel(
         }
     }
 
-    fun createShelfAndAddBook(name: String, bookId: String?) {
-        viewModelScope.launch {
-            val shelfId = bookRepository.createShelf(name)
-            if (bookId != null) {
-                bookRepository.addBookToShelf(shelfId, bookId)
-            }
-        }
-    }
-
-    fun addBookToShelf(shelfId: String, bookId: String) {
-        viewModelScope.launch {
-            bookRepository.addBookToShelf(shelfId, bookId)
-        }
-    }
-
     fun removeBookFromShelf(shelfId: String, bookId: String) {
         viewModelScope.launch {
             bookRepository.removeBookFromShelf(shelfId, bookId)

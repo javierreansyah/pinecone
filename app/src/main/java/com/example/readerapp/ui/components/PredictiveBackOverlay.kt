@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package com.example.readerapp.ui.components
 
 import androidx.activity.BackEventCompat
@@ -99,8 +101,7 @@ fun PredictiveBackOverlay(
                 }
             }
             .graphicsLayer {
-                val progress = backProgress
-                if (progress > 0f) {
+                if (backProgress > 0f) {
                     scaleX = 1f
                     scaleY = 1f
                     clip = true

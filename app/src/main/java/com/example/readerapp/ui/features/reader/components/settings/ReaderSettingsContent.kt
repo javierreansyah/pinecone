@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -25,12 +27,13 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.RadioButton
@@ -59,6 +62,7 @@ import androidx.compose.ui.text.googlefonts.Font
 import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import com.composables.icons.materialsymbols.MaterialSymbols
@@ -596,6 +600,7 @@ private fun TextTabContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun LightingTabContent(
     settings: ReaderSettings,
@@ -603,6 +608,8 @@ private fun LightingTabContent(
     onAddThemeClick: () -> Unit,
     onThemeLongClick: (CustomReaderTheme) -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+
     // Brightness
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -614,12 +621,12 @@ private fun LightingTabContent(
         )
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             FilledIconToggleButton(
                 checked = settings.autoBrightness,
                 onCheckedChange = { onSettingsChange(settings.copy(autoBrightness = it)) },
-                shape = RoundedCornerShape(12.dp),
+                shapes = IconButtonDefaults.toggleableShapes(),
                 modifier = Modifier.size(48.dp)
             ) {
                 Icon(
@@ -631,13 +638,24 @@ private fun LightingTabContent(
                 value = settings.brightness,
                 onValueChange = { onSettingsChange(settings.copy(brightness = it)) },
                 enabled = !settings.autoBrightness,
-                modifier = Modifier.weight(1f),
+                interactionSource = interactionSource,
                 track = { sliderState ->
                     SliderDefaults.Track(
                         sliderState = sliderState,
                         enabled = !settings.autoBrightness,
+                        modifier = Modifier.height(16.dp),
+                        trackCornerSize = 8.dp,
                     )
-                })
+                },
+                thumb = { sliderState ->
+                    SliderDefaults.Thumb(
+                        sliderState = sliderState,
+                        enabled = !settings.autoBrightness,
+                        thumbSize = DpSize(4.dp, 48.dp),
+                        interactionSource = interactionSource,
+                    )
+                }
+            )
         }
     }
 
