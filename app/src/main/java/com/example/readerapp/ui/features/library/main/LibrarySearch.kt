@@ -1,7 +1,6 @@
 package com.example.readerapp.ui.features.library.main
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -12,7 +11,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -31,7 +29,7 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AppBarWithSearch
-import androidx.compose.material3.ExpandedFullScreenSearchBar
+import androidx.compose.material3.ExpandedFullScreenContainedSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -44,7 +42,7 @@ import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldColors
-import androidx.compose.material3.rememberSearchBarState
+import androidx.compose.material3.rememberContainedSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -76,8 +74,9 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.withResumed
 import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Arrow_back
+import com.composables.icons.materialsymbols.outlined.Chevron_backward
 import com.composables.icons.materialsymbols.outlined.Chevron_forward
+import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Label
 import com.composables.icons.materialsymbols.outlined.Menu
@@ -117,7 +116,7 @@ fun LibrarySearchTopBar(
     onAuthorsHeaderClick: () -> Unit = {},
     onTagsHeaderClick: () -> Unit = {},
     scrollBehavior: SearchBarScrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior(),
-    searchBarState: SearchBarState = rememberSearchBarState()
+    searchBarState: SearchBarState = rememberContainedSearchBarState()
 ) {
     val textFieldState = rememberTextFieldState(searchQuery)
     val focusRequester = remember { FocusRequester() }
@@ -138,11 +137,7 @@ fun LibrarySearchTopBar(
         onRestoringChange = { isRestoring = it })
 
     // Colors
-    val isExpandedTarget = searchBarState.targetValue == SearchBarValue.Expanded
-    val searchBarContainerColor by animateColorAsState(
-        targetValue = if (isExpandedTarget) MaterialTheme.colorScheme.surfaceContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
-        label = "searchBarColor"
-    )
+    val searchBarContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
 
     val appBarWithSearchColors = SearchBarDefaults.appBarWithSearchColors(
         searchBarColors = SearchBarDefaults.colors(containerColor = searchBarContainerColor),
@@ -187,7 +182,17 @@ fun LibrarySearchTopBar(
             },
         )
 
-        ExpandedFullScreenSearchBar(
+        val expandedSearchBarColors = SearchBarDefaults.colors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            dividerColor = Color.Transparent,
+            inputFieldColors = SearchBarDefaults.inputFieldColors(
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            )
+        )
+
+        ExpandedFullScreenContainedSearchBar(
             state = searchBarState,
             inputField = {
                 SearchInputField(
@@ -196,11 +201,11 @@ fun LibrarySearchTopBar(
                     focusRequester = focusRequester,
                     isRestoring = isRestoring,
                     onRestoringChange = { isRestoring = it },
-                    colors = appBarWithSearchColors.searchBarColors.inputFieldColors,
+                    colors = expandedSearchBarColors.inputFieldColors,
                     onSearchQueryChange = onSearchQueryChange
                 )
             },
-            colors = appBarWithSearchColors.searchBarColors.copy(dividerColor = Color.Transparent)
+            colors = expandedSearchBarColors
         ) {
             // Track whether the expansion animation has ever settled so we can
             // defer the expensive search-content composition until the bar is
@@ -237,45 +242,28 @@ fun LibrarySearchTopBar(
                 }
             }
 
-            if (showContent) {
+            AnimatedVisibility(
+                visible = showContent,
+                enter = fadeIn(animationSpec = tween(durationMillis = 300)),
+                exit = androidx.compose.animation.ExitTransition.None
+            ) {
                 ExpandedSearchContent(
                     isSearchEmpty = textFieldState.text.isEmpty(),
                     searchCategory = searchCategory,
                     searchResults = searchResults,
                     onSearchCategoryChange = onSearchCategoryChange,
                     onNavigateToReader = { bookId ->
-                        navigateAfterCollapse {
-                            onNavigateToReader(
-                                bookId
-                            )
-                        }
+                        navigateAfterCollapse { onNavigateToReader(bookId) }
                     },
                     onNavigateToShelf = { shelfId, name, count ->
-                        navigateAfterCollapse {
-                            onNavigateToShelf(
-                                shelfId, name, count
-                            )
-                        }
+                        navigateAfterCollapse { onNavigateToShelf(shelfId, name, count) }
                     },
                     onNavigateToAuthor = { author ->
-                        navigateAfterCollapse {
-                            onNavigateToAuthor(
-                                author
-                            )
-                        }
+                        navigateAfterCollapse { onNavigateToAuthor(author) }
                     },
                     onNavigateToTag = { tag -> navigateAfterCollapse { onNavigateToTag(tag) } },
                     onAuthorsHeaderClick = { navigateAfterCollapse { onAuthorsHeaderClick() } },
-                    onTagsHeaderClick = { navigateAfterCollapse { onTagsHeaderClick() } })
-            } else {
-                // Lightweight placeholder shown during the expansion animation.
-                // Uses the same background as the real content so it looks
-                // seamless, but avoids composing the heavy LazyColumn/LazyRow
-                // tree that would cause dropped frames.
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                    onTagsHeaderClick = { navigateAfterCollapse { onTagsHeaderClick() } }
                 )
             }
         }
@@ -417,8 +405,9 @@ private fun SearchInputField(
                     scope.launch { searchBarState.animateToCollapsed() }
                 }) {
                     Icon(
-                        MaterialSymbols.Outlined.Arrow_back,
-                        contentDescription = stringResource(R.string.action_back)
+                        MaterialSymbols.Outlined.Chevron_backward,
+                        contentDescription = stringResource(R.string.action_back),
+                        modifier = Modifier.size(28.dp)
                     )
                 }
             }
@@ -429,11 +418,22 @@ private fun SearchInputField(
                 enter = fadeIn(animationSpec = tween(durationMillis = 150, delayMillis = 200)),
                 exit = fadeOut(animationSpec = tween(durationMillis = 50))
             ) {
-                IconButton(onClick = { launchVoiceSearch() }) {
-                    Icon(
-                        MaterialSymbols.Outlined.Mic,
-                        contentDescription = stringResource(R.string.action_voice_search)
-                    )
+                if (textFieldState.text.isNotEmpty()) {
+                    IconButton(onClick = {
+                        textFieldState.edit { replace(0, length, "") }
+                    }) {
+                        Icon(
+                            MaterialSymbols.Outlined.Close,
+                            contentDescription = stringResource(R.string.action_clear)
+                        )
+                    }
+                } else {
+                    IconButton(onClick = { launchVoiceSearch() }) {
+                        Icon(
+                            MaterialSymbols.Outlined.Mic,
+                            contentDescription = stringResource(R.string.action_voice_search)
+                        )
+                    }
                 }
             }
         },
@@ -456,7 +456,7 @@ private fun ExpandedSearchContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         val categoryLabels = mapOf(
             SearchCategory.All to stringResource(R.string.action_all),
@@ -507,12 +507,11 @@ private fun SearchResultsContent(
     onAuthorsHeaderClick: () -> Unit,
     onTagsHeaderClick: () -> Unit
 ) {
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        val columns = maxOf(1, (maxWidth / 100.dp).toInt())
+    Box(modifier = Modifier.fillMaxSize()) {
         val isAll = searchCategory == SearchCategory.All
         val isPreview = isAll && isSearchEmpty
 
-        val maxBooks = if (isPreview) columns else Int.MAX_VALUE
+        val maxBooks = if (isPreview) 4 else Int.MAX_VALUE
         val maxShelves = if (isPreview) 4 else Int.MAX_VALUE
         val maxAuthors = if (isPreview) 8 else Int.MAX_VALUE
         val maxTags = if (isPreview) 8 else Int.MAX_VALUE
@@ -591,9 +590,6 @@ private fun SearchResultsContent(
                 if (booksToShow.isNotEmpty() && isAll) {
                     BooksSection(
                         books = booksToShow,
-                        useLazy = false, // always false when isAll
-                        isScrollable = !isPreview,
-                        columns = columns,
                         onBookClick = { onBookClick(it) }
                     )
                 }
@@ -640,9 +636,6 @@ private fun SearchResultsContent(
 @Composable
 private fun BooksSection(
     books: List<Book>,
-    useLazy: Boolean,
-    isScrollable: Boolean = true,
-    columns: Int = 3,
     onBookClick: (Book) -> Unit
 ) {
     SectionHeader(
@@ -650,47 +643,13 @@ private fun BooksSection(
         onHeaderClick = null,
         modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 2.dp)
     )
-    if (useLazy) {
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 8.dp)
-        ) {
-            items(books, key = { it.id }) { book ->
-                BookItem(
-                    book = book, onClick = { onBookClick(book) }, modifier = Modifier.width(100.dp)
-                )
-            }
-        }
-    } else {
-        val rowModifier = if (isScrollable) {
-            Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 8.dp)
-        } else {
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp)
-        }
-
-        Row(
-            modifier = rowModifier
-        ) {
-            books.forEach { book ->
-                androidx.compose.runtime.key("${book.id}-$isScrollable") {
-                    val itemModifier =
-                        if (isScrollable) Modifier.width(120.dp) else Modifier.weight(1f)
-                    BookItem(
-                        book = book, onClick = { onBookClick(book) }, modifier = itemModifier
-                    )
-                }
-            }
-
-            if (!isScrollable) {
-                // Keep the items appropriately sized even if there are less than columns
-                repeat(columns - books.size) {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
-            }
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 8.dp)
+    ) {
+        items(books, key = { it.id }) { book ->
+            BookItem(
+                book = book, onClick = { onBookClick(book) }, modifier = Modifier.width(120.dp)
+            )
         }
     }
 }
@@ -776,7 +735,7 @@ private fun SearchFilterItem(
     Surface(
         modifier = modifier.clickable { onClick() },
         shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
