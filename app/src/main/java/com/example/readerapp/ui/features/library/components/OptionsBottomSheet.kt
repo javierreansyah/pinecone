@@ -26,7 +26,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_drop_down
@@ -191,7 +190,7 @@ fun <T> MultiToggleGroupSection(
                         else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
                     }
                 ) {
-                    ProvideTextStyle(value = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium)) {
+                    ProvideTextStyle(value = MaterialTheme.typography.labelLarge) {
                         optionContent(option)
                     }
                 }
