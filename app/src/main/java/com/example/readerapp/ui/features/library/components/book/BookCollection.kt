@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
@@ -22,8 +21,7 @@ fun BookCollection(
     layoutMode: LayoutMode,
     onBookClick: (String) -> Unit,
     onBookLongClick: (String) -> Unit,
-    scrollKey: Any? = null,
-    headerContent: @Composable (() -> Unit)? = null
+    scrollKey: Any? = null
 ) {
     key(scrollKey) {
         if (layoutMode != LayoutMode.List) {
@@ -31,15 +29,13 @@ fun BookCollection(
                 books = books,
                 layoutMode = layoutMode,
                 onBookClick = onBookClick,
-                onBookLongClick = onBookLongClick,
-                headerContent = headerContent
+                onBookLongClick = onBookLongClick
             )
         } else {
             BookList(
                 books = books,
                 onBookClick = onBookClick,
-                onBookLongClick = onBookLongClick,
-                headerContent = headerContent
+                onBookLongClick = onBookLongClick
             )
         }
     }
@@ -50,8 +46,7 @@ private fun BookGrid(
     books: List<Book>,
     layoutMode: LayoutMode = LayoutMode.Grid,
     onBookClick: (String) -> Unit,
-    onBookLongClick: ((String) -> Unit)? = null,
-    headerContent: @Composable (() -> Unit)? = null
+    onBookLongClick: ((String) -> Unit)? = null
 ) {
     val itemWidth = if (layoutMode == LayoutMode.BigGrid) 150.dp else 100.dp
     val horizontalPadding = 8.dp
@@ -62,11 +57,6 @@ private fun BookGrid(
             .fillMaxSize()
             .padding(horizontal = horizontalPadding)
     ) {
-        if (headerContent != null) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                headerContent()
-            }
-        }
         items(
             items = books,
             key = { "${it.id}-${layoutMode.name}" },
@@ -85,17 +75,11 @@ private fun BookGrid(
 private fun BookList(
     books: List<Book>,
     onBookClick: (String) -> Unit,
-    onBookLongClick: ((String) -> Unit)? = null,
-    headerContent: @Composable (() -> Unit)? = null
+    onBookLongClick: ((String) -> Unit)? = null
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxWidth()
     ) {
-        if (headerContent != null) {
-            item {
-                headerContent()
-            }
-        }
         items(books, key = { it.id }) { book ->
             BookItem(
                 book = book,

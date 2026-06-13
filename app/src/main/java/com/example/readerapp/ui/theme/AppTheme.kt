@@ -60,7 +60,6 @@ fun AppTheme(
 
     MaterialTheme(
         colorScheme = resolvedColorScheme,
-        typography = AppTypography,
         motionScheme = MotionScheme.expressive(),
         content = content
     )

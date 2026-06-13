@@ -50,7 +50,6 @@ fun ReaderTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = AppTypography,
         motionScheme = MotionScheme.expressive(),
         content = content
     )
