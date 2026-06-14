@@ -89,6 +89,11 @@ data class DefinitionState(
     val definitionResults: List<DictionaryEntry> = emptyList()
 )
 
+data class ExternalLinkState(
+    val showMenu: Boolean = false,
+    val url: String = ""
+)
+
 class ReaderViewModel(
     private val application: Application,
     private val bookId: String,
@@ -127,6 +132,9 @@ class ReaderViewModel(
     private val _definitionState = MutableStateFlow(DefinitionState())
     val definitionState: StateFlow<DefinitionState> = _definitionState.asStateFlow()
 
+    private val _externalLinkState = MutableStateFlow(ExternalLinkState())
+    val externalLinkState: StateFlow<ExternalLinkState> = _externalLinkState.asStateFlow()
+
     // Search — one-shot navigation events; buffered so emission before
     // the collector is ready is not lost (but NOT replayed on reconnect).
     private val _navigateToLocator = MutableSharedFlow<Locator>(extraBufferCapacity = 1)
@@ -145,6 +153,20 @@ class ReaderViewModel(
     // Bookmarks for the current book
     val bookmarks: StateFlow<List<BookmarkEntity>> = repository.getBookmarks(bookId)
         .stateIn(viewModelScope, WhileSubscribed(5000), emptyList())
+
+    // Jump origin locator state
+    val jumpOrigin: StateFlow<Locator?> = repository.getBookFlow(bookId)
+        .map { details ->
+            val json = details?.book?.jumpOriginLocatorJson
+            if (!json.isNullOrBlank()) {
+                try {
+                    fromJSON(JSONObject(json))
+                } catch (_: Exception) {
+                    null
+                }
+            } else null
+        }
+        .stateIn(viewModelScope, WhileSubscribed(5000), null)
 
     // All raw notes from DB
     private val allNotes: StateFlow<List<NoteEntity>> = repository.getNotes(bookId)
@@ -165,8 +187,7 @@ class ReaderViewModel(
             bookmarksList.any { bookmark ->
                 try {
                     val bmLocator = fromJSON(JSONObject(bookmark.locatorJson))
-                    // Check for similar position (Readium standard comparison)
-                    (bmLocator?.href == locator.href) && (bmLocator.locations.totalProgression == locator.locations.totalProgression)
+                    bmLocator != null && bmLocator.isSamePosition(locator)
                 } catch (_: Exception) {
                     false
                 }
@@ -257,6 +278,16 @@ class ReaderViewModel(
     val tableOfContents: List<Link>
         get() = _publication.value?.tableOfContents ?: emptyList()
 
+    init {
+        viewModelScope.launch {
+            settingsFlow.collect { settings ->
+                if (settings.jumpHistoryMode == "disabled") {
+                    repository.clearJumpOrigin(bookId)
+                }
+            }
+        }
+    }
+
     fun openBook() {
         viewModelScope.launch {
             _bookState.update { it.copy(isLoading = true, error = null) }
@@ -306,8 +337,37 @@ class ReaderViewModel(
         }
     }
 
+    private var justJumped = false
+
     fun onLocatorChanged(locator: Locator) {
+        val oldLocator = _currentLocator.value
         _currentLocator.value = locator
+
+        // Resolve jump origin on page turn if enabled
+        if (oldLocator != null) {
+            viewModelScope.launch {
+                val settings = settingsFlow.first()
+                if (settings.jumpHistoryMode == "disabled") {
+                    repository.clearJumpOrigin(bookId)
+                } else if (settings.jumpHistoryMode == "page_turn") {
+                    if (justJumped) {
+                        justJumped = false
+                    } else {
+                        val details = repository.getBook(bookId)
+                        val jumpOriginJson = details?.book?.jumpOriginLocatorJson
+                        if (jumpOriginJson != null) {
+                            val origin = fromJSON(JSONObject(jumpOriginJson))
+                            if (origin != null && !locator.isSamePosition(origin) && !locator.isSamePosition(
+                                    oldLocator
+                                )
+                            ) {
+                                repository.clearJumpOrigin(bookId)
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         val allPositions = _positions.value
         val pageIndex = if (allPositions.isNotEmpty()) {
@@ -384,6 +444,37 @@ class ReaderViewModel(
         }
     }
 
+    fun recordJumpOrigin() {
+        val current = _currentLocator.value ?: return
+        viewModelScope.launch {
+            val settings = settingsFlow.first()
+            if (settings.jumpHistoryMode != "disabled") {
+                repository.saveJumpOrigin(bookId, current)
+                justJumped = true
+            }
+        }
+    }
+
+    fun goBackToJumpOrigin() {
+        viewModelScope.launch {
+            val details = repository.getBook(bookId) ?: return@launch
+            val json = details.book.jumpOriginLocatorJson
+            if (!json.isNullOrBlank()) {
+                val locator = fromJSON(JSONObject(json))
+                if (locator != null) {
+                    _navigateToLocator.tryEmit(locator)
+                }
+            }
+            repository.clearJumpOrigin(bookId)
+        }
+    }
+
+    fun clearJumpOrigin() {
+        viewModelScope.launch {
+            repository.clearJumpOrigin(bookId)
+        }
+    }
+
     fun toggleControls() {
         _controlsState.update { it.copy(showControls = !it.showControls) }
     }
@@ -395,7 +486,7 @@ class ReaderViewModel(
             val existing = bookmarks.value.find { bookmark ->
                 try {
                     val bmLocator = fromJSON(JSONObject(bookmark.locatorJson))
-                    (bmLocator?.href == locator.href) && (bmLocator.locations.totalProgression == locator.locations.totalProgression)
+                    bmLocator != null && bmLocator.isSamePosition(locator)
                 } catch (_: Exception) {
                     false
                 }
@@ -512,6 +603,14 @@ class ReaderViewModel(
 
     fun hideDefinition() {
         _definitionState.update { it.copy(showDefinition = false) }
+    }
+
+    fun showExternalLinkMenu(url: String) {
+        _externalLinkState.update { it.copy(showMenu = true, url = url) }
+    }
+
+    fun hideExternalLinkMenu() {
+        _externalLinkState.update { it.copy(showMenu = false) }
     }
 
     fun showToc() {
@@ -719,4 +818,38 @@ class ReaderViewModel(
             ) as T
         }
     }
+}
+
+private fun Locator.isSamePosition(other: Locator): Boolean {
+    if (this.href != other.href) return false
+
+    // 1. Compare fragments (like EPUB CFI or HTML ID) - highest precision
+    val thisFragments = this.locations.fragments
+    val otherFragments = other.locations.fragments
+    if (thisFragments.isNotEmpty() && otherFragments.isNotEmpty()) {
+        return thisFragments == otherFragments
+    }
+
+    // 2. Compare progression within the resource - medium precision
+    val thisProg = this.locations.progression
+    val otherProg = other.locations.progression
+    if (thisProg != null && otherProg != null) {
+        return abs(thisProg - otherProg) < 0.0001
+    }
+
+    // 3. Compare total progression across the publication
+    val thisTotalProg = this.locations.totalProgression
+    val otherTotalProg = other.locations.totalProgression
+    if (thisTotalProg != null && otherTotalProg != null) {
+        return abs(thisTotalProg - otherTotalProg) < 0.0001
+    }
+
+    // 4. Compare position index as coarse fallback
+    val thisPos = this.locations.position
+    val otherPos = other.locations.position
+    if (thisPos != null && otherPos != null) {
+        return thisPos == otherPos
+    }
+
+    return false
 }

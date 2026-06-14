@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -58,6 +60,7 @@ import com.example.readerapp.ui.features.reader.ReaderNavigationRouter
 import com.example.readerapp.ui.features.reader.ReaderViewModel
 import com.example.readerapp.ui.features.reader.SearchResultItem
 import com.example.readerapp.ui.features.reader.components.ReaderSearch
+import com.example.readerapp.ui.features.reader.components.contents.ExternalLinkBottomSheet
 import com.example.readerapp.ui.features.reader.components.contents.NoteBottomSheet
 import com.example.readerapp.ui.features.reader.components.contents.ReaderBottomSheet
 import com.example.readerapp.ui.features.reader.components.dictionary.DefinitionWebView
@@ -69,6 +72,7 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
+import androidx.core.net.toUri
 
 @Composable
 fun ReaderOverlay(
@@ -76,13 +80,15 @@ fun ReaderOverlay(
     router: ReaderNavigationRouter,
     bookId: String,
     onNavigateToChapter: (Link) -> Unit,
-    onSeekToProgression: (Double) -> Unit
+    onSeekToProgression: (Double) -> Unit,
+    onNavigateToLocator: (Locator) -> Unit
 ) {
     val bookState by viewModel.bookState.collectAsStateWithLifecycle()
     val controlsState by viewModel.controlsState.collectAsStateWithLifecycle()
     val selectionState by viewModel.selectionState.collectAsStateWithLifecycle()
     val searchState by viewModel.searchState.collectAsStateWithLifecycle()
     val definitionState by viewModel.definitionState.collectAsStateWithLifecycle()
+    val externalLinkState by viewModel.externalLinkState.collectAsStateWithLifecycle()
 
     val themeColors by viewModel.themeColors.collectAsStateWithLifecycle()
     val isBookmarked by viewModel.isBookmarked.collectAsStateWithLifecycle()
@@ -102,6 +108,7 @@ fun ReaderOverlay(
     val bookmarks by viewModel.bookmarks.collectAsStateWithLifecycle()
     val notes by viewModel.allNotesAndHighlights.collectAsStateWithLifecycle()
     val currentLocator by viewModel.currentLocator.collectAsStateWithLifecycle()
+    val jumpOrigin by viewModel.jumpOrigin.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
 
@@ -120,6 +127,10 @@ fun ReaderOverlay(
                 MaterialSymbols.Outlined.Close
             }
         }
+    }
+
+    BackHandler(enabled = searchState.isInNavMode) {
+        viewModel.exitSearchNavigation()
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -155,6 +166,9 @@ fun ReaderOverlay(
             isBookmarked = isBookmarked,
             readerBgColor = readerBgColor,
             readerTextColor = readerTextColor,
+            jumpOrigin = jumpOrigin,
+            onGoBackToOriginClick = { viewModel.goBackToJumpOrigin() },
+            onClearJumpOriginClick = { viewModel.clearJumpOrigin() },
             onBack = { router.navigateBack() },
             onSearchClick = { viewModel.showSearch() },
             onSearchTextClick = { viewModel.showSearch(clearState = false) },
@@ -180,8 +194,10 @@ fun ReaderOverlay(
             totalPages = bookState.totalPages,
             readerBgColor = readerBgColor,
             readerTextColor = readerTextColor,
-            onSeekToProgression = onSeekToProgression,
-            onExitSearchNavigation = { viewModel.exitSearchNavigation() },
+            onSeekToProgression = { progression ->
+                viewModel.recordJumpOrigin()
+                onSeekToProgression(progression)
+            },
             onPrevSearchResult = { viewModel.prevSearchResult() },
             onNextSearchResult = { viewModel.nextSearchResult() },
             onCopy = { highlightText ->
@@ -254,7 +270,8 @@ fun ReaderOverlay(
             getPositionLabel = { viewModel.getPositionLabel(it) },
             getChapterPageLabel = { viewModel.getChapterPageLabel(it) },
             onNavigateToChapter = onNavigateToChapter,
-            onSeekToProgression = onSeekToProgression,
+            onNavigateToLocator = onNavigateToLocator,
+            onRecordJumpOrigin = { viewModel.recordJumpOrigin() },
             onHideToc = { viewModel.hideToc() },
             onToggleControls = { viewModel.toggleControls() },
             onAddNote = { viewModel.addNote(it) },
@@ -268,7 +285,23 @@ fun ReaderOverlay(
             onHideSearch = { viewModel.hideSearch() },
             onUpdateNote = { viewModel.updateNote(it) },
             onHideEditNote = { viewModel.hideEditNote() },
-            onHideDefinition = { viewModel.hideDefinition() }
+            onHideDefinition = { viewModel.hideDefinition() },
+            showExternalLinkMenu = externalLinkState.showMenu,
+            externalLinkUrl = externalLinkState.url,
+            onCopyExternalLink = { url ->
+                val clipboard =
+                    context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                val clip = ClipData.newPlainText("url", url)
+                clipboard.setPrimaryClip(clip)
+            },
+            onOpenExternalLink = { url ->
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW, url.toUri())
+                    context.startActivity(intent)
+                } catch (_: Exception) {
+                }
+            },
+            onHideExternalLinkMenu = { viewModel.hideExternalLinkMenu() }
         )
     }
 }
@@ -282,6 +315,9 @@ fun ReaderTopBarSection(
     isBookmarked: Boolean,
     readerBgColor: Color,
     readerTextColor: Color,
+    jumpOrigin: Locator?,
+    onGoBackToOriginClick: () -> Unit,
+    onClearJumpOriginClick: () -> Unit,
     onBack: () -> Unit,
     onSearchClick: () -> Unit,
     onSearchTextClick: () -> Unit,
@@ -309,7 +345,7 @@ fun ReaderTopBarSection(
             if (searchNavMode) {
                 ReaderSearchTopBar(
                     searchQuery = searchQuery,
-                    onBack = onBack,
+                    onBack = onExitSearchNavigation,
                     onSearchTextClick = onSearchTextClick,
                     onCloseSearch = onExitSearchNavigation,
                     readerBgColor = readerBgColor,
@@ -325,7 +361,10 @@ fun ReaderTopBarSection(
                     onToggleBookmark = onToggleBookmark,
                     onInfoClick = onInfoClick,
                     readerBgColor = readerBgColor,
-                    readerTextColor = readerTextColor
+                    readerTextColor = readerTextColor,
+                    jumpOrigin = jumpOrigin,
+                    onGoBackToOriginClick = onGoBackToOriginClick,
+                    onClearJumpOriginClick = onClearJumpOriginClick
                 )
             }
         }
@@ -347,7 +386,6 @@ fun ReaderBottomBarSection(
     readerBgColor: Color,
     readerTextColor: Color,
     onSeekToProgression: (Double) -> Unit,
-    onExitSearchNavigation: () -> Unit,
     onPrevSearchResult: () -> Unit,
     onNextSearchResult: () -> Unit,
     onCopy: (String) -> Unit,
@@ -403,7 +441,6 @@ fun ReaderBottomBarSection(
                             activeIndex = activeSearchIndex,
                             totalResults = searchResultsSize,
                             textColor = readerTextColor,
-                            onExit = onExitSearchNavigation,
                             onPrev = onPrevSearchResult,
                             onNext = onNextSearchResult
                         )
@@ -464,7 +501,8 @@ fun ReaderSheetsLayer(
     getPositionLabel: (Locator) -> String,
     getChapterPageLabel: (Link) -> String,
     onNavigateToChapter: (Link) -> Unit,
-    onSeekToProgression: (Double) -> Unit,
+    onNavigateToLocator: (Locator) -> Unit,
+    onRecordJumpOrigin: () -> Unit,
     onHideToc: () -> Unit,
     onToggleControls: () -> Unit,
     onAddNote: (String) -> Unit,
@@ -478,7 +516,12 @@ fun ReaderSheetsLayer(
     onHideSearch: () -> Unit,
     onUpdateNote: (NoteEntity) -> Unit,
     onHideEditNote: () -> Unit,
-    onHideDefinition: () -> Unit
+    onHideDefinition: () -> Unit,
+    showExternalLinkMenu: Boolean,
+    externalLinkUrl: String,
+    onCopyExternalLink: (String) -> Unit,
+    onOpenExternalLink: (String) -> Unit,
+    onHideExternalLinkMenu: () -> Unit
 ) {
     val settingsSheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
@@ -496,17 +539,20 @@ fun ReaderSheetsLayer(
                 getPositionLabel = getPositionLabel,
                 getChapterPageLabel = getChapterPageLabel,
                 onChapterClick = { link ->
+                    onRecordJumpOrigin()
                     onNavigateToChapter(link)
                     onHideToc()
                     onToggleControls()
                 },
                 onBookmarkClick = { locator ->
-                    onSeekToProgression(locator.locations.totalProgression ?: 0.0)
+                    onRecordJumpOrigin()
+                    onNavigateToLocator(locator)
                     onHideToc()
                     onToggleControls()
                 },
                 onNoteClick = { locator ->
-                    onSeekToProgression(locator.locations.totalProgression ?: 0.0)
+                    onRecordJumpOrigin()
+                    onNavigateToLocator(locator)
                     onHideToc()
                     onToggleControls()
                 },
@@ -564,6 +610,16 @@ fun ReaderSheetsLayer(
                 definitionWord = definitionWord,
                 definitionResults = definitionResults,
                 onDismiss = onHideDefinition
+            )
+        }
+
+        // External Link Bottom Sheet
+        if (showExternalLinkMenu) {
+            ExternalLinkBottomSheet(
+                url = externalLinkUrl,
+                onCopy = { onCopyExternalLink(externalLinkUrl) },
+                onOpenInBrowser = { onOpenExternalLink(externalLinkUrl) },
+                onDismiss = onHideExternalLinkMenu
             )
         }
     }

@@ -94,6 +94,9 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
                         if (locator != null) {
                             navigatorController.go(locator)
                         }
+                    },
+                    onNavigateToLocator = { locator ->
+                        navigatorController.go(locator)
                     }
                 )
             }

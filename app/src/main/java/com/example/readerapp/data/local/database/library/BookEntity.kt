@@ -23,5 +23,8 @@ data class BookEntity(
     val description: String? = null,
     val publisher: String? = null,
     val published: String? = null,
-    val isRead: Boolean = false
+    val isRead: Boolean = false,
+    val furthestProgression: Double = 0.0,
+    val furthestLocatorJson: String? = null,
+    val jumpOriginLocatorJson: String? = null
 )

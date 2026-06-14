@@ -67,11 +67,6 @@ interface BookDao {
     @Delete
     suspend fun delete(book: BookEntity)
 
-    @Query("UPDATE books SET progression = :progression, lastLocatorJson = :lastLocatorJson, lastReadDate = :lastReadDate WHERE id = :id")
-    suspend fun updateProgress(
-        id: String, progression: Double, lastLocatorJson: String?, lastReadDate: Long
-    )
-
     @Query("SELECT COUNT(*) FROM books WHERE id = :id")
     suspend fun exists(id: String): Int
 

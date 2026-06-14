@@ -260,4 +260,15 @@
     <string name="nav_restore_success">Cadangan berhasil dipulihkan!</string>
     <string name="nav_restore_failed">Gagal memulihkan cadangan</string>
 
+    <!-- Reader Jump Origin tracking -->
+    <string name="reader_jump_go_back">Kembali</string>
+    <string name="reader_jump_history_mode">Riwayat Lompatan</string>
+    <string name="reader_jump_history_mode_explicit">Manual</string>
+    <string name="reader_jump_history_mode_page_turn">Pindah halaman</string>
+    <string name="reader_jump_history_mode_disabled">Dinonaktifkan</string>
+    <!-- Reader Bookmark/Note Sorting -->
+    <string name="reader_sort_creation_date_asc">Tanggal dibuat (terlama dahulu)</string>
+    <string name="reader_sort_creation_date_desc">Tanggal dibuat (terbaru dahulu)</string>
+    <string name="reader_sort_book_order_asc">Urutan buku (awal dahulu)</string>
+    <string name="reader_sort_book_order_desc">Urutan buku (akhir dahulu)</string>
 </resources>

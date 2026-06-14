@@ -3,13 +3,9 @@ package com.example.readerapp.ui.features.reader.components
 import androidx.activity.BackEventCompat
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -108,9 +105,8 @@ fun ReaderSearch(
     }
 
     LaunchedEffect(Unit) {
-        if (query.isEmpty()) {
-            focusRequester.requestFocus()
-        }
+        focusRequester.requestFocus()
+        keyboardController?.show()
     }
 
     var backProgress by remember { mutableFloatStateOf(0f) }
@@ -210,18 +206,6 @@ fun ReaderSearch(
                 }
             )
 
-            val enterTransition: EnterTransition = fadeIn(
-                animationSpec = tween(durationMillis = 150, delayMillis = 50)
-            ) + expandVertically(
-                animationSpec = tween(durationMillis = 200)
-            )
-
-            val exitTransition: ExitTransition = fadeOut(
-                animationSpec = tween(durationMillis = 150)
-            ) + shrinkVertically(
-                animationSpec = tween(durationMillis = 200)
-            )
-
             Spacer(modifier = Modifier.height(8.dp))
 
             // Loading indicator container (fixes height to prevent layout shifts)
@@ -250,44 +234,64 @@ fun ReaderSearch(
                 modifier = Modifier.height(8.dp)
             )
 
-            // ── Results count bar ────────────────────────────────────────────────
-            // Only show if a search was performed, and we have results or are not loading
-            AnimatedVisibility(
-                searchPerformed && (results.isNotEmpty() || !isLoading),
-                enter = enterTransition,
-                exit = exitTransition
-            ) {
-                Surface(
-                    color = backgroundColor, modifier = Modifier.fillMaxWidth()
-                ) {
-                    val resultsText = if (results.isEmpty()) {
-                        stringResource(R.string.reader_search_no_results)
-                    } else {
-                        androidx.compose.ui.res.pluralStringResource(
-                            R.plurals.reader_search_results_count, results.size, results.size
-                        )
-                    }
-                    Text(
-                        text = resultsText,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(
-                            start = 20.dp,
-                            end = 20.dp,
-                            bottom = 16.dp,
-                        )
-                    )
-                }
-            }
-
-
             // ── Result list ───────────────────────────────────────────────────────
             LazyColumn(
-                contentPadding = PaddingValues(bottom = 8.dp), modifier = Modifier.fillMaxSize()
+                contentPadding = PaddingValues(bottom = 8.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .layout { measurable, constraints ->
+                        val progress = backProgress.coerceIn(0f, 1f)
+                        val targetWidth = constraints.maxWidth
+                        val originalWidth = if (progress > 0f) {
+                            (targetWidth / (1f - progress * 0.112f)).toInt()
+                        } else {
+                            targetWidth
+                        }
+                        val childConstraints = constraints.copy(
+                            minWidth = originalWidth.coerceAtLeast(0),
+                            maxWidth = originalWidth.coerceAtLeast(0)
+                        )
+                        val placeable = measurable.measure(childConstraints)
+                        layout(targetWidth, placeable.height) {
+                            placeable.placeRelative(0, 0)
+                        }
+                    }
             ) {
+                if (searchPerformed && (results.isNotEmpty() || !isLoading)) {
+                    item {
+                        Surface(
+                            color = backgroundColor, modifier = Modifier.fillMaxWidth()
+                        ) {
+                            val resultsText = if (results.isEmpty()) {
+                                stringResource(R.string.reader_search_no_results)
+                            } else {
+                                androidx.compose.ui.res.pluralStringResource(
+                                    R.plurals.reader_search_results_count,
+                                    results.size,
+                                    results.size
+                                )
+                            }
+                            Text(
+                                text = resultsText,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(
+                                    start = 20.dp,
+                                    end = 20.dp,
+                                    bottom = 16.dp,
+                                )
+                            )
+                        }
+                    }
+                }
+
                 itemsIndexed(results) { index, item ->
                     SearchResultCard(
-                        item = item, query = query, onClick = { onResultClick(index) })
+                        item = item,
+                        index = index,
+                        query = query,
+                        onClick = { onResultClick(index) }
+                    )
                 }
 
                 // Empty state when search done with no results
@@ -325,7 +329,11 @@ fun ReaderSearch(
 
 @Composable
 fun SearchResultCard(
-    item: SearchResultItem, query: String, onClick: () -> Unit, modifier: Modifier = Modifier
+    item: SearchResultItem,
+    index: Int,
+    query: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val primary = MaterialTheme.colorScheme.primary
     val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
@@ -346,14 +354,16 @@ fun SearchResultCard(
             )
 
             // Line 2: position
-            if (item.positionLabel.isNotBlank()) {
-                Text(
-                    text = item.positionLabel,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = onSurfaceVariant
-                )
+            val subtitleText = if (item.positionLabel.isNotBlank()) {
+                "${index + 1} / ${item.positionLabel}"
+            } else {
+                "${index + 1}"
             }
-
+            Text(
+                text = subtitleText,
+                style = MaterialTheme.typography.bodySmall,
+                color = onSurfaceVariant
+            )
         }
 
         // Line 3: Snippet: before · highlight · after
