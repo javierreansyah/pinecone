@@ -119,10 +119,10 @@ private fun SearchResultsContent(
         val isAll = searchCategory == SearchCategory.All
         val isPreview = isAll && isSearchEmpty
 
-        val maxBooks = if (isPreview) 6 else Int.MAX_VALUE
+        val maxBooks = if (isPreview) 4 else Int.MAX_VALUE
         val maxShelves = if (isPreview) 4 else Int.MAX_VALUE
-        val maxAuthors = if (isPreview) 8 else Int.MAX_VALUE
-        val maxTags = if (isPreview) 8 else Int.MAX_VALUE
+        val maxAuthors = if (isPreview) 4 else Int.MAX_VALUE
+        val maxTags = if (isPreview) 4 else Int.MAX_VALUE
 
         val booksToShow = if (isPreview) {
             results.books.sortedByDescending { it.lastOpened ?: 0L }.take(maxBooks)

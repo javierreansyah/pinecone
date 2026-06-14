@@ -265,4 +265,15 @@
     <string name="nav_restore_success">Backup restored successfully!</string>
     <string name="nav_restore_failed">Failed to restore backup</string>
 
+    <!-- Reader Jump Origin tracking -->
+    <string name="reader_jump_go_back">Go back</string>
+    <string name="reader_jump_history_mode">Jump History</string>
+    <string name="reader_jump_history_mode_explicit">Manual</string>
+    <string name="reader_jump_history_mode_page_turn">Page turn</string>
+    <string name="reader_jump_history_mode_disabled">Disabled</string>
+    <!-- Reader Bookmark/Note Sorting -->
+    <string name="reader_sort_creation_date_asc">Creation date (oldest first)</string>
+    <string name="reader_sort_creation_date_desc">Creation date (newest first)</string>
+    <string name="reader_sort_book_order_asc">Book order (early first)</string>
+    <string name="reader_sort_book_order_desc">Book order (late first)</string>
 </resources>

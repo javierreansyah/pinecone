@@ -45,7 +45,6 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Arrow_forward
 import com.composables.icons.materialsymbols.outlined.Book_3
-import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Content_copy
 import com.composables.icons.materialsymbols.outlined.Delete
 import com.composables.icons.materialsymbols.outlined.Edit
@@ -241,7 +240,6 @@ fun ReaderSearchNavigator(
     activeIndex: Int?,
     totalResults: Int,
     textColor: Color,
-    onExit: () -> Unit,
     onPrev: () -> Unit,
     onNext: () -> Unit
 ) {
@@ -252,18 +250,7 @@ fun ReaderSearchNavigator(
             .fillMaxWidth()
             .padding(vertical = 4.dp)
     ) {
-        IconButton(
-            onClick = onExit, modifier = Modifier
-                .size(40.dp)
-                .align(Alignment.CenterStart)
-        ) {
-            Icon(
-                MaterialSymbols.Outlined.Close,
-                contentDescription = stringResource(R.string.action_close),
-                tint = textColor,
-                modifier = Modifier.size(20.dp)
-            )
-        }
+
 
         Text(
             text = if (totalResults == 0) stringResource(R.string.reader_no_matches) else stringResource(

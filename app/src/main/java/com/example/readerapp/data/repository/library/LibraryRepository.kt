@@ -149,13 +149,51 @@ class LibraryRepository(
     }
 
     suspend fun saveReadingPosition(bookId: String, locator: Locator) {
+        val details = bookDao.getById(bookId) ?: return
+        val book = details.book
         val progression = locator.locations.totalProgression ?: 0.0
-        bookDao.updateProgress(
-            id = bookId,
-            progression = progression,
-            lastLocatorJson = locator.toJSON().toString(),
-            lastReadDate = System.currentTimeMillis()
+
+        val hasJumpOrigin = !book.jumpOriginLocatorJson.isNullOrBlank()
+        val isNewProgressionFurther = progression > book.furthestProgression
+
+        val newFurthestProgression =
+            if (!hasJumpOrigin && isNewProgressionFurther) progression else book.furthestProgression
+        val newFurthestLocatorJson = if (!hasJumpOrigin && isNewProgressionFurther) locator.toJSON()
+            .toString() else book.furthestLocatorJson
+
+        bookDao.update(
+            book.copy(
+                progression = progression,
+                lastLocatorJson = locator.toJSON().toString(),
+                lastReadDate = System.currentTimeMillis(),
+                furthestProgression = newFurthestProgression,
+                furthestLocatorJson = newFurthestLocatorJson
+            )
         )
+    }
+
+    suspend fun saveJumpOrigin(bookId: String, locator: Locator) {
+        val details = bookDao.getById(bookId) ?: return
+        val book = details.book
+        if (book.jumpOriginLocatorJson.isNullOrBlank()) {
+            bookDao.update(
+                book.copy(
+                    jumpOriginLocatorJson = locator.toJSON().toString()
+                )
+            )
+        }
+    }
+
+    suspend fun clearJumpOrigin(bookId: String) {
+        val details = bookDao.getById(bookId) ?: return
+        val book = details.book
+        if (book.jumpOriginLocatorJson != null) {
+            bookDao.update(
+                book.copy(
+                    jumpOriginLocatorJson = null
+                )
+            )
+        }
     }
 
     suspend fun getLastLocator(bookId: String): Locator? {
@@ -163,7 +201,7 @@ class LibraryRepository(
         val json = book.lastLocatorJson ?: return null
         return try {
             Locator.fromJSON(JSONObject(json))
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -402,7 +440,7 @@ class LibraryRepository(
             val url = file.toUrl(isDirectory = false)
             val asset = assetRetriever.retrieve(url).getOrNull() ?: return null
             publicationOpener.open(asset, allowUserInteraction = false).getOrNull()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -430,7 +468,7 @@ class LibraryRepository(
                 }
                 coverFile.absolutePath
             } else null
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
 

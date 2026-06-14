@@ -129,9 +129,23 @@ class NavigatorController(
             configureFonts()
         }
 
+        val listener = object : EpubNavigatorFragment.Listener {
+            override fun onExternalLinkActivated(url: org.readium.r2.shared.util.AbsoluteUrl) {
+                val urlString = url.toString()
+                if (urlString.startsWith(
+                        "http://",
+                        ignoreCase = true
+                    ) || urlString.startsWith("https://", ignoreCase = true)
+                ) {
+                    viewModel.showExternalLinkMenu(urlString)
+                }
+            }
+        }
+
         fragmentManager.fragmentFactory = navigatorFactory.createFragmentFactory(
             initialLocator = initialLocator,
             initialPreferences = initialPreferences,
+            listener = listener,
             configuration = configuration
         )
 

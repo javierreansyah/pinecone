@@ -256,7 +256,8 @@ fun ReaderSettingsContent(
                             readerThemePreset = "Auto",
                             customBackgroundColor = "#FFFFFF",
                             customTextColor = "#000000",
-                            customThemes = emptyList()
+                            customThemes = emptyList(),
+                            jumpHistoryMode = "explicit"
                         )
                         onSettingsChange(defaultReaderSettings)
                         Toast.makeText(
@@ -906,6 +907,75 @@ private fun AdvancedTabContent(
                 })
         }
 
+        // Jump History Mode
+        val jumpHistoryOptionsMap = mapOf(
+            "explicit" to stringResource(R.string.reader_jump_history_mode_explicit),
+            "page_turn" to stringResource(R.string.reader_jump_history_mode_page_turn),
+            "disabled" to stringResource(R.string.reader_jump_history_mode_disabled)
+        )
+        var showJumpHistoryDialog by remember { mutableStateOf(false) }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { showJumpHistoryDialog = true }
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.reader_jump_history_mode),
+                style = MaterialTheme.typography.titleMedium
+            )
+            val activeModeName =
+                jumpHistoryOptionsMap[settings.jumpHistoryMode] ?: settings.jumpHistoryMode
+            Text(
+                activeModeName,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        if (showJumpHistoryDialog) {
+            AlertDialog(
+                onDismissRequest = { showJumpHistoryDialog = false },
+                title = { Text(stringResource(R.string.reader_jump_history_mode)) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        jumpHistoryOptionsMap.forEach { (key, name) ->
+                            val isSelected = settings.jumpHistoryMode == key
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(MaterialTheme.shapes.small)
+                                    .clickable {
+                                        onSettingsChange(settings.copy(jumpHistoryMode = key))
+                                        showJumpHistoryDialog = false
+                                    },
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = isSelected,
+                                    onClick = {
+                                        onSettingsChange(settings.copy(jumpHistoryMode = key))
+                                        showJumpHistoryDialog = false
+                                    }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = name,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showJumpHistoryDialog = false }) {
+                        Text(stringResource(R.string.action_close))
+                    }
+                })
+        }
+
         // Vertical Scroll
         SettingsSwitchRow(
             title = stringResource(R.string.reader_settings_vertical_scroll),
@@ -937,6 +1007,7 @@ private fun AdvancedTabContent(
             title = stringResource(R.string.reader_settings_always_status_bar),
             isChecked = settings.alwaysShowStatusBar,
             onCheckedChange = { onSettingsChange(settings.copy(alwaysShowStatusBar = it)) })
+
 
         // Restore Defaults
         Row(

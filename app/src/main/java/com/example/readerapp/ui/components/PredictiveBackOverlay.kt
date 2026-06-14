@@ -1,4 +1,4 @@
-@file:Suppress("unused")
+@file:Suppress("RedundantSuppression", "unused")
 
 package com.example.readerapp.ui.components
 
@@ -22,7 +22,6 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import kotlin.math.pow
 
 /**
  * A reusable full-screen overlay container that implements predictive back gesture transition animations.
@@ -46,11 +45,10 @@ fun PredictiveBackOverlay(
                 layoutDirection: LayoutDirection,
                 density: Density
             ): Outline {
-                val progress = if (backProgress > 0f) backProgress.pow(0.18f) else 0f
                 val w = size.width
                 val h = size.height
-                val bottomClipPx = progress * 0.08f * h
-                val cornerRadiusPx = with(density) { (progress * 28f).dp.toPx() }
+                val bottomClipPx = backProgress * 0.08f * h
+                val cornerRadiusPx = with(density) { (backProgress * 28f).dp.toPx() }
 
                 val rect = Rect(
                     left = 0f,
@@ -71,12 +69,11 @@ fun PredictiveBackOverlay(
         modifier = modifier
             .fillMaxSize()
             .layout { measurable, constraints ->
-                val progress = if (backProgress > 0f) backProgress.pow(0.18f) else 0f
                 val w = constraints.maxWidth
                 val h = constraints.maxHeight
 
-                if (progress > 0f && w > 0) {
-                    val targetWidth = (w * (1f - progress * 0.112f)).toInt()
+                if (backProgress > 0f && w > 0) {
+                    val targetWidth = (w * (1f - backProgress * 0.112f)).toInt()
                     val childConstraints = constraints.copy(
                         minWidth = targetWidth.coerceAtMost(w),
                         maxWidth = targetWidth.coerceAtMost(w),
@@ -87,9 +84,9 @@ fun PredictiveBackOverlay(
 
                     layout(w, h) {
                         val leftGap = if (swipeEdge == BackEventCompat.EDGE_LEFT) {
-                            (progress * 0.08f * w).toInt()
+                            (backProgress * 0.08f * w).toInt()
                         } else {
-                            (progress * 0.032f * w).toInt()
+                            (backProgress * 0.032f * w).toInt()
                         }
                         placeable.placeRelative(leftGap, 0)
                     }
