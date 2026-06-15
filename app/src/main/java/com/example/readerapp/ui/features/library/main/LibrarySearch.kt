@@ -211,9 +211,11 @@ fun LibrarySearchTopBar(
                 }
             }
 
+            val actionsEffectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+
             AnimatedVisibility(
                 visible = showContent,
-                enter = fadeIn(animationSpec = tween(durationMillis = 300)),
+                enter = fadeIn(animationSpec = actionsEffectsSpec),
                 exit = androidx.compose.animation.ExitTransition.None
             ) {
                 ExpandedSearchContent(

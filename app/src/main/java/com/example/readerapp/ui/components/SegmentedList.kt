@@ -6,9 +6,7 @@
 package com.example.readerapp.ui.components
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -199,9 +197,8 @@ fun SegmentedListItem(
 ) {
     val defaultRadius = 16.dp
     val innerRadius = 4.dp
-    val springSpec = spring<Dp>(
-        dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow
-    )
+
+    val springSpec = MaterialTheme.motionScheme.fastSpatialSpec<Dp>()
 
     val targetTop = if (selected || index == 0) defaultRadius else innerRadius
     val targetBottom = if (selected || index == count - 1) defaultRadius else innerRadius

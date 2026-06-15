@@ -3,7 +3,6 @@ package com.example.readerapp.ui.features.reader.components
 import androidx.activity.BackEventCompat
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.clickable
@@ -21,7 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -80,7 +79,7 @@ fun ReaderSearch(
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    val textFieldState = rememberTextFieldState(query)
+    val textFieldState = remember { TextFieldState(query) }
     val searchBarState = rememberContainedSearchBarState(initialValue = SearchBarValue.Expanded)
 
     // Sync external query changes
@@ -94,7 +93,10 @@ fun ReaderSearch(
 
     // Sync internal query changes back to parent
     LaunchedEffect(textFieldState.text) {
-        onQueryChange(textFieldState.text.toString())
+        val currentText = textFieldState.text.toString()
+        if (currentText != query) {
+            onQueryChange(currentText)
+        }
     }
 
     val launchVoiceSearch = rememberVoiceSearchLauncher { spokenText ->
@@ -215,10 +217,11 @@ fun ReaderSearch(
                     .height(8.dp),
                 contentAlignment = Alignment.Center
             ) {
+                val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
                 this@Column.AnimatedVisibility(
                     visible = isLoading,
-                    enter = fadeIn(animationSpec = tween(durationMillis = 150)),
-                    exit = fadeOut(animationSpec = tween(durationMillis = 150))
+                    enter = fadeIn(animationSpec = actionsEffectsSpec),
+                    exit = fadeOut(animationSpec = actionsEffectsSpec)
                 ) {
                     LinearWavyProgressIndicator(
                         modifier = Modifier

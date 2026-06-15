@@ -153,7 +153,15 @@ class ReaderSearchViewModel(
     }
 
     fun exitSearchNavigation() {
-        _searchState.update { it.copy(isInNavMode = false, activeIndex = null) }
+        _searchState.update {
+            it.copy(
+                isInNavMode = false,
+                activeIndex = null,
+                query = "",
+                results = emptyList(),
+                searchPerformed = false
+            )
+        }
     }
 
     fun hideSearch() {
