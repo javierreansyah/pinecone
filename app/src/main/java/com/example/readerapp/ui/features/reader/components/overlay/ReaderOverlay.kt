@@ -605,7 +605,7 @@ fun ReaderSheetsLayer(
         enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
     )
 
-    val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+    val actionsEffectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
 
     ReaderThemedContent(uiDarkTheme = uiDarkTheme, settings = settings) {
         // Table of Contents Sheet

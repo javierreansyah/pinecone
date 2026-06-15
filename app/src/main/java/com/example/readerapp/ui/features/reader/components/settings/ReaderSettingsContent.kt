@@ -308,7 +308,7 @@ private fun TextTabContent(
                 "Source Sans 3" to "Sans",
                 "Literata" to "Literata",
                 "Atkinson Hyperlegible" to "Atkinson",
-                "Source Code" to "Monospace"
+                "Source Code" to "Mono"
             )
             fonts.forEach { (font, label) ->
                 FontSwatch(
