@@ -6,15 +6,21 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.readerapp.ReaderApplication
+import com.example.readerapp.data.local.database.library.BookmarkEntity
+import com.example.readerapp.data.local.database.library.NoteEntity
 import com.example.readerapp.data.local.database.library.ShelfWithCovers
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.data.repository.library.LibraryRepository
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-
+import org.readium.r2.shared.publication.Link
+import org.readium.r2.shared.publication.Locator
+import org.readium.r2.shared.publication.services.positions
 
 class BookInfoViewModel(
     application: Application, private val bookId: String
@@ -37,6 +43,33 @@ class BookInfoViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = BookInfoUiState(isLoading = true)
         )
+
+    val bookmarks: StateFlow<List<BookmarkEntity>> = repository.getBookmarks(bookId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val notes: StateFlow<List<NoteEntity>> = repository.getNotes(bookId)
+        .map { list -> list.filter { it.noteText.isNotBlank() } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _tableOfContents = MutableStateFlow<List<Link>>(emptyList())
+    val tableOfContents: StateFlow<List<Link>> = _tableOfContents.asStateFlow()
+
+    private val _positions = MutableStateFlow<List<Locator>>(emptyList())
+    val positions: StateFlow<List<Locator>> = _positions.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            val details = repository.getBook(bookId)
+            if (details != null) {
+                val pub = repository.openPublication(details)
+                if (pub != null) {
+                    _tableOfContents.value = pub.tableOfContents
+                    val p = pub.positions()
+                    _positions.value = p
+                }
+            }
+        }
+    }
 
     fun toggleReadStatus() {
         viewModelScope.launch {
@@ -69,6 +102,39 @@ class BookInfoViewModel(
             repository.addBookToShelf(shelfId, bookId)
         }
     }
+
+    fun deleteFurthestPosition() {
+        viewModelScope.launch {
+            repository.resetFurthestToCurrent(bookId)
+        }
+    }
+
+    fun deleteBookmark(bookmarkId: Long) {
+        viewModelScope.launch {
+            repository.removeBookmark(bookmarkId)
+        }
+    }
+
+    fun deleteNote(noteId: Long) {
+        viewModelScope.launch {
+            repository.removeNote(noteId)
+        }
+    }
+
+    fun saveReadingPosition(locator: Locator, onSaved: () -> Unit) {
+        viewModelScope.launch {
+            repository.saveReadingPosition(bookId, locator)
+            onSaved()
+        }
+    }
+
+    fun saveJumpReadingPosition(locator: Locator, onSaved: () -> Unit) {
+        viewModelScope.launch {
+            repository.saveJumpReadingPosition(bookId, locator)
+            onSaved()
+        }
+    }
+
 
     class Factory(
         private val application: Application, private val bookId: String

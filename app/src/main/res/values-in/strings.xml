@@ -144,6 +144,8 @@
     <string name="reader_settings_tab_advanced">Lanjutan</string>
     <string name="reader_settings_font">Font</string>
     <string name="reader_settings_typography">Tipografi</string>
+    <string name="reader_menu_content">Konten</string>
+    <string name="reader_menu_settings">Pengaturan</string>
     <string name="reader_settings_text_size">Ukuran Teks</string>
     <string name="reader_settings_font_weight">Ketebalan Font</string>
     <string name="reader_settings_line_spacing">Spasi Baris</string>
@@ -266,6 +268,10 @@
     <string name="reader_jump_history_mode_explicit">Manual</string>
     <string name="reader_jump_history_mode_page_turn">Pindah halaman</string>
     <string name="reader_jump_history_mode_disabled">Dinonaktifkan</string>
+
+    <!-- Book Info Tabs -->
+    <string name="book_info_current_position">Posisi Sekarang</string>
+    <string name="book_info_furthest_position">Posisi Terjauh yang Dicapai</string>
     <!-- Reader Bookmark/Note Sorting -->
     <string name="reader_sort_creation_date_asc">Tanggal dibuat (terlama dahulu)</string>
     <string name="reader_sort_creation_date_desc">Tanggal dibuat (terbaru dahulu)</string>

@@ -184,6 +184,29 @@ class LibraryRepository(
         }
     }
 
+    suspend fun saveJumpReadingPosition(bookId: String, locator: Locator) {
+        val details = bookDao.getById(bookId) ?: return
+        val book = details.book
+        val progression = locator.locations.totalProgression ?: 0.0
+
+        val existingJumpOrigin = book.jumpOriginLocatorJson
+        val newJumpOriginJson = if (existingJumpOrigin.isNullOrBlank()) {
+            book.lastLocatorJson
+        } else {
+            existingJumpOrigin
+        }
+
+        bookDao.update(
+            book.copy(
+                progression = progression,
+                lastLocatorJson = locator.toJSON().toString(),
+                lastReadDate = System.currentTimeMillis(),
+                jumpOriginLocatorJson = newJumpOriginJson
+            )
+        )
+    }
+
+
     suspend fun clearJumpOrigin(bookId: String) {
         val details = bookDao.getById(bookId) ?: return
         val book = details.book
@@ -194,6 +217,17 @@ class LibraryRepository(
                 )
             )
         }
+    }
+
+    suspend fun resetFurthestToCurrent(bookId: String) {
+        val details = bookDao.getById(bookId) ?: return
+        val book = details.book
+        bookDao.update(
+            book.copy(
+                furthestProgression = book.progression,
+                furthestLocatorJson = book.lastLocatorJson
+            )
+        )
     }
 
     suspend fun getLastLocator(bookId: String): Locator? {
