@@ -121,7 +121,7 @@ fun NoteBottomSheet(
                             .size(32.dp)
                             .border(
                                 width = if (isSelected) 2.dp else 0.dp,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                color = if (isSelected) Color(colorInt).copy(alpha = 1f) else Color.Transparent,
                                 shape = CircleShape
                             )
                             .clickable(
