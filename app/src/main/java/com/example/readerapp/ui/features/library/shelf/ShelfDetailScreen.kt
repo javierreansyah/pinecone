@@ -333,7 +333,7 @@ private fun ShelfDetailTopAppBar(
         }, actions = {
             val isEditMode = isReordering || isRenaming
             val density = LocalDensity.current
-            val slideOffsetPx = remember(density) { with(density) { 60.dp.roundToPx() } }
+            val slideOffsetPx = remember(density) { with(density) { 30.dp.roundToPx() } }
             val actionsSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
             val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
 

@@ -216,7 +216,7 @@ fun LibrarySearchTopBar(
             AnimatedVisibility(
                 visible = showContent,
                 enter = fadeIn(animationSpec = actionsEffectsSpec),
-                exit = androidx.compose.animation.ExitTransition.None
+                exit = fadeOut(animationSpec = actionsEffectsSpec)
             ) {
                 ExpandedSearchContent(
                     isSearchEmpty = textFieldState.text.isEmpty(),
