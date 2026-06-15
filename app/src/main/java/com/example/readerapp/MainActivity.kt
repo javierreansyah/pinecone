@@ -42,6 +42,17 @@ class MainActivity : AppCompatActivity() {
 
         enableEdgeToEdge()
         setContent {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            androidx.compose.runtime.LaunchedEffect(viewModel) {
+                viewModel.toastMessage.collect { message ->
+                    android.widget.Toast.makeText(
+                        context,
+                        message,
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+
             val isReady by viewModel.isReady.collectAsState()
             if (!isReady) {
                 return@setContent

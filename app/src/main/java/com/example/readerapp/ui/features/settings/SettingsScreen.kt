@@ -53,8 +53,6 @@ import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Contrast
@@ -67,12 +65,11 @@ import com.composables.icons.materialsymbols.outlined.Save
 import com.composables.icons.materialsymbols.outlined.Translate
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.example.readerapp.R
-import com.example.readerapp.data.local.preferences.ReaderPreferences
 import com.example.readerapp.data.local.preferences.ReaderSettings
 import com.example.readerapp.ui.components.LibraryTopAppBar
 import com.example.readerapp.ui.components.SegmentedColumn
 import com.example.readerapp.ui.features.settings.components.ColorSchemePickerDialog
-import com.example.readerapp.ui.features.settings.components.settingsItem
+import com.example.readerapp.ui.features.settings.components.SettingsItem
 import com.example.readerapp.worker.WorkerUtils
 import kotlinx.coroutines.launch
 import java.io.File
@@ -95,18 +92,12 @@ fun SettingsScreen(
     val errorSetBackupLocationMsg = stringResource(R.string.settings_error_set_backup_location)
     val scope = rememberCoroutineScope()
     val app = context.applicationContext as com.example.readerapp.ReaderApplication
-    val readerPreferences = remember { ReaderPreferences(context) }
     val viewModel: SettingsViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                @Suppress("UNCHECKED_CAST")
-                return SettingsViewModel(
-                    application = app,
-                    readerPreferences = readerPreferences,
-                    dictionaryBackupManager = app.dictionaryBackupManager
-                ) as T
-            }
-        }
+        factory = SettingsViewModel.Factory(
+            application = app,
+            readerPreferences = app.readerPreferences,
+            dictionaryBackupManager = app.dictionaryBackupManager
+        )
     )
 
     val settings by viewModel.settings.collectAsState()
@@ -444,7 +435,7 @@ private fun GeneralSettingsSection(
                 "Light" to stringResource(R.string.settings_option_light),
                 "Dark" to stringResource(R.string.settings_option_dark)
             )
-            settingsItem(
+            SettingsItem(
                 label = themeModeLabel,
                 value = themeModeOptionsMap[settings.themeMode] ?: settings.themeMode,
                 options = themeModeOptionsMap.values.toList(),
@@ -517,7 +508,7 @@ private fun GeneralSettingsSection(
                 "Medium" to stringResource(R.string.settings_option_medium),
                 "High" to stringResource(R.string.settings_option_high)
             )
-            settingsItem(
+            SettingsItem(
                 label = themeContrastLabel,
                 value = themeContrastOptionsMap[settings.themeContrast]
                     ?: settings.themeContrast,
@@ -547,7 +538,7 @@ private fun GeneralSettingsSection(
                 if (appLocales.isEmpty) "System" else appLocales.get(0)?.language ?: "System"
             if (currentTag == "in") currentTag = "id"
 
-            settingsItem(
+            SettingsItem(
                 label = languageLabel,
                 value = languageOptionsMap[currentTag] ?: currentTag,
                 options = languageOptionsMap.values.toList(),
@@ -635,7 +626,7 @@ private fun BackupSettingsSection(
                 )
 
                 val autoBackupFrequencyLabel = stringResource(R.string.settings_auto_backup_freq)
-                settingsItem(
+                SettingsItem(
                     label = autoBackupFrequencyLabel,
                     value = frequencyOptionsMap[settings.autoBackupFrequency]
                         ?: settings.autoBackupFrequency,

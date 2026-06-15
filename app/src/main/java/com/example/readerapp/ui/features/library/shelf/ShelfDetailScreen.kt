@@ -1,6 +1,5 @@
 package com.example.readerapp.ui.features.library.shelf
 
-import android.app.Application
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -59,7 +58,6 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -68,8 +66,6 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
@@ -108,18 +104,7 @@ fun ShelfDetailScreen(
     onNavigateToBookInfo: (String) -> Unit,
     onNavigateToAddToShelf: (String) -> Unit
 ) {
-    val context = LocalContext.current
-    val viewModel: ShelfDetailViewModel = viewModel(factory = object :
-        ViewModelProvider.AndroidViewModelFactory(context.applicationContext as Application) {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(ShelfDetailViewModel::class.java)) {
-                @Suppress("UNCHECKED_CAST") return ShelfDetailViewModel(
-                    context.applicationContext as Application
-                ) as T
-            }
-            throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
-        }
-    })
+    val viewModel: ShelfDetailViewModel = viewModel()
 
     val uiState by viewModel.uiState.collectAsState()
     var showFilterSheet by remember { mutableStateOf(false) }

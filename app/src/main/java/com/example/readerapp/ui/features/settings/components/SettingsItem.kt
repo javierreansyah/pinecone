@@ -28,7 +28,8 @@ import com.composables.icons.materialsymbols.outlined.Keyboard_arrow_right
 import com.example.readerapp.R
 import com.example.readerapp.ui.components.SegmentedListScope
 
-fun SegmentedListScope.settingsItem(
+@Composable
+fun SegmentedListScope.SettingsItem(
     label: String,
     value: String,
     options: List<String>,
@@ -36,11 +37,11 @@ fun SegmentedListScope.settingsItem(
     enabled: Boolean = true,
     leadingIcon: (@Composable () -> Unit)? = null
 ) {
-    var onListItemClick: (() -> Unit)? = null
+    var showDialog by remember { mutableStateOf(false) }
 
     item(
         enabled = enabled,
-        onClick = { onListItemClick?.invoke() },
+        onClick = { showDialog = true },
         leadingContent = leadingIcon,
         content = { Text(label, style = MaterialTheme.typography.titleMedium) },
         supportingContent = { Text(value, style = MaterialTheme.typography.bodyMedium) },
@@ -49,54 +50,48 @@ fun SegmentedListScope.settingsItem(
                 MaterialSymbols.Outlined.Keyboard_arrow_right,
                 contentDescription = null
             )
-        },
-        wrapper = { itemContent ->
-            var showDialog by remember { mutableStateOf(false) }
-            onListItemClick = { showDialog = true }
-
-            itemContent()
-
-            if (showDialog) {
-                AlertDialog(
-                    onDismissRequest = { showDialog = false },
-                    title = { Text(label) },
-                    text = {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            options.forEach { option ->
-                                val isSelected = option == value
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(MaterialTheme.shapes.small)
-                                        .clickable {
-                                            onSelected(option)
-                                            showDialog = false
-                                        },
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    RadioButton(
-                                        selected = isSelected,
-                                        onClick = {
-                                            onSelected(option)
-                                            showDialog = false
-                                        }
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = option,
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                }
-                            }
-                        }
-                    },
-                    confirmButton = {
-                        TextButton(onClick = { showDialog = false }) {
-                            Text(stringResource(R.string.action_close))
-                        }
-                    }
-                )
-            }
         }
     )
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text(label) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    options.forEach { option ->
+                        val isSelected = option == value
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onSelected(option)
+                                    showDialog = false
+                                }
+                                .clip(MaterialTheme.shapes.small),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = isSelected,
+                                onClick = {
+                                    onSelected(option)
+                                    showDialog = false
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = option,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text(stringResource(R.string.action_close))
+                }
+            }
+        )
+    }
 }

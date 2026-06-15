@@ -42,7 +42,9 @@ import kotlin.time.Duration.Companion.milliseconds
 class NavigatorController(
     private val lifecycleOwner: LifecycleOwner,
     private val fragmentManager: FragmentManager,
-    private val viewModel: ReaderViewModel
+    private val viewModel: ReaderViewModel,
+    private val searchViewModel: ReaderSearchViewModel,
+    private val notesViewModel: ReaderNotesViewModel
 ) : DefaultLifecycleObserver {
 
     companion object {
@@ -62,9 +64,9 @@ class NavigatorController(
         get() = lifecycleOwner.lifecycleScope
 
     private val selectionPoller = SelectionPoller(lifecycleOwner.lifecycleScope) { locator ->
-        val currentHighlight = viewModel.selectionState.value.selectionLocator?.text?.highlight
+        val currentHighlight = notesViewModel.selectionState.value.selectionLocator?.text?.highlight
         if (locator.text.highlight != currentHighlight) {
-            viewModel.showSelectionMenu(locator)
+            notesViewModel.showSelectionMenu(locator)
         }
     }
 
@@ -120,7 +122,7 @@ class NavigatorController(
                     if (mode == currentActionMode) {
                         currentActionMode = null
                         selectionPoller.stop()
-                        viewModel.dismissSelectionBar()
+                        notesViewModel.dismissSelectionBar()
                     }
                 }
             }
@@ -185,9 +187,9 @@ class NavigatorController(
 
         nav.addInputListener(object : InputListener {
             override fun onTap(event: TapEvent): Boolean {
-                if (viewModel.selectionState.value.selectionLocator != null || viewModel.selectionState.value.viewingHighlight != null) {
-                    viewModel.hideSelectionMenu()
-                    viewModel.hideViewHighlight()
+                if (notesViewModel.selectionState.value.selectionLocator != null || notesViewModel.selectionState.value.viewingHighlight != null) {
+                    notesViewModel.hideSelectionMenu()
+                    notesViewModel.hideViewHighlight()
                     return true
                 }
                 viewModel.toggleControls()
@@ -200,12 +202,13 @@ class NavigatorController(
                 val noteIdStr = event.decoration.id.removePrefix("note_")
                 val noteId = noteIdStr.toLongOrNull() ?: return false
                 val note =
-                    viewModel.allNotesAndHighlights.value.find { it.id == noteId } ?: return false
+                    notesViewModel.allNotesAndHighlights.value.find { it.id == noteId }
+                        ?: return false
 
                 if (note.noteText.isBlank()) {
-                    viewModel.viewHighlight(note)
+                    notesViewModel.viewHighlight(note)
                 } else {
-                    viewModel.editNote(note)
+                    notesViewModel.editNote(note)
                 }
                 return true
             }
@@ -252,7 +255,7 @@ class NavigatorController(
         // Observe clear selection events
         lifecycleScope.launch {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.clearSelectionEvent.collect {
+                notesViewModel.clearSelectionEvent.collect {
                     (navigator as? SelectableNavigator)?.clearSelection()
                 }
             }
@@ -262,7 +265,7 @@ class NavigatorController(
         lifecycleScope.launch {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 combine(
-                    _navigatorFlow.filterNotNull(), viewModel.allNotesAndHighlights
+                    _navigatorFlow.filterNotNull(), notesViewModel.allNotesAndHighlights
                 ) { nav, notes ->
                     nav to notes
                 }.collectLatest { (nav, notes) ->
@@ -296,7 +299,7 @@ class NavigatorController(
         // Navigate to locator emitted by search (result selection, prev/next)
         lifecycleScope.launch {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.navigateToLocator.collectLatest { locator ->
+                searchViewModel.navigateToLocator.collectLatest { locator ->
                     navigator?.go(locator, animated = true)
                     delay(100.milliseconds)
                     navigator?.go(locator, animated = false)
@@ -311,7 +314,7 @@ class NavigatorController(
         //         observer in ReaderActivity.
         lifecycleScope.launch {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.searchState
+                searchViewModel.searchState
                     .map { it.isInNavMode }
                     .distinctUntilChanged()
                     .collect { isInNavMode ->

@@ -10,6 +10,8 @@ import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.features.library.LayoutMode
 import com.example.readerapp.ui.features.library.SortType
 import com.example.readerapp.ui.features.library.StatusFilter
+import com.example.readerapp.ui.features.library.filterAndSort
+import com.example.readerapp.ui.features.library.sortShelfBooks
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -45,51 +47,13 @@ class ArchiveViewModel(application: Application) : AndroidViewModel(application)
     )
 
     val archivedBooks: StateFlow<List<Book>> = combine(booksFlow, _uiState) { books, state ->
-        books.filter { book ->
-            val status = when {
-                book.isRead -> StatusFilter.Finished
-                book.progress <= 0.0 -> StatusFilter.NotStarted
-                else -> StatusFilter.Reading
-            }
-            state.bookPreferences.selectedStatus.contains(status)
-        }.let { filtered ->
-            val baseComparator = when (state.bookPreferences.sortType) {
-                SortType.Title -> compareBy { it.title.lowercase() }
-                SortType.Author -> compareBy { it.authors.firstOrNull()?.lowercase() ?: "" }
-                SortType.LastRead -> compareBy { it.lastOpened ?: 0L }
-                SortType.Added -> compareBy { it.addedDate }
-                SortType.Progress -> compareBy { it.progress }
-                SortType.Custom -> {
-                    val indexMap = books.withIndex().associate { it.value.id to it.index }
-                    compareBy<Book> { indexMap[it.id] ?: 0 }
-                }
-            }
-
-            val finalComparator = if (state.bookPreferences.sortType == SortType.Title) {
-                if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
-            } else if (state.bookPreferences.sortType == SortType.Custom) {
-                if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
-            } else {
-                val mainComp =
-                    if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
-                mainComp.thenBy { it.title.lowercase() }
-            }
-
-            filtered.sortedWith(finalComparator)
-        }
+        books.filterAndSort(state.bookPreferences)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val shelves: StateFlow<List<ShelfWithCovers>> = combine(
         bookRepository.getAllShelvesWithBooks(), bookRepository.getAllShelfBookCrossRefs()
     ) { shelvesList, crossRefs ->
-        shelvesList.map { shelfWithCovers ->
-            val shelfId = shelfWithCovers.shelf.id
-            val shelfCrossRefs = crossRefs.filter { it.shelfId == shelfId }
-            val sortedBooks = shelfWithCovers.books.sortedBy { book ->
-                shelfCrossRefs.find { it.bookId == book.book.id }?.orderIndex ?: 0
-            }
-            shelfWithCovers.copy(books = sortedBooks)
-        }
+        sortShelfBooks(shelvesList, crossRefs)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun onLayoutModeChange(mode: LayoutMode) {

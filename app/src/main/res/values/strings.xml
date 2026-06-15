@@ -121,7 +121,6 @@
     <string name="reader_no_notes">No Notes</string>
     <string name="reader_no_toc">No Table of Contents</string>
     <string name="reader_enter_note_placeholder">Enter your note here…</string>
-    <string name="reader_note_text_placeholder">Note text…</string>
     <string name="reader_search_in_book">Search in book…</string>
     <string name="reader_search_no_results">No results found</string>
     <string name="reader_search_no_results_for">No results for \"%s\"</string>

@@ -382,8 +382,9 @@ private fun AutocompleteChipTextField(
     var expanded by remember { mutableStateOf(false) }
     var textFieldWidth by remember { mutableIntStateOf(0) }
 
-    val filteredSuggestions =
+    val filteredSuggestions = remember(suggestions, items, text) {
         suggestions.filter { it.contains(text, ignoreCase = true) && !items.contains(it) }
+    }
 
     Box(
         modifier = modifier.onGloballyPositioned { coordinates ->

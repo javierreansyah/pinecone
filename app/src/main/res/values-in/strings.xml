@@ -120,7 +120,6 @@
     <string name="reader_no_notes">Tidak Ada Catatan</string>
     <string name="reader_no_toc">Tidak Ada Daftar Isi</string>
     <string name="reader_enter_note_placeholder">Masukkan catatan Anda di sini…</string>
-    <string name="reader_note_text_placeholder">Teks catatan…</string>
     <string name="reader_search_in_book">Cari di dalam buku…</string>
     <string name="reader_search_no_results">Hasil tidak ditemukan</string>
     <string name="reader_search_no_results_for">Tidak ada hasil untuk \"%s\"</string>
