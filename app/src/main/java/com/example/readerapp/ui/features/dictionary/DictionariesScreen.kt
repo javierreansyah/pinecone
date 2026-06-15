@@ -3,9 +3,7 @@ package com.example.readerapp.ui.features.dictionary
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -67,9 +65,12 @@ fun DictionariesScreen(
         is DictionaryState.Loading -> state.progress / 100f
         else -> 0f
     }
+
+    val progressSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+
     val animatedProgress by animateFloatAsState(
         targetValue = progressTarget,
-        animationSpec = tween(durationMillis = 250, easing = LinearOutSlowInEasing),
+        animationSpec = progressSpec,
         label = "ImportProgress"
     )
 

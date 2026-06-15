@@ -2,7 +2,6 @@ package com.example.readerapp.ui.root
 
 import android.app.Activity
 import android.content.Intent
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -62,7 +61,7 @@ fun NavGraph(
 
     val navigateBack: () -> Unit = {
         val now = android.os.SystemClock.elapsedRealtime()
-        if (now - lastBackClickTime > 300L) { // Matches the 300ms transition duration perfectly
+        if (now - lastBackClickTime > 300L) {
             lastBackClickTime = now
             if (backStack.size > 1) {
                 backStack.removeLastOrNull()
@@ -77,6 +76,9 @@ fun NavGraph(
     val exclusionWidth = with(density) { 60.dp.toPx() }
     val exclusionHeight = with(density) { 120.dp.toPx() }
 
+    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
+    val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+
     NavDisplay(
         backStack = backStack,
         modifier = modifier
@@ -86,7 +88,6 @@ fun NavGraph(
             },
         onBack = {
             val now = android.os.SystemClock.elapsedRealtime()
-            // Predictive/System back gestures also get debounced to be   safe
             if (now - lastBackClickTime > 400L || backStack.size == 1) {
                 lastBackClickTime = now
                 if (backStack.size > 1) {
@@ -97,29 +98,32 @@ fun NavGraph(
             }
         },
         transitionSpec = {
-            (fadeIn(animationSpec = tween(300)) + scaleIn(
+            (fadeIn(animationSpec = effectsSpec) + scaleIn(
                 initialScale = 0.9f,
-                animationSpec = tween(300)
+                animationSpec = spatialSpec
             ) togetherWith
-                    fadeOut(animationSpec = tween(300)) + scaleOut(
+                    fadeOut(animationSpec = effectsSpec) + scaleOut(
                 targetScale = 0.9f,
-                animationSpec = tween(300)
+                animationSpec = spatialSpec
             )).apply {
                 targetContentZIndex = 1f
             }
         },
         popTransitionSpec = {
-            (fadeIn(animationSpec = tween(300)) togetherWith
-                    fadeOut(animationSpec = tween(300)) + scaleOut(
+            (fadeIn(animationSpec = effectsSpec) togetherWith
+                    fadeOut(animationSpec = effectsSpec) + scaleOut(
                 targetScale = 0.9f,
-                animationSpec = tween(300)
+                animationSpec = spatialSpec
             )).apply {
                 targetContentZIndex = -1f
             }
         },
         predictivePopTransitionSpec = {
-            (fadeIn() togetherWith
-                    fadeOut() + scaleOut(targetScale = 0.9f)).apply {
+            (fadeIn(animationSpec = effectsSpec) togetherWith
+                    fadeOut(animationSpec = effectsSpec) + scaleOut(
+                targetScale = 0.9f,
+                animationSpec = spatialSpec
+            )).apply {
                 targetContentZIndex = -1f
             }
         },

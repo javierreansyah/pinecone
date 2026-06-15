@@ -51,6 +51,7 @@ fun ShelvesPage(
     layoutMode: LayoutMode = LayoutMode.BigList,
     scrollKey: Any? = null
 ) {
+
     key(scrollKey) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.TopStart) {
             if (shelves.isNotEmpty()) {

@@ -6,13 +6,13 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -40,6 +40,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -224,8 +225,14 @@ fun ReaderOverlay(
                 viewModel.recordJumpOrigin()
                 onSeekToProgression(progression)
             },
-            onPrevSearchResult = { searchViewModel.prevSearchResult() },
-            onNextSearchResult = { searchViewModel.nextSearchResult() },
+            onPrevSearchResult = {
+                viewModel.recordJumpOrigin()
+                searchViewModel.prevSearchResult()
+            },
+            onNextSearchResult = {
+                viewModel.recordJumpOrigin()
+                searchViewModel.nextSearchResult()
+            },
             onCopy = { highlightText ->
                 val clipboard =
                     context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -323,7 +330,11 @@ fun ReaderOverlay(
                     positions
                 )
             },
-            onSelectSearchResult = { searchViewModel.selectSearchResult(it) },
+            onSelectSearchResult = {
+                viewModel.recordJumpOrigin()
+                searchViewModel.selectSearchResult(it)
+                viewModel.hideSearch()
+            },
             onHideSearch = { viewModel.hideSearch(); searchViewModel.hideSearch() },
             onUpdateNote = { notesViewModel.updateNote(it) },
             onHideEditNote = { notesViewModel.hideEditNote() },
@@ -370,46 +381,45 @@ fun ReaderTopBarSection(
     onInfoClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val actionsSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
+    val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+    val density = LocalDensity.current
+    val offset = with(density) { 30.dp.roundToPx() }
+
     AnimatedVisibility(
         visible = showControls && !showSearch,
         enter = slideInVertically(
-            initialOffsetY = { -20 }, animationSpec = tween(250)
-        ) + fadeIn(animationSpec = tween(250)),
+            initialOffsetY = { -offset }, animationSpec = actionsSpatialSpec
+        ) + fadeIn(animationSpec = actionsEffectsSpec),
         exit = slideOutVertically(
-            targetOffsetY = { -20 }, animationSpec = tween(250)
-        ) + fadeOut(animationSpec = tween(250)),
+            targetOffsetY = { -offset }, animationSpec = actionsSpatialSpec
+        ) + fadeOut(animationSpec = actionsEffectsSpec),
         modifier = modifier
     ) {
-        Crossfade(
-            targetState = isInSearchNavigationMode,
-            label = "ReaderTopBarMode"
-        ) { searchNavMode ->
-            if (searchNavMode) {
-                ReaderSearchTopBar(
-                    searchQuery = searchQuery,
-                    onBack = onExitSearchNavigation,
-                    onSearchTextClick = onSearchTextClick,
-                    onCloseSearch = onExitSearchNavigation,
-                    readerBgColor = readerBgColor,
-                    readerTextColor = readerTextColor
-                )
-            } else {
-                ReaderTopBar(
-                    isBookmarked = isBookmarked,
-                    onBack = onBack,
-                    onSearchClick = onSearchClick,
-                    onTocClick = onTocClick,
-                    onSettingsClick = onSettingsClick,
-                    onToggleBookmark = onToggleBookmark,
-                    onInfoClick = onInfoClick,
-                    readerBgColor = readerBgColor,
-                    readerTextColor = readerTextColor,
-                    jumpOrigin = jumpOrigin,
-                    onGoBackToOriginClick = onGoBackToOriginClick,
-                    onClearJumpOriginClick = onClearJumpOriginClick
-                )
-            }
-        }
+        ReaderTopBar(
+            isBookmarked = isBookmarked,
+            isInSearchMode = isInSearchNavigationMode,
+            searchQuery = searchQuery,
+            onSearchTextClick = onSearchTextClick,
+            onCloseSearch = onExitSearchNavigation,
+            onBack = {
+                if (isInSearchNavigationMode) {
+                    onExitSearchNavigation()
+                } else {
+                    onBack()
+                }
+            },
+            onSearchClick = onSearchClick,
+            onTocClick = onTocClick,
+            onSettingsClick = onSettingsClick,
+            onToggleBookmark = onToggleBookmark,
+            onInfoClick = onInfoClick,
+            readerBgColor = readerBgColor,
+            readerTextColor = readerTextColor,
+            jumpOrigin = jumpOrigin,
+            onGoBackToOriginClick = onGoBackToOriginClick,
+            onClearJumpOriginClick = onClearJumpOriginClick
+        )
     }
 }
 
@@ -441,13 +451,24 @@ fun ReaderBottomBarSection(
     val isSelectionActive = selectionLocator != null || viewingHighlight != null
     val showBottomBar = (showControls && !showSearch) || isSelectionActive
 
+    val actionsSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
+    val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+    val density = LocalDensity.current
+    val offset = with(density) { 20.dp.roundToPx() }
+
     AnimatedVisibility(
         visible = showBottomBar,
-        enter = slideInVertically(initialOffsetY = { 40 }, animationSpec = tween(250)) + fadeIn(
-            animationSpec = tween(250)
+        enter = slideInVertically(
+            initialOffsetY = { offset },
+            animationSpec = actionsSpatialSpec
+        ) + fadeIn(
+            animationSpec = actionsEffectsSpec
         ),
-        exit = slideOutVertically(targetOffsetY = { 40 }, animationSpec = tween(250)) + fadeOut(
-            animationSpec = tween(250)
+        exit = slideOutVertically(
+            targetOffsetY = { offset },
+            animationSpec = actionsSpatialSpec
+        ) + fadeOut(
+            animationSpec = actionsEffectsSpec
         ),
         modifier = modifier
     ) {
@@ -466,7 +487,19 @@ fun ReaderBottomBarSection(
                 modeArray[0] = currentMode
             }
 
-            Crossfade(targetState = modeArray[0], label = "BottomBarMode") { mode ->
+            AnimatedContent(
+                targetState = modeArray[0],
+                label = "BottomBarMode",
+                transitionSpec = {
+                    (slideInVertically(
+                        initialOffsetY = { offset }, animationSpec = actionsSpatialSpec
+                    ) + fadeIn(animationSpec = actionsEffectsSpec)) togetherWith (
+                            slideOutVertically(
+                                targetOffsetY = { offset }, animationSpec = actionsSpatialSpec
+                            ) + fadeOut(animationSpec = actionsEffectsSpec)
+                            )
+                }
+            ) { mode ->
                 when (mode) {
                     BottomBarMode.PROGRESS -> {
                         ReaderProgressTracker(
@@ -572,6 +605,8 @@ fun ReaderSheetsLayer(
         enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
     )
 
+    val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+
     ReaderThemedContent(uiDarkTheme = uiDarkTheme, settings = settings) {
         // Table of Contents Sheet
         if (showToc) {
@@ -625,8 +660,8 @@ fun ReaderSheetsLayer(
         // Full-screen search overlay
         AnimatedVisibility(
             visible = showSearch,
-            enter = fadeIn(animationSpec = tween(300)),
-            exit = fadeOut(animationSpec = tween(150))
+            enter = fadeIn(animationSpec = actionsEffectsSpec),
+            exit = fadeOut(animationSpec = actionsEffectsSpec)
         ) {
             ReaderSearch(
                 query = searchQuery,
