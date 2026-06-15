@@ -1,9 +1,16 @@
 package com.example.readerapp.ui.features.reader.components.overlay
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -17,6 +24,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.SplitButtonDefaults
@@ -33,10 +41,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
@@ -93,96 +104,202 @@ fun ReaderTopBar(
                 }
             },
             actions = {
-                if (jumpOrigin != null) {
-                    JumpHistoryPill(
-                        onGoBack = onGoBackToOriginClick,
-                        onClear = onClearJumpOriginClick,
-                        textColor = readerTextColor
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
+                val isJumpMode = jumpOrigin != null
+                val density = LocalDensity.current
+                val slideOffsetPx = remember(density) { with(density) { 20.dp.roundToPx() } }
+                val actionsSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
+                val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
 
-                IconButton(onClick = onToggleBookmark) {
-                    Icon(
-                        imageVector = if (isBookmarked) MaterialSymbols.Outlined.Bookmark_check else MaterialSymbols.Outlined.Bookmark,
-                        contentDescription = if (isBookmarked) stringResource(R.string.reader_remove_bookmark) else stringResource(
-                            R.string.reader_add_bookmark
-                        ),
-                        tint = readerTextColor
-                    )
-                }
-
-                IconButton(onClick = onTocClick) {
-                    Icon(
-                        MaterialSymbols.Outlined.List,
-                        contentDescription = stringResource(R.string.reader_toc_title),
-                        modifier = Modifier.size(28.dp),
-                        tint = readerTextColor
-                    )
-                }
-
-                IconButton(onClick = onSettingsClick) {
-                    Icon(
-                        MaterialSymbols.Outlined.Match_case,
-                        contentDescription = stringResource(R.string.reader_settings_typography),
-                        tint = readerTextColor
-                    )
-                }
-
-                var showMoreMenu by remember { mutableStateOf(false) }
-                Box {
-                    IconButton(onClick = { showMoreMenu = true }) {
-                        Icon(
-                            MaterialSymbols.Outlined.More_vert,
-                            contentDescription = stringResource(R.string.action_more),
-                            tint = readerTextColor
-                        )
-                    }
-                    DropdownMenuPopup(
-                        expanded = showMoreMenu,
-                        onDismissRequest = { showMoreMenu = false }
-                    ) {
-                        val groupInteractionSource = remember { MutableInteractionSource() }
-                        DropdownMenuGroup(
-                            shapes = MenuDefaults.groupShape(0, 1),
-                            interactionSource = groupInteractionSource
-                        ) {
-                            DropdownMenuItem(
-                                selected = false,
-                                text = {
-                                    Text(stringResource(R.string.action_search))
-                                },
-                                onClick = {
-                                    onSearchClick()
-                                    showMoreMenu = false
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        MaterialSymbols.Outlined.Search,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(MenuDefaults.LeadingIconSize)
-                                    )
-                                },
-                                shapes = MenuDefaults.itemShape(0, 2)
+                AnimatedContent(
+                    targetState = isJumpMode,
+                    transitionSpec = {
+                        if (targetState) {
+                            // Entering Jump Mode: new content fades in, normal icons fade out + slide right
+                            fadeIn(animationSpec = actionsEffectsSpec) togetherWith
+                                    fadeOut(animationSpec = actionsEffectsSpec) + slideOutHorizontally(
+                                targetOffsetX = { slideOffsetPx },
+                                animationSpec = actionsSpatialSpec
                             )
-                            DropdownMenuItem(
-                                selected = false,
-                                text = {
-                                    Text(stringResource(R.string.book_info_title))
-                                },
-                                onClick = {
-                                    onInfoClick()
-                                    showMoreMenu = false
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        MaterialSymbols.Outlined.Info,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(MenuDefaults.LeadingIconSize)
-                                    )
-                                },
-                                shapes = MenuDefaults.itemShape(1, 2)
+                        } else {
+                            // Exiting Jump Mode: normal icons fade in + slide in from right, jump pill fades out
+                            fadeIn(animationSpec = actionsEffectsSpec) + slideInHorizontally(
+                                initialOffsetX = { slideOffsetPx },
+                                animationSpec = actionsSpatialSpec
+                            ) togetherWith
+                                    fadeOut(animationSpec = actionsEffectsSpec)
+                        }
+                    },
+                    label = "readerTopBarActionsTransition"
+                ) { targetIsJumpMode ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (targetIsJumpMode) {
+                            JumpHistoryPill(
+                                onGoBack = onGoBackToOriginClick,
+                                onClear = onClearJumpOriginClick,
+                                textColor = readerTextColor
                             )
+                            Spacer(modifier = Modifier.width(4.dp))
+                        }
+
+                        IconButton(onClick = onToggleBookmark) {
+                            Icon(
+                                imageVector = if (isBookmarked) MaterialSymbols.Outlined.Bookmark_check else MaterialSymbols.Outlined.Bookmark,
+                                contentDescription = if (isBookmarked) stringResource(R.string.reader_remove_bookmark) else stringResource(
+                                    R.string.reader_add_bookmark
+                                ),
+                                tint = readerTextColor
+                            )
+                        }
+
+                        if (!targetIsJumpMode) {
+                            IconButton(onClick = onTocClick) {
+                                Icon(
+                                    MaterialSymbols.Outlined.List,
+                                    contentDescription = stringResource(R.string.reader_toc_title),
+                                    modifier = Modifier.size(28.dp),
+                                    tint = readerTextColor
+                                )
+                            }
+
+                            IconButton(onClick = onSettingsClick) {
+                                Icon(
+                                    MaterialSymbols.Outlined.Match_case,
+                                    contentDescription = stringResource(R.string.reader_settings_typography),
+                                    modifier = Modifier.size(28.dp),
+                                    tint = readerTextColor
+                                )
+                            }
+                        }
+
+                        var showMoreMenu by remember { mutableStateOf(false) }
+                        Box {
+                            IconButton(onClick = { showMoreMenu = true }) {
+                                Icon(
+                                    MaterialSymbols.Outlined.More_vert,
+                                    contentDescription = stringResource(R.string.action_more),
+                                    tint = readerTextColor
+                                )
+                            }
+                            DropdownMenuPopup(
+                                expanded = showMoreMenu,
+                                onDismissRequest = { showMoreMenu = false }
+                            ) {
+                                val groupInteractionSource = remember { MutableInteractionSource() }
+                                DropdownMenuGroup(
+                                    shapes = MenuDefaults.groupShape(0, 1),
+                                    interactionSource = groupInteractionSource
+                                ) {
+                                    val items = remember(targetIsJumpMode) {
+                                        buildList {
+                                            if (targetIsJumpMode) {
+                                                add("content")
+                                                add("settings")
+                                            }
+                                            add("search")
+                                            add("info")
+                                        }
+                                    }
+                                    items.forEachIndexed { index, item ->
+                                        when (item) {
+                                            "content" -> {
+                                                DropdownMenuItem(
+                                                    selected = false,
+                                                    text = {
+                                                        Text(stringResource(R.string.reader_menu_content))
+                                                    },
+                                                    onClick = {
+                                                        onTocClick()
+                                                        showMoreMenu = false
+                                                    },
+                                                    leadingIcon = {
+                                                        Icon(
+                                                            MaterialSymbols.Outlined.List,
+                                                            contentDescription = null,
+                                                            modifier = Modifier.size(MenuDefaults.LeadingIconSize)
+                                                        )
+                                                    },
+                                                    shapes = MenuDefaults.itemShape(
+                                                        index,
+                                                        items.size
+                                                    )
+                                                )
+                                            }
+
+                                            "settings" -> {
+                                                DropdownMenuItem(
+                                                    selected = false,
+                                                    text = {
+                                                        Text(stringResource(R.string.reader_menu_settings))
+                                                    },
+                                                    onClick = {
+                                                        onSettingsClick()
+                                                        showMoreMenu = false
+                                                    },
+                                                    leadingIcon = {
+                                                        Icon(
+                                                            MaterialSymbols.Outlined.Match_case,
+                                                            contentDescription = null,
+                                                            modifier = Modifier.size(MenuDefaults.LeadingIconSize)
+                                                        )
+                                                    },
+                                                    shapes = MenuDefaults.itemShape(
+                                                        index,
+                                                        items.size
+                                                    )
+                                                )
+                                            }
+
+                                            "search" -> {
+                                                DropdownMenuItem(
+                                                    selected = false,
+                                                    text = {
+                                                        Text(stringResource(R.string.action_search))
+                                                    },
+                                                    onClick = {
+                                                        onSearchClick()
+                                                        showMoreMenu = false
+                                                    },
+                                                    leadingIcon = {
+                                                        Icon(
+                                                            MaterialSymbols.Outlined.Search,
+                                                            contentDescription = null,
+                                                            modifier = Modifier.size(MenuDefaults.LeadingIconSize)
+                                                        )
+                                                    },
+                                                    shapes = MenuDefaults.itemShape(
+                                                        index,
+                                                        items.size
+                                                    )
+                                                )
+                                            }
+
+                                            "info" -> {
+                                                DropdownMenuItem(
+                                                    selected = false,
+                                                    text = {
+                                                        Text(stringResource(R.string.book_info_title))
+                                                    },
+                                                    onClick = {
+                                                        onInfoClick()
+                                                        showMoreMenu = false
+                                                    },
+                                                    leadingIcon = {
+                                                        Icon(
+                                                            MaterialSymbols.Outlined.Info,
+                                                            contentDescription = null,
+                                                            modifier = Modifier.size(MenuDefaults.LeadingIconSize)
+                                                        )
+                                                    },
+                                                    shapes = MenuDefaults.itemShape(
+                                                        index,
+                                                        items.size
+                                                    )
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

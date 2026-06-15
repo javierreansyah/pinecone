@@ -56,7 +56,7 @@ fun CustomColorPickerDialog(
         if (colorStr.length != 7 && colorStr.length != 9) return null
         return try {
             Color(colorStr.toColorInt())
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }

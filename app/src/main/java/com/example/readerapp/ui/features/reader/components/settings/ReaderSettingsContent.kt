@@ -56,6 +56,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.googlefonts.Font
@@ -83,7 +85,7 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.math.roundToInt
 
-@SuppressLint("DefaultLocale", "ConfigurationScreenWidthHeight")
+@SuppressLint("DefaultLocale", "ConfigurationScreenWidthHeight", "LogNotTimber")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ReaderSettingsContent(
@@ -94,8 +96,11 @@ fun ReaderSettingsContent(
         stringResource(R.string.reader_settings_restore_defaults_success)
     val configuration = LocalConfiguration.current
     val locale = configuration.locales[0]
-    val screenHeight = configuration.screenHeightDp.dp
-    val maxSheetHeight = screenHeight * 0.6f
+    val density = LocalDensity.current
+    val windowInfo = LocalWindowInfo.current
+    val maxSheetHeight = remember(windowInfo.containerSize, density) {
+        with(density) { (windowInfo.containerSize.height * 0.6f).toDp() }
+    }
 
     val textTabLabel = stringResource(R.string.reader_settings_tab_text)
     val lightingTabLabel = stringResource(R.string.reader_settings_tab_lighting)
@@ -1054,6 +1059,7 @@ private fun SettingsSwitchRow(
 }
 
 
+@SuppressLint("LogNotTimber")
 @Composable
 private fun FontSwatch(
     isSelected: Boolean,

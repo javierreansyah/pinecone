@@ -37,10 +37,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
@@ -59,10 +61,10 @@ import com.example.readerapp.data.local.preferences.ReaderSettings
 import com.example.readerapp.ui.features.reader.ReaderNavigationRouter
 import com.example.readerapp.ui.features.reader.ReaderViewModel
 import com.example.readerapp.ui.features.reader.SearchResultItem
+import com.example.readerapp.ui.features.reader.components.ExternalLinkBottomSheet
+import com.example.readerapp.ui.features.reader.components.NoteBottomSheet
+import com.example.readerapp.ui.features.reader.components.ReaderBottomSheet
 import com.example.readerapp.ui.features.reader.components.ReaderSearch
-import com.example.readerapp.ui.features.reader.components.contents.ExternalLinkBottomSheet
-import com.example.readerapp.ui.features.reader.components.contents.NoteBottomSheet
-import com.example.readerapp.ui.features.reader.components.contents.ReaderBottomSheet
 import com.example.readerapp.ui.features.reader.components.dictionary.DefinitionWebView
 import com.example.readerapp.ui.features.reader.components.dictionary.DictionaryFormatter
 import com.example.readerapp.ui.features.reader.components.settings.ReaderSettingsContent
@@ -72,7 +74,6 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
-import androidx.core.net.toUri
 
 @Composable
 fun ReaderOverlay(
@@ -647,8 +648,11 @@ private fun ReaderDefinitionBottomSheet(
     definitionResults: List<DictionaryEntry>,
     onDismiss: () -> Unit
 ) {
-    val configuration = LocalConfiguration.current
-    val maxSheetHeight = configuration.screenHeightDp.dp * 0.6f
+    val density = LocalDensity.current
+    val windowInfo = LocalWindowInfo.current
+    val maxSheetHeight = remember(windowInfo.containerSize, density) {
+        with(density) { (windowInfo.containerSize.height * 0.6f).toDp() }
+    }
     val sheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
         enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)

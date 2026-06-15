@@ -22,7 +22,10 @@ data class Book(
     val identifier: String? = null,
     val mediaType: String? = null,
     val filePath: String = "",
-    val isRead: Boolean = false
+    val isRead: Boolean = false,
+    val furthestProgression: Double = 0.0,
+    val lastLocatorJson: String? = null,
+    val furthestLocatorJson: String? = null
 ) {
     companion object {
         fun fromEntity(entity: BookWithDetails): Book = Book(
@@ -42,7 +45,10 @@ data class Book(
             identifier = entity.book.identifier,
             mediaType = entity.book.mediaType,
             filePath = entity.book.filePath,
-            isRead = entity.book.isRead
+            isRead = entity.book.isRead,
+            furthestProgression = entity.book.furthestProgression,
+            lastLocatorJson = entity.book.lastLocatorJson,
+            furthestLocatorJson = entity.book.furthestLocatorJson
         )
     }
 }

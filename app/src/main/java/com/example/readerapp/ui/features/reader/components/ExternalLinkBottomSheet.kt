@@ -1,4 +1,4 @@
-package com.example.readerapp.ui.features.reader.components.contents
+package com.example.readerapp.ui.features.reader.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column

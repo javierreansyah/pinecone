@@ -2,6 +2,8 @@ package com.example.readerapp.ui.features.library.info
 
 import android.app.Application
 import android.content.Intent
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -11,22 +13,29 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -41,13 +50,17 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SecondaryScrollableTabRow
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -58,6 +71,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,17 +81,25 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -88,25 +110,35 @@ import com.composables.icons.materialsymbols.outlined.Add
 import com.composables.icons.materialsymbols.outlined.Archive
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Book
+import com.composables.icons.materialsymbols.outlined.Bookmark
 import com.composables.icons.materialsymbols.outlined.Bookmark_add
 import com.composables.icons.materialsymbols.outlined.Check_circle
 import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Delete
 import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Folder
+import com.composables.icons.materialsymbols.outlined.Format_list_bulleted
 import com.composables.icons.materialsymbols.outlined.More_vert
 import com.composables.icons.materialsymbols.outlined.Radio_button_unchecked
 import com.example.readerapp.R
+import com.example.readerapp.data.local.database.library.BookmarkEntity
+import com.example.readerapp.data.local.database.library.NoteEntity
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.components.EmptyState
 import com.example.readerapp.ui.components.SegmentedColumn
 import com.example.readerapp.ui.features.library.components.ShelfListItem
 import com.example.readerapp.ui.features.reader.ReaderActivity
+import kotlinx.coroutines.launch
+import org.json.JSONObject
+import org.readium.r2.shared.publication.Link
+import org.readium.r2.shared.publication.Locator
+import org.readium.r2.shared.util.mediatype.MediaType
 import java.io.File
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -365,68 +397,94 @@ private fun BookInfoContent(
 ) {
     val scrollState = rememberScrollState()
     val context = LocalContext.current
+    val density = LocalDensity.current
+    val windowInfo = LocalWindowInfo.current
+    val maxTabHeight = remember(windowInfo.containerSize, density) {
+        with(density) { (windowInfo.containerSize.height * 0.8f).toDp() }
+    }
+
+    val bookmarks by viewModel.bookmarks.collectAsState()
+    val notes by viewModel.notes.collectAsState()
+    val tableOfContents by viewModel.tableOfContents.collectAsState()
+    val positions by viewModel.positions.collectAsState()
+
+    val currentLocator = remember(book.lastLocatorJson) {
+        book.lastLocatorJson?.let {
+            try {
+                Locator.fromJSON(JSONObject(it))
+            } catch (_: Exception) {
+                null
+            }
+        }
+    }
+
+    val furthestLocator = remember(book.furthestLocatorJson) {
+        book.furthestLocatorJson?.let {
+            try {
+                Locator.fromJSON(JSONObject(it))
+            } catch (_: Exception) {
+                null
+            }
+        }
+    }
+
+    val navigateToLocator: (Locator) -> Unit = { locator ->
+        viewModel.saveReadingPosition(locator) {
+            val intent = Intent(context, ReaderActivity::class.java).apply {
+                putExtra(ReaderActivity.EXTRA_BOOK_ID, book.id)
+            }
+            context.startActivity(intent)
+        }
+    }
+
+    val jumpToLocator: (Locator) -> Unit = { locator ->
+        viewModel.saveJumpReadingPosition(locator) {
+            val intent = Intent(context, ReaderActivity::class.java).apply {
+                putExtra(ReaderActivity.EXTRA_BOOK_ID, book.id)
+            }
+            context.startActivity(intent)
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Background container with fixed height (completely independent of Column layout)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(540.dp)
-                .graphicsLayer {
-                    translationY = -scrollState.value.toFloat()
-                }
-                .clipToBounds()
-        ) {
-            if (book.coverPath != null) {
-                val coverModel = remember(book.coverPath) { File(book.coverPath) }
-                AsyncImage(
-                    model = coverModel,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    alignment = Alignment.TopCenter,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            translationY = scrollState.value * 0.5f
-                        }
-                        .blur(radius = 32.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded)
-                        .scale(1.2f)
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
-                                    MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
-                                )
-                            )
-                        )
-                )
-            }
+        BookBackgroundBanner(
+            book = book,
+            scrollState = scrollState
+        )
 
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
-                                MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
-                                MaterialTheme.colorScheme.surface
-                            )
-                        )
-                    )
-            )
+        val nestedScrollConnection = remember {
+            object : NestedScrollConnection {
+                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                    val delta = available.y
+                    return if (delta < 0) {
+                        val parentConsumed = scrollState.dispatchRawDelta(-delta)
+                        Offset(0f, -parentConsumed)
+                    } else {
+                        Offset.Zero
+                    }
+                }
+
+                override fun onPostScroll(
+                    consumed: Offset,
+                    available: Offset,
+                    source: NestedScrollSource
+                ): Offset {
+                    val delta = available.y
+                    return if (delta > 0) {
+                        val parentConsumed = scrollState.dispatchRawDelta(-delta)
+                        Offset(0f, -parentConsumed)
+                    } else {
+                        Offset.Zero
+                    }
+                }
+            }
         }
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .nestedScroll(nestedScrollConnection)
                 .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             BookInfoHeader(
@@ -444,20 +502,85 @@ private fun BookInfoContent(
                 onDeleteClick = showDeleteConfirm
             )
 
-            Column(
+            Spacer(modifier = Modifier.height(24.dp))
+
+            val pagerState = rememberPagerState(pageCount = { 4 })
+            val coroutineScope = rememberCoroutineScope()
+            val tabs = listOf(
+                stringResource(R.string.book_info_title),
+                stringResource(R.string.reader_chapters_title),
+                stringResource(R.string.reader_bookmarks_title),
+                stringResource(R.string.reader_notes_title)
+            )
+
+            SecondaryScrollableTabRow(
+                selectedTabIndex = pagerState.currentPage,
+                containerColor = Color.Transparent,
+                edgePadding = 16.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = pagerState.currentPage == index,
+                        onClick = {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(index)
+                            }
+                        },
+                        text = {
+                            Text(
+                                text = title,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
+                    )
+                }
+            }
+
+            HorizontalPager(
+                state = pagerState,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                BookProgress(progress = book.progress)
+                    .wrapContentHeight()
+                    .animateContentSize(),
+                verticalAlignment = Alignment.Top
+            ) { page ->
+                when (page) {
+                    0 -> AboutTabContent(
+                        book = book,
+                        maxTabHeight = maxTabHeight
+                    )
 
-                if (!book.description.isNullOrBlank()) {
-                    BookDescription(description = book.description)
+                    1 -> ChaptersTabContent(
+                        tableOfContents = tableOfContents,
+                        currentLocator = currentLocator,
+                        positions = positions,
+                        onChapterClick = jumpToLocator,
+                        maxTabHeight = maxTabHeight
+                    )
+
+                    2 -> BookmarksTabContent(
+                        bookmarks = bookmarks,
+                        currentLocator = currentLocator,
+                        furthestLocator = furthestLocator,
+                        positions = positions,
+                        tableOfContents = tableOfContents,
+                        onNavigateToLocator = navigateToLocator,
+                        onJumpToLocator = jumpToLocator,
+                        onDeleteBookmark = { viewModel.deleteBookmark(it) },
+                        onDeleteFurthestPosition = { viewModel.deleteFurthestPosition() },
+                        maxTabHeight = maxTabHeight
+                    )
+
+                    3 -> NotesTabContent(
+                        notes = notes,
+                        tableOfContents = tableOfContents,
+                        positions = positions,
+                        onNoteClick = jumpToLocator,
+                        onDeleteNote = { viewModel.deleteNote(it) },
+                        maxTabHeight = maxTabHeight
+                    )
                 }
-
-                BookMetadata(book = book)
             }
         }
 
@@ -469,6 +592,479 @@ private fun BookInfoContent(
         )
     }
 }
+
+@Composable
+private fun BookBackgroundBanner(
+    book: Book,
+    scrollState: ScrollState,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(540.dp)
+            .graphicsLayer {
+                translationY = -scrollState.value.toFloat()
+            }
+            .clipToBounds()
+    ) {
+        if (book.coverPath != null) {
+            val coverModel = remember(book.coverPath) { File(book.coverPath) }
+            AsyncImage(
+                model = coverModel,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                alignment = Alignment.TopCenter,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        translationY = scrollState.value * 0.5f
+                    }
+                    .blur(radius = 32.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded)
+                    .scale(1.2f)
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                                MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
+                            )
+                        )
+                    )
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                            MaterialTheme.colorScheme.surface
+                        )
+                    )
+                )
+        )
+    }
+}
+
+@Composable
+private fun AboutTabContent(
+    book: Book,
+    maxTabHeight: Dp,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(max = maxTabHeight)
+            .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 24.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        BookProgress(progress = book.furthestProgression)
+
+        if (!book.description.isNullOrBlank()) {
+            BookDescription(description = book.description)
+        }
+
+        BookMetadata(book = book)
+    }
+}
+
+@Composable
+private fun ChaptersTabContent(
+    tableOfContents: List<Link>,
+    currentLocator: Locator?,
+    positions: List<Locator>,
+    onChapterClick: (Locator) -> Unit,
+    maxTabHeight: Dp,
+    modifier: Modifier = Modifier
+) {
+    if (tableOfContents.isEmpty()) {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(maxTabHeight)
+        ) {
+            EmptyState(
+                icon = MaterialSymbols.Outlined.Format_list_bulleted,
+                text = stringResource(R.string.reader_no_toc),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+                    .padding(top = 32.dp, start = 16.dp, end = 16.dp)
+            )
+        }
+    } else {
+        LazyColumn(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(maxTabHeight),
+            contentPadding = PaddingValues(vertical = 8.dp)
+        ) {
+            val currentHref = currentLocator?.href?.toString()?.substringBefore("#")
+            items(tableOfContents) { link ->
+                val linkHref = link.href.toString().substringBefore("#")
+                val isCurrentChapter = currentHref == linkHref
+                val pageLabel = getChapterPageLabel(link, positions)
+                ListItem(
+                    headlineContent = {
+                        Text(
+                            text = link.title ?: link.href.toString(),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else Color.Unspecified
+                        )
+                    },
+                    supportingContent = if (pageLabel.isNotBlank()) {
+                        {
+                            Text(
+                                text = pageLabel,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else null,
+                    modifier = Modifier.clickable {
+                        val targetLocator = positions.firstOrNull {
+                            it.href.toString()
+                                .substringBefore("#") == link.href.toString()
+                                .substringBefore("#")
+                        } ?: Locator(
+                            href = link.url(),
+                            mediaType = link.mediaType
+                                ?: positions.firstOrNull()?.mediaType
+                                ?: MediaType.XHTML,
+                            title = link.title
+                        )
+                        onChapterClick(targetLocator)
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BookmarksTabContent(
+    bookmarks: List<BookmarkEntity>,
+    currentLocator: Locator?,
+    furthestLocator: Locator?,
+    positions: List<Locator>,
+    tableOfContents: List<Link>,
+    onNavigateToLocator: (Locator) -> Unit,
+    onJumpToLocator: (Locator) -> Unit,
+    onDeleteBookmark: (Long) -> Unit,
+    onDeleteFurthestPosition: () -> Unit,
+    maxTabHeight: Dp,
+    modifier: Modifier = Modifier
+) {
+    val hasBookmarks = bookmarks.isNotEmpty() || currentLocator != null || furthestLocator != null
+    if (!hasBookmarks) {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(maxTabHeight)
+        ) {
+            EmptyState(
+                icon = MaterialSymbols.Outlined.Bookmark,
+                text = stringResource(R.string.reader_no_bookmarks),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+                    .padding(top = 32.dp, start = 16.dp, end = 16.dp)
+            )
+        }
+    } else {
+        LazyColumn(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(maxTabHeight),
+            contentPadding = PaddingValues(vertical = 8.dp)
+        ) {
+            currentLocator?.let { locator ->
+                item {
+                    ListItem(
+                        headlineContent = {
+                            Text(
+                                text = stringResource(R.string.book_info_current_position),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        },
+                        supportingContent = {
+                            val label = getPositionLabel(locator, positions)
+                            Text(
+                                text = label.ifBlank { stringResource(R.string.reader_in_document) },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        leadingContent = {
+                            Icon(
+                                imageVector = MaterialSymbols.Outlined.Book,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        },
+                        modifier = Modifier.clickable {
+                            onNavigateToLocator(locator)
+                        },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                    )
+                }
+            }
+
+            furthestLocator?.let { locator ->
+                item {
+                    ListItem(
+                        headlineContent = {
+                            Text(
+                                text = stringResource(R.string.book_info_furthest_position),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        },
+                        supportingContent = {
+                            val label = getPositionLabel(locator, positions)
+                            Text(
+                                text = label.ifBlank { stringResource(R.string.reader_in_document) },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        leadingContent = {
+                            Icon(
+                                imageVector = MaterialSymbols.Outlined.Bookmark,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.secondary
+                            )
+                        },
+                        trailingContent = {
+                            androidx.compose.material3.IconButton(
+                                onClick = onDeleteFurthestPosition
+                            ) {
+                                Icon(
+                                    imageVector = MaterialSymbols.Outlined.Delete,
+                                    contentDescription = stringResource(R.string.action_delete),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        },
+                        modifier = Modifier.clickable {
+                            onJumpToLocator(locator)
+                        },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                    )
+                }
+            }
+
+            if (bookmarks.isNotEmpty()) {
+                item {
+                    Text(
+                        text = stringResource(R.string.reader_bookmarks_title),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(
+                            horizontal = 16.dp,
+                            vertical = 8.dp
+                        )
+                    )
+                }
+
+                items(bookmarks) { bookmark ->
+                    val locator = try {
+                        Locator.fromJSON(JSONObject(bookmark.locatorJson))
+                    } catch (_: Exception) {
+                        null
+                    }
+                    if (locator != null) {
+                        val inDocument = stringResource(R.string.reader_in_document)
+                        val chapterTitle =
+                            bookmark.chapterTitle?.takeIf { it.isNotBlank() && it != inDocument }
+                                ?: tableOfContents.find {
+                                    it.href.toString()
+                                        .substringBefore("#") == locator.href.toString()
+                                        .substringBefore("#")
+                                }?.title ?: inDocument
+
+                        ListItem(
+                            headlineContent = {
+                                Text(
+                                    text = chapterTitle,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            },
+                            supportingContent = {
+                                val label = getPositionLabel(locator, positions)
+                                Text(
+                                    text = label.ifBlank { inDocument },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            trailingContent = {
+                                androidx.compose.material3.IconButton(
+                                    onClick = { onDeleteBookmark(bookmark.id) }
+                                ) {
+                                    Icon(
+                                        imageVector = MaterialSymbols.Outlined.Delete,
+                                        contentDescription = stringResource(R.string.action_delete),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            },
+                            modifier = Modifier.clickable {
+                                onJumpToLocator(locator)
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NotesTabContent(
+    notes: List<NoteEntity>,
+    tableOfContents: List<Link>,
+    positions: List<Locator>,
+    onNoteClick: (Locator) -> Unit,
+    onDeleteNote: (Long) -> Unit,
+    maxTabHeight: Dp,
+    modifier: Modifier = Modifier
+) {
+    if (notes.isEmpty()) {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(maxTabHeight)
+        ) {
+            EmptyState(
+                icon = MaterialSymbols.Outlined.Edit,
+                text = stringResource(R.string.reader_no_notes),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+                    .padding(top = 32.dp, start = 16.dp, end = 16.dp)
+            )
+        }
+    } else {
+        LazyColumn(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(maxTabHeight),
+            contentPadding = PaddingValues(vertical = 8.dp)
+        ) {
+            items(notes) { note ->
+                val locator = try {
+                    Locator.fromJSON(JSONObject(note.locatorJson))
+                } catch (_: Exception) {
+                    null
+                }
+                if (locator != null) {
+                    val inDocument = stringResource(R.string.reader_in_document)
+                    val chapterTitle =
+                        note.chapterTitle?.takeIf { it.isNotBlank() && it != inDocument }
+                            ?: tableOfContents.find {
+                                it.href.toString().substringBefore("#") == locator.href.toString()
+                                    .substringBefore("#")
+                            }?.title ?: inDocument
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNoteClick(locator) }
+                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(end = 16.dp)
+                            ) {
+                                Text(
+                                    text = chapterTitle,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                val label = getPositionLabel(locator, positions)
+                                if (label.isNotBlank()) {
+                                    Text(
+                                        text = label,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            androidx.compose.material3.IconButton(
+                                onClick = { onDeleteNote(note.id) },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = MaterialSymbols.Outlined.Delete,
+                                    contentDescription = stringResource(R.string.action_delete),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        locator.text.highlight?.takeIf { it.isNotBlank() }
+                            ?.let { highlight ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(IntrinsicSize.Min)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .width(4.dp)
+                                            .fillMaxHeight()
+                                            .clip(CircleShape)
+                                            .background(
+                                                Color(note.color).copy(
+                                                    alpha = 1f
+                                                )
+                                            )
+                                    )
+                                    Text(
+                                        text = highlight,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(start = 12.dp)
+                                    )
+                                }
+                            }
+
+                        if (note.noteText.isNotBlank()) {
+                            Text(
+                                text = note.noteText,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 @Composable
 private fun BookInfoHeader(
@@ -1053,4 +1649,41 @@ private fun parseBookFormat(mediaType: String?, defaultUnknown: String): String 
 
         else -> mime.uppercase()
     }
+}
+
+@Composable
+private fun getPositionLabel(locator: Locator, positions: List<Locator>): String {
+    val posIndex = locator.locations.totalProgression?.let { target ->
+        positions.indexOfLast { (it.locations.totalProgression ?: -1.0) <= target }
+    }?.takeIf { it != -1 } ?: positions.indexOfLast { pos ->
+        pos.href == locator.href && (pos.locations.progression
+            ?: 0.0) <= (locator.locations.progression ?: 0.0)
+    }.takeIf { it != -1 }
+
+    return when {
+        posIndex != null -> pluralStringResource(
+            R.plurals.reader_page_num, posIndex + 1, posIndex + 1
+        )
+
+        locator.locations.totalProgression != null -> stringResource(
+            R.string.reader_position_at,
+            "${(locator.locations.totalProgression!! * 100).toInt()}%"
+        )
+
+        else -> ""
+    }
+}
+
+@Composable
+private fun getChapterPageLabel(link: Link, positions: List<Locator>): String {
+    if (positions.isEmpty()) return ""
+    val linkHref = link.href.toString().substringBefore("#")
+    val posIndex = positions.indexOfFirst {
+        it.href.toString().substringBefore("#") == linkHref
+    }
+    return if (posIndex != -1) {
+        pluralStringResource(
+            R.plurals.reader_page_num, posIndex + 1, posIndex + 1
+        )
+    } else ""
 }
