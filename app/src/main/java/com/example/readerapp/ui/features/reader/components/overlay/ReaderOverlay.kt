@@ -13,7 +13,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -58,16 +57,21 @@ import com.example.readerapp.data.local.database.dictionary.DictionaryEntry
 import com.example.readerapp.data.local.database.library.BookmarkEntity
 import com.example.readerapp.data.local.database.library.NoteEntity
 import com.example.readerapp.data.local.preferences.ReaderSettings
+import com.example.readerapp.ui.features.reader.ReaderDictionaryViewModel
 import com.example.readerapp.ui.features.reader.ReaderNavigationRouter
+import com.example.readerapp.ui.features.reader.ReaderNotesViewModel
+import com.example.readerapp.ui.features.reader.ReaderSearchViewModel
 import com.example.readerapp.ui.features.reader.ReaderViewModel
 import com.example.readerapp.ui.features.reader.SearchResultItem
 import com.example.readerapp.ui.features.reader.components.ExternalLinkBottomSheet
 import com.example.readerapp.ui.features.reader.components.NoteBottomSheet
 import com.example.readerapp.ui.features.reader.components.ReaderBottomSheet
 import com.example.readerapp.ui.features.reader.components.ReaderSearch
+import com.example.readerapp.ui.features.reader.components.SortOption
 import com.example.readerapp.ui.features.reader.components.dictionary.DefinitionWebView
 import com.example.readerapp.ui.features.reader.components.dictionary.DictionaryFormatter
 import com.example.readerapp.ui.features.reader.components.settings.ReaderSettingsContent
+import com.example.readerapp.ui.features.reader.isSamePosition
 import com.example.readerapp.ui.theme.AppTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -78,6 +82,9 @@ import org.readium.r2.shared.publication.Locator
 @Composable
 fun ReaderOverlay(
     viewModel: ReaderViewModel,
+    searchViewModel: ReaderSearchViewModel,
+    notesViewModel: ReaderNotesViewModel,
+    dictionaryViewModel: ReaderDictionaryViewModel,
     router: ReaderNavigationRouter,
     bookId: String,
     onNavigateToChapter: (Link) -> Unit,
@@ -86,30 +93,43 @@ fun ReaderOverlay(
 ) {
     val bookState by viewModel.bookState.collectAsStateWithLifecycle()
     val controlsState by viewModel.controlsState.collectAsStateWithLifecycle()
-    val selectionState by viewModel.selectionState.collectAsStateWithLifecycle()
-    val searchState by viewModel.searchState.collectAsStateWithLifecycle()
-    val definitionState by viewModel.definitionState.collectAsStateWithLifecycle()
+    val selectionState by notesViewModel.selectionState.collectAsStateWithLifecycle()
+    val searchState by searchViewModel.searchState.collectAsStateWithLifecycle()
+    val definitionState by dictionaryViewModel.definitionState.collectAsStateWithLifecycle()
     val externalLinkState by viewModel.externalLinkState.collectAsStateWithLifecycle()
 
     val themeColors by viewModel.themeColors.collectAsStateWithLifecycle()
-    val isBookmarked by viewModel.isBookmarked.collectAsStateWithLifecycle()
     val settings by viewModel.settingsFlow.collectAsStateWithLifecycle(
         initialValue = ReaderSettings()
     )
 
-    val uiDarkTheme = when (settings.themeMode) {
-        "Dark" -> true
-        "Light" -> false
-        else -> isSystemInDarkTheme()
-    }
-
     val readerBgColor = themeColors.backgroundColor
     val readerTextColor = themeColors.textColor
 
-    val bookmarks by viewModel.bookmarks.collectAsStateWithLifecycle()
-    val notes by viewModel.allNotesAndHighlights.collectAsStateWithLifecycle()
+    val sortedBookmarks by notesViewModel.sortedBookmarks.collectAsStateWithLifecycle()
+    val sortedNotes by notesViewModel.sortedNotes.collectAsStateWithLifecycle()
+    val sortOption by notesViewModel.sortOption.collectAsStateWithLifecycle()
     val currentLocator by viewModel.currentLocator.collectAsStateWithLifecycle()
     val jumpOrigin by viewModel.jumpOrigin.collectAsStateWithLifecycle()
+    val positions by viewModel.positions.collectAsStateWithLifecycle()
+
+    // Pass TOC to NotesViewModel so it can sort correctly
+    LaunchedEffect(viewModel.tableOfContents) {
+        notesViewModel.updateTableOfContents(viewModel.tableOfContents)
+    }
+
+    // Determine if bookmarked manually
+    val isBookmarked = remember(sortedBookmarks, currentLocator) {
+        if (currentLocator == null) false
+        else sortedBookmarks.any {
+            val loc = try {
+                Locator.fromJSON(JSONObject(it.locatorJson))
+            } catch (_: Exception) {
+                null
+            }
+            loc != null && loc.isSamePosition(currentLocator!!)
+        }
+    }
 
     val context = LocalContext.current
 
@@ -131,7 +151,7 @@ fun ReaderOverlay(
     }
 
     BackHandler(enabled = searchState.isInNavMode) {
-        viewModel.exitSearchNavigation()
+        searchViewModel.exitSearchNavigation()
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -168,15 +188,20 @@ fun ReaderOverlay(
             readerBgColor = readerBgColor,
             readerTextColor = readerTextColor,
             jumpOrigin = jumpOrigin,
-            onGoBackToOriginClick = { viewModel.goBackToJumpOrigin() },
+            onGoBackToOriginClick = {
+                jumpOrigin?.let { origin ->
+                    onNavigateToLocator(origin)
+                    viewModel.clearJumpOrigin()
+                }
+            },
             onClearJumpOriginClick = { viewModel.clearJumpOrigin() },
             onBack = { router.navigateBack() },
             onSearchClick = { viewModel.showSearch() },
-            onSearchTextClick = { viewModel.showSearch(clearState = false) },
-            onExitSearchNavigation = { viewModel.exitSearchNavigation() },
+            onSearchTextClick = { viewModel.showSearch() },
+            onExitSearchNavigation = { searchViewModel.exitSearchNavigation() },
             onTocClick = { viewModel.showToc() },
             onSettingsClick = { viewModel.showSettings() },
-            onToggleBookmark = { viewModel.toggleBookmark() },
+            onToggleBookmark = { currentLocator?.let { notesViewModel.toggleBookmark(it) } },
             onInfoClick = { router.navigateToBookInfo(bookId) }
         )
 
@@ -199,52 +224,52 @@ fun ReaderOverlay(
                 viewModel.recordJumpOrigin()
                 onSeekToProgression(progression)
             },
-            onPrevSearchResult = { viewModel.prevSearchResult() },
-            onNextSearchResult = { viewModel.nextSearchResult() },
+            onPrevSearchResult = { searchViewModel.prevSearchResult() },
+            onNextSearchResult = { searchViewModel.nextSearchResult() },
             onCopy = { highlightText ->
                 val clipboard =
                     context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                 val clip = ClipData.newPlainText("highlight", highlightText)
                 clipboard.setPrimaryClip(clip)
-                viewModel.hideSelectionMenu()
-                viewModel.hideViewHighlight()
+                notesViewModel.hideSelectionMenu()
+                notesViewModel.hideViewHighlight()
             },
             onSearch = { highlightText ->
-                viewModel.hideSelectionMenu()
-                viewModel.hideViewHighlight()
+                notesViewModel.hideSelectionMenu()
+                notesViewModel.hideViewHighlight()
                 viewModel.showSearch()
-                viewModel.updateSearchQuery(highlightText)
-                viewModel.performSearch(highlightText)
+                searchViewModel.updateSearchQuery(highlightText)
+                searchViewModel.performSearch(highlightText, viewModel.publication.value, positions)
             },
             onMakeNote = {
                 selectionState.selectionLocator?.let { loc ->
-                    viewModel.addNoteAndEdit(loc)
-                    viewModel.hideSelectionMenu()
-                    viewModel.hideViewHighlight()
+                    notesViewModel.addNoteAndEdit(loc, loc.title ?: bookState.chapter)
+                    notesViewModel.hideSelectionMenu()
+                    notesViewModel.hideViewHighlight()
                 } ?: selectionState.viewingHighlight?.let { note ->
-                    viewModel.editNote(note)
-                    viewModel.hideViewHighlight()
+                    notesViewModel.editNote(note)
+                    notesViewModel.hideViewHighlight()
                 }
             },
             onDefine = { highlightText ->
-                viewModel.lookupDefinition(highlightText)
-                viewModel.hideSelectionMenu()
-                viewModel.hideViewHighlight()
+                dictionaryViewModel.lookupDefinition(highlightText)
+                notesViewModel.hideSelectionMenu()
+                notesViewModel.hideViewHighlight()
             },
             onDelete = {
                 selectionState.viewingHighlight?.let { note ->
-                    viewModel.deleteNote(note.id)
-                    viewModel.hideViewHighlight()
+                    notesViewModel.deleteNote(note.id)
+                    notesViewModel.hideViewHighlight()
                 }
             },
             onColorSelected = { colorInt ->
                 selectionState.selectionLocator?.let { loc ->
-                    viewModel.addHighlight(loc, colorInt)
-                    viewModel.hideSelectionMenu()
-                    viewModel.hideViewHighlight()
+                    notesViewModel.addHighlight(loc, colorInt, loc.title ?: bookState.chapter)
+                    notesViewModel.hideSelectionMenu()
+                    notesViewModel.hideViewHighlight()
                 } ?: selectionState.viewingHighlight?.let { note ->
-                    viewModel.updateNote(note.copy(color = colorInt))
-                    viewModel.hideViewHighlight()
+                    notesViewModel.updateNote(note.copy(color = colorInt))
+                    notesViewModel.hideViewHighlight()
                 }
             }
         )
@@ -259,10 +284,12 @@ fun ReaderOverlay(
             definitionWord = definitionState.definitionWord,
             definitionResults = definitionState.definitionResults,
             tableOfContents = viewModel.tableOfContents,
-            bookmarks = bookmarks,
-            notes = notes,
+            sortedBookmarks = sortedBookmarks,
+            sortedNotes = sortedNotes,
+            sortOption = sortOption,
+            onSortOptionChange = { notesViewModel.setSortOption(it) },
             currentLocator = currentLocator,
-            uiDarkTheme = uiDarkTheme,
+            uiDarkTheme = themeColors.backgroundColorInt == 0xFF000000.toInt(),
             settings = settings,
             searchQuery = searchState.query,
             searchResults = searchState.results,
@@ -275,18 +302,32 @@ fun ReaderOverlay(
             onRecordJumpOrigin = { viewModel.recordJumpOrigin() },
             onHideToc = { viewModel.hideToc() },
             onToggleControls = { viewModel.toggleControls() },
-            onAddNote = { viewModel.addNote(it) },
-            onDeleteBookmark = { viewModel.deleteBookmark(it) },
-            onDeleteNote = { viewModel.deleteNote(it) },
+            onAddNote = { text ->
+                currentLocator?.let {
+                    notesViewModel.addNote(
+                        it,
+                        text,
+                        chapterTitle = it.title ?: bookState.chapter
+                    )
+                }
+            },
+            onDeleteBookmark = { notesViewModel.deleteBookmark(it) },
+            onDeleteNote = { notesViewModel.deleteNote(it) },
             onHideSettings = { viewModel.hideSettings() },
             onUpdateSettings = { viewModel.updateSettings(it) },
-            onUpdateSearchQuery = { viewModel.updateSearchQuery(it) },
-            onPerformSearch = { viewModel.performSearch(it) },
-            onSelectSearchResult = { viewModel.selectSearchResult(it) },
-            onHideSearch = { viewModel.hideSearch() },
-            onUpdateNote = { viewModel.updateNote(it) },
-            onHideEditNote = { viewModel.hideEditNote() },
-            onHideDefinition = { viewModel.hideDefinition() },
+            onUpdateSearchQuery = { searchViewModel.updateSearchQuery(it) },
+            onPerformSearch = {
+                searchViewModel.performSearch(
+                    it,
+                    viewModel.publication.value,
+                    positions
+                )
+            },
+            onSelectSearchResult = { searchViewModel.selectSearchResult(it) },
+            onHideSearch = { viewModel.hideSearch(); searchViewModel.hideSearch() },
+            onUpdateNote = { notesViewModel.updateNote(it) },
+            onHideEditNote = { notesViewModel.hideEditNote() },
+            onHideDefinition = { dictionaryViewModel.hideDefinition() },
             showExternalLinkMenu = externalLinkState.showMenu,
             externalLinkUrl = externalLinkState.url,
             onCopyExternalLink = { url ->
@@ -490,8 +531,10 @@ fun ReaderSheetsLayer(
     definitionWord: String,
     definitionResults: List<DictionaryEntry>,
     tableOfContents: List<Link>,
-    bookmarks: List<BookmarkEntity>,
-    notes: List<NoteEntity>,
+    sortedBookmarks: List<BookmarkEntity>,
+    sortedNotes: List<NoteEntity>,
+    sortOption: SortOption,
+    onSortOptionChange: (SortOption) -> Unit,
     currentLocator: Locator?,
     uiDarkTheme: Boolean,
     settings: ReaderSettings,
@@ -534,8 +577,10 @@ fun ReaderSheetsLayer(
         if (showToc) {
             ReaderBottomSheet(
                 tableOfContents = tableOfContents,
-                bookmarks = bookmarks,
-                notes = notes,
+                sortedBookmarks = sortedBookmarks,
+                sortedNotes = sortedNotes,
+                sortOption = sortOption,
+                onSortOptionChange = onSortOptionChange,
                 currentLocator = currentLocator,
                 getPositionLabel = getPositionLabel,
                 getChapterPageLabel = getChapterPageLabel,

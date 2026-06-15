@@ -33,6 +33,19 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
         ReaderViewModel.Factory(application, bookId, isNightMode(resources.configuration))
     }
 
+    private val searchViewModel: ReaderSearchViewModel by viewModels {
+        ReaderSearchViewModel.Factory(application)
+    }
+
+    private val notesViewModel: ReaderNotesViewModel by viewModels {
+        val bookId = intent.getStringExtra(EXTRA_BOOK_ID) ?: ""
+        ReaderNotesViewModel.Factory(application, bookId)
+    }
+
+    private val dictionaryViewModel: ReaderDictionaryViewModel by viewModels {
+        ReaderDictionaryViewModel.Factory(application)
+    }
+
     private lateinit var navigatorController: NavigatorController
     private var navigatorContainer: FragmentContainerView? = null
 
@@ -43,7 +56,13 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
 
         navigatorContainer = findViewById(R.id.navigator_container)
         // Fix 1: pass LifecycleOwner + FragmentManager instead of the whole activity
-        navigatorController = NavigatorController(this, supportFragmentManager, viewModel)
+        navigatorController = NavigatorController(
+            this,
+            supportFragmentManager,
+            viewModel,
+            searchViewModel,
+            notesViewModel
+        )
 
         // Ensure the navigator container doesn't shift when bars toggle or keyboard appears
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(navigatorContainer!!) { _, insets ->
@@ -84,6 +103,9 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
             ReaderTheme(readerBackgroundColor = readerBgColor) {
                 ReaderOverlay(
                     viewModel = viewModel,
+                    searchViewModel = searchViewModel,
+                    notesViewModel = notesViewModel,
+                    dictionaryViewModel = dictionaryViewModel,
                     router = this@ReaderActivity,
                     bookId = intent.getStringExtra(EXTRA_BOOK_ID) ?: "",
                     onNavigateToChapter = { link ->

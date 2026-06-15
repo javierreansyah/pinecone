@@ -51,7 +51,6 @@ fun SegmentedButtonGroup(
                             )
                         }
                     }, enabled = enabled
-                    // Removed custom shape, colors, and border to use M3 defaults
                 )
             }
         }

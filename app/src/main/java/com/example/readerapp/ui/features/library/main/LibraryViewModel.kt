@@ -2,13 +2,14 @@ package com.example.readerapp.ui.features.library.main
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import coil.imageLoader
 import coil.request.ImageRequest
 import coil.size.Scale
 import com.example.readerapp.R
 import com.example.readerapp.ReaderApplication
-import com.example.readerapp.data.local.database.library.ShelfEntity
 import com.example.readerapp.data.local.database.library.ShelfWithCovers
 import com.example.readerapp.data.local.preferences.LibraryPreferencesManager
 import com.example.readerapp.data.model.Book
@@ -17,6 +18,8 @@ import com.example.readerapp.ui.features.library.SearchCategory
 import com.example.readerapp.ui.features.library.ShelfFilter
 import com.example.readerapp.ui.features.library.SortType
 import com.example.readerapp.ui.features.library.StatusFilter
+import com.example.readerapp.ui.features.library.filterAndSort
+import com.example.readerapp.ui.features.library.mapAndSortShelves
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -39,6 +42,22 @@ import kotlin.time.Duration.Companion.milliseconds
 class LibraryViewModel(
     application: Application, private val screenKey: String = "library_books"
 ) : AndroidViewModel(application) {
+
+    companion object {
+        fun provideFactory(
+            application: Application,
+            screenKey: String = "library_books"
+        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                if (modelClass.isAssignableFrom(LibraryViewModel::class.java)) {
+                    return LibraryViewModel(application, screenKey) as T
+                }
+                throw IllegalArgumentException("Unknown ViewModel class")
+            }
+        }
+    }
+
     private val bookRepository = (application as ReaderApplication).libraryRepository
     private val prefsManager = LibraryPreferencesManager(application)
 
@@ -94,38 +113,7 @@ class LibraryViewModel(
 
     fun getFilteredAndSortedBooks(baseFlow: Flow<List<Book>>): Flow<List<Book>> {
         return combine(baseFlow, _uiState) { books, state ->
-            books.filter { book ->
-                val status = when {
-                    book.isRead -> StatusFilter.Finished
-                    book.progress <= 0.0 -> StatusFilter.NotStarted
-                    else -> StatusFilter.Reading
-                }
-                state.bookPreferences.selectedStatus.contains(status)
-            }.let { filtered ->
-                val baseComparator = when (state.bookPreferences.sortType) {
-                    SortType.Title -> compareBy { it.title.lowercase() }
-                    SortType.Author -> compareBy { it.authors.firstOrNull()?.lowercase() ?: "" }
-                    SortType.LastRead -> compareBy { it.lastOpened ?: 0L }
-                    SortType.Added -> compareBy { it.addedDate }
-                    SortType.Progress -> compareBy { it.progress }
-                    SortType.Custom -> {
-                        val indexMap = books.withIndex().associate { it.value.id to it.index }
-                        compareBy<Book> { indexMap[it.id] ?: 0 }
-                    }
-                }
-
-                val finalComparator = if (state.bookPreferences.sortType == SortType.Title) {
-                    if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
-                } else if (state.bookPreferences.sortType == SortType.Custom) {
-                    if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
-                } else {
-                    val mainComp =
-                        if (state.bookPreferences.isAscending) baseComparator else baseComparator.reversed()
-                    mainComp.thenBy { it.title.lowercase() }
-                }
-
-                filtered.sortedWith(finalComparator)
-            }
+            books.filterAndSort(state.bookPreferences)
         }
     }
 
@@ -142,61 +130,13 @@ class LibraryViewModel(
         bookRepository.getAllBooks(),
         _uiState
     ) { shelvesList, crossRefs, allBooksEntities, state ->
-        val sortedShelves = shelvesList.map { shelfWithCovers ->
-            val shelfId = shelfWithCovers.shelf.id
-            val shelfCrossRefs = crossRefs.filter { it.shelfId == shelfId }
-            val sortedBooks = shelfWithCovers.books.sortedBy { book ->
-                shelfCrossRefs.find { it.bookId == book.book.id }?.orderIndex ?: 0
-            }
-            shelfWithCovers.copy(books = sortedBooks)
-        }.let { processedShelves ->
-            val baseComparator = when (state.shelvesPreferences.sortType) {
-                SortType.Title -> compareBy { it.shelf.name.lowercase() }
-                SortType.LastRead -> compareBy { shelf: ShelfWithCovers ->
-                    shelf.books.maxOfOrNull {
-                        it.book.lastReadDate ?: 0L
-                    } ?: 0L
-                }
-
-                SortType.Progress -> compareBy { shelf: ShelfWithCovers ->
-                    if (shelf.books.isEmpty()) 0.0 else shelf.books.map { it.book.progression }
-                        .average()
-                }
-
-                SortType.Added -> compareBy { it.shelf.createdAt }
-                else -> compareBy { it.shelf.name.lowercase() }
-            }
-
-            val finalComparator = if (state.shelvesPreferences.isAscending) {
-                baseComparator.thenBy { it.shelf.name.lowercase() }
-            } else {
-                baseComparator.reversed().thenBy { it.shelf.name.lowercase() }
-            }
-
-            processedShelves.sortedWith(finalComparator)
-        }
-
-        val shelvedBookIds = crossRefs.map { it.bookId }.toSet()
-        val unshelvedBooks = allBooksEntities.filter { it.book.id !in shelvedBookIds }
-
-        val showShelves = state.shelvesPreferences.selectedShelfFilter.contains(ShelfFilter.Shelves)
-        val showUnshelved =
-            state.shelvesPreferences.selectedShelfFilter.contains(ShelfFilter.Unshelved)
-
-        val finalShelves = if (showShelves) sortedShelves else emptyList()
-
-        if (showUnshelved && unshelvedBooks.isNotEmpty()) {
-            val unshelvedShelf = ShelfWithCovers(
-                shelf = ShelfEntity(
-                    id = "unshelved",
-                    name = application.getString(R.string.library_label_unshelved),
-                    createdAt = 0L
-                ), books = unshelvedBooks
-            )
-            finalShelves + unshelvedShelf
-        } else {
-            finalShelves
-        }
+        mapAndSortShelves(
+            shelvesList = shelvesList,
+            crossRefs = crossRefs,
+            allBooksEntities = allBooksEntities,
+            prefs = state.shelvesPreferences,
+            unshelvedLabel = application.getString(R.string.library_label_unshelved)
+        )
     }.onEach { _isShelvesLoading.value = false }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

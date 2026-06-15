@@ -2,7 +2,6 @@ package com.example.readerapp.ui.root
 
 import android.app.Application
 import android.net.Uri
-import android.widget.Toast
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
@@ -11,8 +10,10 @@ import androidx.lifecycle.viewModelScope
 import com.example.readerapp.data.local.preferences.ReaderPreferences
 import com.example.readerapp.data.local.preferences.ReaderSettings
 import com.example.readerapp.data.repository.library.LibraryRepository
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
@@ -27,6 +28,9 @@ class MainViewModel(
 
     private val _settings = MutableStateFlow(ReaderSettings())
     val settings: StateFlow<ReaderSettings> = _settings.asStateFlow()
+
+    private val _toastMessage = MutableSharedFlow<String>()
+    val toastMessage = _toastMessage.asSharedFlow()
 
     init {
         viewModelScope.launch {
@@ -44,31 +48,30 @@ class MainViewModel(
         viewModelScope.launch {
             val result = libraryRepository.importBook(uri)
             if (result != null) {
-                Toast.makeText(getApplication(), "Import complete", Toast.LENGTH_SHORT).show()
+                _toastMessage.emit("Import complete")
             }
         }
     }
 
     fun importBooks(uris: List<Uri>) {
         if (uris.isEmpty()) return
-        Toast.makeText(getApplication(), "Importing ${uris.size} files...", Toast.LENGTH_SHORT)
-            .show()
         viewModelScope.launch {
+            _toastMessage.emit("Importing ${uris.size} files...")
             uris.forEach { uri ->
                 libraryRepository.importBook(uri)
             }
-            Toast.makeText(getApplication(), "Import complete", Toast.LENGTH_SHORT).show()
+            _toastMessage.emit("Import complete")
         }
     }
 
     fun scanFolder(uri: Uri) {
-        Toast.makeText(getApplication(), "Scanning folder for books...", Toast.LENGTH_SHORT).show()
         viewModelScope.launch {
+            _toastMessage.emit("Scanning folder for books...")
             val root = DocumentFile.fromTreeUri(getApplication(), uri)
             if (root != null) {
                 importFromDocumentFile(root)
             }
-            Toast.makeText(getApplication(), "Folder scan complete", Toast.LENGTH_SHORT).show()
+            _toastMessage.emit("Folder scan complete")
         }
     }
 

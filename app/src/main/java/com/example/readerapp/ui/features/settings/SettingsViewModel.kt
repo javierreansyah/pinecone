@@ -4,6 +4,8 @@ import android.app.Application
 import android.net.Uri
 import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import coil.annotation.ExperimentalCoilApi
 import coil.imageLoader
@@ -106,6 +108,24 @@ class SettingsViewModel(
             } else {
                 onFailure()
             }
+        }
+    }
+
+    class Factory(
+        private val application: Application,
+        private val readerPreferences: ReaderPreferences,
+        private val dictionaryBackupManager: DictionaryBackupManager
+    ) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
+                return SettingsViewModel(
+                    application,
+                    readerPreferences,
+                    dictionaryBackupManager
+                ) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }
     }
 }

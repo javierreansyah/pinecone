@@ -5,9 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.readerapp.ReaderApplication
 import com.example.readerapp.data.model.Book
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -40,20 +38,18 @@ class FilterCategoryViewModel(application: Application) : AndroidViewModel(appli
         }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    @OptIn(DelicateCoroutinesApi::class)
     fun deleteFilterItem(type: String, name: String, onSuccess: () -> Unit) {
         onSuccess()
-        GlobalScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.IO) {
             bookRepository.deleteFilterItem(type, name)
         }
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
     fun renameFilterItem(
         type: String, oldName: String, newName: String, onSuccess: (String) -> Unit
     ) {
         onSuccess(newName.trim())
-        GlobalScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.IO) {
             bookRepository.renameFilterItem(type, oldName, newName)
         }
     }
