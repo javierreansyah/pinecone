@@ -21,8 +21,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.material3.MaterialTheme
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -33,6 +42,8 @@ import com.example.readerapp.R
 import com.example.readerapp.ui.components.EmptyState
 import com.example.readerapp.ui.components.LibraryTopAppBar
 import com.example.readerapp.ui.features.library.components.FilterResultBottomSheet
+import com.example.readerapp.ui.features.library.components.MultiSelectAppBar
+import com.example.readerapp.ui.features.library.components.MultiSelectTopBarTransition
 import com.example.readerapp.ui.features.library.components.book.BookCollection
 import com.example.readerapp.ui.features.library.components.book.BookContextMenu
 
@@ -60,6 +71,7 @@ fun ArchiveScreen(
     val allBooks by viewModel.allBooks.collectAsState()
     var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
     var showFilterSheet by remember { mutableStateOf(false) }
+    var selectedBooks by remember { mutableStateOf(emptySet<String>()) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val isEmpty = archivedBooks.isEmpty()
@@ -67,21 +79,64 @@ fun ArchiveScreen(
     Scaffold(
         modifier = if (isEmpty) Modifier else Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LibraryTopAppBar(
-                title = { Text(stringResource(R.string.library_archives_title)) },
-                onBack = onNavigateBack,
-                isEmpty = isEmpty,
-                scrollBehavior = scrollBehavior,
-                actions = {
-                    IconButton(
-                        shapes = IconButtonDefaults.shapes(),
-                        onClick = { showFilterSheet = true }
-                    ) {
-                        Icon(
-                            MaterialSymbols.Outlined.Tune,
-                            contentDescription = stringResource(R.string.action_filter)
-                        )
-                    }
+            MultiSelectTopBarTransition(
+                isMultiSelect = selectedBooks.isNotEmpty(),
+                multiSelectBar = {
+                    val showMarkAsRead = allBooks
+                        .filter { it.id in selectedBooks }
+                        .any { !it.isRead }
+                    MultiSelectAppBar(
+                        selectedCount = selectedBooks.size,
+                        showMarkAsRead = showMarkAsRead,
+                        onClearSelection = { selectedBooks = emptySet() },
+                        onSelectAll = { selectedBooks = archivedBooks.map { it.id }.toSet() },
+                        onMarkAsReadUnread = {
+                            val booksToProcess = selectedBooks.toList()
+                            selectedBooks = emptySet()
+                            booksToProcess.forEach { bookId ->
+                                val book = allBooks.find { it.id == bookId }
+                                if (book != null && book.isRead != showMarkAsRead) {
+                                    viewModel.toggleReadStatus(bookId)
+                                }
+                            }
+                        },
+                        onAddToShelf = {
+                            val ids = selectedBooks.joinToString(",")
+                            selectedBooks = emptySet()
+                            onNavigateToAddToShelf(ids)
+                        },
+                        onArchive = {
+                            val booksToProcess = selectedBooks.toList()
+                            selectedBooks = emptySet()
+                            booksToProcess.forEach { bookId ->
+                                viewModel.toggleArchive(bookId)
+                            }
+                        },
+                        onDelete = {
+                            val booksToProcess = selectedBooks.toList()
+                            selectedBooks = emptySet()
+                            booksToProcess.forEach { viewModel.deleteBook(it) }
+                        }
+                    )
+                },
+                defaultBar = {
+                    LibraryTopAppBar(
+                        title = { Text(stringResource(R.string.library_archives_title)) },
+                        onBack = onNavigateBack,
+                        isEmpty = isEmpty,
+                        scrollBehavior = scrollBehavior,
+                        actions = {
+                            IconButton(
+                                shapes = IconButtonDefaults.shapes(),
+                                onClick = { showFilterSheet = true }
+                            ) {
+                                Icon(
+                                    MaterialSymbols.Outlined.Tune,
+                                    contentDescription = stringResource(R.string.action_filter)
+                                )
+                            }
+                        }
+                    )
                 }
             )
         }) { innerPadding ->
@@ -102,7 +157,18 @@ fun ArchiveScreen(
                 BookCollection(
                     books = archivedBooks,
                     layoutMode = uiState.bookPreferences.layoutMode,
-                    onBookClick = onNavigateToReader,
+                    selectedBooks = selectedBooks,
+                    onBookClick = { bookId ->
+                        if (selectedBooks.isNotEmpty()) {
+                            selectedBooks = if (selectedBooks.contains(bookId)) {
+                                selectedBooks - bookId
+                            } else {
+                                selectedBooks + bookId
+                            }
+                        } else {
+                            onNavigateToReader(bookId)
+                        }
+                    },
                     onBookLongClick = { selectedBookForMenu = it },
                     scrollKey = Triple(
                         uiState.bookPreferences.sortType,
@@ -125,6 +191,7 @@ fun ArchiveScreen(
             onRemoveFromShelf = {},
             onAddToShelf = onNavigateToAddToShelf,
             onDeleteBook = { viewModel.deleteBook(bookId) },
+            onEnterMultiSelect = { selectedBooks = setOf(bookId) },
             onDismiss = { selectedBookForMenu = null })
     }
 

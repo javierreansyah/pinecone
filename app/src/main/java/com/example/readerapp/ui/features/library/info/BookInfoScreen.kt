@@ -95,9 +95,9 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.fromHtml
+import com.example.readerapp.ui.components.HtmlPreset
+import com.example.readerapp.ui.components.HtmlWebView
+import com.example.readerapp.ui.components.HtmlWebViewConfig
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -1403,12 +1403,21 @@ private fun BookDescription(
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
-        HtmlText(
-            html = description,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = if (isExpanded) Int.MAX_VALUE else 4
-        )
+        // WebView renders the raw publisher HTML properly — handles <BR>, mixed
+        // <b><i> preambles, bare <div>/<p> blocks, &amp; entities, etc.
+        // Expand/collapse is driven by animateContentSize on the wrapper Box.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (!isExpanded) Modifier.heightIn(max = 120.dp) else Modifier)
+                .animateContentSize()
+        ) {
+            HtmlWebView(
+                htmlContent = description,
+                config = HtmlWebViewConfig(preset = HtmlPreset.Description),
+                baseFontSize = MaterialTheme.typography.bodyMedium.fontSize
+            )
+        }
         if (description.length > 200) {
             val labelText =
                 if (isExpanded) stringResource(R.string.book_read_less) else stringResource(
@@ -1573,29 +1582,7 @@ private fun BookInfoTopButtons(
     }
 }
 
-@Composable
-private fun HtmlText(
-    html: String, style: TextStyle, color: Color, maxLines: Int = Int.MAX_VALUE
-) {
-    val annotatedString = remember(html) {
-        val formattedHtml = html.replace("</p>", "</p><br>").trim()
-        val parsed = AnnotatedString.fromHtml(formattedHtml)
-        var endIndex = parsed.length
-        while (endIndex > 0 && parsed[endIndex - 1].isWhitespace()) {
-            endIndex--
-        }
-        if (endIndex == parsed.length) parsed else parsed.subSequence(0, endIndex)
-    }
 
-    Text(
-        text = annotatedString,
-        style = style.copy(lineHeight = style.fontSize * 1.5f),
-        color = color,
-        maxLines = maxLines,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.fillMaxWidth()
-    )
-}
 
 private fun formatPublishedDate(dateString: String?, defaultValue: String): String {
     if (dateString.isNullOrBlank()) return defaultValue

@@ -18,10 +18,12 @@ import coil.request.ImageRequest
 import com.example.readerapp.R
 import com.example.readerapp.data.model.Book
 import java.io.File
+import androidx.compose.foundation.layout.BoxScope
 
 @Composable
 fun CoverImage(
-    book: Book, modifier: Modifier = Modifier
+    book: Book, modifier: Modifier = Modifier,
+    coverOverlay: @Composable BoxScope.() -> Unit = {}
 ) {
     if (book.coverPath != null) {
         val context = LocalContext.current
@@ -36,13 +38,16 @@ fun CoverImage(
             modifier = modifier,
             contentAlignment = Alignment.BottomCenter
         ) {
-            AsyncImage(
-                model = imageRequest,
-                contentDescription = stringResource(R.string.book_cover_description, book.title),
-                modifier = Modifier
-                    .clip(MaterialTheme.shapes.small),
-                contentScale = ContentScale.Fit
-            )
+            Box {
+                AsyncImage(
+                    model = imageRequest,
+                    contentDescription = stringResource(R.string.book_cover_description, book.title),
+                    modifier = Modifier
+                        .clip(MaterialTheme.shapes.small),
+                    contentScale = ContentScale.Fit
+                )
+                coverOverlay()
+            }
         }
     } else {
         Surface(
@@ -52,6 +57,7 @@ fun CoverImage(
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Text(text = book.title.take(1), style = MaterialTheme.typography.displayMedium)
+                coverOverlay()
             }
         }
     }

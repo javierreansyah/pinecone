@@ -32,8 +32,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Book
@@ -46,6 +54,8 @@ import com.example.readerapp.ui.features.library.ShelfFilter
 import com.example.readerapp.ui.features.library.SortType
 import com.example.readerapp.ui.features.library.StatusFilter
 import com.example.readerapp.ui.features.library.components.LibraryFilterBottomSheet
+import com.example.readerapp.ui.features.library.components.MultiSelectAppBar
+import com.example.readerapp.ui.features.library.components.MultiSelectTopBarTransition
 import com.example.readerapp.ui.features.library.components.book.BookCollection
 import com.example.readerapp.ui.features.library.components.book.BookContextMenu
 import kotlinx.coroutines.launch
@@ -131,8 +141,9 @@ fun LibraryScreen(
 
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
 
-    // Context Menu State
+    // Context Menu & Selection State
     var selectedBookContext by remember { mutableStateOf<Pair<String, String?>?>(null) }
+    var selectedBooks by remember { mutableStateOf(emptySet<String>()) }
 
     val pagerState = rememberPagerState(pageCount = { 2 })
     val scope = rememberCoroutineScope()
@@ -153,21 +164,67 @@ fun LibraryScreen(
     }
 
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
-        LibrarySearchTopBar(
-            searchQuery = uiState.searchQuery,
-            searchCategory = uiState.searchCategory,
-            searchResults = uiState.searchResults,
-            onSearchQueryChange = onSearchQueryChange,
-            onSearchCategoryChange = onSearchCategoryChange,
-            onOpenDrawerClick = onOpenDrawerClick,
-            onFilterClick = { showFilterSheet.value = true },
-            onNavigateToReader = onNavigateToReader,
-            onNavigateToShelf = onNavigateToShelf,
-            onNavigateToAuthor = onNavigateToAuthor,
-            onNavigateToTag = onNavigateToTag,
-            onAuthorsHeaderClick = onNavigateToAllAuthors,
-            onTagsHeaderClick = onNavigateToAllTags,
-            scrollBehavior = scrollBehavior
+        MultiSelectTopBarTransition(
+            isMultiSelect = selectedBooks.isNotEmpty() && !isShelvesTab,
+            multiSelectBar = {
+                val showMarkAsRead = uiState.allBooks
+                    .filter { it.id in selectedBooks }
+                    .any { !it.isRead }
+                MultiSelectAppBar(
+                    selectedCount = selectedBooks.size,
+                    showMarkAsRead = showMarkAsRead,
+                    onClearSelection = { selectedBooks = emptySet() },
+                    onSelectAll = { selectedBooks = uiState.filteredBooks.map { it.id }.toSet() },
+                    onMarkAsReadUnread = {
+                        val booksToProcess = selectedBooks.toList()
+                        selectedBooks = emptySet()
+                        booksToProcess.forEach { bookId ->
+                            val book = uiState.allBooks.find { it.id == bookId }
+                            if (book != null && book.isRead != showMarkAsRead) {
+                                toggleReadStatus(bookId)
+                            }
+                        }
+                    },
+                    onAddToShelf = {
+                        val ids = selectedBooks.joinToString(",")
+                        selectedBooks = emptySet()
+                        onNavigateToAddToShelf(ids)
+                    },
+                    onArchive = {
+                        val booksToProcess = selectedBooks.toList()
+                        selectedBooks = emptySet()
+                        booksToProcess.forEach { bookId ->
+                            val book = uiState.allBooks.find { it.id == bookId }
+                            if (book != null && !book.isArchived) {
+                                toggleArchive(bookId)
+                            }
+                        }
+                    },
+                    onDelete = {
+                        val booksToProcess = selectedBooks.toList()
+                        selectedBooks = emptySet()
+                        booksToProcess.forEach { deleteBook(it) }
+                    }
+                )
+            },
+            defaultBar = {
+                LibrarySearchTopBar(
+                    searchQuery = uiState.searchQuery,
+                    searchCategory = uiState.searchCategory,
+                    searchResults = uiState.searchResults,
+                    onSearchQueryChange = onSearchQueryChange,
+                    onSearchCategoryChange = onSearchCategoryChange,
+                    onOpenDrawerClick = onOpenDrawerClick,
+                    onFilterClick = { showFilterSheet.value = true },
+                    onNavigateToReader = onNavigateToReader,
+                    onNavigateToShelf = onNavigateToShelf,
+                    onNavigateToAuthor = onNavigateToAuthor,
+                    onNavigateToTag = onNavigateToTag,
+                    onAuthorsHeaderClick = onNavigateToAllAuthors,
+                    onTagsHeaderClick = onNavigateToAllTags,
+                    scrollBehavior = scrollBehavior
+                )
+            }
         )
     }, bottomBar = {
         LibraryShortBottomNavigation(
@@ -191,7 +248,18 @@ fun LibraryScreen(
                         books = uiState.filteredBooks,
                         layoutMode = uiState.bookPreferences.layoutMode,
                         isImporting = uiState.isImporting,
-                        onNavigateToReader = onNavigateToReader,
+                        selectedBooks = selectedBooks,
+                        onBookClick = { bookId ->
+                            if (selectedBooks.isNotEmpty()) {
+                                selectedBooks = if (selectedBooks.contains(bookId)) {
+                                    selectedBooks - bookId
+                                } else {
+                                    selectedBooks + bookId
+                                }
+                            } else {
+                                onNavigateToReader(bookId)
+                            }
+                        },
                         onBookLongClick = { selectedBookContext = Pair(it, null) },
                         scrollKey = Pair(
                             uiState.bookPreferences.sortType,
@@ -243,6 +311,7 @@ fun LibraryScreen(
             bookId = bookId,
             shelfId = contextShelfId,
             allBooks = uiState.allBooks,
+            showSelectMultiple = !isShelvesTab,
             onNavigateToBookInfo = onNavigateToBookInfo,
             onToggleArchive = { toggleArchive(bookId) },
             onToggleReadStatus = { toggleReadStatus(bookId) },
@@ -255,6 +324,9 @@ fun LibraryScreen(
             },
             onAddToShelf = onNavigateToAddToShelf,
             onDeleteBook = { deleteBook(bookId) },
+            onEnterMultiSelect = {
+                selectedBooks = setOf(bookId)
+            },
             onDismiss = { selectedBookContext = null })
     }
 }
@@ -297,7 +369,8 @@ private fun LibraryBooksTabContent(
     books: List<com.example.readerapp.data.model.Book>,
     layoutMode: LayoutMode,
     isImporting: Boolean,
-    onNavigateToReader: (String) -> Unit,
+    selectedBooks: Set<String>,
+    onBookClick: (String) -> Unit,
     onBookLongClick: (String) -> Unit,
     scrollKey: Any? = null
 ) {
@@ -319,8 +392,9 @@ private fun LibraryBooksTabContent(
             BookCollection(
                 books = books,
                 layoutMode = layoutMode,
-                onBookClick = onNavigateToReader,
+                onBookClick = onBookClick,
                 onBookLongClick = onBookLongClick,
+                selectedBooks = selectedBooks,
                 scrollKey = scrollKey
             )
         }
