@@ -21,8 +21,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.Color
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Check_circle
 import com.example.readerapp.R
 import com.example.readerapp.data.model.Book
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.ExperimentalAnimationApi
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -32,6 +44,7 @@ fun BookItem(
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
     isList: Boolean = false,
+    isSelected: Boolean = false,
     trailingContent: @Composable (() -> Unit)? = null
 ) {
     if (isList) {
@@ -50,8 +63,10 @@ fun BookItem(
                     .height(100.dp)
                     .aspectRatio(2f / 3f)
             ) {
-                CoverImage(
-                    book = book, modifier = Modifier.fillMaxSize()
+                BookCoverWithSelection(
+                    book = book,
+                    isSelected = isSelected,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
             Column(
@@ -102,8 +117,10 @@ fun BookItem(
                 )
                 .padding(8.dp)
         ) {
-            CoverImage(
-                book = book, modifier = Modifier
+            BookCoverWithSelection(
+                book = book,
+                isSelected = isSelected,
+                modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(2f / 3f)
             )
@@ -143,6 +160,51 @@ fun BookItem(
                     )
                 }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+fun BookCoverWithSelection(book: Book, isSelected: Boolean, modifier: Modifier = Modifier) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        CoverImage(
+            book = book, 
+            modifier = Modifier.fillMaxSize(),
+            coverOverlay = {
+                Box(modifier = Modifier.matchParentSize()) {
+                    AnimatedVisibility(
+                        visible = isSelected,
+                        enter = fadeIn(),
+                        exit = fadeOut(),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(MaterialTheme.shapes.small)
+                                .background(Color.Black.copy(alpha = 0.4f))
+                        )
+                    }
+                }
+            }
+        )
+        AnimatedVisibility(
+            visible = isSelected,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Icon(
+                imageVector = MaterialSymbols.Outlined.Check_circle,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier
+                    .size(32.dp)
+                    .animateEnterExit(
+                        enter = scaleIn(initialScale = 0.8f),
+                        exit = scaleOut(targetScale = 0.8f)
+                    )
+            )
         }
     }
 }

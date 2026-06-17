@@ -10,8 +10,11 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +27,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
@@ -259,7 +265,7 @@ fun ReaderOverlay(
                 }
             },
             onDefine = { highlightText ->
-                dictionaryViewModel.lookupDefinition(highlightText)
+                dictionaryViewModel.lookupDefinition(highlightText, clearHistory = true)
                 notesViewModel.hideSelectionMenu()
                 notesViewModel.hideViewHighlight()
             },
@@ -290,6 +296,7 @@ fun ReaderOverlay(
             editingNote = selectionState.editingNote,
             definitionWord = definitionState.definitionWord,
             definitionResults = definitionState.definitionResults,
+            definitionWordHistorySize = definitionState.wordHistory.size,
             tableOfContents = viewModel.tableOfContents,
             sortedBookmarks = sortedBookmarks,
             sortedNotes = sortedNotes,
@@ -339,6 +346,8 @@ fun ReaderOverlay(
             onUpdateNote = { notesViewModel.updateNote(it) },
             onHideEditNote = { notesViewModel.hideEditNote() },
             onHideDefinition = { dictionaryViewModel.hideDefinition() },
+            onDefineWord = { dictionaryViewModel.lookupDefinition(it, clearHistory = false) },
+            onPopDefinition = { dictionaryViewModel.popDefinition() },
             showExternalLinkMenu = externalLinkState.showMenu,
             externalLinkUrl = externalLinkState.url,
             onCopyExternalLink = { url ->
@@ -563,6 +572,7 @@ fun ReaderSheetsLayer(
     editingNote: NoteEntity?,
     definitionWord: String,
     definitionResults: List<DictionaryEntry>,
+    definitionWordHistorySize: Int,
     tableOfContents: List<Link>,
     sortedBookmarks: List<BookmarkEntity>,
     sortedNotes: List<NoteEntity>,
@@ -594,6 +604,8 @@ fun ReaderSheetsLayer(
     onUpdateNote: (NoteEntity) -> Unit,
     onHideEditNote: () -> Unit,
     onHideDefinition: () -> Unit,
+    onDefineWord: (String) -> Unit,
+    onPopDefinition: () -> Unit,
     showExternalLinkMenu: Boolean,
     externalLinkUrl: String,
     onCopyExternalLink: (String) -> Unit,
@@ -690,7 +702,10 @@ fun ReaderSheetsLayer(
             ReaderDefinitionBottomSheet(
                 definitionWord = definitionWord,
                 definitionResults = definitionResults,
-                onDismiss = onHideDefinition
+                historySize = definitionWordHistorySize,
+                onDismiss = onHideDefinition,
+                onPop = onPopDefinition,
+                onWordClick = onDefineWord
             )
         }
 
@@ -726,7 +741,10 @@ fun ReaderThemedContent(
 private fun ReaderDefinitionBottomSheet(
     definitionWord: String,
     definitionResults: List<DictionaryEntry>,
-    onDismiss: () -> Unit
+    historySize: Int,
+    onDismiss: () -> Unit,
+    onPop: () -> Unit,
+    onWordClick: (String) -> Unit
 ) {
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current
@@ -756,27 +774,71 @@ private fun ReaderDefinitionBottomSheet(
                     modifier = Modifier.padding(horizontal = 24.dp)
                 )
             } else {
-                val scrollState = rememberScrollState()
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f, fill = false)
-                        .verticalScroll(scrollState)
-                ) {
-                    val sortedResults =
-                        definitionResults.sortedWith(compareBy<DictionaryEntry> { entry ->
-                            when {
-                                entry.word == definitionWord -> 0
-                                entry.word.firstOrNull()?.isLowerCase() == true -> 1
-                                else -> 2
-                            }
-                        }.thenBy { it.word })
+                Box(modifier = Modifier
+                    .weight(1f, fill = false)
+                    .fillMaxWidth()) {
+                    val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
 
-                    val combinedHtmlContent =
-                        DictionaryFormatter.prepareHtmlForMultipleEntries(sortedResults)
-                    DefinitionWebView(
-                        htmlContent = combinedHtmlContent, modifier = Modifier.fillMaxWidth()
-                    )
+                    AnimatedContent(
+                        targetState = Triple(definitionWord, definitionResults, historySize),
+                        label = "DefinitionTransition",
+                        transitionSpec = {
+                            fadeIn(
+                                animationSpec = tween(
+                                    durationMillis = 100,
+                                    delayMillis = 100
+                                )
+                            ) togetherWith
+                                    fadeOut(animationSpec = tween(durationMillis = 100))
+                        }
+                    ) { (word, results, _) ->
+                        val scrollState = rememberScrollState()
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .verticalScroll(scrollState)
+                        ) {
+                            val sortedResults =
+                                results.sortedWith(compareBy<DictionaryEntry> { entry ->
+                                    when {
+                                        entry.word == word -> 0
+                                        entry.word.firstOrNull()?.isLowerCase() == true -> 1
+                                        else -> 2
+                                    }
+                                }.thenBy { it.word })
+
+                            val combinedHtmlContent =
+                                DictionaryFormatter.prepareHtmlForMultipleEntries(sortedResults)
+                            DefinitionWebView(
+                                htmlContent = combinedHtmlContent,
+                                modifier = Modifier.fillMaxWidth(),
+                                onWordClick = onWordClick
+                            )
+                        }
+                    }
+
+                    Box(modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(end = 16.dp)) {
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = historySize > 0,
+                            enter = fadeIn(animationSpec = actionsEffectsSpec),
+                            exit = fadeOut(animationSpec = actionsEffectsSpec)
+                        ) {
+                            FilledTonalIconButton(
+                                shape = androidx.compose.foundation.shape.CircleShape,
+                                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                                ),
+                                onClick = onPop
+                            ) {
+                                Icon(
+                                    MaterialSymbols.Outlined.Arrow_back,
+                                    contentDescription = "Back"
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

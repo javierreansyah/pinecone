@@ -92,9 +92,9 @@ fun SelectShelfScreen(
                     ShelfListItem(
                         shelfWithCovers = shelfWithCovers,
                         onClick = {
-                            viewModel.addBookToShelf(
+                            viewModel.addBooksToShelf(
                                 shelfId = shelfWithCovers.shelf.id,
-                                bookId = bookId,
+                                bookIdsStr = bookId,
                                 onComplete = onNavigateBack
                             )
                         }
@@ -132,9 +132,9 @@ fun SelectShelfScreen(
                 TextButton(
                     onClick = {
                         if (newShelfName.isNotBlank()) {
-                            viewModel.createShelfAndAddBook(
+                            viewModel.createShelfAndAddBooks(
                                 name = newShelfName,
-                                bookId = bookId,
+                                bookIdsStr = bookId,
                                 onComplete = onNavigateBack
                             )
                             newShelfName = ""

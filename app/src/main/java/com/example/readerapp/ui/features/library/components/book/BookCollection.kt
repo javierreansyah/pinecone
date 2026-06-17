@@ -27,6 +27,7 @@ fun BookCollection(
     layoutMode: LayoutMode,
     onBookClick: (String) -> Unit,
     onBookLongClick: (String) -> Unit,
+    selectedBooks: Set<String> = emptySet(),
     scrollKey: Any? = null
 ) {
     key(scrollKey) {
@@ -48,13 +49,15 @@ fun BookCollection(
                     books = books,
                     layoutMode = targetLayoutMode,
                     onBookClick = onBookClick,
-                    onBookLongClick = onBookLongClick
+                    onBookLongClick = onBookLongClick,
+                    selectedBooks = selectedBooks
                 )
             } else {
                 BookList(
                     books = books,
                     onBookClick = onBookClick,
-                    onBookLongClick = onBookLongClick
+                    onBookLongClick = onBookLongClick,
+                    selectedBooks = selectedBooks
                 )
             }
         }
@@ -66,7 +69,8 @@ private fun BookGrid(
     books: List<Book>,
     layoutMode: LayoutMode = LayoutMode.Grid,
     onBookClick: (String) -> Unit,
-    onBookLongClick: ((String) -> Unit)? = null
+    onBookLongClick: ((String) -> Unit)? = null,
+    selectedBooks: Set<String> = emptySet()
 ) {
     val itemWidth = if (layoutMode == LayoutMode.BigGrid) 150.dp else 100.dp
     val horizontalPadding = 8.dp
@@ -86,6 +90,7 @@ private fun BookGrid(
                 book = book,
                 onClick = { onBookClick(book.id) },
                 onLongClick = { onBookLongClick?.invoke(book.id) },
+                isSelected = selectedBooks.contains(book.id)
             )
         }
     }
@@ -95,7 +100,8 @@ private fun BookGrid(
 private fun BookList(
     books: List<Book>,
     onBookClick: (String) -> Unit,
-    onBookLongClick: ((String) -> Unit)? = null
+    onBookLongClick: ((String) -> Unit)? = null,
+    selectedBooks: Set<String> = emptySet()
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize()
@@ -106,6 +112,7 @@ private fun BookList(
                 onClick = { onBookClick(book.id) },
                 onLongClick = { onBookLongClick?.invoke(book.id) },
                 isList = true,
+                isSelected = selectedBooks.contains(book.id)
             )
         }
     }

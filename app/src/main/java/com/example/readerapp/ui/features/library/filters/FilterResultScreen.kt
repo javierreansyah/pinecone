@@ -8,6 +8,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -73,6 +75,8 @@ import com.example.readerapp.R
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.components.LibraryTopAppBar
 import com.example.readerapp.ui.features.library.components.FilterResultBottomSheet
+import com.example.readerapp.ui.features.library.components.MultiSelectAppBar
+import com.example.readerapp.ui.features.library.components.MultiSelectTopBarTransition
 import com.example.readerapp.ui.features.library.components.book.BookCollection
 import com.example.readerapp.ui.features.library.components.book.BookContextMenu
 
@@ -181,51 +185,98 @@ private fun FilterResultContent(
     var renameName by remember { mutableStateOf(TextFieldValue("")) }
     var showMergeWarningDialog by remember { mutableStateOf(false) }
     var pendingRenameName by remember { mutableStateOf("") }
+    var selectedBooks by remember { mutableStateOf(emptySet<String>()) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            FilterResultTopAppBar(
-                filterValue = filterValue,
-                showMenu = showMenu,
-                isRenaming = isRenaming,
-                renameName = renameName,
-                suggestions = suggestionList,
-                onRenameNameChange = { renameName = it },
-                onCancelRename = { isRenaming = false },
-                onSaveRename = {
-                    val newName = renameName.text.trim()
-                    if (newName.isNotBlank()) {
-                        if (suggestionList.contains(newName) && newName != filterValue) {
-                            pendingRenameName = newName
-                            showMergeWarningDialog = true
-                        } else {
-                            onRenameFilterItem(newName)
-                            isRenaming = false
+            MultiSelectTopBarTransition(
+                isMultiSelect = selectedBooks.isNotEmpty(),
+                multiSelectBar = {
+                    val showMarkAsRead = allBooks
+                        .filter { it.id in selectedBooks }
+                        .any { !it.isRead }
+                    MultiSelectAppBar(
+                        selectedCount = selectedBooks.size,
+                        showMarkAsRead = showMarkAsRead,
+                        onClearSelection = { selectedBooks = emptySet() },
+                        onSelectAll = { selectedBooks = books.map { it.id }.toSet() },
+                        onMarkAsReadUnread = {
+                            val booksToProcess = selectedBooks.toList()
+                            selectedBooks = emptySet()
+                            booksToProcess.forEach { bookId ->
+                                val book = allBooks.find { it.id == bookId }
+                                if (book != null && book.isRead != showMarkAsRead) {
+                                    onToggleReadStatus(bookId)
+                                }
+                            }
+                        },
+                        onAddToShelf = {
+                            val ids = selectedBooks.joinToString(",")
+                            selectedBooks = emptySet()
+                            onNavigateToAddToShelf(ids)
+                        },
+                        onArchive = {
+                            val booksToProcess = selectedBooks.toList()
+                            selectedBooks = emptySet()
+                            booksToProcess.forEach { bookId ->
+                                val book = allBooks.find { it.id == bookId }
+                                if (book != null && !book.isArchived) {
+                                    onToggleArchive(bookId)
+                                }
+                            }
+                        },
+                        onDelete = {
+                            val booksToProcess = selectedBooks.toList()
+                            selectedBooks = emptySet()
+                            booksToProcess.forEach { onDeleteBook(it) }
                         }
-                    } else {
-                        isRenaming = false
-                    }
-                },
-                onNavigateBack = onNavigateBack,
-                onFilterClick = { showFilterSheet = true },
-                onMenuToggle = { showMenu = !showMenu },
-                onMenuDismiss = { showMenu = false },
-                onRenameClick = {
-                    showMenu = false
-                    renameName = TextFieldValue(
-                        text = filterValue,
-                        selection = TextRange(filterValue.length)
                     )
-                    isRenaming = true
                 },
-                onDeleteClick = {
-                    showMenu = false
-                    showDeleteConfirm = true
-                },
-                scrollBehavior = scrollBehavior
+                defaultBar = {
+                    FilterResultTopAppBar(
+                        filterValue = filterValue,
+                        showMenu = showMenu,
+                        isRenaming = isRenaming,
+                        renameName = renameName,
+                        suggestions = suggestionList,
+                        onRenameNameChange = { renameName = it },
+                        onCancelRename = { isRenaming = false },
+                        onSaveRename = {
+                            val newName = renameName.text.trim()
+                            if (newName.isNotBlank()) {
+                                if (suggestionList.contains(newName) && newName != filterValue) {
+                                    pendingRenameName = newName
+                                    showMergeWarningDialog = true
+                                } else {
+                                    onRenameFilterItem(newName)
+                                    isRenaming = false
+                                }
+                            } else {
+                                isRenaming = false
+                            }
+                        },
+                        onNavigateBack = onNavigateBack,
+                        onFilterClick = { showFilterSheet = true },
+                        onMenuToggle = { showMenu = !showMenu },
+                        onMenuDismiss = { showMenu = false },
+                        onRenameClick = {
+                            showMenu = false
+                            renameName = TextFieldValue(
+                                text = filterValue,
+                                selection = TextRange(filterValue.length)
+                            )
+                            isRenaming = true
+                        },
+                        onDeleteClick = {
+                            showMenu = false
+                            showDeleteConfirm = true
+                        },
+                        scrollBehavior = scrollBehavior
+                    )
+                }
             )
         }
     ) { innerPadding ->
@@ -233,7 +284,18 @@ private fun FilterResultContent(
             books = books,
             layoutMode = uiState.bookPreferences.layoutMode,
             innerPadding = innerPadding,
-            onNavigateToReader = onNavigateToReader,
+            selectedBooks = selectedBooks,
+            onBookClick = { bookId ->
+                if (selectedBooks.isNotEmpty()) {
+                    selectedBooks = if (selectedBooks.contains(bookId)) {
+                        selectedBooks - bookId
+                    } else {
+                        selectedBooks + bookId
+                    }
+                } else {
+                    onNavigateToReader(bookId)
+                }
+            },
             onBookLongClick = { selectedBookContext = it to null },
             scrollKey = Triple(
                 uiState.bookPreferences.sortType,
@@ -266,7 +328,10 @@ private fun FilterResultContent(
         onToggleReadStatus = onToggleReadStatus,
         onRemoveFromShelf = onRemoveFromShelf,
         onNavigateToAddToShelf = onNavigateToAddToShelf,
-        onDeleteBook = onDeleteBook
+        onDeleteBook = onDeleteBook,
+        onEnterMultiSelect = { bookId ->
+            selectedBooks = setOf(bookId)
+        }
     )
 
     if (showMergeWarningDialog) {
@@ -571,7 +636,8 @@ private fun FilterResultBookContent(
     books: List<Book>,
     layoutMode: com.example.readerapp.ui.features.library.LayoutMode,
     innerPadding: PaddingValues,
-    onNavigateToReader: (String) -> Unit,
+    selectedBooks: Set<String>,
+    onBookClick: (String) -> Unit,
     onBookLongClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     scrollKey: Any? = null
@@ -591,8 +657,9 @@ private fun FilterResultBookContent(
             BookCollection(
                 books = books,
                 layoutMode = layoutMode,
-                onBookClick = onNavigateToReader,
+                onBookClick = onBookClick,
                 onBookLongClick = onBookLongClick,
+                selectedBooks = selectedBooks,
                 scrollKey = scrollKey
             )
         }
@@ -620,7 +687,8 @@ private fun FilterResultDialogsAndSheets(
     onToggleReadStatus: (String) -> Unit,
     onRemoveFromShelf: (String, String) -> Unit,
     onNavigateToAddToShelf: (String) -> Unit,
-    onDeleteBook: (String) -> Unit
+    onDeleteBook: (String) -> Unit,
+    onEnterMultiSelect: (String) -> Unit
 ) {
     if (showFilterSheet) {
         FilterResultBottomSheet(
@@ -649,6 +717,7 @@ private fun FilterResultDialogsAndSheets(
             },
             onAddToShelf = onNavigateToAddToShelf,
             onDeleteBook = { onDeleteBook(bookId) },
+            onEnterMultiSelect = { onEnterMultiSelect(bookId) },
             onDismiss = onBookMenuDismiss
         )
     }

@@ -22,17 +22,23 @@ class SelectShelfViewModel(
             initialValue = emptyList()
         )
 
-    fun addBookToShelf(shelfId: String, bookId: String, onComplete: () -> Unit) {
+    fun addBooksToShelf(shelfId: String, bookIdsStr: String, onComplete: () -> Unit) {
         viewModelScope.launch {
-            bookRepository.addBookToShelf(shelfId, bookId)
+            val ids = bookIdsStr.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+            ids.forEach { bookId ->
+                bookRepository.addBookToShelf(shelfId, bookId)
+            }
             onComplete()
         }
     }
 
-    fun createShelfAndAddBook(name: String, bookId: String, onComplete: () -> Unit) {
+    fun createShelfAndAddBooks(name: String, bookIdsStr: String, onComplete: () -> Unit) {
         viewModelScope.launch {
             val shelfId = bookRepository.createShelf(name)
-            bookRepository.addBookToShelf(shelfId, bookId)
+            val ids = bookIdsStr.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+            ids.forEach { bookId ->
+                bookRepository.addBookToShelf(shelfId, bookId)
+            }
             onComplete()
         }
     }

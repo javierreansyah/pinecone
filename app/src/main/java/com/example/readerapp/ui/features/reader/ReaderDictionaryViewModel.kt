@@ -18,7 +18,8 @@ import kotlinx.coroutines.launch
 data class DefinitionState(
     val showDefinition: Boolean = false,
     val definitionWord: String = "",
-    val definitionResults: List<DictionaryEntry> = emptyList()
+    val definitionResults: List<DictionaryEntry> = emptyList(),
+    val wordHistory: List<Pair<String, List<DictionaryEntry>>> = emptyList()
 )
 
 class ReaderDictionaryViewModel(
@@ -29,23 +30,49 @@ class ReaderDictionaryViewModel(
     private val _definitionState = MutableStateFlow(DefinitionState())
     val definitionState: StateFlow<DefinitionState> = _definitionState.asStateFlow()
 
-    fun lookupDefinition(word: String) {
+    fun lookupDefinition(word: String, clearHistory: Boolean = false) {
         val cleanWord = word.trim().replace(Regex("[^\\w\\s-]"), "")
         if (cleanWord.isBlank()) return
 
         viewModelScope.launch {
             val activeDictId = readerPreferences.readerSettings.first().activeDictionaryId
             val results = dictionaryRepository.lookupWord(activeDictId, cleanWord)
-            _definitionState.update {
-                it.copy(
-                    showDefinition = true, definitionWord = cleanWord, definitionResults = results
+            _definitionState.update { state ->
+                val newHistory = if (clearHistory) {
+                    emptyList()
+                } else if (state.showDefinition && state.definitionWord.isNotBlank() && cleanWord != state.definitionWord) {
+                    state.wordHistory + (state.definitionWord to state.definitionResults)
+                } else {
+                    state.wordHistory
+                }
+                
+                state.copy(
+                    showDefinition = true, 
+                    definitionWord = cleanWord, 
+                    definitionResults = results,
+                    wordHistory = newHistory
                 )
             }
         }
     }
 
+    fun popDefinition() {
+        _definitionState.update { state ->
+            if (state.wordHistory.isNotEmpty()) {
+                val previous = state.wordHistory.last()
+                state.copy(
+                    definitionWord = previous.first,
+                    definitionResults = previous.second,
+                    wordHistory = state.wordHistory.dropLast(1)
+                )
+            } else {
+                state
+            }
+        }
+    }
+
     fun hideDefinition() {
-        _definitionState.update { it.copy(showDefinition = false) }
+        _definitionState.update { it.copy(showDefinition = false, wordHistory = emptyList()) }
     }
 
     class Factory(

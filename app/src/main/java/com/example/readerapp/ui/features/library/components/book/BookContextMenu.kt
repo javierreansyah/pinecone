@@ -35,12 +35,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Archive
-import com.composables.icons.materialsymbols.outlined.Bookmark_add
 import com.composables.icons.materialsymbols.outlined.Bookmark_remove
 import com.composables.icons.materialsymbols.outlined.Check_circle
 import com.composables.icons.materialsymbols.outlined.Delete
+import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Info
 import com.composables.icons.materialsymbols.outlined.Radio_button_unchecked
+import com.composables.icons.materialsymbols.outlined.Select
 import com.example.readerapp.R
 import com.example.readerapp.data.model.Book
 
@@ -56,6 +57,8 @@ fun BookContextMenu(
     onRemoveFromShelf: () -> Unit,
     onAddToShelf: (String) -> Unit,
     onDeleteBook: () -> Unit,
+    showSelectMultiple: Boolean = true,
+    onEnterMultiSelect: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
     var showDeleteConfirmation by remember { mutableStateOf(false) }
@@ -130,6 +133,26 @@ fun BookContextMenu(
                     onDismiss()
                 })
 
+            if (showSelectMultiple) {
+                ListItem(
+                    headlineContent = {
+                        Text(
+                            stringResource(R.string.action_select_multiple), // Need to define or use something
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    },
+                    leadingContent = {
+                        Icon(
+                            MaterialSymbols.Outlined.Select, contentDescription = null
+                        )
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    modifier = Modifier.clickable {
+                        onEnterMultiSelect()
+                        onDismiss()
+                    })
+            }
+
             ListItem(
                 headlineContent = {
                     val labelText =
@@ -158,7 +181,7 @@ fun BookContextMenu(
                 },
                 leadingContent = {
                     Icon(
-                        MaterialSymbols.Outlined.Bookmark_add, contentDescription = null
+                        MaterialSymbols.Outlined.Folder, contentDescription = null
                     )
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),

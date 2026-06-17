@@ -10,6 +10,8 @@
     <string name="action_edit">Edit</string>
     <string name="action_read">Read</string>
     <string name="action_more">More</string>
+    <string name="action_select_multiple">Select multiple</string>
+    <string name="action_select_all">Select all</string>
 
     <string name="action_search">Search</string>
     <string name="action_clear">Clear</string>
