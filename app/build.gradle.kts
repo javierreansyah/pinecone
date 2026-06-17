@@ -111,6 +111,6 @@ dependencies {
     coreLibraryDesugaring(libs.desugar.jdk)
     debugImplementation(libs.androidx.compose.ui.tooling)
     //noinspection UseTomlInstead
-    implementation("androidx.compose.ui:ui-text-google-fonts:1.11.2")
+    implementation("androidx.compose.ui:ui-text-google-fonts:1.11.3")
     implementation(libs.kotlinx.serialization.json)
 }

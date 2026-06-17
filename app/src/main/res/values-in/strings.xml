@@ -11,6 +11,8 @@
     <string name="action_edit">Edit</string>
     <string name="action_read">Baca</string>
     <string name="action_more">Lainnya</string>
+    <string name="action_select_multiple">Pilih beberapa</string>
+    <string name="action_select_all">Pilih Semua</string>
 
     <string name="action_search">Cari</string>
     <string name="action_clear">Bersihkan</string>

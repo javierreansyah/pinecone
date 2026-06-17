@@ -8,13 +8,11 @@ import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -774,9 +772,11 @@ private fun ReaderDefinitionBottomSheet(
                     modifier = Modifier.padding(horizontal = 24.dp)
                 )
             } else {
-                Box(modifier = Modifier
-                    .weight(1f, fill = false)
-                    .fillMaxWidth()) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .fillMaxWidth()
+                ) {
                     val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
 
                     AnimatedContent(
@@ -817,10 +817,12 @@ private fun ReaderDefinitionBottomSheet(
                         }
                     }
 
-                    Box(modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(end = 16.dp)) {
-                        androidx.compose.animation.AnimatedVisibility(
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(end = 16.dp)
+                    ) {
+                        this@Column.AnimatedVisibility(
                             visible = historySize > 0,
                             enter = fadeIn(animationSpec = actionsEffectsSpec),
                             exit = fadeOut(animationSpec = actionsEffectsSpec)

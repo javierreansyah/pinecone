@@ -45,10 +45,10 @@ class ReaderDictionaryViewModel(
                 } else {
                     state.wordHistory
                 }
-                
+
                 state.copy(
-                    showDefinition = true, 
-                    definitionWord = cleanWord, 
+                    showDefinition = true,
+                    definitionWord = cleanWord,
                     definitionResults = results,
                     wordHistory = newHistory
                 )
