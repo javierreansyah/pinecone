@@ -95,9 +95,6 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import com.example.readerapp.ui.components.HtmlPreset
-import com.example.readerapp.ui.components.HtmlWebView
-import com.example.readerapp.ui.components.HtmlWebViewConfig
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -125,6 +122,9 @@ import com.example.readerapp.data.local.database.library.BookmarkEntity
 import com.example.readerapp.data.local.database.library.NoteEntity
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.components.EmptyState
+import com.example.readerapp.ui.components.HtmlPreset
+import com.example.readerapp.ui.components.HtmlWebView
+import com.example.readerapp.ui.components.HtmlWebViewConfig
 import com.example.readerapp.ui.components.SegmentedColumn
 import com.example.readerapp.ui.features.library.components.ShelfListItem
 import com.example.readerapp.ui.features.reader.ReaderActivity
@@ -501,8 +501,6 @@ private fun BookInfoContent(
                 onToggleArchive = { viewModel.toggleArchive() },
                 onDeleteClick = showDeleteConfirm
             )
-
-            Spacer(modifier = Modifier.height(24.dp))
 
             val pagerState = rememberPagerState(pageCount = { 4 })
             val coroutineScope = rememberCoroutineScope()
@@ -1307,8 +1305,8 @@ private fun BookHeaderDetails(
                                 )
                             },
                             colors = SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                labelColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant
                             ),
                             border = null
                         )
@@ -1581,7 +1579,6 @@ private fun BookInfoTopButtons(
         }
     }
 }
-
 
 
 private fun formatPublishedDate(dateString: String?, defaultValue: String): String {
