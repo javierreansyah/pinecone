@@ -377,7 +377,6 @@ class ReaderViewModel(
     }
 
     override fun onCleared() {
-        super.onCleared()
         closeBook()
     }
 

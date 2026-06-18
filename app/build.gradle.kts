@@ -63,6 +63,7 @@ android {
     }
 }
 
+@Suppress("UnstableApiUsage")
 androidComponents {
     onVariants { variant ->
         val outputName = when (variant.name) {
