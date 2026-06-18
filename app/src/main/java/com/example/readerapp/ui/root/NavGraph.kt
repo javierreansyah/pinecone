@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
@@ -71,9 +72,10 @@ fun NavGraph(
         }
     }
 
-    // Exclude the top-left area where the app bar back button sits from the system's edge swipe.
+    // Exclude the top area from the system's edge swipe.
     // This prevents the user's thumb from accidentally starting a predictive back gesture while clicking.
-    val exclusionWidth = with(density) { 60.dp.toPx() }
+    val windowInfo = LocalWindowInfo.current
+    val exclusionWidth = windowInfo.containerSize.width.toFloat()
     val exclusionHeight = with(density) { 120.dp.toPx() }
 
     val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()

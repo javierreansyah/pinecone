@@ -1,3 +1,5 @@
+@file:Suppress("SameReturnValue")
+
 package com.example.readerapp.ui.components
 
 import android.annotation.SuppressLint

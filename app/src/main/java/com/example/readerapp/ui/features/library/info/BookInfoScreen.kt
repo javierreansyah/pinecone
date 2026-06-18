@@ -1,3 +1,5 @@
+@file:Suppress("unused", "RedundantSuppression")
+
 package com.example.readerapp.ui.features.library.info
 
 import android.app.Application
