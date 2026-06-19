@@ -165,7 +165,6 @@ private fun SearchResultsContent(
                     val book = booksToShow.find { it.id == id }
                     if (book != null) onBookClick(book)
                 },
-                onBookLongClick = {},
                 scrollKey = results,
                 headerContent = {
                     SectionHeader(
@@ -378,7 +377,7 @@ private fun SearchFilterItem(
 private fun BookCollection(
     books: List<Book>,
     onBookClick: (String) -> Unit,
-    onBookLongClick: (String) -> Unit,
+    onBookLongClick: ((String) -> Unit)? = null,
     scrollKey: Any? = null,
     headerContent: @Composable (() -> Unit)? = null
 ) {
@@ -408,7 +407,7 @@ private fun BookCollection(
                 BookItem(
                     book = book,
                     onClick = { onBookClick(book.id) },
-                    onLongClick = { onBookLongClick(book.id) },
+                    onLongClick = onBookLongClick?.let { { it(book.id) } },
                 )
             }
         }

@@ -35,6 +35,7 @@ import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Delete
 import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Select_all
+import com.composables.icons.materialsymbols.outlined.Deselect
 import com.composables.icons.materialsymbols.outlined.Unarchive
 import com.example.readerapp.R
 
@@ -42,7 +43,9 @@ import com.example.readerapp.R
 @Composable
 fun MultiSelectAppBar(
     selectedCount: Int,
+    isAllSelected: Boolean,
     showMarkAsRead: Boolean,
+    onCloseMultiSelect: () -> Unit,
     onClearSelection: () -> Unit,
     onSelectAll: () -> Unit,
     onMarkAsReadUnread: () -> Unit,
@@ -59,7 +62,7 @@ fun MultiSelectAppBar(
             Text(text = "$selectedCount")
         },
         navigationIcon = {
-            IconButton(onClick = onClearSelection) {
+            IconButton(onClick = onCloseMultiSelect) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Close,
                     contentDescription = stringResource(R.string.action_cancel)
@@ -67,13 +70,21 @@ fun MultiSelectAppBar(
             }
         },
         actions = {
-            IconButton(onClick = onSelectAll) {
+            IconButton(onClick = {
+                if (isAllSelected) {
+                    onClearSelection()
+                } else {
+                    onSelectAll()
+                }
+            }) {
                 Icon(
-                    imageVector = MaterialSymbols.Outlined.Select_all,
-                    contentDescription = stringResource(R.string.action_select_all)
+                    imageVector = if (isAllSelected) MaterialSymbols.Outlined.Deselect else MaterialSymbols.Outlined.Select_all,
+                    contentDescription = stringResource(
+                        if (isAllSelected) R.string.action_deselect_all else R.string.action_select_all
+                    )
                 )
             }
-            IconButton(onClick = onMarkAsReadUnread) {
+            IconButton(onClick = onMarkAsReadUnread, enabled = selectedCount > 0) {
                 if (showMarkAsRead) {
                     Icon(
                         imageVector = MaterialSymbols.Outlined.Check_circle,
@@ -86,13 +97,13 @@ fun MultiSelectAppBar(
                     )
                 }
             }
-            IconButton(onClick = onAddToShelf) {
+            IconButton(onClick = onAddToShelf, enabled = selectedCount > 0) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Folder,
                     contentDescription = stringResource(R.string.library_label_add_to_shelf)
                 )
             }
-            IconButton(onClick = onArchive) {
+            IconButton(onClick = onArchive, enabled = selectedCount > 0) {
                 if (isUnarchive) {
                     Icon(
                         imageVector = MaterialSymbols.Outlined.Unarchive,
@@ -105,11 +116,11 @@ fun MultiSelectAppBar(
                     )
                 }
             }
-            IconButton(onClick = { showDeleteConfirmation = true }) {
+            IconButton(onClick = { showDeleteConfirmation = true }, enabled = selectedCount > 0) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Delete,
                     contentDescription = stringResource(R.string.action_delete),
-                    tint = MaterialTheme.colorScheme.error
+                    tint = if (selectedCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                 )
             }
         },

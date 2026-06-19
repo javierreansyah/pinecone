@@ -8,9 +8,12 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -49,7 +53,11 @@ fun ShelvesPage(
     onBookClick: (String) -> Unit,
     onBookLongClick: ((String, String) -> Unit)? = null,
     layoutMode: LayoutMode = LayoutMode.BigList,
-    scrollKey: Any? = null
+    scrollKey: Any? = null,
+    isInMultiSelectMode: Boolean = false,
+    selectedShelves: Set<String> = emptySet(),
+    onShelfLongClick: ((String) -> Unit)? = null,
+    onShelfToggleSelect: ((String) -> Unit)? = null
 ) {
 
     key(scrollKey) {
@@ -83,15 +91,25 @@ fun ShelvesPage(
                             val visibleBooks = shelfWithCovers.books
                             val booksCount = visibleBooks.size
 
+                            val isUnshelved = shelfWithCovers.shelf.id == "unshelved"
+                            val isItemSelectable = !isUnshelved
+                            val itemInMultiSelectMode = isInMultiSelectMode && isItemSelectable
+
                             if (targetLayoutMode == LayoutMode.List) {
                                 ShelfListItem(
-                                    shelfWithCovers = shelfWithCovers, onClick = {
+                                    shelfWithCovers = shelfWithCovers, 
+                                    onClick = {
                                         onShelfClick(
                                             shelfWithCovers.shelf.id,
                                             shelfWithCovers.shelf.name,
                                             booksCount
                                         )
-                                    })
+                                    },
+                                    isInMultiSelectMode = itemInMultiSelectMode,
+                                    isSelected = selectedShelves.contains(shelfWithCovers.shelf.id),
+                                    onLongClick = if (isItemSelectable) { { onShelfLongClick?.invoke(shelfWithCovers.shelf.id) } } else null,
+                                    onToggleSelect = if (isItemSelectable) { { onShelfToggleSelect?.invoke(shelfWithCovers.shelf.id) } } else null
+                                )
                             } else {
                                 ShelfRowItem(
                                     shelfWithCovers = shelfWithCovers,
@@ -99,7 +117,11 @@ fun ShelvesPage(
                                     visibleBooks = visibleBooks,
                                     onShelfClick = onShelfClick,
                                     onBookClick = onBookClick,
-                                    onBookLongClick = onBookLongClick
+                                    onBookLongClick = onBookLongClick,
+                                    isInMultiSelectMode = itemInMultiSelectMode,
+                                    isSelected = selectedShelves.contains(shelfWithCovers.shelf.id),
+                                    onLongClick = if (isItemSelectable) { { onShelfLongClick?.invoke(shelfWithCovers.shelf.id) } } else null,
+                                    onToggleSelect = if (isItemSelectable) { { onShelfToggleSelect?.invoke(shelfWithCovers.shelf.id) } } else null
                                 )
                             }
                         }
@@ -118,6 +140,7 @@ fun ShelvesPage(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ShelfRowItem(
     shelfWithCovers: ShelfWithCovers,
@@ -125,23 +148,39 @@ private fun ShelfRowItem(
     visibleBooks: List<com.example.readerapp.data.local.database.library.BookWithDetails>,
     onShelfClick: (String, String, Int) -> Unit,
     onBookClick: (String) -> Unit,
-    onBookLongClick: ((String, String) -> Unit)?
+    onBookLongClick: ((String, String) -> Unit)?,
+    isInMultiSelectMode: Boolean = false,
+    isSelected: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
+    onToggleSelect: (() -> Unit)? = null
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable {
-                onShelfClick(
-                    shelfWithCovers.shelf.id,
-                    shelfWithCovers.shelf.name,
-                    booksCount
-                )
-            }
+            .combinedClickable(
+                onClick = {
+                    if (isInMultiSelectMode && onToggleSelect != null) {
+                        onToggleSelect()
+                    } else {
+                        onShelfClick(
+                            shelfWithCovers.shelf.id,
+                            shelfWithCovers.shelf.name,
+                            booksCount
+                        )
+                    }
+                },
+                onLongClick = {
+                    onLongClick?.invoke()
+                }
+            )
             .padding(vertical = 4.dp)
     ) {
         ShelfRowHeader(
             shelfName = shelfWithCovers.shelf.name,
-            booksCount = booksCount
+            booksCount = booksCount,
+            isInMultiSelectMode = isInMultiSelectMode,
+            isSelected = isSelected,
+            onToggleSelect = onToggleSelect
         )
         ShelfBooksHorizontalRow(
             shelfId = shelfWithCovers.shelf.id,
@@ -155,26 +194,37 @@ private fun ShelfRowItem(
 @Composable
 private fun ShelfRowHeader(
     shelfName: String,
-    booksCount: Int
+    booksCount: Int,
+    isInMultiSelectMode: Boolean = false,
+    isSelected: Boolean = false,
+    onToggleSelect: (() -> Unit)? = null
 ) {
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .padding(bottom = 2.dp)
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = shelfName,
-            style = MaterialTheme.typography.titleMediumEmphasized
-        )
-        val countText = pluralStringResource(
-            R.plurals.library_shelf_count, booksCount, booksCount
-        )
-        Text(
-            text = countText,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.primary
-        )
+        Column(modifier = Modifier.weight(1f).padding(vertical = 2.dp)) {
+            Text(
+                text = shelfName,
+                style = MaterialTheme.typography.titleMediumEmphasized
+            )
+            val countText = pluralStringResource(
+                R.plurals.library_shelf_count, booksCount, booksCount
+            )
+            Text(
+                text = countText,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+        if (isInMultiSelectMode) {
+            Checkbox(
+                checked = isSelected,
+                onCheckedChange = { onToggleSelect?.invoke() }
+            )
+        }
     }
 }
 
@@ -210,9 +260,7 @@ private fun ShelfBooksHorizontalRow(
                 BookItem(
                     book = book,
                     onClick = { onBookClick(book.id) },
-                    onLongClick = {
-                        onBookLongClick?.invoke(book.id, shelfId)
-                    },
+                    onLongClick = onBookLongClick?.let { { it(book.id, shelfId) } },
                     modifier = Modifier.width(120.dp)
                 )
             }

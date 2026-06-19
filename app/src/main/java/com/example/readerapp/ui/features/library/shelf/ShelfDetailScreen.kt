@@ -1,5 +1,6 @@
 package com.example.readerapp.ui.features.library.shelf
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -77,6 +78,7 @@ import com.composables.icons.materialsymbols.outlined.Drag_handle
 import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Format_list_numbered
 import com.composables.icons.materialsymbols.outlined.More_vert
+import com.composables.icons.materialsymbols.outlined.Select
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.example.readerapp.R
 import com.example.readerapp.data.local.database.library.ShelfWithCovers
@@ -116,6 +118,7 @@ fun ShelfDetailScreen(
     var renameName by remember { mutableStateOf(TextFieldValue("")) }
     var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
     var selectedBooks by remember { mutableStateOf(emptySet<String>()) }
+    var isInMultiSelectMode by remember { mutableStateOf(false) }
 
     val shelves by viewModel.shelves.collectAsState()
     val allBooks by viewModel.allBooks.collectAsState()
@@ -138,22 +141,36 @@ fun ShelfDetailScreen(
         ?: initialShelfName.ifEmpty { stringResource(R.string.library_tab_shelves) }
     val displayCount = shelfWithCovers?.books?.size ?: initialBookCount
 
+    val isMultiSelect = isInMultiSelectMode
+
+    BackHandler(enabled = isMultiSelect) {
+        selectedBooks = emptySet()
+        isInMultiSelectMode = false
+    }
+
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
+        modifier = if (isMultiSelect) Modifier else Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
             MultiSelectTopBarTransition(
-                isMultiSelect = selectedBooks.isNotEmpty(),
+                isMultiSelect = isMultiSelect,
                 multiSelectBar = {
                     val showMarkAsRead = allBooks
                         .filter { it.id in selectedBooks }
                         .any { !it.isRead }
                     MultiSelectAppBar(
                         selectedCount = selectedBooks.size,
+                        isAllSelected = selectedBooks.size == books.size,
                         showMarkAsRead = showMarkAsRead,
+                        onCloseMultiSelect = {
+                            selectedBooks = emptySet()
+                            isInMultiSelectMode = false
+                        },
                         onClearSelection = { selectedBooks = emptySet() },
                         onSelectAll = { selectedBooks = books.map { it.id }.toSet() },
                         onMarkAsReadUnread = {
                             val booksToProcess = selectedBooks.toList()
                             selectedBooks = emptySet()
+                            isInMultiSelectMode = false
                             booksToProcess.forEach { bookId ->
                                 val book = allBooks.find { it.id == bookId }
                                 if (book != null && book.isRead != showMarkAsRead) {
@@ -164,11 +181,13 @@ fun ShelfDetailScreen(
                         onAddToShelf = {
                             val ids = selectedBooks.joinToString(",")
                             selectedBooks = emptySet()
+                            isInMultiSelectMode = false
                             onNavigateToAddToShelf(ids)
                         },
                         onArchive = {
                             val booksToProcess = selectedBooks.toList()
                             selectedBooks = emptySet()
+                            isInMultiSelectMode = false
                             booksToProcess.forEach { bookId ->
                                 val book = allBooks.find { it.id == bookId }
                                 if (book != null && !book.isArchived) {
@@ -179,6 +198,7 @@ fun ShelfDetailScreen(
                         onDelete = {
                             val booksToProcess = selectedBooks.toList()
                             selectedBooks = emptySet()
+                            isInMultiSelectMode = false
                             booksToProcess.forEach { viewModel.deleteBook(it) }
                         }
                     )
@@ -223,7 +243,8 @@ fun ShelfDetailScreen(
                             )
                             isRenaming = true
                         },
-                        onDeleteClick = { showDeleteDialog = true }
+                        onDeleteClick = { showDeleteDialog = true },
+                        onEnterMultiSelect = { isInMultiSelectMode = true }
                     )
                 }
             )
@@ -236,9 +257,10 @@ fun ShelfDetailScreen(
             isReordering = isReordering,
             layoutMode = uiState.bookPreferences.layoutMode,
             selectedBooks = selectedBooks,
+            isInMultiSelectMode = isInMultiSelectMode,
             onReorderBooksChange = { reorderBooks = it },
             onBookClick = { bookId ->
-                if (selectedBooks.isNotEmpty()) {
+                if (isInMultiSelectMode) {
                     selectedBooks = if (selectedBooks.contains(bookId)) {
                         selectedBooks - bookId
                     } else {
@@ -289,6 +311,7 @@ fun ShelfDetailScreen(
             onDeleteBook = { viewModel.deleteBook(bookId) },
             onEnterMultiSelect = {
                 selectedBooks = setOf(bookId)
+                isInMultiSelectMode = true
             },
             onDismiss = { selectedBookForMenu = null })
     }
@@ -314,6 +337,7 @@ private fun ShelfDetailTopAppBar(
     onShowFilterSheet: () -> Unit,
     onRenameClick: () -> Unit,
     onDeleteClick: () -> Unit,
+    onEnterMultiSelect: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showMoreMenu by remember { mutableStateOf(false) }
@@ -458,29 +482,45 @@ private fun ShelfDetailTopAppBar(
                                 contentDescription = stringResource(R.string.action_filter)
                             )
                         }
-                        if (shelfId != "unshelved") {
-                            Box {
-                                IconButton(
-                                    shapes = IconButtonDefaults.shapes(),
-                                    onClick = { showMoreMenu = true }) {
-                                    Icon(
-                                        MaterialSymbols.Outlined.More_vert,
-                                        contentDescription = stringResource(R.string.action_more)
-                                    )
-                                }
-                                DropdownMenuPopup(
-                                    expanded = showMoreMenu,
-                                    onDismissRequest = { showMoreMenu = false }) {
-                                    val groupInteractionSource =
-                                        remember { MutableInteractionSource() }
-                                    DropdownMenuGroup(
-                                        shapes = MenuDefaults.groupShape(0, 1),
-                                        interactionSource = groupInteractionSource,
-                                    ) {
+                        Box {
+                            IconButton(
+                                shapes = IconButtonDefaults.shapes(),
+                                onClick = { showMoreMenu = true }) {
+                                Icon(
+                                    MaterialSymbols.Outlined.More_vert,
+                                    contentDescription = stringResource(R.string.action_more)
+                                )
+                            }
+                            val totalItems = if (shelfId == "unshelved") 1 else 3
+                            DropdownMenuPopup(
+                                expanded = showMoreMenu,
+                                onDismissRequest = { showMoreMenu = false }) {
+                                val groupInteractionSource =
+                                    remember { MutableInteractionSource() }
+                                DropdownMenuGroup(
+                                    shapes = MenuDefaults.groupShape(0, 1),
+                                    interactionSource = groupInteractionSource,
+                                ) {
+                                    DropdownMenuItem(
+                                        selected = false,
+                                        text = { Text(stringResource(R.string.action_select_multiple)) },
+                                        shapes = MenuDefaults.itemShape(0, totalItems),
+                                        leadingIcon = {
+                                            Icon(
+                                                MaterialSymbols.Outlined.Select,
+                                                modifier = Modifier.size(MenuDefaults.LeadingIconSize),
+                                                contentDescription = null,
+                                            )
+                                        },
+                                        onClick = {
+                                            onEnterMultiSelect()
+                                            showMoreMenu = false
+                                        })
+                                    if (shelfId != "unshelved") {
                                         DropdownMenuItem(
                                             selected = false,
                                             text = { Text(stringResource(R.string.action_rename)) },
-                                            shapes = MenuDefaults.itemShape(0, 2),
+                                            shapes = MenuDefaults.itemShape(1, totalItems),
                                             leadingIcon = {
                                                 Icon(
                                                     MaterialSymbols.Outlined.Edit,
@@ -500,7 +540,7 @@ private fun ShelfDetailTopAppBar(
                                                     color = MaterialTheme.colorScheme.error
                                                 )
                                             },
-                                            shapes = MenuDefaults.itemShape(1, 2),
+                                            shapes = MenuDefaults.itemShape(2, totalItems),
                                             leadingIcon = {
                                                 Icon(
                                                     MaterialSymbols.Outlined.Delete,
@@ -535,6 +575,7 @@ private fun ShelfDetailContent(
     isReordering: Boolean,
     layoutMode: LayoutMode,
     selectedBooks: Set<String>,
+    isInMultiSelectMode: Boolean,
     onReorderBooksChange: (List<Book>) -> Unit,
     onBookClick: (String) -> Unit,
     onBookLongClick: (String) -> Unit,
@@ -633,6 +674,7 @@ private fun ShelfDetailContent(
                         onBookClick = onBookClick,
                         onBookLongClick = onBookLongClick,
                         selectedBooks = selectedBooks,
+                        isInMultiSelectMode = isInMultiSelectMode,
                         scrollKey = scrollKey
                     )
                 }

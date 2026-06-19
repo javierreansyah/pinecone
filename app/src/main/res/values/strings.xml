@@ -9,8 +9,9 @@
     <string name="action_edit">Edit</string>
     <string name="action_read">Read</string>
     <string name="action_more">More</string>
-    <string name="action_select_multiple">Select multiple</string>
+    <string name="action_select_multiple">Select Multiple</string>
     <string name="action_select_all">Select all</string>
+    <string name="action_deselect_all">Deselect all</string>
 
     <string name="action_search">Search</string>
     <string name="action_clear">Clear</string>
@@ -45,6 +46,7 @@
     <string name="library_view_all">View all %s</string>
     <string name="library_delete_shelf_title">Delete Shelf</string>
     <string name="library_delete_shelf_message">Are you sure you want to delete \'%s\'? The books inside will not be deleted.</string>
+    <string name="library_delete_shelves_message">Are you sure you want to delete %d shelves? The books inside will not be deleted.</string>
     <string name="library_shelf_name_label">Shelf Name</string>
     <string name="library_create_shelf_title">Create New Shelf</string>
     <string name="library_select_shelf_title">Select Shelf</string>

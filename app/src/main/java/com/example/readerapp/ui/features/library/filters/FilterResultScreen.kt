@@ -1,5 +1,6 @@
 package com.example.readerapp.ui.features.library.filters
 
+import androidx.activity.compose.BackHandler
 import android.app.Application
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
@@ -68,6 +69,7 @@ import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Delete
 import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.More_vert
+import com.composables.icons.materialsymbols.outlined.Select
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.example.readerapp.R
 import com.example.readerapp.data.model.Book
@@ -184,26 +186,40 @@ private fun FilterResultContent(
     var showMergeWarningDialog by remember { mutableStateOf(false) }
     var pendingRenameName by remember { mutableStateOf("") }
     var selectedBooks by remember { mutableStateOf(emptySet<String>()) }
+    var isInMultiSelectMode by remember { mutableStateOf(false) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
+    val isMultiSelect = isInMultiSelectMode
+
+    BackHandler(enabled = isMultiSelect) {
+        selectedBooks = emptySet()
+        isInMultiSelectMode = false
+    }
+
     Scaffold(
-        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = if (isMultiSelect) modifier else modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             MultiSelectTopBarTransition(
-                isMultiSelect = selectedBooks.isNotEmpty(),
+                isMultiSelect = isMultiSelect,
                 multiSelectBar = {
                     val showMarkAsRead = allBooks
                         .filter { it.id in selectedBooks }
                         .any { !it.isRead }
                     MultiSelectAppBar(
                         selectedCount = selectedBooks.size,
+                        isAllSelected = selectedBooks.size == books.size,
                         showMarkAsRead = showMarkAsRead,
+                        onCloseMultiSelect = {
+                            selectedBooks = emptySet()
+                            isInMultiSelectMode = false
+                        },
                         onClearSelection = { selectedBooks = emptySet() },
                         onSelectAll = { selectedBooks = books.map { it.id }.toSet() },
                         onMarkAsReadUnread = {
                             val booksToProcess = selectedBooks.toList()
                             selectedBooks = emptySet()
+                            isInMultiSelectMode = false
                             booksToProcess.forEach { bookId ->
                                 val book = allBooks.find { it.id == bookId }
                                 if (book != null && book.isRead != showMarkAsRead) {
@@ -214,11 +230,13 @@ private fun FilterResultContent(
                         onAddToShelf = {
                             val ids = selectedBooks.joinToString(",")
                             selectedBooks = emptySet()
+                            isInMultiSelectMode = false
                             onNavigateToAddToShelf(ids)
                         },
                         onArchive = {
                             val booksToProcess = selectedBooks.toList()
                             selectedBooks = emptySet()
+                            isInMultiSelectMode = false
                             booksToProcess.forEach { bookId ->
                                 val book = allBooks.find { it.id == bookId }
                                 if (book != null && !book.isArchived) {
@@ -229,6 +247,7 @@ private fun FilterResultContent(
                         onDelete = {
                             val booksToProcess = selectedBooks.toList()
                             selectedBooks = emptySet()
+                            isInMultiSelectMode = false
                             booksToProcess.forEach { onDeleteBook(it) }
                         }
                     )
@@ -272,6 +291,7 @@ private fun FilterResultContent(
                             showMenu = false
                             showDeleteConfirm = true
                         },
+                        onEnterMultiSelect = { isInMultiSelectMode = true },
                         scrollBehavior = scrollBehavior
                     )
                 }
@@ -283,8 +303,9 @@ private fun FilterResultContent(
             layoutMode = uiState.bookPreferences.layoutMode,
             innerPadding = innerPadding,
             selectedBooks = selectedBooks,
+            isInMultiSelectMode = isInMultiSelectMode,
             onBookClick = { bookId ->
-                if (selectedBooks.isNotEmpty()) {
+                if (isInMultiSelectMode) {
                     selectedBooks = if (selectedBooks.contains(bookId)) {
                         selectedBooks - bookId
                     } else {
@@ -329,6 +350,7 @@ private fun FilterResultContent(
         onDeleteBook = onDeleteBook,
         onEnterMultiSelect = { bookId ->
             selectedBooks = setOf(bookId)
+            isInMultiSelectMode = true
         }
     )
 
@@ -374,6 +396,7 @@ private fun FilterResultTopAppBar(
     onMenuDismiss: () -> Unit,
     onRenameClick: () -> Unit,
     onDeleteClick: () -> Unit,
+    onEnterMultiSelect: () -> Unit,
     scrollBehavior: androidx.compose.material3.TopAppBarScrollBehavior,
     modifier: Modifier = Modifier
 ) {
@@ -547,8 +570,24 @@ private fun FilterResultTopAppBar(
                                     ) {
                                         DropdownMenuItem(
                                             selected = false,
+                                            text = { Text(stringResource(R.string.action_select_multiple)) },
+                                            shapes = MenuDefaults.itemShape(0, 3),
+                                            leadingIcon = {
+                                                Icon(
+                                                    MaterialSymbols.Outlined.Select,
+                                                    modifier = Modifier.size(MenuDefaults.LeadingIconSize),
+                                                    contentDescription = null
+                                                )
+                                            },
+                                            onClick = {
+                                                onEnterMultiSelect()
+                                                onMenuDismiss()
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            selected = false,
                                             text = { Text(stringResource(R.string.action_rename)) },
-                                            shapes = MenuDefaults.itemShape(0, 2),
+                                            shapes = MenuDefaults.itemShape(1, 3),
                                             leadingIcon = {
                                                 Icon(
                                                     MaterialSymbols.Outlined.Edit,
@@ -566,7 +605,7 @@ private fun FilterResultTopAppBar(
                                                     color = MaterialTheme.colorScheme.error
                                                 )
                                             },
-                                            shapes = MenuDefaults.itemShape(1, 2),
+                                            shapes = MenuDefaults.itemShape(2, 3),
                                             leadingIcon = {
                                                 Icon(
                                                     MaterialSymbols.Outlined.Delete,
@@ -635,6 +674,7 @@ private fun FilterResultBookContent(
     layoutMode: com.example.readerapp.ui.features.library.LayoutMode,
     innerPadding: PaddingValues,
     selectedBooks: Set<String>,
+    isInMultiSelectMode: Boolean,
     onBookClick: (String) -> Unit,
     onBookLongClick: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -658,6 +698,7 @@ private fun FilterResultBookContent(
                 onBookClick = onBookClick,
                 onBookLongClick = onBookLongClick,
                 selectedBooks = selectedBooks,
+                isInMultiSelectMode = isInMultiSelectMode,
                 scrollKey = scrollKey
             )
         }

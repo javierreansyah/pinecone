@@ -8,6 +8,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.Checkbox
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Check_circle
 import com.example.readerapp.R
@@ -45,14 +47,24 @@ fun BookItem(
     onLongClick: (() -> Unit)? = null,
     isList: Boolean = false,
     isSelected: Boolean = false,
+    isInMultiSelectMode: Boolean = false,
     trailingContent: @Composable (() -> Unit)? = null
 ) {
     if (isList) {
         Row(
             modifier = modifier
                 .fillMaxWidth()
-                .combinedClickable(
-                    onClick = onClick, onLongClick = onLongClick
+                .then(
+                    if (onLongClick != null) {
+                        Modifier.combinedClickable(
+                            onClick = onClick,
+                            onLongClick = onLongClick
+                        )
+                    } else {
+                        Modifier.clickable(
+                            onClick = onClick
+                        )
+                    }
                 )
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.Top,
@@ -66,6 +78,8 @@ fun BookItem(
                 BookCoverWithSelection(
                     book = book,
                     isSelected = isSelected,
+                    isInMultiSelectMode = isInMultiSelectMode,
+                    isList = true,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -104,7 +118,12 @@ fun BookItem(
                     )
                 }
             }
-            if (trailingContent != null) {
+            if (isInMultiSelectMode) {
+                Checkbox(
+                    checked = isSelected,
+                    onCheckedChange = null
+                )
+            } else if (trailingContent != null) {
                 trailingContent()
             }
         }
@@ -112,14 +131,25 @@ fun BookItem(
         Column(
             modifier = modifier
                 .clip(MaterialTheme.shapes.small)
-                .combinedClickable(
-                    onClick = onClick, onLongClick = onLongClick
+                .then(
+                    if (onLongClick != null) {
+                        Modifier.combinedClickable(
+                            onClick = onClick,
+                            onLongClick = onLongClick
+                        )
+                    } else {
+                        Modifier.clickable(
+                            onClick = onClick
+                        )
+                    }
                 )
                 .padding(8.dp)
         ) {
             BookCoverWithSelection(
                 book = book,
                 isSelected = isSelected,
+                isInMultiSelectMode = isInMultiSelectMode,
+                isList = false,
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(2f / 3f)
@@ -166,15 +196,21 @@ fun BookItem(
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun BookCoverWithSelection(book: Book, isSelected: Boolean, modifier: Modifier = Modifier) {
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+fun BookCoverWithSelection(
+    book: Book, 
+    isSelected: Boolean, 
+    isInMultiSelectMode: Boolean = false,
+    isList: Boolean = false,
+    modifier: Modifier = Modifier
+) {
+    Box(modifier = modifier, contentAlignment = Alignment.TopStart) {
         CoverImage(
             book = book,
             modifier = Modifier.fillMaxSize(),
             coverOverlay = {
                 Box(modifier = Modifier.matchParentSize()) {
                     AnimatedVisibility(
-                        visible = isSelected,
+                        visible = isSelected && !isList,
                         enter = fadeIn(),
                         exit = fadeOut(),
                         modifier = Modifier.fillMaxSize()
@@ -189,21 +225,11 @@ fun BookCoverWithSelection(book: Book, isSelected: Boolean, modifier: Modifier =
                 }
             }
         )
-        AnimatedVisibility(
-            visible = isSelected,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
-            Icon(
-                imageVector = MaterialSymbols.Outlined.Check_circle,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier
-                    .size(32.dp)
-                    .animateEnterExit(
-                        enter = scaleIn(initialScale = 0.8f),
-                        exit = scaleOut(targetScale = 0.8f)
-                    )
+        if (!isList && isInMultiSelectMode) {
+            Checkbox(
+                checked = isSelected,
+                onCheckedChange = null,
+                modifier = Modifier.padding(4.dp)
             )
         }
     }

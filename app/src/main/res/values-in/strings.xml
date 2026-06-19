@@ -10,8 +10,9 @@
     <string name="action_edit">Edit</string>
     <string name="action_read">Baca</string>
     <string name="action_more">Lainnya</string>
-    <string name="action_select_multiple">Pilih beberapa</string>
+    <string name="action_select_multiple">Pilih Beberapa</string>
     <string name="action_select_all">Pilih Semua</string>
+    <string name="action_deselect_all">Batal Pilih Semua</string>
 
     <string name="action_search">Cari</string>
     <string name="action_clear">Bersihkan</string>
@@ -35,7 +36,7 @@
     <!-- Library -->
     <string name="library_tab_books">Buku</string>
     <string name="library_tab_shelves">Rak</string>
-    <string name="library_search_placeholder">Cari di perpustakaan</string>
+    <string name="library_search_placeholder">Cari di pustaka</string>
     <string name="library_empty_books">Buku tidak ditemukan</string>
     <string name="library_empty_shelves">Rak tidak ditemukan</string>
     <string name="library_empty_shelf">Rak Kosong</string>
