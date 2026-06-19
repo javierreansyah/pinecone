@@ -85,7 +85,7 @@ private fun BookGrid(
         screenWidth >= 600.dp -> if (layoutMode == LayoutMode.BigGrid) 180.dp else 120.dp
         else -> if (layoutMode == LayoutMode.BigGrid) 150.dp else 100.dp
     }
-    
+
     val horizontalPadding = when {
         screenWidth >= 840.dp -> 24.dp
         screenWidth >= 600.dp -> 16.dp
@@ -106,7 +106,9 @@ private fun BookGrid(
             BookItem(
                 book = book,
                 onClick = { onBookClick(book.id) },
-                onLongClick = if (selectedBooks.isNotEmpty()) null else { { onBookLongClick?.invoke(book.id) } },
+                onLongClick = if (selectedBooks.isNotEmpty()) null else {
+                    { onBookLongClick?.invoke(book.id) }
+                },
                 isList = false,
                 isSelected = selectedBooks.contains(book.id),
                 isInMultiSelectMode = isInMultiSelectMode
@@ -139,7 +141,9 @@ private fun BookList(
             BookItem(
                 book = book,
                 onClick = { onBookClick(book.id) },
-                onLongClick = if (selectedBooks.isNotEmpty()) null else { { onBookLongClick?.invoke(book.id) } },
+                onLongClick = if (selectedBooks.isNotEmpty()) null else {
+                    { onBookLongClick?.invoke(book.id) }
+                },
                 isList = true,
                 isSelected = selectedBooks.contains(book.id),
                 isInMultiSelectMode = isInMultiSelectMode

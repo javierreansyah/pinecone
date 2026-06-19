@@ -51,8 +51,8 @@ import com.example.readerapp.ui.features.library.SortType
 import com.example.readerapp.ui.features.library.StatusFilter
 import com.example.readerapp.ui.features.library.components.LibraryFilterBottomSheet
 import com.example.readerapp.ui.features.library.components.MultiSelectAppBar
-import com.example.readerapp.ui.features.library.components.ShelvesMultiSelectAppBar
 import com.example.readerapp.ui.features.library.components.MultiSelectTopBarTransition
+import com.example.readerapp.ui.features.library.components.ShelvesMultiSelectAppBar
 import com.example.readerapp.ui.features.library.components.book.BookCollection
 import com.example.readerapp.ui.features.library.components.book.BookContextMenu
 import com.example.readerapp.ui.root.AppDrawer
@@ -212,13 +212,17 @@ fun LibraryScreen(
             Box(modifier = Modifier.weight(1f)) {
 
                 Scaffold(
-                    modifier = if (isInMultiSelectMode) Modifier else Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+                    modifier = if (isInMultiSelectMode) Modifier else Modifier.nestedScroll(
+                        scrollBehavior.nestedScrollConnection
+                    ),
                     topBar = {
                         MultiSelectTopBarTransition(
                             isMultiSelect = isInMultiSelectMode,
                             multiSelectBar = {
                                 if (isShelvesTab) {
-                                    val selectedShelfName = uiState.shelves.find { it.shelf.id == selectedShelves.firstOrNull() }?.shelf?.name ?: ""
+                                    val selectedShelfName =
+                                        uiState.shelves.find { it.shelf.id == selectedShelves.firstOrNull() }?.shelf?.name
+                                            ?: ""
                                     ShelvesMultiSelectAppBar(
                                         selectedCount = selectedShelves.size,
                                         isAllSelected = selectedShelves.size > 0 && selectedShelves.size == uiState.shelves.count { it.shelf.id != "unshelved" },
@@ -229,7 +233,9 @@ fun LibraryScreen(
                                         },
                                         onClearSelection = { selectedShelves = emptySet() },
                                         onSelectAll = {
-                                            selectedShelves = uiState.shelves.filter { it.shelf.id != "unshelved" }.map { it.shelf.id }.toSet()
+                                            selectedShelves =
+                                                uiState.shelves.filter { it.shelf.id != "unshelved" }
+                                                    .map { it.shelf.id }.toSet()
                                         },
                                         onRename = { newName ->
                                             val shelfId = selectedShelves.firstOrNull()
@@ -254,49 +260,50 @@ fun LibraryScreen(
                                         selectedCount = selectedBooks.size,
                                         isAllSelected = selectedBooks.size == uiState.filteredBooks.size,
                                         showMarkAsRead = showMarkAsRead,
-                                    onCloseMultiSelect = {
-                                        selectedBooks = emptySet()
-                                        isInMultiSelectMode = false
-                                    },
-                                    onClearSelection = { selectedBooks = emptySet() },
-                                    onSelectAll = {
-                                        selectedBooks = uiState.filteredBooks.map { it.id }.toSet()
-                                    },
-                                    onMarkAsReadUnread = {
-                                        val booksToProcess = selectedBooks.toList()
-                                        selectedBooks = emptySet()
-                                        isInMultiSelectMode = false
-                                        booksToProcess.forEach { bookId ->
-                                            val book = uiState.allBooks.find { it.id == bookId }
-                                            if (book != null && book.isRead != showMarkAsRead) {
-                                                toggleReadStatus(bookId)
+                                        onCloseMultiSelect = {
+                                            selectedBooks = emptySet()
+                                            isInMultiSelectMode = false
+                                        },
+                                        onClearSelection = { selectedBooks = emptySet() },
+                                        onSelectAll = {
+                                            selectedBooks =
+                                                uiState.filteredBooks.map { it.id }.toSet()
+                                        },
+                                        onMarkAsReadUnread = {
+                                            val booksToProcess = selectedBooks.toList()
+                                            selectedBooks = emptySet()
+                                            isInMultiSelectMode = false
+                                            booksToProcess.forEach { bookId ->
+                                                val book = uiState.allBooks.find { it.id == bookId }
+                                                if (book != null && book.isRead != showMarkAsRead) {
+                                                    toggleReadStatus(bookId)
+                                                }
                                             }
-                                        }
-                                    },
-                                    onAddToShelf = {
-                                        val ids = selectedBooks.joinToString(",")
-                                        selectedBooks = emptySet()
-                                        isInMultiSelectMode = false
-                                        onNavigateToAddToShelf(ids)
-                                    },
-                                    onArchive = {
-                                        val booksToProcess = selectedBooks.toList()
-                                        selectedBooks = emptySet()
-                                        isInMultiSelectMode = false
-                                        booksToProcess.forEach { bookId ->
-                                            val book = uiState.allBooks.find { it.id == bookId }
-                                            if (book != null && !book.isArchived) {
-                                                toggleArchive(bookId)
+                                        },
+                                        onAddToShelf = {
+                                            val ids = selectedBooks.joinToString(",")
+                                            selectedBooks = emptySet()
+                                            isInMultiSelectMode = false
+                                            onNavigateToAddToShelf(ids)
+                                        },
+                                        onArchive = {
+                                            val booksToProcess = selectedBooks.toList()
+                                            selectedBooks = emptySet()
+                                            isInMultiSelectMode = false
+                                            booksToProcess.forEach { bookId ->
+                                                val book = uiState.allBooks.find { it.id == bookId }
+                                                if (book != null && !book.isArchived) {
+                                                    toggleArchive(bookId)
+                                                }
                                             }
+                                        },
+                                        onDelete = {
+                                            val booksToProcess = selectedBooks.toList()
+                                            selectedBooks = emptySet()
+                                            isInMultiSelectMode = false
+                                            booksToProcess.forEach { deleteBook(it) }
                                         }
-                                    },
-                                    onDelete = {
-                                        val booksToProcess = selectedBooks.toList()
-                                        selectedBooks = emptySet()
-                                        isInMultiSelectMode = false
-                                        booksToProcess.forEach { deleteBook(it) }
-                                    }
-                                )
+                                    )
                                 }
                             },
                             defaultBar = {
@@ -332,7 +339,7 @@ fun LibraryScreen(
                         )
                     }) { innerPadding ->
                     HorizontalPager(
-                        state = pagerState, 
+                        state = pagerState,
                         userScrollEnabled = !isInMultiSelectMode,
                         modifier = Modifier
                             .padding(innerPadding)

@@ -35,6 +35,7 @@ import com.example.readerapp.R
 fun RenameFilterDialog(
     initialName: String,
     suggestions: List<String>,
+    isMergingMultiple: Boolean = false,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
@@ -90,7 +91,14 @@ fun RenameFilterDialog(
                         }
                     }
                 }
-                if (text.isNotBlank() && suggestions.contains(text) && text != initialName) {
+                if (isMergingMultiple) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Multiple items will be merged into one.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else if (text.isNotBlank() && suggestions.contains(text) && text != initialName) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = stringResource(R.string.library_warning_merge),

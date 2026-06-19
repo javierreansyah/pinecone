@@ -30,8 +30,8 @@ import com.example.readerapp.ui.features.library.components.book.CoverImage
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ShelfListItem(
-    shelfWithCovers: ShelfWithCovers, 
-    onClick: () -> Unit, 
+    shelfWithCovers: ShelfWithCovers,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
     isInMultiSelectMode: Boolean = false,
     isSelected: Boolean = false,
@@ -90,7 +90,7 @@ fun ShelfListItem(
         Column(
             modifier = Modifier
                 .height(100.dp)
-                .weight(1f), 
+                .weight(1f),
             verticalArrangement = Arrangement.Top
         ) {
             Text(

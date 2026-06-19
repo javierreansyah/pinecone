@@ -1,7 +1,7 @@
 package com.example.readerapp.ui.features.library.filters
 
-import androidx.activity.compose.BackHandler
 import android.app.Application
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn

@@ -4,8 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,8 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,9 +29,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.material3.Checkbox
-import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Check_circle
 import com.example.readerapp.R
 import com.example.readerapp.data.model.Book
 
@@ -197,11 +191,11 @@ fun BookItem(
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun BookCoverWithSelection(
-    book: Book, 
-    isSelected: Boolean, 
+    modifier: Modifier = Modifier,
+    book: Book,
+    isSelected: Boolean,
     isInMultiSelectMode: Boolean = false,
-    isList: Boolean = false,
-    modifier: Modifier = Modifier
+    isList: Boolean = false
 ) {
     Box(modifier = modifier, contentAlignment = Alignment.TopStart) {
         CoverImage(

@@ -11,9 +11,9 @@ import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.ModalWideNavigationRail
@@ -67,7 +67,7 @@ fun AppDrawer(
                     scope.launch { drawerState.collapse() }
                 },
                 modifier = Modifier
-                    .padding(start = 4.dp, top = 8.dp)
+                    .padding(start = 8.dp, top = 8.dp)
             ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Menu_open,
@@ -79,7 +79,7 @@ fun AppDrawer(
             // FAB for imports with dropdown menu
             Box(
                 modifier = Modifier
-                    .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 32.dp)
+                    .padding(start = 20.dp, end = 16.dp, top = 16.dp, bottom = 16.dp)
                     .align(Alignment.Start)
             ) {
                 var menuExpanded by remember { mutableStateOf(false) }

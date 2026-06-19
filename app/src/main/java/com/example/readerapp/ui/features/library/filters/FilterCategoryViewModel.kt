@@ -53,4 +53,15 @@ class FilterCategoryViewModel(application: Application) : AndroidViewModel(appli
             bookRepository.renameFilterItem(type, oldName, newName)
         }
     }
+
+    fun renameFilterItems(
+        type: String, oldNames: List<String>, newName: String, onSuccess: (String) -> Unit
+    ) {
+        onSuccess(newName.trim())
+        viewModelScope.launch(Dispatchers.IO) {
+            oldNames.forEach { oldName ->
+                bookRepository.renameFilterItem(type, oldName, newName)
+            }
+        }
+    }
 }

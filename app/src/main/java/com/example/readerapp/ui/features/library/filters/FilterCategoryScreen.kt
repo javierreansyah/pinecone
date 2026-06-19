@@ -1,6 +1,7 @@
 package com.example.readerapp.ui.features.library.filters
 
 import android.app.Application
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
@@ -49,6 +51,8 @@ import com.example.readerapp.ui.components.LibraryTopAppBar
 import com.example.readerapp.ui.components.SegmentedLazyColumn
 import com.example.readerapp.ui.features.library.components.FilterItemSortBottomSheet
 import com.example.readerapp.ui.features.library.components.FilterItemSortType
+import com.example.readerapp.ui.features.library.components.FilterMultiSelectAppBar
+import com.example.readerapp.ui.features.library.components.MultiSelectTopBarTransition
 import com.example.readerapp.ui.features.library.components.RenameFilterDialog
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -95,6 +99,9 @@ fun AllFilterItemsScreen(
         },
         onRenameConfirm = { oldName, newName ->
             viewModel.renameFilterItem(filterType, oldName, newName) {}
+        },
+        onRenameItemsConfirm = { oldNames, newName ->
+            viewModel.renameFilterItems(filterType, oldNames, newName) {}
         }
     )
 }
@@ -109,11 +116,20 @@ private fun AllFilterItemsContent(
     onNavigateToDetail: (String) -> Unit,
     onDeleteConfirm: (String) -> Unit,
     onRenameConfirm: (String, String) -> Unit,
+    onRenameItemsConfirm: (List<String>, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var selectedItemForMenu by remember { mutableStateOf<String?>(null) }
     var itemToDelete by remember { mutableStateOf<String?>(null) }
     var itemToRename by remember { mutableStateOf<String?>(null) }
+    var isMultiRename by remember { mutableStateOf(false) }
+    var selectedItems by remember { mutableStateOf(setOf<String>()) }
+    var isInMultiSelectMode by remember { mutableStateOf(false) }
+
+    BackHandler(enabled = isInMultiSelectMode) {
+        selectedItems = emptySet()
+        isInMultiSelectMode = false
+    }
 
     var sortType by remember { mutableStateOf(FilterItemSortType.Label) }
     var sortAscending by remember { mutableStateOf(true) }
@@ -145,12 +161,40 @@ private fun AllFilterItemsContent(
     Scaffold(
         modifier = if (isEmpty) modifier else modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            AllFilterItemsTopAppBar(
-                filterType = filterType,
-                isEmpty = isEmpty,
-                onNavigateBack = onNavigateBack,
-                onSortClick = { showSortSheet = true },
-                scrollBehavior = scrollBehavior
+            MultiSelectTopBarTransition(
+                isMultiSelect = isInMultiSelectMode,
+                multiSelectBar = {
+                    FilterMultiSelectAppBar(
+                        selectedCount = selectedItems.size,
+                        isAllSelected = selectedItems.size == sortedItems.size,
+                        onCloseMultiSelect = {
+                            selectedItems = emptySet()
+                            isInMultiSelectMode = false
+                        },
+                        onClearSelection = { selectedItems = emptySet() },
+                        onSelectAll = { selectedItems = sortedItems.map { it.first }.toSet() },
+                        onRenameClick = {
+                            itemToRename = selectedItems.firstOrNull() ?: ""
+                            isMultiRename = selectedItems.size > 1
+                        },
+                        onDelete = {
+                            selectedItems.forEach { name ->
+                                onDeleteConfirm(name)
+                            }
+                            selectedItems = emptySet()
+                            isInMultiSelectMode = false
+                        }
+                    )
+                },
+                defaultBar = {
+                    AllFilterItemsTopAppBar(
+                        filterType = filterType,
+                        isEmpty = isEmpty,
+                        onNavigateBack = onNavigateBack,
+                        onSortClick = { showSortSheet = true },
+                        scrollBehavior = scrollBehavior
+                    )
+                }
             )
         }
     ) { innerPadding ->
@@ -163,6 +207,8 @@ private fun AllFilterItemsContent(
             AllFilterItemsList(
                 sortedItems = sortedItems,
                 selectedItemForMenu = selectedItemForMenu,
+                selectedItems = selectedItems,
+                isInMultiSelectMode = isInMultiSelectMode,
                 innerPadding = innerPadding,
                 onNavigateToDetail = onNavigateToDetail,
                 onMoreClick = { selectedItemForMenu = it },
@@ -170,10 +216,24 @@ private fun AllFilterItemsContent(
                 onRenameClick = { name ->
                     selectedItemForMenu = null
                     itemToRename = name
+                    isMultiRename = false
                 },
                 onDeleteClick = { name ->
                     selectedItemForMenu = null
                     itemToDelete = name
+                },
+                onToggleSelect = { name ->
+                    selectedItems = if (selectedItems.contains(name)) {
+                        selectedItems - name
+                    } else {
+                        selectedItems + name
+                    }
+                },
+                onLongClick = { name ->
+                    if (!isInMultiSelectMode) {
+                        selectedItems = setOf(name)
+                        isInMultiSelectMode = true
+                    }
                 }
             )
         }
@@ -182,6 +242,7 @@ private fun AllFilterItemsContent(
             filterType = filterType,
             itemToDelete = itemToDelete,
             itemToRename = itemToRename,
+            isMultiRename = isMultiRename,
             suggestionList = suggestions,
             showSortSheet = showSortSheet,
             sortType = sortType,
@@ -194,7 +255,18 @@ private fun AllFilterItemsContent(
             onRenameDismiss = { itemToRename = null },
             onRenameConfirm = { oldName, newName ->
                 itemToRename = null
-                onRenameConfirm(oldName, newName)
+                if (isMultiRename) {
+                    val items = selectedItems.toList()
+                    selectedItems = emptySet()
+                    isMultiRename = false
+                    isInMultiSelectMode = false
+                    onRenameItemsConfirm(items, newName)
+                } else {
+                    onRenameConfirm(oldName, newName)
+                    if (selectedItems.contains(oldName)) {
+                        selectedItems = emptySet()
+                    }
+                }
             },
             onSortTypeChange = { newType ->
                 if (sortType == newType) {
@@ -274,12 +346,16 @@ private fun AllFilterItemsEmptyState(
 private fun AllFilterItemsList(
     sortedItems: List<Pair<String, Int>>,
     selectedItemForMenu: String?,
+    selectedItems: Set<String>,
+    isInMultiSelectMode: Boolean,
     innerPadding: PaddingValues,
     onNavigateToDetail: (String) -> Unit,
     onMoreClick: (String) -> Unit,
     onMenuDismiss: () -> Unit,
     onRenameClick: (String) -> Unit,
     onDeleteClick: (String) -> Unit,
+    onToggleSelect: (String) -> Unit,
+    onLongClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     SegmentedLazyColumn(
@@ -290,8 +366,14 @@ private fun AllFilterItemsList(
         contentPadding = PaddingValues(bottom = 16.dp)
     ) {
         sortedItems.forEach { item ->
+            val isSelected = selectedItems.contains(item.first)
             item(
-                onClick = { onNavigateToDetail(item.first) },
+                selected = isSelected,
+                onClick = {
+                    if (isInMultiSelectMode) onToggleSelect(item.first)
+                    else onNavigateToDetail(item.first)
+                },
+                onLongClick = { onLongClick(item.first) },
                 content = { Text(item.first) },
                 supportingContent = {
                     Text(
@@ -301,13 +383,20 @@ private fun AllFilterItemsList(
                     )
                 },
                 trailingContent = {
-                    AllFilterItemsItemActions(
-                        isMenuExpanded = selectedItemForMenu == item.first,
-                        onMoreClick = { onMoreClick(item.first) },
-                        onMenuDismiss = onMenuDismiss,
-                        onRenameClick = { onRenameClick(item.first) },
-                        onDeleteClick = { onDeleteClick(item.first) }
-                    )
+                    if (isInMultiSelectMode) {
+                        Checkbox(
+                            checked = selectedItems.contains(item.first),
+                            onCheckedChange = { onToggleSelect(item.first) }
+                        )
+                    } else {
+                        AllFilterItemsItemActions(
+                            isMenuExpanded = selectedItemForMenu == item.first,
+                            onMoreClick = { onMoreClick(item.first) },
+                            onMenuDismiss = onMenuDismiss,
+                            onRenameClick = { onRenameClick(item.first) },
+                            onDeleteClick = { onDeleteClick(item.first) }
+                        )
+                    }
                 }
             )
         }
@@ -382,6 +471,7 @@ private fun AllFilterItemsDialogs(
     filterType: String,
     itemToDelete: String?,
     itemToRename: String?,
+    isMultiRename: Boolean,
     suggestionList: List<String>,
     showSortSheet: Boolean,
     sortType: FilterItemSortType,
@@ -421,6 +511,7 @@ private fun AllFilterItemsDialogs(
         RenameFilterDialog(
             initialName = oldName,
             suggestions = suggestionList,
+            isMergingMultiple = isMultiRename,
             onDismiss = onRenameDismiss,
             onConfirm = { newName -> onRenameConfirm(oldName, newName) }
         )
