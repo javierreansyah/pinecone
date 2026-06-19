@@ -7,6 +7,7 @@ package com.example.readerapp.ui.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,7 +19,6 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.Dp
@@ -29,6 +29,7 @@ class SegmentedListItemData(
     val selected: Boolean,
     val enabled: Boolean,
     val onClick: (() -> Unit)?,
+    val onLongClick: (() -> Unit)?,
     val leadingContent: @Composable (() -> Unit)?,
     val trailingContent: @Composable (() -> Unit)?,
     val supportingContent: @Composable (() -> Unit)?,
@@ -42,6 +43,7 @@ interface SegmentedListScope {
         selected: Boolean = false,
         enabled: Boolean = true,
         onClick: (() -> Unit)? = null,
+        onLongClick: (() -> Unit)? = null,
         leadingContent: (@Composable () -> Unit)? = null,
         trailingContent: (@Composable () -> Unit)? = null,
         supportingContent: (@Composable () -> Unit)? = null,
@@ -55,6 +57,7 @@ interface SegmentedListScope {
         selected: (item: T) -> Boolean = { false },
         enabled: (item: T) -> Boolean = { true },
         onClick: ((item: T) -> Unit)? = null,
+        onLongClick: ((item: T) -> Unit)? = null,
         leadingContent: (@Composable (item: T) -> Unit)? = null,
         trailingContent: (@Composable (item: T) -> Unit)? = null,
         supportingContent: (@Composable (item: T) -> Unit)? = null,
@@ -71,6 +74,7 @@ class SegmentedListBuilder : SegmentedListScope {
         selected: Boolean,
         enabled: Boolean,
         onClick: (() -> Unit)?,
+        onLongClick: (() -> Unit)?,
         leadingContent: (@Composable () -> Unit)?,
         trailingContent: (@Composable () -> Unit)?,
         supportingContent: (@Composable () -> Unit)?,
@@ -83,6 +87,7 @@ class SegmentedListBuilder : SegmentedListScope {
                 selected = selected,
                 enabled = enabled,
                 onClick = onClick,
+                onLongClick = onLongClick,
                 leadingContent = leadingContent,
                 trailingContent = trailingContent,
                 supportingContent = supportingContent,
@@ -98,6 +103,7 @@ class SegmentedListBuilder : SegmentedListScope {
         selected: (item: T) -> Boolean,
         enabled: (item: T) -> Boolean,
         onClick: ((item: T) -> Unit)?,
+        onLongClick: ((item: T) -> Unit)?,
         leadingContent: (@Composable (item: T) -> Unit)?,
         trailingContent: (@Composable (item: T) -> Unit)?,
         supportingContent: (@Composable (item: T) -> Unit)?,
@@ -110,6 +116,7 @@ class SegmentedListBuilder : SegmentedListScope {
                 selected = selected(item),
                 enabled = enabled(item),
                 onClick = onClick?.let { { it(item) } },
+                onLongClick = onLongClick?.let { { it(item) } },
                 leadingContent = leadingContent?.let { { it(item) } },
                 trailingContent = trailingContent?.let { { it(item) } },
                 supportingContent = supportingContent?.let { { it(item) } },
@@ -135,6 +142,7 @@ inline fun SegmentedColumn(
                 SegmentedListItem(
                     selected = item.selected,
                     onClick = item.onClick,
+                    onLongClick = item.onLongClick,
                     index = index,
                     count = count,
                     enabled = item.enabled,
@@ -170,6 +178,7 @@ inline fun SegmentedLazyColumn(
                 SegmentedListItem(
                     selected = item.selected,
                     onClick = item.onClick,
+                    onLongClick = item.onLongClick,
                     index = index,
                     count = count,
                     enabled = item.enabled,
@@ -183,10 +192,12 @@ inline fun SegmentedLazyColumn(
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun SegmentedListItem(
     selected: Boolean,
     onClick: (() -> Unit)?,
+    onLongClick: (() -> Unit)? = null,
     index: Int,
     count: Int,
     enabled: Boolean = true,
@@ -227,25 +238,27 @@ fun SegmentedListItem(
     )
     val contentColor = if (enabled) baseContentColor else baseContentColor.copy(alpha = 0.38f)
 
-    if (onClick != null) {
+    if (onClick != null || onLongClick != null) {
         ListItem(
-            onClick = onClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(shape),
-            enabled = enabled,
+            headlineContent = content,
+            supportingContent = supportingContent,
             leadingContent = leadingContent,
             trailingContent = trailingContent,
-            supportingContent = supportingContent,
-            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(shape)
+                .combinedClickable(
+                    onClick = { onClick?.invoke() },
+                    onLongClick = onLongClick?.let { { it() } },
+                    enabled = enabled
+                ),
             colors = ListItemDefaults.colors(
                 containerColor = if (enabled) containerColor else containerColor.copy(alpha = 0.6f),
                 headlineColor = contentColor,
                 supportingColor = contentColor,
                 leadingIconColor = contentColor,
                 trailingIconColor = contentColor
-            ),
-            content = content
+            )
         )
     } else {
         ListItem(

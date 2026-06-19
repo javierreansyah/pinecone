@@ -47,6 +47,9 @@
     <string name="library_view_all">Lihat semua %s</string>
     <string name="library_delete_shelf_title">Hapus Rak</string>
     <string name="library_delete_shelf_message">Apakah Anda yakin ingin menghapus \'%s\'? Buku di dalamnya tidak akan dihapus.</string>
+    <plurals name="library_delete_shelves_message">
+        <item quantity="other">Apakah Anda yakin ingin menghapus %d rak? Buku-buku di dalamnya tidak akan dihapus.</item>
+    </plurals>
     <string name="library_shelf_name_label">Nama Rak</string>
     <string name="library_create_shelf_title">Buat Rak Baru</string>
     <string name="library_select_shelf_title">Pilih Rak</string>

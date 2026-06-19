@@ -7,7 +7,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -97,7 +96,7 @@ fun ShelvesPage(
 
                             if (targetLayoutMode == LayoutMode.List) {
                                 ShelfListItem(
-                                    shelfWithCovers = shelfWithCovers, 
+                                    shelfWithCovers = shelfWithCovers,
                                     onClick = {
                                         onShelfClick(
                                             shelfWithCovers.shelf.id,
@@ -107,8 +106,12 @@ fun ShelvesPage(
                                     },
                                     isInMultiSelectMode = itemInMultiSelectMode,
                                     isSelected = selectedShelves.contains(shelfWithCovers.shelf.id),
-                                    onLongClick = if (isItemSelectable) { { onShelfLongClick?.invoke(shelfWithCovers.shelf.id) } } else null,
-                                    onToggleSelect = if (isItemSelectable) { { onShelfToggleSelect?.invoke(shelfWithCovers.shelf.id) } } else null
+                                    onLongClick = if (isItemSelectable) {
+                                        { onShelfLongClick?.invoke(shelfWithCovers.shelf.id) }
+                                    } else null,
+                                    onToggleSelect = if (isItemSelectable) {
+                                        { onShelfToggleSelect?.invoke(shelfWithCovers.shelf.id) }
+                                    } else null
                                 )
                             } else {
                                 ShelfRowItem(
@@ -120,8 +123,12 @@ fun ShelvesPage(
                                     onBookLongClick = onBookLongClick,
                                     isInMultiSelectMode = itemInMultiSelectMode,
                                     isSelected = selectedShelves.contains(shelfWithCovers.shelf.id),
-                                    onLongClick = if (isItemSelectable) { { onShelfLongClick?.invoke(shelfWithCovers.shelf.id) } } else null,
-                                    onToggleSelect = if (isItemSelectable) { { onShelfToggleSelect?.invoke(shelfWithCovers.shelf.id) } } else null
+                                    onLongClick = if (isItemSelectable) {
+                                        { onShelfLongClick?.invoke(shelfWithCovers.shelf.id) }
+                                    } else null,
+                                    onToggleSelect = if (isItemSelectable) {
+                                        { onShelfToggleSelect?.invoke(shelfWithCovers.shelf.id) }
+                                    } else null
                                 )
                             }
                         }
@@ -205,7 +212,11 @@ private fun ShelfRowHeader(
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f).padding(vertical = 2.dp)) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(vertical = 4.dp)
+        ) {
             Text(
                 text = shelfName,
                 style = MaterialTheme.typography.titleMediumEmphasized

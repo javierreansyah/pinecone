@@ -33,9 +33,9 @@ import com.composables.icons.materialsymbols.outlined.Check_circle
 import com.composables.icons.materialsymbols.outlined.Circle
 import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Delete
+import com.composables.icons.materialsymbols.outlined.Deselect
 import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Select_all
-import com.composables.icons.materialsymbols.outlined.Deselect
 import com.composables.icons.materialsymbols.outlined.Unarchive
 import com.example.readerapp.R
 
@@ -120,7 +120,9 @@ fun MultiSelectAppBar(
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Delete,
                     contentDescription = stringResource(R.string.action_delete),
-                    tint = if (selectedCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    tint = if (selectedCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(
+                        alpha = 0.38f
+                    )
                 )
             }
         },
