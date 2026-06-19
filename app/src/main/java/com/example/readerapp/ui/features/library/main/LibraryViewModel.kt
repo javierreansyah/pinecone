@@ -235,6 +235,18 @@ class LibraryViewModel(
         }
     }
 
+    fun deleteShelf(shelfId: String) {
+        viewModelScope.launch {
+            bookRepository.deleteShelf(shelfId)
+        }
+    }
+
+    fun renameShelf(shelfId: String, newName: String) {
+        viewModelScope.launch {
+            bookRepository.renameShelf(shelfId, newName)
+        }
+    }
+
     fun toggleArchive(bookId: String) {
         viewModelScope.launch {
             bookRepository.toggleArchive(bookId)

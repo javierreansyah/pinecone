@@ -1,6 +1,7 @@
 package com.example.readerapp.ui.features.library.components
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,9 +27,16 @@ import com.example.readerapp.data.local.database.library.ShelfWithCovers
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.features.library.components.book.CoverImage
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ShelfListItem(
-    shelfWithCovers: ShelfWithCovers, onClick: () -> Unit, modifier: Modifier = Modifier
+    shelfWithCovers: ShelfWithCovers, 
+    onClick: () -> Unit, 
+    modifier: Modifier = Modifier,
+    isInMultiSelectMode: Boolean = false,
+    isSelected: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
+    onToggleSelect: (() -> Unit)? = null
 ) {
     val visibleBooks = shelfWithCovers.books
     val booksCount = visibleBooks.size
@@ -38,7 +47,18 @@ fun ShelfListItem(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .combinedClickable(
+                onClick = {
+                    if (isInMultiSelectMode && onToggleSelect != null) {
+                        onToggleSelect()
+                    } else {
+                        onClick()
+                    }
+                },
+                onLongClick = {
+                    onLongClick?.invoke()
+                }
+            )
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -68,7 +88,10 @@ fun ShelfListItem(
 
         // Details
         Column(
-            modifier = Modifier.height(100.dp), verticalArrangement = Arrangement.Top
+            modifier = Modifier
+                .height(100.dp)
+                .weight(1f), 
+            verticalArrangement = Arrangement.Top
         ) {
             Text(
                 text = shelfWithCovers.shelf.name,
@@ -83,6 +106,13 @@ fun ShelfListItem(
                 text = countText,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        if (isInMultiSelectMode) {
+            Checkbox(
+                checked = isSelected,
+                onCheckedChange = { onToggleSelect?.invoke() }
             )
         }
     }

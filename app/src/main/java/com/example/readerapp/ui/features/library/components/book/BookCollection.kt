@@ -28,6 +28,7 @@ fun BookCollection(
     onBookClick: (String) -> Unit,
     onBookLongClick: (String) -> Unit,
     selectedBooks: Set<String> = emptySet(),
+    isInMultiSelectMode: Boolean = false,
     scrollKey: Any? = null
 ) {
     key(scrollKey) {
@@ -50,14 +51,16 @@ fun BookCollection(
                     layoutMode = targetLayoutMode,
                     onBookClick = onBookClick,
                     onBookLongClick = onBookLongClick,
-                    selectedBooks = selectedBooks
+                    selectedBooks = selectedBooks,
+                    isInMultiSelectMode = isInMultiSelectMode
                 )
             } else {
                 BookList(
                     books = books,
                     onBookClick = onBookClick,
                     onBookLongClick = onBookLongClick,
-                    selectedBooks = selectedBooks
+                    selectedBooks = selectedBooks,
+                    isInMultiSelectMode = isInMultiSelectMode
                 )
             }
         }
@@ -70,7 +73,8 @@ private fun BookGrid(
     layoutMode: LayoutMode = LayoutMode.Grid,
     onBookClick: (String) -> Unit,
     onBookLongClick: ((String) -> Unit)? = null,
-    selectedBooks: Set<String> = emptySet()
+    selectedBooks: Set<String> = emptySet(),
+    isInMultiSelectMode: Boolean = false
 ) {
     val density = LocalDensity.current
     val containerSize = LocalWindowInfo.current.containerSize
@@ -102,8 +106,10 @@ private fun BookGrid(
             BookItem(
                 book = book,
                 onClick = { onBookClick(book.id) },
-                onLongClick = { onBookLongClick?.invoke(book.id) },
-                isSelected = selectedBooks.contains(book.id)
+                onLongClick = if (selectedBooks.isNotEmpty()) null else { { onBookLongClick?.invoke(book.id) } },
+                isList = false,
+                isSelected = selectedBooks.contains(book.id),
+                isInMultiSelectMode = isInMultiSelectMode
             )
         }
     }
@@ -114,7 +120,8 @@ private fun BookList(
     books: List<Book>,
     onBookClick: (String) -> Unit,
     onBookLongClick: ((String) -> Unit)? = null,
-    selectedBooks: Set<String> = emptySet()
+    selectedBooks: Set<String> = emptySet(),
+    isInMultiSelectMode: Boolean = false
 ) {
     val density = LocalDensity.current
     val containerSize = LocalWindowInfo.current.containerSize
@@ -132,9 +139,10 @@ private fun BookList(
             BookItem(
                 book = book,
                 onClick = { onBookClick(book.id) },
-                onLongClick = { onBookLongClick?.invoke(book.id) },
+                onLongClick = if (selectedBooks.isNotEmpty()) null else { { onBookLongClick?.invoke(book.id) } },
                 isList = true,
-                isSelected = selectedBooks.contains(book.id)
+                isSelected = selectedBooks.contains(book.id),
+                isInMultiSelectMode = isInMultiSelectMode
             )
         }
     }

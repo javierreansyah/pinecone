@@ -1,5 +1,6 @@
 package com.example.readerapp.ui.features.library.archive
 
+import androidx.activity.compose.BackHandler
 import android.app.Application
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,6 +29,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Book
+import com.composables.icons.materialsymbols.outlined.Select
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.example.readerapp.R
 import com.example.readerapp.ui.components.EmptyState
@@ -63,27 +65,41 @@ fun ArchiveScreen(
     var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
     var showFilterSheet by remember { mutableStateOf(false) }
     var selectedBooks by remember { mutableStateOf(emptySet<String>()) }
+    var isInMultiSelectMode by remember { mutableStateOf(false) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val isEmpty = archivedBooks.isEmpty()
 
+    val isMultiSelect = isInMultiSelectMode
+
+    BackHandler(enabled = isMultiSelect) {
+        selectedBooks = emptySet()
+        isInMultiSelectMode = false
+    }
+
     Scaffold(
-        modifier = if (isEmpty) Modifier else Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = if (isEmpty || isMultiSelect) Modifier else Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             MultiSelectTopBarTransition(
-                isMultiSelect = selectedBooks.isNotEmpty(),
+                isMultiSelect = isMultiSelect,
                 multiSelectBar = {
                     val showMarkAsRead = allBooks
                         .filter { it.id in selectedBooks }
                         .any { !it.isRead }
                     MultiSelectAppBar(
                         selectedCount = selectedBooks.size,
+                        isAllSelected = selectedBooks.size == archivedBooks.size,
                         showMarkAsRead = showMarkAsRead,
+                        onCloseMultiSelect = {
+                            selectedBooks = emptySet()
+                            isInMultiSelectMode = false
+                        },
                         onClearSelection = { selectedBooks = emptySet() },
                         onSelectAll = { selectedBooks = archivedBooks.map { it.id }.toSet() },
                         onMarkAsReadUnread = {
                             val booksToProcess = selectedBooks.toList()
                             selectedBooks = emptySet()
+                            isInMultiSelectMode = false
                             booksToProcess.forEach { bookId ->
                                 val book = allBooks.find { it.id == bookId }
                                 if (book != null && book.isRead != showMarkAsRead) {
@@ -94,11 +110,13 @@ fun ArchiveScreen(
                         onAddToShelf = {
                             val ids = selectedBooks.joinToString(",")
                             selectedBooks = emptySet()
+                            isInMultiSelectMode = false
                             onNavigateToAddToShelf(ids)
                         },
                         onArchive = {
                             val booksToProcess = selectedBooks.toList()
                             selectedBooks = emptySet()
+                            isInMultiSelectMode = false
                             booksToProcess.forEach { bookId ->
                                 viewModel.toggleArchive(bookId)
                             }
@@ -106,6 +124,7 @@ fun ArchiveScreen(
                         onDelete = {
                             val booksToProcess = selectedBooks.toList()
                             selectedBooks = emptySet()
+                            isInMultiSelectMode = false
                             booksToProcess.forEach { viewModel.deleteBook(it) }
                         },
                         isUnarchive = true
@@ -118,6 +137,15 @@ fun ArchiveScreen(
                         isEmpty = isEmpty,
                         scrollBehavior = scrollBehavior,
                         actions = {
+                            IconButton(
+                                shapes = IconButtonDefaults.shapes(),
+                                onClick = { isInMultiSelectMode = true }
+                            ) {
+                                Icon(
+                                    MaterialSymbols.Outlined.Select,
+                                    contentDescription = stringResource(R.string.action_select_multiple)
+                                )
+                            }
                             IconButton(
                                 shapes = IconButtonDefaults.shapes(),
                                 onClick = { showFilterSheet = true }
@@ -150,8 +178,9 @@ fun ArchiveScreen(
                     books = archivedBooks,
                     layoutMode = uiState.bookPreferences.layoutMode,
                     selectedBooks = selectedBooks,
+                    isInMultiSelectMode = isInMultiSelectMode,
                     onBookClick = { bookId ->
-                        if (selectedBooks.isNotEmpty()) {
+                        if (isInMultiSelectMode) {
                             selectedBooks = if (selectedBooks.contains(bookId)) {
                                 selectedBooks - bookId
                             } else {
@@ -183,7 +212,10 @@ fun ArchiveScreen(
             onRemoveFromShelf = {},
             onAddToShelf = onNavigateToAddToShelf,
             onDeleteBook = { viewModel.deleteBook(bookId) },
-            onEnterMultiSelect = { selectedBooks = setOf(bookId) },
+            onEnterMultiSelect = {
+                selectedBooks = setOf(bookId)
+                isInMultiSelectMode = true
+            },
             onDismiss = { selectedBookForMenu = null })
     }
 
