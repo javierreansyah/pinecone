@@ -9,14 +9,14 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.features.library.LayoutMode
@@ -72,8 +72,21 @@ private fun BookGrid(
     onBookLongClick: ((String) -> Unit)? = null,
     selectedBooks: Set<String> = emptySet()
 ) {
-    val itemWidth = if (layoutMode == LayoutMode.BigGrid) 150.dp else 100.dp
-    val horizontalPadding = 8.dp
+    val density = LocalDensity.current
+    val containerSize = LocalWindowInfo.current.containerSize
+    val screenWidth = with(density) { containerSize.width.toDp() }
+
+    val itemWidth = when {
+        screenWidth >= 840.dp -> if (layoutMode == LayoutMode.BigGrid) 200.dp else 140.dp
+        screenWidth >= 600.dp -> if (layoutMode == LayoutMode.BigGrid) 180.dp else 120.dp
+        else -> if (layoutMode == LayoutMode.BigGrid) 150.dp else 100.dp
+    }
+    
+    val horizontalPadding = when {
+        screenWidth >= 840.dp -> 24.dp
+        screenWidth >= 600.dp -> 16.dp
+        else -> 8.dp
+    }
 
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = itemWidth),
@@ -103,8 +116,17 @@ private fun BookList(
     onBookLongClick: ((String) -> Unit)? = null,
     selectedBooks: Set<String> = emptySet()
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize()
+    val density = LocalDensity.current
+    val containerSize = LocalWindowInfo.current.containerSize
+    val screenWidth = with(density) { containerSize.width.toDp() }
+    val columns = if (screenWidth >= 600.dp) 2 else 1
+    val horizontalPadding = if (screenWidth >= 600.dp) 16.dp else 0.dp
+
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(columns),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = horizontalPadding)
     ) {
         items(books, key = { it.id }) { book ->
             BookItem(

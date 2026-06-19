@@ -2,7 +2,6 @@ package com.example.readerapp.ui.features.reader.components
 
 import androidx.activity.BackEventCompat
 import androidx.activity.compose.PredictiveBackHandler
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.clickable
@@ -18,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.input.TextFieldState
@@ -208,20 +208,104 @@ fun ReaderSearch(
                 }
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Loading indicator container (fixes height to prevent layout shifts)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp),
-                contentAlignment = Alignment.Center
-            ) {
+            // ── Result list ───────────────────────────────────────────────────────
+            Box(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
+                    contentPadding = PaddingValues(bottom = 8.dp, top = 16.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .layout { measurable, constraints ->
+                            val progress = backProgress.coerceIn(0f, 1f)
+                            val targetWidth = constraints.maxWidth
+                            val originalWidth = if (progress > 0f) {
+                                (targetWidth / (1f - progress * 0.112f)).toInt()
+                            } else {
+                                targetWidth
+                            }
+                            val childConstraints = constraints.copy(
+                                minWidth = originalWidth.coerceAtLeast(0),
+                                maxWidth = originalWidth.coerceAtLeast(0)
+                            )
+                            val placeable = measurable.measure(childConstraints)
+                            layout(targetWidth, placeable.height) {
+                                placeable.placeRelative(0, 0)
+                            }
+                        }
+                ) {
+                    if (searchPerformed && results.isNotEmpty()) {
+                        item {
+                            Surface(
+                                color = backgroundColor, modifier = Modifier.fillMaxWidth()
+                            ) {
+                                val resultsText = androidx.compose.ui.res.pluralStringResource(
+                                    R.plurals.reader_search_results_count,
+                                    results.size,
+                                    results.size
+                                )
+                                Text(
+                                    text = resultsText,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(
+                                        start = 20.dp,
+                                        end = 20.dp,
+                                        bottom = 16.dp,
+                                    )
+                                )
+                            }
+                        }
+                    }
+
+                    itemsIndexed(results) { index, item ->
+                        SearchResultCard(
+                            item = item,
+                            index = index,
+                            query = query,
+                            onClick = { onResultClick(index) }
+                        )
+                    }
+
+                    // Empty state when search done with no results
+                    if (searchPerformed && !isLoading && results.isEmpty()) {
+                        item {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 64.dp)
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    Icon(
+                                        MaterialSymbols.Outlined.Search,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(48.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                    )
+                                    Text(
+                                        stringResource(
+                                            R.string.reader_search_no_results_for,
+                                            query
+                                        ),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
                 val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
-                this@Column.AnimatedVisibility(
+                androidx.compose.animation.AnimatedVisibility(
                     visible = isLoading,
                     enter = fadeIn(animationSpec = actionsEffectsSpec),
-                    exit = fadeOut(animationSpec = actionsEffectsSpec)
+                    exit = fadeOut(animationSpec = actionsEffectsSpec),
+                    modifier = Modifier.align(Alignment.TopCenter)
                 ) {
                     LinearWavyProgressIndicator(
                         modifier = Modifier
@@ -230,100 +314,6 @@ fun ReaderSearch(
                         color = MaterialTheme.colorScheme.primary,
                         trackColor = MaterialTheme.colorScheme.surfaceVariant
                     )
-                }
-            }
-
-            Spacer(
-                modifier = Modifier.height(8.dp)
-            )
-
-            // ── Result list ───────────────────────────────────────────────────────
-            LazyColumn(
-                contentPadding = PaddingValues(bottom = 8.dp),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .layout { measurable, constraints ->
-                        val progress = backProgress.coerceIn(0f, 1f)
-                        val targetWidth = constraints.maxWidth
-                        val originalWidth = if (progress > 0f) {
-                            (targetWidth / (1f - progress * 0.112f)).toInt()
-                        } else {
-                            targetWidth
-                        }
-                        val childConstraints = constraints.copy(
-                            minWidth = originalWidth.coerceAtLeast(0),
-                            maxWidth = originalWidth.coerceAtLeast(0)
-                        )
-                        val placeable = measurable.measure(childConstraints)
-                        layout(targetWidth, placeable.height) {
-                            placeable.placeRelative(0, 0)
-                        }
-                    }
-            ) {
-                if (searchPerformed && (results.isNotEmpty() || !isLoading)) {
-                    item {
-                        Surface(
-                            color = backgroundColor, modifier = Modifier.fillMaxWidth()
-                        ) {
-                            val resultsText = if (results.isEmpty()) {
-                                stringResource(R.string.reader_search_no_results)
-                            } else {
-                                androidx.compose.ui.res.pluralStringResource(
-                                    R.plurals.reader_search_results_count,
-                                    results.size,
-                                    results.size
-                                )
-                            }
-                            Text(
-                                text = resultsText,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(
-                                    start = 20.dp,
-                                    end = 20.dp,
-                                    bottom = 16.dp,
-                                )
-                            )
-                        }
-                    }
-                }
-
-                itemsIndexed(results) { index, item ->
-                    SearchResultCard(
-                        item = item,
-                        index = index,
-                        query = query,
-                        onClick = { onResultClick(index) }
-                    )
-                }
-
-                // Empty state when search done with no results
-                if (searchPerformed && !isLoading && results.isEmpty()) {
-                    item {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 64.dp)
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                Icon(
-                                    MaterialSymbols.Outlined.Search,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(48.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                                )
-                                Text(
-                                    stringResource(R.string.reader_search_no_results_for, query),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -358,7 +348,7 @@ fun SearchResultCard(
 
             // Line 2: position
             val subtitleText = if (item.positionLabel.isNotBlank()) {
-                "${index + 1} / ${item.positionLabel}"
+                "${index + 1} | ${item.positionLabel}"
             } else {
                 "${index + 1}"
             }
@@ -400,7 +390,10 @@ fun SearchResultCard(
         }
 
         Text(
-            text = snippet, style = MaterialTheme.typography.bodyMedium, lineHeight = 20.sp
+            text = snippet,
+            style = MaterialTheme.typography.bodyMedium,
+            lineHeight = 20.sp,
+            modifier = Modifier.widthIn(max = 600.dp)
         )
 
     }

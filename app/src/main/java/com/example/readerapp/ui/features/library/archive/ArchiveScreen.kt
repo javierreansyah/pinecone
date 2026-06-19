@@ -107,7 +107,8 @@ fun ArchiveScreen(
                             val booksToProcess = selectedBooks.toList()
                             selectedBooks = emptySet()
                             booksToProcess.forEach { viewModel.deleteBook(it) }
-                        }
+                        },
+                        isUnarchive = true
                     )
                 },
                 defaultBar = {

@@ -8,7 +8,6 @@ import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -36,10 +35,12 @@ import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -764,81 +765,84 @@ private fun ReaderDefinitionBottomSheet(
                 .heightIn(max = maxSheetHeight)
                 .padding(top = 8.dp, bottom = 24.dp)
         ) {
-            if (definitionResults.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.reader_no_definition),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 24.dp)
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .weight(1f, fill = false)
-                        .fillMaxWidth()
-                ) {
-                    val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+            val levelHeights = remember { mutableStateMapOf<Int, Int>() }
+            val minEnforcedHeight = remember(historySize, levelHeights) {
+                if (historySize == 0) {
+                    0
+                } else {
+                    levelHeights[historySize - 1] ?: 0
+                }
+            }
 
-                    AnimatedContent(
-                        targetState = Triple(definitionWord, definitionResults, historySize),
-                        label = "DefinitionTransition",
-                        transitionSpec = {
-                            fadeIn(
-                                animationSpec = tween(
-                                    durationMillis = 100,
-                                    delayMillis = 100
-                                )
-                            ) togetherWith
-                                    fadeOut(animationSpec = tween(durationMillis = 100))
-                        }
-                    ) { (word, results, _) ->
-                        val scrollState = rememberScrollState()
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .verticalScroll(scrollState)
-                        ) {
-                            val sortedResults =
-                                results.sortedWith(compareBy<DictionaryEntry> { entry ->
-                                    when {
-                                        entry.word == word -> 0
-                                        entry.word.firstOrNull()?.isLowerCase() == true -> 1
-                                        else -> 2
-                                    }
-                                }.thenBy { it.word })
+            Box(
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .fillMaxWidth()
+                    .heightIn(min = with(density) { minEnforcedHeight.toDp() })
+                    .onSizeChanged { size ->
+                        levelHeights[historySize] = size.height
+                    }
+            ) {
+                val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
 
-                            val combinedHtmlContent =
-                                DictionaryFormatter.prepareHtmlForMultipleEntries(sortedResults)
-                            DefinitionWebView(
-                                htmlContent = combinedHtmlContent,
-                                modifier = Modifier.fillMaxWidth(),
-                                onWordClick = onWordClick
-                            )
-                        }
+                if (definitionResults.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.reader_no_definition),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 24.dp)
+                    )
+                } else {
+                    val scrollState = rememberScrollState()
+                    LaunchedEffect(definitionWord) {
+                        scrollState.scrollTo(0)
                     }
 
-                    Box(
+                    Column(
                         modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(end = 16.dp)
+                            .fillMaxWidth()
+                            .verticalScroll(scrollState)
                     ) {
-                        this@Column.AnimatedVisibility(
-                            visible = historySize > 0,
-                            enter = fadeIn(animationSpec = actionsEffectsSpec),
-                            exit = fadeOut(animationSpec = actionsEffectsSpec)
+                        val sortedResults =
+                            definitionResults.sortedWith(compareBy<DictionaryEntry> { entry ->
+                                when {
+                                    entry.word == definitionWord -> 0
+                                    entry.word.firstOrNull()?.isLowerCase() == true -> 1
+                                    else -> 2
+                                }
+                            }.thenBy { it.word })
+
+                        val combinedHtmlContent =
+                            DictionaryFormatter.prepareHtmlForMultipleEntries(sortedResults)
+                        DefinitionWebView(
+                            htmlContent = combinedHtmlContent,
+                            modifier = Modifier.fillMaxWidth(),
+                            onWordClick = onWordClick
+                        )
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(end = 16.dp)
+                ) {
+                    this@Column.AnimatedVisibility(
+                        visible = historySize > 0,
+                        enter = fadeIn(animationSpec = actionsEffectsSpec),
+                        exit = fadeOut(animationSpec = actionsEffectsSpec)
+                    ) {
+                        FilledTonalIconButton(
+                            shape = androidx.compose.foundation.shape.CircleShape,
+                            colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                            ),
+                            onClick = onPop
                         ) {
-                            FilledTonalIconButton(
-                                shape = androidx.compose.foundation.shape.CircleShape,
-                                colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                                ),
-                                onClick = onPop
-                            ) {
-                                Icon(
-                                    MaterialSymbols.Outlined.Arrow_back,
-                                    contentDescription = "Back"
-                                )
-                            }
+                            Icon(
+                                MaterialSymbols.Outlined.Arrow_back,
+                                contentDescription = "Back"
+                            )
                         }
                     }
                 }
