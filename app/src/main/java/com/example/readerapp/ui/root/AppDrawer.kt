@@ -13,6 +13,7 @@ import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.ModalWideNavigationRail
@@ -85,6 +86,12 @@ fun AppDrawer(
 
                 SmallExtendedFloatingActionButton(
                     onClick = { menuExpanded = true },
+                    elevation = FloatingActionButtonDefaults.elevation(
+                        defaultElevation = 0.dp,
+                        pressedElevation = 0.dp,
+                        hoveredElevation = 0.dp,
+                        focusedElevation = 0.dp
+                    ),
                     icon = {
                         Icon(
                             imageVector = MaterialSymbols.Outlined.Add,
