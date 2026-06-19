@@ -82,7 +82,7 @@ class MainViewModel(
             }
         } else {
             val name = file.name?.lowercase() ?: ""
-            val supportedExtensions = listOf(".epub", ".cbz", ".cbr", ".cb7", ".cbt", ".webpub")
+            val supportedExtensions = listOf(".epub")
             if (supportedExtensions.any { name.endsWith(it) }) {
                 libraryRepository.importBook(file.uri)
             }

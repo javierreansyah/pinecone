@@ -30,13 +30,6 @@
                 <data android:scheme="file" />
                 <data android:scheme="content" />
                 <data android:mimeType="application/epub+zip" />
-                <data android:mimeType="application/webpub+json" />
-                <data android:mimeType="application/x-cbz" />
-                <data android:mimeType="application/x-cbr" />
-                <data android:mimeType="application/x-cb7" />
-                <data android:mimeType="application/x-cbt" />
-                <data android:mimeType="application/vnd.comicbook+zip" />
-                <data android:mimeType="application/vnd.comicbook-rar" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -48,10 +41,6 @@
                 <data android:scheme="content" />
                 <data android:host="*" />
                 <data android:pathPattern=".*\\.epub" />
-                <data android:pathPattern=".*\\.cbz" />
-                <data android:pathPattern=".*\\.cbr" />
-                <data android:pathPattern=".*\\.cb7" />
-                <data android:pathPattern=".*\\.cbt" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

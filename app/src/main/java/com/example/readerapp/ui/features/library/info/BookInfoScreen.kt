@@ -102,6 +102,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.text.HtmlCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.composables.icons.materialsymbols.MaterialSymbols
@@ -124,9 +125,6 @@ import com.example.readerapp.data.local.database.library.BookmarkEntity
 import com.example.readerapp.data.local.database.library.NoteEntity
 import com.example.readerapp.data.model.Book
 import com.example.readerapp.ui.components.EmptyState
-import com.example.readerapp.ui.components.HtmlPreset
-import com.example.readerapp.ui.components.HtmlWebView
-import com.example.readerapp.ui.components.HtmlWebViewConfig
 import com.example.readerapp.ui.components.SegmentedColumn
 import com.example.readerapp.ui.features.library.components.ShelfListItem
 import com.example.readerapp.ui.features.reader.ReaderActivity
@@ -1394,6 +1392,17 @@ private fun BookDescription(
     modifier: Modifier = Modifier
 ) {
     var isExpanded by remember { mutableStateOf(false) }
+
+    val annotatedDescription = remember(description) {
+        val spanned = HtmlCompat.fromHtml(
+            description,
+            HtmlCompat.FROM_HTML_MODE_COMPACT
+        )
+        // Trim trailing whitespace/newlines that HtmlCompat often leaves
+        val trimmed = spanned.toString().trimEnd()
+        androidx.compose.ui.text.AnnotatedString(trimmed)
+    }
+
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -1403,21 +1412,16 @@ private fun BookDescription(
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
-        // WebView renders the raw publisher HTML properly — handles <BR>, mixed
-        // <b><i> preambles, bare <div>/<p> blocks, &amp; entities, etc.
-        // Expand/collapse is driven by animateContentSize on the wrapper Box.
-        Box(
+        Text(
+            text = annotatedDescription,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = if (isExpanded) Int.MAX_VALUE else 5,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier
                 .fillMaxWidth()
-                .then(if (!isExpanded) Modifier.heightIn(max = 120.dp) else Modifier)
                 .animateContentSize()
-        ) {
-            HtmlWebView(
-                htmlContent = description,
-                config = HtmlWebViewConfig(preset = HtmlPreset.Description),
-                baseFontSize = MaterialTheme.typography.bodyMedium.fontSize
-            )
-        }
+        )
         if (description.length > 200) {
             val labelText =
                 if (isExpanded) stringResource(R.string.book_read_less) else stringResource(

@@ -117,6 +117,7 @@ fun HtmlWebView(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
+            isSaveEnabled = false
             setBackgroundColor(AndroidColor.TRANSPARENT)
             isVerticalScrollBarEnabled = false
             isHorizontalScrollBarEnabled = false
@@ -140,6 +141,8 @@ fun HtmlWebView(
         }
     }, update = { webView ->
         webView.loadDataWithBaseURL(null, fullHtml, "text/html", "UTF-8", null)
+    }, onRelease = { webView ->
+        webView.destroy()
     })
 }
 

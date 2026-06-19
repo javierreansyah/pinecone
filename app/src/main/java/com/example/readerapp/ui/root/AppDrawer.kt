@@ -1,45 +1,50 @@
 package com.example.readerapp.ui.root
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.DrawerDefaults
-import androidx.compose.material3.DrawerState
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.DropdownMenuGroup
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenuPopup
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.MenuDefaults
+import androidx.compose.material3.ModalWideNavigationRail
+import androidx.compose.material3.SmallExtendedFloatingActionButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.WideNavigationRailItem
+import androidx.compose.material3.WideNavigationRailState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Add
 import com.composables.icons.materialsymbols.outlined.Archive
-import com.composables.icons.materialsymbols.outlined.Book
+import com.composables.icons.materialsymbols.outlined.Book_3
 import com.composables.icons.materialsymbols.outlined.Folder
+import com.composables.icons.materialsymbols.outlined.Menu_open
 import com.composables.icons.materialsymbols.outlined.Settings
 import com.composables.icons.materialsymbols.outlined.Upload
 import com.example.readerapp.R
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AppDrawer(
-    drawerState: DrawerState,
+    drawerState: WideNavigationRailState,
     onNavigateToArchives: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onImportFilesClick: () -> Unit,
@@ -47,94 +52,143 @@ fun AppDrawer(
     onNavigateToDictionaries: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    val containerColor = DrawerDefaults.modalContainerColor
 
-    ModalDrawerSheet(
-        modifier = Modifier.drawBehind {
-            drawRect(
-                color = containerColor,
-                topLeft = Offset(-50.dp.toPx(), 0f),
-                size = Size(50.dp.toPx(), size.height)
-            )
-        }
+    ModalWideNavigationRail(
+        state = drawerState,
+        hideOnCollapse = true,
+        modifier = Modifier.fillMaxHeight(),
+        expandedHeaderTopPadding = 0.dp,
+        contentPadding = PaddingValues(0.dp)
     ) {
-        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+        Column(modifier = Modifier.fillMaxHeight()) {
+            IconButton(
+                onClick = {
+                    scope.launch { drawerState.collapse() }
+                },
+                modifier = Modifier
+                    .padding(start = 4.dp, top = 8.dp)
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.app_logo),
-                    contentDescription = null,
-                    modifier = Modifier.size(26.dp),
+                    imageVector = MaterialSymbols.Outlined.Menu_open,
+                    contentDescription = stringResource(R.string.action_close),
                     tint = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = stringResource(id = R.string.app_name),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.SemiBold
                 )
             }
 
-            NavigationDrawerItem(
+            // FAB for imports with dropdown menu
+            Box(
+                modifier = Modifier
+                    .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 32.dp)
+                    .align(Alignment.Start)
+            ) {
+                var menuExpanded by remember { mutableStateOf(false) }
+
+                SmallExtendedFloatingActionButton(
+                    onClick = { menuExpanded = true },
+                    icon = {
+                        Icon(
+                            imageVector = MaterialSymbols.Outlined.Add,
+                            contentDescription = null
+                        )
+                    },
+                    text = { Text(text = "Import") }
+                )
+
+                DropdownMenuPopup(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false }
+                ) {
+                    val groupInteractionSource = remember { MutableInteractionSource() }
+                    DropdownMenuGroup(
+                        shapes = MenuDefaults.groupShape(0, 1),
+                        interactionSource = groupInteractionSource
+                    ) {
+                        DropdownMenuItem(
+                            selected = false,
+                            text = { Text(stringResource(R.string.nav_import_files)) },
+                            shapes = MenuDefaults.itemShape(0, 2),
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = MaterialSymbols.Outlined.Upload,
+                                    modifier = Modifier.size(MenuDefaults.LeadingIconSize),
+                                    contentDescription = null
+                                )
+                            },
+                            onClick = {
+                                menuExpanded = false
+                                onImportFilesClick()
+                                scope.launch { drawerState.collapse() }
+                            }
+                        )
+                        DropdownMenuItem(
+                            selected = false,
+                            text = { Text(stringResource(R.string.nav_scan_folder)) },
+                            shapes = MenuDefaults.itemShape(1, 2),
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = MaterialSymbols.Outlined.Folder,
+                                    modifier = Modifier.size(MenuDefaults.LeadingIconSize),
+                                    contentDescription = null
+                                )
+                            },
+                            onClick = {
+                                menuExpanded = false
+                                onScanFolderClick()
+                                scope.launch { drawerState.collapse() }
+                            }
+                        )
+                    }
+                }
+            }
+
+            // Normal WideNavigationRailItems below the FAB
+            WideNavigationRailItem(
+                railExpanded = true,
+                icon = {
+                    Icon(
+                        imageVector = MaterialSymbols.Outlined.Archive,
+                        contentDescription = null
+                    )
+                },
                 label = { Text(stringResource(R.string.library_archives_title)) },
-                icon = { Icon(MaterialSymbols.Outlined.Archive, contentDescription = null) },
                 selected = false,
-                onClick = { onNavigateToArchives() },
-                shape = RectangleShape
+                onClick = {
+                    onNavigateToArchives()
+                    scope.launch { drawerState.collapse() }
+                }
             )
 
-            NavigationDrawerItem(
+            WideNavigationRailItem(
+                railExpanded = true,
+                icon = {
+                    Icon(
+                        imageVector = MaterialSymbols.Outlined.Book_3,
+                        contentDescription = null
+                    )
+                },
                 label = { Text(stringResource(R.string.dictionaries_title)) },
-                icon = { Icon(MaterialSymbols.Outlined.Book, contentDescription = null) },
-                selected = false,
-                onClick = { onNavigateToDictionaries() },
-                shape = RectangleShape
-            )
-
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-            Text(
-                text = stringResource(R.string.nav_book_import),
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
-                color = MaterialTheme.colorScheme.primary,
-            )
-
-            NavigationDrawerItem(
-                label = { Text(stringResource(R.string.nav_import_files)) },
-                icon = { Icon(MaterialSymbols.Outlined.Upload, contentDescription = null) },
                 selected = false,
                 onClick = {
-                    onImportFilesClick()
-                    scope.launch { drawerState.close() }
-                },
-                shape = RectangleShape
-            )
-            NavigationDrawerItem(
-                label = { Text(stringResource(R.string.nav_scan_folder)) },
-                icon = { Icon(MaterialSymbols.Outlined.Folder, contentDescription = null) },
-                selected = false,
-                onClick = {
-                    onScanFolderClick()
-                    scope.launch { drawerState.close() }
-                },
-                shape = RectangleShape
+                    onNavigateToDictionaries()
+                    scope.launch { drawerState.collapse() }
+                }
             )
 
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-            NavigationDrawerItem(
+            WideNavigationRailItem(
+                railExpanded = true,
+                icon = {
+                    Icon(
+                        imageVector = MaterialSymbols.Outlined.Settings,
+                        contentDescription = null
+                    )
+                },
                 label = { Text(stringResource(R.string.settings_title)) },
-                icon = { Icon(MaterialSymbols.Outlined.Settings, contentDescription = null) },
                 selected = false,
-                onClick = { onNavigateToSettings() },
-                shape = RectangleShape
+                onClick = {
+                    onNavigateToSettings()
+                    scope.launch { drawerState.collapse() }
+                }
             )
         }
     }
 }
-
-
-

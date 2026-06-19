@@ -1,7 +1,13 @@
 package com.example.readerapp.ui.root
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.provider.DocumentsContract
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -9,11 +15,10 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.systemGestureExclusion
-import androidx.compose.material3.DrawerState
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
@@ -39,16 +44,64 @@ import com.example.readerapp.ui.features.library.shelf.SelectShelfViewModel
 import com.example.readerapp.ui.features.library.shelf.ShelfDetailScreen
 import com.example.readerapp.ui.features.reader.ReaderActivity
 import com.example.readerapp.ui.features.settings.SettingsScreen
-import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun NavGraph(
     backStack: MutableList<NavKey>,
-    drawerState: DrawerState,
+    mainViewModel: MainViewModel,
     modifier: Modifier = Modifier
 ) {
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = object :
+            ActivityResultContract<Array<String>, List<@JvmSuppressWildcards Uri>>() {
+            override fun createIntent(context: Context, input: Array<String>): Intent {
+                return Intent(Intent.ACTION_GET_CONTENT).apply {
+                    type = "*/*"
+                    putExtra(Intent.EXTRA_MIME_TYPES, input)
+                    putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    val uri = DocumentsContract.buildDocumentUri(
+                        "com.android.externalstorage.documents",
+                        "primary:Download"
+                    )
+                    putExtra(DocumentsContract.EXTRA_INITIAL_URI, uri)
+                }
+            }
+
+            override fun parseResult(resultCode: Int, intent: Intent?): List<Uri> {
+                if (resultCode != Activity.RESULT_OK || intent == null) return emptyList()
+                val clipData = intent.clipData
+                if (clipData != null) {
+                    return (0 until clipData.itemCount).map { clipData.getItemAt(it).uri }
+                }
+                return listOfNotNull(intent.data)
+            }
+        },
+        onResult = { uris ->
+            mainViewModel.importBooks(uris)
+        }
+    )
+
+    val folderPickerLauncher = rememberLauncherForActivityResult(
+        contract = object : ActivityResultContracts.OpenDocumentTree() {
+            override fun createIntent(context: Context, input: Uri?): Intent {
+                val intent = super.createIntent(context, input)
+                val uri = DocumentsContract.buildDocumentUri(
+                    "com.android.externalstorage.documents",
+                    "primary:"
+                )
+                intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, uri)
+                return intent
+            }
+        },
+        onResult = { uri ->
+            uri?.let {
+                mainViewModel.scanFolder(it)
+            }
+        }
+    )
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val app = context.applicationContext as ReaderApplication
     val readerPreferences = app.readerPreferences
     val density = LocalDensity.current
@@ -138,9 +191,6 @@ fun NavGraph(
                         }
                         context.startActivity(intent)
                     },
-                    onOpenDrawerClick = {
-                        scope.launch { drawerState.open() }
-                    },
                     onNavigateToShelf = { shelfId, name, count ->
                         backStack.add(Screen.ShelfDetail(shelfId, name, count))
                     },
@@ -161,7 +211,30 @@ fun NavGraph(
                     },
                     onNavigateToAddToShelf = { bookId ->
                         backStack.add(Screen.AddToShelf(bookId))
-                    }
+                    },
+                    onNavigateToArchives = {
+                        backStack.clear()
+                        backStack.add(Screen.Library)
+                        backStack.add(Screen.Archives)
+                    },
+                    onNavigateToSettings = {
+                        backStack.clear()
+                        backStack.add(Screen.Library)
+                        backStack.add(Screen.Settings)
+                    },
+                    onNavigateToDictionaries = {
+                        backStack.clear()
+                        backStack.add(Screen.Library)
+                        backStack.add(Screen.Dictionaries)
+                    },
+                    onImportFilesClick = {
+                        filePickerLauncher.launch(
+                            arrayOf(
+                                "application/epub+zip"
+                            )
+                        )
+                    },
+                    onScanFolderClick = { folderPickerLauncher.launch(null) }
                 )
             }
             entry<Screen.Settings> {

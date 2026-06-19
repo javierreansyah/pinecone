@@ -1,5 +1,4 @@
 <resources>
-    <string name="app_name">Pinecone</string>
 
     <!-- Common Actions -->
     <string name="action_back">Back</string>
@@ -124,7 +123,6 @@
     <string name="reader_no_toc">No Table of Contents</string>
     <string name="reader_enter_note_placeholder">Enter your note here…</string>
     <string name="reader_search_in_book">Search in book…</string>
-    <string name="reader_search_no_results">No results found</string>
     <string name="reader_search_no_results_for">No results for \"%s\"</string>
     <plurals name="reader_search_results_count">
         <item quantity="one">%d result</item>
@@ -253,7 +251,6 @@
     <string name="reader_settings_restore_defaults_success">Reader settings restored to defaults</string>
 
     <!-- Navigation Drawer -->
-    <string name="nav_book_import">Book Import</string>
 
     <string name="nav_import_files">Import Files</string>
     <string name="nav_scan_folder">Scan Folder</string>

@@ -6,13 +6,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.ViewModelProvider
-import com.example.readerapp.ui.root.MainDrawerWrapper
 import com.example.readerapp.ui.root.MainViewModel
 import com.example.readerapp.ui.root.NavGraph
 import com.example.readerapp.ui.theme.AppTheme
@@ -76,7 +73,6 @@ class MainActivity : AppCompatActivity() {
 
                 val backStack =
                     androidx.navigation3.runtime.rememberNavBackStack(*initialBackStack.toTypedArray())
-                val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
                 com.example.readerapp.ui.root.HandleDeepLinks(
                     backStack = backStack,
@@ -84,16 +80,10 @@ class MainActivity : AppCompatActivity() {
                     removeOnNewIntentListener = { removeOnNewIntentListener(it) }
                 )
 
-                MainDrawerWrapper(
+                NavGraph(
                     backStack = backStack,
-                    drawerState = drawerState,
-                    viewModel = viewModel
-                ) {
-                    NavGraph(
-                        backStack = backStack,
-                        drawerState = drawerState
-                    )
-                }
+                    mainViewModel = viewModel
+                )
             }
         }
     }

@@ -6,16 +6,22 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -29,6 +35,7 @@ import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Delete
 import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Select_all
+import com.composables.icons.materialsymbols.outlined.Unarchive
 import com.example.readerapp.R
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,8 +49,11 @@ fun MultiSelectAppBar(
     onAddToShelf: () -> Unit,
     onArchive: () -> Unit,
     onDelete: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isUnarchive: Boolean = false
 ) {
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
+
     TopAppBar(
         title = {
             Text(text = "$selectedCount")
@@ -83,12 +93,19 @@ fun MultiSelectAppBar(
                 )
             }
             IconButton(onClick = onArchive) {
-                Icon(
-                    imageVector = MaterialSymbols.Outlined.Archive,
-                    contentDescription = stringResource(R.string.book_archive)
-                )
+                if (isUnarchive) {
+                    Icon(
+                        imageVector = MaterialSymbols.Outlined.Unarchive,
+                        contentDescription = stringResource(R.string.book_unarchive)
+                    )
+                } else {
+                    Icon(
+                        imageVector = MaterialSymbols.Outlined.Archive,
+                        contentDescription = stringResource(R.string.book_archive)
+                    )
+                }
             }
-            IconButton(onClick = onDelete) {
+            IconButton(onClick = { showDeleteConfirmation = true }) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Delete,
                     contentDescription = stringResource(R.string.action_delete),
@@ -101,6 +118,46 @@ fun MultiSelectAppBar(
         ),
         modifier = modifier
     )
+
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            title = {
+                Text(
+                    stringResource(R.string.book_delete_title),
+                    style = MaterialTheme.typography.titleLarge
+                )
+            },
+            text = {
+                Text(
+                    stringResource(R.string.book_delete_message),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDelete()
+                        showDeleteConfirmation = false
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(
+                        stringResource(R.string.action_delete),
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmation = false }) {
+                    Text(
+                        stringResource(R.string.action_cancel),
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
+            }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
