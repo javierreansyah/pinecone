@@ -42,6 +42,7 @@ import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Info
 import com.composables.icons.materialsymbols.outlined.Radio_button_unchecked
 import com.composables.icons.materialsymbols.outlined.Select
+import com.composables.icons.materialsymbols.outlined.Unarchive
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.model.Book
 
@@ -215,7 +216,8 @@ fun BookContextMenu(
                 },
                 leadingContent = {
                     Icon(
-                        MaterialSymbols.Outlined.Archive, contentDescription = null
+                        if (book?.isArchived == true) MaterialSymbols.Outlined.Unarchive else MaterialSymbols.Outlined.Archive,
+                        contentDescription = null
                     )
                 },
                 trailingContent = null,
