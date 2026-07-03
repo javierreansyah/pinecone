@@ -28,7 +28,8 @@ class BookInfoViewModel(
     application: Application, private val bookId: String
 ) : AndroidViewModel(application) {
 
-    private val repository: LibraryRepository = (application as PineconeApplication).libraryRepository
+    private val repository: LibraryRepository =
+        (application as PineconeApplication).libraryRepository
 
     val shelves: StateFlow<List<ShelfWithCovers>> = repository.getAllShelvesWithBooks()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())

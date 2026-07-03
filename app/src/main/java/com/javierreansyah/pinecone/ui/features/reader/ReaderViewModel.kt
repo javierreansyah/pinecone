@@ -8,8 +8,8 @@ import androidx.core.graphics.toColorInt
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.PineconeApplication
+import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
@@ -117,9 +117,10 @@ class ReaderViewModel(
     val themeColors: StateFlow<PineconeThemeColors> = combine(
         settingsFlow, systemDarkThemeFlow
     ) { settings, isSystemDark ->
-        val customTheme = settings.customThemes.find { it.name == settings.PineconeThemePreset }
+        val customTheme = settings.customThemes.find { it.name == settings.pineconeThemePreset }
         val uiThemeSetting = customTheme?.uiTheme ?: "Setting"
-        val effectiveThemeMode = if (uiThemeSetting == "Setting" || uiThemeSetting == "setting") settings.themeMode else uiThemeSetting
+        val effectiveThemeMode =
+            if (uiThemeSetting == "Setting" || uiThemeSetting == "setting") settings.themeMode else uiThemeSetting
 
         val uiDarkTheme = when (effectiveThemeMode) {
             "Dark" -> true
@@ -127,7 +128,7 @@ class ReaderViewModel(
             else -> isSystemDark
         }
 
-        val bgColorInt = when (settings.PineconeThemePreset) {
+        val bgColorInt = when (settings.pineconeThemePreset) {
             "Light" -> 0xFFFFFFFF.toInt()
             "Warm" -> 0xFFFAF4E8.toInt()
             "Dark" -> 0xFF000000.toInt()
@@ -139,7 +140,7 @@ class ReaderViewModel(
             }
         }
 
-        val textColorInt = when (settings.PineconeThemePreset) {
+        val textColorInt = when (settings.pineconeThemePreset) {
             "Light" -> 0xFF000000.toInt()
             "Warm" -> 0xFF121212.toInt()
             "Dark" -> 0xFFFFFFFF.toInt()
@@ -163,7 +164,12 @@ class ReaderViewModel(
         run {
             val bgColorInt = if (initialSystemDark) 0xFF000000.toInt() else 0xFFFFFFFF.toInt()
             val textColorInt = if (initialSystemDark) 0xFFFFFFFF.toInt() else 0xFF000000.toInt()
-            PineconeThemeColors(Color(bgColorInt), Color(textColorInt), bgColorInt, initialSystemDark)
+            PineconeThemeColors(
+                Color(bgColorInt),
+                Color(textColorInt),
+                bgColorInt,
+                initialSystemDark
+            )
         }
     )
 

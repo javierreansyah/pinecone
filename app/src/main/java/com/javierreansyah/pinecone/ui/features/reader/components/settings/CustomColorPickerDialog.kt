@@ -140,14 +140,16 @@ fun CustomColorPickerDialog(
                         stringResource(R.string.settings_option_light) to "Light",
                         stringResource(R.string.settings_option_dark) to "Dark"
                     )
-                    
+
                     SegmentedButtonGroup(
                         title = stringResource(R.string.settings_theme_mode),
                         options = uiThemeOptions.map { it.first },
                         icons = emptyList(),
-                        selected = uiThemeOptions.find { it.second == uiThemeInput }?.first ?: stringResource(R.string.reader_settings_theme_setting),
+                        selected = uiThemeOptions.find { it.second == uiThemeInput }?.first
+                            ?: stringResource(R.string.reader_settings_theme_setting),
                         onSelected = { selectedLabel ->
-                            uiThemeInput = uiThemeOptions.find { it.first == selectedLabel }?.second ?: "Setting"
+                            uiThemeInput = uiThemeOptions.find { it.first == selectedLabel }?.second
+                                ?: "Setting"
                         },
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -176,7 +178,10 @@ fun CustomColorPickerDialog(
                                 onClick = {
                                     if (isValid) {
                                         onConfirm(
-                                            name, bgColorInput.uppercase(), textColorInput.uppercase(), uiThemeInput
+                                            name,
+                                            bgColorInput.uppercase(),
+                                            textColorInput.uppercase(),
+                                            uiThemeInput
                                         )
                                     }
                                 }, enabled = isValid
