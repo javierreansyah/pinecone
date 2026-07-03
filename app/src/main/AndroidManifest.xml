@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application
-        android:name=".ReaderApplication"
+        android:name=".PineconeApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
@@ -12,7 +12,7 @@
         android:localeConfig="@xml/locales_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.ReaderApp">
+        android:theme="@style/Theme.Pinecone">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -56,7 +56,7 @@
         <activity
             android:name=".ui.features.reader.ReaderActivity"
             android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize|uiMode"
-            android:theme="@style/Theme.ReaderApp" />
+            android:theme="@style/Theme.Pinecone" />
     </application>
 
 </manifest>

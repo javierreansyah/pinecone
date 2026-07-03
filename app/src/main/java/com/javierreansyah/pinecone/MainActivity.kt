@@ -1,0 +1,121 @@
+package com.javierreansyah.pinecone
+
+import android.content.Intent
+import android.os.Bundle
+import androidx.activity.SystemBarStyle
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.ViewModelProvider
+import com.javierreansyah.pinecone.ui.root.MainViewModel
+import com.javierreansyah.pinecone.ui.root.NavGraph
+import com.javierreansyah.pinecone.ui.theme.AppTheme
+
+class MainActivity : AppCompatActivity() {
+    private lateinit var viewModel: MainViewModel
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
+        super.onCreate(savedInstanceState)
+
+        val app = application as PineconeApplication
+        viewModel = ViewModelProvider(
+            this,
+            MainViewModel.Factory(
+                application = app,
+                libraryRepository = app.libraryRepository,
+                readerPreferences = app.readerPreferences
+            )
+        )[MainViewModel::class.java]
+
+        // Keep splash screen visible until the real settings are loaded from DataStore,
+        // preventing a flicker from default theme (Dynamic) to the user's actual theme.
+        splashScreen.setKeepOnScreenCondition { !viewModel.isReady.value }
+
+        handleIntent(intent)
+
+        enableEdgeToEdge()
+        setContent {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            androidx.compose.runtime.LaunchedEffect(viewModel) {
+                viewModel.toastMessage.collect { message ->
+                    android.widget.Toast.makeText(
+                        context,
+                        message,
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+
+            val isReady by viewModel.isReady.collectAsState()
+            if (!isReady) {
+                return@setContent
+            }
+
+            val settings by viewModel.settings.collectAsState()
+            val darkTheme = when (settings.themeMode) {
+                "Light" -> false
+                "Dark" -> true
+                else -> isSystemInDarkTheme()
+            }
+
+            DisposableEffect(darkTheme) {
+                enableEdgeToEdge(
+                    statusBarStyle = SystemBarStyle.auto(
+                        android.graphics.Color.TRANSPARENT,
+                        android.graphics.Color.TRANSPARENT
+                    ) { darkTheme },
+                    navigationBarStyle = SystemBarStyle.auto(
+                        android.graphics.Color.TRANSPARENT,
+                        android.graphics.Color.TRANSPARENT
+                    ) { darkTheme }
+                )
+                onDispose {}
+            }
+
+            AppTheme(
+                darkTheme = darkTheme,
+                colorPalette = settings.colorPalette,
+                themeContrast = settings.themeContrast
+            ) {
+                val initialBackStack = androidx.compose.runtime.remember {
+                    com.javierreansyah.pinecone.ui.root.getInitialBackStackFromIntent(intent)
+                }
+
+                val backStack =
+                    androidx.navigation3.runtime.rememberNavBackStack(*initialBackStack.toTypedArray())
+
+                com.javierreansyah.pinecone.ui.root.HandleDeepLinks(
+                    backStack = backStack,
+                    addOnNewIntentListener = { addOnNewIntentListener(it) },
+                    removeOnNewIntentListener = { removeOnNewIntentListener(it) }
+                )
+
+                NavGraph(
+                    backStack = backStack,
+                    mainViewModel = viewModel
+                )
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent) {
+        if (intent.action == Intent.ACTION_VIEW) {
+            val uri = intent.data ?: return
+            if (uri.scheme == "file" || uri.scheme == "content") {
+                viewModel.importBook(uri)
+            }
+        }
+    }
+}

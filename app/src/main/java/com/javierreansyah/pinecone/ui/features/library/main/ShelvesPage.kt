@@ -1,0 +1,280 @@
+package com.javierreansyah.pinecone.ui.features.library.main
+
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Book
+import com.composables.icons.materialsymbols.outlined.Folder
+import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
+import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.ui.components.EmptyState
+import com.javierreansyah.pinecone.ui.features.library.LayoutMode
+import com.javierreansyah.pinecone.ui.features.library.components.ShelfListItem
+import com.javierreansyah.pinecone.ui.features.library.components.book.BookItem
+
+@Composable
+fun ShelvesPage(
+    modifier: Modifier = Modifier,
+    shelves: List<ShelfWithCovers>,
+    onShelfClick: (String, String, Int) -> Unit,
+    onBookClick: (String) -> Unit,
+    onBookLongClick: ((String, String) -> Unit)? = null,
+    layoutMode: LayoutMode = LayoutMode.BigList,
+    scrollKey: Any? = null,
+    isInMultiSelectMode: Boolean = false,
+    selectedShelves: Set<String> = emptySet(),
+    onShelfLongClick: ((String) -> Unit)? = null,
+    onShelfToggleSelect: ((String) -> Unit)? = null
+) {
+
+    key(scrollKey) {
+        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.TopStart) {
+            if (shelves.isNotEmpty()) {
+                AnimatedContent(
+                    targetState = layoutMode,
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(durationMillis = 100, delayMillis = 100)) +
+                                scaleIn(
+                                    initialScale = 0.9f,
+                                    animationSpec = tween(durationMillis = 100, delayMillis = 100)
+                                ) togetherWith
+                                fadeOut(animationSpec = tween(durationMillis = 100)) +
+                                scaleOut(
+                                    targetScale = 0.9f,
+                                    animationSpec = tween(durationMillis = 100)
+                                )
+                    },
+                    label = "shelvesPageLayoutTransition"
+                ) { targetLayoutMode ->
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .then(
+                                if (targetLayoutMode != LayoutMode.List) Modifier.padding(vertical = 4.dp)
+                                else Modifier
+                            ), contentPadding = PaddingValues(top = 8.dp)
+                    ) {
+                        items(shelves, key = { it.shelf.id }) { shelfWithCovers ->
+                            val visibleBooks = shelfWithCovers.books
+                            val booksCount = visibleBooks.size
+
+                            val isUnshelved = shelfWithCovers.shelf.id == "unshelved"
+                            val isItemSelectable = !isUnshelved
+                            val itemInMultiSelectMode = isInMultiSelectMode && isItemSelectable
+
+                            if (targetLayoutMode == LayoutMode.List) {
+                                ShelfListItem(
+                                    shelfWithCovers = shelfWithCovers,
+                                    onClick = {
+                                        onShelfClick(
+                                            shelfWithCovers.shelf.id,
+                                            shelfWithCovers.shelf.name,
+                                            booksCount
+                                        )
+                                    },
+                                    isInMultiSelectMode = itemInMultiSelectMode,
+                                    isSelected = selectedShelves.contains(shelfWithCovers.shelf.id),
+                                    onLongClick = if (isItemSelectable) {
+                                        { onShelfLongClick?.invoke(shelfWithCovers.shelf.id) }
+                                    } else null,
+                                    onToggleSelect = if (isItemSelectable) {
+                                        { onShelfToggleSelect?.invoke(shelfWithCovers.shelf.id) }
+                                    } else null
+                                )
+                            } else {
+                                ShelfRowItem(
+                                    shelfWithCovers = shelfWithCovers,
+                                    booksCount = booksCount,
+                                    visibleBooks = visibleBooks,
+                                    onShelfClick = onShelfClick,
+                                    onBookClick = onBookClick,
+                                    onBookLongClick = onBookLongClick,
+                                    isInMultiSelectMode = itemInMultiSelectMode,
+                                    isSelected = selectedShelves.contains(shelfWithCovers.shelf.id),
+                                    onLongClick = if (isItemSelectable) {
+                                        { onShelfLongClick?.invoke(shelfWithCovers.shelf.id) }
+                                    } else null,
+                                    onToggleSelect = if (isItemSelectable) {
+                                        { onShelfToggleSelect?.invoke(shelfWithCovers.shelf.id) }
+                                    } else null
+                                )
+                            }
+                        }
+                    }
+                }
+            } else {
+                EmptyState(
+                    icon = MaterialSymbols.Outlined.Folder,
+                    text = stringResource(R.string.library_empty_shelves),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun ShelfRowItem(
+    shelfWithCovers: ShelfWithCovers,
+    booksCount: Int,
+    visibleBooks: List<com.javierreansyah.pinecone.data.local.database.library.BookWithDetails>,
+    onShelfClick: (String, String, Int) -> Unit,
+    onBookClick: (String) -> Unit,
+    onBookLongClick: ((String, String) -> Unit)?,
+    isInMultiSelectMode: Boolean = false,
+    isSelected: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
+    onToggleSelect: (() -> Unit)? = null
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = {
+                    if (isInMultiSelectMode && onToggleSelect != null) {
+                        onToggleSelect()
+                    } else {
+                        onShelfClick(
+                            shelfWithCovers.shelf.id,
+                            shelfWithCovers.shelf.name,
+                            booksCount
+                        )
+                    }
+                },
+                onLongClick = {
+                    onLongClick?.invoke()
+                }
+            )
+            .padding(vertical = 4.dp)
+    ) {
+        ShelfRowHeader(
+            shelfName = shelfWithCovers.shelf.name,
+            booksCount = booksCount,
+            isInMultiSelectMode = isInMultiSelectMode,
+            isSelected = isSelected,
+            onToggleSelect = onToggleSelect
+        )
+        ShelfBooksHorizontalRow(
+            shelfId = shelfWithCovers.shelf.id,
+            visibleBooks = visibleBooks,
+            onBookClick = onBookClick,
+            onBookLongClick = onBookLongClick
+        )
+    }
+}
+
+@Composable
+private fun ShelfRowHeader(
+    shelfName: String,
+    booksCount: Int,
+    isInMultiSelectMode: Boolean = false,
+    isSelected: Boolean = false,
+    onToggleSelect: (() -> Unit)? = null
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(vertical = 4.dp)
+        ) {
+            Text(
+                text = shelfName,
+                style = MaterialTheme.typography.titleMediumEmphasized
+            )
+            val countText = pluralStringResource(
+                R.plurals.library_shelf_count, booksCount, booksCount
+            )
+            Text(
+                text = countText,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+        if (isInMultiSelectMode) {
+            Checkbox(
+                checked = isSelected,
+                onCheckedChange = { onToggleSelect?.invoke() }
+            )
+        }
+    }
+}
+
+@Composable
+private fun ShelfBooksHorizontalRow(
+    shelfId: String,
+    visibleBooks: List<com.javierreansyah.pinecone.data.local.database.library.BookWithDetails>,
+    onBookClick: (String) -> Unit,
+    onBookLongClick: ((String, String) -> Unit)?
+) {
+    if (visibleBooks.isEmpty()) {
+        EmptyState(
+            icon = MaterialSymbols.Outlined.Book,
+            text = stringResource(R.string.library_empty_shelf),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(140.dp)
+                .padding(horizontal = 8.dp)
+        )
+    } else {
+        val density = LocalDensity.current
+        val containerSize = LocalWindowInfo.current.containerSize
+        val screenWidth = with(density) { containerSize.width.toDp() }
+        val fitsOnScreen = (120.dp * visibleBooks.size + 16.dp) <= screenWidth
+
+        LazyRow(
+            userScrollEnabled = !fitsOnScreen,
+            contentPadding = PaddingValues(horizontal = 8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(visibleBooks, key = { it.book.id }) { bookEntity ->
+                val book = Book.fromEntity(bookEntity)
+                BookItem(
+                    book = book,
+                    onClick = { onBookClick(book.id) },
+                    onLongClick = onBookLongClick?.let { { it(book.id, shelfId) } },
+                    modifier = Modifier.width(120.dp)
+                )
+            }
+        }
+    }
+}
