@@ -31,7 +31,10 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "re
 
 @Serializable
 data class CustomPineconeTheme(
-    val name: String, val backgroundColor: String, val textColor: String, val uiTheme: String = "Setting"
+    val name: String,
+    val backgroundColor: String,
+    val textColor: String,
+    val uiTheme: String = "Setting"
 )
 
 @Serializable
@@ -74,7 +77,7 @@ data class ReaderSettings(
     val textNormalization: Boolean = false,
 
     // Reader theme
-    val PineconeThemePreset: String = "Auto",
+    val pineconeThemePreset: String = "Auto",
     val customBackgroundColor: String = "#FFFFFF",
     val customTextColor: String = "#000000",
     val customThemes: List<CustomPineconeTheme> = emptyList(),
@@ -94,7 +97,7 @@ data class ReaderSettings(
      */
     @OptIn(ExperimentalReadiumApi::class)
     fun toEpubPreferences(isSystemDark: Boolean): EpubPreferences {
-        val resolvedTheme = when (PineconeThemePreset) {
+        val resolvedTheme = when (pineconeThemePreset) {
             "Light" -> Theme.LIGHT
             "Dark" -> Theme.DARK
             "Warm" -> Theme.SEPIA
@@ -110,7 +113,7 @@ data class ReaderSettings(
             else -> null // Custom will be handled by backgroundColor/textColor
         }
 
-        val bgColor = if (PineconeThemePreset !in listOf("Light", "Dark", "Warm", "Auto")) {
+        val bgColor = if (pineconeThemePreset !in listOf("Light", "Dark", "Warm", "Auto")) {
             try {
                 Color(customBackgroundColor.toColorInt())
             } catch (_: Exception) {
@@ -118,7 +121,7 @@ data class ReaderSettings(
             }
         } else null
 
-        val txtColor = if (PineconeThemePreset !in listOf("Light", "Dark", "Warm", "Auto")) {
+        val txtColor = if (pineconeThemePreset !in listOf("Light", "Dark", "Warm", "Auto")) {
             try {
                 Color(customTextColor.toColorInt())
             } catch (_: Exception) {
@@ -279,7 +282,7 @@ class ReaderPreferences(private val context: Context) {
             readingProgression = preferences[READING_PROGRESSION] ?: "LTR",
             textNormalization = preferences[TEXT_NORMALIZATION] ?: false,
 
-            PineconeThemePreset = preferences[READER_THEME_PRESET] ?: "Auto",
+            pineconeThemePreset = preferences[READER_THEME_PRESET] ?: "Auto",
             customBackgroundColor = preferences[CUSTOM_BACKGROUND_COLOR] ?: "#FFFFFF",
             customTextColor = preferences[CUSTOM_TEXT_COLOR] ?: "#000000",
             customThemes = preferences[CUSTOM_THEMES]?.map {
@@ -343,7 +346,7 @@ class ReaderPreferences(private val context: Context) {
             preferences[READING_PROGRESSION] = settings.readingProgression
             preferences[TEXT_NORMALIZATION] = settings.textNormalization
 
-            preferences[READER_THEME_PRESET] = settings.PineconeThemePreset
+            preferences[READER_THEME_PRESET] = settings.pineconeThemePreset
             preferences[CUSTOM_BACKGROUND_COLOR] = settings.customBackgroundColor
             preferences[CUSTOM_TEXT_COLOR] = settings.customTextColor
             preferences[CUSTOM_THEMES] = settings.customThemes.map {

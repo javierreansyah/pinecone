@@ -188,10 +188,10 @@ fun ReaderSettingsContent(
                 {
                     val newThemes = settings.customThemes.filter { it.name != themeToEdit?.name }
                     val newPreset =
-                        if (settings.PineconeThemePreset == themeToEdit?.name) "Auto" else settings.PineconeThemePreset
+                        if (settings.pineconeThemePreset == themeToEdit?.name) "Auto" else settings.pineconeThemePreset
                     onSettingsChange(
                         settings.copy(
-                            customThemes = newThemes, PineconeThemePreset = newPreset
+                            customThemes = newThemes, pineconeThemePreset = newPreset
                         )
                     )
                     showColorPicker = false
@@ -210,12 +210,12 @@ fun ReaderSettingsContent(
                 }
 
                 val newPreset =
-                    if (settings.PineconeThemePreset == themeToEdit?.name || themeToEdit == null) name else settings.PineconeThemePreset
+                    if (settings.pineconeThemePreset == themeToEdit?.name || themeToEdit == null) name else settings.pineconeThemePreset
 
                 onSettingsChange(
                     settings.copy(
                         customThemes = updatedThemes,
-                        PineconeThemePreset = newPreset,
+                        pineconeThemePreset = newPreset,
                         customBackgroundColor = if (newPreset == name) bgColor else settings.customBackgroundColor,
                         customTextColor = if (newPreset == name) textColor else settings.customTextColor
                     )
@@ -259,7 +259,7 @@ fun ReaderSettingsContent(
                             verticalMargin = 32.0,
                             readingProgression = "LTR",
                             textNormalization = false,
-                            PineconeThemePreset = "Auto",
+                            pineconeThemePreset = "Auto",
                             customBackgroundColor = "#FFFFFF",
                             customTextColor = "#000000",
                             customThemes = emptyList(),
@@ -654,12 +654,13 @@ private fun LightingTabContent(
                         trackCornerSize = 8.dp,
                     )
                 },
-                thumb = { sliderState ->
+                thumb = { _ ->
                     SliderDefaults.Thumb(
-                        sliderState = sliderState,
-                        enabled = !settings.autoBrightness,
-                        thumbSize = DpSize(4.dp, 48.dp),
                         interactionSource = interactionSource,
+                        modifier = Modifier,
+                        colors = SliderDefaults.colors(),
+                        enabled = !settings.autoBrightness,
+                        thumbSize = DpSize(4.dp, 48.dp)
                     )
                 }
             )
@@ -682,27 +683,27 @@ private fun LightingTabContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             ThemeSwatch(
-                isSelected = settings.PineconeThemePreset == "Auto",
-                onClick = { onSettingsChange(settings.copy(PineconeThemePreset = "Auto")) },
+                isSelected = settings.pineconeThemePreset == "Auto",
+                onClick = { onSettingsChange(settings.copy(pineconeThemePreset = "Auto")) },
                 isAuto = true,
                 label = stringResource(R.string.reader_settings_theme_auto),
                 modifier = Modifier.padding(start = 0.dp, end = 4.dp)
             )
             ThemeSwatch(
-                isSelected = settings.PineconeThemePreset == "Light",
-                onClick = { onSettingsChange(settings.copy(PineconeThemePreset = "Light")) },
+                isSelected = settings.pineconeThemePreset == "Light",
+                onClick = { onSettingsChange(settings.copy(pineconeThemePreset = "Light")) },
                 color = Color.White,
                 label = stringResource(R.string.reader_settings_theme_light)
             )
             ThemeSwatch(
-                isSelected = settings.PineconeThemePreset == "Dark",
-                onClick = { onSettingsChange(settings.copy(PineconeThemePreset = "Dark")) },
+                isSelected = settings.pineconeThemePreset == "Dark",
+                onClick = { onSettingsChange(settings.copy(pineconeThemePreset = "Dark")) },
                 color = Color.Black,
                 label = stringResource(R.string.reader_settings_theme_dark)
             )
             ThemeSwatch(
-                isSelected = settings.PineconeThemePreset == "Warm",
-                onClick = { onSettingsChange(settings.copy(PineconeThemePreset = "Warm")) },
+                isSelected = settings.pineconeThemePreset == "Warm",
+                onClick = { onSettingsChange(settings.copy(pineconeThemePreset = "Warm")) },
                 color = Color(0xFFFAF4E8),
                 label = stringResource(R.string.reader_settings_theme_sepia)
             )
@@ -710,10 +711,10 @@ private fun LightingTabContent(
             // Custom Saved Themes
             settings.customThemes.forEach { theme ->
                 ThemeSwatch(
-                    isSelected = settings.PineconeThemePreset == theme.name, onClick = {
+                    isSelected = settings.pineconeThemePreset == theme.name, onClick = {
                         onSettingsChange(
                             settings.copy(
-                                PineconeThemePreset = theme.name,
+                                pineconeThemePreset = theme.name,
                                 customBackgroundColor = theme.backgroundColor,
                                 customTextColor = theme.textColor
                             )

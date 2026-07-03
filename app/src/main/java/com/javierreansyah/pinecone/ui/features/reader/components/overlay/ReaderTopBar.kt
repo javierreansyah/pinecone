@@ -419,9 +419,7 @@ fun JumpHistoryPill(
         },
         trailingButton = {
             TooltipBox(
-                positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
-                    TooltipAnchorPosition.Above
-                ),
+                positionProvider = TooltipDefaults.rememberTooltipPositionProvider(positioning = TooltipAnchorPosition.Above),
                 tooltip = {
                     PlainTooltip {
                         Text(description)

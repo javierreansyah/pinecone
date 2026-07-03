@@ -169,6 +169,7 @@
     <string name="reader_settings_brightness">Kecerahan</string>
     <string name="reader_settings_auto_brightness">Kecerahan Otomatis</string>
     <string name="reader_settings_theme">Tema</string>
+    <string name="reader_settings_theme_setting">Pengaturan</string>
     <string name="reader_settings_theme_auto">Otomatis</string>
     <string name="reader_settings_theme_light">Terang</string>
     <string name="reader_settings_theme_dark">Gelap</string>
@@ -270,7 +271,6 @@
     <string name="nav_backup_success">Cadangan berhasil</string>
     <string name="nav_backup_failed">Cadangan gagal</string>
     <string name="nav_restore_backup">Pulihkan Cadangan</string>
-    <string name="nav_restore_backup_warning">Peringatan: Memulihkan cadangan akan sepenuhnya menimpa perpustakaan, kemajuan membaca, dan pengaturan saat ini dengan konten dari cadangan tersebut. Tindakan ini tidak dapat dibatalkan.\n\nApakah Anda ingin melanjutkan?</string>
     <string name="nav_restoring_backup">Memulihkan cadangan…</string>
     <string name="nav_restore_success">Cadangan berhasil dipulihkan!</string>
     <string name="nav_restore_failed">Gagal memulihkan cadangan</string>

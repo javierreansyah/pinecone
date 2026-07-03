@@ -120,7 +120,7 @@ class SettingsViewModel(
                                     if (parsedDate != null) {
                                         timestamp = parsedDate.time
                                     }
-                                } catch (e: Exception) {
+                                } catch (_: Exception) {
                                     // Ignore and use lastModified
                                 }
                             }
@@ -165,7 +165,7 @@ class SettingsViewModel(
             val backupFolderUriString = settingsVal.backupFolderUri
             if (backupFolderUriString.isNotEmpty()) {
                 val backupFolderUri = backupFolderUriString.toUri()
-                val backupFolder = androidx.documentfile.provider.DocumentFile.fromTreeUri(
+                val backupFolder = DocumentFile.fromTreeUri(
                     getApplication(),
                     backupFolderUri
                 )

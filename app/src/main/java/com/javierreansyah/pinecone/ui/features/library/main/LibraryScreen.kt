@@ -225,7 +225,7 @@ fun LibraryScreen(
                                             ?: ""
                                     ShelvesMultiSelectAppBar(
                                         selectedCount = selectedShelves.size,
-                                        isAllSelected = selectedShelves.size > 0 && selectedShelves.size == uiState.shelves.count { it.shelf.id != "unshelved" },
+                                        isAllSelected = selectedShelves.isNotEmpty() && selectedShelves.size == uiState.shelves.count { it.shelf.id != "unshelved" },
                                         selectedShelfName = selectedShelfName,
                                         onCloseMultiSelect = {
                                             selectedShelves = emptySet()

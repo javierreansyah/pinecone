@@ -42,9 +42,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuGroup
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
@@ -57,27 +59,25 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SecondaryScrollableTabRow
+import androidx.compose.material3.SplitButtonDefaults
+import androidx.compose.material3.SplitButtonLayout
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.DropdownMenuPopup
-import androidx.compose.material3.MenuDefaults
-import androidx.compose.material3.PlainTooltip
-import androidx.compose.material3.SplitButtonDefaults
-import androidx.compose.material3.SplitButtonLayout
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
-import androidx.compose.material3.rememberTooltipState
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
@@ -166,8 +166,7 @@ fun BookInfoScreen(
     val context = LocalContext.current
     val application = context.applicationContext as Application
     val viewModel: BookInfoViewModel = viewModel(
-        key = bookId,
-        factory = BookInfoViewModel.Factory(application, bookId)
+        key = bookId, factory = BookInfoViewModel.Factory(application, bookId)
     )
 
     val uiState by viewModel.uiState.collectAsState()
@@ -215,59 +214,50 @@ fun BookInfoScreen(
                     onNavigateToEdit = onNavigateToEdit,
                     onNavigateToTag = onNavigateToTag,
                     showShelfDialog = { showShelfDialog = true },
-                    showDeleteConfirm = { showDeleteConfirm = true }
-                )
+                    showDeleteConfirm = { showDeleteConfirm = true })
             }
         }
     }
 
     if (showShelfDialog) {
         Dialog(
-            onDismissRequest = { showShelfDialog = false },
-            properties = DialogProperties(
-                usePlatformDefaultWidth = false,
-                decorFitsSystemWindows = false
+            onDismissRequest = { showShelfDialog = false }, properties = DialogProperties(
+                usePlatformDefaultWidth = false, decorFitsSystemWindows = false
             )
         ) {
             Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = MaterialTheme.colorScheme.background
+                modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
             ) {
-                Scaffold(
-                    topBar = {
-                        TopAppBar(
-                            title = { Text(stringResource(R.string.library_select_shelf_title)) },
-                            navigationIcon = {
-                                FilledTonalIconButton(
-                                    shapes = IconButtonDefaults.shapes(),
-                                    colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                                    ),
-                                    onClick = { showShelfDialog = false }
-                                ) {
-                                    Icon(
-                                        MaterialSymbols.Outlined.Arrow_back,
-                                        contentDescription = stringResource(R.string.action_back)
-                                    )
-                                }
-                            },
-                            colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = MaterialTheme.colorScheme.surface,
-                                scrolledContainerColor = MaterialTheme.colorScheme.surface,
-                            ),
+                Scaffold(topBar = {
+                    TopAppBar(
+                        title = { Text(stringResource(R.string.library_select_shelf_title)) },
+                        navigationIcon = {
+                            FilledTonalIconButton(
+                                shapes = IconButtonDefaults.shapes(),
+                                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                                ),
+                                onClick = { showShelfDialog = false }) {
+                                Icon(
+                                    MaterialSymbols.Outlined.Arrow_back,
+                                    contentDescription = stringResource(R.string.action_back)
+                                )
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            scrolledContainerColor = MaterialTheme.colorScheme.surface,
+                        ),
+                    )
+                }, floatingActionButton = {
+                    FloatingActionButton(
+                        onClick = { showCreateShelfDialog = true }) {
+                        Icon(
+                            MaterialSymbols.Outlined.Add,
+                            contentDescription = stringResource(R.string.action_create)
                         )
-                    },
-                    floatingActionButton = {
-                        FloatingActionButton(
-                            onClick = { showCreateShelfDialog = true }
-                        ) {
-                            Icon(
-                                MaterialSymbols.Outlined.Add,
-                                contentDescription = stringResource(R.string.action_create)
-                            )
-                        }
                     }
-                ) { paddingValues ->
+                }) { paddingValues ->
                     Box(
                         modifier = Modifier
                             .padding(paddingValues)
@@ -289,12 +279,10 @@ fun BookInfoScreen(
                             ) {
                                 items(validShelves) { shelfWithCovers ->
                                     ShelfListItem(
-                                        shelfWithCovers = shelfWithCovers,
-                                        onClick = {
+                                        shelfWithCovers = shelfWithCovers, onClick = {
                                             viewModel.addBookToShelf(shelfWithCovers.shelf.id)
                                             showShelfDialog = false
-                                        }
-                                    )
+                                        })
                                 }
                             }
                         }
@@ -305,96 +293,79 @@ fun BookInfoScreen(
     }
 
     if (showCreateShelfDialog) {
-        AlertDialog(
-            onDismissRequest = { showCreateShelfDialog = false },
-            title = {
-                Text(
-                    stringResource(R.string.library_create_shelf_title),
-                    style = MaterialTheme.typography.titleLarge
-                )
-            },
-            text = {
-                OutlinedTextField(
-                    value = newShelfName,
-                    onValueChange = { newShelfName = it },
-                    label = {
-                        Text(
-                            stringResource(R.string.library_shelf_name_label),
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                    },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (newShelfName.isNotBlank()) {
-                            viewModel.createShelfAndAddBook(newShelfName)
-                            newShelfName = ""
-                            showCreateShelfDialog = false
-                            showShelfDialog = false
-                        }
+        AlertDialog(onDismissRequest = { showCreateShelfDialog = false }, title = {
+            Text(
+                stringResource(R.string.library_create_shelf_title),
+                style = MaterialTheme.typography.titleLarge
+            )
+        }, text = {
+            OutlinedTextField(
+                value = newShelfName, onValueChange = { newShelfName = it }, label = {
+                    Text(
+                        stringResource(R.string.library_shelf_name_label),
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                }, singleLine = true, modifier = Modifier.fillMaxWidth()
+            )
+        }, confirmButton = {
+            TextButton(
+                onClick = {
+                    if (newShelfName.isNotBlank()) {
+                        viewModel.createShelfAndAddBook(newShelfName)
+                        newShelfName = ""
+                        showCreateShelfDialog = false
+                        showShelfDialog = false
                     }
-                ) {
-                    Text(
-                        stringResource(R.string.action_create),
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showCreateShelfDialog = false }) {
-                    Text(
-                        stringResource(R.string.action_cancel),
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                }
+                }) {
+                Text(
+                    stringResource(R.string.action_create),
+                    style = MaterialTheme.typography.labelLarge
+                )
             }
-        )
+        }, dismissButton = {
+            TextButton(onClick = { showCreateShelfDialog = false }) {
+                Text(
+                    stringResource(R.string.action_cancel),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        })
     }
 
     if (showDeleteConfirm) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
-            title = {
+        AlertDialog(onDismissRequest = { showDeleteConfirm = false }, title = {
+            Text(
+                stringResource(R.string.book_delete_title),
+                style = MaterialTheme.typography.titleLarge
+            )
+        }, text = {
+            Text(
+                stringResource(R.string.book_delete_message),
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }, confirmButton = {
+            TextButton(
+                onClick = {
+                    viewModel.deleteBook {
+                        showDeleteConfirm = false
+                        onNavigateBack()
+                    }
+                },
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+            ) {
                 Text(
-                    stringResource(R.string.book_delete_title),
-                    style = MaterialTheme.typography.titleLarge
+                    stringResource(R.string.action_delete),
+                    style = MaterialTheme.typography.labelLarge
                 )
-            },
-            text = {
-                Text(
-                    stringResource(R.string.book_delete_message),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.deleteBook {
-                            showDeleteConfirm = false
-                            onNavigateBack()
-                        }
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text(
-                        stringResource(R.string.action_delete),
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text(
-                        stringResource(R.string.action_cancel),
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                }
             }
-        )
+        }, dismissButton = {
+            TextButton(onClick = { showDeleteConfirm = false }) {
+                Text(
+                    stringResource(R.string.action_cancel),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        })
     }
 }
 
@@ -463,8 +434,7 @@ private fun BookInfoContent(
 
     Box(modifier = Modifier.fillMaxSize()) {
         BookBackgroundBanner(
-            book = book,
-            scrollState = scrollState
+            book = book, scrollState = scrollState
         )
 
         val nestedScrollConnection = remember {
@@ -480,9 +450,7 @@ private fun BookInfoContent(
                 }
 
                 override fun onPostScroll(
-                    consumed: Offset,
-                    available: Offset,
-                    source: NestedScrollSource
+                    consumed: Offset, available: Offset, source: NestedScrollSource
                 ): Offset {
                     val delta = available.y
                     return if (delta > 0) {
@@ -499,8 +467,7 @@ private fun BookInfoContent(
             modifier = Modifier
                 .fillMaxSize()
                 .nestedScroll(nestedScrollConnection)
-                .verticalScroll(scrollState),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .verticalScroll(scrollState), horizontalAlignment = Alignment.CenterHorizontally
         ) {
             BookInfoHeader(
                 book = book,
@@ -515,13 +482,14 @@ private fun BookInfoContent(
                     furthestLocator?.let { jumpToLocator(it) }
                 },
                 onReadFromStartClick = {
-                    val firstPos = positions.firstOrNull() ?: tableOfContents.firstOrNull()?.let { link ->
-                        Locator(
-                            href = link.url(),
-                            mediaType = link.mediaType ?: MediaType.XHTML,
-                            title = link.title
-                        )
-                    }
+                    val firstPos =
+                        positions.firstOrNull() ?: tableOfContents.firstOrNull()?.let { link ->
+                            Locator(
+                                href = link.url(),
+                                mediaType = link.mediaType ?: MediaType.XHTML,
+                                title = link.title
+                            )
+                        }
                     firstPos?.let { jumpToLocator(it) }
                 },
                 onToggleReadStatus = { viewModel.toggleReadStatus() },
@@ -546,20 +514,15 @@ private fun BookInfoContent(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 tabs.forEachIndexed { index, title ->
-                    Tab(
-                        selected = pagerState.currentPage == index,
-                        onClick = {
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(index)
-                            }
-                        },
-                        text = {
-                            Text(
-                                text = title,
-                                style = MaterialTheme.typography.titleMedium
-                            )
+                    Tab(selected = pagerState.currentPage == index, onClick = {
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(index)
                         }
-                    )
+                    }, text = {
+                        Text(
+                            text = title, style = MaterialTheme.typography.titleMedium
+                        )
+                    })
                 }
             }
 
@@ -573,8 +536,7 @@ private fun BookInfoContent(
             ) { page ->
                 when (page) {
                     0 -> AboutTabContent(
-                        book = book,
-                        maxTabHeight = maxTabHeight
+                        book = book, maxTabHeight = maxTabHeight
                     )
 
                     1 -> ChaptersTabContent(
@@ -621,9 +583,7 @@ private fun BookInfoContent(
 
 @Composable
 private fun BookBackgroundBanner(
-    book: Book,
-    scrollState: ScrollState,
-    modifier: Modifier = Modifier
+    book: Book, scrollState: ScrollState, modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
@@ -632,8 +592,7 @@ private fun BookBackgroundBanner(
             .graphicsLayer {
                 translationY = -scrollState.value.toFloat()
             }
-            .clipToBounds()
-    ) {
+            .clipToBounds()) {
         if (book.coverPath != null) {
             val coverModel = remember(book.coverPath) { File(book.coverPath) }
             AsyncImage(
@@ -647,8 +606,7 @@ private fun BookBackgroundBanner(
                         translationY = scrollState.value * 0.5f
                     }
                     .blur(radius = 32.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded)
-                    .scale(1.2f)
-            )
+                    .scale(1.2f))
         } else {
             Box(
                 modifier = Modifier
@@ -682,9 +640,7 @@ private fun BookBackgroundBanner(
 
 @Composable
 private fun AboutTabContent(
-    book: Book,
-    maxTabHeight: Dp,
-    modifier: Modifier = Modifier
+    book: Book, maxTabHeight: Dp, modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier
@@ -742,13 +698,21 @@ private fun ChaptersTabContent(
                 val isCurrentChapter = currentHref == linkHref
                 val pageLabel = getChapterPageLabel(link, positions)
                 ListItem(
-                    headlineContent = {
-                        Text(
-                            text = link.title ?: link.href.toString(),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else Color.Unspecified
+                    modifier = Modifier.clickable {
+                        val targetLocator = positions.firstOrNull {
+                            it.href.toString().substringBefore("#") == link.href.toString()
+                                .substringBefore("#")
+                        } ?: Locator(
+                            href = link.url(),
+                            mediaType = link.mediaType ?: positions.firstOrNull()?.mediaType
+                            ?: MediaType.XHTML,
+                            title = link.title
                         )
+                        onChapterClick(targetLocator)
                     },
+                    leadingContent = null,
+                    trailingContent = null,
+                    overlineContent = null,
                     supportingContent = if (pageLabel.isNotBlank()) {
                         {
                             Text(
@@ -758,21 +722,15 @@ private fun ChaptersTabContent(
                             )
                         }
                     } else null,
-                    modifier = Modifier.clickable {
-                        val targetLocator = positions.firstOrNull {
-                            it.href.toString()
-                                .substringBefore("#") == link.href.toString()
-                                .substringBefore("#")
-                        } ?: Locator(
-                            href = link.url(),
-                            mediaType = link.mediaType
-                                ?: positions.firstOrNull()?.mediaType
-                                ?: MediaType.XHTML,
-                            title = link.title
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    elevation = ListItemDefaults.elevation(),
+                    content = {
+                        Text(
+                            text = link.title ?: link.href.toString(),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else Color.Unspecified
                         )
-                        onChapterClick(targetLocator)
                     },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
             }
         }
@@ -819,19 +777,8 @@ private fun BookmarksTabContent(
             currentLocator?.let { locator ->
                 item {
                     ListItem(
-                        headlineContent = {
-                            Text(
-                                text = stringResource(R.string.book_info_current_position),
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        },
-                        supportingContent = {
-                            val label = getPositionLabel(locator, positions)
-                            Text(
-                                text = label.ifBlank { stringResource(R.string.reader_in_document) },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                        modifier = Modifier.clickable {
+                            onNavigateToLocator(locator)
                         },
                         leadingContent = {
                             Icon(
@@ -840,23 +787,8 @@ private fun BookmarksTabContent(
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         },
-                        modifier = Modifier.clickable {
-                            onNavigateToLocator(locator)
-                        },
-                        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                    )
-                }
-            }
-
-            furthestLocator?.let { locator ->
-                item {
-                    ListItem(
-                        headlineContent = {
-                            Text(
-                                text = stringResource(R.string.book_info_furthest_position),
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        },
+                        trailingContent = null,
+                        overlineContent = null,
                         supportingContent = {
                             val label = getPositionLabel(locator, positions)
                             Text(
@@ -864,6 +796,24 @@ private fun BookmarksTabContent(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                        },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                        elevation = ListItemDefaults.elevation(),
+                        content = {
+                            Text(
+                                text = stringResource(R.string.book_info_current_position),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        },
+                    )
+                }
+            }
+
+            furthestLocator?.let { locator ->
+                item {
+                    ListItem(
+                        modifier = Modifier.clickable {
+                            onJumpToLocator(locator)
                         },
                         leadingContent = {
                             Icon(
@@ -883,10 +833,23 @@ private fun BookmarksTabContent(
                                 )
                             }
                         },
-                        modifier = Modifier.clickable {
-                            onJumpToLocator(locator)
+                        overlineContent = null,
+                        supportingContent = {
+                            val label = getPositionLabel(locator, positions)
+                            Text(
+                                text = label.ifBlank { stringResource(R.string.reader_in_document) },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         },
-                        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                        elevation = ListItemDefaults.elevation(),
+                        content = {
+                            Text(
+                                text = stringResource(R.string.book_info_furthest_position),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        },
                     )
                 }
             }
@@ -898,8 +861,7 @@ private fun BookmarksTabContent(
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(
-                            horizontal = 16.dp,
-                            vertical = 8.dp
+                            horizontal = 16.dp, vertical = 8.dp
                         )
                     )
                 }
@@ -921,12 +883,21 @@ private fun BookmarksTabContent(
                                 }?.title ?: inDocument
 
                         ListItem(
-                            headlineContent = {
-                                Text(
-                                    text = chapterTitle,
-                                    style = MaterialTheme.typography.titleMedium
-                                )
+                            modifier = Modifier.clickable {
+                                onJumpToLocator(locator)
                             },
+                            leadingContent = null,
+                            trailingContent = {
+                                androidx.compose.material3.IconButton(
+                                    onClick = { onDeleteBookmark(bookmark.id) }) {
+                                    Icon(
+                                        imageVector = MaterialSymbols.Outlined.Delete,
+                                        contentDescription = stringResource(R.string.action_delete),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            },
+                            overlineContent = null,
                             supportingContent = {
                                 val label = getPositionLabel(locator, positions)
                                 Text(
@@ -935,21 +906,14 @@ private fun BookmarksTabContent(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             },
-                            trailingContent = {
-                                androidx.compose.material3.IconButton(
-                                    onClick = { onDeleteBookmark(bookmark.id) }
-                                ) {
-                                    Icon(
-                                        imageVector = MaterialSymbols.Outlined.Delete,
-                                        contentDescription = stringResource(R.string.action_delete),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                            elevation = ListItemDefaults.elevation(),
+                            content = {
+                                Text(
+                                    text = chapterTitle,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
                             },
-                            modifier = Modifier.clickable {
-                                onJumpToLocator(locator)
-                            },
-                            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                         )
                     }
                 }
@@ -1010,8 +974,7 @@ private fun NotesTabContent(
                             .fillMaxWidth()
                             .clickable { onNoteClick(locator) }
                             .padding(horizontal = 20.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+                        verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1039,8 +1002,7 @@ private fun NotesTabContent(
                                 }
                             }
                             androidx.compose.material3.IconButton(
-                                onClick = { onDeleteNote(note.id) },
-                                modifier = Modifier.size(24.dp)
+                                onClick = { onDeleteNote(note.id) }, modifier = Modifier.size(24.dp)
                             ) {
                                 Icon(
                                     imageVector = MaterialSymbols.Outlined.Delete,
@@ -1050,32 +1012,31 @@ private fun NotesTabContent(
                             }
                         }
 
-                        locator.text.highlight?.takeIf { it.isNotBlank() }
-                            ?.let { highlight ->
-                                Row(
+                        locator.text.highlight?.takeIf { it.isNotBlank() }?.let { highlight ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(IntrinsicSize.Min)
+                            ) {
+                                Box(
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(IntrinsicSize.Min)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .width(4.dp)
-                                            .fillMaxHeight()
-                                            .clip(CircleShape)
-                                            .background(
-                                                Color(note.color).copy(
-                                                    alpha = 1f
-                                                )
+                                        .width(4.dp)
+                                        .fillMaxHeight()
+                                        .clip(CircleShape)
+                                        .background(
+                                            Color(note.color).copy(
+                                                alpha = 1f
                                             )
-                                    )
-                                    Text(
-                                        text = highlight,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(start = 12.dp)
-                                    )
-                                }
+                                        )
+                                )
+                                Text(
+                                    text = highlight,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(start = 12.dp)
+                                )
                             }
+                        }
 
                         if (note.noteText.isNotBlank()) {
                             Text(
@@ -1114,8 +1075,7 @@ private fun BookInfoHeader(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         BookCoverImage(
-            coverPath = book.coverPath,
-            title = book.title
+            coverPath = book.coverPath, title = book.title
         )
 
         BookHeaderDetails(
@@ -1161,84 +1121,79 @@ private fun BookButtonGroup(
     ) {
         var splitMenuExpanded by remember { mutableStateOf(false) }
 
-        SplitButtonLayout(
-            leadingButton = {
-                SplitButtonDefaults.LeadingButton(
-                    onClick = onReadClick,
+        SplitButtonLayout(leadingButton = {
+            SplitButtonDefaults.LeadingButton(
+                onClick = onReadClick,
+            ) {
+                Icon(
+                    imageVector = MaterialSymbols.Outlined.Book,
+                    contentDescription = null,
+                    modifier = Modifier.size(SplitButtonDefaults.LeadingIconSize)
+                )
+                Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
+                Text(stringResource(R.string.action_read))
+            }
+        }, trailingButton = {
+            val description = stringResource(R.string.action_more)
+            Box {
+                TooltipBox(
+                    positionProvider = TooltipDefaults.rememberTooltipPositionProvider(positioning = TooltipAnchorPosition.Above),
+                    tooltip = {
+                        PlainTooltip { Text(description) }
+                    },
+                    state = rememberTooltipState()
                 ) {
-                    Icon(
-                        imageVector = MaterialSymbols.Outlined.Book,
-                        contentDescription = null,
-                        modifier = Modifier.size(SplitButtonDefaults.LeadingIconSize)
-                    )
-                    Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
-                    Text(stringResource(R.string.action_read))
-                }
-            },
-            trailingButton = {
-                val description = stringResource(R.string.action_more)
-                Box {
-                    TooltipBox(
-                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
-                        tooltip = {
-                            PlainTooltip { Text(description) }
-                        },
-                        state = rememberTooltipState()
-                    ) {
-                        SplitButtonDefaults.TrailingButton(
-                            checked = splitMenuExpanded,
-                            onCheckedChange = { splitMenuExpanded = it },
-                            modifier = Modifier.semantics {
-                                stateDescription = if (splitMenuExpanded) "Expanded" else "Collapsed"
-                                contentDescription = description
-                            }
-                        ) {
-                            val rotation: Float by animateFloatAsState(
-                                targetValue = if (splitMenuExpanded) 180f else 0f,
-                                label = "Trailing Icon Rotation"
-                            )
-                            Icon(
-                                MaterialSymbols.Outlined.Arrow_drop_down,
-                                modifier = Modifier
-                                    .size(SplitButtonDefaults.TrailingIconSize)
-                                    .graphicsLayer { rotationZ = rotation },
-                                contentDescription = description
-                            )
-                        }
+                    SplitButtonDefaults.TrailingButton(
+                        checked = splitMenuExpanded,
+                        onCheckedChange = { splitMenuExpanded = it },
+                        modifier = Modifier.semantics {
+                            stateDescription = if (splitMenuExpanded) "Expanded" else "Collapsed"
+                            contentDescription = description
+                        }) {
+                        val rotation: Float by animateFloatAsState(
+                            targetValue = if (splitMenuExpanded) 180f else 0f,
+                            label = "Trailing Icon Rotation"
+                        )
+                        Icon(
+                            MaterialSymbols.Outlined.Arrow_drop_down,
+                            modifier = Modifier
+                                .size(SplitButtonDefaults.TrailingIconSize)
+                                .graphicsLayer { rotationZ = rotation },
+                            contentDescription = description
+                        )
                     }
+                }
 
-                    DropdownMenuPopup(
-                        expanded = splitMenuExpanded,
-                        onDismissRequest = { splitMenuExpanded = false }
+                DropdownMenuPopup(
+                    expanded = splitMenuExpanded,
+                    onDismissRequest = { splitMenuExpanded = false }) {
+                    val groupInteractionSource = remember { MutableInteractionSource() }
+                    DropdownMenuGroup(
+                        shapes = MenuDefaults.groupShape(0, 1),
+                        interactionSource = groupInteractionSource
                     ) {
-                        val groupInteractionSource = remember { MutableInteractionSource() }
-                        DropdownMenuGroup(
-                            shapes = MenuDefaults.groupShape(0, 1),
-                            interactionSource = groupInteractionSource
-                        ) {
-                            DropdownMenuItem(
-                                selected = false,
-                                text = { Text("Read furthest") },
-                                onClick = {
-                                    splitMenuExpanded = false
-                                    onReadFurthestClick()
-                                },
-                                shapes = MenuDefaults.itemShape(0, 2)
-                            )
-                            DropdownMenuItem(
-                                selected = false,
-                                text = { Text("Read from start") },
-                                onClick = {
-                                    splitMenuExpanded = false
-                                    onReadFromStartClick()
-                                },
-                                shapes = MenuDefaults.itemShape(1, 2)
-                            )
-                        }
+                        DropdownMenuItem(
+                            selected = false,
+                            text = { Text("Read furthest") },
+                            onClick = {
+                                splitMenuExpanded = false
+                                onReadFurthestClick()
+                            },
+                            shapes = MenuDefaults.itemShape(0, 2)
+                        )
+                        DropdownMenuItem(
+                            selected = false,
+                            text = { Text("Read from start") },
+                            onClick = {
+                                splitMenuExpanded = false
+                                onReadFromStartClick()
+                            },
+                            shapes = MenuDefaults.itemShape(1, 2)
+                        )
                     }
                 }
             }
-        )
+        })
 
         Box(
             modifier = Modifier
@@ -1277,8 +1232,7 @@ private fun BookButtonGroup(
         }
 
         FilledTonalIconButton(
-            onClick = onToggleArchive,
-            colors = IconButtonDefaults.filledTonalIconButtonColors(
+            onClick = onToggleArchive, colors = IconButtonDefaults.filledTonalIconButtonColors(
                 containerColor = if (book.isArchived) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
                 contentColor = if (book.isArchived) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -1292,8 +1246,7 @@ private fun BookButtonGroup(
         }
 
         FilledTonalIconButton(
-            onClick = onDeleteClick,
-            colors = IconButtonDefaults.filledTonalIconButtonColors(
+            onClick = onDeleteClick, colors = IconButtonDefaults.filledTonalIconButtonColors(
                 containerColor = MaterialTheme.colorScheme.errorContainer,
                 contentColor = MaterialTheme.colorScheme.onErrorContainer
             )
@@ -1308,9 +1261,7 @@ private fun BookButtonGroup(
 
 @Composable
 private fun BookCoverImage(
-    coverPath: String?,
-    title: String,
-    modifier: Modifier = Modifier
+    coverPath: String?, title: String, modifier: Modifier = Modifier
 ) {
     if (coverPath != null) {
         val coverModel = remember(coverPath) { File(coverPath) }
@@ -1398,54 +1349,45 @@ private fun BookHeaderDetails(
                 ) {
                     tagsToShow.forEach { tag ->
                         SuggestionChip(
-                            onClick = { onNavigateToTag(tag) },
-                            label = {
+                            onClick = { onNavigateToTag(tag) }, label = {
                                 Text(
                                     text = tag,
                                     style = MaterialTheme.typography.labelMedium,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
-                            },
-                            colors = SuggestionChipDefaults.suggestionChipColors(
+                            }, colors = SuggestionChipDefaults.suggestionChipColors(
                                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
                                 labelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            ),
-                            border = null
+                            ), border = null
                         )
                     }
 
                     if (showMoreChip) {
                         SuggestionChip(
-                            onClick = { isExpanded = true },
-                            label = {
+                            onClick = { isExpanded = true }, label = {
                                 Icon(
                                     imageVector = MaterialSymbols.Outlined.More_vert,
                                     contentDescription = "Show more tags",
                                     modifier = Modifier.size(16.dp)
                                 )
-                            },
-                            colors = SuggestionChipDefaults.suggestionChipColors(
+                            }, colors = SuggestionChipDefaults.suggestionChipColors(
                                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
                                 labelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            ),
-                            border = null
+                            ), border = null
                         )
                     } else if (isExpanded && tags.size > 5) {
                         SuggestionChip(
-                            onClick = { isExpanded = false },
-                            label = {
+                            onClick = { isExpanded = false }, label = {
                                 Icon(
                                     imageVector = MaterialSymbols.Outlined.Close,
                                     contentDescription = "Show less tags",
                                     modifier = Modifier.size(16.dp)
                                 )
-                            },
-                            colors = SuggestionChipDefaults.suggestionChipColors(
+                            }, colors = SuggestionChipDefaults.suggestionChipColors(
                                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
                                 labelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            ),
-                            border = null
+                            ), border = null
                         )
                     }
                 }
@@ -1456,12 +1398,10 @@ private fun BookHeaderDetails(
 
 @Composable
 private fun BookProgress(
-    progress: Double,
-    modifier: Modifier = Modifier
+    progress: Double, modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1491,15 +1431,13 @@ private fun BookProgress(
 
 @Composable
 private fun BookDescription(
-    description: String,
-    modifier: Modifier = Modifier
+    description: String, modifier: Modifier = Modifier
 ) {
     var isExpanded by remember { mutableStateOf(false) }
 
     val annotatedDescription = remember(description) {
         val spanned = HtmlCompat.fromHtml(
-            description,
-            HtmlCompat.FROM_HTML_MODE_COMPACT
+            description, HtmlCompat.FROM_HTML_MODE_COMPACT
         )
         // Trim trailing whitespace/newlines that HtmlCompat often leaves
         val trimmed = spanned.toString().trimEnd()
@@ -1507,8 +1445,7 @@ private fun BookDescription(
     }
 
     Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
             text = stringResource(R.string.book_description),
@@ -1535,24 +1472,20 @@ private fun BookDescription(
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
+                    interactionSource = remember { MutableInteractionSource() }, indication = null
                 ) {
                     isExpanded = !isExpanded
-                }
-            )
+                })
         }
     }
 }
 
 @Composable
 private fun BookMetadata(
-    book: Book,
-    modifier: Modifier = Modifier
+    book: Book, modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
             text = stringResource(R.string.book_publication_details),
@@ -1629,8 +1562,7 @@ private fun BookMetadata(
                     )
                     Text(
                         text = parseBookFormat(
-                            book.mediaType,
-                            stringResource(R.string.book_unknown)
+                            book.mediaType, stringResource(R.string.book_unknown)
                         ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface
@@ -1759,8 +1691,7 @@ private fun getPositionLabel(locator: Locator, positions: List<Locator>): String
         )
 
         locator.locations.totalProgression != null -> stringResource(
-            R.string.reader_position_at,
-            "${(locator.locations.totalProgression!! * 100).toInt()}%"
+            R.string.reader_position_at, "${(locator.locations.totalProgression!! * 100).toInt()}%"
         )
 
         else -> ""

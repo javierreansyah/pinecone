@@ -23,7 +23,8 @@ class EditBookViewModel(
     application: Application, private val bookId: String
 ) : AndroidViewModel(application) {
 
-    private val repository: LibraryRepository = (application as PineconeApplication).libraryRepository
+    private val repository: LibraryRepository =
+        (application as PineconeApplication).libraryRepository
 
     private val _uiState = MutableStateFlow(EditBookUiState())
     val uiState: StateFlow<EditBookUiState> = _uiState.asStateFlow()
