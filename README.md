@@ -1,6 +1,8 @@
-# ReaderApp
+# Pinecone
 
 Expressive Material 3 e-reader built with Jetpack Compose.
+
+**Author**: Javier Aahmes Reansyah (javierreansyah)
 
 ## Quick Start
 

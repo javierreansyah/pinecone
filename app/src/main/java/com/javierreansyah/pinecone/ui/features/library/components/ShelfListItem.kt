@@ -1,0 +1,119 @@
+package com.javierreansyah.pinecone.ui.features.library.components
+
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
+import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
+import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.ui.features.library.components.book.CoverImage
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun ShelfListItem(
+    shelfWithCovers: ShelfWithCovers,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isInMultiSelectMode: Boolean = false,
+    isSelected: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
+    onToggleSelect: (() -> Unit)? = null
+) {
+    val visibleBooks = shelfWithCovers.books
+    val booksCount = visibleBooks.size
+
+    // We only need up to 2 covers for the thumbnail
+    val booksForThumbnail = visibleBooks.take(2).map { Book.fromEntity(it) }
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = {
+                    if (isInMultiSelectMode && onToggleSelect != null) {
+                        onToggleSelect()
+                    } else {
+                        onClick()
+                    }
+                },
+                onLongClick = {
+                    onLongClick?.invoke()
+                }
+            )
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Thumbnail Box
+        // The first book is on top, second is behind shifted right, third is behind shifted further right.
+        Box(
+            modifier = Modifier
+                .height(100.dp)
+                .width(76.dp)
+        ) {
+            // Draw in reverse so the first item has the highest z-index naturally
+            booksForThumbnail.forEachIndexed { index, book ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .aspectRatio(2f / 3f)
+                        .offset(x = (index * 9).dp)
+                        .zIndex(3f - index)
+                ) {
+                    CoverImage(
+                        book = book, modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+        }
+
+        // Details
+        Column(
+            modifier = Modifier
+                .height(100.dp)
+                .weight(1f),
+            verticalArrangement = Arrangement.Top
+        ) {
+            Text(
+                text = shelfWithCovers.shelf.name,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
+            val countText = androidx.compose.ui.res.pluralStringResource(
+                R.plurals.library_shelf_count, booksCount, booksCount
+            )
+            Text(
+                text = countText,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        if (isInMultiSelectMode) {
+            Checkbox(
+                checked = isSelected,
+                onCheckedChange = { onToggleSelect?.invoke() }
+            )
+        }
+    }
+}

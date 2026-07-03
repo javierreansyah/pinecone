@@ -50,7 +50,8 @@
         <item quantity="one">Are you sure you want to delete %d shelf? The books inside will not be deleted.</item>
         <item quantity="other">Are you sure you want to delete %d shelves? The books inside will not be deleted.</item>
     </plurals>
-    <string name="library_shelf_name_label">Shelf Name</string>
+    <string name="library_rename_shelf_title">Rename shelf</string>
+    <string name="library_shelf_name_label">Shelf name</string>
     <string name="library_create_shelf_title">Create New Shelf</string>
     <string name="library_select_shelf_title">Select Shelf</string>
     <plurals name="library_shelf_count">
@@ -67,6 +68,10 @@
     <string name="library_empty_authors">No authors found.</string>
     <string name="library_empty_tags">No tags found.</string>
     <string name="library_delete_item_title">Delete %s</string>
+    <string name="library_rename_author_title">Rename author</string>
+    <string name="library_rename_tag_title">Rename tag</string>
+    <string name="library_author_name_label">Author name</string>
+    <string name="library_tag_name_label">Tag name</string>
     <string name="library_delete_item_message">Are you sure you want to delete \'%s\'? This will remove it from all books.</string>
     <string name="library_label_view">View</string>
     <string name="library_label_status">Status</string>
@@ -151,6 +156,7 @@
     <string name="reader_settings_tab_lighting">Lighting</string>
     <string name="reader_settings_tab_advanced">Advanced</string>
     <string name="reader_settings_font">Font</string>
+    <string name="reader_settings_dictionary">Dictionary</string>
     <string name="reader_settings_typography">Typography</string>
     <string name="reader_menu_content">Content</string>
     <string name="reader_menu_settings">Settings</string>
@@ -168,6 +174,7 @@
     <string name="reader_settings_brightness">Brightness</string>
     <string name="reader_settings_auto_brightness">Auto Brightness</string>
     <string name="reader_settings_theme">Theme</string>
+    <string name="reader_settings_theme_setting">Setting</string>
     <string name="reader_settings_theme_auto">Auto</string>
     <string name="reader_settings_theme_light">Light</string>
     <string name="reader_settings_theme_dark">Dark</string>
@@ -249,6 +256,11 @@
     <string name="settings_backup_freq_3d">3 days</string>
     <string name="settings_backup_freq_1w">1 week</string>
     <string name="settings_restore_defaults">Restore Defaults</string>
+    <string name="settings_restore_backup_warning">Are you sure you want to restore? This will overwrite your current library and settings.</string>
+    <string name="settings_restore_backup_sheet_title">Select Backup to Restore</string>
+    <string name="settings_backup_auto_label">Auto</string>
+    <string name="settings_backup_manual_label">Manual</string>
+    <string name="settings_no_backups_found">No backups found in the selected folder.</string>
     <string name="settings_restore_defaults_warning">Are you sure you want to restore settings to their default values? This will reset your theme, color palette, language, and auto-backup settings.\n\nReader settings (like font size, brightness, etc.) will not be changed.</string>
     <string name="settings_restore_defaults_success">Settings restored to defaults</string>
     <string name="reader_settings_restore_defaults">Restore Reader Defaults</string>

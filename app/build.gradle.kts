@@ -13,11 +13,11 @@ fun generateVersionCode(): Int {
 val appVersionName = "1.0"
 
 android {
-    namespace = "com.example.readerapp"
+    namespace = "com.javierreansyah.pinecone"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.example.readerapp"
+        applicationId = "com.javierreansyah.pinecone"
         minSdk = 34
         targetSdk = 37
         versionCode = generateVersionCode()

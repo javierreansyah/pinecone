@@ -50,7 +50,8 @@
     <plurals name="library_delete_shelves_message">
         <item quantity="other">Apakah Anda yakin ingin menghapus %d rak? Buku-buku di dalamnya tidak akan dihapus.</item>
     </plurals>
-    <string name="library_shelf_name_label">Nama Rak</string>
+    <string name="library_rename_shelf_title">Ubah nama rak</string>
+    <string name="library_shelf_name_label">Nama rak</string>
     <string name="library_create_shelf_title">Buat Rak Baru</string>
     <string name="library_select_shelf_title">Pilih Rak</string>
     <plurals name="library_shelf_count">
@@ -65,6 +66,10 @@
     <string name="library_empty_authors">Penulis tidak ditemukan.</string>
     <string name="library_empty_tags">Tag tidak ditemukan.</string>
     <string name="library_delete_item_title">Hapus %s</string>
+    <string name="library_rename_author_title">Ubah nama penulis</string>
+    <string name="library_rename_tag_title">Ubah nama tag</string>
+    <string name="library_author_name_label">Nama penulis</string>
+    <string name="library_tag_name_label">Nama tag</string>
     <string name="library_delete_item_message">Apakah Anda yakin ingin menghapus \'%s\'? Ini akan menghapusnya dari semua buku.</string>
     <string name="library_label_view">Tampilan</string>
     <string name="library_label_status">Status</string>
@@ -146,6 +151,7 @@
     <string name="reader_settings_tab_lighting">Pencahayaan</string>
     <string name="reader_settings_tab_advanced">Lanjutan</string>
     <string name="reader_settings_font">Font</string>
+    <string name="reader_settings_dictionary">Kamus</string>
     <string name="reader_settings_typography">Tipografi</string>
     <string name="reader_menu_content">Konten</string>
     <string name="reader_menu_settings">Pengaturan</string>
@@ -243,6 +249,11 @@
     <string name="settings_backup_freq_3d">3 hari</string>
     <string name="settings_backup_freq_1w">1 minggu</string>
     <string name="settings_restore_defaults">Pulihkan Setelan Awal</string>
+    <string name="settings_restore_backup_warning">Apakah Anda yakin ingin memulihkan? Ini akan menimpa perpustakaan dan pengaturan Anda saat ini.</string>
+    <string name="settings_restore_backup_sheet_title">Pilih Cadangan untuk Dipulihkan</string>
+    <string name="settings_backup_auto_label">Otomatis</string>
+    <string name="settings_backup_manual_label">Manual</string>
+    <string name="settings_no_backups_found">Tidak ada cadangan yang ditemukan di folder yang dipilih.</string>
     <string name="settings_restore_defaults_warning">Apakah Anda yakin ingin memulihkan pengaturan ke nilai default? Tindakan ini akan mereset tema, palet warna, bahasa, dan pengaturan cadangan otomatis Anda.\n\nPengaturan pembaca (seperti ukuran font, kecerahan, dll.) tidak akan diubah.</string>
     <string name="settings_restore_defaults_success">Pengaturan dipulihkan ke default</string>
     <string name="reader_settings_restore_defaults">Pulihkan Setelan Awal Pembaca</string>
