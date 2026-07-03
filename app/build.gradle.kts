@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.aboutlibraries)
 }
 
 fun generateVersionCode(): Int {
@@ -61,6 +62,10 @@ android {
         compose = true
         viewBinding = true
     }
+
+    lint {
+        lintConfig = file("../lint.xml")
+    }
 }
 
 @Suppress("UnstableApiUsage")
@@ -114,4 +119,9 @@ dependencies {
     //noinspection UseTomlInstead
     implementation("androidx.compose.ui:ui-text-google-fonts:1.11.4")
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.aboutlibraries.compose)
 }
+
+aboutLibraries {
+}
+

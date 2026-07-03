@@ -15,6 +15,12 @@ sealed interface Screen : NavKey {
     data object Settings : Screen
 
     @Serializable
+    data object About : Screen
+
+    @Serializable
+    data object OpenSourceLicenses : Screen
+
+    @Serializable
     data class ShelfDetail(
         val shelfId: String,
         val name: String = "",

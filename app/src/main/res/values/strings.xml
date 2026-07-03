@@ -297,4 +297,15 @@
     <string name="reader_sort_creation_date_desc">Creation date (newest first)</string>
     <string name="reader_sort_book_order_asc">Book order (early first)</string>
     <string name="reader_sort_book_order_desc">Book order (late first)</string>
+
+    <!-- About & Licenses -->
+    <string name="about_title">Pinecone</string>
+    <string name="about_copyright">Copyright © 2026 Javier Aahmes Reansyah</string>
+    <string name="about_view_full_license">View Full License</string>
+    <string name="about_source_code">Source Code (GitHub)</string>
+    <string name="about_open_source_licenses">Open Source Licenses</string>
+    <string name="about_no_libraries">No open source libraries found.</string>
+    <string name="about_unknown_license">Unknown License</string>
+    <string name="settings_about_section">About</string>
+    <string name="settings_about_app">About this App</string>
 </resources>

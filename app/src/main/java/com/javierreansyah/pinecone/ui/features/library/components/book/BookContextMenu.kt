@@ -138,31 +138,6 @@ fun BookContextMenu(
                 },
             )
 
-            if (showSelectMultiple) {
-                ListItem(
-                    modifier = Modifier.clickable {
-                        onEnterMultiSelect()
-                        onDismiss()
-                    },
-                    leadingContent = {
-                        Icon(
-                            MaterialSymbols.Outlined.Select, contentDescription = null
-                        )
-                    },
-                    trailingContent = null,
-                    overlineContent = null,
-                    supportingContent = null,
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                    elevation = ListItemDefaults.elevation(),
-                    content = {
-                        Text(
-                            stringResource(R.string.action_select_multiple), // Need to define or use something
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    },
-                )
-            }
-
             ListItem(
                 modifier = Modifier.clickable {
                     onToggleReadStatus()
@@ -280,6 +255,36 @@ fun BookContextMenu(
                     )
                 },
             )
+
+            if (showSelectMultiple) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(
+                        horizontal = 16.dp, vertical = 8.dp
+                    )
+                )
+                ListItem(
+                    modifier = Modifier.clickable {
+                        onEnterMultiSelect()
+                        onDismiss()
+                    },
+                    leadingContent = {
+                        Icon(
+                            MaterialSymbols.Outlined.Select, contentDescription = null
+                        )
+                    },
+                    trailingContent = null,
+                    overlineContent = null,
+                    supportingContent = null,
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    elevation = ListItemDefaults.elevation(),
+                    content = {
+                        Text(
+                            stringResource(R.string.action_select_multiple),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    },
+                )
+            }
         }
     }
 
