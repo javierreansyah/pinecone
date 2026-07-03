@@ -116,50 +116,57 @@ fun BookContextMenu(
             }
 
             ListItem(
-                headlineContent = {
-                    Text(
-                        stringResource(R.string.book_info_title),
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                modifier = Modifier.clickable {
+                    onNavigateToBookInfo(bookId)
+                    onDismiss()
                 },
                 leadingContent = {
                     Icon(
                         MaterialSymbols.Outlined.Info, contentDescription = null
                     )
                 },
+                trailingContent = null,
+                overlineContent = null,
+                supportingContent = null,
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                modifier = Modifier.clickable {
-                    onNavigateToBookInfo(bookId)
-                    onDismiss()
-                })
+                elevation = ListItemDefaults.elevation(),
+                content = {
+                    Text(
+                        stringResource(R.string.book_info_title),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                },
+            )
 
             if (showSelectMultiple) {
                 ListItem(
-                    headlineContent = {
-                        Text(
-                            stringResource(R.string.action_select_multiple), // Need to define or use something
-                            style = MaterialTheme.typography.titleMedium
-                        )
+                    modifier = Modifier.clickable {
+                        onEnterMultiSelect()
+                        onDismiss()
                     },
                     leadingContent = {
                         Icon(
                             MaterialSymbols.Outlined.Select, contentDescription = null
                         )
                     },
+                    trailingContent = null,
+                    overlineContent = null,
+                    supportingContent = null,
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                    modifier = Modifier.clickable {
-                        onEnterMultiSelect()
-                        onDismiss()
-                    })
+                    elevation = ListItemDefaults.elevation(),
+                    content = {
+                        Text(
+                            stringResource(R.string.action_select_multiple), // Need to define or use something
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    },
+                )
             }
 
             ListItem(
-                headlineContent = {
-                    val labelText =
-                        if (book?.isRead == true) stringResource(R.string.book_mark_as_unread) else stringResource(
-                            R.string.book_mark_as_read
-                        )
-                    Text(labelText, style = MaterialTheme.typography.titleMedium)
+                modifier = Modifier.clickable {
+                    onToggleReadStatus()
+                    onDismiss()
                 },
                 leadingContent = {
                     Icon(
@@ -167,72 +174,91 @@ fun BookContextMenu(
                         contentDescription = null
                     )
                 },
+                trailingContent = null,
+                overlineContent = null,
+                supportingContent = null,
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                modifier = Modifier.clickable {
-                    onToggleReadStatus()
-                    onDismiss()
-                })
+                elevation = ListItemDefaults.elevation(),
+                content = {
+                    val labelText =
+                        if (book?.isRead == true) stringResource(R.string.book_mark_as_unread) else stringResource(
+                            R.string.book_mark_as_read
+                        )
+                    Text(labelText, style = MaterialTheme.typography.titleMedium)
+                },
+            )
             ListItem(
-                headlineContent = {
-                    Text(
-                        stringResource(R.string.library_label_add_to_shelf),
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                modifier = Modifier.clickable {
+                    onAddToShelf(bookId)
+                    onDismiss()
                 },
                 leadingContent = {
                     Icon(
                         MaterialSymbols.Outlined.Folder, contentDescription = null
                     )
                 },
+                trailingContent = null,
+                overlineContent = null,
+                supportingContent = null,
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                modifier = Modifier.clickable {
-                    onAddToShelf(bookId)
-                    onDismiss()
-                })
+                elevation = ListItemDefaults.elevation(),
+                content = {
+                    Text(
+                        stringResource(R.string.library_label_add_to_shelf),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                },
+            )
             if (shelfId != null && shelfId != "unshelved") {
                 ListItem(
-                    headlineContent = {
-                        Text(
-                            stringResource(R.string.library_label_remove_from_shelf),
-                            style = MaterialTheme.typography.titleMedium
-                        )
+                    modifier = Modifier.clickable {
+                        onRemoveFromShelf()
+                        onDismiss()
                     },
                     leadingContent = {
                         Icon(
                             MaterialSymbols.Outlined.Bookmark_remove, contentDescription = null
                         )
                     },
+                    trailingContent = null,
+                    overlineContent = null,
+                    supportingContent = null,
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                    modifier = Modifier.clickable {
-                        onRemoveFromShelf()
-                        onDismiss()
-                    })
+                    elevation = ListItemDefaults.elevation(),
+                    content = {
+                        Text(
+                            stringResource(R.string.library_label_remove_from_shelf),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    },
+                )
             }
             ListItem(
-                headlineContent = {
-                    val labelText =
-                        if (book?.isArchived == true) stringResource(R.string.book_unarchive) else stringResource(
-                            R.string.book_archive
-                        )
-                    Text(labelText, style = MaterialTheme.typography.titleMedium)
+                modifier = Modifier.clickable {
+                    onToggleArchive()
+                    onDismiss()
                 },
                 leadingContent = {
                     Icon(
                         MaterialSymbols.Outlined.Archive, contentDescription = null
                     )
                 },
+                trailingContent = null,
+                overlineContent = null,
+                supportingContent = null,
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                modifier = Modifier.clickable {
-                    onToggleArchive()
-                    onDismiss()
-                })
+                elevation = ListItemDefaults.elevation(),
+                content = {
+                    val labelText =
+                        if (book?.isArchived == true) stringResource(R.string.book_unarchive) else stringResource(
+                            R.string.book_archive
+                        )
+                    Text(labelText, style = MaterialTheme.typography.titleMedium)
+                },
+            )
             ListItem(
-                headlineContent = {
-                    Text(
-                        stringResource(R.string.action_delete),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.error
-                    )
+                modifier = Modifier.clickable {
+                    showDeleteConfirmation = true
                 },
                 leadingContent = {
                     Icon(
@@ -241,10 +267,19 @@ fun BookContextMenu(
                         tint = MaterialTheme.colorScheme.error
                     )
                 },
+                trailingContent = null,
+                overlineContent = null,
+                supportingContent = null,
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                modifier = Modifier.clickable {
-                    showDeleteConfirmation = true
-                })
+                elevation = ListItemDefaults.elevation(),
+                content = {
+                    Text(
+                        stringResource(R.string.action_delete),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                },
+            )
         }
     }
 
