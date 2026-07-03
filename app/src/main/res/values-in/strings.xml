@@ -290,4 +290,15 @@
     <string name="reader_sort_creation_date_desc">Tanggal dibuat (terbaru dahulu)</string>
     <string name="reader_sort_book_order_asc">Urutan buku (awal dahulu)</string>
     <string name="reader_sort_book_order_desc">Urutan buku (akhir dahulu)</string>
+
+    <!-- About & Licenses -->
+    <string name="about_title">Pinecone</string>
+    <string name="about_copyright">Hak Cipta © 2026 Javier Aahmes Reansyah</string>
+    <string name="about_view_full_license">Lihat Lisensi Penuh</string>
+    <string name="about_source_code">Kode Sumber (GitHub)</string>
+    <string name="about_open_source_licenses">Lisensi Sumber Terbuka</string>
+    <string name="about_no_libraries">Tidak ada perpustakaan sumber terbuka yang ditemukan.</string>
+    <string name="about_unknown_license">Lisensi Tidak Diketahui</string>
+    <string name="settings_about_section">Tentang</string>
+    <string name="settings_about_app">Tentang Aplikasi Ini</string>
 </resources>

@@ -43,6 +43,8 @@ import com.javierreansyah.pinecone.ui.features.library.shelf.SelectShelfScreen
 import com.javierreansyah.pinecone.ui.features.library.shelf.SelectShelfViewModel
 import com.javierreansyah.pinecone.ui.features.library.shelf.ShelfDetailScreen
 import com.javierreansyah.pinecone.ui.features.reader.ReaderActivity
+import com.javierreansyah.pinecone.ui.features.settings.AboutScreen
+import com.javierreansyah.pinecone.ui.features.settings.OpenSourceLicensesScreen
 import com.javierreansyah.pinecone.ui.features.settings.SettingsScreen
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -239,6 +241,22 @@ fun NavGraph(
             }
             entry<Screen.Settings> {
                 SettingsScreen(
+                    onNavigateBack = navigateBack,
+                    onNavigateToAbout = {
+                        backStack.add(Screen.About)
+                    }
+                )
+            }
+            entry<Screen.About> {
+                AboutScreen(
+                    onNavigateBack = navigateBack,
+                    onNavigateToOpenSourceLicenses = {
+                        backStack.add(Screen.OpenSourceLicenses)
+                    }
+                )
+            }
+            entry<Screen.OpenSourceLicenses> {
+                OpenSourceLicensesScreen(
                     onNavigateBack = navigateBack
                 )
             }

@@ -32,11 +32,12 @@ import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -60,6 +61,7 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Contrast
 import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.History
+import com.composables.icons.materialsymbols.outlined.Info
 import com.composables.icons.materialsymbols.outlined.Keyboard_arrow_right
 import com.composables.icons.materialsymbols.outlined.Palette
 import com.composables.icons.materialsymbols.outlined.Restart_alt
@@ -81,7 +83,8 @@ import java.util.Date
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SettingsScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToAbout: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val navRestoringBackupMsg = stringResource(R.string.nav_restoring_backup)
@@ -137,7 +140,7 @@ fun SettingsScreen(
     var showRestoreBottomSheet by remember { mutableStateOf(false) }
     var selectedBackupToRestore by remember { mutableStateOf<BackupFile?>(null) }
     val availableBackups by viewModel.availableBackups.collectAsState()
-    val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val bottomSheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
 
 
 
@@ -258,6 +261,10 @@ fun SettingsScreen(
                         showRestoreBottomSheet = true
                     }
                 }
+            )
+
+            AboutSettingsSection(
+                onNavigateToAbout = onNavigateToAbout
             )
         }
     }
@@ -666,7 +673,7 @@ private fun BackupSettingsSection(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            SegmentedColumn {
+            SegmentedColumn(modifier = Modifier.padding(bottom = 16.dp)) {
                 // 1. Backup Location Item
                 val backupLocationLabel = stringResource(R.string.settings_backup_location)
                 item(
@@ -825,6 +832,45 @@ private fun BackupSettingsSection(
                     }
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun AboutSettingsSection(
+    onNavigateToAbout: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = stringResource(R.string.settings_about_section),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        SegmentedColumn(modifier = Modifier.padding(bottom = 16.dp)) {
+            item(
+                onClick = onNavigateToAbout,
+                leadingContent = {
+                    Icon(
+                        imageVector = MaterialSymbols.Outlined.Info,
+                        contentDescription = null
+                    )
+                },
+                content = {
+                    Text(
+                        stringResource(R.string.settings_about_app),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                },
+                trailingContent = {
+                    Icon(
+                        imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
+                        contentDescription = null
+                    )
+                }
+            )
         }
     }
 }

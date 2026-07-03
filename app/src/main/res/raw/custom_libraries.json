@@ -1,0 +1,78 @@
+{
+  "libraries": [
+    {
+      "uniqueId": "font_atkinson",
+      "name": "Atkinson Hyperlegible",
+      "developers": [
+        {
+          "name": "Braille Institute"
+        }
+      ],
+      "website": "https://fonts.google.com/specimen/Atkinson+Hyperlegible",
+      "licenses": [
+        "OFL-1.1"
+      ]
+    },
+    {
+      "uniqueId": "font_literata",
+      "name": "Literata",
+      "developers": [
+        {
+          "name": "TypeTogether"
+        }
+      ],
+      "website": "https://fonts.google.com/specimen/Literata",
+      "licenses": [
+        "OFL-1.1"
+      ]
+    },
+    {
+      "uniqueId": "font_source_code",
+      "name": "Source Code Pro",
+      "developers": [
+        {
+          "name": "Adobe"
+        }
+      ],
+      "website": "https://fonts.google.com/specimen/Source+Code+Pro",
+      "licenses": [
+        "OFL-1.1"
+      ]
+    },
+    {
+      "uniqueId": "font_source_sans",
+      "name": "Source Sans 3",
+      "developers": [
+        {
+          "name": "Adobe"
+        }
+      ],
+      "website": "https://fonts.google.com/specimen/Source+Sans+3",
+      "licenses": [
+        "OFL-1.1"
+      ]
+    },
+    {
+      "uniqueId": "font_source_serif",
+      "name": "Source Serif 4",
+      "developers": [
+        {
+          "name": "Adobe"
+        }
+      ],
+      "website": "https://fonts.google.com/specimen/Source+Serif+4",
+      "licenses": [
+        "OFL-1.1"
+      ]
+    }
+  ],
+  "licenses": {
+    "OFL-1.1": {
+      "name": "SIL Open Font License 1.1",
+      "url": "https://scripts.sil.org/OFL",
+      "internalHash": "OFL-1.1",
+      "spdxId": "OFL-1.1",
+      "hash": "OFL-1.1"
+    }
+  }
+}
