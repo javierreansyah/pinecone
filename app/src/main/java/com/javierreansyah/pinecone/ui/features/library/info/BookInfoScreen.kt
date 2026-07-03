@@ -126,7 +126,6 @@ import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Arrow_drop_down
 import com.composables.icons.materialsymbols.outlined.Book
 import com.composables.icons.materialsymbols.outlined.Bookmark
-import com.composables.icons.materialsymbols.outlined.Bookmark_add
 import com.composables.icons.materialsymbols.outlined.Check_circle
 import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Delete
@@ -135,6 +134,7 @@ import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Format_list_bulleted
 import com.composables.icons.materialsymbols.outlined.More_vert
 import com.composables.icons.materialsymbols.outlined.Radio_button_unchecked
+import com.composables.icons.materialsymbols.outlined.Replay
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
@@ -817,7 +817,7 @@ private fun BookmarksTabContent(
                         },
                         leadingContent = {
                             Icon(
-                                imageVector = MaterialSymbols.Outlined.Bookmark,
+                                imageVector = MaterialSymbols.Outlined.Book,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.secondary
                             )
@@ -1175,6 +1175,12 @@ private fun BookButtonGroup(
                         DropdownMenuItem(
                             selected = false,
                             text = { Text("Read furthest") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = MaterialSymbols.Outlined.Book,
+                                    contentDescription = null
+                                )
+                            },
                             onClick = {
                                 splitMenuExpanded = false
                                 onReadFurthestClick()
@@ -1184,6 +1190,12 @@ private fun BookButtonGroup(
                         DropdownMenuItem(
                             selected = false,
                             text = { Text("Read from start") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = MaterialSymbols.Outlined.Replay,
+                                    contentDescription = null
+                                )
+                            },
                             onClick = {
                                 splitMenuExpanded = false
                                 onReadFromStartClick()
@@ -1223,7 +1235,7 @@ private fun BookButtonGroup(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
         ) {
             Icon(
-                imageVector = MaterialSymbols.Outlined.Bookmark_add,
+                imageVector = MaterialSymbols.Outlined.Folder,
                 contentDescription = null,
                 modifier = Modifier.size(20.dp)
             )
