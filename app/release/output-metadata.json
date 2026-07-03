@@ -4,14 +4,14 @@
     "type": "APK",
     "kind": "Directory"
   },
-  "applicationId": "com.example.readerapp",
+  "applicationId": "com.javierreansyah.pinecone",
   "variantName": "release",
   "elements": [
     {
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 77819027,
+      "versionCode": 79010294,
       "versionName": "1.0",
       "outputFile": "pinecone-v1.0.apk"
     }
