@@ -2,7 +2,7 @@
   <img src="Screenshots/AppIcon.jpg" width="160" alt="Pinecone Icon" />
   <h1>Pinecone</h1>
   <p>
-    A modern, highly customizable EPUB reader built for Android. Pinecone combines a beautiful Material 3 Expressive interface with the robust Readium engine to deliver a deeply personalized and immersive reading experience.
+    Pinecone is a modern Android EPUB reader that combines a stunning Material 3 Expressive design with the powerful Readium engine for a deeply customizable, smooth reading experience.
   </p>
 </div>
 
