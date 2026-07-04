@@ -1,16 +1,20 @@
 package com.javierreansyah.pinecone.ui.features.settings
 
-import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -24,7 +28,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.components.SegmentedListItem
@@ -45,6 +48,7 @@ fun OpenSourceLicensesScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     var libraries by remember { mutableStateOf<List<Library>?>(null) }
+    var selectedLibrary by remember { mutableStateOf<Library?>(null) }
 
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
@@ -96,11 +100,7 @@ fun OpenSourceLicensesScreen(
                         index = index,
                         count = libs!!.size,
                         onClick = {
-                            val url = library.website ?: license?.url
-                            if (!url.isNullOrBlank()) {
-                                val intent = Intent(Intent.ACTION_VIEW, url.toUri())
-                                context.startActivity(intent)
-                            }
+                            selectedLibrary = library
                         },
                         content = {
                             Text(
@@ -118,6 +118,30 @@ fun OpenSourceLicensesScreen(
                     )
                 }
             }
+        }
+
+        selectedLibrary?.let { library ->
+            val license = library.licenses.firstOrNull()
+            AlertDialog(
+                onDismissRequest = { selectedLibrary = null },
+                confirmButton = {
+                    TextButton(onClick = { selectedLibrary = null }) {
+                        Text(stringResource(R.string.ok))
+                    }
+                },
+                title = {
+                    Text(text = library.name)
+                },
+                text = {
+                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                        Text(
+                            text = license?.licenseContent
+                                ?: stringResource(R.string.about_unknown_license),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            )
         }
     }
 }
