@@ -58,8 +58,10 @@ internal fun ExpandedSearchContent(
     onNavigateToShelf: (String, String, Int) -> Unit,
     onNavigateToAuthor: (String) -> Unit,
     onNavigateToTag: (String) -> Unit,
+    onNavigateToCollection: (String) -> Unit,
     onAuthorsHeaderClick: () -> Unit,
-    onTagsHeaderClick: () -> Unit
+    onTagsHeaderClick: () -> Unit,
+    onCollectionsHeaderClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -70,6 +72,7 @@ internal fun ExpandedSearchContent(
             SearchCategory.All to stringResource(R.string.action_all),
             SearchCategory.Books to stringResource(R.string.library_tab_books),
             SearchCategory.Shelves to stringResource(R.string.library_tab_shelves),
+            SearchCategory.Collections to stringResource(R.string.library_select_collection_title),
             SearchCategory.Authors to stringResource(R.string.library_authors_title),
             SearchCategory.Tags to stringResource(R.string.library_tags_title)
         )
@@ -97,8 +100,10 @@ internal fun ExpandedSearchContent(
             onShelfClick = { shelf -> onNavigateToShelf(shelf.id, shelf.name, 0) },
             onAuthorClick = { author -> onNavigateToAuthor(author) },
             onTagClick = { tag -> onNavigateToTag(tag) },
+            onCollectionClick = { collection -> onNavigateToCollection(collection.name) },
             onAuthorsHeaderClick = onAuthorsHeaderClick,
-            onTagsHeaderClick = onTagsHeaderClick
+            onTagsHeaderClick = onTagsHeaderClick,
+            onCollectionsHeaderClick = onCollectionsHeaderClick
         )
     }
 }
@@ -112,8 +117,10 @@ private fun SearchResultsContent(
     onShelfClick: (ShelfEntity) -> Unit,
     onAuthorClick: (String) -> Unit,
     onTagClick: (String) -> Unit,
+    onCollectionClick: (com.javierreansyah.pinecone.data.local.database.library.CollectionEntity) -> Unit,
     onAuthorsHeaderClick: () -> Unit,
-    onTagsHeaderClick: () -> Unit
+    onTagsHeaderClick: () -> Unit,
+    onCollectionsHeaderClick: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         val isAll = searchCategory == SearchCategory.All
@@ -123,6 +130,7 @@ private fun SearchResultsContent(
         val maxShelves = if (isPreview) 4 else Int.MAX_VALUE
         val maxAuthors = if (isPreview) 4 else Int.MAX_VALUE
         val maxTags = if (isPreview) 4 else Int.MAX_VALUE
+        val maxCollections = if (isPreview) 4 else Int.MAX_VALUE
 
         val booksToShow = if (isPreview) {
             results.books.sortedByDescending { it.lastOpened ?: 0L }.take(maxBooks)
@@ -138,6 +146,14 @@ private fun SearchResultsContent(
             results.shelves.take(maxShelves)
         } else {
             results.shelves
+        }
+
+        val collectionsToShow = if (isPreview) {
+            results.collections.sortedBy { it.name }.take(maxCollections)
+        } else if (isAll) {
+            results.collections.take(maxCollections)
+        } else {
+            results.collections
         }
 
         val authorsToShow = if (isPreview) {
@@ -209,6 +225,17 @@ private fun SearchResultsContent(
                         nameSelector = { it.name },
                         onClick = { onShelfClick(it) },
                         onHeaderClick = null
+                    )
+                }
+
+                if (collectionsToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Collections)) {
+                    GridFilterSection(
+                        title = stringResource(R.string.library_select_collection_title),
+                        items = collectionsToShow,
+                        icon = MaterialSymbols.Outlined.Folder,
+                        nameSelector = { it.name },
+                        onClick = { onCollectionClick(it) },
+                        onHeaderClick = { onCollectionsHeaderClick() }
                     )
                 }
 

@@ -44,7 +44,15 @@ class ShelfDetailViewModel(
     private val booksFlow: Flow<List<Book>> =
         bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }
 
-    val allBooks: StateFlow<List<Book>> = booksFlow.stateIn(
+    private val globalCollectionId: StateFlow<String?> = prefsManager.getGlobalCollectionFlow().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = null
+    )
+
+    val allBooks: StateFlow<List<Book>> = combine(booksFlow, globalCollectionId) { books, collectionId ->
+        if (collectionId == null || collectionId == "_all_") books else books.filter { it.collectionId == collectionId }
+    }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
@@ -53,11 +61,14 @@ class ShelfDetailViewModel(
     val shelves: StateFlow<List<ShelfWithCovers>> = combine(
         bookRepository.getAllShelvesWithBooks(),
         bookRepository.getAllShelfBookCrossRefs(),
-        bookRepository.getAllBooks()
-    ) { shelvesList, crossRefs, allBooksEntities ->
-        val sortedShelves = sortShelfBooks(shelvesList, crossRefs)
+        bookRepository.getAllBooks(),
+        globalCollectionId
+    ) { shelvesList, crossRefs, allBooksEntities, collectionId ->
+        val sortedShelves = sortShelfBooks(shelvesList, crossRefs, collectionId)
         val shelvedBookIds = crossRefs.map { it.bookId }.toSet()
-        val unshelvedBooks = allBooksEntities.filter { it.book.id !in shelvedBookIds }
+        val unshelvedBooks = allBooksEntities.filter { 
+            it.book.id !in shelvedBookIds && (collectionId == null || collectionId == "_all_" || it.book.collectionId == collectionId)
+        }
 
         val unshelvedShelf = ShelfWithCovers(
             shelf = ShelfEntity(
@@ -151,6 +162,12 @@ class ShelfDetailViewModel(
     fun removeBookFromShelf(shelfId: String, bookId: String) {
         viewModelScope.launch {
             bookRepository.removeBookFromShelf(shelfId, bookId)
+        }
+    }
+
+    fun removeBookFromCollection(bookId: String) {
+        viewModelScope.launch {
+            bookRepository.removeBookFromCollection(bookId)
         }
     }
 }

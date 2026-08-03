@@ -21,7 +21,11 @@ data class BookWithDetails(
         parentColumn = "id", entityColumn = "id", associateBy = Junction(
             value = BookTagCrossRef::class, parentColumn = "bookId", entityColumn = "tagId"
         )
-    ) val tags: List<TagEntity>
+    ) val tags: List<TagEntity>,
+
+    @Relation(
+        parentColumn = "collectionId", entityColumn = "id"
+    ) val collection: CollectionEntity?
 ) {
     val sortedAuthors: List<AuthorEntity>
         get() {

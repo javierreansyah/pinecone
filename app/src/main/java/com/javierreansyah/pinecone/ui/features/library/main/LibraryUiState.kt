@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library.main
 
+import com.javierreansyah.pinecone.data.local.database.library.CollectionEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
@@ -21,6 +22,7 @@ data class LibraryUiState(
 data class SearchResults(
     val books: List<Book> = emptyList(),
     val shelves: List<ShelfEntity> = emptyList(),
+    val collections: List<CollectionEntity> = emptyList(),
     val authors: List<String> = emptyList(),
     val tags: List<String> = emptyList()
 )
@@ -38,5 +40,8 @@ data class LibraryScreenUiState(
     val allBooks: List<Book> = emptyList(),
     val searchResults: SearchResults = SearchResults(),
     val isBooksLoading: Boolean = true,
-    val isShelvesLoading: Boolean = true
+    val isShelvesLoading: Boolean = true,
+    val allCollections: List<CollectionEntity> = emptyList(),
+    val allShelves: List<ShelfEntity> = emptyList(),
+    val globalCollectionId: String? = null
 )

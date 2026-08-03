@@ -40,12 +40,21 @@ import com.composables.icons.materialsymbols.outlined.Menu_open
 import com.composables.icons.materialsymbols.outlined.Settings
 import com.composables.icons.materialsymbols.outlined.Upload
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.data.local.database.library.CollectionEntity
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AppDrawer(
     drawerState: WideNavigationRailState,
+    allCollections: List<CollectionEntity> = emptyList(),
+    selectedCollectionId: String? = null,
+    onCollectionSelected: (String?) -> Unit = {},
     onNavigateToArchives: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onImportFilesClick: () -> Unit,
@@ -61,7 +70,7 @@ fun AppDrawer(
         expandedHeaderTopPadding = 0.dp,
         contentPadding = PaddingValues(0.dp)
     ) {
-        Column(modifier = Modifier.fillMaxHeight()) {
+        Column(modifier = Modifier.fillMaxHeight().verticalScroll(rememberScrollState())) {
             IconButton(
                 onClick = {
                     scope.launch { drawerState.collapse() }
@@ -196,6 +205,50 @@ fun AppDrawer(
                     scope.launch { drawerState.collapse() }
                 }
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Collections",
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            WideNavigationRailItem(
+                railExpanded = true,
+                icon = {
+                    Icon(
+                        imageVector = MaterialSymbols.Outlined.Book_3,
+                        contentDescription = null
+                    )
+                },
+                label = { Text(stringResource(R.string.action_all)) },
+                selected = selectedCollectionId == null || selectedCollectionId == "_all_",
+                onClick = {
+                    onCollectionSelected("_all_")
+                    scope.launch { drawerState.collapse() }
+                }
+            )
+
+            allCollections.forEach { collection ->
+                WideNavigationRailItem(
+                    railExpanded = true,
+                    icon = {
+                        Icon(
+                            imageVector = MaterialSymbols.Outlined.Folder,
+                            contentDescription = null
+                        )
+                    },
+                    label = { Text(collection.name) },
+                    selected = selectedCollectionId == collection.id,
+                    onClick = {
+                        onCollectionSelected(collection.id)
+                        scope.launch { drawerState.collapse() }
+                    }
+                )
+            }
         }
     }
 }

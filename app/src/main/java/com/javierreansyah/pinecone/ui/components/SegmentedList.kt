@@ -240,42 +240,46 @@ fun SegmentedListItem(
 
     if (onClick != null || onLongClick != null) {
         ListItem(
-            headlineContent = content,
-            supportingContent = supportingContent,
+            modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(shape)
+                        .combinedClickable(
+                            onClick = { onClick?.invoke() },
+                            onLongClick = onLongClick?.let { { it() } },
+                            enabled = enabled
+                        ),
             leadingContent = leadingContent,
             trailingContent = trailingContent,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(shape)
-                .combinedClickable(
-                    onClick = { onClick?.invoke() },
-                    onLongClick = onLongClick?.let { { it() } },
-                    enabled = enabled
-                ),
+            overlineContent = null,
+            supportingContent = supportingContent,
             colors = ListItemDefaults.colors(
-                containerColor = if (enabled) containerColor else containerColor.copy(alpha = 0.6f),
-                headlineColor = contentColor,
-                supportingColor = contentColor,
-                leadingIconColor = contentColor,
-                trailingIconColor = contentColor
-            )
+                        containerColor = if (enabled) containerColor else containerColor.copy(alpha = 0.6f),
+                        headlineColor = contentColor,
+                        supportingColor = contentColor,
+                        leadingIconColor = contentColor,
+                        trailingIconColor = contentColor
+                    ),
+            elevation = ListItemDefaults.elevation(ListItemDefaults.Elevation),
+            content = content,
         )
     } else {
         ListItem(
-            headlineContent = content,
-            supportingContent = supportingContent,
+            modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(shape),
             leadingContent = leadingContent,
             trailingContent = trailingContent,
+            overlineContent = null,
+            supportingContent = supportingContent,
             colors = ListItemDefaults.colors(
-                containerColor = if (enabled) containerColor else containerColor.copy(alpha = 0.6f),
-                headlineColor = contentColor,
-                supportingColor = contentColor,
-                leadingIconColor = contentColor,
-                trailingIconColor = contentColor
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(shape)
+                        containerColor = if (enabled) containerColor else containerColor.copy(alpha = 0.6f),
+                        headlineColor = contentColor,
+                        supportingColor = contentColor,
+                        leadingIconColor = contentColor,
+                        trailingIconColor = contentColor
+                    ),
+            elevation = ListItemDefaults.elevation(ListItemDefaults.Elevation),
+            content = content,
         )
     }
 }

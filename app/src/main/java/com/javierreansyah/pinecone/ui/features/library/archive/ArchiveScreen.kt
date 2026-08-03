@@ -46,7 +46,8 @@ fun ArchiveScreen(
     onNavigateBack: () -> Unit,
     onNavigateToReader: (String) -> Unit,
     onNavigateToBookInfo: (String) -> Unit,
-    onNavigateToAddToShelf: (String) -> Unit
+    onNavigateToAddToShelf: (String) -> Unit,
+    onNavigateToAddToCollection: (String) -> Unit
 ) {
     val context = LocalContext.current
     val viewModel: ArchiveViewModel = viewModel(factory = object :
@@ -112,6 +113,12 @@ fun ArchiveScreen(
                             selectedBooks = emptySet()
                             isInMultiSelectMode = false
                             onNavigateToAddToShelf(ids)
+                        },
+                        onAddToCollection = {
+                            val ids = selectedBooks.joinToString(",")
+                            selectedBooks = emptySet()
+                            isInMultiSelectMode = false
+                            onNavigateToAddToCollection(ids)
                         },
                         onArchive = {
                             val booksToProcess = selectedBooks.toList()
@@ -211,6 +218,8 @@ fun ArchiveScreen(
             onToggleReadStatus = { viewModel.toggleReadStatus(bookId) },
             onRemoveFromShelf = {},
             onAddToShelf = onNavigateToAddToShelf,
+            onRemoveFromCollection = { viewModel.removeBookFromCollection(bookId) },
+            onAddToCollection = onNavigateToAddToCollection,
             onDeleteBook = { viewModel.deleteBook(bookId) },
             onEnterMultiSelect = {
                 selectedBooks = setOf(bookId)

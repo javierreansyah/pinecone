@@ -25,7 +25,9 @@ data class Book(
     val isRead: Boolean = false,
     val furthestProgression: Double = 0.0,
     val lastLocatorJson: String? = null,
-    val furthestLocatorJson: String? = null
+    val furthestLocatorJson: String? = null,
+    val collectionId: String? = null,
+    val collectionName: String? = null
 ) {
     companion object {
         fun fromEntity(entity: BookWithDetails): Book = Book(
@@ -48,7 +50,9 @@ data class Book(
             isRead = entity.book.isRead,
             furthestProgression = entity.book.furthestProgression,
             lastLocatorJson = entity.book.lastLocatorJson,
-            furthestLocatorJson = entity.book.furthestLocatorJson
+            furthestLocatorJson = entity.book.furthestLocatorJson,
+            collectionId = entity.book.collectionId,
+            collectionName = entity.collection?.name
         )
     }
 }

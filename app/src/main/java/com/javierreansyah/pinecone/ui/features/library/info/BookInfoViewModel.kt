@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
+import com.javierreansyah.pinecone.data.local.database.library.CollectionEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
@@ -32,6 +33,9 @@ class BookInfoViewModel(
         (application as PineconeApplication).libraryRepository
 
     val shelves: StateFlow<List<ShelfWithCovers>> = repository.getAllShelvesWithBooks()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val collections: StateFlow<List<CollectionEntity>> = repository.getAllCollections()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val uiState: StateFlow<BookInfoUiState> = repository.getBookFlow(bookId)
@@ -111,6 +115,25 @@ class BookInfoViewModel(
         viewModelScope.launch {
             val shelfId = repository.createShelf(name)
             repository.addBookToShelf(shelfId, bookId)
+        }
+    }
+
+    fun addBookToCollection(collectionId: String) {
+        viewModelScope.launch {
+            repository.addBookToCollection(collectionId, bookId)
+        }
+    }
+
+    fun removeBookFromCollection() {
+        viewModelScope.launch {
+            repository.removeBookFromCollection(bookId)
+        }
+    }
+
+    fun createCollectionAndAddBook(name: String) {
+        viewModelScope.launch {
+            val collectionId = repository.createCollection(name)
+            repository.addBookToCollection(collectionId, bookId)
         }
     }
 

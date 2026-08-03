@@ -1081,6 +1081,7 @@ private fun BookInfoHeader(
         BookHeaderDetails(
             title = book.title,
             authors = book.authors,
+            collectionName = book.collectionName,
             tags = book.tags,
             onNavigateToTag = onNavigateToTag
         )
@@ -1316,6 +1317,7 @@ private fun BookCoverImage(
 private fun BookHeaderDetails(
     title: String,
     authors: List<String>,
+    collectionName: String?,
     tags: List<String>,
     onNavigateToTag: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -1349,6 +1351,15 @@ private fun BookHeaderDetails(
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+
+        if (collectionName != null) {
+            Text(
+                text = collectionName,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
 
         if (tags.isNotEmpty()) {
             CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
