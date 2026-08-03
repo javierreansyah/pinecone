@@ -8,6 +8,10 @@ import com.javierreansyah.pinecone.ui.features.library.ShelfFilter
 import com.javierreansyah.pinecone.ui.features.library.SortType
 import com.javierreansyah.pinecone.ui.features.library.StatusFilter
 
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.Flow
+
 class LibraryPreferencesManager(context: Context) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences("library_prefs", Context.MODE_PRIVATE)
@@ -30,6 +34,7 @@ class LibraryPreferencesManager(context: Context) {
         val shelfFilterSetStr = prefs.getStringSet(
             "${screenKey}_shelf_filter", setOf(ShelfFilter.Shelves.name, ShelfFilter.Unshelved.name)
         ) ?: setOf()
+
 
         return FilterSortPreferences(
             layoutMode = try {
@@ -54,6 +59,21 @@ class LibraryPreferencesManager(context: Context) {
                 }
             }.toSet()
         )
+    }
+
+    fun getGlobalCollectionFlow(): Flow<String?> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "global_collection") {
+                trySend(prefs.getString("global_collection", null))
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(prefs.getString("global_collection", null))
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    fun setGlobalCollection(collectionId: String?) {
+        prefs.edit().putString("global_collection", collectionId).apply()
     }
 
     fun savePreferences(screenKey: String, prefsObj: FilterSortPreferences) {

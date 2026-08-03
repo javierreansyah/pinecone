@@ -106,7 +106,8 @@ fun ShelfDetailScreen(
     onNavigateBack: () -> Unit,
     onNavigateToReader: (String) -> Unit,
     onNavigateToBookInfo: (String) -> Unit,
-    onNavigateToAddToShelf: (String) -> Unit
+    onNavigateToAddToShelf: (String) -> Unit,
+    onNavigateToAddToCollection: (String) -> Unit
 ) {
     val viewModel: ShelfDetailViewModel = viewModel()
 
@@ -183,6 +184,12 @@ fun ShelfDetailScreen(
                             selectedBooks = emptySet()
                             isInMultiSelectMode = false
                             onNavigateToAddToShelf(ids)
+                        },
+                        onAddToCollection = {
+                            val ids = selectedBooks.joinToString(",")
+                            selectedBooks = emptySet()
+                            isInMultiSelectMode = false
+                            onNavigateToAddToCollection(ids)
                         },
                         onArchive = {
                             val booksToProcess = selectedBooks.toList()
@@ -308,6 +315,8 @@ fun ShelfDetailScreen(
             onToggleReadStatus = { viewModel.toggleReadStatus(bookId) },
             onRemoveFromShelf = { viewModel.removeBookFromShelf(shelfId, bookId) },
             onAddToShelf = onNavigateToAddToShelf,
+            onAddToCollection = onNavigateToAddToCollection,
+            onRemoveFromCollection = { viewModel.removeBookFromCollection(bookId) },
             onDeleteBook = { viewModel.deleteBook(bookId) },
             onEnterMultiSelect = {
                 selectedBooks = setOf(bookId)

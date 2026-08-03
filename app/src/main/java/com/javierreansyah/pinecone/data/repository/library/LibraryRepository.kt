@@ -18,6 +18,8 @@ import com.javierreansyah.pinecone.data.local.database.library.NoteDao
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfBookCrossRefEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfDao
+import com.javierreansyah.pinecone.data.local.database.library.CollectionDao
+import com.javierreansyah.pinecone.data.local.database.library.CollectionEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.local.database.library.TagEntity
@@ -43,6 +45,7 @@ class LibraryRepository(
     private val bookmarkDao: BookmarkDao,
     private val shelfDao: ShelfDao,
     private val noteDao: NoteDao,
+    private val collectionDao: CollectionDao,
     private val publicationOpener: PublicationOpener,
     private val assetRetriever: AssetRetriever
 ) {
@@ -269,6 +272,7 @@ class LibraryRepository(
             bookDao.deleteOrphanAuthors()
             bookDao.deleteOrphanTags()
             shelfDao.deleteOrphanShelves()
+            collectionDao.deleteOrphanCollections()
         }
     }
 
@@ -345,6 +349,14 @@ class LibraryRepository(
             bookDao.deleteAuthorByName(name)
         } else if (type == "tag") {
             bookDao.deleteTagByName(name)
+        } else if (type == "collection") {
+            val collection = collectionDao.getCollectionByName(name)
+            if (collection != null) {
+                database.withTransaction {
+                    bookDao.removeCollectionFromBooks(collection.id)
+                    collectionDao.deleteCollection(collection)
+                }
+            }
         }
     }
 
@@ -369,6 +381,17 @@ class LibraryRepository(
                     bookDao.deleteTagByName(oldName)
                 } else {
                     bookDao.renameTag(oldName, trimmedNewName)
+                }
+            } else if (type == "collection") {
+                val existingDest = collectionDao.getCollectionByName(trimmedNewName)
+                val source = collectionDao.getCollectionByName(oldName)
+                if (existingDest != null && source != null) {
+                    database.withTransaction {
+                        bookDao.mergeCollectionId(source.id, existingDest.id)
+                        collectionDao.deleteCollection(source)
+                    }
+                } else if (source != null) {
+                    collectionDao.renameCollection(source.id, trimmedNewName)
                 }
             }
         }
@@ -436,6 +459,45 @@ class LibraryRepository(
                 shelfDao.updateShelfBookOrderIndex(shelfId, bookId, index)
             }
         }
+
+    // --- Collection Methods ---
+
+    fun getAllCollections(): Flow<List<CollectionEntity>> = collectionDao.getAllCollections()
+
+    suspend fun createCollection(name: String): String {
+        val id = UUID.randomUUID().toString()
+        collectionDao.insertCollection(CollectionEntity(id = id, name = name))
+        return id
+    }
+
+    suspend fun deleteCollection(collectionId: String) {
+        val collection = collectionDao.getCollectionById(collectionId)
+        if (collection != null) {
+            collectionDao.deleteCollection(collection)
+        }
+    }
+
+    suspend fun renameCollection(collectionId: String, newName: String) {
+        collectionDao.renameCollection(collectionId, newName)
+    }
+
+    suspend fun addBookToCollection(collectionId: String, bookId: String) {
+        val details = bookDao.getById(bookId) ?: return
+        val book = details.book
+        database.withTransaction {
+            bookDao.update(book.copy(collectionId = collectionId))
+            collectionDao.deleteOrphanCollections()
+        }
+    }
+
+    suspend fun removeBookFromCollection(bookId: String) {
+        val details = bookDao.getById(bookId) ?: return
+        val book = details.book
+        database.withTransaction {
+            bookDao.update(book.copy(collectionId = null))
+            collectionDao.deleteOrphanCollections()
+        }
+    }
 
     // --- Note Methods ---
 

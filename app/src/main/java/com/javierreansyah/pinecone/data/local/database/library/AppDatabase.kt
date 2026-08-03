@@ -6,8 +6,8 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
-    entities = [BookEntity::class, BookmarkEntity::class, ShelfEntity::class, ShelfBookCrossRefEntity::class, NoteEntity::class, AuthorEntity::class, BookAuthorCrossRef::class, TagEntity::class, BookTagCrossRef::class],
-    version = 10,
+    entities = [BookEntity::class, BookmarkEntity::class, ShelfEntity::class, ShelfBookCrossRefEntity::class, NoteEntity::class, AuthorEntity::class, BookAuthorCrossRef::class, TagEntity::class, BookTagCrossRef::class, CollectionEntity::class],
+    version = 11,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -15,6 +15,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun bookmarkDao(): BookmarkDao
     abstract fun shelfDao(): ShelfDao
     abstract fun noteDao(): NoteDao
+    abstract fun collectionDao(): CollectionDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -73,6 +74,13 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE books ADD COLUMN furthestProgression REAL NOT NULL DEFAULT 0.0")
                 db.execSQL("ALTER TABLE books ADD COLUMN furthestLocatorJson TEXT")
                 db.execSQL("ALTER TABLE books ADD COLUMN jumpOriginLocatorJson TEXT")
+            }
+        }
+
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS `collections` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+                db.execSQL("ALTER TABLE books ADD COLUMN collectionId TEXT")
             }
         }
     }

@@ -76,6 +76,16 @@
     <string name="library_label_view">View</string>
     <string name="library_label_status">Status</string>
     <string name="library_label_unshelved">Unshelved</string>
+    
+    <string name="library_select_collection_title">Select Collection</string>
+    <string name="library_collections_title">Collections</string>
+    <string name="library_rename_collection_title">Rename collection</string>
+    <string name="library_empty_collections">No collections yet</string>
+    <string name="library_create_collection_title">Create Collection</string>
+    <string name="library_collection_name_label">Collection Name</string>
+    <string name="library_label_add_to_collection">Add to collection</string>
+    <string name="library_label_remove_from_collection">Remove from collection</string>
+    <string name="library_label_uncollected">Uncollected</string>
     <string name="library_label_add_to_shelf">Add to Shelf</string>
     <string name="library_label_remove_from_shelf">Remove from Shelf</string>
     <string name="library_sort_title">Title</string>

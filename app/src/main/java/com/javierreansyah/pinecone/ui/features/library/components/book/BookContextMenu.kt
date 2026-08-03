@@ -43,6 +43,8 @@ import com.composables.icons.materialsymbols.outlined.Info
 import com.composables.icons.materialsymbols.outlined.Radio_button_unchecked
 import com.composables.icons.materialsymbols.outlined.Select
 import com.composables.icons.materialsymbols.outlined.Unarchive
+import com.composables.icons.materialsymbols.outlined.Folder
+import com.composables.icons.materialsymbols.outlined.Delete
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.model.Book
 
@@ -57,6 +59,8 @@ fun BookContextMenu(
     onToggleReadStatus: () -> Unit,
     onRemoveFromShelf: () -> Unit,
     onAddToShelf: (String) -> Unit,
+    onRemoveFromCollection: () -> Unit,
+    onAddToCollection: (String) -> Unit,
     onDeleteBook: () -> Unit,
     showSelectMultiple: Boolean = true,
     onEnterMultiSelect: () -> Unit = {},
@@ -209,6 +213,55 @@ fun BookContextMenu(
                     },
                 )
             }
+            
+            ListItem(
+                modifier = Modifier.clickable {
+                    onAddToCollection(bookId)
+                    onDismiss()
+                },
+                leadingContent = {
+                    Icon(
+                        MaterialSymbols.Outlined.Folder, contentDescription = null
+                    )
+                },
+                trailingContent = null,
+                overlineContent = null,
+                supportingContent = null,
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                elevation = ListItemDefaults.elevation(),
+                content = {
+                    Text(
+                        stringResource(R.string.library_label_add_to_collection),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                },
+            )
+            
+            if (book?.collectionId != null) {
+                ListItem(
+                    modifier = Modifier.clickable {
+                        onRemoveFromCollection()
+                        onDismiss()
+                    },
+                    leadingContent = {
+                        Icon(
+                            MaterialSymbols.Outlined.Delete, contentDescription = null
+                        )
+                    },
+                    trailingContent = null,
+                    overlineContent = null,
+                    supportingContent = null,
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    elevation = ListItemDefaults.elevation(),
+                    content = {
+                        Text(
+                            stringResource(R.string.library_label_remove_from_collection),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    },
+                )
+            }
+            
             ListItem(
                 modifier = Modifier.clickable {
                     onToggleArchive()

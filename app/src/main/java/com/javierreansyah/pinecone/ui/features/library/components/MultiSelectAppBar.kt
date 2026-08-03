@@ -32,6 +32,7 @@ import com.composables.icons.materialsymbols.outlined.Deselect
 import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Select_all
 import com.composables.icons.materialsymbols.outlined.Unarchive
+import com.composables.icons.materialsymbols.outlined.Folder
 import com.javierreansyah.pinecone.R
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,6 +46,7 @@ fun MultiSelectAppBar(
     onSelectAll: () -> Unit,
     onMarkAsReadUnread: () -> Unit,
     onAddToShelf: () -> Unit,
+    onAddToCollection: () -> Unit,
     onArchive: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
@@ -96,6 +98,12 @@ fun MultiSelectAppBar(
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Folder,
                     contentDescription = stringResource(R.string.library_label_add_to_shelf)
+                )
+            }
+            IconButton(onClick = onAddToCollection, enabled = selectedCount > 0) {
+                Icon(
+                    imageVector = MaterialSymbols.Outlined.Folder,
+                    contentDescription = stringResource(R.string.library_label_add_to_collection)
                 )
             }
             IconButton(onClick = onArchive, enabled = selectedCount > 0) {

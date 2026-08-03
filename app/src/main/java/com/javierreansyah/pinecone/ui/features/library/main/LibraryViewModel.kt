@@ -10,6 +10,8 @@ import coil.request.ImageRequest
 import coil.size.Scale
 import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.data.local.database.library.CollectionEntity
+import com.javierreansyah.pinecone.data.local.database.library.ShelfEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
 import com.javierreansyah.pinecone.data.model.Book
@@ -83,7 +85,33 @@ class LibraryViewModel(
     private val booksFlow: Flow<List<Book>> =
         bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }
 
-    private val allBooks: StateFlow<List<Book>> = booksFlow.stateIn(
+    private val globalCollectionId: StateFlow<String?> = prefsManager.getGlobalCollectionFlow().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = null
+    )
+
+    private val allBooks: StateFlow<List<Book>> = combine(booksFlow, globalCollectionId) { books, collectionId ->
+        if (collectionId == null || collectionId == "_all_") books else books.filter { it.collectionId == collectionId }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    private val allCollections: StateFlow<List<CollectionEntity>> = bookRepository.getAllCollections().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    private val allShelvesEntities: StateFlow<List<ShelfEntity>> = bookRepository.searchShelves("").stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    private val allCrossRefs = bookRepository.getAllShelfBookCrossRefs().stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
@@ -112,13 +140,13 @@ class LibraryViewModel(
     }
 
     fun getFilteredAndSortedBooks(baseFlow: Flow<List<Book>>): Flow<List<Book>> {
-        return combine(baseFlow, _uiState) { books, state ->
-            books.filterAndSort(state.bookPreferences)
+        return combine(baseFlow, _uiState, allCrossRefs) { books, state, crossRefs ->
+            books.filterAndSort(state.bookPreferences, crossRefs)
         }
     }
 
     private val filteredBooks: StateFlow<List<Book>> =
-        getFilteredAndSortedBooks(booksFlow).onEach { _isBooksLoading.value = false }.stateIn(
+        getFilteredAndSortedBooks(allBooks).onEach { _isBooksLoading.value = false }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
@@ -128,14 +156,16 @@ class LibraryViewModel(
         bookRepository.getAllShelvesWithBooks(),
         bookRepository.getAllShelfBookCrossRefs(),
         bookRepository.getAllBooks(),
-        _uiState
-    ) { shelvesList, crossRefs, allBooksEntities, state ->
+        _uiState,
+        globalCollectionId
+    ) { shelvesList, crossRefs, allBooksEntities, state, collectionId ->
         mapAndSortShelves(
             shelvesList = shelvesList,
             crossRefs = crossRefs,
             allBooksEntities = allBooksEntities,
             prefs = state.shelvesPreferences,
-            unshelvedLabel = application.getString(R.string.library_label_unshelved)
+            unshelvedLabel = application.getString(R.string.library_label_unshelved),
+            globalCollectionId = collectionId
         )
     }.onEach { _isShelvesLoading.value = false }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -154,36 +184,42 @@ class LibraryViewModel(
         query to category
     }.flatMapLatest { (query, category) ->
         if (query.isBlank()) {
-            combine(allBooks, shelves) { books, shelfList ->
+            combine(allBooks, shelves, allCollections) { books, shelfList, collections ->
                 val matchedBooks =
                     if (category == SearchCategory.All || category == SearchCategory.Books) books else emptyList()
                 val matchedShelves =
                     if (category == SearchCategory.All || category == SearchCategory.Shelves) shelfList.map { it.shelf } else emptyList()
+                val matchedCollections =
+                    if (category == SearchCategory.All || category == SearchCategory.Collections) collections else emptyList()
                 val matchedAuthors =
                     if (category == SearchCategory.All || category == SearchCategory.Authors) books.flatMap { it.authors }
                         .distinct() else emptyList()
                 val matchedTags =
                     if (category == SearchCategory.All || category == SearchCategory.Tags) books.flatMap { it.tags }
                         .distinct() else emptyList()
-                SearchResults(matchedBooks, matchedShelves, matchedAuthors, matchedTags)
+                SearchResults(matchedBooks, matchedShelves, matchedCollections, matchedAuthors, matchedTags)
             }
         } else {
             combine(
                 bookRepository.searchBooks(query)
                     .map { entities -> entities.map { Book.fromEntity(it) } },
-                bookRepository.searchShelves(query),
+                shelves,
                 bookRepository.searchAuthors(query),
-                bookRepository.searchTags(query)
-            ) { books, shelvesList, authors, tags ->
+                bookRepository.searchTags(query),
+                allCollections
+            ) { books, shelvesList, authors, tags, collections ->
+                val filteredBooks = if (globalCollectionId.value != null && globalCollectionId.value != "_all_") books.filter { it.collectionId == globalCollectionId.value } else books
                 val matchedBooks =
-                    if (category == SearchCategory.All || category == SearchCategory.Books) books else emptyList()
+                    if (category == SearchCategory.All || category == SearchCategory.Books) filteredBooks else emptyList()
                 val matchedShelves =
-                    if (category == SearchCategory.All || category == SearchCategory.Shelves) shelvesList else emptyList()
+                    if (category == SearchCategory.All || category == SearchCategory.Shelves) shelvesList.filter { it.shelf.name.contains(query, ignoreCase = true) }.map { it.shelf } else emptyList()
+                val matchedCollections =
+                    if (category == SearchCategory.All || category == SearchCategory.Collections) collections.filter { it.name.contains(query, ignoreCase = true) } else emptyList()
                 val matchedAuthors =
                     if (category == SearchCategory.All || category == SearchCategory.Authors) authors else emptyList()
                 val matchedTags =
                     if (category == SearchCategory.All || category == SearchCategory.Tags) tags else emptyList()
-                SearchResults(matchedBooks, matchedShelves, matchedAuthors, matchedTags)
+                SearchResults(matchedBooks, matchedShelves, matchedCollections, matchedAuthors, matchedTags)
             }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SearchResults())
@@ -195,7 +231,9 @@ class LibraryViewModel(
         allBooks,
         searchResults,
         _isBooksLoading,
-        _isShelvesLoading
+        _isShelvesLoading,
+        allCollections,
+        allShelvesEntities
     ) { array ->
         @Suppress("UNCHECKED_CAST")
         val baseState = array[0] as LibraryUiState
@@ -213,6 +251,12 @@ class LibraryViewModel(
         val searchRes = array[4] as SearchResults
         val booksLoading = array[5] as Boolean
         val shelvesLoading = array[6] as Boolean
+        
+        @Suppress("UNCHECKED_CAST")
+        val colls = array[7] as List<CollectionEntity>
+        
+        @Suppress("UNCHECKED_CAST")
+        val shelvesEntities = array[8] as List<ShelfEntity>
 
         LibraryScreenUiState(
             searchQuery = baseState.searchQuery,
@@ -225,7 +269,10 @@ class LibraryViewModel(
             allBooks = booksList,
             searchResults = searchRes,
             isBooksLoading = booksLoading,
-            isShelvesLoading = shelvesLoading
+            isShelvesLoading = shelvesLoading,
+            allCollections = colls,
+            allShelves = shelvesEntities,
+            globalCollectionId = globalCollectionId.value
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LibraryScreenUiState())
 
@@ -262,6 +309,12 @@ class LibraryViewModel(
     fun removeBookFromShelf(shelfId: String, bookId: String) {
         viewModelScope.launch {
             bookRepository.removeBookFromShelf(shelfId, bookId)
+        }
+    }
+
+    fun removeBookFromCollection(bookId: String) {
+        viewModelScope.launch {
+            bookRepository.removeBookFromCollection(bookId)
         }
     }
 
@@ -325,6 +378,31 @@ class LibraryViewModel(
                 if (contains(filter)) remove(filter) else add(filter)
             }
             val newPrefs = currentPrefs.copy(selectedShelfFilter = updatedFilter)
+            prefsManager.savePreferences(
+                if (isShelvesTab) "library_shelves" else screenKey, newPrefs
+            )
+            if (isShelvesTab) state.copy(shelvesPreferences = newPrefs) else state.copy(
+                bookPreferences = newPrefs
+            )
+        }
+    }
+
+    fun setGlobalCollection(collectionId: String?) {
+        prefsManager.setGlobalCollection(collectionId)
+    }
+
+    fun toggleAllStatusFilters(isShelvesTab: Boolean = false) {
+        _uiState.update { state ->
+            val currentPrefs = if (isShelvesTab) state.shelvesPreferences else state.bookPreferences
+            val allStatus = setOf(StatusFilter.NotStarted, StatusFilter.Reading, StatusFilter.Finished)
+            val updatedStatus = if (currentPrefs.selectedStatus.size == allStatus.size) {
+                // If all are selected, unselecting "All" should clear it (or maybe we just set to all since empty means no books shown for status, though empty collection/shelf means all books)
+                // For Status, let's make it toggle between all and none
+                emptySet<StatusFilter>()
+            } else {
+                allStatus
+            }
+            val newPrefs = currentPrefs.copy(selectedStatus = updatedStatus)
             prefsManager.savePreferences(
                 if (isShelvesTab) "library_shelves" else screenKey, newPrefs
             )

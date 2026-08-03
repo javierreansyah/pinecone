@@ -41,6 +41,25 @@ import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.ShelfFilter
 import com.javierreansyah.pinecone.ui.features.library.SortType
 import com.javierreansyah.pinecone.ui.features.library.StatusFilter
+import com.javierreansyah.pinecone.data.local.database.library.CollectionEntity
+import com.javierreansyah.pinecone.data.local.database.library.ShelfEntity
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalOverscrollFactory
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -222,7 +241,6 @@ fun <T> MultiToggleGroupSection(
     }
 }
 
-// Screens
 @Composable
 fun LibraryFilterBottomSheet(
     isShelvesTab: Boolean,
