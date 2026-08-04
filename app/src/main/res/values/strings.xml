@@ -12,6 +12,8 @@
     <string name="action_select_multiple">Select Multiple</string>
     <string name="action_select_all">Select all</string>
     <string name="action_deselect_all">Deselect all</string>
+    <string name="action_organize">Organize</string>
+    <string name="action_accept">Accept</string>
 
     <string name="action_search">Search</string>
     <string name="action_clear">Clear</string>
@@ -77,15 +79,15 @@
     <string name="library_label_status">Status</string>
     <string name="library_label_unshelved">Unshelved</string>
     
-    <string name="library_select_collection_title">Select Collection</string>
-    <string name="library_collections_title">Collections</string>
-    <string name="library_rename_collection_title">Rename collection</string>
-    <string name="library_empty_collections">No collections yet</string>
-    <string name="library_create_collection_title">Create Collection</string>
-    <string name="library_collection_name_label">Collection Name</string>
-    <string name="library_label_add_to_collection">Add to collection</string>
-    <string name="library_label_remove_from_collection">Remove from collection</string>
-    <string name="library_label_uncollected">Uncollected</string>
+    <string name="library_select_space_title">Space</string>
+    <string name="library_spaces_title">Spaces</string>
+    <string name="library_rename_space_title">Rename space</string>
+    <string name="library_empty_spaces">No spaces yet</string>
+    <string name="library_create_space_title">Create Space</string>
+    <string name="library_space_name_label">Space Name</string>
+    <string name="library_label_add_to_space">Add to space</string>
+    <string name="library_label_remove_from_space">Remove from space</string>
+    <string name="library_label_unspaced">No Space</string>
     <string name="library_label_add_to_shelf">Add to Shelf</string>
     <string name="library_label_remove_from_shelf">Remove from Shelf</string>
     <string name="library_sort_title">Title</string>

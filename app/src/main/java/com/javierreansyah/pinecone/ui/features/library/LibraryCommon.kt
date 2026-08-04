@@ -50,7 +50,7 @@ fun List<Book>.filterAndSort(
 fun sortShelfBooks(
     shelvesList: List<ShelfWithCovers>,
     crossRefs: List<ShelfBookCrossRefEntity>,
-    globalCollectionId: String? = null
+    globalSpaceId: String? = null
 ): List<ShelfWithCovers> {
     val crossRefsByShelf = crossRefs.groupBy { it.shelfId }
     return shelvesList.map { shelfWithCovers ->
@@ -58,7 +58,7 @@ fun sortShelfBooks(
         val shelfCrossRefs = crossRefsByShelf[shelfId].orEmpty()
         val orderMap = shelfCrossRefs.associate { it.bookId to it.orderIndex }
         val filteredBooks = shelfWithCovers.books.filter {
-            globalCollectionId == null || globalCollectionId == "_all_" || it.book.collectionId == globalCollectionId
+            globalSpaceId == null || globalSpaceId == "_all_" || it.spaces.any { space -> space.id == globalSpaceId }
         }
         val sortedBooks = filteredBooks.sortedBy { book ->
             orderMap[book.book.id] ?: 0
@@ -73,9 +73,9 @@ fun mapAndSortShelves(
     allBooksEntities: List<BookWithDetails>,
     prefs: FilterSortPreferences,
     unshelvedLabel: String,
-    globalCollectionId: String? = null
+    globalSpaceId: String? = null
 ): List<ShelfWithCovers> {
-    val mappedShelves = sortShelfBooks(shelvesList, crossRefs, globalCollectionId)
+    val mappedShelves = sortShelfBooks(shelvesList, crossRefs, globalSpaceId)
 
     val sortedShelves = mappedShelves.let { processedShelves ->
         val baseComparator = when (prefs.sortType) {
@@ -106,14 +106,14 @@ fun mapAndSortShelves(
 
     val shelvedBookIds = crossRefs.map { it.bookId }.toSet()
     val unshelvedBooks = allBooksEntities.filter { 
-        it.book.id !in shelvedBookIds && (globalCollectionId == null || globalCollectionId == "_all_" || it.book.collectionId == globalCollectionId)
+        it.book.id !in shelvedBookIds && (globalSpaceId == null || globalSpaceId == "_all_" || it.spaces.any { space -> space.id == globalSpaceId })
     }
 
     val showShelves = prefs.selectedShelfFilter.contains(ShelfFilter.Shelves)
     val showUnshelved = prefs.selectedShelfFilter.contains(ShelfFilter.Unshelved)
 
     val finalShelves = if (showShelves) {
-        if (globalCollectionId != null && globalCollectionId != "_all_") {
+        if (globalSpaceId != null && globalSpaceId != "_all_") {
             sortedShelves.filter { it.books.isNotEmpty() }
         } else {
             sortedShelves

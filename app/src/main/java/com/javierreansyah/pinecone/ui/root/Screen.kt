@@ -40,10 +40,10 @@ sealed interface Screen : NavKey {
     data object AllTags : Screen
 
     @Serializable
-    data object AllCollections : Screen
+    data object AllSpaces : Screen
 
     @Serializable
-    data class CollectionDetail(val collectionName: String) : Screen
+    data class SpaceDetail(val spaceName: String) : Screen
 
     @Serializable
     data object Dictionaries : Screen
@@ -55,8 +55,5 @@ sealed interface Screen : NavKey {
     data class EditBook(val bookId: String) : Screen
 
     @Serializable
-    data class AddToShelf(val bookId: String) : Screen
-
-    @Serializable
-    data class AddToCollection(val bookId: String) : Screen
+    data class Organize(val bookIds: String) : Screen
 }

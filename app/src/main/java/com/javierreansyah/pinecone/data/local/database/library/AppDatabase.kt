@@ -6,8 +6,8 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
-    entities = [BookEntity::class, BookmarkEntity::class, ShelfEntity::class, ShelfBookCrossRefEntity::class, NoteEntity::class, AuthorEntity::class, BookAuthorCrossRef::class, TagEntity::class, BookTagCrossRef::class, CollectionEntity::class],
-    version = 11,
+    entities = [BookEntity::class, BookmarkEntity::class, ShelfEntity::class, ShelfBookCrossRefEntity::class, NoteEntity::class, AuthorEntity::class, BookAuthorCrossRef::class, TagEntity::class, BookTagCrossRef::class, SpaceEntity::class, BookSpaceCrossRef::class],
+    version = 12,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -15,7 +15,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun bookmarkDao(): BookmarkDao
     abstract fun shelfDao(): ShelfDao
     abstract fun noteDao(): NoteDao
-    abstract fun collectionDao(): CollectionDao
+    abstract fun spaceDao(): SpaceDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -81,6 +81,24 @@ abstract class AppDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("CREATE TABLE IF NOT EXISTS `collections` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))")
                 db.execSQL("ALTER TABLE books ADD COLUMN collectionId TEXT")
+            }
+        }
+
+        val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS `spaces` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `book_space_cross_ref` (`bookId` TEXT NOT NULL, `spaceId` TEXT NOT NULL, PRIMARY KEY(`bookId`, `spaceId`), FOREIGN KEY(`bookId`) REFERENCES `books`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`spaceId`) REFERENCES `spaces`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_book_space_cross_ref_spaceId` ON `book_space_cross_ref` (`spaceId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_book_space_cross_ref_bookId` ON `book_space_cross_ref` (`bookId`)")
+                
+                // Migrate existing collections to spaces
+                db.execSQL("INSERT INTO spaces (id, name, createdAt) SELECT id, name, createdAt FROM collections")
+                
+                // Migrate existing book collections to cross refs
+                db.execSQL("INSERT INTO book_space_cross_ref (bookId, spaceId) SELECT id, collectionId FROM books WHERE collectionId IS NOT NULL")
+                
+                // Drop collections table
+                db.execSQL("DROP TABLE collections")
             }
         }
     }

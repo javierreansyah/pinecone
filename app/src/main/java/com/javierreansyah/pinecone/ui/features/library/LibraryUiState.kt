@@ -5,7 +5,7 @@ enum class SortType { Title, Author, LastRead, Added, Progress, Custom }
 enum class StatusFilter { NotStarted, Reading, Finished }
 enum class ShelfFilter { Shelves, Unshelved }
 
-enum class SearchCategory { All, Books, Authors, Shelves, Tags, Collections }
+enum class SearchCategory { All, Books, Authors, Shelves, Tags, Spaces }
 
 data class FilterSortPreferences(
     val layoutMode: LayoutMode = LayoutMode.Grid,

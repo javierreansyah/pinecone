@@ -108,10 +108,6 @@ class ArchiveViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun removeBookFromCollection(bookId: String) {
-        viewModelScope.launch {
-            bookRepository.removeBookFromCollection(bookId)
-        }
-    }
+    // Space removal not supported from archive view yet
 
 }

@@ -89,8 +89,7 @@ fun FilterResultScreen(
     onNavigateToReader: (String) -> Unit,
     onNavigateToMerged: (String) -> Unit = {},
     onNavigateToBookInfo: (String) -> Unit,
-    onNavigateToAddToShelf: (String) -> Unit,
-    onNavigateToAddToCollection: (String) -> Unit
+    onNavigateToOrganize: (String) -> Unit
 ) {
     val context = LocalContext.current
     val viewModel: FilterResultViewModel = viewModel(factory = object :
@@ -111,12 +110,12 @@ fun FilterResultScreen(
     val allAuthors by viewModel.allAuthors.collectAsState()
     val allTags by viewModel.allTags.collectAsState()
 
-    val allCollections by viewModel.allCollections.collectAsState()
+    val allSpaces by viewModel.allSpaces.collectAsState()
 
-    val suggestionList = remember(filterType, allAuthors, allTags, allCollections) {
+    val suggestionList = remember(filterType, allAuthors, allTags, allSpaces) {
         when (filterType) {
             "author" -> allAuthors.map { it.name }
-            "collection" -> allCollections.map { it.name }
+            "space" -> allSpaces.map { it.name }
             else -> allTags.map { it.name }
         }
     }
@@ -124,7 +123,7 @@ fun FilterResultScreen(
     val baseBooksFlow = remember(filterType, filterValue) {
         when (filterType) {
             "author" -> viewModel.getBooksByAuthor(filterValue)
-            "collection" -> viewModel.getBooksByCollection(filterValue)
+            "space" -> viewModel.getBooksBySpace(filterValue)
             else -> viewModel.getBooksByTag(filterValue)
         }
     }
@@ -157,9 +156,8 @@ fun FilterResultScreen(
         onToggleArchive = { bookId -> viewModel.toggleArchive(bookId) },
         onToggleReadStatus = { bookId -> viewModel.toggleReadStatus(bookId) },
         onRemoveFromShelf = { shelfId, bookId -> viewModel.removeBookFromShelf(shelfId, bookId) },
-        onNavigateToAddToShelf = onNavigateToAddToShelf,
-        onRemoveFromCollection = { bookId -> viewModel.removeBookFromCollection(bookId) },
-        onNavigateToAddToCollection = onNavigateToAddToCollection,
+        onNavigateToOrganize = onNavigateToOrganize,
+        onRemoveFromSpace = { spaceId, bookId -> viewModel.removeBookFromSpace(spaceId, bookId) },
         onDeleteBook = { bookId -> viewModel.deleteBook(bookId) }
     )
 }
@@ -184,9 +182,8 @@ private fun FilterResultContent(
     onToggleArchive: (String) -> Unit,
     onToggleReadStatus: (String) -> Unit,
     onRemoveFromShelf: (String, String) -> Unit,
-    onNavigateToAddToShelf: (String) -> Unit,
-    onRemoveFromCollection: (String) -> Unit,
-    onNavigateToAddToCollection: (String) -> Unit,
+    onNavigateToOrganize: (String) -> Unit,
+    onRemoveFromSpace: (String, String) -> Unit,
     onDeleteBook: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -240,17 +237,11 @@ private fun FilterResultContent(
                                 }
                             }
                         },
-                        onAddToShelf = {
+                        onOrganize = {
                             val ids = selectedBooks.joinToString(",")
                             selectedBooks = emptySet()
                             isInMultiSelectMode = false
-                            onNavigateToAddToShelf(ids)
-                        },
-                        onAddToCollection = {
-                            val ids = selectedBooks.joinToString(",")
-                            selectedBooks = emptySet()
-                            isInMultiSelectMode = false
-                            onNavigateToAddToCollection(ids)
+                            onNavigateToOrganize(ids)
                         },
                         onArchive = {
                             val booksToProcess = selectedBooks.toList()
@@ -365,9 +356,8 @@ private fun FilterResultContent(
         onToggleArchive = onToggleArchive,
         onToggleReadStatus = onToggleReadStatus,
         onRemoveFromShelf = onRemoveFromShelf,
-        onNavigateToAddToShelf = onNavigateToAddToShelf,
-        onRemoveFromCollection = onRemoveFromCollection,
-        onNavigateToAddToCollection = onNavigateToAddToCollection,
+        onRemoveFromSpace = onRemoveFromSpace,
+        onNavigateToOrganize = onNavigateToOrganize,
         onDeleteBook = onDeleteBook,
         onEnterMultiSelect = { bookId ->
             selectedBooks = setOf(bookId)
@@ -746,9 +736,8 @@ private fun FilterResultDialogsAndSheets(
     onToggleArchive: (String) -> Unit,
     onToggleReadStatus: (String) -> Unit,
     onRemoveFromShelf: (String, String) -> Unit,
-    onNavigateToAddToShelf: (String) -> Unit,
-    onRemoveFromCollection: (String) -> Unit,
-    onNavigateToAddToCollection: (String) -> Unit,
+    onRemoveFromSpace: (String, String) -> Unit,
+    onNavigateToOrganize: (String) -> Unit,
     onDeleteBook: (String) -> Unit,
     onEnterMultiSelect: (String) -> Unit
 ) {
@@ -772,14 +761,7 @@ private fun FilterResultDialogsAndSheets(
             onNavigateToBookInfo = onNavigateToBookInfo,
             onToggleArchive = { onToggleArchive(bookId) },
             onToggleReadStatus = { onToggleReadStatus(bookId) },
-            onRemoveFromShelf = {
-                contextShelfId?.let {
-                    onRemoveFromShelf(it, bookId)
-                }
-            },
-            onAddToShelf = onNavigateToAddToShelf,
-            onRemoveFromCollection = { onRemoveFromCollection(bookId) },
-            onAddToCollection = onNavigateToAddToCollection,
+            onOrganize = { onNavigateToOrganize(bookId) },
             onDeleteBook = { onDeleteBook(bookId) },
             onEnterMultiSelect = { onEnterMultiSelect(bookId) },
             onDismiss = onBookMenuDismiss
@@ -789,7 +771,7 @@ private fun FilterResultDialogsAndSheets(
     if (showDeleteConfirm) {
         val titleType = when (filterType) {
             "author" -> stringResource(R.string.library_sort_author)
-            "collection" -> stringResource(R.string.library_collections_title)
+            "space" -> stringResource(R.string.library_spaces_title)
             else -> stringResource(R.string.library_sort_label)
         }
         AlertDialog(

@@ -4,6 +4,7 @@ package com.javierreansyah.pinecone.data.local.database.library
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import kotlinx.serialization.Serializable
+import androidx.room.ColumnInfo
 
 @Entity(tableName = "books")
 @Serializable
@@ -27,5 +28,5 @@ data class BookEntity(
     val furthestProgression: Double = 0.0,
     val furthestLocatorJson: String? = null,
     val jumpOriginLocatorJson: String? = null,
-    val collectionId: String? = null
+    @ColumnInfo(name = "collectionId") val legacyCollectionId: String? = null
 )

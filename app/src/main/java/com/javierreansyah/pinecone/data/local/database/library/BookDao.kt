@@ -183,9 +183,4 @@ interface BookDao {
     @Query("DELETE FROM book_tag_cross_ref")
     suspend fun deleteAllBookTagCrossRefs()
 
-    @Query("UPDATE books SET collectionId = null WHERE collectionId = :collectionId")
-    suspend fun removeCollectionFromBooks(collectionId: String)
-
-    @Query("UPDATE books SET collectionId = :newCollectionId WHERE collectionId = :oldCollectionId")
-    suspend fun mergeCollectionId(oldCollectionId: String, newCollectionId: String)
 }

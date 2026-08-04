@@ -57,8 +57,8 @@ class PineconeApplication : Application() {
                 AppDatabase.MIGRATION_4_5,
                 AppDatabase.MIGRATION_5_6,
                 AppDatabase.MIGRATION_8_9,
-                AppDatabase.MIGRATION_9_10,
-                AppDatabase.MIGRATION_10_11
+                AppDatabase.MIGRATION_10_11,
+                AppDatabase.MIGRATION_11_12
             )
             .fallbackToDestructiveMigration(false)
             .build()
@@ -86,7 +86,7 @@ class PineconeApplication : Application() {
             bookmarkDao = database.bookmarkDao(),
             shelfDao = database.shelfDao(),
             noteDao = database.noteDao(),
-            collectionDao = database.collectionDao(),
+            spaceDao = database.spaceDao(),
             publicationOpener = publicationOpener,
             assetRetriever = assetRetriever
         )

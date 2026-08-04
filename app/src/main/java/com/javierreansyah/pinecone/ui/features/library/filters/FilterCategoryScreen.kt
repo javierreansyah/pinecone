@@ -42,6 +42,7 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Delete
 import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Folder
+import com.composables.icons.materialsymbols.outlined.Forest
 import com.composables.icons.materialsymbols.outlined.Label
 import com.composables.icons.materialsymbols.outlined.More_vert
 import com.composables.icons.materialsymbols.outlined.Person
@@ -77,18 +78,18 @@ fun AllFilterItemsScreen(
 
     val itemsWithCounts by when (filterType) {
         "author" -> viewModel.authorsWithCounts.collectAsState()
-        "collection" -> viewModel.collectionsWithCounts.collectAsState()
+        "space" -> viewModel.spacesWithCounts.collectAsState()
         else -> viewModel.tagsWithCounts.collectAsState()
     }
 
     val allAuthors by viewModel.allAuthors.collectAsState()
     val allTags by viewModel.allTags.collectAsState()
-    val allCollections by viewModel.allCollections.collectAsState()
+    val allSpaces by viewModel.allSpaces.collectAsState()
 
-    val suggestionList = remember(filterType, allAuthors, allTags, allCollections) {
+    val suggestionList = remember(filterType, allAuthors, allTags, allSpaces) {
         when (filterType) {
             "author" -> allAuthors.map { it.name }
-            "collection" -> allCollections.map { it.name }
+            "space" -> allSpaces.map { it.name }
             else -> allTags.map { it.name }
         }
     }
@@ -298,7 +299,7 @@ private fun AllFilterItemsTopAppBar(
 ) {
     val titleText = when (filterType) {
         "author" -> stringResource(R.string.library_authors_title)
-        "collection" -> stringResource(R.string.library_collections_title)
+        "space" -> stringResource(R.string.library_spaces_title)
         else -> stringResource(R.string.library_tags_title)
     }
 
@@ -327,13 +328,13 @@ private fun AllFilterItemsEmptyState(
 ) {
     val icon = when (filterType) {
         "author" -> MaterialSymbols.Outlined.Person
-        "collection" -> MaterialSymbols.Outlined.Folder
+        "space" -> MaterialSymbols.Outlined.Forest
         else -> MaterialSymbols.Outlined.Label
     }
 
     val text = when (filterType) {
         "author" -> stringResource(R.string.library_empty_authors)
-        "collection" -> stringResource(R.string.library_empty_collections)
+        "space" -> stringResource(R.string.library_empty_spaces)
         else -> stringResource(R.string.library_empty_tags)
     }
 
@@ -515,12 +516,12 @@ private fun AllFilterItemsDialogs(
     itemToRename?.let { oldName ->
         val dialogTitle = when (filterType) {
             "author" -> stringResource(R.string.library_rename_author_title)
-            "collection" -> stringResource(R.string.library_rename_collection_title)
+            "space" -> stringResource(R.string.library_rename_space_title)
             else -> stringResource(R.string.library_rename_tag_title)
         }
         val fieldLabel = when (filterType) {
             "author" -> stringResource(R.string.library_author_name_label)
-            "collection" -> stringResource(R.string.library_collection_name_label)
+            "space" -> stringResource(R.string.library_space_name_label)
             else -> stringResource(R.string.library_tag_name_label)
         }
         RenameFilterDialog(

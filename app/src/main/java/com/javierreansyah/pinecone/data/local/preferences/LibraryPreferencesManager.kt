@@ -61,19 +61,19 @@ class LibraryPreferencesManager(context: Context) {
         )
     }
 
-    fun getGlobalCollectionFlow(): Flow<String?> = callbackFlow {
+    fun getGlobalSpaceFlow(): Flow<String?> = callbackFlow {
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == "global_collection") {
-                trySend(prefs.getString("global_collection", null))
+            if (key == "global_space") {
+                trySend(prefs.getString("global_space", null))
             }
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
-        trySend(prefs.getString("global_collection", null))
+        trySend(prefs.getString("global_space", null))
         awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }
 
-    fun setGlobalCollection(collectionId: String?) {
-        prefs.edit().putString("global_collection", collectionId).apply()
+    fun setGlobalSpace(spaceId: String?) {
+        prefs.edit().putString("global_space", spaceId).apply()
     }
 
     fun savePreferences(screenKey: String, prefsObj: FilterSortPreferences) {

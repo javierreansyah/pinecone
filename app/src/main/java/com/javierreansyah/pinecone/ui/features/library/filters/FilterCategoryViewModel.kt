@@ -23,8 +23,8 @@ class FilterCategoryViewModel(application: Application) : AndroidViewModel(appli
         bookRepository.getAllAuthors().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val allTags =
         bookRepository.getAllTags().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
-    val allCollections =
-        bookRepository.getAllCollections().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val allSpaces =
+        bookRepository.getAllSpaces().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val authorsWithCounts = combine(allAuthors, booksFlow) { authors, books ->
         authors.map { author ->
@@ -40,10 +40,10 @@ class FilterCategoryViewModel(application: Application) : AndroidViewModel(appli
         }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    val collectionsWithCounts = combine(allCollections, booksFlow) { collections, books ->
-        collections.map { collection ->
-            val count = books.count { it.collectionId == collection.id }
-            Pair(collection.name, count)
+    val spacesWithCounts = combine(allSpaces, booksFlow) { spaces, books ->
+        spaces.map { space ->
+            val count = books.count { book -> book.spaceIds.contains(space.id) }
+            Pair(space.name, count)
         }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
