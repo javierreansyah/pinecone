@@ -44,14 +44,14 @@ class ShelfDetailViewModel(
     private val booksFlow: Flow<List<Book>> =
         bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }
 
-    private val globalCollectionId: StateFlow<String?> = prefsManager.getGlobalCollectionFlow().stateIn(
+    private val globalSpaceId: StateFlow<String?> = prefsManager.getGlobalSpaceFlow().stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = null
     )
 
-    val allBooks: StateFlow<List<Book>> = combine(booksFlow, globalCollectionId) { books, collectionId ->
-        if (collectionId == null || collectionId == "_all_") books else books.filter { it.collectionId == collectionId }
+    val allBooks: StateFlow<List<Book>> = combine(booksFlow, globalSpaceId) { books, spaceId ->
+        if (spaceId == null || spaceId == "_all_") books else books.filter { book -> book.spaceIds.contains(spaceId) }
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -62,12 +62,12 @@ class ShelfDetailViewModel(
         bookRepository.getAllShelvesWithBooks(),
         bookRepository.getAllShelfBookCrossRefs(),
         bookRepository.getAllBooks(),
-        globalCollectionId
-    ) { shelvesList, crossRefs, allBooksEntities, collectionId ->
-        val sortedShelves = sortShelfBooks(shelvesList, crossRefs, collectionId)
+        globalSpaceId
+    ) { shelvesList, crossRefs, allBooksEntities, spaceId ->
+        val sortedShelves = sortShelfBooks(shelvesList, crossRefs, spaceId)
         val shelvedBookIds = crossRefs.map { it.bookId }.toSet()
         val unshelvedBooks = allBooksEntities.filter { 
-            it.book.id !in shelvedBookIds && (collectionId == null || collectionId == "_all_" || it.book.collectionId == collectionId)
+            it.book.id !in shelvedBookIds && (spaceId == null || spaceId == "_all_" || it.spaces.any { space -> space.id == spaceId })
         }
 
         val unshelvedShelf = ShelfWithCovers(
@@ -165,9 +165,9 @@ class ShelfDetailViewModel(
         }
     }
 
-    fun removeBookFromCollection(bookId: String) {
+    fun removeBookFromSpace(spaceId: String, bookId: String) {
         viewModelScope.launch {
-            bookRepository.removeBookFromCollection(bookId)
+            bookRepository.removeBookFromSpace(spaceId, bookId)
         }
     }
 }

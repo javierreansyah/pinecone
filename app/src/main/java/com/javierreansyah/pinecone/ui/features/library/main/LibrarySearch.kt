@@ -82,10 +82,10 @@ fun LibrarySearchTopBar(
     onNavigateToShelf: (String, String, Int) -> Unit,
     onNavigateToAuthor: (String) -> Unit,
     onNavigateToTag: (String) -> Unit,
-    onNavigateToCollection: (String) -> Unit,
+    onNavigateToSpace: (String) -> Unit,
     onAuthorsHeaderClick: () -> Unit = {},
     onTagsHeaderClick: () -> Unit = {},
-    onCollectionsHeaderClick: () -> Unit = {},
+    onSpacesHeaderClick: () -> Unit = {},
     scrollBehavior: SearchBarScrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior(),
     searchBarState: SearchBarState = rememberContainedSearchBarState()
 ) {
@@ -235,10 +235,10 @@ fun LibrarySearchTopBar(
                         navigateAfterCollapse { onNavigateToAuthor(author) }
                     },
                     onNavigateToTag = { tag -> navigateAfterCollapse { onNavigateToTag(tag) } },
-                    onNavigateToCollection = { collection -> navigateAfterCollapse { onNavigateToCollection(collection) } },
+                    onNavigateToSpace = { space -> navigateAfterCollapse { onNavigateToSpace(space) } },
                     onAuthorsHeaderClick = { navigateAfterCollapse { onAuthorsHeaderClick() } },
                     onTagsHeaderClick = { navigateAfterCollapse { onTagsHeaderClick() } },
-                    onCollectionsHeaderClick = { navigateAfterCollapse { onCollectionsHeaderClick() } }
+                    onSpacesHeaderClick = { navigateAfterCollapse { onSpacesHeaderClick() } }
                 )
             }
         }

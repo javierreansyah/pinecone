@@ -46,8 +46,7 @@ fun ArchiveScreen(
     onNavigateBack: () -> Unit,
     onNavigateToReader: (String) -> Unit,
     onNavigateToBookInfo: (String) -> Unit,
-    onNavigateToAddToShelf: (String) -> Unit,
-    onNavigateToAddToCollection: (String) -> Unit
+    onNavigateToOrganize: (String) -> Unit
 ) {
     val context = LocalContext.current
     val viewModel: ArchiveViewModel = viewModel(factory = object :
@@ -108,17 +107,11 @@ fun ArchiveScreen(
                                 }
                             }
                         },
-                        onAddToShelf = {
+                        onOrganize = {
                             val ids = selectedBooks.joinToString(",")
                             selectedBooks = emptySet()
                             isInMultiSelectMode = false
-                            onNavigateToAddToShelf(ids)
-                        },
-                        onAddToCollection = {
-                            val ids = selectedBooks.joinToString(",")
-                            selectedBooks = emptySet()
-                            isInMultiSelectMode = false
-                            onNavigateToAddToCollection(ids)
+                            onNavigateToOrganize(ids)
                         },
                         onArchive = {
                             val booksToProcess = selectedBooks.toList()
@@ -216,10 +209,7 @@ fun ArchiveScreen(
             onNavigateToBookInfo = onNavigateToBookInfo,
             onToggleArchive = { viewModel.toggleArchive(bookId) },
             onToggleReadStatus = { viewModel.toggleReadStatus(bookId) },
-            onRemoveFromShelf = {},
-            onAddToShelf = onNavigateToAddToShelf,
-            onRemoveFromCollection = { viewModel.removeBookFromCollection(bookId) },
-            onAddToCollection = onNavigateToAddToCollection,
+            onOrganize = onNavigateToOrganize,
             onDeleteBook = { viewModel.deleteBook(bookId) },
             onEnterMultiSelect = {
                 selectedBooks = setOf(bookId)

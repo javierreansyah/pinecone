@@ -36,11 +36,13 @@ import com.composables.icons.materialsymbols.outlined.Add
 import com.composables.icons.materialsymbols.outlined.Archive
 import com.composables.icons.materialsymbols.outlined.Book_3
 import com.composables.icons.materialsymbols.outlined.Folder
+import com.composables.icons.materialsymbols.outlined.Forest
 import com.composables.icons.materialsymbols.outlined.Menu_open
+import com.composables.icons.materialsymbols.outlined.Park
 import com.composables.icons.materialsymbols.outlined.Settings
 import com.composables.icons.materialsymbols.outlined.Upload
 import com.javierreansyah.pinecone.R
-import com.javierreansyah.pinecone.data.local.database.library.CollectionEntity
+import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -52,9 +54,10 @@ import androidx.compose.foundation.layout.height
 @Composable
 fun AppDrawer(
     drawerState: WideNavigationRailState,
-    allCollections: List<CollectionEntity> = emptyList(),
-    selectedCollectionId: String? = null,
-    onCollectionSelected: (String?) -> Unit = {},
+    allSpaces: List<SpaceEntity> = emptyList(),
+    selectedSpaceId: String? = null,
+    onSpaceSelected: (String?) -> Unit = {},
+    onNavigateToAllSpaces: () -> Unit,
     onNavigateToArchives: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onImportFilesClick: () -> Unit,
@@ -162,6 +165,22 @@ fun AppDrawer(
                 railExpanded = true,
                 icon = {
                     Icon(
+                        imageVector = MaterialSymbols.Outlined.Forest,
+                        contentDescription = null
+                    )
+                },
+                label = { Text(stringResource(R.string.library_spaces_title)) },
+                selected = false,
+                onClick = {
+                    onNavigateToAllSpaces()
+                    scope.launch { drawerState.collapse() }
+                }
+            )
+
+            WideNavigationRailItem(
+                railExpanded = true,
+                icon = {
+                    Icon(
                         imageVector = MaterialSymbols.Outlined.Archive,
                         contentDescription = null
                     )
@@ -207,10 +226,8 @@ fun AppDrawer(
             )
 
             Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Collections",
+                text = "Spaces",
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -220,31 +237,31 @@ fun AppDrawer(
                 railExpanded = true,
                 icon = {
                     Icon(
-                        imageVector = MaterialSymbols.Outlined.Book_3,
+                        imageVector = MaterialSymbols.Outlined.Forest,
                         contentDescription = null
                     )
                 },
                 label = { Text(stringResource(R.string.action_all)) },
-                selected = selectedCollectionId == null || selectedCollectionId == "_all_",
+                selected = selectedSpaceId == null || selectedSpaceId == "_all_",
                 onClick = {
-                    onCollectionSelected("_all_")
+                    onSpaceSelected("_all_")
                     scope.launch { drawerState.collapse() }
                 }
             )
 
-            allCollections.forEach { collection ->
+            allSpaces.forEach { space ->
                 WideNavigationRailItem(
                     railExpanded = true,
                     icon = {
                         Icon(
-                            imageVector = MaterialSymbols.Outlined.Folder,
+                            imageVector = MaterialSymbols.Outlined.Park,
                             contentDescription = null
                         )
                     },
-                    label = { Text(collection.name) },
-                    selected = selectedCollectionId == collection.id,
+                    label = { Text(space.name) },
+                    selected = selectedSpaceId == space.id,
                     onClick = {
-                        onCollectionSelected(collection.id)
+                        onSpaceSelected(space.id)
                         scope.launch { drawerState.collapse() }
                     }
                 )

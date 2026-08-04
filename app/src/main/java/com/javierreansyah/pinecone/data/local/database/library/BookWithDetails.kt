@@ -24,8 +24,10 @@ data class BookWithDetails(
     ) val tags: List<TagEntity>,
 
     @Relation(
-        parentColumn = "collectionId", entityColumn = "id"
-    ) val collection: CollectionEntity?
+        parentColumn = "id", entityColumn = "id", associateBy = Junction(
+            value = BookSpaceCrossRef::class, parentColumn = "bookId", entityColumn = "spaceId"
+        )
+    ) val spaces: List<SpaceEntity>
 ) {
     val sortedAuthors: List<AuthorEntity>
         get() {

@@ -8,7 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
-import com.javierreansyah.pinecone.data.local.database.library.CollectionEntity
+import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
@@ -35,7 +35,7 @@ class BookInfoViewModel(
     val shelves: StateFlow<List<ShelfWithCovers>> = repository.getAllShelvesWithBooks()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val collections: StateFlow<List<CollectionEntity>> = repository.getAllCollections()
+    val spaces: StateFlow<List<SpaceEntity>> = repository.getAllSpaces()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val uiState: StateFlow<BookInfoUiState> = repository.getBookFlow(bookId)
@@ -118,22 +118,22 @@ class BookInfoViewModel(
         }
     }
 
-    fun addBookToCollection(collectionId: String) {
+    fun addBookToSpace(spaceId: String) {
         viewModelScope.launch {
-            repository.addBookToCollection(collectionId, bookId)
+            repository.addBookToSpace(spaceId, bookId)
         }
     }
 
-    fun removeBookFromCollection() {
+    fun removeBookFromSpace(spaceId: String) {
         viewModelScope.launch {
-            repository.removeBookFromCollection(bookId)
+            repository.removeBookFromSpace(spaceId, bookId)
         }
     }
 
-    fun createCollectionAndAddBook(name: String) {
+    fun createSpaceAndAddBook(name: String) {
         viewModelScope.launch {
-            val collectionId = repository.createCollection(name)
-            repository.addBookToCollection(collectionId, bookId)
+            val spaceId = repository.createSpace(name)
+            repository.addBookToSpace(spaceId, bookId)
         }
     }
 

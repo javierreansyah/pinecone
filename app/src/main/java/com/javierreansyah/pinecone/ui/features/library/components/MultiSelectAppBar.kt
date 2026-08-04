@@ -27,12 +27,12 @@ import com.composables.icons.materialsymbols.outlined.Archive
 import com.composables.icons.materialsymbols.outlined.Check_circle
 import com.composables.icons.materialsymbols.outlined.Circle
 import com.composables.icons.materialsymbols.outlined.Close
+import com.composables.icons.materialsymbols.outlined.Create_new_folder
 import com.composables.icons.materialsymbols.outlined.Delete
 import com.composables.icons.materialsymbols.outlined.Deselect
-import com.composables.icons.materialsymbols.outlined.Folder
+import com.composables.icons.materialsymbols.outlined.Forest
 import com.composables.icons.materialsymbols.outlined.Select_all
 import com.composables.icons.materialsymbols.outlined.Unarchive
-import com.composables.icons.materialsymbols.outlined.Folder
 import com.javierreansyah.pinecone.R
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,8 +45,7 @@ fun MultiSelectAppBar(
     onClearSelection: () -> Unit,
     onSelectAll: () -> Unit,
     onMarkAsReadUnread: () -> Unit,
-    onAddToShelf: () -> Unit,
-    onAddToCollection: () -> Unit,
+    onOrganize: () -> Unit,
     onArchive: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
@@ -94,16 +93,10 @@ fun MultiSelectAppBar(
                     )
                 }
             }
-            IconButton(onClick = onAddToShelf, enabled = selectedCount > 0) {
+            IconButton(onClick = onOrganize, enabled = selectedCount > 0) {
                 Icon(
-                    imageVector = MaterialSymbols.Outlined.Folder,
-                    contentDescription = stringResource(R.string.library_label_add_to_shelf)
-                )
-            }
-            IconButton(onClick = onAddToCollection, enabled = selectedCount > 0) {
-                Icon(
-                    imageVector = MaterialSymbols.Outlined.Folder,
-                    contentDescription = stringResource(R.string.library_label_add_to_collection)
+                    imageVector = MaterialSymbols.Outlined.Create_new_folder,
+                    contentDescription = stringResource(R.string.action_organize)
                 )
             }
             IconButton(onClick = onArchive, enabled = selectedCount > 0) {

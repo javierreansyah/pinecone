@@ -106,8 +106,7 @@ fun ShelfDetailScreen(
     onNavigateBack: () -> Unit,
     onNavigateToReader: (String) -> Unit,
     onNavigateToBookInfo: (String) -> Unit,
-    onNavigateToAddToShelf: (String) -> Unit,
-    onNavigateToAddToCollection: (String) -> Unit
+    onNavigateToOrganize: (String) -> Unit
 ) {
     val viewModel: ShelfDetailViewModel = viewModel()
 
@@ -179,17 +178,11 @@ fun ShelfDetailScreen(
                                 }
                             }
                         },
-                        onAddToShelf = {
+                        onOrganize = {
                             val ids = selectedBooks.joinToString(",")
                             selectedBooks = emptySet()
                             isInMultiSelectMode = false
-                            onNavigateToAddToShelf(ids)
-                        },
-                        onAddToCollection = {
-                            val ids = selectedBooks.joinToString(",")
-                            selectedBooks = emptySet()
-                            isInMultiSelectMode = false
-                            onNavigateToAddToCollection(ids)
+                            onNavigateToOrganize(ids)
                         },
                         onArchive = {
                             val booksToProcess = selectedBooks.toList()
@@ -313,10 +306,7 @@ fun ShelfDetailScreen(
             onNavigateToBookInfo = onNavigateToBookInfo,
             onToggleArchive = { viewModel.toggleArchive(bookId) },
             onToggleReadStatus = { viewModel.toggleReadStatus(bookId) },
-            onRemoveFromShelf = { viewModel.removeBookFromShelf(shelfId, bookId) },
-            onAddToShelf = onNavigateToAddToShelf,
-            onAddToCollection = onNavigateToAddToCollection,
-            onRemoveFromCollection = { viewModel.removeBookFromCollection(bookId) },
+            onOrganize = { onNavigateToOrganize(bookId) },
             onDeleteBook = { viewModel.deleteBook(bookId) },
             onEnterMultiSelect = {
                 selectedBooks = setOf(bookId)

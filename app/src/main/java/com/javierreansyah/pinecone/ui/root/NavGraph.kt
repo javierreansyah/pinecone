@@ -39,11 +39,7 @@ import com.javierreansyah.pinecone.ui.features.library.filters.FilterResultScree
 import com.javierreansyah.pinecone.ui.features.library.info.BookInfoScreen
 import com.javierreansyah.pinecone.ui.features.library.info.EditBookScreen
 import com.javierreansyah.pinecone.ui.features.library.main.LibraryRoute
-import com.javierreansyah.pinecone.ui.features.library.shelf.SelectShelfScreen
-import com.javierreansyah.pinecone.ui.features.library.shelf.SelectShelfViewModel
 import com.javierreansyah.pinecone.ui.features.library.shelf.ShelfDetailScreen
-import com.javierreansyah.pinecone.ui.features.library.collection.SelectCollectionScreen
-import com.javierreansyah.pinecone.ui.features.library.collection.SelectCollectionViewModel
 import com.javierreansyah.pinecone.ui.features.reader.ReaderActivity
 import com.javierreansyah.pinecone.ui.features.settings.AboutScreen
 import com.javierreansyah.pinecone.ui.features.settings.OpenSourceLicensesScreen
@@ -210,20 +206,17 @@ fun NavGraph(
                     onNavigateToAllTags = {
                         backStack.add(Screen.AllTags)
                     },
-                    onNavigateToCollection = { collectionName ->
-                        backStack.add(Screen.CollectionDetail(collectionName))
+                    onNavigateToSpace = { spaceName ->
+                        backStack.add(Screen.SpaceDetail(spaceName))
                     },
-                    onNavigateToAllCollections = {
-                        backStack.add(Screen.AllCollections)
+                    onNavigateToAllSpaces = {
+                        backStack.add(Screen.AllSpaces)
                     },
                     onNavigateToBookInfo = { bookId ->
                         backStack.add(Screen.BookInfo(bookId))
                     },
-                    onNavigateToAddToShelf = { bookId ->
-                        backStack.add(Screen.AddToShelf(bookId))
-                    },
-                    onNavigateToAddToCollection = { bookId ->
-                        backStack.add(Screen.AddToCollection(bookId))
+                    onNavigateToOrganize = { bookIds ->
+                        backStack.add(Screen.Organize(bookIds))
                     },
                     onNavigateToArchives = {
                         backStack.clear()
@@ -283,11 +276,8 @@ fun NavGraph(
                     onNavigateToBookInfo = { bookId ->
                         backStack.add(Screen.BookInfo(bookId))
                     },
-                    onNavigateToAddToShelf = { bookId ->
-                        backStack.add(Screen.AddToShelf(bookId))
-                    },
-                    onNavigateToAddToCollection = { bookId ->
-                        backStack.add(Screen.AddToCollection(bookId))
+                    onNavigateToOrganize = { bookIds ->
+                        backStack.add(Screen.Organize(bookIds))
                     }
                 )
             }
@@ -306,11 +296,8 @@ fun NavGraph(
                     onNavigateToBookInfo = { bookId ->
                         backStack.add(Screen.BookInfo(bookId))
                     },
-                    onNavigateToAddToShelf = { bookId ->
-                        backStack.add(Screen.AddToShelf(bookId))
-                    },
-                    onNavigateToAddToCollection = { bookId ->
-                        backStack.add(Screen.AddToCollection(bookId))
+                    onNavigateToOrganize = { bookIds ->
+                        backStack.add(Screen.Organize(bookIds))
                     }
                 )
             }
@@ -332,11 +319,8 @@ fun NavGraph(
                     onNavigateToBookInfo = { bookId ->
                         backStack.add(Screen.BookInfo(bookId))
                     },
-                    onNavigateToAddToShelf = { bookId ->
-                        backStack.add(Screen.AddToShelf(bookId))
-                    },
-                    onNavigateToAddToCollection = { bookId ->
-                        backStack.add(Screen.AddToCollection(bookId))
+                    onNavigateToOrganize = { bookIds ->
+                        backStack.add(Screen.Organize(bookIds))
                     }
                 )
             }
@@ -358,18 +342,15 @@ fun NavGraph(
                     onNavigateToBookInfo = { bookId ->
                         backStack.add(Screen.BookInfo(bookId))
                     },
-                    onNavigateToAddToShelf = { bookId ->
-                        backStack.add(Screen.AddToShelf(bookId))
-                    },
-                    onNavigateToAddToCollection = { bookId ->
-                        backStack.add(Screen.AddToCollection(bookId))
+                    onNavigateToOrganize = { bookIds ->
+                        backStack.add(Screen.Organize(bookIds))
                     }
                 )
             }
-            entry<Screen.CollectionDetail> { args ->
+            entry<Screen.SpaceDetail> { args ->
                 FilterResultScreen(
-                    filterType = "collection",
-                    filterValue = args.collectionName,
+                    filterType = "space",
+                    filterValue = args.spaceName,
                     onNavigateBack = navigateBack,
                     onNavigateToReader = { bookId ->
                         val intent = Intent(context, ReaderActivity::class.java).apply {
@@ -379,16 +360,13 @@ fun NavGraph(
                     },
                     onNavigateToMerged = { newName ->
                         backStack.removeLastOrNull()
-                        backStack.add(Screen.CollectionDetail(newName))
+                        backStack.add(Screen.SpaceDetail(newName))
                     },
                     onNavigateToBookInfo = { bookId ->
                         backStack.add(Screen.BookInfo(bookId))
                     },
-                    onNavigateToAddToShelf = { bookId ->
-                        backStack.add(Screen.AddToShelf(bookId))
-                    },
-                    onNavigateToAddToCollection = { bookId ->
-                        backStack.add(Screen.AddToCollection(bookId))
+                    onNavigateToOrganize = { bookIds ->
+                        backStack.add(Screen.Organize(bookIds))
                     }
                 )
             }
@@ -410,12 +388,12 @@ fun NavGraph(
                     }
                 )
             }
-            entry<Screen.AllCollections> {
+            entry<Screen.AllSpaces> {
                 AllFilterItemsScreen(
-                    filterType = "collection",
+                    filterType = "space",
                     onNavigateBack = navigateBack,
-                    onNavigateToDetail = { collectionName ->
-                        backStack.add(Screen.CollectionDetail(collectionName))
+                    onNavigateToDetail = { spaceName ->
+                        backStack.add(Screen.SpaceDetail(spaceName))
                     }
                 )
             }
@@ -449,39 +427,21 @@ fun NavGraph(
                     onNavigateBack = navigateBack
                 )
             }
-            entry<Screen.AddToShelf> { args ->
-                val selectShelfViewModel: SelectShelfViewModel = viewModel(
+            entry<Screen.Organize> { args ->
+                val organizeViewModel: com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel = viewModel(
+                    key = args.bookIds,
                     factory = object :
                         androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory(app) {
                         override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                            if (modelClass.isAssignableFrom(SelectShelfViewModel::class.java)) {
-                                @Suppress("UNCHECKED_CAST") return SelectShelfViewModel(app) as T
+                            if (modelClass.isAssignableFrom(com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel::class.java)) {
+                                @Suppress("UNCHECKED_CAST") return com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel(app, args.bookIds) as T
                             }
                             throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
                         }
                     }
                 )
-                SelectShelfScreen(
-                    bookId = args.bookId,
-                    viewModel = selectShelfViewModel,
-                    onNavigateBack = navigateBack
-                )
-            }
-            entry<Screen.AddToCollection> { args ->
-                val selectCollectionViewModel: SelectCollectionViewModel = viewModel(
-                    factory = object :
-                        androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory(app) {
-                        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                            if (modelClass.isAssignableFrom(SelectCollectionViewModel::class.java)) {
-                                @Suppress("UNCHECKED_CAST") return SelectCollectionViewModel(app) as T
-                            }
-                            throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
-                        }
-                    }
-                )
-                SelectCollectionScreen(
-                    bookId = args.bookId,
-                    viewModel = selectCollectionViewModel,
+                com.javierreansyah.pinecone.ui.features.library.organize.OrganizeScreen(
+                    viewModel = organizeViewModel,
                     onNavigateBack = navigateBack
                 )
             }

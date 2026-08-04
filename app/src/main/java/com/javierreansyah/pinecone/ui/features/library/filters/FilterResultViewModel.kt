@@ -43,14 +43,14 @@ class FilterResultViewModel(
     private val booksFlow: Flow<List<Book>> =
         bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }
 
-    private val globalCollectionId: StateFlow<String?> = prefsManager.getGlobalCollectionFlow().stateIn(
+    private val globalSpaceId: StateFlow<String?> = prefsManager.getGlobalSpaceFlow().stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = null
     )
 
-    val allBooks: StateFlow<List<Book>> = combine(booksFlow, globalCollectionId) { books, collectionId ->
-        if (collectionId == null || collectionId == "_all_") books else books.filter { it.collectionId == collectionId }
+    val allBooks: StateFlow<List<Book>> = combine(booksFlow, globalSpaceId) { books, spaceId ->
+        if (spaceId == null || spaceId == "_all_") books else books.filter { book -> book.spaceIds.contains(spaceId) }
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -58,17 +58,17 @@ class FilterResultViewModel(
     )
 
     val shelves: StateFlow<List<ShelfWithCovers>> = combine(
-        bookRepository.getAllShelvesWithBooks(), bookRepository.getAllShelfBookCrossRefs(), globalCollectionId
-    ) { shelvesList, crossRefs, collectionId ->
-        sortShelfBooks(shelvesList, crossRefs, collectionId)
+        bookRepository.getAllShelvesWithBooks(), bookRepository.getAllShelfBookCrossRefs(), globalSpaceId
+    ) { shelvesList, crossRefs, spaceId ->
+        sortShelfBooks(shelvesList, crossRefs, spaceId)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val allAuthors =
         bookRepository.getAllAuthors().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val allTags =
         bookRepository.getAllTags().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
-    val allCollections =
-        bookRepository.getAllCollections().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val allSpaces =
+        bookRepository.getAllSpaces().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     fun getBooksByAuthor(author: String): Flow<List<Book>> = booksFlow.map { books ->
         books.filter { it.authors.contains(author) }
@@ -78,10 +78,10 @@ class FilterResultViewModel(
         books.filter { it.tags.contains(tag) }
     }
 
-    fun getBooksByCollection(collectionName: String): Flow<List<Book>> = combine(booksFlow, allCollections) { books, collections ->
-        val collection = collections.find { it.name == collectionName }
-        if (collection != null) {
-            books.filter { it.collectionId == collection.id }
+    fun getBooksBySpace(spaceName: String): Flow<List<Book>> = combine(booksFlow, allSpaces) { books, spaces ->
+        val space = spaces.find { it.name == spaceName }
+        if (space != null) {
+            books.filter { book -> book.spaceIds.contains(space.id) }
         } else {
             emptyList()
         }
@@ -169,9 +169,9 @@ class FilterResultViewModel(
         }
     }
 
-    fun removeBookFromCollection(bookId: String) {
+    fun removeBookFromSpace(spaceId: String, bookId: String) {
         viewModelScope.launch {
-            bookRepository.removeBookFromCollection(bookId)
+            bookRepository.removeBookFromSpace(spaceId, bookId)
         }
     }
 }

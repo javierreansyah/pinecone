@@ -69,13 +69,12 @@ fun LibraryRoute(
     onNavigateToShelf: (String, String, Int) -> Unit,
     onNavigateToAuthor: (String) -> Unit = {},
     onNavigateToTag: (String) -> Unit = {},
-    onNavigateToCollection: (String) -> Unit = {},
+    onNavigateToSpace: (String) -> Unit = {},
     onNavigateToAllAuthors: () -> Unit = {},
     onNavigateToAllTags: () -> Unit = {},
-    onNavigateToAllCollections: () -> Unit = {},
+    onNavigateToAllSpaces: () -> Unit = {},
     onNavigateToBookInfo: (String) -> Unit,
-    onNavigateToAddToShelf: (String) -> Unit,
-    onNavigateToAddToCollection: (String) -> Unit,
+    onNavigateToOrganize: (String) -> Unit,
     onNavigateToArchives: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToDictionaries: () -> Unit,
@@ -100,9 +99,9 @@ fun LibraryRoute(
         toggleShelfFilter = viewModel::toggleShelfFilter,
         toggleArchive = viewModel::toggleArchive,
         toggleReadStatus = viewModel::toggleReadStatus,
-        setGlobalCollection = viewModel::setGlobalCollection,
+        setGlobalSpace = viewModel::setGlobalSpace,
         removeBookFromShelf = viewModel::removeBookFromShelf,
-        removeBookFromCollection = viewModel::removeBookFromCollection,
+        removeBookFromSpace = viewModel::removeBookFromSpace,
         deleteBook = viewModel::deleteBook,
         renameShelf = viewModel::renameShelf,
         deleteShelf = viewModel::deleteShelf,
@@ -110,13 +109,12 @@ fun LibraryRoute(
         onNavigateToShelf = onNavigateToShelf,
         onNavigateToAuthor = onNavigateToAuthor,
         onNavigateToTag = onNavigateToTag,
-        onNavigateToCollection = onNavigateToCollection,
+        onNavigateToSpace = onNavigateToSpace,
         onNavigateToAllAuthors = onNavigateToAllAuthors,
         onNavigateToAllTags = onNavigateToAllTags,
-        onNavigateToAllCollections = onNavigateToAllCollections,
+        onNavigateToAllSpaces = onNavigateToAllSpaces,
         onNavigateToBookInfo = onNavigateToBookInfo,
-        onNavigateToAddToShelf = onNavigateToAddToShelf,
-        onNavigateToAddToCollection = onNavigateToAddToCollection,
+        onNavigateToOrganize = onNavigateToOrganize,
         onNavigateToArchives = onNavigateToArchives,
         onNavigateToSettings = onNavigateToSettings,
         onNavigateToDictionaries = onNavigateToDictionaries,
@@ -141,9 +139,9 @@ fun LibraryScreen(
     toggleShelfFilter: (ShelfFilter, Boolean) -> Unit,
     toggleArchive: (String) -> Unit,
     toggleReadStatus: (String) -> Unit,
-    setGlobalCollection: (String?) -> Unit,
+    setGlobalSpace: (String?) -> Unit,
     removeBookFromShelf: (String, String) -> Unit,
-    removeBookFromCollection: (String) -> Unit,
+    removeBookFromSpace: (String, String) -> Unit,
     deleteBook: (String) -> Unit,
     renameShelf: (String, String) -> Unit,
     deleteShelf: (String) -> Unit,
@@ -151,13 +149,12 @@ fun LibraryScreen(
     onNavigateToShelf: (String, String, Int) -> Unit,
     onNavigateToAuthor: (String) -> Unit = {},
     onNavigateToTag: (String) -> Unit = {},
-    onNavigateToCollection: (String) -> Unit = {},
+    onNavigateToSpace: (String) -> Unit = {},
     onNavigateToAllAuthors: () -> Unit = {},
     onNavigateToAllTags: () -> Unit = {},
-    onNavigateToAllCollections: () -> Unit = {},
+    onNavigateToAllSpaces: () -> Unit = {},
     onNavigateToBookInfo: (String) -> Unit,
-    onNavigateToAddToShelf: (String) -> Unit,
-    onNavigateToAddToCollection: (String) -> Unit,
+    onNavigateToOrganize: (String) -> Unit,
     onNavigateToArchives: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToDictionaries: () -> Unit,
@@ -215,9 +212,10 @@ fun LibraryScreen(
         Row(modifier = Modifier.fillMaxSize()) {
             AppDrawer(
                 drawerState = drawerState,
-                allCollections = uiState.allCollections,
-                selectedCollectionId = uiState.globalCollectionId,
-                onCollectionSelected = { setGlobalCollection(it) },
+                allSpaces = uiState.allSpaces,
+                selectedSpaceId = uiState.globalSpaceId,
+                onSpaceSelected = { setGlobalSpace(it) },
+                onNavigateToAllSpaces = onNavigateToAllSpaces,
                 onNavigateToArchives = onNavigateToArchives,
                 onNavigateToSettings = onNavigateToSettings,
                 onNavigateToDictionaries = onNavigateToDictionaries,
@@ -296,17 +294,11 @@ fun LibraryScreen(
                                                 }
                                             }
                                         },
-                                        onAddToShelf = {
+                                        onOrganize = {
                                             val ids = selectedBooks.joinToString(",")
                                             selectedBooks = emptySet()
                                             isInMultiSelectMode = false
-                                            onNavigateToAddToShelf(ids)
-                                        },
-                                        onAddToCollection = {
-                                            val ids = selectedBooks.joinToString(",")
-                                            selectedBooks = emptySet()
-                                            isInMultiSelectMode = false
-                                            onNavigateToAddToCollection(ids)
+                                            onNavigateToOrganize(ids)
                                         },
                                         onArchive = {
                                             val booksToProcess = selectedBooks.toList()
@@ -343,10 +335,10 @@ fun LibraryScreen(
                                     onNavigateToShelf = onNavigateToShelf,
                                     onNavigateToAuthor = onNavigateToAuthor,
                                     onNavigateToTag = onNavigateToTag,
-                                    onNavigateToCollection = onNavigateToCollection,
+                                    onNavigateToSpace = onNavigateToSpace,
                                     onAuthorsHeaderClick = onNavigateToAllAuthors,
                                     onTagsHeaderClick = onNavigateToAllTags,
-                                    onCollectionsHeaderClick = onNavigateToAllCollections,
+                                    onSpacesHeaderClick = onNavigateToAllSpaces,
                                     scrollBehavior = scrollBehavior
                                 )
                             }
@@ -452,21 +444,13 @@ fun LibraryScreen(
                     BookContextMenu(
                         bookId = bookId,
                         shelfId = contextShelfId,
+                        spaceId = uiState.globalSpaceId,
                         allBooks = uiState.allBooks,
                         showSelectMultiple = !isShelvesTab,
                         onNavigateToBookInfo = onNavigateToBookInfo,
                         onToggleArchive = { toggleArchive(bookId) },
                         onToggleReadStatus = { toggleReadStatus(bookId) },
-                        onRemoveFromShelf = {
-                            contextShelfId?.let {
-                                removeBookFromShelf(
-                                    it, bookId
-                                )
-                            }
-                        },
-                        onAddToShelf = onNavigateToAddToShelf,
-                        onAddToCollection = onNavigateToAddToCollection,
-                        onRemoveFromCollection = { removeBookFromCollection(bookId) },
+                        onOrganize = { onNavigateToOrganize(bookId) },
                         onDeleteBook = { deleteBook(bookId) },
                         onEnterMultiSelect = {
                             selectedBooks = setOf(bookId)

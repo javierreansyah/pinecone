@@ -58,10 +58,10 @@ internal fun ExpandedSearchContent(
     onNavigateToShelf: (String, String, Int) -> Unit,
     onNavigateToAuthor: (String) -> Unit,
     onNavigateToTag: (String) -> Unit,
-    onNavigateToCollection: (String) -> Unit,
+    onNavigateToSpace: (String) -> Unit,
     onAuthorsHeaderClick: () -> Unit,
     onTagsHeaderClick: () -> Unit,
-    onCollectionsHeaderClick: () -> Unit
+    onSpacesHeaderClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -72,7 +72,7 @@ internal fun ExpandedSearchContent(
             SearchCategory.All to stringResource(R.string.action_all),
             SearchCategory.Books to stringResource(R.string.library_tab_books),
             SearchCategory.Shelves to stringResource(R.string.library_tab_shelves),
-            SearchCategory.Collections to stringResource(R.string.library_select_collection_title),
+            SearchCategory.Spaces to stringResource(R.string.library_select_space_title),
             SearchCategory.Authors to stringResource(R.string.library_authors_title),
             SearchCategory.Tags to stringResource(R.string.library_tags_title)
         )
@@ -100,10 +100,10 @@ internal fun ExpandedSearchContent(
             onShelfClick = { shelf -> onNavigateToShelf(shelf.id, shelf.name, 0) },
             onAuthorClick = { author -> onNavigateToAuthor(author) },
             onTagClick = { tag -> onNavigateToTag(tag) },
-            onCollectionClick = { collection -> onNavigateToCollection(collection.name) },
+            onSpaceClick = { space -> onNavigateToSpace(space.name) },
             onAuthorsHeaderClick = onAuthorsHeaderClick,
             onTagsHeaderClick = onTagsHeaderClick,
-            onCollectionsHeaderClick = onCollectionsHeaderClick
+            onSpacesHeaderClick = onSpacesHeaderClick
         )
     }
 }
@@ -117,10 +117,10 @@ private fun SearchResultsContent(
     onShelfClick: (ShelfEntity) -> Unit,
     onAuthorClick: (String) -> Unit,
     onTagClick: (String) -> Unit,
-    onCollectionClick: (com.javierreansyah.pinecone.data.local.database.library.CollectionEntity) -> Unit,
+    onSpaceClick: (com.javierreansyah.pinecone.data.local.database.library.SpaceEntity) -> Unit,
     onAuthorsHeaderClick: () -> Unit,
     onTagsHeaderClick: () -> Unit,
-    onCollectionsHeaderClick: () -> Unit
+    onSpacesHeaderClick: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         val isAll = searchCategory == SearchCategory.All
@@ -130,7 +130,7 @@ private fun SearchResultsContent(
         val maxShelves = if (isPreview) 4 else Int.MAX_VALUE
         val maxAuthors = if (isPreview) 4 else Int.MAX_VALUE
         val maxTags = if (isPreview) 4 else Int.MAX_VALUE
-        val maxCollections = if (isPreview) 4 else Int.MAX_VALUE
+        val maxSpaces = if (isPreview) 4 else Int.MAX_VALUE
 
         val booksToShow = if (isPreview) {
             results.books.sortedByDescending { it.lastOpened ?: 0L }.take(maxBooks)
@@ -148,12 +148,12 @@ private fun SearchResultsContent(
             results.shelves
         }
 
-        val collectionsToShow = if (isPreview) {
-            results.collections.sortedBy { it.name }.take(maxCollections)
+        val spacesToShow = if (isPreview) {
+            results.spaces.sortedBy { it.name }.take(maxSpaces)
         } else if (isAll) {
-            results.collections.take(maxCollections)
+            results.spaces.take(maxSpaces)
         } else {
-            results.collections
+            results.spaces
         }
 
         val authorsToShow = if (isPreview) {
@@ -228,15 +228,16 @@ private fun SearchResultsContent(
                     )
                 }
 
-                if (collectionsToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Collections)) {
+
+
+                if (spacesToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Spaces)) {
                     GridFilterSection(
-                        title = stringResource(R.string.library_select_collection_title),
-                        items = collectionsToShow,
-                        icon = MaterialSymbols.Outlined.Folder,
+                        title = stringResource(R.string.library_select_space_title),
+                        items = spacesToShow,
+                        icon = MaterialSymbols.Outlined.Folder, // or suitable icon
                         nameSelector = { it.name },
-                        onClick = { onCollectionClick(it) },
-                        onHeaderClick = { onCollectionsHeaderClick() }
-                    )
+                        onClick = { onSpaceClick(it) },
+                        onHeaderClick = { onSpacesHeaderClick() })
                 }
 
                 if (authorsToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Authors)) {
