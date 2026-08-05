@@ -45,6 +45,24 @@ interface SpaceDao {
     @Query("SELECT * FROM book_space_cross_ref")
     fun getAllBookSpaceCrossRefs(): Flow<List<BookSpaceCrossRef>>
 
+    @Query("SELECT * FROM spaces")
+    suspend fun getAllSpacesSync(): List<SpaceEntity>
+
+    @Query("SELECT * FROM book_space_cross_ref")
+    suspend fun getAllBookSpaceCrossRefsSync(): List<BookSpaceCrossRef>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAllSpaces(spaces: List<SpaceEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAllBookSpaceCrossRefs(crossRefs: List<BookSpaceCrossRef>)
+
+    @Query("DELETE FROM book_space_cross_ref")
+    suspend fun deleteAllBookSpaceCrossRefs()
+
+    @Query("DELETE FROM spaces")
+    suspend fun deleteAllSpaces()
+
     @Query("UPDATE OR IGNORE book_space_cross_ref SET spaceId = :newId WHERE spaceId = :oldId")
     suspend fun mergeBookSpaceCrossRef(oldId: String, newId: String)
 }

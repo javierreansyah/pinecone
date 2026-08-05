@@ -22,6 +22,7 @@ documentfile = "1.1.0"
 reorderable = "3.1.0"
 materialKolor = "5.0.0"
 aboutlibraries = "15.0.4"
+junit = "4.13.2"
 
 [libraries]
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashscreen" }
@@ -56,6 +57,7 @@ reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reo
 materialKolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 aboutlibraries-compose = { module = "com.mikepenz:aboutlibraries-compose-m3", version.ref = "aboutlibraries" }
+junit = { module = "junit:junit", version.ref = "junit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -245,6 +245,7 @@
     <string name="settings_backup_now_summary">Backup library and dictionaries (%s)</string>
     <string name="settings_restore">Restore</string>
     <string name="settings_restore_summary">Restore library and dictionaries</string>
+    <string name="settings_restore_missing_dictionaries">Library restored. Some referenced dictionary backups were missing, so existing dictionaries were kept.</string>
     <string name="settings_last_backup_format">Last: %s</string>
     <string name="settings_error_set_backup_location">Please set Backup Location first to restore dictionaries</string>
     <string name="settings_auto_backup_freq">Auto Backup Frequency</string>

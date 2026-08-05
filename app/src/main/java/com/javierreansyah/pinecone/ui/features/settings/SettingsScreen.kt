@@ -90,6 +90,8 @@ fun SettingsScreen(
     val navRestoringBackupMsg = stringResource(R.string.nav_restoring_backup)
     val navRestoreSuccessMsg = stringResource(R.string.nav_restore_success)
     val navRestoreFailedMsg = stringResource(R.string.nav_restore_failed)
+    val restoreMissingDictionariesMsg =
+        stringResource(R.string.settings_restore_missing_dictionaries)
     val navStartingBackupMsg = stringResource(R.string.nav_starting_backup)
     val navBackupSuccessMsg = stringResource(R.string.nav_backup_success)
     val navBackupFailedMsg = stringResource(R.string.nav_backup_failed)
@@ -321,6 +323,13 @@ fun SettingsScreen(
                                         context,
                                         navRestoreSuccessMsg,
                                         Toast.LENGTH_SHORT
+                                    ).show()
+                                },
+                                onWarning = {
+                                    Toast.makeText(
+                                        context,
+                                        restoreMissingDictionariesMsg,
+                                        Toast.LENGTH_LONG
                                     ).show()
                                 },
                                 onFailure = {

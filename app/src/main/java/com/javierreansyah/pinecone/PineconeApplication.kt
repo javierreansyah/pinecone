@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.javierreansyah.pinecone.data.local.database.library.AppDatabase
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.repository.dictionary.DictionaryBackupManager
+import com.javierreansyah.pinecone.data.repository.backup.LibraryBackupRepository
 import com.javierreansyah.pinecone.data.repository.dictionary.DictionaryImportManager
 import com.javierreansyah.pinecone.data.repository.dictionary.DictionaryRepository
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
@@ -50,16 +51,7 @@ class PineconeApplication : Application() {
             AppDatabase::class.java,
             "reader_database"
         )
-            .addMigrations(
-                AppDatabase.MIGRATION_1_2,
-                AppDatabase.MIGRATION_2_3,
-                AppDatabase.MIGRATION_3_4,
-                AppDatabase.MIGRATION_4_5,
-                AppDatabase.MIGRATION_5_6,
-                AppDatabase.MIGRATION_8_9,
-                AppDatabase.MIGRATION_10_11,
-                AppDatabase.MIGRATION_11_12
-            )
+            .addCallback(AppDatabase.BACKUP_REVISION_CALLBACK)
             .fallbackToDestructiveMigration(false)
             .build()
 
@@ -94,6 +86,8 @@ class PineconeApplication : Application() {
         // Schedule initial backup based on preferences
         readerPreferences = ReaderPreferences(applicationContext)
 
+        DictionaryBackupManager.recoverInterruptedRestores(applicationContext)
+
         dictionaryRepository = DictionaryRepository(
             context = applicationContext,
             preferences = readerPreferences
@@ -110,6 +104,12 @@ class PineconeApplication : Application() {
         )
 
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            try {
+                LibraryBackupRepository(applicationContext).completePendingSettingsRestore()
+            } catch (error: Exception) {
+                error.printStackTrace()
+            }
+            libraryRepository.cleanupOrphanedFiles()
             val initialFrequency = readerPreferences.readerSettings.first().autoBackupFrequency
             WorkerUtils.scheduleBackupWork(applicationContext, initialFrequency)
         }

@@ -13,6 +13,7 @@ import coil.imageLoader
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.data.repository.backup.LibraryBackupRepository
+import com.javierreansyah.pinecone.data.repository.backup.BackupResult
 import com.javierreansyah.pinecone.data.repository.dictionary.DictionaryBackupManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -77,8 +78,8 @@ class SettingsViewModel(
         viewModelScope.launch {
             _isBackingUp.value = true
             onStart()
-            val libSuccess = libraryBackupRepository.performBackup(force = true)
             val dictSuccess = dictionaryBackupManager.backupDictionaries()
+            val libSuccess = dictSuccess && libraryBackupRepository.performBackup(force = true)
             _isBackingUp.value = false
             if (libSuccess && dictSuccess) {
                 onSuccess()
@@ -104,19 +105,24 @@ class SettingsViewModel(
                 if (backupFolder != null && backupFolder.canRead()) {
                     val dateFormat = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
 
-                    val files = backupFolder.listFiles()
+                    val libraryFolder = backupFolder.findFile("Library")?.takeIf { it.isDirectory }
+                    val files = (listOfNotNull(libraryFolder).flatMap { it.listFiles().toList() } +
+                        backupFolder.listFiles().toList())
+                        .distinctBy { it.uri }
                         .filter { it.name?.endsWith(".pine") == true }
                         .mapNotNull { file ->
                             val name = file.name ?: return@mapNotNull null
 
-                            // Try to parse yyMMdd_HHmmss from filename, fallback to lastModified
                             var timestamp = file.lastModified()
                             val parts = name.split("_")
                             if (parts.size >= 2) {
                                 try {
-                                    val dateStr = "${parts[0]}_${parts[1]}"
-                                    val parsedDate =
-                                        SimpleDateFormat("yyMMdd_HHmmss", Locale.US).parse(dateStr)
+                                    val isNew = parts[0].length == 8 && parts.size >= 3
+                                    val dateStr = if (isNew) {
+                                        "${parts[0]}_${parts[1]}_${parts[2]}"
+                                    } else "${parts[0]}_${parts[1]}"
+                                    val pattern = if (isNew) "yyyyMMdd_HHmmss_SSS" else "yyMMdd_HHmmss"
+                                    val parsedDate = SimpleDateFormat(pattern, Locale.US).parse(dateStr)
                                     if (parsedDate != null) {
                                         timestamp = parsedDate.time
                                     }
@@ -125,7 +131,7 @@ class SettingsViewModel(
                                 }
                             }
 
-                            val isManual = name.contains("_M.pine")
+                            val isManual = name.endsWith("_M.pine")
 
                             BackupFile(
                                 uri = file.uri,
@@ -153,35 +159,37 @@ class SettingsViewModel(
         uri: Uri,
         onStart: () -> Unit,
         onSuccess: () -> Unit,
+        onWarning: () -> Unit,
         onFailure: () -> Unit
     ) {
         viewModelScope.launch {
             _isRestoring.value = true
             onStart()
-            val libSuccess = libraryBackupRepository.restoreBackup(uri)
-
-            var dictSuccess = true
-            val settingsVal = readerPreferences.readerSettings.first()
-            val backupFolderUriString = settingsVal.backupFolderUri
-            if (backupFolderUriString.isNotEmpty()) {
-                val backupFolderUri = backupFolderUriString.toUri()
-                val backupFolder = DocumentFile.fromTreeUri(
-                    getApplication(),
-                    backupFolderUri
-                )
-                val dictBackupFile = backupFolder?.findFile("dictionary_backup.pinedict")
-                if (dictBackupFile != null) {
-                    dictSuccess = dictionaryBackupManager.restoreDictionaries(dictBackupFile.uri)
-                }
+            val dictionaryPreflight = dictionaryBackupManager.preflightForLibraryBackup(uri)
+            if (dictionaryPreflight is BackupResult.Failure) {
+                _isRestoring.value = false
+                onFailure()
+                return@launch
             }
-
+            val libraryOnly = dictionaryPreflight is BackupResult.Partial
+            if (libraryOnly) onWarning()
+            val libraryResult = libraryBackupRepository.restoreBackupResult(uri)
+            if (libraryResult is BackupResult.Failure) {
+                _isRestoring.value = false
+                onFailure()
+                return@launch
+            }
+            if (libraryResult is BackupResult.Partial) onWarning()
+            val dictionaryResult = if (libraryOnly) BackupResult.Success()
+            else dictionaryBackupManager.restoreForLibraryBackup(uri)
             _isRestoring.value = false
-            if (libSuccess && dictSuccess) {
+            if (dictionaryResult is BackupResult.Failure) {
+                onFailure()
+            } else {
+                if (dictionaryResult is BackupResult.Partial) onWarning()
                 getApplication<Application>().imageLoader.memoryCache?.clear()
                 getApplication<Application>().imageLoader.diskCache?.clear()
                 onSuccess()
-            } else {
-                onFailure()
             }
         }
     }
