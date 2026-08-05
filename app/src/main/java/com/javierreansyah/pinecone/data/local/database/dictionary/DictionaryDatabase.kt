@@ -12,8 +12,6 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 import java.util.concurrent.ConcurrentHashMap
 
 @Entity(
@@ -56,34 +54,8 @@ interface DictionaryDao {
     suspend fun getPrefixDefinitions(word: String): List<DictionaryEntry>
 }
 
-val MIGRATION_1_2 = object : Migration(1, 2) {
-    override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL("ALTER TABLE dictionary_entries ADD COLUMN wordIndex INTEGER NOT NULL DEFAULT 0")
-        db.execSQL("CREATE TABLE IF NOT EXISTS `synonym_entries` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `synonym` TEXT NOT NULL, `originalWordIndex` INTEGER NOT NULL)")
-        db.execSQL("CREATE INDEX IF NOT EXISTS `index_synonym_entries_synonym` ON `synonym_entries` (`synonym`)")
-    }
-}
-
-val MIGRATION_2_3 = object : Migration(2, 3) {
-    override fun migrate(db: SupportSQLiteDatabase) {
-        // Recreate dictionary_entries with COLLATE NOCASE on word
-        db.execSQL("CREATE TABLE IF NOT EXISTS `dictionary_entries_new` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `wordIndex` INTEGER NOT NULL DEFAULT 0, `word` TEXT COLLATE NOCASE NOT NULL, `definition` TEXT NOT NULL)")
-        db.execSQL("INSERT INTO `dictionary_entries_new` (`id`, `wordIndex`, `word`, `definition`) SELECT `id`, `wordIndex`, `word`, `definition` FROM `dictionary_entries`")
-        db.execSQL("DROP TABLE `dictionary_entries`")
-        db.execSQL("ALTER TABLE `dictionary_entries_new` RENAME TO `dictionary_entries`")
-        db.execSQL("CREATE INDEX IF NOT EXISTS `index_dictionary_entries_word` ON `dictionary_entries` (`word`)")
-
-        // Recreate synonym_entries with COLLATE NOCASE on synonym
-        db.execSQL("CREATE TABLE IF NOT EXISTS `synonym_entries_new` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `synonym` TEXT COLLATE NOCASE NOT NULL, `originalWordIndex` INTEGER NOT NULL)")
-        db.execSQL("INSERT INTO `synonym_entries_new` (`id`, `synonym`, `originalWordIndex`) SELECT `id`, `synonym`, `originalWordIndex` FROM `synonym_entries`")
-        db.execSQL("DROP TABLE `synonym_entries`")
-        db.execSQL("ALTER TABLE `synonym_entries_new` RENAME TO `synonym_entries`")
-        db.execSQL("CREATE INDEX IF NOT EXISTS `index_synonym_entries_synonym` ON `synonym_entries` (`synonym`)")
-    }
-}
-
 @Database(
-    entities = [DictionaryEntry::class, SynonymEntry::class], version = 3, exportSchema = false
+    entities = [DictionaryEntry::class, SynonymEntry::class], version = 1, exportSchema = true
 )
 abstract class DictionaryDatabase : RoomDatabase() {
     abstract fun dictionaryDao(): DictionaryDao
@@ -98,8 +70,7 @@ abstract class DictionaryDatabase : RoomDatabase() {
                     context.applicationContext,
                     DictionaryDatabase::class.java,
                     "dict_$dictionaryId.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
-                    .fallbackToDestructiveMigration(false)
+                ).fallbackToDestructiveMigration(false)
                     .build()
             }
         }

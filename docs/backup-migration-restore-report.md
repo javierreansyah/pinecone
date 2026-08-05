@@ -1,5 +1,13 @@
 # Backup restore after database migration
 
+> **Status (2026-08-04): resolved by the development reset.** This document records
+> the defects in the previous schema-v12 and backup implementation. The application
+> now uses clean Room v1 baselines, exported schemas, a separately versioned and
+> checksummed library archive, per-dictionary immutable snapshots, safe staged
+> restore, and legacy readers for the formats described below. Existing development
+> installs must clear app data or reinstall because no v12-to-v1 database downgrade
+> is intentionally provided.
+
 ## Executive summary
 
 The current implementation cannot be considered safe across app updates. The most likely reason a migrated installation fails before backup restore is attempted is an incomplete Room migration graph: the database is version 12, but the application registers migrations for `1→2`, `2→3`, `3→4`, `4→5`, `5→6`, `8→9`, `10→11`, and `11→12`. There is no registered path for database versions 6 or 7 to reach version 8.
@@ -139,4 +147,3 @@ Backup/restore should not be enabled for an update until all of the following ar
 - validation completes before current data is deleted;
 - restore tests pass across at least one backup from every supported prior release;
 - failures are observable in logs and are actionable in the UI.
-

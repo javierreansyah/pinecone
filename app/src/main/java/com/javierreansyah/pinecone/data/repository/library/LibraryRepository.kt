@@ -58,6 +58,17 @@ class LibraryRepository(
 
     fun getAllBooks(): Flow<List<BookWithDetails>> = bookDao.getAllBooks()
 
+    suspend fun cleanupOrphanedFiles() = withContext(Dispatchers.IO) {
+        val books = bookDao.getAllBooksSync()
+        val referencedBooks = books.map { File(it.filePath).canonicalPath }.toSet()
+        val referencedCovers = books.mapNotNull { it.coverPath }
+            .map { File(it).canonicalPath }.toSet()
+        booksDir.listFiles()?.filter { it.isFile && it.canonicalPath !in referencedBooks }
+            ?.forEach { it.delete() }
+        coversDir.listFiles()?.filter { it.isFile && it.canonicalPath !in referencedCovers }
+            ?.forEach { it.delete() }
+    }
+
     fun getArchivedBooks(): Flow<List<BookWithDetails>> = bookDao.getArchivedBooks()
 
     fun searchBooks(query: String): Flow<List<BookWithDetails>> = bookDao.searchBooks(query)

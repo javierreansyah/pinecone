@@ -23,6 +23,10 @@ android {
         targetSdk = 37
         versionCode = generateVersionCode()
         versionName = appVersionName
+
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas")
+        }
     }
 
     buildTypes {
@@ -120,8 +124,8 @@ dependencies {
     implementation("androidx.compose.ui:ui-text-google-fonts:1.11.4")
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.aboutlibraries.compose)
+    testImplementation(libs.junit)
 }
 
 aboutLibraries {
 }
-

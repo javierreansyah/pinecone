@@ -85,6 +85,7 @@ data class ReaderSettings(
     // Backup
     val autoBackupFrequency: String = "12h",
     val lastBackupTime: Long = 0L,
+    val lastBackupRevision: Long = -1L,
     val backupFolderUri: String = "",
 
     // Dictionaries
@@ -226,6 +227,7 @@ class ReaderPreferences(private val context: Context) {
         // Backup
         val AUTO_BACKUP_FREQUENCY = stringPreferencesKey("auto_backup_frequency")
         val LAST_BACKUP_TIME = longPreferencesKey("last_backup_time")
+        val LAST_BACKUP_REVISION = longPreferencesKey("last_backup_revision")
         val BACKUP_FOLDER_URI = stringPreferencesKey("backup_folder_uri")
 
         // Dictionaries
@@ -293,6 +295,7 @@ class ReaderPreferences(private val context: Context) {
 
             autoBackupFrequency = preferences[AUTO_BACKUP_FREQUENCY] ?: "12h",
             lastBackupTime = preferences[LAST_BACKUP_TIME] ?: 0L,
+            lastBackupRevision = preferences[LAST_BACKUP_REVISION] ?: -1L,
             backupFolderUri = preferences[BACKUP_FOLDER_URI] ?: "",
 
             activeDictionaryId = preferences[ACTIVE_DICTIONARY_ID] ?: "",
@@ -355,6 +358,7 @@ class ReaderPreferences(private val context: Context) {
 
             preferences[AUTO_BACKUP_FREQUENCY] = settings.autoBackupFrequency
             preferences[LAST_BACKUP_TIME] = settings.lastBackupTime
+            preferences[LAST_BACKUP_REVISION] = settings.lastBackupRevision
             preferences[BACKUP_FOLDER_URI] = settings.backupFolderUri
 
             preferences[ACTIVE_DICTIONARY_ID] = settings.activeDictionaryId
