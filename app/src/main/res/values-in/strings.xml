@@ -226,10 +226,13 @@
     <string name="settings_backup_now">Cadangkan Sekarang</string>
     <string name="settings_backup_now_summary">Cadangkan perpustakaan dan kamus (%s)</string>
     <string name="settings_restore">Pulihkan</string>
+    <string name="settings_export_backup">Ekspor cadangan</string>
+    <string name="settings_import_backup">Impor Cadangan</string>
+    <string name="settings_import_backup_summary">Tambahkan cadangan portabel Pinecone ke brankas ini</string>
     <string name="settings_restore_summary">Pulihkan perpustakaan dan kamus</string>
-    <string name="settings_restore_missing_dictionaries">Perpustakaan dipulihkan. Beberapa cadangan kamus yang dirujuk tidak ditemukan, sehingga kamus yang ada tetap dipertahankan.</string>
+    <string name="settings_restore_partial">Pemulihan tersimpan, tetapi pembersihan akhir belum selesai. Mulai ulang Pinecone untuk menyelesaikan pemulihan.</string>
     <string name="settings_last_backup_format">Terakhir: %s</string>
-    <string name="settings_error_set_backup_location">Harap atur Lokasi Cadangan terlebih dahulu untuk memulihkan kamus</string>
+    <string name="settings_error_set_backup_location">Harap pilih lokasi cadangan terlebih dahulu</string>
     <string name="settings_auto_backup_freq">Frekuensi Cadangan Otomatis</string>
     <string name="settings_backup_location">Lokasi Cadangan</string>
     <string name="settings_option_system">Sistem</string>

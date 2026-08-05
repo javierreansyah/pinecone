@@ -1,6 +1,7 @@
 package com.javierreansyah.pinecone.data.model
 
-
+import com.javierreansyah.pinecone.data.local.preferences.InstalledDictionary
+import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -20,30 +21,62 @@ data class LibraryBackupPayload(
 )
 
 @Serializable
-data class BackupEntry(
-    val path: String,
+enum class VaultObjectKind { BOOK, COVER, DICTIONARY }
+
+@Serializable
+data class VaultObject(
+    val kind: VaultObjectKind,
+    val sha256: String,
     val size: Long,
-    val sha256: String
+    val crc32: Long,
+    val storedSize: Long,
+    val storedCrc32: Long,
+    val fileName: String,
+    val sourcePath: String,
+    val sourceSize: Long,
+    val sourceLastModified: Long
 )
 
 @Serializable
-data class DictionaryReference(
-    val id: String,
-    val name: String,
-    val sha256: String = "",
-    val fileName: String = ""
+data class BookObjectReference(
+    val bookId: String,
+    val book: VaultObject,
+    val cover: VaultObject? = null
 )
 
 @Serializable
-data class LibraryBackupManifest(
-    val format: String = "pinecone-library",
+data class DictionaryObjectReference(
+    val dictionary: InstalledDictionary,
+    val objectInfo: VaultObject
+)
+
+@Serializable
+data class VaultSnapshot(
+    val format: String = "pinecone-vault-snapshot",
     val formatVersion: Int = 1,
+    val id: String,
     val createdAt: Long,
     val backupKind: String,
     val appVersion: String,
     val databaseRevision: Long,
+    val stateFingerprint: String,
     val recordCounts: Map<String, Int>,
-    val entries: List<BackupEntry>,
-    val dictionaries: List<DictionaryReference> = emptyList(),
-    val activeDictionaryId: String = ""
+    val library: LibraryBackupPayload,
+    val settings: ReaderSettings,
+    val books: List<BookObjectReference>,
+    val dictionaries: List<DictionaryObjectReference>,
+    val activeDictionaryId: String
+)
+
+@Serializable
+data class VaultFormat(
+    val format: String = "pinecone-backup-vault",
+    val formatVersion: Int = 1
+)
+
+@Serializable
+data class PortableBackupManifest(
+    val format: String = "pinecone-portable-backup",
+    val formatVersion: Int = 1,
+    val snapshot: VaultSnapshot
 )
