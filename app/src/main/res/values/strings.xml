@@ -244,10 +244,13 @@
     <string name="settings_backup_now">Backup Now</string>
     <string name="settings_backup_now_summary">Backup library and dictionaries (%s)</string>
     <string name="settings_restore">Restore</string>
+    <string name="settings_export_backup">Export backup</string>
+    <string name="settings_import_backup">Import Backup</string>
+    <string name="settings_import_backup_summary">Add a portable Pinecone backup to this vault</string>
     <string name="settings_restore_summary">Restore library and dictionaries</string>
-    <string name="settings_restore_missing_dictionaries">Library restored. Some referenced dictionary backups were missing, so existing dictionaries were kept.</string>
+    <string name="settings_restore_partial">Restore committed, but final cleanup could not finish. Restart Pinecone to complete recovery.</string>
     <string name="settings_last_backup_format">Last: %s</string>
-    <string name="settings_error_set_backup_location">Please set Backup Location first to restore dictionaries</string>
+    <string name="settings_error_set_backup_location">Please select a backup location first</string>
     <string name="settings_auto_backup_freq">Auto Backup Frequency</string>
     <string name="settings_backup_location">Backup Location</string>
     <string name="settings_option_system">System</string>

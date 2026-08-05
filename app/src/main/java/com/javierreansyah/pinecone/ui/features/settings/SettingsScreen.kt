@@ -90,8 +90,7 @@ fun SettingsScreen(
     val navRestoringBackupMsg = stringResource(R.string.nav_restoring_backup)
     val navRestoreSuccessMsg = stringResource(R.string.nav_restore_success)
     val navRestoreFailedMsg = stringResource(R.string.nav_restore_failed)
-    val restoreMissingDictionariesMsg =
-        stringResource(R.string.settings_restore_missing_dictionaries)
+    val restorePartialMsg = stringResource(R.string.settings_restore_partial)
     val navStartingBackupMsg = stringResource(R.string.nav_starting_backup)
     val navBackupSuccessMsg = stringResource(R.string.nav_backup_success)
     val navBackupFailedMsg = stringResource(R.string.nav_backup_failed)
@@ -102,8 +101,7 @@ fun SettingsScreen(
     val viewModel: SettingsViewModel = viewModel(
         factory = SettingsViewModel.Factory(
             application = app,
-            readerPreferences = app.readerPreferences,
-            dictionaryBackupManager = app.dictionaryBackupManager
+            readerPreferences = app.readerPreferences
         )
     )
 
@@ -141,8 +139,31 @@ fun SettingsScreen(
     var showRestoreWarning by remember { mutableStateOf(false) }
     var showRestoreBottomSheet by remember { mutableStateOf(false) }
     var selectedBackupToRestore by remember { mutableStateOf<BackupFile?>(null) }
+    var selectedBackupToExport by remember { mutableStateOf<BackupFile?>(null) }
     val availableBackups by viewModel.availableBackups.collectAsState()
     val bottomSheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { destination ->
+        val selected = selectedBackupToExport
+        if (destination != null && selected != null) {
+            viewModel.exportBackup(selected.uri, destination,
+                onSuccess = { Toast.makeText(context, navBackupSuccessMsg, Toast.LENGTH_SHORT).show() },
+                onFailure = { Toast.makeText(context, navBackupFailedMsg, Toast.LENGTH_SHORT).show() })
+        }
+        selectedBackupToExport = null
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { source ->
+        source?.let {
+            viewModel.importBackup(it,
+                onSuccess = { Toast.makeText(context, navBackupSuccessMsg, Toast.LENGTH_SHORT).show() },
+                onFailure = { Toast.makeText(context, navBackupFailedMsg, Toast.LENGTH_SHORT).show() })
+        }
+    }
 
 
 
@@ -262,7 +283,8 @@ fun SettingsScreen(
                         viewModel.loadBackups()
                         showRestoreBottomSheet = true
                     }
-                }
+                },
+                onImportClick = { importLauncher.launch(arrayOf("application/octet-stream", "application/zip")) }
             )
 
             AboutSettingsSection(
@@ -328,7 +350,7 @@ fun SettingsScreen(
                                 onWarning = {
                                     Toast.makeText(
                                         context,
-                                        restoreMissingDictionariesMsg,
+                                        restorePartialMsg,
                                         Toast.LENGTH_LONG
                                     ).show()
                                 },
@@ -424,10 +446,19 @@ fun SettingsScreen(
                                                 )
                                             },
                                             trailingContent = {
-                                                Icon(
-                                                    imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                                                    contentDescription = null
-                                                )
+                                                Row {
+                                                    IconButton(onClick = {
+                                                        selectedBackupToExport = backup
+                                                        exportLauncher.launch("pinecone_${backup.name}.pine")
+                                                    }) {
+                                                        Icon(MaterialSymbols.Outlined.Save,
+                                                            contentDescription = stringResource(R.string.settings_export_backup))
+                                                    }
+                                                    Icon(
+                                                        imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
+                                                        contentDescription = null
+                                                    )
+                                                }
                                             }
                                         )
                                     }
@@ -667,6 +698,7 @@ private fun BackupSettingsSection(
     onBackupLocationClick: () -> Unit,
     onBackupClick: () -> Unit,
     onRestoreClick: () -> Unit,
+    onImportClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -838,6 +870,25 @@ private fun BackupSettingsSection(
                             imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
                             contentDescription = null
                         )
+                    }
+                )
+
+                item(
+                    enabled = hasPermission,
+                    onClick = onImportClick,
+                    leadingContent = {
+                        Icon(MaterialSymbols.Outlined.Folder, contentDescription = null)
+                    },
+                    content = {
+                        Text(stringResource(R.string.settings_import_backup),
+                            style = MaterialTheme.typography.titleMedium)
+                    },
+                    supportingContent = {
+                        Text(stringResource(R.string.settings_import_backup_summary),
+                            style = MaterialTheme.typography.bodyMedium)
+                    },
+                    trailingContent = {
+                        Icon(MaterialSymbols.Outlined.Keyboard_arrow_right, contentDescription = null)
                     }
                 )
             }

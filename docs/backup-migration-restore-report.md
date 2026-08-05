@@ -1,12 +1,11 @@
 # Backup restore after database migration
 
-> **Status (2026-08-04): resolved by the development reset.** This document records
-> the defects in the previous schema-v12 and backup implementation. The application
-> now uses clean Room v1 baselines, exported schemas, a separately versioned and
-> checksummed library archive, per-dictionary immutable snapshots, safe staged
-> restore, and legacy readers for the formats described below. Existing development
-> installs must clear app data or reinstall because no v12-to-v1 database downgrade
-> is intentionally provided.
+> **Status (2026-08-05): superseded by the development reset and vault-v1 backup.**
+> This document records defects in the discarded schema-v12 and backup implementations.
+> The application now uses clean Room-v1 baselines and one deduplicated, checksummed
+> backup vault. Vault snapshots and portable exports both start at format version 1;
+> no reader or migration is provided for any earlier development backup. Existing
+> development installs must clear app data or reinstall.
 
 ## Executive summary
 

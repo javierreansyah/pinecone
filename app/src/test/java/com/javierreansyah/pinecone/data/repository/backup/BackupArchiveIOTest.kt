@@ -1,62 +1,34 @@
 package com.javierreansyah.pinecone.data.repository.backup
 
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
-import org.junit.Rule
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.junit.rules.TemporaryFolder
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.io.File
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
+import java.util.zip.CRC32
 
 class BackupArchiveIOTest {
-    @get:Rule
-    val temporaryFolder = TemporaryFolder()
+    @Test
+    fun copyCalculatesDigestAndCrcInSinglePass() {
+        val bytes = "pinecone-object".repeat(1_000).toByteArray()
+        val output = ByteArrayOutputStream()
+        val result = BackupArchiveIO.copyAndDigest(ByteArrayInputStream(bytes), output)
+        val crc = CRC32().apply { update(bytes) }
 
-    @Test(expected = IllegalArgumentException::class)
-    fun extractRejectsTraversal() {
-        val bytes = zip("../outside.txt", "bad".toByteArray())
-        BackupArchiveIO.extract(
-            ByteArrayInputStream(bytes),
-            temporaryFolder.newFolder("extract")
-        ) { true }
-    }
-
-    @Test(expected = IllegalArgumentException::class)
-    fun extractRejectsUnexpectedEntry() {
-        val bytes = zip("executable.bin", byteArrayOf(1, 2, 3))
-        BackupArchiveIO.extract(
-            ByteArrayInputStream(bytes),
-            temporaryFolder.newFolder("unexpected")
-        ) { it == "library.json" }
+        assertArrayEquals(bytes, output.toByteArray())
+        assertEquals(bytes.size.toLong(), result.size)
+        assertEquals(crc.value, result.crc32)
+        assertEquals(64, result.sha256.length)
     }
 
     @Test
-    fun descriptorAndVerifyRoundTrip() {
-        val root = temporaryFolder.newFolder("verify")
-        val file = File(root, "library.json").apply { writeText("{\"books\":[]}") }
-        val descriptor = BackupArchiveIO.descriptor("library.json", file)
-        BackupArchiveIO.verify(root, listOf(descriptor))
-        assertEquals(file.length(), descriptor.size)
-    }
-
-    @Test(expected = IllegalArgumentException::class)
-    fun verifyDetectsTampering() {
-        val root = temporaryFolder.newFolder("tamper")
-        val file = File(root, "library.json").apply { writeText("original") }
-        val descriptor = BackupArchiveIO.descriptor("library.json", file)
-        file.writeText("modified")
-        BackupArchiveIO.verify(root, listOf(descriptor))
-    }
-
-    private fun zip(path: String, bytes: ByteArray): ByteArray {
-        val output = ByteArrayOutputStream()
-        ZipOutputStream(output).use { zip ->
-            zip.putNextEntry(ZipEntry(path))
-            zip.write(bytes)
-            zip.closeEntry()
-        }
-        return output.toByteArray()
+    fun archivePathsRejectTraversalAndAbsoluteNames() {
+        assertTrue(BackupArchiveIO.safeArchivePath("objects/books/hash.epub"))
+        assertFalse(BackupArchiveIO.safeArchivePath("../outside"))
+        assertFalse(BackupArchiveIO.safeArchivePath("objects/../outside"))
+        assertFalse(BackupArchiveIO.safeArchivePath("/absolute"))
+        assertFalse(BackupArchiveIO.safeArchivePath("objects//book"))
     }
 }

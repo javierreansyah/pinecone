@@ -4,8 +4,7 @@ import android.app.Application
 import androidx.room.Room
 import com.javierreansyah.pinecone.data.local.database.library.AppDatabase
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
-import com.javierreansyah.pinecone.data.repository.dictionary.DictionaryBackupManager
-import com.javierreansyah.pinecone.data.repository.backup.LibraryBackupRepository
+import com.javierreansyah.pinecone.data.repository.backup.BackupRepository
 import com.javierreansyah.pinecone.data.repository.dictionary.DictionaryImportManager
 import com.javierreansyah.pinecone.data.repository.dictionary.DictionaryRepository
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
@@ -29,9 +28,6 @@ class PineconeApplication : Application() {
         private set
 
     lateinit var dictionaryImportManager: DictionaryImportManager
-        private set
-
-    lateinit var dictionaryBackupManager: DictionaryBackupManager
         private set
 
     lateinit var readerPreferences: ReaderPreferences
@@ -86,8 +82,6 @@ class PineconeApplication : Application() {
         // Schedule initial backup based on preferences
         readerPreferences = ReaderPreferences(applicationContext)
 
-        DictionaryBackupManager.recoverInterruptedRestores(applicationContext)
-
         dictionaryRepository = DictionaryRepository(
             context = applicationContext,
             preferences = readerPreferences
@@ -98,14 +92,9 @@ class PineconeApplication : Application() {
             preferences = readerPreferences
         )
 
-        dictionaryBackupManager = DictionaryBackupManager(
-            context = applicationContext,
-            preferences = readerPreferences
-        )
-
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
             try {
-                LibraryBackupRepository(applicationContext).completePendingSettingsRestore()
+                BackupRepository(applicationContext).completePendingSettingsRestore()
             } catch (error: Exception) {
                 error.printStackTrace()
             }
