@@ -148,9 +148,14 @@ fun SettingsScreen(
     ) { destination ->
         val selected = selectedBackupToExport
         if (destination != null && selected != null) {
-            viewModel.exportBackup(selected.uri, destination,
-                onSuccess = { Toast.makeText(context, navBackupSuccessMsg, Toast.LENGTH_SHORT).show() },
-                onFailure = { Toast.makeText(context, navBackupFailedMsg, Toast.LENGTH_SHORT).show() })
+            viewModel.exportBackup(
+                selected.uri, destination,
+                onSuccess = {
+                    Toast.makeText(context, navBackupSuccessMsg, Toast.LENGTH_SHORT).show()
+                },
+                onFailure = {
+                    Toast.makeText(context, navBackupFailedMsg, Toast.LENGTH_SHORT).show()
+                })
         }
         selectedBackupToExport = null
     }
@@ -159,13 +164,16 @@ fun SettingsScreen(
         contract = ActivityResultContracts.OpenDocument()
     ) { source ->
         source?.let {
-            viewModel.importBackup(it,
-                onSuccess = { Toast.makeText(context, navBackupSuccessMsg, Toast.LENGTH_SHORT).show() },
-                onFailure = { Toast.makeText(context, navBackupFailedMsg, Toast.LENGTH_SHORT).show() })
+            viewModel.importBackup(
+                it,
+                onSuccess = {
+                    Toast.makeText(context, navBackupSuccessMsg, Toast.LENGTH_SHORT).show()
+                },
+                onFailure = {
+                    Toast.makeText(context, navBackupFailedMsg, Toast.LENGTH_SHORT).show()
+                })
         }
     }
-
-
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -284,7 +292,14 @@ fun SettingsScreen(
                         showRestoreBottomSheet = true
                     }
                 },
-                onImportClick = { importLauncher.launch(arrayOf("application/octet-stream", "application/zip")) }
+                onImportClick = {
+                    importLauncher.launch(
+                        arrayOf(
+                            "application/octet-stream",
+                            "application/zip"
+                        )
+                    )
+                }
             )
 
             AboutSettingsSection(
@@ -451,8 +466,10 @@ fun SettingsScreen(
                                                         selectedBackupToExport = backup
                                                         exportLauncher.launch("pinecone_${backup.name}.pine")
                                                     }) {
-                                                        Icon(MaterialSymbols.Outlined.Save,
-                                                            contentDescription = stringResource(R.string.settings_export_backup))
+                                                        Icon(
+                                                            MaterialSymbols.Outlined.Save,
+                                                            contentDescription = stringResource(R.string.settings_export_backup)
+                                                        )
                                                     }
                                                     Icon(
                                                         imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
@@ -490,12 +507,10 @@ fun SettingsScreen(
                         )
                         viewModel.updateSettings(defaultSettings)
 
-                        // Revert locale to system default
                         androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
                             androidx.core.os.LocaleListCompat.getEmptyLocaleList()
                         )
 
-                        // Reschedule backup work with default frequency
                         WorkerUtils.scheduleBackupWork(context, "12h")
 
                         Toast.makeText(
@@ -705,7 +720,7 @@ private fun BackupSettingsSection(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Section 1: Backup & Restore
+
         Column {
             Text(
                 text = stringResource(R.string.settings_backup_preferences),
@@ -715,7 +730,7 @@ private fun BackupSettingsSection(
             )
 
             SegmentedColumn(modifier = Modifier.padding(bottom = 16.dp)) {
-                // 1. Backup Location Item
+
                 val backupLocationLabel = stringResource(R.string.settings_backup_location)
                 item(
                     onClick = onBackupLocationClick,
@@ -746,7 +761,6 @@ private fun BackupSettingsSection(
                     }
                 )
 
-                // 2. Auto Backup Frequency Item
                 val frequencyOptionsMap = mapOf(
                     "6h" to stringResource(R.string.settings_backup_freq_6h),
                     "12h" to stringResource(R.string.settings_backup_freq_12h),
@@ -776,7 +790,6 @@ private fun BackupSettingsSection(
                     }
                 )
 
-                // Localized last backup time computation
                 val lastBackupTimeText = if (settings.lastBackupTime > 0) {
                     val formatter =
                         SimpleDateFormat("MMM dd, HH:mm", LocalLocale.current.platformLocale)
@@ -788,7 +801,6 @@ private fun BackupSettingsSection(
                     stringResource(R.string.settings_option_never)
                 }
 
-                // 3. Backup Now Item
                 item(
                     enabled = hasPermission,
                     onClick = onBackupClick,
@@ -834,7 +846,6 @@ private fun BackupSettingsSection(
                     }
                 )
 
-                // 4. Restore Item
                 item(
                     enabled = hasPermission,
                     onClick = onRestoreClick,
@@ -880,15 +891,22 @@ private fun BackupSettingsSection(
                         Icon(MaterialSymbols.Outlined.Folder, contentDescription = null)
                     },
                     content = {
-                        Text(stringResource(R.string.settings_import_backup),
-                            style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            stringResource(R.string.settings_import_backup),
+                            style = MaterialTheme.typography.titleMedium
+                        )
                     },
                     supportingContent = {
-                        Text(stringResource(R.string.settings_import_backup_summary),
-                            style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            stringResource(R.string.settings_import_backup_summary),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     },
                     trailingContent = {
-                        Icon(MaterialSymbols.Outlined.Keyboard_arrow_right, contentDescription = null)
+                        Icon(
+                            MaterialSymbols.Outlined.Keyboard_arrow_right,
+                            contentDescription = null
+                        )
                     }
                 )
             }

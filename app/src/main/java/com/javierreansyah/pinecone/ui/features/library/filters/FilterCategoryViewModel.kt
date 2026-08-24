@@ -26,9 +26,10 @@ class FilterCategoryViewModel(application: Application) : AndroidViewModel(appli
         viewModelScope, SharingStarted.WhileSubscribed(5000), null
     )
 
-    private val booksFlow: Flow<List<Book>> = combine(unfilteredBooks, globalSpaceId) { books, spaceId ->
-        books.inSpace(spaceId)
-    }
+    private val booksFlow: Flow<List<Book>> =
+        combine(unfilteredBooks, globalSpaceId) { books, spaceId ->
+            books.inSpace(spaceId)
+        }
 
     val allAuthors = combine(bookRepository.getAllAuthors(), booksFlow) { authors, books ->
         val namesInSpace = books.flatMap { it.authors }.toSet()

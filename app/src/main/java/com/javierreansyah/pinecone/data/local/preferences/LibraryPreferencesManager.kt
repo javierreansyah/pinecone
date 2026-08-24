@@ -7,10 +7,10 @@ import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.ShelfFilter
 import com.javierreansyah.pinecone.ui.features.library.SortType
 import com.javierreansyah.pinecone.ui.features.library.StatusFilter
-
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import androidx.core.content.edit
 
 class LibraryPreferencesManager(context: Context) {
     private val prefs: SharedPreferences =
@@ -34,7 +34,6 @@ class LibraryPreferencesManager(context: Context) {
         val shelfFilterSetStr = prefs.getStringSet(
             "${screenKey}_shelf_filter", setOf(ShelfFilter.Shelves.name, ShelfFilter.Unshelved.name)
         ) ?: setOf()
-
 
         return FilterSortPreferences(
             layoutMode = try {
@@ -73,7 +72,7 @@ class LibraryPreferencesManager(context: Context) {
     }
 
     fun setGlobalSpace(spaceId: String?) {
-        prefs.edit().putString("global_space", spaceId).apply()
+        prefs.edit { putString("global_space", spaceId) }
     }
 
     fun savePreferences(screenKey: String, prefsObj: FilterSortPreferences) {

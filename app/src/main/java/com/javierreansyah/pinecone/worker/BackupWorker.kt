@@ -23,6 +23,7 @@ class BackupWorker(
         com.javierreansyah.pinecone.data.repository.backup.BackupFailure.IO_ERROR,
         com.javierreansyah.pinecone.data.repository.backup.BackupFailure.CONCURRENT_CHANGE ->
             Result.retry()
+
         else -> Result.failure()
     }
 }

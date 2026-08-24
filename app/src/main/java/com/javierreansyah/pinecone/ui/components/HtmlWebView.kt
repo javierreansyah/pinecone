@@ -17,49 +17,14 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.viewinterop.AndroidView
 import android.graphics.Color as AndroidColor
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Config
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Selects the CSS preset injected into the WebView.
- *
- * - [Definition] – rich dictionary styling: part-of-speech markers, qualifier
- *   labels, Wiktionary class hooks, etc.
- * - [Description] – book-blurb styling: normalises messy publisher HTML
- *   (`<BR>`, bare `<b><i>` preambles, `<div>`/`<p>` mix) into a clean,
- *   readable paragraph layout.
- */
 enum class HtmlPreset { Definition, Description }
 
-/**
- * Configuration for [HtmlWebView].
- *
- * @param preset        Which CSS preset to apply.
- * @param onWordClick   Optional callback invoked (on the main thread) when the
- *                      user taps a word or link.  Pass `null` to omit the JS
- *                      bridge entirely.
- * @param extraCss      Additional CSS injected after the preset styles.  Useful
- *                      for one-off tweaks without creating a new preset.
- */
 data class HtmlWebViewConfig(
     val preset: HtmlPreset = HtmlPreset.Definition,
     val onWordClick: ((String) -> Unit)? = null,
     val extraCss: String = ""
 )
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Composable
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Renders an HTML string inside a transparent, non-scrolling [WebView] that is
- * styled using the current Material 3 color tokens.
- *
- * Scrolling is intentionally disabled so the surrounding lazy/scroll container
- * handles it.  JavaScript is enabled only when [HtmlWebViewConfig.onWordClick]
- * is provided.
- */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun HtmlWebView(
@@ -72,7 +37,6 @@ fun HtmlWebView(
     val density = LocalDensity.current
     val fontSizeCss = with(density) { baseFontSize.toPx() / density.density }
 
-    // Capture every color token used by CSS; re-render HTML when any changes.
     val onSurface = colorScheme.onSurface
     val onSurfaceVariant = colorScheme.onSurfaceVariant
     val primary = colorScheme.primary
@@ -146,39 +110,18 @@ fun HtmlWebView(
     })
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HTML normalisation
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Pre-processes the raw HTML string before injection.
- *
- * For the [HtmlPreset.Description] preset this handles the common mess found
- * in book-metadata descriptions:
- * - Converts bare `<BR>` / `<BR />` line breaks into paragraph breaks so
- *   the CSS paragraph spacing takes effect properly.
- * - Strips leading/trailing whitespace inside block elements.
- * - Collapses multiple consecutive blank paragraphs.
- */
 private fun normaliseHtml(html: String, preset: HtmlPreset): String {
     if (preset != HtmlPreset.Description) return html
 
     var result = html
-        // Normalise self-closing and upper-case <BR> variants
         .replace(Regex("<[Bb][Rr]\\s*/?>"), "<br>")
-        // Convert sequences of <br> (with optional whitespace between) to paragraph boundaries
         .replace(Regex("(<br>\\s*){2,}"), "</p><p>")
-        // Single <br> → space (avoids orphan line breaks inside a paragraph)
         .replace(Regex("\\s*<br>\\s*"), " ")
-        // Strip trailing whitespace inside <p> tags
         .replace(Regex("<p>\\s+"), "<p>")
         .replace(Regex("\\s+</p>"), "</p>")
-        // Collapse consecutive empty paragraphs produced by the transformation above
         .replace(Regex("(<p>\\s*</p>\\s*)+"), "")
         .trim()
 
-    // If the content has no block-level tags at all, wrap in a <p> so
-    // paragraph CSS applies.
     val hasBlock = Regex("<(p|div|h[1-6]|ul|ol|blockquote)[\\s>]", RegexOption.IGNORE_CASE)
         .containsMatchIn(result)
     if (!hasBlock) {
@@ -187,10 +130,6 @@ private fun normaliseHtml(html: String, preset: HtmlPreset): String {
 
     return result
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// HTML document builder
-// ─────────────────────────────────────────────────────────────────────────────
 
 private fun buildHtml(
     body: String,
@@ -256,11 +195,6 @@ $wordClickJs
     """.trimIndent()
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CSS blocks
-// ─────────────────────────────────────────────────────────────────────────────
-
-/** Styles common to every preset. */
 private fun baseCss() = """
 * {
     margin: 0;
@@ -399,7 +333,6 @@ img { max-width: 100%; height: auto; }
 }
 """
 
-/** Extra CSS for the [HtmlPreset.Definition] preset (Wiktionary/dict class hooks). */
 private fun definitionCss() = """
 .pos, .part-of-speech, .mw-headline {
     color: var(--primary);
@@ -459,13 +392,6 @@ hr.definition-divider {
 }
 """
 
-/**
- * Extra CSS for the [HtmlPreset.Description] preset.
- *
- * Optimised for book-blurb HTML: de-emphasises heavy bold/italic preambles,
- * tightens paragraph spacing, and gives the first paragraph (often the
- * marketing hook in bold-italic) a slightly distinct treatment.
- */
 private fun descriptionCss() = """
 body {
     padding: 0;
@@ -507,11 +433,6 @@ div {
 }
 """
 
-// ─────────────────────────────────────────────────────────────────────────────
-// JavaScript
-// ─────────────────────────────────────────────────────────────────────────────
-
-/** JS that calls `Android.onWordClick(word)` when the user taps a word. */
 private fun wordClickScript() = """
 <script>
 document.body.addEventListener('click', function(e) {
@@ -539,11 +460,6 @@ document.body.addEventListener('click', function(e) {
 </script>
 """
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Colour helper
-// ─────────────────────────────────────────────────────────────────────────────
-
-/** Converts a Compose [Color] to a CSS `rgba()` string. */
 internal fun Color.toCssRgba(): String {
     val argb = this.toArgb()
     val r = (argb shr 16) and 0xFF

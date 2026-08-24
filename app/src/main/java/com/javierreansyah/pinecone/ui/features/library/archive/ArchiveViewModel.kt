@@ -108,6 +108,4 @@ class ArchiveViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    // Space removal not supported from archive view yet
-
 }

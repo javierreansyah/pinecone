@@ -18,10 +18,10 @@ import com.javierreansyah.pinecone.data.local.database.library.NoteDao
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfBookCrossRefEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfDao
-import com.javierreansyah.pinecone.data.local.database.library.SpaceDao
-import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
+import com.javierreansyah.pinecone.data.local.database.library.SpaceDao
+import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.data.local.database.library.TagEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -71,25 +71,15 @@ class LibraryRepository(
 
     fun getArchivedBooks(): Flow<List<BookWithDetails>> = bookDao.getArchivedBooks()
 
-    fun searchBooks(query: String): Flow<List<BookWithDetails>> = bookDao.searchBooks(query)
-
     fun searchShelves(query: String): Flow<List<ShelfEntity>> = shelfDao.searchShelves(query)
-
-    fun searchAuthors(query: String): Flow<List<String>> = bookDao.searchAuthors(query)
-
-    fun searchTags(query: String): Flow<List<String>> = bookDao.searchTags(query)
 
     suspend fun getBook(id: String): BookWithDetails? = bookDao.getById(id)
 
     fun getBookFlow(id: String): Flow<BookWithDetails?> = bookDao.getByIdFlow(id)
 
-    /**
-     * Import a book from a content URI (file picker or intent).
-     * Copies to internal storage, extracts metadata via Readium, stores in Room.
-     */
     suspend fun importBook(uri: Uri): BookWithDetails? = withContext(Dispatchers.IO) {
         try {
-            // Copy to a temporary file to analyze it
+
             val tempFile = File(booksDir, "import_${System.currentTimeMillis()}")
             context.contentResolver.openInputStream(uri)?.use { input ->
                 FileOutputStream(tempFile).use { output ->
@@ -97,25 +87,20 @@ class LibraryRepository(
                 }
             } ?: return@withContext null
 
-            // Detect media type and extension
             val asset = assetRetriever.retrieve(tempFile.toUrl(isDirectory = false)).getOrNull()
             val mediaType = asset?.format
             val extension = mediaType?.fileExtension ?: "epub"
 
-            // Generate ID from file hash
             val bookId = generateFileHash(tempFile)
 
-            // Check if already exists
             if (bookDao.exists(bookId) > 0) {
                 tempFile.delete()
                 return@withContext bookDao.getById(bookId)
             }
 
-            // Rename to final location with correct extension
             val finalFile = File(booksDir, "$bookId.$extension")
             tempFile.renameTo(finalFile)
 
-            // Open with Readium to extract metadata
             val publication = openPublicationFromFile(finalFile) ?: run {
                 finalFile.delete()
                 return@withContext null
@@ -153,9 +138,6 @@ class LibraryRepository(
         }
     }
 
-    /**
-     * Open a Publication for reading. Caller is responsible for closing it.
-     */
     suspend fun openPublication(book: BookWithDetails): Publication? = withContext(Dispatchers.IO) {
         val file = File(book.book.filePath)
         if (!file.exists()) return@withContext null
@@ -220,7 +202,6 @@ class LibraryRepository(
         )
     }
 
-
     suspend fun clearJumpOrigin(bookId: String) {
         val details = bookDao.getById(bookId) ?: return
         val book = details.book
@@ -272,22 +253,20 @@ class LibraryRepository(
 
     suspend fun deleteBook(bookId: String) = withContext(Dispatchers.IO) {
         val book = bookDao.getById(bookId)?.book ?: return@withContext
-        // Delete EPUB file
+
         File(book.filePath).delete()
-        // Delete cover
+
         book.coverPath?.let { File(it).delete() }
-        // Delete from DB in a transaction
+
         database.withTransaction {
             bookDao.delete(book)
-            // Cleanup orphans
+
             bookDao.deleteOrphanAuthors()
             bookDao.deleteOrphanTags()
             shelfDao.deleteOrphanShelves()
             spaceDao.deleteOrphanSpaces()
         }
     }
-
-    // --- Update Metadata ---
 
     suspend fun updateBookMetadata(
         bookId: String,
@@ -406,8 +385,6 @@ class LibraryRepository(
             }
         }
 
-    // --- Archive & Read Status Methods ---
-
     suspend fun toggleArchive(bookId: String) {
         val book = bookDao.getById(bookId)?.book ?: return
         bookDao.update(book.copy(isArchived = !book.isArchived))
@@ -417,8 +394,6 @@ class LibraryRepository(
         val book = bookDao.getById(bookId)?.book ?: return
         bookDao.update(book.copy(isRead = !book.isRead))
     }
-
-    // --- Shelf Methods ---
 
     fun getAllShelvesWithBooks(): Flow<List<ShelfWithCovers>> =
         shelfDao.getAllShelvesWithBooks().map { shelves ->
@@ -470,25 +445,12 @@ class LibraryRepository(
             }
         }
 
-    // --- Space Methods ---
-
     fun getAllSpaces(): Flow<List<SpaceEntity>> = spaceDao.getAllSpaces()
 
     suspend fun createSpace(name: String): String {
         val id = UUID.randomUUID().toString()
         spaceDao.insertSpace(SpaceEntity(id = id, name = name))
         return id
-    }
-
-    suspend fun deleteSpace(spaceId: String) {
-        val space = spaceDao.getSpaceById(spaceId)
-        if (space != null) {
-            spaceDao.deleteSpace(space)
-        }
-    }
-
-    suspend fun renameSpace(spaceId: String, newName: String) {
-        spaceDao.renameSpace(spaceId, newName)
     }
 
     suspend fun addBookToSpace(spaceId: String, bookId: String) {
@@ -509,9 +471,8 @@ class LibraryRepository(
         }
     }
 
-    fun getAllBookSpaceCrossRefs(): Flow<List<com.javierreansyah.pinecone.data.local.database.library.BookSpaceCrossRef>> = spaceDao.getAllBookSpaceCrossRefs()
-
-    // --- Note Methods ---
+    fun getAllBookSpaceCrossRefs(): Flow<List<com.javierreansyah.pinecone.data.local.database.library.BookSpaceCrossRef>> =
+        spaceDao.getAllBookSpaceCrossRefs()
 
     suspend fun addNote(
         bookId: String,
@@ -541,8 +502,6 @@ class LibraryRepository(
         noteDao.deleteById(id)
     }
 
-    // --- Private helpers ---
-
     private suspend fun openPublicationFromFile(file: File): Publication? {
         return try {
             val url = file.toUrl(isDirectory = false)
@@ -558,7 +517,6 @@ class LibraryRepository(
     ): BookEntity {
         val metadata = publication.metadata
 
-        // Extract cover image
         val coverPath = try {
             val coverLink = publication.linkWithRel("cover")
             val coverBitmap = coverLink?.let { link ->

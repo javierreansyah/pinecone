@@ -8,8 +8,8 @@ import androidx.lifecycle.viewModelScope
 import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
-import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
+import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import kotlinx.coroutines.Dispatchers
@@ -73,7 +73,7 @@ class BookInfoViewModel(
                     if (pub != null) {
                         val tableOfContents = pub.tableOfContents
                         val positions = pub.positions()
-                        pub.close() // Close the publication as we only need metadata and page mappings
+                        pub.close()
                         tableOfContents to positions
                     } else {
                         null
@@ -118,25 +118,6 @@ class BookInfoViewModel(
         }
     }
 
-    fun addBookToSpace(spaceId: String) {
-        viewModelScope.launch {
-            repository.addBookToSpace(spaceId, bookId)
-        }
-    }
-
-    fun removeBookFromSpace(spaceId: String) {
-        viewModelScope.launch {
-            repository.removeBookFromSpace(spaceId, bookId)
-        }
-    }
-
-    fun createSpaceAndAddBook(name: String) {
-        viewModelScope.launch {
-            val spaceId = repository.createSpace(name)
-            repository.addBookToSpace(spaceId, bookId)
-        }
-    }
-
     fun deleteFurthestPosition() {
         viewModelScope.launch {
             repository.resetFurthestToCurrent(bookId)
@@ -168,7 +149,6 @@ class BookInfoViewModel(
             onSaved()
         }
     }
-
 
     class Factory(
         private val application: Application, private val bookId: String

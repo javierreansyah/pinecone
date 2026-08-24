@@ -431,17 +431,22 @@ fun NavGraph(
     )
 
     organizeBookIds?.let { bookIds ->
-        val organizeViewModel: com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel = viewModel(
-            key = bookIds,
-            factory = object : androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory(app) {
-                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                    if (modelClass.isAssignableFrom(com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel::class.java)) {
-                        @Suppress("UNCHECKED_CAST") return com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel(app, bookIds) as T
+        val organizeViewModel: com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel =
+            viewModel(
+                key = bookIds,
+                factory = object :
+                    androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory(app) {
+                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                        if (modelClass.isAssignableFrom(com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel::class.java)) {
+                            @Suppress("UNCHECKED_CAST") return com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel(
+                                app,
+                                bookIds
+                            ) as T
+                        }
+                        throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
                     }
-                    throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
                 }
-            }
-        )
+            )
         com.javierreansyah.pinecone.ui.features.library.organize.OrganizeBottomSheet(
             viewModel = organizeViewModel,
             onNavigateBack = { organizeBookIds = null }

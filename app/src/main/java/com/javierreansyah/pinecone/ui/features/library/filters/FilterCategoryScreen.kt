@@ -41,7 +41,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Delete
 import com.composables.icons.materialsymbols.outlined.Edit
-import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Forest
 import com.composables.icons.materialsymbols.outlined.Label
 import com.composables.icons.materialsymbols.outlined.More_vert
@@ -60,7 +59,7 @@ import com.javierreansyah.pinecone.ui.features.library.components.RenameFilterDi
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AllFilterItemsScreen(
-    filterType: String, // "author" or "tag"
+    filterType: String,
     onNavigateBack: () -> Unit, onNavigateToDetail: (String) -> Unit
 ) {
     val context = LocalContext.current

@@ -20,37 +20,6 @@ interface BookDao {
     fun getArchivedBooks(): Flow<List<BookWithDetails>>
 
     @Transaction
-    @Query(
-        """
-        SELECT DISTINCT books.* FROM books
-        LEFT JOIN book_author_cross_ref ON books.id = book_author_cross_ref.bookId
-        LEFT JOIN authors ON book_author_cross_ref.authorId = authors.id
-        WHERE books.isArchived = 0 AND (books.title LIKE '%' || :query || '%' OR authors.name LIKE '%' || :query || '%')
-    """
-    )
-    fun searchBooks(query: String): Flow<List<BookWithDetails>>
-
-    @Query(
-        """
-        SELECT DISTINCT authors.name FROM authors
-        JOIN book_author_cross_ref ON authors.id = book_author_cross_ref.authorId
-        JOIN books ON book_author_cross_ref.bookId = books.id
-        WHERE books.isArchived = 0 AND authors.name LIKE '%' || :query || '%'
-    """
-    )
-    fun searchAuthors(query: String): Flow<List<String>>
-
-    @Query(
-        """
-        SELECT DISTINCT tags.name FROM tags
-        JOIN book_tag_cross_ref ON tags.id = book_tag_cross_ref.tagId
-        JOIN books ON book_tag_cross_ref.bookId = books.id
-        WHERE books.isArchived = 0 AND tags.name LIKE '%' || :query || '%'
-    """
-    )
-    fun searchTags(query: String): Flow<List<String>>
-
-    @Transaction
     @Query("SELECT * FROM books WHERE id = :id")
     suspend fun getById(id: String): BookWithDetails?
 

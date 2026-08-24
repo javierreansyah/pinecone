@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.data.local.database.library
 
-
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index

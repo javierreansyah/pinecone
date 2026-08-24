@@ -124,7 +124,6 @@ fun ShelfDetailScreen(
     val allBooks by viewModel.allBooks.collectAsState()
     val shelfWithCovers = shelves.find { it.shelf.id == shelfId }
 
-    // Use a flow to get filtered and sorted books
     val baseBooksFlow = remember(shelfWithCovers) {
         flowOf(shelfWithCovers?.books?.map { Book.fromEntity(it) } ?: emptyList())
     }
@@ -132,7 +131,6 @@ fun ShelfDetailScreen(
     val books by viewModel.getFilteredAndSortedBooks(baseBooksFlow)
         .collectAsState(initial = emptyList())
 
-    // Local mutable state for reordering
     var reorderBooks by remember { mutableStateOf(emptyList<Book>()) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -301,7 +299,6 @@ fun ShelfDetailScreen(
     selectedBookForMenu?.let { bookId ->
         BookContextMenu(
             bookId = bookId,
-            shelfId = shelfId,
             allBooks = allBooks,
             onNavigateToBookInfo = onNavigateToBookInfo,
             onToggleArchive = { viewModel.toggleArchive(bookId) },
@@ -428,14 +425,14 @@ private fun ShelfDetailTopAppBar(
             AnimatedContent(
                 targetState = isEditMode, transitionSpec = {
                     if (targetState) {
-                        // Enter Edit Mode: Checkmark fades in, normal actions fade out and slide right by 20dp
+
                         fadeIn(animationSpec = actionsEffectsSpec) togetherWith fadeOut(
                             animationSpec = actionsEffectsSpec
                         ) + slideOutHorizontally(
                             targetOffsetX = { slideOffsetPx }, animationSpec = actionsSpatialSpec
                         )
                     } else {
-                        // Exit Edit Mode: Normal actions fade in and slide in from right by 20dp, checkmark fades out
+
                         fadeIn(animationSpec = actionsEffectsSpec) + slideInHorizontally(
                             initialOffsetX = { slideOffsetPx }, animationSpec = actionsSpatialSpec
                         ) togetherWith fadeOut(animationSpec = actionsEffectsSpec)

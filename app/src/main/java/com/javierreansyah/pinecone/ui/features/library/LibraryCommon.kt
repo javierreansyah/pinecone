@@ -13,8 +13,7 @@ fun List<Book>.inSpace(spaceId: String?): List<Book> =
     else filter { spaceId in it.spaceIds }
 
 fun List<Book>.filterAndSort(
-    prefs: FilterSortPreferences,
-    crossRefs: List<ShelfBookCrossRefEntity> = emptyList()
+    prefs: FilterSortPreferences
 ): List<Book> {
     return this.filter { book ->
         val status = when {
@@ -111,7 +110,7 @@ fun mapAndSortShelves(
     }
 
     val shelvedBookIds = crossRefs.map { it.bookId }.toSet()
-    val unshelvedBooks = allBooksEntities.filter { 
+    val unshelvedBooks = allBooksEntities.filter {
         it.book.id !in shelvedBookIds && (globalSpaceId == null || globalSpaceId == "_all_" || it.spaces.any { space -> space.id == globalSpaceId })
     }
 

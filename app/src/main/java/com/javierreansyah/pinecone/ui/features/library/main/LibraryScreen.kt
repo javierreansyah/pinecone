@@ -99,8 +99,6 @@ fun LibraryRoute(
         toggleArchive = viewModel::toggleArchive,
         toggleReadStatus = viewModel::toggleReadStatus,
         setGlobalSpace = viewModel::setGlobalSpace,
-        removeBookFromShelf = viewModel::removeBookFromShelf,
-        removeBookFromSpace = viewModel::removeBookFromSpace,
         deleteBook = viewModel::deleteBook,
         renameShelf = viewModel::renameShelf,
         deleteShelf = viewModel::deleteShelf,
@@ -138,8 +136,6 @@ fun LibraryScreen(
     toggleArchive: (String) -> Unit,
     toggleReadStatus: (String) -> Unit,
     setGlobalSpace: (String?) -> Unit,
-    removeBookFromShelf: (String, String) -> Unit,
-    removeBookFromSpace: (String, String) -> Unit,
     deleteBook: (String) -> Unit,
     renameShelf: (String, String) -> Unit,
     deleteShelf: (String) -> Unit,
@@ -170,7 +166,6 @@ fun LibraryScreen(
 
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
 
-    // Context Menu & Selection State
     var selectedBookContext by remember { mutableStateOf<Pair<String, String?>?>(null) }
     var selectedBooks by remember { mutableStateOf(emptySet<String>()) }
     var selectedShelves by remember { mutableStateOf(emptySet<String>()) }
@@ -178,7 +173,6 @@ fun LibraryScreen(
 
     val pagerState = rememberPagerState(pageCount = { 2 })
 
-    // Derived States for Performance optimization
     val showEmptyState by remember(uiState.filteredBooks, uiState.isBooksLoading) {
         derivedStateOf { uiState.filteredBooks.isEmpty() && !uiState.isBooksLoading }
     }
@@ -385,9 +379,9 @@ fun LibraryScreen(
                             }
 
                             1 -> {
-                                // Shelves Page
+
                                 if (uiState.shelves.isEmpty() && uiState.isShelvesLoading) {
-                                    // Display nothing while fetching
+
                                 } else {
                                     ShelvesPage(
                                         shelves = uiState.shelves,
@@ -432,14 +426,10 @@ fun LibraryScreen(
                     }
                 }
 
-                // Context Menu
                 selectedBookContext?.let { context ->
                     val bookId = context.first
-                    val contextShelfId = context.second
                     BookContextMenu(
                         bookId = bookId,
-                        shelfId = contextShelfId,
-                        spaceId = uiState.globalSpaceId,
                         allBooks = uiState.allBooks,
                         showSelectMultiple = !isShelvesTab,
                         onNavigateToBookInfo = onNavigateToBookInfo,

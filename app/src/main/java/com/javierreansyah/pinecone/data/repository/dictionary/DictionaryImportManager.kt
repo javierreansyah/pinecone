@@ -25,13 +25,11 @@ class DictionaryImportManager(
                 _importState.value = DictionaryState.Loading(progress)
             }
 
-            // Update installed dictionaries
             val currentSettings = preferences.readerSettings.first()
             val newInstalled = currentSettings.installedDictionaries + InstalledDictionary(
                 id = dictId, name = info.name, wordCount = info.wordCount
             )
 
-            // Set as active if it's the first one
             val newActiveId = currentSettings.activeDictionaryId.ifEmpty { dictId }
 
             preferences.updateSettings(

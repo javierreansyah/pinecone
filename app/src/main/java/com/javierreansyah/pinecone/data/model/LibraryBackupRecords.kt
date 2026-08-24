@@ -1,6 +1,16 @@
 package com.javierreansyah.pinecone.data.model
 
-import com.javierreansyah.pinecone.data.local.database.library.*
+import com.javierreansyah.pinecone.data.local.database.library.AuthorEntity
+import com.javierreansyah.pinecone.data.local.database.library.BookAuthorCrossRef
+import com.javierreansyah.pinecone.data.local.database.library.BookEntity
+import com.javierreansyah.pinecone.data.local.database.library.BookSpaceCrossRef
+import com.javierreansyah.pinecone.data.local.database.library.BookTagCrossRef
+import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
+import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
+import com.javierreansyah.pinecone.data.local.database.library.ShelfBookCrossRefEntity
+import com.javierreansyah.pinecone.data.local.database.library.ShelfEntity
+import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
+import com.javierreansyah.pinecone.data.local.database.library.TagEntity
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -49,6 +59,7 @@ data class BookmarkBackupRecord(
 
 fun BookmarkEntity.toBackupRecord() =
     BookmarkBackupRecord(id, bookId, locatorJson, chapterTitle, createdAt)
+
 fun BookmarkBackupRecord.toEntity() =
     BookmarkEntity(id, bookId, locatorJson, chapterTitle, createdAt)
 
@@ -65,11 +76,13 @@ data class NoteBackupRecord(
 
 fun NoteEntity.toBackupRecord() =
     NoteBackupRecord(id, bookId, locatorJson, chapterTitle, noteText, color, createdAt)
+
 fun NoteBackupRecord.toEntity() =
     NoteEntity(id, bookId, locatorJson, chapterTitle, noteText, color, createdAt)
 
 @Serializable
 data class ShelfBackupRecord(val id: String, val name: String, val createdAt: Long)
+
 fun ShelfEntity.toBackupRecord() = ShelfBackupRecord(id, name, createdAt)
 fun ShelfBackupRecord.toEntity() = ShelfEntity(id, name, createdAt)
 
@@ -80,18 +93,22 @@ data class ShelfBookBackupRecord(
     val addedAt: Long,
     val orderIndex: Int = 0
 )
+
 fun ShelfBookCrossRefEntity.toBackupRecord() =
     ShelfBookBackupRecord(shelfId, bookId, addedAt, orderIndex)
+
 fun ShelfBookBackupRecord.toEntity() =
     ShelfBookCrossRefEntity(shelfId, bookId, addedAt, orderIndex)
 
 @Serializable
 data class AuthorBackupRecord(val id: Long = 0, val name: String)
+
 fun AuthorEntity.toBackupRecord() = AuthorBackupRecord(id, name)
 fun AuthorBackupRecord.toEntity() = AuthorEntity(id, name)
 
 @Serializable
 data class TagBackupRecord(val id: Long = 0, val name: String)
+
 fun TagEntity.toBackupRecord() = TagBackupRecord(id, name)
 fun TagBackupRecord.toEntity() = TagEntity(id, name)
 
@@ -101,20 +118,24 @@ data class BookAuthorBackupRecord(
     val authorId: Long,
     val authorOrder: Int = 0
 )
+
 fun BookAuthorCrossRef.toBackupRecord() = BookAuthorBackupRecord(bookId, authorId, authorOrder)
 fun BookAuthorBackupRecord.toEntity() = BookAuthorCrossRef(bookId, authorId, authorOrder)
 
 @Serializable
 data class BookTagBackupRecord(val bookId: String, val tagId: Long)
+
 fun BookTagCrossRef.toBackupRecord() = BookTagBackupRecord(bookId, tagId)
 fun BookTagBackupRecord.toEntity() = BookTagCrossRef(bookId, tagId)
 
 @Serializable
 data class SpaceBackupRecord(val id: String, val name: String, val createdAt: Long)
+
 fun SpaceEntity.toBackupRecord() = SpaceBackupRecord(id, name, createdAt)
 fun SpaceBackupRecord.toEntity() = SpaceEntity(id, name, createdAt)
 
 @Serializable
 data class BookSpaceBackupRecord(val bookId: String, val spaceId: String)
+
 fun BookSpaceCrossRef.toBackupRecord() = BookSpaceBackupRecord(bookId, spaceId)
 fun BookSpaceBackupRecord.toEntity() = BookSpaceCrossRef(bookId, spaceId)

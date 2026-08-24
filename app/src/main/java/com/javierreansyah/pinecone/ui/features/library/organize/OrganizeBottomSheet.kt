@@ -1,13 +1,10 @@
 package com.javierreansyah.pinecone.ui.features.library.organize
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,34 +17,24 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.rememberContainedSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -56,9 +43,7 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.PopupProperties
 import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Add
 import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Forest
@@ -154,19 +139,32 @@ fun OrganizeBottomSheet(
             )
 
             if (!uiState.isLoading) {
-                val showCreateSpace = searchQuery.isNotBlank() && !uiState.spaces.any { it.space.name.equals(searchQuery, ignoreCase = true) }
-                val showCreateShelf = searchQuery.isNotBlank() && !uiState.shelves.any { it.shelf.name.equals(searchQuery, ignoreCase = true) }
-                val isSearchEmpty = searchQuery.isNotBlank() && filteredSpaces.isEmpty() && filteredShelves.isEmpty() && !showCreateSpace && !showCreateShelf
+                val showCreateSpace = searchQuery.isNotBlank() && !uiState.spaces.any {
+                    it.space.name.equals(
+                        searchQuery,
+                        ignoreCase = true
+                    )
+                }
+                val showCreateShelf = searchQuery.isNotBlank() && !uiState.shelves.any {
+                    it.shelf.name.equals(
+                        searchQuery,
+                        ignoreCase = true
+                    )
+                }
+                val isSearchEmpty =
+                    searchQuery.isNotBlank() && filteredSpaces.isEmpty() && filteredShelves.isEmpty() && !showCreateSpace && !showCreateShelf
 
                 val fastEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
-                val fastSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<androidx.compose.ui.unit.IntSize>()
-                val fastSpatialSpecIntOffset = MaterialTheme.motionScheme.fastSpatialSpec<androidx.compose.ui.unit.IntOffset>()
+                val fastSpatialSpec =
+                    MaterialTheme.motionScheme.fastSpatialSpec<androidx.compose.ui.unit.IntSize>()
+                val fastSpatialSpecIntOffset =
+                    MaterialTheme.motionScheme.fastSpatialSpec<androidx.compose.ui.unit.IntOffset>()
 
                 AnimatedContent(
                     targetState = isSearchEmpty,
                     transitionSpec = {
                         fadeIn(animationSpec = fastEffectsSpec) togetherWith
-                        fadeOut(animationSpec = fastEffectsSpec) using SizeTransform { _, _ ->
+                                fadeOut(animationSpec = fastEffectsSpec) using SizeTransform { _, _ ->
                             fastSpatialSpec
                         }
                     },
@@ -218,7 +216,7 @@ fun OrganizeBottomSheet(
                                             placementSpec = fastSpatialSpecIntOffset
                                         ),
                                         selected = false,
-                                        onClick = { 
+                                        onClick = {
                                             viewModel.createSpace(searchQuery)
                                             textFieldState.edit { replace(0, length, "") }
                                             keyboardController?.hide()
@@ -234,11 +232,11 @@ fun OrganizeBottomSheet(
                                                 tint = MaterialTheme.colorScheme.primary
                                             )
                                         },
-                                        content = { 
+                                        content = {
                                             Text(
                                                 stringResource(R.string.library_new_space) + " \"$searchQuery\"",
                                                 color = MaterialTheme.colorScheme.primary
-                                            ) 
+                                            )
                                         }
                                     )
                                 }
@@ -253,7 +251,7 @@ fun OrganizeBottomSheet(
                                             placementSpec = fastSpatialSpecIntOffset
                                         ),
                                         selected = false,
-                                        onClick = { 
+                                        onClick = {
                                             viewModel.createShelf(searchQuery)
                                             textFieldState.edit { replace(0, length, "") }
                                             keyboardController?.hide()
@@ -269,11 +267,11 @@ fun OrganizeBottomSheet(
                                                 tint = MaterialTheme.colorScheme.primary
                                             )
                                         },
-                                        content = { 
+                                        content = {
                                             Text(
                                                 stringResource(R.string.library_new_shelf) + " \"$searchQuery\"",
                                                 color = MaterialTheme.colorScheme.primary
-                                            ) 
+                                            )
                                         }
                                     )
                                 }
@@ -294,10 +292,18 @@ fun OrganizeBottomSheet(
                                         modifier = Modifier.padding(bottom = 8.dp)
                                     )
                                 }
-                                itemsIndexed(filteredSpaces, key = { _, it -> "space_${it.space.id}" }) { index, spaceItem ->
-                                    val isTopDetached = spaceItem.state == ToggleableState.On || index == 0 || (filteredSpaces.getOrNull(index - 1)?.state == ToggleableState.On)
-                                    val isBottomDetached = spaceItem.state == ToggleableState.On || index == filteredSpaces.size - 1 || (filteredSpaces.getOrNull(index + 1)?.state == ToggleableState.On)
-                                    
+                                itemsIndexed(
+                                    filteredSpaces,
+                                    key = { _, it -> "space_${it.space.id}" }) { index, spaceItem ->
+                                    val isTopDetached =
+                                        spaceItem.state == ToggleableState.On || index == 0 || (filteredSpaces.getOrNull(
+                                            index - 1
+                                        )?.state == ToggleableState.On)
+                                    val isBottomDetached =
+                                        spaceItem.state == ToggleableState.On || index == filteredSpaces.size - 1 || (filteredSpaces.getOrNull(
+                                            index + 1
+                                        )?.state == ToggleableState.On)
+
                                     SegmentedListItem(
                                         modifier = Modifier.animateItem(
                                             fadeInSpec = fastEffectsSpec,
@@ -305,7 +311,12 @@ fun OrganizeBottomSheet(
                                             placementSpec = fastSpatialSpecIntOffset
                                         ),
                                         selected = spaceItem.state == ToggleableState.On,
-                                        onClick = { viewModel.toggleSpace(spaceItem.space.id, spaceItem.state) },
+                                        onClick = {
+                                            viewModel.toggleSpace(
+                                                spaceItem.space.id,
+                                                spaceItem.state
+                                            )
+                                        },
                                         index = index,
                                         count = filteredSpaces.size,
                                         isTopDetached = isTopDetached,
@@ -314,7 +325,12 @@ fun OrganizeBottomSheet(
                                         trailingContent = {
                                             TriStateCheckbox(
                                                 state = spaceItem.state,
-                                                onClick = { viewModel.toggleSpace(spaceItem.space.id, spaceItem.state) }
+                                                onClick = {
+                                                    viewModel.toggleSpace(
+                                                        spaceItem.space.id,
+                                                        spaceItem.state
+                                                    )
+                                                }
                                             )
                                         }
                                     )
@@ -333,10 +349,18 @@ fun OrganizeBottomSheet(
                                         modifier = Modifier.padding(bottom = 8.dp)
                                     )
                                 }
-                                itemsIndexed(filteredShelves, key = { _, it -> "shelf_${it.shelf.id}" }) { index, shelfItem ->
-                                    val isTopDetached = shelfItem.state == ToggleableState.On || index == 0 || (filteredShelves.getOrNull(index - 1)?.state == ToggleableState.On)
-                                    val isBottomDetached = shelfItem.state == ToggleableState.On || index == filteredShelves.size - 1 || (filteredShelves.getOrNull(index + 1)?.state == ToggleableState.On)
-                                    
+                                itemsIndexed(
+                                    filteredShelves,
+                                    key = { _, it -> "shelf_${it.shelf.id}" }) { index, shelfItem ->
+                                    val isTopDetached =
+                                        shelfItem.state == ToggleableState.On || index == 0 || (filteredShelves.getOrNull(
+                                            index - 1
+                                        )?.state == ToggleableState.On)
+                                    val isBottomDetached =
+                                        shelfItem.state == ToggleableState.On || index == filteredShelves.size - 1 || (filteredShelves.getOrNull(
+                                            index + 1
+                                        )?.state == ToggleableState.On)
+
                                     SegmentedListItem(
                                         modifier = Modifier.animateItem(
                                             fadeInSpec = fastEffectsSpec,
@@ -344,7 +368,12 @@ fun OrganizeBottomSheet(
                                             placementSpec = fastSpatialSpecIntOffset
                                         ),
                                         selected = shelfItem.state == ToggleableState.On,
-                                        onClick = { viewModel.toggleShelf(shelfItem.shelf.id, shelfItem.state) },
+                                        onClick = {
+                                            viewModel.toggleShelf(
+                                                shelfItem.shelf.id,
+                                                shelfItem.state
+                                            )
+                                        },
                                         index = index,
                                         count = filteredShelves.size,
                                         isTopDetached = isTopDetached,
@@ -353,7 +382,12 @@ fun OrganizeBottomSheet(
                                         trailingContent = {
                                             TriStateCheckbox(
                                                 state = shelfItem.state,
-                                                onClick = { viewModel.toggleShelf(shelfItem.shelf.id, shelfItem.state) }
+                                                onClick = {
+                                                    viewModel.toggleShelf(
+                                                        shelfItem.shelf.id,
+                                                        shelfItem.state
+                                                    )
+                                                }
                                             )
                                         }
                                     )

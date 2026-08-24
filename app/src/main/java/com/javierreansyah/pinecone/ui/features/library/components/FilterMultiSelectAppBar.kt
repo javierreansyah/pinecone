@@ -16,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Close
@@ -108,8 +109,11 @@ fun FilterMultiSelectAppBar(
             },
             text = {
                 Text(
-                    if (selectedCount == 1) "Are you sure you want to delete this item? This will remove it from all books."
-                    else "Are you sure you want to delete $selectedCount items? This will remove them from all books.",
+                    pluralStringResource(
+                        R.plurals.library_delete_items_message,
+                        selectedCount,
+                        selectedCount
+                    ),
                     style = MaterialTheme.typography.bodyMedium
                 )
             },

@@ -41,29 +41,30 @@ class OrganizeViewModel(
         repository.getAllSpaces(),
         repository.getAllBookSpaceCrossRefs()
     ) { shelvesWithBooks, spaces, spaceCrossRefs ->
-        
-        val shelfItems = shelvesWithBooks.filter { it.shelf.id != "unshelved" }.map { shelfWithBooks ->
-            val shelfId = shelfWithBooks.shelf.id
-            val booksInShelf = shelfWithBooks.books.map { it.book.id }
-            val countInShelf = targetBookIds.count { it in booksInShelf }
-            
-            val initialState = when {
-                countInShelf == 0 -> ToggleableState.Off
-                countInShelf == targetBookIds.size -> ToggleableState.On
-                else -> ToggleableState.Indeterminate
-            }
-            
-            ShelfItemState(shelfWithBooks.shelf, initialState)
-        }.sortedBy { it.shelf.name }
+
+        val shelfItems =
+            shelvesWithBooks.filter { it.shelf.id != "unshelved" }.map { shelfWithBooks ->
+                val shelfId = shelfWithBooks.shelf.id
+                val booksInShelf = shelfWithBooks.books.map { it.book.id }
+                val countInShelf = targetBookIds.count { it in booksInShelf }
+
+                val initialState = when (countInShelf) {
+                    0 -> ToggleableState.Off
+                    targetBookIds.size -> ToggleableState.On
+                    else -> ToggleableState.Indeterminate
+                }
+
+                ShelfItemState(shelfWithBooks.shelf, initialState)
+            }.sortedBy { it.shelf.name }
 
         val spaceItems = spaces.filter { it.id != "_all_" }.map { space ->
             val spaceId = space.id
             val booksInSpace = spaceCrossRefs.filter { it.spaceId == spaceId }.map { it.bookId }
             val countInSpace = targetBookIds.count { it in booksInSpace }
 
-            val initialState = when {
-                countInSpace == 0 -> ToggleableState.Off
-                countInSpace == targetBookIds.size -> ToggleableState.On
+            val initialState = when (countInSpace) {
+                0 -> ToggleableState.Off
+                targetBookIds.size -> ToggleableState.On
                 else -> ToggleableState.Indeterminate
             }
 
@@ -79,9 +80,9 @@ class OrganizeViewModel(
 
     fun toggleShelf(shelfId: String, currentState: ToggleableState) {
         val newState = when (currentState) {
-            ToggleableState.Indeterminate -> ToggleableState.On // If mixed, clicking it selects all
-            ToggleableState.On -> ToggleableState.Off // If selected, clicking deselects
-            ToggleableState.Off -> ToggleableState.On // If deselected, clicking selects
+            ToggleableState.Indeterminate -> ToggleableState.On
+            ToggleableState.On -> ToggleableState.Off
+            ToggleableState.Off -> ToggleableState.On
         }
         viewModelScope.launch {
             targetBookIds.forEach { bookId ->

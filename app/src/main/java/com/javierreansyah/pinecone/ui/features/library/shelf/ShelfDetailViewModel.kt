@@ -51,7 +51,11 @@ class ShelfDetailViewModel(
     )
 
     val allBooks: StateFlow<List<Book>> = combine(booksFlow, globalSpaceId) { books, spaceId ->
-        if (spaceId == null || spaceId == "_all_") books else books.filter { book -> book.spaceIds.contains(spaceId) }
+        if (spaceId == null || spaceId == "_all_") books else books.filter { book ->
+            book.spaceIds.contains(
+                spaceId
+            )
+        }
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -66,7 +70,7 @@ class ShelfDetailViewModel(
     ) { shelvesList, crossRefs, allBooksEntities, spaceId ->
         val sortedShelves = sortShelfBooks(shelvesList, crossRefs, spaceId)
         val shelvedBookIds = crossRefs.map { it.bookId }.toSet()
-        val unshelvedBooks = allBooksEntities.filter { 
+        val unshelvedBooks = allBooksEntities.filter {
             it.book.id !in shelvedBookIds && (spaceId == null || spaceId == "_all_" || it.spaces.any { space -> space.id == spaceId })
         }
 
@@ -139,8 +143,6 @@ class ShelfDetailViewModel(
         }
     }
 
-    // --- Book Context Menu Actions ---
-
     fun deleteBook(bookId: String) {
         viewModelScope.launch {
             bookRepository.deleteBook(bookId)
@@ -159,15 +161,4 @@ class ShelfDetailViewModel(
         }
     }
 
-    fun removeBookFromShelf(shelfId: String, bookId: String) {
-        viewModelScope.launch {
-            bookRepository.removeBookFromShelf(shelfId, bookId)
-        }
-    }
-
-    fun removeBookFromSpace(spaceId: String, bookId: String) {
-        viewModelScope.launch {
-            bookRepository.removeBookFromSpace(spaceId, bookId)
-        }
-    }
 }

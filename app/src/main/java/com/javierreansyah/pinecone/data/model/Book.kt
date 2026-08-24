@@ -3,9 +3,6 @@ package com.javierreansyah.pinecone.data.model
 import com.javierreansyah.pinecone.data.local.database.library.BookWithDetails
 import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 
-/**
- * UI-layer model for displaying books in the library.
- */
 data class Book(
     val id: String,
     val title: String,
@@ -30,6 +27,7 @@ data class Book(
     val spaces: List<SpaceEntity> = emptyList()
 ) {
     val spaceIds: List<String> get() = spaces.map { it.id }
+
     companion object {
         fun fromEntity(entity: BookWithDetails): Book = Book(
             id = entity.book.id,

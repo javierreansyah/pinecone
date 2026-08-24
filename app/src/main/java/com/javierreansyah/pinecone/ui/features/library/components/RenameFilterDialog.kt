@@ -96,7 +96,7 @@ fun RenameFilterDialog(
                 if (isMergingMultiple) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Multiple items will be merged into one.",
+                        text = stringResource(R.string.library_warning_merge_multiple),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

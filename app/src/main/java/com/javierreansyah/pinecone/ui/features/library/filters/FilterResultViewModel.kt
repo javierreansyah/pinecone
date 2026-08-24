@@ -65,7 +65,9 @@ class FilterResultViewModel(
     )
 
     val shelves: StateFlow<List<ShelfWithCovers>> = combine(
-        bookRepository.getAllShelvesWithBooks(), bookRepository.getAllShelfBookCrossRefs(), globalSpaceId
+        bookRepository.getAllShelvesWithBooks(),
+        bookRepository.getAllShelfBookCrossRefs(),
+        globalSpaceId
     ) { shelvesList, crossRefs, spaceId ->
         sortShelfBooks(shelvesList, crossRefs, spaceId)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -89,14 +91,15 @@ class FilterResultViewModel(
         books.filter { it.tags.contains(tag) }
     }
 
-    fun getBooksBySpace(spaceName: String): Flow<List<Book>> = combine(allBooksAcrossSpaces, allSpaces) { books, spaces ->
-        val space = spaces.find { it.name == spaceName }
-        if (space != null) {
-            books.filter { book -> book.spaceIds.contains(space.id) }
-        } else {
-            emptyList()
+    fun getBooksBySpace(spaceName: String): Flow<List<Book>> =
+        combine(allBooksAcrossSpaces, allSpaces) { books, spaces ->
+            val space = spaces.find { it.name == spaceName }
+            if (space != null) {
+                books.filter { book -> book.spaceIds.contains(space.id) }
+            } else {
+                emptyList()
+            }
         }
-    }
 
     fun getFilteredAndSortedBooks(baseFlow: Flow<List<Book>>): Flow<List<Book>> {
         return combine(baseFlow, _uiState) { books, state ->
@@ -154,8 +157,6 @@ class FilterResultViewModel(
         }
     }
 
-    // --- Book Context Menu Actions ---
-
     fun deleteBook(bookId: String) {
         viewModelScope.launch {
             bookRepository.deleteBook(bookId)
@@ -174,15 +175,4 @@ class FilterResultViewModel(
         }
     }
 
-    fun removeBookFromShelf(shelfId: String, bookId: String) {
-        viewModelScope.launch {
-            bookRepository.removeBookFromShelf(shelfId, bookId)
-        }
-    }
-
-    fun removeBookFromSpace(spaceId: String, bookId: String) {
-        viewModelScope.launch {
-            bookRepository.removeBookFromSpace(spaceId, bookId)
-        }
-    }
 }

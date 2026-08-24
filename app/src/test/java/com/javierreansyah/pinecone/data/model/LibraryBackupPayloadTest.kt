@@ -11,9 +11,11 @@ class LibraryBackupPayloadTest {
     @Test
     fun vaultSnapshotV1RoundTripsWithoutLegacyDefaults() {
         val payload = LibraryBackupPayload(
-            books = listOf(BookBackupRecord(
-                id = "book-1", title = "Book", filePath = "/source/book.epub", addedDate = 1
-            )),
+            books = listOf(
+                BookBackupRecord(
+                    id = "book-1", title = "Book", filePath = "/source/book.epub", addedDate = 1
+                )
+            ),
             bookmarks = emptyList(), shelves = emptyList(), shelfBookCrossRefs = emptyList(),
             notes = emptyList()
         )

@@ -41,7 +41,6 @@ fun ShelfListItem(
     val visibleBooks = shelfWithCovers.books
     val booksCount = visibleBooks.size
 
-    // We only need up to 2 covers for the thumbnail
     val booksForThumbnail = visibleBooks.take(2).map { Book.fromEntity(it) }
 
     Row(
@@ -63,14 +62,13 @@ fun ShelfListItem(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Thumbnail Box
-        // The first book is on top, second is behind shifted right, third is behind shifted further right.
+
         Box(
             modifier = Modifier
                 .height(100.dp)
                 .width(76.dp)
         ) {
-            // Draw in reverse so the first item has the highest z-index naturally
+
             booksForThumbnail.forEachIndexed { index, book ->
                 Box(
                     modifier = Modifier
@@ -86,7 +84,6 @@ fun ShelfListItem(
             }
         }
 
-        // Details
         Column(
             modifier = Modifier
                 .height(100.dp)

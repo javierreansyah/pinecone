@@ -155,21 +155,21 @@ fun ReaderTopBar(
                     targetState = topBarState,
                     transitionSpec = {
                         if (targetState != TopBarState.NORMAL && initialState == TopBarState.NORMAL) {
-                            // Entering Jump/Search Mode: new content fades in, normal icons fade out + slide right
+
                             fadeIn(animationSpec = actionsEffectsSpec) togetherWith
                                     fadeOut(animationSpec = actionsEffectsSpec) + slideOutHorizontally(
                                 targetOffsetX = { slideOffsetPx },
                                 animationSpec = actionsSpatialSpec
                             )
                         } else if (targetState == TopBarState.NORMAL && initialState != TopBarState.NORMAL) {
-                            // Exiting Jump/Search Mode: normal icons fade in + slide in from right, old state fades out
+
                             fadeIn(animationSpec = actionsEffectsSpec) + slideInHorizontally(
                                 initialOffsetX = { slideOffsetPx },
                                 animationSpec = actionsSpatialSpec
                             ) togetherWith
                                     fadeOut(animationSpec = actionsEffectsSpec)
                         } else {
-                            // e.g. SEARCH -> JUMP or JUMP -> SEARCH
+
                             fadeIn(animationSpec = actionsEffectsSpec) togetherWith fadeOut(
                                 animationSpec = actionsEffectsSpec
                             )
@@ -451,5 +451,3 @@ fun JumpHistoryPill(
         modifier = modifier
     )
 }
-
-
