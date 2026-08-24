@@ -16,27 +16,23 @@ class DictionaryRepository(
 
         val results = mutableListOf<DictionaryEntry>()
 
-        // Exact match
         results.addAll(dao.getDefinitions(word))
 
-        // Synonyms
         val synonyms = dao.getSynonyms(word)
         for (syn in synonyms) {
             val baseEntries = dao.getDefinitionsByIndex(syn.originalWordIndex)
             results.addAll(baseEntries)
         }
 
-        // If not found, try partial/prefix
         if (results.isEmpty()) {
             results.addAll(dao.getPrefixDefinitions(word))
         }
 
-        // Return distinct definitions to avoid duplicates
         return results.distinctBy { it.definition }
     }
 
     suspend fun deleteDictionary(dictionaryId: String) {
-        // Remove from settings
+
         val currentSettings = preferences.readerSettings.first()
         val newInstalled = currentSettings.installedDictionaries.filter { it.id != dictionaryId }
         val newActiveId = if (currentSettings.activeDictionaryId == dictionaryId) {
@@ -50,10 +46,8 @@ class DictionaryRepository(
             )
         )
 
-        // Close database to release SQLite file locks
         DictionaryDatabase.closeDatabase(dictionaryId)
 
-        // Delete database files
         val dbFile = context.getDatabasePath("dict_$dictionaryId.db")
         if (dbFile.exists()) dbFile.delete()
         val walFile = context.getDatabasePath("dict_$dictionaryId.db-wal")

@@ -6,14 +6,25 @@ import com.javierreansyah.pinecone.data.local.database.library.ShelfEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
 
-fun List<Book>.filterAndSort(prefs: FilterSortPreferences): List<Book> {
+const val ALL_SPACES_ID = "_all_"
+
+fun List<Book>.inSpace(spaceId: String?): List<Book> =
+    if (spaceId == null || spaceId == ALL_SPACES_ID) this
+    else filter { spaceId in it.spaceIds }
+
+fun List<Book>.filterAndSort(
+    prefs: FilterSortPreferences
+): List<Book> {
     return this.filter { book ->
         val status = when {
             book.isRead -> StatusFilter.Finished
             book.progress <= 0.0 -> StatusFilter.NotStarted
             else -> StatusFilter.Reading
         }
-        prefs.selectedStatus.contains(status)
+        val statusMatch = prefs.selectedStatus.contains(status)
+
+        statusMatch
+
     }.let { filtered ->
         val baseComparator = when (prefs.sortType) {
             SortType.Title -> compareBy { it.title.lowercase() }
@@ -43,14 +54,18 @@ fun List<Book>.filterAndSort(prefs: FilterSortPreferences): List<Book> {
 
 fun sortShelfBooks(
     shelvesList: List<ShelfWithCovers>,
-    crossRefs: List<ShelfBookCrossRefEntity>
+    crossRefs: List<ShelfBookCrossRefEntity>,
+    globalSpaceId: String? = null
 ): List<ShelfWithCovers> {
     val crossRefsByShelf = crossRefs.groupBy { it.shelfId }
     return shelvesList.map { shelfWithCovers ->
         val shelfId = shelfWithCovers.shelf.id
         val shelfCrossRefs = crossRefsByShelf[shelfId].orEmpty()
         val orderMap = shelfCrossRefs.associate { it.bookId to it.orderIndex }
-        val sortedBooks = shelfWithCovers.books.sortedBy { book ->
+        val filteredBooks = shelfWithCovers.books.filter {
+            globalSpaceId == null || globalSpaceId == "_all_" || it.spaces.any { space -> space.id == globalSpaceId }
+        }
+        val sortedBooks = filteredBooks.sortedBy { book ->
             orderMap[book.book.id] ?: 0
         }
         shelfWithCovers.copy(books = sortedBooks)
@@ -62,9 +77,10 @@ fun mapAndSortShelves(
     crossRefs: List<ShelfBookCrossRefEntity>,
     allBooksEntities: List<BookWithDetails>,
     prefs: FilterSortPreferences,
-    unshelvedLabel: String
+    unshelvedLabel: String,
+    globalSpaceId: String? = null
 ): List<ShelfWithCovers> {
-    val mappedShelves = sortShelfBooks(shelvesList, crossRefs)
+    val mappedShelves = sortShelfBooks(shelvesList, crossRefs, globalSpaceId)
 
     val sortedShelves = mappedShelves.let { processedShelves ->
         val baseComparator = when (prefs.sortType) {
@@ -94,12 +110,22 @@ fun mapAndSortShelves(
     }
 
     val shelvedBookIds = crossRefs.map { it.bookId }.toSet()
-    val unshelvedBooks = allBooksEntities.filter { it.book.id !in shelvedBookIds }
+    val unshelvedBooks = allBooksEntities.filter {
+        it.book.id !in shelvedBookIds && (globalSpaceId == null || globalSpaceId == "_all_" || it.spaces.any { space -> space.id == globalSpaceId })
+    }
 
     val showShelves = prefs.selectedShelfFilter.contains(ShelfFilter.Shelves)
     val showUnshelved = prefs.selectedShelfFilter.contains(ShelfFilter.Unshelved)
 
-    val finalShelves = if (showShelves) sortedShelves else emptyList()
+    val finalShelves = if (showShelves) {
+        if (globalSpaceId != null && globalSpaceId != "_all_") {
+            sortedShelves.filter { it.books.isNotEmpty() }
+        } else {
+            sortedShelves
+        }
+    } else {
+        emptyList()
+    }
 
     return if (showUnshelved && unshelvedBooks.isNotEmpty()) {
         val unshelvedShelf = ShelfWithCovers(

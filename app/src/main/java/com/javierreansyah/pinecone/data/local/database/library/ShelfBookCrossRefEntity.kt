@@ -1,10 +1,8 @@
 package com.javierreansyah.pinecone.data.local.database.library
 
-
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
-import kotlinx.serialization.Serializable
 
 @Entity(
     tableName = "shelf_book_cross_ref",
@@ -22,7 +20,6 @@ import kotlinx.serialization.Serializable
     )],
     indices = [Index("shelfId"), Index("bookId")]
 )
-@Serializable
 data class ShelfBookCrossRefEntity(
     val shelfId: String,
     val bookId: String,

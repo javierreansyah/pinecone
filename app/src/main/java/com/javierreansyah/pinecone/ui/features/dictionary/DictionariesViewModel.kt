@@ -37,7 +37,6 @@ class DictionariesViewModel(
         importManager.resetImportState()
     }
 
-
     fun deleteDictionary(id: String) {
         viewModelScope.launch {
             repository.deleteDictionary(id)

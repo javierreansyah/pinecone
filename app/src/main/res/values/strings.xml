@@ -1,6 +1,5 @@
 <resources>
 
-    <!-- Common Actions -->
     <string name="action_back">Back</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_save">Save</string>
@@ -12,6 +11,8 @@
     <string name="action_select_multiple">Select Multiple</string>
     <string name="action_select_all">Select all</string>
     <string name="action_deselect_all">Deselect all</string>
+    <string name="action_organize">Organize</string>
+    <string name="action_import">Import</string>
 
     <string name="action_search">Search</string>
     <string name="action_clear">Clear</string>
@@ -32,7 +33,6 @@
     <string name="action_all">All</string>
     <string name="common_error">Error: %s</string>
 
-    <!-- Library -->
     <string name="library_tab_books">Books</string>
     <string name="library_tab_shelves">Shelves</string>
     <string name="library_search_placeholder">Search library</string>
@@ -50,6 +50,10 @@
         <item quantity="one">Are you sure you want to delete %d shelf? The books inside will not be deleted.</item>
         <item quantity="other">Are you sure you want to delete %d shelves? The books inside will not be deleted.</item>
     </plurals>
+    <plurals name="library_delete_items_message">
+        <item quantity="one">Are you sure you want to delete %d item? This will remove it from all books.</item>
+        <item quantity="other">Are you sure you want to delete %d items? This will remove them from all books.</item>
+    </plurals>
     <string name="library_rename_shelf_title">Rename shelf</string>
     <string name="library_shelf_name_label">Shelf name</string>
     <string name="library_create_shelf_title">Create New Shelf</string>
@@ -64,6 +68,7 @@
     </plurals>
 
     <string name="library_warning_merge">Warning: A matching item already exists. Saving will merge this item and its books into the existing one.</string>
+    <string name="library_warning_merge_multiple">Multiple items will be merged into one.</string>
     <string name="library_importing">Importing…</string>
     <string name="library_empty_authors">No authors found.</string>
     <string name="library_empty_tags">No tags found.</string>
@@ -76,8 +81,14 @@
     <string name="library_label_view">View</string>
     <string name="library_label_status">Status</string>
     <string name="library_label_unshelved">Unshelved</string>
+
+    <string name="library_spaces_title">Spaces</string>
+    <string name="library_rename_space_title">Rename space</string>
+    <string name="library_empty_spaces">No spaces yet</string>
+    <string name="library_new_space">New Space</string>
+    <string name="library_new_shelf">New Shelf</string>
+    <string name="library_space_name_label">Space Name</string>
     <string name="library_label_add_to_shelf">Add to Shelf</string>
-    <string name="library_label_remove_from_shelf">Remove from Shelf</string>
     <string name="library_sort_title">Title</string>
     <string name="library_sort_author">Author</string>
     <string name="library_sort_last_read">Date last read</string>
@@ -90,7 +101,6 @@
     <string name="library_status_reading">Currently reading</string>
     <string name="library_status_finished">Finished</string>
 
-    <!-- Book Details -->
     <string name="book_info_title">Book Info</string>
     <string name="book_not_found">Book not found</string>
     <string name="book_edit_title">Edit Book</string>
@@ -108,6 +118,10 @@
     <string name="book_mark_as_unread">Mark as Unread</string>
     <string name="book_read_more">Read More</string>
     <string name="book_read_less">Read Less</string>
+    <string name="book_read_furthest">Read furthest</string>
+    <string name="book_read_from_start">Read from start</string>
+    <string name="book_show_more_tags">Show more tags</string>
+    <string name="book_show_less_tags">Show less tags</string>
     <string name="book_not_available">N/A</string>
     <string name="book_unknown">Unknown</string>
     <string name="book_label_authors">Authors</string>
@@ -118,7 +132,6 @@
     <string name="book_cover_description">Cover for %s</string>
     <string name="book_unknown_author">Unknown Author</string>
 
-    <!-- Reader -->
     <string name="reader_no_definition">No definition found.</string>
     <string name="reader_toc_title">Table of Contents</string>
     <string name="reader_bookmarks_title">Bookmarks</string>
@@ -150,8 +163,11 @@
     <string name="reader_in_document">In Document</string>
     <string name="reader_no_matches">No matches</string>
     <string name="reader_result_num_of">%1$s of %2$s</string>
+    <string name="reader_external_link_title">External Link Options</string>
+    <string name="reader_copy_link">Copy Link</string>
+    <string name="reader_open_in_browser">Open in Browser</string>
+    <string name="reader_highlight_color">Highlight Color</string>
 
-    <!-- Reader Settings -->
     <string name="reader_settings_tab_text">Text</string>
     <string name="reader_settings_tab_lighting">Lighting</string>
     <string name="reader_settings_tab_advanced">Advanced</string>
@@ -193,7 +209,6 @@
     <string name="reader_settings_bg_color">Background Color (Hex)</string>
     <string name="reader_settings_text_color">Text Color (Hex)</string>
 
-    <!-- Reader settings options -->
     <string name="reader_settings_alignment_left">Left</string>
     <string name="reader_settings_alignment_right">Right</string>
     <string name="reader_settings_alignment_justify">Justify</string>
@@ -204,7 +219,6 @@
     <string name="reader_settings_orientation_portrait">Portrait</string>
     <string name="reader_settings_orientation_landscape">Landscape</string>
 
-    <!-- Dictionaries -->
     <string name="dictionaries_title">Dictionaries</string>
     <string name="dictionaries_empty">No dictionaries installed\nTap + to import a Stardict .zip file</string>
     <string name="dictionaries_import_stardict">Import Stardict</string>
@@ -220,7 +234,6 @@
     <string name="dictionaries_none_installed">No dictionaries installed. Install one from the navigation drawer.</string>
     <string name="dictionaries_install_success">Dictionary installed successfully</string>
 
-    <!-- Settings -->
     <string name="settings_title">Settings</string>
     <string name="settings_general">General</string>
     <string name="settings_theme_mode">Theme Mode</string>
@@ -232,9 +245,13 @@
     <string name="settings_backup_now">Backup Now</string>
     <string name="settings_backup_now_summary">Backup library and dictionaries (%s)</string>
     <string name="settings_restore">Restore</string>
+    <string name="settings_export_backup">Export backup</string>
+    <string name="settings_import_backup">Import Backup</string>
+    <string name="settings_import_backup_summary">Add a portable Pinecone backup to this vault</string>
     <string name="settings_restore_summary">Restore library and dictionaries</string>
+    <string name="settings_restore_partial">Restore committed, but final cleanup could not finish. Restart Pinecone to complete recovery.</string>
     <string name="settings_last_backup_format">Last: %s</string>
-    <string name="settings_error_set_backup_location">Please set Backup Location first to restore dictionaries</string>
+    <string name="settings_error_set_backup_location">Please select a backup location first</string>
     <string name="settings_auto_backup_freq">Auto Backup Frequency</string>
     <string name="settings_backup_location">Backup Location</string>
     <string name="settings_option_system">System</string>
@@ -267,10 +284,15 @@
     <string name="reader_settings_restore_defaults_warning">Are you sure you want to restore reader settings to their default values? This will reset all typography, layout, theme, and brightness preferences.\n\nGeneral settings (like theme mode, language, etc.) will not be changed.</string>
     <string name="reader_settings_restore_defaults_success">Reader settings restored to defaults</string>
 
-    <!-- Navigation Drawer -->
-
     <string name="nav_import_files">Import Files</string>
     <string name="nav_scan_folder">Scan Folder</string>
+    <string name="nav_import_complete">Import complete</string>
+    <plurals name="nav_importing_files">
+        <item quantity="one">Importing %d file…</item>
+        <item quantity="other">Importing %d files…</item>
+    </plurals>
+    <string name="nav_scanning_folder">Scanning folder for books…</string>
+    <string name="nav_folder_scan_complete">Folder scan complete</string>
 
     <string name="nav_setup_now">Setup now</string>
     <string name="nav_starting_backup">Starting backup…</string>
@@ -281,24 +303,20 @@
     <string name="nav_restore_success">Backup restored successfully!</string>
     <string name="nav_restore_failed">Failed to restore backup</string>
 
-    <!-- Reader Jump Origin tracking -->
     <string name="reader_jump_go_back">Go back</string>
     <string name="reader_jump_history_mode">Jump History</string>
     <string name="reader_jump_history_mode_explicit">Manual</string>
     <string name="reader_jump_history_mode_page_turn">Page turn</string>
     <string name="reader_jump_history_mode_disabled">Disabled</string>
 
-    <!-- Book Info Tabs -->
     <string name="book_info_current_position">Current Position</string>
     <string name="book_info_furthest_position">Furthest Position Reached</string>
 
-    <!-- Reader Bookmark/Note Sorting -->
     <string name="reader_sort_creation_date_asc">Creation date (oldest first)</string>
     <string name="reader_sort_creation_date_desc">Creation date (newest first)</string>
     <string name="reader_sort_book_order_asc">Book order (early first)</string>
     <string name="reader_sort_book_order_desc">Book order (late first)</string>
 
-    <!-- About & Licenses -->
     <string name="about_title">Pinecone</string>
     <string name="about_copyright">Copyright © 2026 Javier Aahmes Reansyah</string>
     <string name="about_view_full_license">View Full License</string>

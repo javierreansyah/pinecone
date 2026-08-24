@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-
 class EditBookViewModel(
     application: Application, private val bookId: String
 ) : AndroidViewModel(application) {

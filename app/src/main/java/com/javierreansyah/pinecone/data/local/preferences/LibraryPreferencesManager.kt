@@ -7,6 +7,10 @@ import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.ShelfFilter
 import com.javierreansyah.pinecone.ui.features.library.SortType
 import com.javierreansyah.pinecone.ui.features.library.StatusFilter
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import androidx.core.content.edit
 
 class LibraryPreferencesManager(context: Context) {
     private val prefs: SharedPreferences =
@@ -54,6 +58,21 @@ class LibraryPreferencesManager(context: Context) {
                 }
             }.toSet()
         )
+    }
+
+    fun getGlobalSpaceFlow(): Flow<String?> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "global_space") {
+                trySend(prefs.getString("global_space", null))
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(prefs.getString("global_space", null))
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    fun setGlobalSpace(spaceId: String?) {
+        prefs.edit { putString("global_space", spaceId) }
     }
 
     fun savePreferences(screenKey: String, prefsObj: FilterSortPreferences) {

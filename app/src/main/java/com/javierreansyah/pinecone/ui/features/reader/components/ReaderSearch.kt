@@ -82,7 +82,6 @@ fun ReaderSearch(
     val textFieldState = remember { TextFieldState(query) }
     val searchBarState = rememberContainedSearchBarState(initialValue = SearchBarValue.Expanded)
 
-    // Sync external query changes
     LaunchedEffect(query) {
         if (textFieldState.text.toString() != query) {
             textFieldState.edit {
@@ -91,7 +90,6 @@ fun ReaderSearch(
         }
     }
 
-    // Sync internal query changes back to parent
     LaunchedEffect(textFieldState.text) {
         val currentText = textFieldState.text.toString()
         if (currentText != query) {
@@ -124,7 +122,7 @@ fun ReaderSearch(
             isCompleted = true
             onClose()
         } catch (_: CancellationException) {
-            // Cancelled
+
         } finally {
             if (!isCompleted) {
                 backProgress = 0f
@@ -146,7 +144,7 @@ fun ReaderSearch(
                 .statusBarsPadding()
                 .padding(top = 8.dp)
         ) {
-            // ── Contained Search Bar Capsule ──────────────────────────────────────
+
             SearchBarDefaults.InputField(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -210,7 +208,6 @@ fun ReaderSearch(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ── Result list ───────────────────────────────────────────────────────
             Box(modifier = Modifier.fillMaxSize()) {
                 LazyColumn(
                     contentPadding = PaddingValues(bottom = 8.dp, top = 16.dp),
@@ -267,7 +264,6 @@ fun ReaderSearch(
                         )
                     }
 
-                    // Empty state when search done with no results
                     if (searchPerformed && !isLoading && results.isEmpty()) {
                         item {
                             Box(
@@ -339,14 +335,13 @@ fun SearchResultCard(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Column {
-            // Line 1: chapter name
+
             Text(
                 text = item.chapterTitle ?: "Unknown Chapter",
                 style = MaterialTheme.typography.titleMedium,
                 color = primary
             )
 
-            // Line 2: position
             val subtitleText = if (item.positionLabel.isNotBlank()) {
                 "${index + 1} | ${item.positionLabel}"
             } else {
@@ -359,7 +354,6 @@ fun SearchResultCard(
             )
         }
 
-        // Line 3: Snippet: before · highlight · after
         val snippet = buildAnnotatedString {
             val before = item.textBefore?.trim() ?: ""
             val highlight = item.highlight ?: query

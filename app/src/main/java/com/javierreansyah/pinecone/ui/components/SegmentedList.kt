@@ -19,6 +19,7 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.Dp
@@ -128,7 +129,9 @@ class SegmentedListBuilder : SegmentedListScope {
 
 @Composable
 inline fun SegmentedColumn(
-    modifier: Modifier = Modifier, content: @Composable SegmentedListScope.() -> Unit
+    modifier: Modifier = Modifier,
+    animated: Boolean = true,
+    content: @Composable SegmentedListScope.() -> Unit
 ) {
     val builder = SegmentedListBuilder().apply { content() }
     val items = builder.items
@@ -138,19 +141,29 @@ inline fun SegmentedColumn(
         modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         items.forEachIndexed { index, item ->
-            item.wrapper {
-                SegmentedListItem(
-                    selected = item.selected,
-                    onClick = item.onClick,
-                    onLongClick = item.onLongClick,
-                    index = index,
-                    count = count,
-                    enabled = item.enabled,
-                    leadingContent = item.leadingContent,
-                    trailingContent = item.trailingContent,
-                    supportingContent = item.supportingContent,
-                    content = item.content
-                )
+            val isTopDetached =
+                item.selected || index == 0 || (items.getOrNull(index - 1)?.selected == true)
+            val isBottomDetached =
+                item.selected || index == count - 1 || (items.getOrNull(index + 1)?.selected == true)
+
+            key(item.key ?: index) {
+                item.wrapper {
+                    SegmentedListItem(
+                        selected = item.selected,
+                        onClick = item.onClick,
+                        onLongClick = item.onLongClick,
+                        index = index,
+                        count = count,
+                        isTopDetached = isTopDetached,
+                        isBottomDetached = isBottomDetached,
+                        enabled = item.enabled,
+                        animated = animated,
+                        leadingContent = item.leadingContent,
+                        trailingContent = item.trailingContent,
+                        supportingContent = item.supportingContent,
+                        content = item.content
+                    )
+                }
             }
         }
     }
@@ -160,6 +173,7 @@ inline fun SegmentedColumn(
 inline fun SegmentedLazyColumn(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
+    animated: Boolean = true,
     content: @Composable SegmentedListScope.() -> Unit
 ) {
     val builder = SegmentedListBuilder().apply { content() }
@@ -174,19 +188,30 @@ inline fun SegmentedLazyColumn(
         items(
             count = count, key = { index -> items[index].key ?: index }) { index ->
             val item = items[index]
-            item.wrapper {
-                SegmentedListItem(
-                    selected = item.selected,
-                    onClick = item.onClick,
-                    onLongClick = item.onLongClick,
-                    index = index,
-                    count = count,
-                    enabled = item.enabled,
-                    leadingContent = item.leadingContent,
-                    trailingContent = item.trailingContent,
-                    supportingContent = item.supportingContent,
-                    content = item.content
-                )
+            val isTopDetached =
+                item.selected || index == 0 || (items.getOrNull(index - 1)?.selected == true)
+            val isBottomDetached =
+                item.selected || index == count - 1 || (items.getOrNull(index + 1)?.selected == true)
+
+            key(item.key ?: index) {
+                item.wrapper {
+                    SegmentedListItem(
+                        modifier = Modifier.animateItem(),
+                        selected = item.selected,
+                        onClick = item.onClick,
+                        onLongClick = item.onLongClick,
+                        index = index,
+                        count = count,
+                        isTopDetached = isTopDetached,
+                        isBottomDetached = isBottomDetached,
+                        enabled = item.enabled,
+                        animated = animated,
+                        leadingContent = item.leadingContent,
+                        trailingContent = item.trailingContent,
+                        supportingContent = item.supportingContent,
+                        content = item.content
+                    )
+                }
             }
         }
     }
@@ -195,12 +220,16 @@ inline fun SegmentedLazyColumn(
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun SegmentedListItem(
+    modifier: Modifier = Modifier,
     selected: Boolean,
     onClick: (() -> Unit)?,
     onLongClick: (() -> Unit)? = null,
-    index: Int,
-    count: Int,
+    index: Int = 0,
+    count: Int = 1,
+    isTopDetached: Boolean = (selected || index == 0),
+    isBottomDetached: Boolean = (selected || index == count - 1),
     enabled: Boolean = true,
+    animated: Boolean = true,
     leadingContent: @Composable (() -> Unit)? = null,
     trailingContent: @Composable (() -> Unit)? = null,
     supportingContent: @Composable (() -> Unit)? = null,
@@ -211,15 +240,26 @@ fun SegmentedListItem(
 
     val springSpec = MaterialTheme.motionScheme.fastSpatialSpec<Dp>()
 
-    val targetTop = if (selected || index == 0) defaultRadius else innerRadius
-    val targetBottom = if (selected || index == count - 1) defaultRadius else innerRadius
+    val targetTop = if (isTopDetached) defaultRadius else innerRadius
+    val targetBottom = if (isBottomDetached) defaultRadius else innerRadius
 
-    val topRadius by animateDpAsState(
-        targetValue = targetTop, animationSpec = springSpec, label = "topRadius"
-    )
-    val bottomRadius by animateDpAsState(
-        targetValue = targetBottom, animationSpec = springSpec, label = "bottomRadius"
-    )
+    val topRadius = if (animated) {
+        val animatedTop by animateDpAsState(
+            targetValue = targetTop, animationSpec = springSpec, label = "topRadius"
+        )
+        animatedTop
+    } else {
+        targetTop
+    }
+
+    val bottomRadius = if (animated) {
+        val animatedBottom by animateDpAsState(
+            targetValue = targetBottom, animationSpec = springSpec, label = "bottomRadius"
+        )
+        animatedBottom
+    } else {
+        targetBottom
+    }
 
     val shape = RoundedCornerShape(
         topStart = topRadius,
@@ -228,23 +268,35 @@ fun SegmentedListItem(
         bottomEnd = bottomRadius
     )
 
-    val containerColor by animateColorAsState(
-        targetValue = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer,
-        label = "color"
-    )
-    val baseContentColor by animateColorAsState(
-        targetValue = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface,
-        label = "contentColor"
-    )
+    val targetContainerColor =
+        if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer
+    val containerColor = if (animated) {
+        val animatedContainer by animateColorAsState(
+            targetValue = targetContainerColor,
+            label = "color"
+        )
+        animatedContainer
+    } else {
+        targetContainerColor
+    }
+
+    val targetBaseContentColor =
+        if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
+    val baseContentColor = if (animated) {
+        val animatedBaseContent by animateColorAsState(
+            targetValue = targetBaseContentColor,
+            label = "contentColor"
+        )
+        animatedBaseContent
+    } else {
+        targetBaseContentColor
+    }
+
     val contentColor = if (enabled) baseContentColor else baseContentColor.copy(alpha = 0.38f)
 
     if (onClick != null || onLongClick != null) {
         ListItem(
-            headlineContent = content,
-            supportingContent = supportingContent,
-            leadingContent = leadingContent,
-            trailingContent = trailingContent,
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxWidth()
                 .clip(shape)
                 .combinedClickable(
@@ -252,20 +304,10 @@ fun SegmentedListItem(
                     onLongClick = onLongClick?.let { { it() } },
                     enabled = enabled
                 ),
-            colors = ListItemDefaults.colors(
-                containerColor = if (enabled) containerColor else containerColor.copy(alpha = 0.6f),
-                headlineColor = contentColor,
-                supportingColor = contentColor,
-                leadingIconColor = contentColor,
-                trailingIconColor = contentColor
-            )
-        )
-    } else {
-        ListItem(
-            headlineContent = content,
-            supportingContent = supportingContent,
             leadingContent = leadingContent,
             trailingContent = trailingContent,
+            overlineContent = null,
+            supportingContent = supportingContent,
             colors = ListItemDefaults.colors(
                 containerColor = if (enabled) containerColor else containerColor.copy(alpha = 0.6f),
                 headlineColor = contentColor,
@@ -273,9 +315,27 @@ fun SegmentedListItem(
                 leadingIconColor = contentColor,
                 trailingIconColor = contentColor
             ),
-            modifier = Modifier
+            elevation = ListItemDefaults.elevation(ListItemDefaults.Elevation),
+            content = content,
+        )
+    } else {
+        ListItem(
+            modifier = modifier
                 .fillMaxWidth()
-                .clip(shape)
+                .clip(shape),
+            leadingContent = leadingContent,
+            trailingContent = trailingContent,
+            overlineContent = null,
+            supportingContent = supportingContent,
+            colors = ListItemDefaults.colors(
+                containerColor = if (enabled) containerColor else containerColor.copy(alpha = 0.6f),
+                headlineColor = contentColor,
+                supportingColor = contentColor,
+                leadingIconColor = contentColor,
+                trailingIconColor = contentColor
+            ),
+            elevation = ListItemDefaults.elevation(ListItemDefaults.Elevation),
+            content = content,
         )
     }
 }

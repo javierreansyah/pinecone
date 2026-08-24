@@ -34,7 +34,7 @@ fun rememberVoiceSearchLauncher(
             try {
                 speechRecognizerLauncher.launch(intent)
             } catch (e: Exception) {
-                // Ignored if device doesn't support speech recognition
+
             }
         }
     }

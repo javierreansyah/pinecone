@@ -35,10 +35,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Archive
-import com.composables.icons.materialsymbols.outlined.Bookmark_remove
 import com.composables.icons.materialsymbols.outlined.Check_circle
+import com.composables.icons.materialsymbols.outlined.Create_new_folder
 import com.composables.icons.materialsymbols.outlined.Delete
-import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Info
 import com.composables.icons.materialsymbols.outlined.Radio_button_unchecked
 import com.composables.icons.materialsymbols.outlined.Select
@@ -50,13 +49,11 @@ import com.javierreansyah.pinecone.data.model.Book
 @Composable
 fun BookContextMenu(
     bookId: String,
-    shelfId: String? = null,
     allBooks: List<Book>,
     onNavigateToBookInfo: (String) -> Unit,
     onToggleArchive: () -> Unit,
     onToggleReadStatus: () -> Unit,
-    onRemoveFromShelf: () -> Unit,
-    onAddToShelf: (String) -> Unit,
+    onOrganize: (String) -> Unit,
     onDeleteBook: () -> Unit,
     showSelectMultiple: Boolean = true,
     onEnterMultiSelect: () -> Unit = {},
@@ -163,14 +160,15 @@ fun BookContextMenu(
                     Text(labelText, style = MaterialTheme.typography.titleMedium)
                 },
             )
+
             ListItem(
                 modifier = Modifier.clickable {
-                    onAddToShelf(bookId)
+                    onOrganize(bookId)
                     onDismiss()
                 },
                 leadingContent = {
                     Icon(
-                        MaterialSymbols.Outlined.Folder, contentDescription = null
+                        MaterialSymbols.Outlined.Create_new_folder, contentDescription = null
                     )
                 },
                 trailingContent = null,
@@ -180,35 +178,12 @@ fun BookContextMenu(
                 elevation = ListItemDefaults.elevation(),
                 content = {
                     Text(
-                        stringResource(R.string.library_label_add_to_shelf),
+                        stringResource(R.string.action_organize),
                         style = MaterialTheme.typography.titleMedium
                     )
                 },
             )
-            if (shelfId != null && shelfId != "unshelved") {
-                ListItem(
-                    modifier = Modifier.clickable {
-                        onRemoveFromShelf()
-                        onDismiss()
-                    },
-                    leadingContent = {
-                        Icon(
-                            MaterialSymbols.Outlined.Bookmark_remove, contentDescription = null
-                        )
-                    },
-                    trailingContent = null,
-                    overlineContent = null,
-                    supportingContent = null,
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                    elevation = ListItemDefaults.elevation(),
-                    content = {
-                        Text(
-                            stringResource(R.string.library_label_remove_from_shelf),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    },
-                )
-            }
+
             ListItem(
                 modifier = Modifier.clickable {
                     onToggleArchive()
@@ -230,9 +205,13 @@ fun BookContextMenu(
                         if (book?.isArchived == true) stringResource(R.string.book_unarchive) else stringResource(
                             R.string.book_archive
                         )
-                    Text(labelText, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        labelText,
+                        style = MaterialTheme.typography.titleMedium
+                    )
                 },
             )
+
             ListItem(
                 modifier = Modifier.clickable {
                     showDeleteConfirmation = true
@@ -290,7 +269,6 @@ fun BookContextMenu(
         }
     }
 
-    // Delete Confirmation Dialog
     if (showDeleteConfirmation) {
         AlertDialog(onDismissRequest = { showDeleteConfirmation = false }, title = {
             Text(

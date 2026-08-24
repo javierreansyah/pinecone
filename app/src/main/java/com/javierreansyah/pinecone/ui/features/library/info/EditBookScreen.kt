@@ -237,7 +237,6 @@ private fun EditBookContent(
             onCoverUriChange = onCoverUriChange
         )
 
-        // Title
         OutlinedTextField(
             value = uiState.title,
             onValueChange = onTitleChange,
@@ -246,7 +245,6 @@ private fun EditBookContent(
             singleLine = true
         )
 
-        // Authors Autocomplete
         AutocompleteChipTextField(
             label = stringResource(R.string.book_label_authors),
             items = uiState.authors,
@@ -256,7 +254,6 @@ private fun EditBookContent(
             modifier = Modifier.fillMaxWidth()
         )
 
-        // Tags Autocomplete
         AutocompleteChipTextField(
             label = stringResource(R.string.book_label_tags),
             items = uiState.tags,
@@ -266,7 +263,6 @@ private fun EditBookContent(
             modifier = Modifier.fillMaxWidth()
         )
 
-        // Description
         OutlinedTextField(
             value = uiState.description,
             onValueChange = onDescriptionChange,
@@ -343,7 +339,6 @@ private fun BookCoverPicker(
             }
         }
 
-        // Edit Indicator Overlay
         Box(
             modifier = Modifier
                 .align(Alignment.TopStart)

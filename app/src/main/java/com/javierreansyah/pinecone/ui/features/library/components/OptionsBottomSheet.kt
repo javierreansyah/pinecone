@@ -222,7 +222,6 @@ fun <T> MultiToggleGroupSection(
     }
 }
 
-// Screens
 @Composable
 fun LibraryFilterBottomSheet(
     isShelvesTab: Boolean,
@@ -413,4 +412,3 @@ private fun statusLabelRes(status: StatusFilter): Int = when (status) {
     StatusFilter.Reading -> R.string.library_status_reading
     StatusFilter.Finished -> R.string.library_status_finished
 }
-

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-
     <color name="text_selection_grey_light">#66AAAAAA</color>
     <color name="text_selection_grey_dark">#66444444</color>
 

@@ -118,12 +118,10 @@ fun ReaderOverlay(
     val jumpOrigin by viewModel.jumpOrigin.collectAsStateWithLifecycle()
     val positions by viewModel.positions.collectAsStateWithLifecycle()
 
-    // Pass TOC to NotesViewModel so it can sort correctly
     LaunchedEffect(viewModel.tableOfContents) {
         notesViewModel.updateTableOfContents(viewModel.tableOfContents)
     }
 
-    // Determine if bookmarked manually
     val isBookmarked = remember(sortedBookmarks, currentLocator) {
         if (currentLocator == null) false
         else sortedBookmarks.any {
@@ -162,7 +160,7 @@ fun ReaderOverlay(
     val uiDarkTheme = themeColors.isDarkTheme
     PineconeThemedContent(uiDarkTheme = uiDarkTheme, settings = settings) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Loading state
+
             if (bookState.isLoading) {
                 Box(
                     modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
@@ -171,7 +169,6 @@ fun ReaderOverlay(
                 }
             }
 
-            // Error state
             bookState.error?.let { error ->
                 Box(
                     modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
@@ -184,7 +181,6 @@ fun ReaderOverlay(
                 }
             }
 
-            // Top Bar Section
             ReaderTopBarSection(
                 modifier = Modifier.align(Alignment.TopCenter),
                 showControls = controlsState.showControls,
@@ -219,7 +215,6 @@ fun ReaderOverlay(
                 onInfoClick = { router.navigateToBookInfo(bookId) }
             )
 
-            // Bottom Bar Section
             ReaderBottomBarSection(
                 modifier = Modifier.align(Alignment.BottomCenter),
                 showControls = controlsState.showControls,
@@ -298,7 +293,6 @@ fun ReaderOverlay(
                 }
             )
 
-            // Sheets Layer
             ReaderSheetsLayer(
                 showToc = controlsState.showToc,
                 showSettings = controlsState.showSettings,
@@ -629,7 +623,6 @@ fun ReaderSheetsLayer(
 
     val actionsEffectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
 
-    // Table of Contents Sheet
     if (showToc) {
         ReaderBottomSheet(
             tableOfContents = tableOfContents,
@@ -665,7 +658,6 @@ fun ReaderSheetsLayer(
         )
     }
 
-    // Settings Bottom Sheet
     if (showSettings) {
         ModalBottomSheet(
             onDismissRequest = onHideSettings,
@@ -678,7 +670,6 @@ fun ReaderSheetsLayer(
         }
     }
 
-    // Full-screen search overlay
     AnimatedVisibility(
         visible = showSearch,
         enter = fadeIn(animationSpec = actionsEffectsSpec),
@@ -696,7 +687,6 @@ fun ReaderSheetsLayer(
         )
     }
 
-    // Edit Note Bottom Sheet
     editingNote?.let { note ->
         NoteBottomSheet(
             note = note,
@@ -706,7 +696,6 @@ fun ReaderSheetsLayer(
         )
     }
 
-    // Definition Bottom Sheet
     if (showDefinition) {
         ReaderDefinitionBottomSheet(
             definitionWord = definitionWord,
@@ -718,7 +707,6 @@ fun ReaderSheetsLayer(
         )
     }
 
-    // External Link Bottom Sheet
     if (showExternalLinkMenu) {
         ExternalLinkBottomSheet(
             url = externalLinkUrl,
@@ -850,7 +838,7 @@ private fun ReaderDefinitionBottomSheet(
                         ) {
                             Icon(
                                 MaterialSymbols.Outlined.Arrow_back,
-                                contentDescription = "Back"
+                                contentDescription = stringResource(R.string.action_back)
                             )
                         }
                     }

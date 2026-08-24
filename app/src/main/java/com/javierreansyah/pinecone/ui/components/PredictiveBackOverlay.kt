@@ -23,12 +23,6 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 
-/**
- * A reusable full-screen overlay container that implements predictive back gesture transition animations.
- *
- * It applies a non-linear scaling curve, horizontal auto-arranging flex width constraints (preventing squishing),
- * and dynamic bottom crop-clipping based on the gesture progress and origin edge.
- */
 @Composable
 fun PredictiveBackOverlay(
     backProgress: Float,
@@ -37,7 +31,7 @@ fun PredictiveBackOverlay(
     backgroundColor: Color = MaterialTheme.colorScheme.surface,
     content: @Composable () -> Unit
 ) {
-    // Dynamic Shape that dynamically crops the bottom by 8% of height
+
     val customShape = remember(backProgress) {
         object : Shape {
             override fun createOutline(

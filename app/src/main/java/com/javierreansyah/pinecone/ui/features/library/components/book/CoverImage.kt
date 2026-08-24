@@ -51,16 +51,14 @@ fun CoverImage(
         ) {
             intrinsicSize.width / intrinsicSize.height
         } else {
-            2f / 3f // fallback to standard book cover ratio while loading
+            2f / 3f
         }
 
-        // Outer container: the 2:3 area from the caller, no rounding
         Box(
             modifier = modifier,
-            contentAlignment = Alignment.BottomCenter
+            contentAlignment = Alignment.TopCenter
         ) {
-            // Inner container: sized to the image's actual aspect ratio,
-            // as large as possible within the outer container, with rounding
+
             Box(
                 modifier = Modifier
                     .aspectRatio(imageAspectRatio)

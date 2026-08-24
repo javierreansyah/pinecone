@@ -93,8 +93,7 @@ dependencies {
     implementation(libs.androidx.documentfile)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
-    //noinspection UseTomlInstead
-    implementation("com.composables:icons-material-symbols-outlined-cmp:2.2.1")
+    implementation(libs.composables.icons.material.symbols.outlined)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
@@ -116,12 +115,15 @@ dependencies {
     implementation(libs.work.runtime.ktx)
     coreLibraryDesugaring(libs.desugar.jdk)
     debugImplementation(libs.androidx.compose.ui.tooling)
-    //noinspection UseTomlInstead
-    implementation("androidx.compose.ui:ui-text-google-fonts:1.11.4")
+    implementation(libs.androidx.compose.ui.text.google.fonts)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.aboutlibraries.compose)
+    testImplementation(libs.junit)
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 aboutLibraries {
 }
-

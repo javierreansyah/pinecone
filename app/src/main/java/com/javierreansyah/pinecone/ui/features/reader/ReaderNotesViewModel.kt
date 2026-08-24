@@ -60,7 +60,6 @@ class ReaderNotesViewModel(
         _tableOfContents.value = toc
     }
 
-    // Pre-sorted and pre-parsed flows on Default dispatcher to keep UI thread clean
     val sortedBookmarks = combine(bookmarks, _sortOption, _tableOfContents) { bms, sort, toc ->
         bms.map { bookmark ->
             val locator = try {

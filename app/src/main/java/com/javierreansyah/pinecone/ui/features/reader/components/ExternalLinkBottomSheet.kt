@@ -20,11 +20,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Content_copy
 import com.composables.icons.materialsymbols.outlined.Open_in_new
+import com.javierreansyah.pinecone.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,7 +61,7 @@ fun ExternalLinkBottomSheet(
             ) {
                 Column {
                     Text(
-                        text = "External Link Options",
+                        text = stringResource(R.string.reader_external_link_title),
                         style = MaterialTheme.typography.titleMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -82,7 +84,7 @@ fun ExternalLinkBottomSheet(
             ListItem(
                 headlineContent = {
                     Text(
-                        "Copy Link",
+                        stringResource(R.string.reader_copy_link),
                         style = MaterialTheme.typography.titleMedium
                     )
                 },
@@ -100,7 +102,7 @@ fun ExternalLinkBottomSheet(
             ListItem(
                 headlineContent = {
                     Text(
-                        "Open in Browser",
+                        stringResource(R.string.reader_open_in_browser),
                         style = MaterialTheme.typography.titleMedium
                     )
                 },

@@ -3,7 +3,6 @@ package com.javierreansyah.pinecone.data.local.database.library
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
-import kotlinx.serialization.Serializable
 
 @Entity(
     tableName = "book_author_cross_ref",
@@ -21,7 +20,6 @@ import kotlinx.serialization.Serializable
     )],
     indices = [Index("authorId"), Index("bookId")]
 )
-@Serializable
 data class BookAuthorCrossRef(
     val bookId: String, val authorId: Long, val authorOrder: Int = 0
 )

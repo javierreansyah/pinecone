@@ -15,10 +15,8 @@ fun PineconeTheme(
 ) {
     val isDarkBackground = readerBackgroundColor.luminance() < 0.5f
 
-    // Check if the parent theme is dark or light based on background luminance
     val parentIsDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
-    // Resolve primary/onPrimary to respect light/dark mismatch between reader page and app theme
     val primaryColor = when {
         isDarkBackground && parentIsDark -> MaterialTheme.colorScheme.primary
         isDarkBackground && !parentIsDark -> MaterialTheme.colorScheme.inversePrimary
@@ -31,7 +29,7 @@ fun PineconeTheme(
     val colorScheme = if (isDarkBackground) {
         darkColorScheme(
             background = Color.Transparent,
-            surface = readerBackgroundColor, // Matches reader background
+            surface = readerBackgroundColor,
             onSurface = Color.White,
             onSurfaceVariant = Color.White.copy(alpha = 0.7f),
             primary = primaryColor,
@@ -40,7 +38,7 @@ fun PineconeTheme(
     } else {
         lightColorScheme(
             background = Color.Transparent,
-            surface = readerBackgroundColor, // Matches reader background
+            surface = readerBackgroundColor,
             onSurface = Color.Black,
             onSurfaceVariant = Color.Black.copy(alpha = 0.7f),
             primary = primaryColor,
