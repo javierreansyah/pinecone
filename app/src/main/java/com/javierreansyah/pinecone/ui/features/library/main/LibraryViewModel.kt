@@ -303,9 +303,21 @@ class LibraryViewModel(
         }
     }
 
+    fun deleteBooks(bookIds: Collection<String>) {
+        viewModelScope.launch {
+            bookIds.forEach { bookRepository.deleteBook(it) }
+        }
+    }
+
     fun deleteShelf(shelfId: String) {
         viewModelScope.launch {
             bookRepository.deleteShelf(shelfId)
+        }
+    }
+
+    fun deleteShelves(shelfIds: Collection<String>) {
+        viewModelScope.launch {
+            shelfIds.forEach { bookRepository.deleteShelf(it) }
         }
     }
 
@@ -321,9 +333,33 @@ class LibraryViewModel(
         }
     }
 
+    fun archiveBooks(bookIds: Collection<String>) {
+        viewModelScope.launch {
+            val currentBooks = allBooks.value
+            bookIds.forEach { bookId ->
+                val book = currentBooks.find { it.id == bookId }
+                if (book != null && !book.isArchived) {
+                    bookRepository.toggleArchive(bookId)
+                }
+            }
+        }
+    }
+
     fun toggleReadStatus(bookId: String) {
         viewModelScope.launch {
             bookRepository.toggleReadStatus(bookId)
+        }
+    }
+
+    fun markBooksReadStatus(bookIds: Collection<String>, markAsRead: Boolean) {
+        viewModelScope.launch {
+            val currentBooks = allBooks.value
+            bookIds.forEach { bookId ->
+                val book = currentBooks.find { it.id == bookId }
+                if (book != null && book.isRead != markAsRead) {
+                    bookRepository.toggleReadStatus(bookId)
+                }
+            }
         }
     }
 

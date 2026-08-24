@@ -163,15 +163,45 @@ class FilterResultViewModel(
         }
     }
 
+    fun deleteBooks(bookIds: Collection<String>) {
+        viewModelScope.launch {
+            bookIds.forEach { bookRepository.deleteBook(it) }
+        }
+    }
+
     fun toggleArchive(bookId: String) {
         viewModelScope.launch {
             bookRepository.toggleArchive(bookId)
         }
     }
 
+    fun archiveBooks(bookIds: Collection<String>) {
+        viewModelScope.launch {
+            val currentBooks = allBooksAcrossSpaces.value
+            bookIds.forEach { bookId ->
+                val book = currentBooks.find { it.id == bookId }
+                if (book != null && !book.isArchived) {
+                    bookRepository.toggleArchive(bookId)
+                }
+            }
+        }
+    }
+
     fun toggleReadStatus(bookId: String) {
         viewModelScope.launch {
             bookRepository.toggleReadStatus(bookId)
+        }
+    }
+
+    fun markBooksReadStatus(bookIds: Collection<String>, markAsRead: Boolean) {
+        viewModelScope.launch {
+            val currentBooks = allBooksAcrossSpaces.value
+            bookIds.forEach { bookId ->
+                val book = currentBooks.find { it.id == bookId }
+                if (book != null && book.isRead != markAsRead) {
+                    bookRepository.toggleReadStatus(bookId)
+                }
+            }
         }
     }
 

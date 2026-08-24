@@ -418,6 +418,9 @@ fun NavGraph(
                     },
                     onNavigateToTag = { tagName ->
                         backStack.add(Screen.TagDetail(tagName))
+                    },
+                    onNavigateToOrganize = { bookIds ->
+                        organizeBookIds = bookIds
                     }
                 )
             }

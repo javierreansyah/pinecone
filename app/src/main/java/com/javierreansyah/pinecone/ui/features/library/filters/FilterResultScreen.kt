@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.library.filters
 
-import android.app.Application
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
@@ -36,6 +35,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -50,7 +50,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
@@ -59,8 +58,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
@@ -74,13 +71,15 @@ import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
+import com.javierreansyah.pinecone.ui.features.library.LayoutMode
+import com.javierreansyah.pinecone.ui.features.library.SortType
+import com.javierreansyah.pinecone.ui.features.library.StatusFilter
 import com.javierreansyah.pinecone.ui.features.library.components.FilterResultBottomSheet
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectAppBar
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectTopBarTransition
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookCollection
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookContextMenu
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FilterResultScreen(
     filterType: String,
@@ -89,21 +88,9 @@ fun FilterResultScreen(
     onNavigateToReader: (String) -> Unit,
     onNavigateToMerged: (String) -> Unit = {},
     onNavigateToBookInfo: (String) -> Unit,
-    onNavigateToOrganize: (String) -> Unit
+    onNavigateToOrganize: (String) -> Unit,
+    viewModel: FilterResultViewModel = viewModel()
 ) {
-    val context = LocalContext.current
-    val viewModel: FilterResultViewModel = viewModel(factory = object :
-        ViewModelProvider.AndroidViewModelFactory(context.applicationContext as Application) {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(FilterResultViewModel::class.java)) {
-                @Suppress("UNCHECKED_CAST") return FilterResultViewModel(
-                    context.applicationContext as Application
-                ) as T
-            }
-            throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
-        }
-    })
-
     val uiState by viewModel.uiState.collectAsState()
     val spaceScopedBooks by viewModel.allBooks.collectAsState()
     val allBooksAcrossSpaces by viewModel.allBooksAcrossSpaces.collectAsState()
@@ -111,7 +98,6 @@ fun FilterResultScreen(
 
     val allAuthors by viewModel.allAuthors.collectAsState()
     val allTags by viewModel.allTags.collectAsState()
-
     val allSpaces by viewModel.allSpaces.collectAsState()
 
     val suggestionList = remember(filterType, allAuthors, allTags, allSpaces) {
@@ -142,9 +128,9 @@ fun FilterResultScreen(
         onNavigateBack = onNavigateBack,
         onNavigateToReader = onNavigateToReader,
         onNavigateToBookInfo = onNavigateToBookInfo,
-        onLayoutModeChange = { mode -> viewModel.onLayoutModeChange(mode) },
-        onSortTypeChange = { sort -> viewModel.onSortTypeChange(sort) },
-        onStatusToggle = { status -> viewModel.toggleStatusFilter(status) },
+        onLayoutModeChange = viewModel::onLayoutModeChange,
+        onSortTypeChange = viewModel::onSortTypeChange,
+        onStatusToggle = viewModel::toggleStatusFilter,
         onDeleteFilterItem = {
             viewModel.deleteFilterItem(filterType, filterValue) {
                 onNavigateBack()
@@ -155,14 +141,16 @@ fun FilterResultScreen(
                 onNavigateToMerged(confirmedName)
             }
         },
-        onToggleArchive = { bookId -> viewModel.toggleArchive(bookId) },
-        onToggleReadStatus = { bookId -> viewModel.toggleReadStatus(bookId) },
+        onToggleArchive = viewModel::toggleArchive,
+        onToggleReadStatus = viewModel::toggleReadStatus,
+        onMarkBooksReadStatus = viewModel::markBooksReadStatus,
+        onArchiveBooks = viewModel::archiveBooks,
+        onDeleteBooks = viewModel::deleteBooks,
         onNavigateToOrganize = onNavigateToOrganize,
-        onDeleteBook = { bookId -> viewModel.deleteBook(bookId) }
+        onDeleteBook = viewModel::deleteBook
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun FilterResultContent(
     filterType: String,
@@ -174,13 +162,16 @@ private fun FilterResultContent(
     onNavigateBack: () -> Unit,
     onNavigateToReader: (String) -> Unit,
     onNavigateToBookInfo: (String) -> Unit,
-    onLayoutModeChange: (com.javierreansyah.pinecone.ui.features.library.LayoutMode) -> Unit,
-    onSortTypeChange: (com.javierreansyah.pinecone.ui.features.library.SortType) -> Unit,
-    onStatusToggle: (com.javierreansyah.pinecone.ui.features.library.StatusFilter) -> Unit,
+    onLayoutModeChange: (LayoutMode) -> Unit,
+    onSortTypeChange: (SortType) -> Unit,
+    onStatusToggle: (StatusFilter) -> Unit,
     onDeleteFilterItem: () -> Unit,
     onRenameFilterItem: (String) -> Unit,
     onToggleArchive: (String) -> Unit,
     onToggleReadStatus: (String) -> Unit,
+    onMarkBooksReadStatus: (Collection<String>, Boolean) -> Unit,
+    onArchiveBooks: (Collection<String>) -> Unit,
+    onDeleteBooks: (Collection<String>) -> Unit,
     onNavigateToOrganize: (String) -> Unit,
     onDeleteBook: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -196,112 +187,81 @@ private fun FilterResultContent(
     var selectedBooks by remember { mutableStateOf(emptySet<String>()) }
     var isInMultiSelectMode by remember { mutableStateOf(false) }
 
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-
-    val isMultiSelect = isInMultiSelectMode
-
-    BackHandler(enabled = isMultiSelect) {
+    val exitMultiSelect = {
         selectedBooks = emptySet()
         isInMultiSelectMode = false
     }
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
+    BackHandler(enabled = isInMultiSelectMode, onBack = exitMultiSelect)
+
     Scaffold(
-        modifier = if (isMultiSelect) modifier else modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = if (isInMultiSelectMode) modifier else modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            MultiSelectTopBarTransition(
-                isMultiSelect = isMultiSelect,
-                multiSelectBar = {
-                    val showMarkAsRead = allBooks
-                        .filter { it.id in selectedBooks }
-                        .any { !it.isRead }
-                    MultiSelectAppBar(
-                        selectedCount = selectedBooks.size,
-                        isAllSelected = selectedBooks.size == books.size,
-                        showMarkAsRead = showMarkAsRead,
-                        onCloseMultiSelect = {
-                            selectedBooks = emptySet()
-                            isInMultiSelectMode = false
-                        },
-                        onClearSelection = { selectedBooks = emptySet() },
-                        onSelectAll = { selectedBooks = books.map { it.id }.toSet() },
-                        onMarkAsReadUnread = {
-                            val booksToProcess = selectedBooks.toList()
-                            selectedBooks = emptySet()
-                            isInMultiSelectMode = false
-                            booksToProcess.forEach { bookId ->
-                                val book = allBooks.find { it.id == bookId }
-                                if (book != null && book.isRead != showMarkAsRead) {
-                                    onToggleReadStatus(bookId)
-                                }
-                            }
-                        },
-                        onOrganize = {
-                            val ids = selectedBooks.joinToString(",")
-                            selectedBooks = emptySet()
-                            isInMultiSelectMode = false
-                            onNavigateToOrganize(ids)
-                        },
-                        onArchive = {
-                            val booksToProcess = selectedBooks.toList()
-                            selectedBooks = emptySet()
-                            isInMultiSelectMode = false
-                            booksToProcess.forEach { bookId ->
-                                val book = allBooks.find { it.id == bookId }
-                                if (book != null && !book.isArchived) {
-                                    onToggleArchive(bookId)
-                                }
-                            }
-                        },
-                        onDelete = {
-                            val booksToProcess = selectedBooks.toList()
-                            selectedBooks = emptySet()
-                            isInMultiSelectMode = false
-                            booksToProcess.forEach { onDeleteBook(it) }
+            FilterResultTopBar(
+                filterValue = filterValue,
+                allBooks = allBooks,
+                books = books,
+                selectedBooks = selectedBooks,
+                isInMultiSelectMode = isInMultiSelectMode,
+                showMenu = showMenu,
+                isRenaming = isRenaming,
+                renameName = renameName,
+                suggestions = suggestionList,
+                scrollBehavior = scrollBehavior,
+                onRenameNameChange = { renameName = it },
+                onCancelRename = { isRenaming = false },
+                onSaveRename = {
+                    val newName = renameName.text.trim()
+                    if (newName.isNotBlank()) {
+                        if (suggestionList.contains(newName) && newName != filterValue) {
+                            pendingRenameName = newName
+                            showMergeWarningDialog = true
+                        } else {
+                            onRenameFilterItem(newName)
+                            isRenaming = false
                         }
-                    )
+                    } else {
+                        isRenaming = false
+                    }
                 },
-                defaultBar = {
-                    FilterResultTopAppBar(
-                        filterValue = filterValue,
-                        showMenu = showMenu,
-                        isRenaming = isRenaming,
-                        renameName = renameName,
-                        suggestions = suggestionList,
-                        onRenameNameChange = { renameName = it },
-                        onCancelRename = { isRenaming = false },
-                        onSaveRename = {
-                            val newName = renameName.text.trim()
-                            if (newName.isNotBlank()) {
-                                if (suggestionList.contains(newName) && newName != filterValue) {
-                                    pendingRenameName = newName
-                                    showMergeWarningDialog = true
-                                } else {
-                                    onRenameFilterItem(newName)
-                                    isRenaming = false
-                                }
-                            } else {
-                                isRenaming = false
-                            }
-                        },
-                        onNavigateBack = onNavigateBack,
-                        onFilterClick = { showFilterSheet = true },
-                        onMenuToggle = { showMenu = !showMenu },
-                        onMenuDismiss = { showMenu = false },
-                        onRenameClick = {
-                            showMenu = false
-                            renameName = TextFieldValue(
-                                text = filterValue,
-                                selection = TextRange(filterValue.length)
-                            )
-                            isRenaming = true
-                        },
-                        onDeleteClick = {
-                            showMenu = false
-                            showDeleteConfirm = true
-                        },
-                        onEnterMultiSelect = { isInMultiSelectMode = true },
-                        scrollBehavior = scrollBehavior
+                onNavigateBack = onNavigateBack,
+                onFilterClick = { showFilterSheet = true },
+                onMenuToggle = { showMenu = !showMenu },
+                onMenuDismiss = { showMenu = false },
+                onRenameClick = {
+                    showMenu = false
+                    renameName = TextFieldValue(
+                        text = filterValue,
+                        selection = TextRange(filterValue.length)
                     )
+                    isRenaming = true
+                },
+                onDeleteClick = {
+                    showMenu = false
+                    showDeleteConfirm = true
+                },
+                onEnterMultiSelect = { isInMultiSelectMode = true },
+                onExitMultiSelect = exitMultiSelect,
+                onClearSelection = { selectedBooks = emptySet() },
+                onSelectAll = { selectedBooks = books.map { it.id }.toSet() },
+                onMarkAsReadUnread = { showMarkAsRead ->
+                    onMarkBooksReadStatus(selectedBooks, showMarkAsRead)
+                    exitMultiSelect()
+                },
+                onOrganize = {
+                    val ids = selectedBooks.joinToString(",")
+                    exitMultiSelect()
+                    onNavigateToOrganize(ids)
+                },
+                onArchive = {
+                    onArchiveBooks(selectedBooks)
+                    exitMultiSelect()
+                },
+                onDelete = {
+                    onDeleteBooks(selectedBooks)
+                    exitMultiSelect()
                 }
             )
         }
@@ -386,9 +346,85 @@ private fun FilterResultContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FilterResultTopBar(
+    filterValue: String,
+    allBooks: List<Book>,
+    books: List<Book>,
+    selectedBooks: Set<String>,
+    isInMultiSelectMode: Boolean,
+    showMenu: Boolean,
+    isRenaming: Boolean,
+    renameName: TextFieldValue,
+    suggestions: List<String>,
+    scrollBehavior: TopAppBarScrollBehavior,
+    onRenameNameChange: (TextFieldValue) -> Unit,
+    onCancelRename: () -> Unit,
+    onSaveRename: () -> Unit,
+    onNavigateBack: () -> Unit,
+    onFilterClick: () -> Unit,
+    onMenuToggle: () -> Unit,
+    onMenuDismiss: () -> Unit,
+    onRenameClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    onEnterMultiSelect: () -> Unit,
+    onExitMultiSelect: () -> Unit,
+    onClearSelection: () -> Unit,
+    onSelectAll: () -> Unit,
+    onMarkAsReadUnread: (Boolean) -> Unit,
+    onOrganize: () -> Unit,
+    onArchive: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val showMarkAsRead = remember(allBooks, selectedBooks) {
+        allBooks.filter { it.id in selectedBooks }.any { !it.isRead }
+    }
+
+    MultiSelectTopBarTransition(
+        isMultiSelect = isInMultiSelectMode,
+        multiSelectBar = {
+            MultiSelectAppBar(
+                selectedCount = selectedBooks.size,
+                isAllSelected = books.isNotEmpty() && selectedBooks.size == books.size,
+                showMarkAsRead = showMarkAsRead,
+                onCloseMultiSelect = onExitMultiSelect,
+                onClearSelection = onClearSelection,
+                onSelectAll = onSelectAll,
+                onMarkAsReadUnread = { onMarkAsReadUnread(showMarkAsRead) },
+                onOrganize = onOrganize,
+                onArchive = onArchive,
+                onDelete = onDelete
+            )
+        },
+        defaultBar = {
+            FilterResultDefaultTopAppBar(
+                filterValue = filterValue,
+                showMenu = showMenu,
+                isRenaming = isRenaming,
+                renameName = renameName,
+                suggestions = suggestions,
+                onRenameNameChange = onRenameNameChange,
+                onCancelRename = onCancelRename,
+                onSaveRename = onSaveRename,
+                onNavigateBack = onNavigateBack,
+                onFilterClick = onFilterClick,
+                onMenuToggle = onMenuToggle,
+                onMenuDismiss = onMenuDismiss,
+                onRenameClick = onRenameClick,
+                onDeleteClick = onDeleteClick,
+                onEnterMultiSelect = onEnterMultiSelect,
+                scrollBehavior = scrollBehavior,
+                modifier = modifier
+            )
+        }
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun FilterResultTopAppBar(
+private fun FilterResultDefaultTopAppBar(
     filterValue: String,
     showMenu: Boolean,
     isRenaming: Boolean,
@@ -404,7 +440,7 @@ private fun FilterResultTopAppBar(
     onRenameClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onEnterMultiSelect: () -> Unit,
-    scrollBehavior: androidx.compose.material3.TopAppBarScrollBehavior,
+    scrollBehavior: TopAppBarScrollBehavior,
     modifier: Modifier = Modifier
 ) {
     var isSuggestionsExpanded by remember { mutableStateOf(false) }
@@ -511,14 +547,12 @@ private fun FilterResultTopAppBar(
                     targetState = isRenaming,
                     transitionSpec = {
                         if (targetState) {
-
                             fadeIn(animationSpec = actionsEffectsSpec) togetherWith
                                     fadeOut(animationSpec = actionsEffectsSpec) + slideOutHorizontally(
                                 targetOffsetX = { slideOffsetPx },
                                 animationSpec = actionsSpatialSpec
                             )
                         } else {
-
                             fadeIn(animationSpec = actionsEffectsSpec) + slideInHorizontally(
                                 initialOffsetX = { slideOffsetPx },
                                 animationSpec = actionsSpatialSpec
@@ -678,7 +712,7 @@ private fun FilterResultTopAppBar(
 @Composable
 private fun FilterResultBookContent(
     books: List<Book>,
-    layoutMode: com.javierreansyah.pinecone.ui.features.library.LayoutMode,
+    layoutMode: LayoutMode,
     innerPadding: PaddingValues,
     selectedBooks: Set<String>,
     isInMultiSelectMode: Boolean,
@@ -722,9 +756,9 @@ private fun FilterResultDialogsAndSheets(
     showFilterSheet: Boolean,
     showDeleteConfirm: Boolean,
     onFilterDismiss: () -> Unit,
-    onLayoutModeChange: (com.javierreansyah.pinecone.ui.features.library.LayoutMode) -> Unit,
-    onSortTypeChange: (com.javierreansyah.pinecone.ui.features.library.SortType) -> Unit,
-    onStatusToggle: (com.javierreansyah.pinecone.ui.features.library.StatusFilter) -> Unit,
+    onLayoutModeChange: (LayoutMode) -> Unit,
+    onSortTypeChange: (SortType) -> Unit,
+    onStatusToggle: (StatusFilter) -> Unit,
     onDeleteDismiss: () -> Unit,
     onDeleteConfirm: () -> Unit,
     onBookMenuDismiss: () -> Unit,
@@ -782,6 +816,7 @@ private fun FilterResultDialogsAndSheets(
                 TextButton(onClick = onDeleteDismiss) {
                     Text(stringResource(R.string.action_cancel))
                 }
-            })
+            }
+        )
     }
 }

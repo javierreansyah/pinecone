@@ -51,7 +51,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
@@ -60,7 +59,6 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SecondaryScrollableTabRow
@@ -68,15 +66,12 @@ import androidx.compose.material3.SplitButtonDefaults
 import androidx.compose.material3.SplitButtonLayout
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -114,13 +109,10 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.core.text.HtmlCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Add
 import com.composables.icons.materialsymbols.outlined.Archive
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Arrow_drop_down
@@ -128,9 +120,9 @@ import com.composables.icons.materialsymbols.outlined.Book
 import com.composables.icons.materialsymbols.outlined.Bookmark
 import com.composables.icons.materialsymbols.outlined.Check_circle
 import com.composables.icons.materialsymbols.outlined.Close
+import com.composables.icons.materialsymbols.outlined.Create_new_folder
 import com.composables.icons.materialsymbols.outlined.Delete
 import com.composables.icons.materialsymbols.outlined.Edit
-import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Format_list_bulleted
 import com.composables.icons.materialsymbols.outlined.More_vert
 import com.composables.icons.materialsymbols.outlined.Radio_button_unchecked
@@ -141,7 +133,6 @@ import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.SegmentedColumn
-import com.javierreansyah.pinecone.ui.features.library.components.ShelfListItem
 import com.javierreansyah.pinecone.ui.features.reader.ReaderActivity
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -160,7 +151,8 @@ fun BookInfoScreen(
     bookId: String,
     onNavigateBack: () -> Unit,
     onNavigateToEdit: (String) -> Unit,
-    onNavigateToTag: (String) -> Unit
+    onNavigateToTag: (String) -> Unit,
+    onNavigateToOrganize: (String) -> Unit
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as Application
@@ -169,14 +161,10 @@ fun BookInfoScreen(
     )
 
     val uiState by viewModel.uiState.collectAsState()
-    val shelves by viewModel.shelves.collectAsState()
     val book = uiState.book
     val isLoading = uiState.isLoading
 
-    var showShelfDialog by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
-    var showCreateShelfDialog by remember { mutableStateOf(false) }
-    var newShelfName by remember { mutableStateOf("") }
 
     Scaffold { innerPadding ->
         Box(
@@ -212,123 +200,10 @@ fun BookInfoScreen(
                     onNavigateBack = onNavigateBack,
                     onNavigateToEdit = onNavigateToEdit,
                     onNavigateToTag = onNavigateToTag,
-                    showShelfDialog = { showShelfDialog = true },
+                    onOrganizeClick = { onNavigateToOrganize(bookId) },
                     showDeleteConfirm = { showDeleteConfirm = true })
             }
         }
-    }
-
-    if (showShelfDialog) {
-        Dialog(
-            onDismissRequest = { showShelfDialog = false }, properties = DialogProperties(
-                usePlatformDefaultWidth = false, decorFitsSystemWindows = false
-            )
-        ) {
-            Surface(
-                modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
-            ) {
-                Scaffold(topBar = {
-                    TopAppBar(
-                        title = { Text(stringResource(R.string.library_select_shelf_title)) },
-                        navigationIcon = {
-                            FilledTonalIconButton(
-                                shapes = IconButtonDefaults.shapes(),
-                                colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                                ),
-                                onClick = { showShelfDialog = false }) {
-                                Icon(
-                                    MaterialSymbols.Outlined.Arrow_back,
-                                    contentDescription = stringResource(R.string.action_back)
-                                )
-                            }
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            scrolledContainerColor = MaterialTheme.colorScheme.surface,
-                        ),
-                    )
-                }, floatingActionButton = {
-                    FloatingActionButton(
-                        onClick = { showCreateShelfDialog = true }) {
-                        Icon(
-                            MaterialSymbols.Outlined.Add,
-                            contentDescription = stringResource(R.string.action_create)
-                        )
-                    }
-                }) { paddingValues ->
-                    Box(
-                        modifier = Modifier
-                            .padding(paddingValues)
-                            .fillMaxSize()
-                    ) {
-                        val validShelves = shelves.filter { it.shelf.id != "unshelved" }
-                        if (validShelves.isEmpty()) {
-                            EmptyState(
-                                icon = MaterialSymbols.Outlined.Folder,
-                                text = stringResource(R.string.library_empty_shelves),
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(16.dp)
-                            )
-                        } else {
-                            LazyColumn(
-                                modifier = Modifier.fillMaxWidth(),
-                                contentPadding = PaddingValues(bottom = 80.dp)
-                            ) {
-                                items(validShelves) { shelfWithCovers ->
-                                    ShelfListItem(
-                                        shelfWithCovers = shelfWithCovers, onClick = {
-                                            viewModel.addBookToShelf(shelfWithCovers.shelf.id)
-                                            showShelfDialog = false
-                                        })
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    if (showCreateShelfDialog) {
-        AlertDialog(onDismissRequest = { showCreateShelfDialog = false }, title = {
-            Text(
-                stringResource(R.string.library_create_shelf_title),
-                style = MaterialTheme.typography.titleLarge
-            )
-        }, text = {
-            OutlinedTextField(
-                value = newShelfName, onValueChange = { newShelfName = it }, label = {
-                    Text(
-                        stringResource(R.string.library_shelf_name_label),
-                        style = MaterialTheme.typography.labelMedium
-                    )
-                }, singleLine = true, modifier = Modifier.fillMaxWidth()
-            )
-        }, confirmButton = {
-            TextButton(
-                onClick = {
-                    if (newShelfName.isNotBlank()) {
-                        viewModel.createShelfAndAddBook(newShelfName)
-                        newShelfName = ""
-                        showCreateShelfDialog = false
-                        showShelfDialog = false
-                    }
-                }) {
-                Text(
-                    stringResource(R.string.action_create),
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
-        }, dismissButton = {
-            TextButton(onClick = { showCreateShelfDialog = false }) {
-                Text(
-                    stringResource(R.string.action_cancel),
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
-        })
     }
 
     if (showDeleteConfirm) {
@@ -377,7 +252,7 @@ private fun BookInfoContent(
     onNavigateBack: () -> Unit,
     onNavigateToEdit: (String) -> Unit,
     onNavigateToTag: (String) -> Unit,
-    showShelfDialog: () -> Unit,
+    onOrganizeClick: () -> Unit,
     showDeleteConfirm: () -> Unit
 ) {
     val scrollState = rememberScrollState()
@@ -492,7 +367,7 @@ private fun BookInfoContent(
                     firstPos?.let { jumpToLocator(it) }
                 },
                 onToggleReadStatus = { viewModel.toggleReadStatus() },
-                onAddToShelfClick = showShelfDialog,
+                onOrganizeClick = onOrganizeClick,
                 onToggleArchive = { viewModel.toggleArchive() },
                 onDeleteClick = showDeleteConfirm
             )
@@ -1059,7 +934,7 @@ private fun BookInfoHeader(
     onReadFurthestClick: () -> Unit,
     onReadFromStartClick: () -> Unit,
     onToggleReadStatus: () -> Unit,
-    onAddToShelfClick: () -> Unit,
+    onOrganizeClick: () -> Unit,
     onToggleArchive: () -> Unit,
     onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -1090,7 +965,7 @@ private fun BookInfoHeader(
             onReadFurthestClick = onReadFurthestClick,
             onReadFromStartClick = onReadFromStartClick,
             onToggleReadStatus = onToggleReadStatus,
-            onAddToShelfClick = onAddToShelfClick,
+            onOrganizeClick = onOrganizeClick,
             onToggleArchive = onToggleArchive,
             onDeleteClick = onDeleteClick
         )
@@ -1105,7 +980,7 @@ private fun BookButtonGroup(
     onReadFurthestClick: () -> Unit,
     onReadFromStartClick: () -> Unit,
     onToggleReadStatus: () -> Unit,
-    onAddToShelfClick: () -> Unit,
+    onOrganizeClick: () -> Unit,
     onToggleArchive: () -> Unit,
     onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -1230,16 +1105,16 @@ private fun BookButtonGroup(
         }
 
         FilledTonalButton(
-            onClick = onAddToShelfClick,
+            onClick = onOrganizeClick,
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
         ) {
             Icon(
-                imageVector = MaterialSymbols.Outlined.Folder,
+                imageVector = MaterialSymbols.Outlined.Create_new_folder,
                 contentDescription = null,
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.library_label_add_to_shelf))
+            Text(stringResource(R.string.action_organize))
         }
 
         FilledTonalIconButton(
