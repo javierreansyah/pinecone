@@ -58,10 +58,8 @@ internal fun ExpandedSearchContent(
     onNavigateToShelf: (String, String, Int) -> Unit,
     onNavigateToAuthor: (String) -> Unit,
     onNavigateToTag: (String) -> Unit,
-    onNavigateToSpace: (String) -> Unit,
     onAuthorsHeaderClick: () -> Unit,
-    onTagsHeaderClick: () -> Unit,
-    onSpacesHeaderClick: () -> Unit
+    onTagsHeaderClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -72,7 +70,6 @@ internal fun ExpandedSearchContent(
             SearchCategory.All to stringResource(R.string.action_all),
             SearchCategory.Books to stringResource(R.string.library_tab_books),
             SearchCategory.Shelves to stringResource(R.string.library_tab_shelves),
-            SearchCategory.Spaces to stringResource(R.string.library_select_space_title),
             SearchCategory.Authors to stringResource(R.string.library_authors_title),
             SearchCategory.Tags to stringResource(R.string.library_tags_title)
         )
@@ -100,10 +97,8 @@ internal fun ExpandedSearchContent(
             onShelfClick = { shelf -> onNavigateToShelf(shelf.id, shelf.name, 0) },
             onAuthorClick = { author -> onNavigateToAuthor(author) },
             onTagClick = { tag -> onNavigateToTag(tag) },
-            onSpaceClick = { space -> onNavigateToSpace(space.name) },
             onAuthorsHeaderClick = onAuthorsHeaderClick,
-            onTagsHeaderClick = onTagsHeaderClick,
-            onSpacesHeaderClick = onSpacesHeaderClick
+            onTagsHeaderClick = onTagsHeaderClick
         )
     }
 }
@@ -117,10 +112,8 @@ private fun SearchResultsContent(
     onShelfClick: (ShelfEntity) -> Unit,
     onAuthorClick: (String) -> Unit,
     onTagClick: (String) -> Unit,
-    onSpaceClick: (com.javierreansyah.pinecone.data.local.database.library.SpaceEntity) -> Unit,
     onAuthorsHeaderClick: () -> Unit,
-    onTagsHeaderClick: () -> Unit,
-    onSpacesHeaderClick: () -> Unit
+    onTagsHeaderClick: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         val isAll = searchCategory == SearchCategory.All
@@ -130,7 +123,6 @@ private fun SearchResultsContent(
         val maxShelves = if (isPreview) 4 else Int.MAX_VALUE
         val maxAuthors = if (isPreview) 4 else Int.MAX_VALUE
         val maxTags = if (isPreview) 4 else Int.MAX_VALUE
-        val maxSpaces = if (isPreview) 4 else Int.MAX_VALUE
 
         val booksToShow = if (isPreview) {
             results.books.sortedByDescending { it.lastOpened ?: 0L }.take(maxBooks)
@@ -146,14 +138,6 @@ private fun SearchResultsContent(
             results.shelves.take(maxShelves)
         } else {
             results.shelves
-        }
-
-        val spacesToShow = if (isPreview) {
-            results.spaces.sortedBy { it.name }.take(maxSpaces)
-        } else if (isAll) {
-            results.spaces.take(maxSpaces)
-        } else {
-            results.spaces
         }
 
         val authorsToShow = if (isPreview) {
@@ -226,18 +210,6 @@ private fun SearchResultsContent(
                         onClick = { onShelfClick(it) },
                         onHeaderClick = null
                     )
-                }
-
-
-
-                if (spacesToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Spaces)) {
-                    GridFilterSection(
-                        title = stringResource(R.string.library_select_space_title),
-                        items = spacesToShow,
-                        icon = MaterialSymbols.Outlined.Folder, // or suitable icon
-                        nameSelector = { it.name },
-                        onClick = { onSpaceClick(it) },
-                        onHeaderClick = { onSpacesHeaderClick() })
                 }
 
                 if (authorsToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Authors)) {

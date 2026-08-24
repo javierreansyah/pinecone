@@ -19,6 +19,8 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
@@ -105,6 +107,7 @@ fun NavGraph(
     val app = context.applicationContext as PineconeApplication
     val readerPreferences = app.readerPreferences
     val density = LocalDensity.current
+    var organizeBookIds by remember { mutableStateOf<String?>(null) }
 
     // Debounce to prevent rapid double-clicks from crashing the transition state machine
     var lastBackClickTime by androidx.compose.runtime.remember {
@@ -206,9 +209,6 @@ fun NavGraph(
                     onNavigateToAllTags = {
                         backStack.add(Screen.AllTags)
                     },
-                    onNavigateToSpace = { spaceName ->
-                        backStack.add(Screen.SpaceDetail(spaceName))
-                    },
                     onNavigateToAllSpaces = {
                         backStack.add(Screen.AllSpaces)
                     },
@@ -216,7 +216,7 @@ fun NavGraph(
                         backStack.add(Screen.BookInfo(bookId))
                     },
                     onNavigateToOrganize = { bookIds ->
-                        backStack.add(Screen.Organize(bookIds))
+                        organizeBookIds = bookIds
                     },
                     onNavigateToArchives = {
                         backStack.clear()
@@ -277,7 +277,7 @@ fun NavGraph(
                         backStack.add(Screen.BookInfo(bookId))
                     },
                     onNavigateToOrganize = { bookIds ->
-                        backStack.add(Screen.Organize(bookIds))
+                        organizeBookIds = bookIds
                     }
                 )
             }
@@ -297,7 +297,7 @@ fun NavGraph(
                         backStack.add(Screen.BookInfo(bookId))
                     },
                     onNavigateToOrganize = { bookIds ->
-                        backStack.add(Screen.Organize(bookIds))
+                        organizeBookIds = bookIds
                     }
                 )
             }
@@ -320,7 +320,7 @@ fun NavGraph(
                         backStack.add(Screen.BookInfo(bookId))
                     },
                     onNavigateToOrganize = { bookIds ->
-                        backStack.add(Screen.Organize(bookIds))
+                        organizeBookIds = bookIds
                     }
                 )
             }
@@ -343,7 +343,7 @@ fun NavGraph(
                         backStack.add(Screen.BookInfo(bookId))
                     },
                     onNavigateToOrganize = { bookIds ->
-                        backStack.add(Screen.Organize(bookIds))
+                        organizeBookIds = bookIds
                     }
                 )
             }
@@ -366,7 +366,7 @@ fun NavGraph(
                         backStack.add(Screen.BookInfo(bookId))
                     },
                     onNavigateToOrganize = { bookIds ->
-                        backStack.add(Screen.Organize(bookIds))
+                        organizeBookIds = bookIds
                     }
                 )
             }
@@ -427,24 +427,24 @@ fun NavGraph(
                     onNavigateBack = navigateBack
                 )
             }
-            entry<Screen.Organize> { args ->
-                val organizeViewModel: com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel = viewModel(
-                    key = args.bookIds,
-                    factory = object :
-                        androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory(app) {
-                        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                            if (modelClass.isAssignableFrom(com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel::class.java)) {
-                                @Suppress("UNCHECKED_CAST") return com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel(app, args.bookIds) as T
-                            }
-                            throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
-                        }
-                    }
-                )
-                com.javierreansyah.pinecone.ui.features.library.organize.OrganizeScreen(
-                    viewModel = organizeViewModel,
-                    onNavigateBack = navigateBack
-                )
-            }
         }
     )
+
+    organizeBookIds?.let { bookIds ->
+        val organizeViewModel: com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel = viewModel(
+            key = bookIds,
+            factory = object : androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory(app) {
+                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                    if (modelClass.isAssignableFrom(com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel::class.java)) {
+                        @Suppress("UNCHECKED_CAST") return com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel(app, bookIds) as T
+                    }
+                    throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
+                }
+            }
+        )
+        com.javierreansyah.pinecone.ui.features.library.organize.OrganizeBottomSheet(
+            viewModel = organizeViewModel,
+            onNavigateBack = { organizeBookIds = null }
+        )
+    }
 }

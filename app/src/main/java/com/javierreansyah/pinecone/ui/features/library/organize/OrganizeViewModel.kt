@@ -7,7 +7,6 @@ import androidx.lifecycle.viewModelScope
 import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.data.local.database.library.ShelfEntity
 import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -37,18 +36,11 @@ class OrganizeViewModel(
     private val repository = (application as PineconeApplication).libraryRepository
     private val targetBookIds = bookIdsStr.split(",").map { it.trim() }.filter { it.isNotEmpty() }
 
-    // User modifications to the states. Key is ID, value is new ToggleableState (On or Off).
-    // Indeterminate means no change from initial.
-    private val _shelfChanges = MutableStateFlow<Map<String, ToggleableState>>(emptyMap())
-    private val _spaceChanges = MutableStateFlow<Map<String, ToggleableState>>(emptyMap())
-
     val uiState: StateFlow<OrganizeUiState> = combine(
         repository.getAllShelvesWithBooks(),
         repository.getAllSpaces(),
-        repository.getAllBookSpaceCrossRefs(),
-        _shelfChanges,
-        _spaceChanges
-    ) { shelvesWithBooks, spaces, spaceCrossRefs, shelfChanges, spaceChanges ->
+        repository.getAllBookSpaceCrossRefs()
+    ) { shelvesWithBooks, spaces, spaceCrossRefs ->
         
         val shelfItems = shelvesWithBooks.filter { it.shelf.id != "unshelved" }.map { shelfWithBooks ->
             val shelfId = shelfWithBooks.shelf.id
@@ -61,8 +53,7 @@ class OrganizeViewModel(
                 else -> ToggleableState.Indeterminate
             }
             
-            val currentState = shelfChanges[shelfId] ?: initialState
-            ShelfItemState(shelfWithBooks.shelf, currentState)
+            ShelfItemState(shelfWithBooks.shelf, initialState)
         }.sortedBy { it.shelf.name }
 
         val spaceItems = spaces.filter { it.id != "_all_" }.map { space ->
@@ -76,8 +67,7 @@ class OrganizeViewModel(
                 else -> ToggleableState.Indeterminate
             }
 
-            val currentState = spaceChanges[spaceId] ?: initialState
-            SpaceItemState(space, currentState)
+            SpaceItemState(space, initialState)
         }.sortedBy { it.space.name }
 
         OrganizeUiState(
@@ -93,7 +83,15 @@ class OrganizeViewModel(
             ToggleableState.On -> ToggleableState.Off // If selected, clicking deselects
             ToggleableState.Off -> ToggleableState.On // If deselected, clicking selects
         }
-        _shelfChanges.value = _shelfChanges.value.toMutableMap().apply { put(shelfId, newState) }
+        viewModelScope.launch {
+            targetBookIds.forEach { bookId ->
+                if (newState == ToggleableState.On) {
+                    repository.addBookToShelf(shelfId, bookId)
+                } else {
+                    repository.removeBookFromShelf(shelfId, bookId)
+                }
+            }
+        }
     }
 
     fun toggleSpace(spaceId: String, currentState: ToggleableState) {
@@ -102,47 +100,28 @@ class OrganizeViewModel(
             ToggleableState.On -> ToggleableState.Off
             ToggleableState.Off -> ToggleableState.On
         }
-        _spaceChanges.value = _spaceChanges.value.toMutableMap().apply { put(spaceId, newState) }
+        viewModelScope.launch {
+            targetBookIds.forEach { bookId ->
+                if (newState == ToggleableState.On) {
+                    repository.addBookToSpace(spaceId, bookId)
+                } else {
+                    repository.removeBookFromSpace(spaceId, bookId)
+                }
+            }
+        }
     }
 
     fun createShelf(name: String) {
         viewModelScope.launch {
             val shelfId = repository.createShelf(name)
-            _shelfChanges.value = _shelfChanges.value.toMutableMap().apply { put(shelfId, ToggleableState.On) }
+            targetBookIds.forEach { bookId -> repository.addBookToShelf(shelfId, bookId) }
         }
     }
 
     fun createSpace(name: String) {
         viewModelScope.launch {
             val spaceId = repository.createSpace(name)
-            _spaceChanges.value = _spaceChanges.value.toMutableMap().apply { put(spaceId, ToggleableState.On) }
-        }
-    }
-
-    fun save(onComplete: () -> Unit) {
-        viewModelScope.launch {
-            // Apply shelf changes
-            _shelfChanges.value.forEach { (shelfId, state) ->
-                targetBookIds.forEach { bookId ->
-                    if (state == ToggleableState.On) {
-                        repository.addBookToShelf(shelfId, bookId)
-                    } else if (state == ToggleableState.Off) {
-                        repository.removeBookFromShelf(shelfId, bookId)
-                    }
-                }
-            }
-
-            // Apply space changes
-            _spaceChanges.value.forEach { (spaceId, state) ->
-                targetBookIds.forEach { bookId ->
-                    if (state == ToggleableState.On) {
-                        repository.addBookToSpace(spaceId, bookId)
-                    } else if (state == ToggleableState.Off) {
-                        repository.removeBookFromSpace(spaceId, bookId)
-                    }
-                }
-            }
-            onComplete()
+            targetBookIds.forEach { bookId -> repository.addBookToSpace(spaceId, bookId) }
         }
     }
 }

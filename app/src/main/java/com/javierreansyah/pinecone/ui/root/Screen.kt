@@ -54,6 +54,4 @@ sealed interface Screen : NavKey {
     @Serializable
     data class EditBook(val bookId: String) : Screen
 
-    @Serializable
-    data class Organize(val bookIds: String) : Screen
 }

@@ -69,7 +69,6 @@ fun LibraryRoute(
     onNavigateToShelf: (String, String, Int) -> Unit,
     onNavigateToAuthor: (String) -> Unit = {},
     onNavigateToTag: (String) -> Unit = {},
-    onNavigateToSpace: (String) -> Unit = {},
     onNavigateToAllAuthors: () -> Unit = {},
     onNavigateToAllTags: () -> Unit = {},
     onNavigateToAllSpaces: () -> Unit = {},
@@ -109,7 +108,6 @@ fun LibraryRoute(
         onNavigateToShelf = onNavigateToShelf,
         onNavigateToAuthor = onNavigateToAuthor,
         onNavigateToTag = onNavigateToTag,
-        onNavigateToSpace = onNavigateToSpace,
         onNavigateToAllAuthors = onNavigateToAllAuthors,
         onNavigateToAllTags = onNavigateToAllTags,
         onNavigateToAllSpaces = onNavigateToAllSpaces,
@@ -149,7 +147,6 @@ fun LibraryScreen(
     onNavigateToShelf: (String, String, Int) -> Unit,
     onNavigateToAuthor: (String) -> Unit = {},
     onNavigateToTag: (String) -> Unit = {},
-    onNavigateToSpace: (String) -> Unit = {},
     onNavigateToAllAuthors: () -> Unit = {},
     onNavigateToAllTags: () -> Unit = {},
     onNavigateToAllSpaces: () -> Unit = {},
@@ -335,10 +332,8 @@ fun LibraryScreen(
                                     onNavigateToShelf = onNavigateToShelf,
                                     onNavigateToAuthor = onNavigateToAuthor,
                                     onNavigateToTag = onNavigateToTag,
-                                    onNavigateToSpace = onNavigateToSpace,
                                     onAuthorsHeaderClick = onNavigateToAllAuthors,
                                     onTagsHeaderClick = onNavigateToAllTags,
-                                    onSpacesHeaderClick = onNavigateToAllSpaces,
                                     scrollBehavior = scrollBehavior
                                 )
                             }

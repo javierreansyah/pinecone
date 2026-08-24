@@ -6,6 +6,12 @@ import com.javierreansyah.pinecone.data.local.database.library.ShelfEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
 
+const val ALL_SPACES_ID = "_all_"
+
+fun List<Book>.inSpace(spaceId: String?): List<Book> =
+    if (spaceId == null || spaceId == ALL_SPACES_ID) this
+    else filter { spaceId in it.spaceIds }
+
 fun List<Book>.filterAndSort(
     prefs: FilterSortPreferences,
     crossRefs: List<ShelfBookCrossRefEntity> = emptyList()

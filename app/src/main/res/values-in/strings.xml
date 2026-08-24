@@ -53,6 +53,8 @@
     <string name="library_rename_shelf_title">Ubah nama rak</string>
     <string name="library_shelf_name_label">Nama rak</string>
     <string name="library_create_shelf_title">Buat Rak Baru</string>
+    <string name="library_new_shelf">Rak Baru</string>
+    <string name="library_new_space">Ruang Baru</string>
     <string name="library_select_shelf_title">Pilih Rak</string>
     <plurals name="library_shelf_count">
         <item quantity="other">%d buku</item>

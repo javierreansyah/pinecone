@@ -105,7 +105,9 @@ fun FilterResultScreen(
     })
 
     val uiState by viewModel.uiState.collectAsState()
-    val allBooks by viewModel.allBooks.collectAsState()
+    val spaceScopedBooks by viewModel.allBooks.collectAsState()
+    val allBooksAcrossSpaces by viewModel.allBooksAcrossSpaces.collectAsState()
+    val allBooks = if (filterType == "space") allBooksAcrossSpaces else spaceScopedBooks
 
     val allAuthors by viewModel.allAuthors.collectAsState()
     val allTags by viewModel.allTags.collectAsState()
