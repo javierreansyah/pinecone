@@ -7,6 +7,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
@@ -36,7 +37,7 @@ class MainViewModel(
         viewModelScope.launch {
             readerPreferences.readerSettings.collect { newSettings ->
                 _settings.value = newSettings
-                // Only set isReady to true after the first settings emission is applied
+
                 if (!_isReady.value) {
                     _isReady.value = true
                 }
@@ -48,7 +49,7 @@ class MainViewModel(
         viewModelScope.launch {
             val result = libraryRepository.importBook(uri)
             if (result != null) {
-                _toastMessage.emit("Import complete")
+                _toastMessage.emit(getApplication<Application>().getString(R.string.nav_import_complete))
             }
         }
     }
@@ -56,22 +57,28 @@ class MainViewModel(
     fun importBooks(uris: List<Uri>) {
         if (uris.isEmpty()) return
         viewModelScope.launch {
-            _toastMessage.emit("Importing ${uris.size} files...")
+            _toastMessage.emit(
+                getApplication<Application>().resources.getQuantityString(
+                    R.plurals.nav_importing_files,
+                    uris.size,
+                    uris.size
+                )
+            )
             uris.forEach { uri ->
                 libraryRepository.importBook(uri)
             }
-            _toastMessage.emit("Import complete")
+            _toastMessage.emit(getApplication<Application>().getString(R.string.nav_import_complete))
         }
     }
 
     fun scanFolder(uri: Uri) {
         viewModelScope.launch {
-            _toastMessage.emit("Scanning folder for books...")
+            _toastMessage.emit(getApplication<Application>().getString(R.string.nav_scanning_folder))
             val root = DocumentFile.fromTreeUri(getApplication(), uri)
             if (root != null) {
                 importFromDocumentFile(root)
             }
-            _toastMessage.emit("Folder scan complete")
+            _toastMessage.emit(getApplication<Application>().getString(R.string.nav_folder_scan_complete))
         }
     }
 

@@ -168,7 +168,7 @@ fun CustomColorPickerDialog(
                                 )
                             }
                         } else {
-                            // Spacer to keep Save button on the right when Delete is not present
+
                             Box(modifier = Modifier.weight(1f))
                         }
 

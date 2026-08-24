@@ -2,6 +2,7 @@ package com.javierreansyah.pinecone.ui.features.library.main
 
 import com.javierreansyah.pinecone.data.local.database.library.ShelfEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
+import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.ui.features.library.FilterSortPreferences
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
@@ -19,6 +20,7 @@ data class LibraryUiState(
 )
 
 data class SearchResults(
+    val query: String = "",
     val books: List<Book> = emptyList(),
     val shelves: List<ShelfEntity> = emptyList(),
     val authors: List<String> = emptyList(),
@@ -38,5 +40,8 @@ data class LibraryScreenUiState(
     val allBooks: List<Book> = emptyList(),
     val searchResults: SearchResults = SearchResults(),
     val isBooksLoading: Boolean = true,
-    val isShelvesLoading: Boolean = true
+    val isShelvesLoading: Boolean = true,
+    val allSpaces: List<SpaceEntity> = emptyList(),
+    val allShelves: List<ShelfEntity> = emptyList(),
+    val globalSpaceId: String? = null
 )

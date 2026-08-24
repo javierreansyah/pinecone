@@ -36,8 +36,6 @@ import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
 import kotlin.time.Duration.Companion.milliseconds
 
-// Fix 1: Accept LifecycleOwner + FragmentManager instead of the whole AppCompatActivity.
-//         This prevents leaking the activity reference through configuration changes.
 @OptIn(ExperimentalReadiumApi::class)
 class NavigatorController(
     private val lifecycleOwner: LifecycleOwner,
@@ -51,15 +49,12 @@ class NavigatorController(
         private const val NAVIGATOR_TAG = "epub_navigator"
     }
 
-    // Fix 3: navigator is fully private; the public API (go, clearSelection, etc.) is sufficient.
     private var navigator: EpubNavigatorFragment? = null
 
-    // Fix 2: navigatorFlow is a properly encapsulated StateFlow.
     private val _navigatorFlow = MutableStateFlow<EpubNavigatorFragment?>(null)
 
     private var currentActionMode: ActionMode? = null
 
-    // Fix 1: use lifecycleOwner.lifecycleScope, not activity.lifecycleScope
     private val lifecycleScope: LifecycleCoroutineScope
         get() = lifecycleOwner.lifecycleScope
 
@@ -72,8 +67,6 @@ class NavigatorController(
 
     private var lastSelectionCssColor: String? = null
 
-    // Fix 4: setupObservers() is NOT called from init; it is deferred until setupNavigator()
-    //         so observers are never live before a navigator can possibly exist.
     private var observersStarted = false
 
     init {
@@ -87,7 +80,6 @@ class NavigatorController(
                 setupNavigatorListener(it)
                 _navigatorFlow.value = it
             }
-            // Fix 4: start observers exactly once, even on the config-change path
             startObserversOnce()
             return
         }
@@ -127,7 +119,6 @@ class NavigatorController(
                 }
             }
 
-            // Register custom fonts via the Registry object
             configureFonts()
         }
 
@@ -165,11 +156,9 @@ class NavigatorController(
             _navigatorFlow.value = it
         }
 
-        // Fix 4: start observers exactly once, after the navigator is committed
         startObserversOnce()
     }
 
-    // Fix 4: guards against being called multiple times (config change re-enters setupNavigator)
     private fun startObserversOnce() {
         if (observersStarted) return
         observersStarted = true
@@ -216,7 +205,6 @@ class NavigatorController(
     }
 
     private fun setupObservers() {
-        // Observe themeColors flow to dynamically update CSS selection
         lifecycleScope.launch {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.themeColors.collect { colors ->
@@ -225,7 +213,6 @@ class NavigatorController(
             }
         }
 
-        // Observe preferences and submit to navigator reactively
         lifecycleScope.launch {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 combine(_navigatorFlow.filterNotNull(), viewModel.epubPreferences) { nav, prefs ->
@@ -236,7 +223,6 @@ class NavigatorController(
             }
         }
 
-        // Observe current locator for position saving and UI updates reactively from active navigator
         lifecycleScope.launch {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 _navigatorFlow.collectLatest { nav ->
@@ -252,7 +238,6 @@ class NavigatorController(
             }
         }
 
-        // Observe clear selection events
         lifecycleScope.launch {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 notesViewModel.clearSelectionEvent.collect {
@@ -261,7 +246,6 @@ class NavigatorController(
             }
         }
 
-        // Observe notes and highlights and apply them as permanent decorations
         lifecycleScope.launch {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 combine(
@@ -296,7 +280,6 @@ class NavigatorController(
             }
         }
 
-        // Navigate to locator emitted by search (result selection, prev/next)
         lifecycleScope.launch {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 searchViewModel.navigateToLocator.collectLatest { locator ->
@@ -308,10 +291,6 @@ class NavigatorController(
             }
         }
 
-        // Fix 5: Own the search-highlight-clear reaction here, where it belongs.
-        //         Clear the search decoration only when isInNavMode transitions false → not as a
-        //         side-effect of every emission from the combined controlsState/searchState/settings
-        //         observer in ReaderActivity.
         lifecycleScope.launch {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 searchViewModel.searchState

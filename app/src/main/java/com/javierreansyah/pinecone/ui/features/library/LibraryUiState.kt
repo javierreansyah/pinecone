@@ -16,5 +16,3 @@ data class FilterSortPreferences(
     ),
     val selectedShelfFilter: Set<ShelfFilter> = setOf(ShelfFilter.Shelves, ShelfFilter.Unshelved)
 )
-
-

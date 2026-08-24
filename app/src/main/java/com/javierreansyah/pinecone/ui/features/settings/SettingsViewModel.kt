@@ -2,8 +2,6 @@ package com.javierreansyah.pinecone.ui.features.settings
 
 import android.app.Application
 import android.net.Uri
-import androidx.core.net.toUri
-import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -12,12 +10,11 @@ import coil.annotation.ExperimentalCoilApi
 import coil.imageLoader
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
-import com.javierreansyah.pinecone.data.repository.backup.LibraryBackupRepository
-import com.javierreansyah.pinecone.data.repository.dictionary.DictionaryBackupManager
+import com.javierreansyah.pinecone.data.repository.backup.BackupRepository
+import com.javierreansyah.pinecone.data.repository.backup.BackupResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -33,117 +30,48 @@ data class BackupFile(
 
 class SettingsViewModel(
     application: Application,
-    private val readerPreferences: ReaderPreferences,
-    val dictionaryBackupManager: DictionaryBackupManager
+    private val readerPreferences: ReaderPreferences
 ) : AndroidViewModel(application) {
-
-    private val libraryBackupRepository = LibraryBackupRepository(application)
-
+    private val backupRepository = BackupRepository(application)
     private val _settings = MutableStateFlow(ReaderSettings())
     val settings: StateFlow<ReaderSettings> = _settings.asStateFlow()
-
     private val _isBackingUp = MutableStateFlow(false)
     val isBackingUp: StateFlow<Boolean> = _isBackingUp.asStateFlow()
-
     private val _isRestoring = MutableStateFlow(false)
     val isRestoring: StateFlow<Boolean> = _isRestoring.asStateFlow()
-
     private val _availableBackups = MutableStateFlow<List<BackupFile>>(emptyList())
     val availableBackups: StateFlow<List<BackupFile>> = _availableBackups.asStateFlow()
 
     init {
-        viewModelScope.launch {
-            readerPreferences.readerSettings.collect {
-                _settings.value = it
-            }
-        }
+        viewModelScope.launch { readerPreferences.readerSettings.collect { _settings.value = it } }
     }
 
-    fun updateSettings(newSettings: ReaderSettings) {
-        viewModelScope.launch {
-            readerPreferences.updateAllSettings(newSettings)
-        }
+    fun updateSettings(settings: ReaderSettings) {
+        viewModelScope.launch { readerPreferences.updateAllSettings(settings) }
     }
 
-    suspend fun updateSettingsSuspended(newSettings: ReaderSettings) {
-        readerPreferences.updateAllSettings(newSettings)
-    }
+    suspend fun updateSettingsSuspended(settings: ReaderSettings) =
+        readerPreferences.updateAllSettings(settings)
 
-    fun performFullBackup(
-        onStart: () -> Unit,
-        onSuccess: () -> Unit,
-        onFailure: () -> Unit
-    ) {
+    fun performFullBackup(onStart: () -> Unit, onSuccess: () -> Unit, onFailure: () -> Unit) {
         viewModelScope.launch {
-            _isBackingUp.value = true
-            onStart()
-            val libSuccess = libraryBackupRepository.performBackup(force = true)
-            val dictSuccess = dictionaryBackupManager.backupDictionaries()
+            _isBackingUp.value = true; onStart()
+            val result = backupRepository.createSnapshot(manual = true)
             _isBackingUp.value = false
-            if (libSuccess && dictSuccess) {
-                onSuccess()
-            } else {
-                onFailure()
-            }
+            if (result.isSuccess) {
+                loadBackups(); onSuccess()
+            } else onFailure()
         }
     }
 
     fun loadBackups() {
         viewModelScope.launch {
-            val currentSettings = readerPreferences.readerSettings.first()
-            val backupFolderUriString = currentSettings.backupFolderUri
-            if (backupFolderUriString.isEmpty()) {
-                _availableBackups.value = emptyList()
-                return@launch
-            }
-
-            try {
-                val backupFolderUri = backupFolderUriString.toUri()
-                val backupFolder = DocumentFile.fromTreeUri(getApplication(), backupFolderUri)
-
-                if (backupFolder != null && backupFolder.canRead()) {
-                    val dateFormat = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
-
-                    val files = backupFolder.listFiles()
-                        .filter { it.name?.endsWith(".pine") == true }
-                        .mapNotNull { file ->
-                            val name = file.name ?: return@mapNotNull null
-
-                            // Try to parse yyMMdd_HHmmss from filename, fallback to lastModified
-                            var timestamp = file.lastModified()
-                            val parts = name.split("_")
-                            if (parts.size >= 2) {
-                                try {
-                                    val dateStr = "${parts[0]}_${parts[1]}"
-                                    val parsedDate =
-                                        SimpleDateFormat("yyMMdd_HHmmss", Locale.US).parse(dateStr)
-                                    if (parsedDate != null) {
-                                        timestamp = parsedDate.time
-                                    }
-                                } catch (_: Exception) {
-                                    // Ignore and use lastModified
-                                }
-                            }
-
-                            val isManual = name.contains("_M.pine")
-
-                            BackupFile(
-                                uri = file.uri,
-                                name = name,
-                                timestamp = timestamp,
-                                isManual = isManual,
-                                formattedDate = dateFormat.format(Date(timestamp))
-                            )
-                        }
-                        .sortedByDescending { it.timestamp }
-
-                    _availableBackups.value = files
-                } else {
-                    _availableBackups.value = emptyList()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                _availableBackups.value = emptyList()
+            val formatter = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
+            _availableBackups.value = backupRepository.listSnapshots().map {
+                BackupFile(
+                    it.uri, it.id, it.timestamp, it.isManual,
+                    formatter.format(Date(it.timestamp))
+                )
             }
         }
     }
@@ -153,52 +81,55 @@ class SettingsViewModel(
         uri: Uri,
         onStart: () -> Unit,
         onSuccess: () -> Unit,
+        onWarning: () -> Unit,
         onFailure: () -> Unit
     ) {
         viewModelScope.launch {
-            _isRestoring.value = true
-            onStart()
-            val libSuccess = libraryBackupRepository.restoreBackup(uri)
-
-            var dictSuccess = true
-            val settingsVal = readerPreferences.readerSettings.first()
-            val backupFolderUriString = settingsVal.backupFolderUri
-            if (backupFolderUriString.isNotEmpty()) {
-                val backupFolderUri = backupFolderUriString.toUri()
-                val backupFolder = DocumentFile.fromTreeUri(
-                    getApplication(),
-                    backupFolderUri
-                )
-                val dictBackupFile = backupFolder?.findFile("dictionary_backup.pinedict")
-                if (dictBackupFile != null) {
-                    dictSuccess = dictionaryBackupManager.restoreDictionaries(dictBackupFile.uri)
+            _isRestoring.value = true; onStart()
+            when (backupRepository.restoreSnapshot(uri)) {
+                is BackupResult.Success, BackupResult.Skipped -> {
+                    getApplication<Application>().imageLoader.memoryCache?.clear()
+                    getApplication<Application>().imageLoader.diskCache?.clear()
+                    onSuccess()
                 }
-            }
 
-            _isRestoring.value = false
-            if (libSuccess && dictSuccess) {
-                getApplication<Application>().imageLoader.memoryCache?.clear()
-                getApplication<Application>().imageLoader.diskCache?.clear()
-                onSuccess()
-            } else {
-                onFailure()
+                is BackupResult.Partial -> {
+                    onWarning(); onSuccess()
+                }
+
+                is BackupResult.Failure -> onFailure()
             }
+            _isRestoring.value = false
+        }
+    }
+
+    fun exportBackup(uri: Uri, destination: Uri, onSuccess: () -> Unit, onFailure: () -> Unit) {
+        viewModelScope.launch {
+            if (backupRepository.exportSnapshot(
+                    uri,
+                    destination
+                ).isSuccess
+            ) onSuccess() else onFailure()
+        }
+    }
+
+    fun importBackup(uri: Uri, onSuccess: () -> Unit, onFailure: () -> Unit) {
+        viewModelScope.launch {
+            val result = backupRepository.importPortable(uri)
+            if (result.isSuccess) {
+                loadBackups(); onSuccess()
+            } else onFailure()
         }
     }
 
     class Factory(
         private val application: Application,
-        private val readerPreferences: ReaderPreferences,
-        private val dictionaryBackupManager: DictionaryBackupManager
+        private val readerPreferences: ReaderPreferences
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
-                return SettingsViewModel(
-                    application,
-                    readerPreferences,
-                    dictionaryBackupManager
-                ) as T
+                return SettingsViewModel(application, readerPreferences) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }

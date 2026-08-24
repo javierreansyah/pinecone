@@ -29,14 +29,17 @@ object WorkerUtils {
             else -> 12L to TimeUnit.HOURS
         }
 
-        val constraints = Constraints.Builder().setRequiresStorageNotLow(true).build()
+        val constraints = Constraints.Builder()
+            .setRequiresStorageNotLow(true)
+            .setRequiresBatteryNotLow(true)
+            .build()
 
         val workRequest = PeriodicWorkRequestBuilder<BackupWorker>(
             repeatInterval.first, repeatInterval.second
         ).setConstraints(constraints).build()
 
         workManager.enqueueUniquePeriodicWork(
-            BACKUP_WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE, // Update if exists
+            BACKUP_WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE,
             workRequest
         )
     }

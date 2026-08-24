@@ -4,9 +4,13 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
@@ -36,16 +40,23 @@ import com.composables.icons.materialsymbols.outlined.Add
 import com.composables.icons.materialsymbols.outlined.Archive
 import com.composables.icons.materialsymbols.outlined.Book_3
 import com.composables.icons.materialsymbols.outlined.Folder
+import com.composables.icons.materialsymbols.outlined.Forest
 import com.composables.icons.materialsymbols.outlined.Menu_open
+import com.composables.icons.materialsymbols.outlined.Park
 import com.composables.icons.materialsymbols.outlined.Settings
 import com.composables.icons.materialsymbols.outlined.Upload
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AppDrawer(
     drawerState: WideNavigationRailState,
+    allSpaces: List<SpaceEntity> = emptyList(),
+    selectedSpaceId: String? = null,
+    onSpaceSelected: (String?) -> Unit = {},
+    onNavigateToAllSpaces: () -> Unit,
     onNavigateToArchives: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onImportFilesClick: () -> Unit,
@@ -61,7 +72,9 @@ fun AppDrawer(
         expandedHeaderTopPadding = 0.dp,
         contentPadding = PaddingValues(0.dp)
     ) {
-        Column(modifier = Modifier.fillMaxHeight()) {
+        Column(modifier = Modifier
+            .fillMaxHeight()
+            .verticalScroll(rememberScrollState())) {
             IconButton(
                 onClick = {
                     scope.launch { drawerState.collapse() }
@@ -76,7 +89,6 @@ fun AppDrawer(
                 )
             }
 
-            // FAB for imports with dropdown menu
             Box(
                 modifier = Modifier
                     .padding(start = 20.dp, end = 16.dp, top = 16.dp, bottom = 16.dp)
@@ -98,7 +110,7 @@ fun AppDrawer(
                             contentDescription = null
                         )
                     },
-                    text = { Text(text = "Import") }
+                    text = { Text(text = stringResource(R.string.action_import)) }
                 )
 
                 DropdownMenuPopup(
@@ -148,7 +160,22 @@ fun AppDrawer(
                 }
             }
 
-            // Normal WideNavigationRailItems below the FAB
+            WideNavigationRailItem(
+                railExpanded = true,
+                icon = {
+                    Icon(
+                        imageVector = MaterialSymbols.Outlined.Forest,
+                        contentDescription = null
+                    )
+                },
+                label = { Text(stringResource(R.string.library_spaces_title)) },
+                selected = false,
+                onClick = {
+                    onNavigateToAllSpaces()
+                    scope.launch { drawerState.collapse() }
+                }
+            )
+
             WideNavigationRailItem(
                 railExpanded = true,
                 icon = {
@@ -196,6 +223,48 @@ fun AppDrawer(
                     scope.launch { drawerState.collapse() }
                 }
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(R.string.library_spaces_title),
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            WideNavigationRailItem(
+                railExpanded = true,
+                icon = {
+                    Icon(
+                        imageVector = MaterialSymbols.Outlined.Forest,
+                        contentDescription = null
+                    )
+                },
+                label = { Text(stringResource(R.string.action_all)) },
+                selected = selectedSpaceId == null || selectedSpaceId == "_all_",
+                onClick = {
+                    onSpaceSelected("_all_")
+                    scope.launch { drawerState.collapse() }
+                }
+            )
+
+            allSpaces.forEach { space ->
+                WideNavigationRailItem(
+                    railExpanded = true,
+                    icon = {
+                        Icon(
+                            imageVector = MaterialSymbols.Outlined.Park,
+                            contentDescription = null
+                        )
+                    },
+                    label = { Text(space.name) },
+                    selected = selectedSpaceId == space.id,
+                    onClick = {
+                        onSpaceSelected(space.id)
+                        scope.launch { drawerState.collapse() }
+                    }
+                )
+            }
         }
     }
 }

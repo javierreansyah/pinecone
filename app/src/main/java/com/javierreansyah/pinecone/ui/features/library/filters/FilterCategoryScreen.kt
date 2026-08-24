@@ -41,6 +41,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Delete
 import com.composables.icons.materialsymbols.outlined.Edit
+import com.composables.icons.materialsymbols.outlined.Forest
 import com.composables.icons.materialsymbols.outlined.Label
 import com.composables.icons.materialsymbols.outlined.More_vert
 import com.composables.icons.materialsymbols.outlined.Person
@@ -58,7 +59,7 @@ import com.javierreansyah.pinecone.ui.features.library.components.RenameFilterDi
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AllFilterItemsScreen(
-    filterType: String, // "author" or "tag"
+    filterType: String,
     onNavigateBack: () -> Unit, onNavigateToDetail: (String) -> Unit
 ) {
     val context = LocalContext.current
@@ -74,18 +75,22 @@ fun AllFilterItemsScreen(
         }
     })
 
-    val itemsWithCounts by if (filterType == "author") {
-        viewModel.authorsWithCounts.collectAsState()
-    } else {
-        viewModel.tagsWithCounts.collectAsState()
+    val itemsWithCounts by when (filterType) {
+        "author" -> viewModel.authorsWithCounts.collectAsState()
+        "space" -> viewModel.spacesWithCounts.collectAsState()
+        else -> viewModel.tagsWithCounts.collectAsState()
     }
 
     val allAuthors by viewModel.allAuthors.collectAsState()
     val allTags by viewModel.allTags.collectAsState()
+    val allSpaces by viewModel.allSpaces.collectAsState()
 
-    val suggestionList = remember(filterType, allAuthors, allTags) {
-        if (filterType == "author") allAuthors.map { it.name }
-        else allTags.map { it.name }
+    val suggestionList = remember(filterType, allAuthors, allTags, allSpaces) {
+        when (filterType) {
+            "author" -> allAuthors.map { it.name }
+            "space" -> allSpaces.map { it.name }
+            else -> allTags.map { it.name }
+        }
     }
 
     AllFilterItemsContent(
@@ -291,10 +296,10 @@ private fun AllFilterItemsTopAppBar(
     scrollBehavior: androidx.compose.material3.TopAppBarScrollBehavior,
     modifier: Modifier = Modifier
 ) {
-    val titleText = if (filterType == "author") {
-        stringResource(R.string.library_authors_title)
-    } else {
-        stringResource(R.string.library_tags_title)
+    val titleText = when (filterType) {
+        "author" -> stringResource(R.string.library_authors_title)
+        "space" -> stringResource(R.string.library_spaces_title)
+        else -> stringResource(R.string.library_tags_title)
     }
 
     LibraryTopAppBar(
@@ -320,16 +325,16 @@ private fun AllFilterItemsEmptyState(
     innerPadding: PaddingValues,
     modifier: Modifier = Modifier
 ) {
-    val icon = if (filterType == "author") {
-        MaterialSymbols.Outlined.Person
-    } else {
-        MaterialSymbols.Outlined.Label
+    val icon = when (filterType) {
+        "author" -> MaterialSymbols.Outlined.Person
+        "space" -> MaterialSymbols.Outlined.Forest
+        else -> MaterialSymbols.Outlined.Label
     }
 
-    val text = if (filterType == "author") {
-        stringResource(R.string.library_empty_authors)
-    } else {
-        stringResource(R.string.library_empty_tags)
+    val text = when (filterType) {
+        "author" -> stringResource(R.string.library_empty_authors)
+        "space" -> stringResource(R.string.library_empty_spaces)
+        else -> stringResource(R.string.library_empty_tags)
     }
 
     EmptyState(
@@ -508,15 +513,15 @@ private fun AllFilterItemsDialogs(
     }
 
     itemToRename?.let { oldName ->
-        val dialogTitle = if (filterType == "author") {
-            stringResource(R.string.library_rename_author_title)
-        } else {
-            stringResource(R.string.library_rename_tag_title)
+        val dialogTitle = when (filterType) {
+            "author" -> stringResource(R.string.library_rename_author_title)
+            "space" -> stringResource(R.string.library_rename_space_title)
+            else -> stringResource(R.string.library_rename_tag_title)
         }
-        val fieldLabel = if (filterType == "author") {
-            stringResource(R.string.library_author_name_label)
-        } else {
-            stringResource(R.string.library_tag_name_label)
+        val fieldLabel = when (filterType) {
+            "author" -> stringResource(R.string.library_author_name_label)
+            "space" -> stringResource(R.string.library_space_name_label)
+            else -> stringResource(R.string.library_tag_name_label)
         }
         RenameFilterDialog(
             initialName = oldName,

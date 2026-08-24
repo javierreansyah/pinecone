@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Common Actions -->
     <string name="action_back">Kembali</string>
     <string name="action_cancel">Batal</string>
     <string name="action_save">Simpan</string>
@@ -13,6 +12,8 @@
     <string name="action_select_multiple">Pilih Beberapa</string>
     <string name="action_select_all">Pilih Semua</string>
     <string name="action_deselect_all">Batal Pilih Semua</string>
+    <string name="action_organize">Atur</string>
+    <string name="action_import">Impor</string>
 
     <string name="action_search">Cari</string>
     <string name="action_clear">Bersihkan</string>
@@ -33,7 +34,6 @@
     <string name="action_all">Semua</string>
     <string name="common_error">Kesalahan: %s</string>
 
-    <!-- Library -->
     <string name="library_tab_books">Buku</string>
     <string name="library_tab_shelves">Rak</string>
     <string name="library_search_placeholder">Cari di pustaka</string>
@@ -50,6 +50,9 @@
     <plurals name="library_delete_shelves_message">
         <item quantity="other">Apakah Anda yakin ingin menghapus %d rak? Buku-buku di dalamnya tidak akan dihapus.</item>
     </plurals>
+    <plurals name="library_delete_items_message">
+        <item quantity="other">Apakah Anda yakin ingin menghapus %d item? Ini akan menghapusnya dari semua buku.</item>
+    </plurals>
     <string name="library_rename_shelf_title">Ubah nama rak</string>
     <string name="library_shelf_name_label">Nama rak</string>
     <string name="library_create_shelf_title">Buat Rak Baru</string>
@@ -62,6 +65,7 @@
     </plurals>
 
     <string name="library_warning_merge">Peringatan: Item yang cocok sudah ada. Menyimpan akan menggabungkan item ini dan bukunya ke dalam item yang sudah ada.</string>
+    <string name="library_warning_merge_multiple">Beberapa item akan digabungkan menjadi satu.</string>
     <string name="library_importing">Mengimpor…</string>
     <string name="library_empty_authors">Penulis tidak ditemukan.</string>
     <string name="library_empty_tags">Tag tidak ditemukan.</string>
@@ -74,8 +78,14 @@
     <string name="library_label_view">Tampilan</string>
     <string name="library_label_status">Status</string>
     <string name="library_label_unshelved">Belum Masuk Rak</string>
+
+    <string name="library_spaces_title">Ruang</string>
+    <string name="library_rename_space_title">Ubah nama ruang</string>
+    <string name="library_empty_spaces">Belum ada ruang</string>
+    <string name="library_new_space">Ruang Baru</string>
+    <string name="library_new_shelf">Rak Baru</string>
+    <string name="library_space_name_label">Nama ruang</string>
     <string name="library_label_add_to_shelf">Tambah ke Rak</string>
-    <string name="library_label_remove_from_shelf">Hapus dari Rak</string>
     <string name="library_sort_title">Judul</string>
     <string name="library_sort_author">Penulis</string>
     <string name="library_sort_last_read">Tanggal terakhir dibaca</string>
@@ -88,7 +98,6 @@
     <string name="library_status_reading">Sedang dibaca</string>
     <string name="library_status_finished">Selesai</string>
 
-    <!-- Book Details -->
     <string name="book_info_title">Info Buku</string>
     <string name="book_not_found">Buku tidak ditemukan</string>
     <string name="book_edit_title">Edit Buku</string>
@@ -106,6 +115,10 @@
     <string name="book_mark_as_unread">Tandai sebagai Belum Dibaca</string>
     <string name="book_read_more">Baca Selengkapnya</string>
     <string name="book_read_less">Lebih Sedikit</string>
+    <string name="book_read_furthest">Baca posisi terjauh</string>
+    <string name="book_read_from_start">Baca dari awal</string>
+    <string name="book_show_more_tags">Tampilkan lebih banyak tag</string>
+    <string name="book_show_less_tags">Tampilkan lebih sedikit tag</string>
     <string name="book_not_available">N/A</string>
     <string name="book_unknown">Tidak Diketahui</string>
     <string name="book_label_authors">Penulis</string>
@@ -116,7 +129,6 @@
     <string name="book_cover_description">Sampul untuk %s</string>
     <string name="book_unknown_author">Penulis Tidak Diketahui</string>
 
-    <!-- Reader -->
     <string name="reader_no_definition">Definisi tidak ditemukan.</string>
     <string name="reader_toc_title">Daftar Isi</string>
     <string name="reader_bookmarks_title">Bookmark</string>
@@ -145,8 +157,11 @@
     <string name="reader_in_document">Dalam Dokumen</string>
     <string name="reader_no_matches">Tidak ada kecocokan</string>
     <string name="reader_result_num_of">%1$s dari %2$s</string>
+    <string name="reader_external_link_title">Opsi Tautan Eksternal</string>
+    <string name="reader_copy_link">Salin Tautan</string>
+    <string name="reader_open_in_browser">Buka di Browser</string>
+    <string name="reader_highlight_color">Warna Sorotan</string>
 
-    <!-- Reader Settings -->
     <string name="reader_settings_tab_text">Teks</string>
     <string name="reader_settings_tab_lighting">Pencahayaan</string>
     <string name="reader_settings_tab_advanced">Lanjutan</string>
@@ -188,7 +203,6 @@
     <string name="reader_settings_bg_color">Warna Latar Belakang (Hex)</string>
     <string name="reader_settings_text_color">Warna Teks (Hex)</string>
 
-    <!-- Reader settings options -->
     <string name="reader_settings_alignment_left">Kiri</string>
     <string name="reader_settings_alignment_right">Kanan</string>
     <string name="reader_settings_alignment_justify">Rata Kanan-Kiri</string>
@@ -199,7 +213,6 @@
     <string name="reader_settings_orientation_portrait">Potret</string>
     <string name="reader_settings_orientation_landscape">Lanskap</string>
 
-    <!-- Dictionaries -->
     <string name="dictionaries_title">Kamus</string>
     <string name="dictionaries_empty">Kamus tidak terinstal\nKetuk + untuk mengimpor file .zip Stardict</string>
     <string name="dictionaries_import_stardict">Impor Stardict</string>
@@ -214,7 +227,6 @@
     <string name="dictionaries_none_installed">Kamus tidak terinstal. Instal kamus dari laci navigasi.</string>
     <string name="dictionaries_install_success">Kamus berhasil diinstal</string>
 
-    <!-- Settings -->
     <string name="settings_title">Pengaturan</string>
     <string name="settings_general">Umum</string>
     <string name="settings_theme_mode">Mode Tema</string>
@@ -226,9 +238,13 @@
     <string name="settings_backup_now">Cadangkan Sekarang</string>
     <string name="settings_backup_now_summary">Cadangkan perpustakaan dan kamus (%s)</string>
     <string name="settings_restore">Pulihkan</string>
+    <string name="settings_export_backup">Ekspor cadangan</string>
+    <string name="settings_import_backup">Impor Cadangan</string>
+    <string name="settings_import_backup_summary">Tambahkan cadangan portabel Pinecone ke brankas ini</string>
     <string name="settings_restore_summary">Pulihkan perpustakaan dan kamus</string>
+    <string name="settings_restore_partial">Pemulihan tersimpan, tetapi pembersihan akhir belum selesai. Mulai ulang Pinecone untuk menyelesaikan pemulihan.</string>
     <string name="settings_last_backup_format">Terakhir: %s</string>
-    <string name="settings_error_set_backup_location">Harap atur Lokasi Cadangan terlebih dahulu untuk memulihkan kamus</string>
+    <string name="settings_error_set_backup_location">Harap pilih lokasi cadangan terlebih dahulu</string>
     <string name="settings_auto_backup_freq">Frekuensi Cadangan Otomatis</string>
     <string name="settings_backup_location">Lokasi Cadangan</string>
     <string name="settings_option_system">Sistem</string>
@@ -261,10 +277,14 @@
     <string name="reader_settings_restore_defaults_warning">Apakah Anda yakin ingin memulihkan pengaturan pembaca ke nilai default? Tindakan ini akan mereset semua preferensi tipografi, tata letak, tema, dan kecerahan.\n\nPengaturan umum (seperti mode tema, bahasa, dll.) tidak akan diubah.</string>
     <string name="reader_settings_restore_defaults_success">Pengaturan pembaca dipulihkan ke default</string>
 
-    <!-- Navigation Drawer -->
-
     <string name="nav_import_files">Impor File</string>
     <string name="nav_scan_folder">Pindai Folder</string>
+    <string name="nav_import_complete">Impor selesai</string>
+    <plurals name="nav_importing_files">
+        <item quantity="other">Mengimpor %d file…</item>
+    </plurals>
+    <string name="nav_scanning_folder">Memindai folder untuk mencari buku…</string>
+    <string name="nav_folder_scan_complete">Pemindaian folder selesai</string>
 
     <string name="nav_setup_now">Konfigurasi sekarang</string>
     <string name="nav_starting_backup">Memulai pencadangan…</string>
@@ -275,23 +295,20 @@
     <string name="nav_restore_success">Cadangan berhasil dipulihkan!</string>
     <string name="nav_restore_failed">Gagal memulihkan cadangan</string>
 
-    <!-- Reader Jump Origin tracking -->
     <string name="reader_jump_go_back">Kembali</string>
     <string name="reader_jump_history_mode">Riwayat Lompatan</string>
     <string name="reader_jump_history_mode_explicit">Manual</string>
     <string name="reader_jump_history_mode_page_turn">Pindah halaman</string>
     <string name="reader_jump_history_mode_disabled">Dinonaktifkan</string>
 
-    <!-- Book Info Tabs -->
     <string name="book_info_current_position">Posisi Sekarang</string>
     <string name="book_info_furthest_position">Posisi Terjauh yang Dicapai</string>
-    <!-- Reader Bookmark/Note Sorting -->
+
     <string name="reader_sort_creation_date_asc">Tanggal dibuat (terlama dahulu)</string>
     <string name="reader_sort_creation_date_desc">Tanggal dibuat (terbaru dahulu)</string>
     <string name="reader_sort_book_order_asc">Urutan buku (awal dahulu)</string>
     <string name="reader_sort_book_order_desc">Urutan buku (akhir dahulu)</string>
 
-    <!-- About & Licenses -->
     <string name="about_title">Pinecone</string>
     <string name="about_copyright">Hak Cipta © 2026 Javier Aahmes Reansyah</string>
     <string name="about_view_full_license">Lihat Lisensi Penuh</string>

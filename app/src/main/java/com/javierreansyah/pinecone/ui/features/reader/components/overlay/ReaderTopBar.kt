@@ -14,6 +14,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -30,8 +31,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.PlainTooltip
+import androidx.compose.material3.SplitButton
 import androidx.compose.material3.SplitButtonDefaults
-import androidx.compose.material3.SplitButtonLayout
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
@@ -155,21 +156,21 @@ fun ReaderTopBar(
                     targetState = topBarState,
                     transitionSpec = {
                         if (targetState != TopBarState.NORMAL && initialState == TopBarState.NORMAL) {
-                            // Entering Jump/Search Mode: new content fades in, normal icons fade out + slide right
+
                             fadeIn(animationSpec = actionsEffectsSpec) togetherWith
                                     fadeOut(animationSpec = actionsEffectsSpec) + slideOutHorizontally(
                                 targetOffsetX = { slideOffsetPx },
                                 animationSpec = actionsSpatialSpec
                             )
                         } else if (targetState == TopBarState.NORMAL && initialState != TopBarState.NORMAL) {
-                            // Exiting Jump/Search Mode: normal icons fade in + slide in from right, old state fades out
+
                             fadeIn(animationSpec = actionsEffectsSpec) + slideInHorizontally(
                                 initialOffsetX = { slideOffsetPx },
                                 animationSpec = actionsSpatialSpec
                             ) togetherWith
                                     fadeOut(animationSpec = actionsEffectsSpec)
                         } else {
-                            // e.g. SEARCH -> JUMP or JUMP -> SEARCH
+
                             fadeIn(animationSpec = actionsEffectsSpec) togetherWith fadeOut(
                                 animationSpec = actionsEffectsSpec
                             )
@@ -390,7 +391,7 @@ fun JumpHistoryPill(
     val size = SplitButtonDefaults.ExtraSmallContainerHeight
     val transparentOutline = textColor.copy(alpha = 0.3f)
 
-    SplitButtonLayout(
+    SplitButton(
         leadingButton = {
             SplitButtonDefaults.OutlinedLeadingButton(
                 onClick = onGoBack,
@@ -426,11 +427,14 @@ fun JumpHistoryPill(
                     }
                 },
                 state = rememberTooltipState(),
+                modifier = Modifier.fillMaxHeight()
             ) {
                 SplitButtonDefaults.OutlinedTrailingButton(
                     checked = false,
                     onCheckedChange = { _ -> onClear() },
-                    modifier = Modifier.heightIn(size),
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .heightIn(size),
                     shapes = SplitButtonDefaults.trailingButtonShapesFor(size),
                     contentPadding = SplitButtonDefaults.trailingButtonContentPaddingFor(size),
                     colors = ButtonDefaults.outlinedButtonColors(
@@ -451,5 +455,3 @@ fun JumpHistoryPill(
         modifier = modifier
     )
 }
-
-

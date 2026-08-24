@@ -4,7 +4,7 @@ import android.app.Application
 import androidx.room.Room
 import com.javierreansyah.pinecone.data.local.database.library.AppDatabase
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
-import com.javierreansyah.pinecone.data.repository.dictionary.DictionaryBackupManager
+import com.javierreansyah.pinecone.data.repository.backup.BackupRepository
 import com.javierreansyah.pinecone.data.repository.dictionary.DictionaryImportManager
 import com.javierreansyah.pinecone.data.repository.dictionary.DictionaryRepository
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
@@ -30,9 +30,6 @@ class PineconeApplication : Application() {
     lateinit var dictionaryImportManager: DictionaryImportManager
         private set
 
-    lateinit var dictionaryBackupManager: DictionaryBackupManager
-        private set
-
     lateinit var readerPreferences: ReaderPreferences
         private set
 
@@ -50,15 +47,7 @@ class PineconeApplication : Application() {
             AppDatabase::class.java,
             "reader_database"
         )
-            .addMigrations(
-                AppDatabase.MIGRATION_1_2,
-                AppDatabase.MIGRATION_2_3,
-                AppDatabase.MIGRATION_3_4,
-                AppDatabase.MIGRATION_4_5,
-                AppDatabase.MIGRATION_5_6,
-                AppDatabase.MIGRATION_8_9,
-                AppDatabase.MIGRATION_9_10
-            )
+            .addCallback(AppDatabase.BACKUP_REVISION_CALLBACK)
             .fallbackToDestructiveMigration(false)
             .build()
 
@@ -85,11 +74,11 @@ class PineconeApplication : Application() {
             bookmarkDao = database.bookmarkDao(),
             shelfDao = database.shelfDao(),
             noteDao = database.noteDao(),
+            spaceDao = database.spaceDao(),
             publicationOpener = publicationOpener,
             assetRetriever = assetRetriever
         )
 
-        // Schedule initial backup based on preferences
         readerPreferences = ReaderPreferences(applicationContext)
 
         dictionaryRepository = DictionaryRepository(
@@ -102,12 +91,13 @@ class PineconeApplication : Application() {
             preferences = readerPreferences
         )
 
-        dictionaryBackupManager = DictionaryBackupManager(
-            context = applicationContext,
-            preferences = readerPreferences
-        )
-
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            try {
+                BackupRepository(applicationContext).completePendingSettingsRestore()
+            } catch (error: Exception) {
+                error.printStackTrace()
+            }
+            libraryRepository.cleanupOrphanedFiles()
             val initialFrequency = readerPreferences.readerSettings.first().autoBackupFrequency
             WorkerUtils.scheduleBackupWork(applicationContext, initialFrequency)
         }

@@ -3,7 +3,6 @@ package com.javierreansyah.pinecone.data.local.database.library
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
-import kotlinx.serialization.Serializable
 
 @Entity(
     tableName = "book_tag_cross_ref", primaryKeys = ["bookId", "tagId"], foreignKeys = [ForeignKey(
@@ -18,7 +17,6 @@ import kotlinx.serialization.Serializable
         onDelete = ForeignKey.CASCADE
     )], indices = [Index("tagId"), Index("bookId")]
 )
-@Serializable
 data class BookTagCrossRef(
     val bookId: String, val tagId: Long
 )

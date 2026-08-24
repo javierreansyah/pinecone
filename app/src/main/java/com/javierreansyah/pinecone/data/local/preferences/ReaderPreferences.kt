@@ -44,7 +44,7 @@ data class InstalledDictionary(
 
 @Serializable
 data class ReaderSettings(
-    // App-level settings (not Readium)
+
     val themeMode: String = "System",
     val colorPalette: String = "Dynamic",
     val themeContrast: String = "Standard",
@@ -55,7 +55,6 @@ data class ReaderSettings(
     val preventScreenTimeout: Boolean = false,
     val alwaysShowStatusBar: Boolean = false,
 
-    // Readium-mapped settings
     val publisherStyles: Boolean = true,
     val fontSize: Double = 1.0,
     val fontFamily: String = "Source Serif 4",
@@ -76,25 +75,21 @@ data class ReaderSettings(
     val readingProgression: String = "LTR",
     val textNormalization: Boolean = false,
 
-    // Reader theme
     val pineconeThemePreset: String = "Auto",
     val customBackgroundColor: String = "#FFFFFF",
     val customTextColor: String = "#000000",
     val customThemes: List<CustomPineconeTheme> = emptyList(),
 
-    // Backup
     val autoBackupFrequency: String = "12h",
     val lastBackupTime: Long = 0L,
+    val lastBackupRevision: Long = -1L,
     val backupFolderUri: String = "",
 
-    // Dictionaries
     val activeDictionaryId: String = "",
     val installedDictionaries: List<InstalledDictionary> = emptyList(),
     val jumpHistoryMode: String = "explicit"
 ) {
-    /**
-     * Converts the app-level reader settings to Readium's [EpubPreferences].
-     */
+
     @OptIn(ExperimentalReadiumApi::class)
     fun toEpubPreferences(isSystemDark: Boolean): EpubPreferences {
         val resolvedTheme = when (pineconeThemePreset) {
@@ -110,7 +105,7 @@ data class ReaderSettings(
                 if (isDark) Theme.DARK else Theme.LIGHT
             }
 
-            else -> null // Custom will be handled by backgroundColor/textColor
+            else -> null
         }
 
         val bgColor = if (pineconeThemePreset !in listOf("Light", "Dark", "Warm", "Auto")) {
@@ -185,7 +180,7 @@ data class ReaderSettings(
 
 class ReaderPreferences(private val context: Context) {
     companion object {
-        // App-level settings
+
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val COLOR_PALETTE = stringPreferencesKey("color_palette")
         val THEME_CONTRAST = stringPreferencesKey("theme_contrast")
@@ -196,7 +191,6 @@ class ReaderPreferences(private val context: Context) {
         val PREVENT_SCREEN_TIMEOUT = booleanPreferencesKey("prevent_screen_timeout")
         val ALWAYS_SHOW_STATUS_BAR = booleanPreferencesKey("always_show_status_bar")
 
-        // Readium-mapped settings
         val PUBLISHER_STYLES = booleanPreferencesKey("publisher_styles")
         val FONT_SIZE = doublePreferencesKey("font_size")
         val FONT_FAMILY = stringPreferencesKey("font_family")
@@ -217,22 +211,19 @@ class ReaderPreferences(private val context: Context) {
         val READING_PROGRESSION = stringPreferencesKey("reading_progression")
         val TEXT_NORMALIZATION = booleanPreferencesKey("text_normalization")
 
-        // Reader theme
         val READER_THEME_PRESET = stringPreferencesKey("reader_theme_preset")
         val CUSTOM_BACKGROUND_COLOR = stringPreferencesKey("custom_background_color")
         val CUSTOM_TEXT_COLOR = stringPreferencesKey("custom_text_color")
         val CUSTOM_THEMES = stringSetPreferencesKey("custom_themes")
 
-        // Backup
         val AUTO_BACKUP_FREQUENCY = stringPreferencesKey("auto_backup_frequency")
         val LAST_BACKUP_TIME = longPreferencesKey("last_backup_time")
+        val LAST_BACKUP_REVISION = longPreferencesKey("last_backup_revision")
         val BACKUP_FOLDER_URI = stringPreferencesKey("backup_folder_uri")
 
-        // Dictionaries
         val ACTIVE_DICTIONARY_ID = stringPreferencesKey("active_dictionary_id")
         val INSTALLED_DICTIONARIES = stringSetPreferencesKey("installed_dictionaries")
 
-        // Jump History
         val JUMP_HISTORY_MODE = stringPreferencesKey("jump_history_mode")
     }
 
@@ -293,6 +284,7 @@ class ReaderPreferences(private val context: Context) {
 
             autoBackupFrequency = preferences[AUTO_BACKUP_FREQUENCY] ?: "12h",
             lastBackupTime = preferences[LAST_BACKUP_TIME] ?: 0L,
+            lastBackupRevision = preferences[LAST_BACKUP_REVISION] ?: -1L,
             backupFolderUri = preferences[BACKUP_FOLDER_URI] ?: "",
 
             activeDictionaryId = preferences[ACTIVE_DICTIONARY_ID] ?: "",
@@ -355,6 +347,7 @@ class ReaderPreferences(private val context: Context) {
 
             preferences[AUTO_BACKUP_FREQUENCY] = settings.autoBackupFrequency
             preferences[LAST_BACKUP_TIME] = settings.lastBackupTime
+            preferences[LAST_BACKUP_REVISION] = settings.lastBackupRevision
             preferences[BACKUP_FOLDER_URI] = settings.backupFolderUri
 
             preferences[ACTIVE_DICTIONARY_ID] = settings.activeDictionaryId

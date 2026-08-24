@@ -124,7 +124,7 @@ fun ReaderProgressTracker(
             )
             .height(48.dp)
     ) {
-        // Progress slider
+
         val density = LocalDensity.current
         val trackStrokeWidthPx = with(density) { 2.dp.toPx() }
         val thumbWidthPx = with(density) { 2.dp.toPx() }
@@ -134,7 +134,7 @@ fun ReaderProgressTracker(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp) // extra padding for thumb
+                .padding(horizontal = 12.dp)
                 .height(20.dp)
                 .onSizeChanged { seekBarWidthPx = it.width.toFloat().coerceAtLeast(1f) }
                 .pointerInput(Unit) {
@@ -220,7 +220,6 @@ fun ReaderProgressTracker(
             }
         }
 
-        // Page info text
         val pageText = if (isSeeking || pendingSeek != null) {
             if (totalPages != null) {
                 val page = (sliderPosition * totalPages).roundToInt().coerceIn(1, totalPages)
@@ -317,7 +316,7 @@ fun ReaderTextSelectionControl(
         contentPadding = BottomAppBarDefaults.ContentPadding,
         modifier = modifier.fillMaxWidth()
     ) {
-        // Left side: Action Icons
+
         IconButton(onClick = onCopy) {
             Icon(
                 MaterialSymbols.Outlined.Content_copy,
@@ -342,7 +341,6 @@ fun ReaderTextSelectionControl(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Right side: Action Icons
         if (showDeleteOption) {
             IconButton(onClick = onDelete) {
                 Icon(
@@ -363,7 +361,7 @@ fun ReaderTextSelectionControl(
             IconButton(onClick = { expanded = true }) {
                 Icon(
                     MaterialSymbols.Outlined.Ink_highlighter,
-                    contentDescription = "Highlight Color",
+                    contentDescription = stringResource(R.string.reader_highlight_color),
                     tint = selectedColorInt?.let { Color(it).copy(alpha = 1f) } ?: readerTextColor
                 )
             }
@@ -372,10 +370,10 @@ fun ReaderTextSelectionControl(
                 onDismissRequest = { expanded = false }
             ) {
                 val swatches = listOf(
-                    "#40fac02e".toColorInt(), // Yellow
-                    "#40fd7142".toColorInt(), // Orange
-                    "#408bc24a".toColorInt(), // Green
-                    "#4025c6da".toColorInt()  // Blue
+                    "#40fac02e".toColorInt(),
+                    "#40fd7142".toColorInt(),
+                    "#408bc24a".toColorInt(),
+                    "#4025c6da".toColorInt()
                 )
                 val totalItems = swatches.size
                 val groupInteractionSource = remember { MutableInteractionSource() }

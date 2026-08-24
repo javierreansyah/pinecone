@@ -91,7 +91,6 @@ fun NoteBottomSheet(
                 }
             )
 
-            // Color Swatches
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -100,10 +99,10 @@ fun NoteBottomSheet(
                     .padding(bottom = 16.dp)
             ) {
                 val swatches = listOf(
-                    "#40fac02e".toColorInt(), // Yellow
-                    "#40fd7142".toColorInt(), // Orange
-                    "#408bc24a".toColorInt(), // Green
-                    "#4025c6da".toColorInt()  // Blue
+                    "#40fac02e".toColorInt(),
+                    "#40fd7142".toColorInt(),
+                    "#408bc24a".toColorInt(),
+                    "#4025c6da".toColorInt()
                 )
                 swatches.forEach { colorInt ->
                     val isSelected = selectedColor == colorInt

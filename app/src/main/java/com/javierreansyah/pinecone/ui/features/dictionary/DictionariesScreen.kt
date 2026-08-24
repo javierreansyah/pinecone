@@ -203,8 +203,6 @@ private fun DictionariesContent(
                 )
             }
 
-
-
             itemToDelete?.let { dict ->
                 DeleteDictionaryDialog(
                     dictName = dict.name,
@@ -248,7 +246,6 @@ private fun DictionariesTopAppBar(
         modifier = modifier
     )
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -305,7 +302,6 @@ private fun DictionariesList(
                 trailingContent = { Text("${(animatedProgress * 100).toInt()}%") }
             )
         }
-
 
     }
 }
@@ -372,7 +368,6 @@ private fun DictionaryItemActions(
         }
     }
 }
-
 
 @Composable
 private fun DeleteDictionaryDialog(

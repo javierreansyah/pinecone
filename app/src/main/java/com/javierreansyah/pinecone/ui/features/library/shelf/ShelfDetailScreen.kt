@@ -97,7 +97,6 @@ import kotlinx.coroutines.flow.flowOf
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ShelfDetailScreen(
     shelfId: String,
@@ -106,10 +105,9 @@ fun ShelfDetailScreen(
     onNavigateBack: () -> Unit,
     onNavigateToReader: (String) -> Unit,
     onNavigateToBookInfo: (String) -> Unit,
-    onNavigateToAddToShelf: (String) -> Unit
+    onNavigateToOrganize: (String) -> Unit,
+    viewModel: ShelfDetailViewModel = viewModel()
 ) {
-    val viewModel: ShelfDetailViewModel = viewModel()
-
     val uiState by viewModel.uiState.collectAsState()
     var showFilterSheet by remember { mutableStateOf(false) }
     var isReordering by remember { mutableStateOf(false) }
@@ -124,7 +122,6 @@ fun ShelfDetailScreen(
     val allBooks by viewModel.allBooks.collectAsState()
     val shelfWithCovers = shelves.find { it.shelf.id == shelfId }
 
-    // Use a flow to get filtered and sorted books
     val baseBooksFlow = remember(shelfWithCovers) {
         flowOf(shelfWithCovers?.books?.map { Book.fromEntity(it) } ?: emptyList())
     }
@@ -132,153 +129,103 @@ fun ShelfDetailScreen(
     val books by viewModel.getFilteredAndSortedBooks(baseBooksFlow)
         .collectAsState(initial = emptyList())
 
-    // Local mutable state for reordering
     var reorderBooks by remember { mutableStateOf(emptyList<Book>()) }
-
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     val displayTitle = shelfWithCovers?.shelf?.name
         ?: initialShelfName.ifEmpty { stringResource(R.string.library_tab_shelves) }
     val displayCount = shelfWithCovers?.books?.size ?: initialBookCount
 
-    val isMultiSelect = isInMultiSelectMode
-
-    BackHandler(enabled = isMultiSelect) {
+    val exitMultiSelect = {
         selectedBooks = emptySet()
         isInMultiSelectMode = false
     }
 
-    Scaffold(
-        modifier = if (isMultiSelect) Modifier else Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            MultiSelectTopBarTransition(
-                isMultiSelect = isMultiSelect,
-                multiSelectBar = {
-                    val showMarkAsRead = allBooks
-                        .filter { it.id in selectedBooks }
-                        .any { !it.isRead }
-                    MultiSelectAppBar(
-                        selectedCount = selectedBooks.size,
-                        isAllSelected = selectedBooks.size == books.size,
-                        showMarkAsRead = showMarkAsRead,
-                        onCloseMultiSelect = {
-                            selectedBooks = emptySet()
-                            isInMultiSelectMode = false
-                        },
-                        onClearSelection = { selectedBooks = emptySet() },
-                        onSelectAll = { selectedBooks = books.map { it.id }.toSet() },
-                        onMarkAsReadUnread = {
-                            val booksToProcess = selectedBooks.toList()
-                            selectedBooks = emptySet()
-                            isInMultiSelectMode = false
-                            booksToProcess.forEach { bookId ->
-                                val book = allBooks.find { it.id == bookId }
-                                if (book != null && book.isRead != showMarkAsRead) {
-                                    viewModel.toggleReadStatus(bookId)
-                                }
-                            }
-                        },
-                        onAddToShelf = {
-                            val ids = selectedBooks.joinToString(",")
-                            selectedBooks = emptySet()
-                            isInMultiSelectMode = false
-                            onNavigateToAddToShelf(ids)
-                        },
-                        onArchive = {
-                            val booksToProcess = selectedBooks.toList()
-                            selectedBooks = emptySet()
-                            isInMultiSelectMode = false
-                            booksToProcess.forEach { bookId ->
-                                val book = allBooks.find { it.id == bookId }
-                                if (book != null && !book.isArchived) {
-                                    viewModel.toggleArchive(bookId)
-                                }
-                            }
-                        },
-                        onDelete = {
-                            val booksToProcess = selectedBooks.toList()
-                            selectedBooks = emptySet()
-                            isInMultiSelectMode = false
-                            booksToProcess.forEach { viewModel.deleteBook(it) }
-                        }
-                    )
-                },
-                defaultBar = {
-                    ShelfDetailTopAppBar(
-                        displayTitle = displayTitle,
-                        displayCount = displayCount,
-                        isReordering = isReordering,
-                        isRenaming = isRenaming,
-                        renameName = renameName,
-                        onRenameNameChange = { renameName = it },
-                        onCancelRename = { isRenaming = false },
-                        onSaveRename = {
-                            if (renameName.text.isNotBlank()) {
-                                viewModel.renameShelf(shelfId, renameName.text)
-                            }
-                            isRenaming = false
-                        },
-                        shelfId = shelfId,
-                        scrollBehavior = scrollBehavior,
-                        onNavigateBack = onNavigateBack,
-                        onCancelReorder = { isReordering = false },
-                        onSaveReorder = {
-                            viewModel.updateShelfOrder(shelfId, reorderBooks.map { it.id })
-                            if (uiState.bookPreferences.sortType != SortType.Custom) {
-                                viewModel.onSortTypeChange(SortType.Custom)
-                            }
-                            isReordering = false
-                        },
-                        onStartReordering = {
-                            if (shelfWithCovers != null) {
-                                reorderBooks = shelfWithCovers.books.map { Book.fromEntity(it) }
-                                isReordering = true
-                            }
-                        },
-                        onShowFilterSheet = { showFilterSheet = true },
-                        onRenameClick = {
-                            val name = shelfWithCovers?.shelf?.name ?: ""
-                            renameName = TextFieldValue(
-                                text = name, selection = TextRange(name.length)
-                            )
-                            isRenaming = true
-                        },
-                        onDeleteClick = { showDeleteDialog = true },
-                        onEnterMultiSelect = { isInMultiSelectMode = true }
-                    )
-                }
-            )
-        }
-    ) { innerPadding ->
-        ShelfDetailContent(
-            shelfWithCovers = shelfWithCovers,
-            books = books,
-            reorderBooks = reorderBooks,
-            isReordering = isReordering,
-            layoutMode = uiState.bookPreferences.layoutMode,
-            selectedBooks = selectedBooks,
-            isInMultiSelectMode = isInMultiSelectMode,
-            onReorderBooksChange = { reorderBooks = it },
-            onBookClick = { bookId ->
-                if (isInMultiSelectMode) {
-                    selectedBooks = if (selectedBooks.contains(bookId)) {
-                        selectedBooks - bookId
-                    } else {
-                        selectedBooks + bookId
-                    }
-                } else {
-                    onNavigateToReader(bookId)
-                }
-            },
-            onBookLongClick = { selectedBookForMenu = it },
-            modifier = Modifier.padding(innerPadding),
-            scrollKey = Triple(
-                uiState.bookPreferences.sortType,
-                uiState.bookPreferences.isAscending,
-                uiState.bookPreferences.selectedStatus
-            )
+    BackHandler(enabled = isInMultiSelectMode, onBack = exitMultiSelect)
+
+    ShelfDetailContent(
+        shelfId = shelfId,
+        displayTitle = displayTitle,
+        displayCount = displayCount,
+        shelfWithCovers = shelfWithCovers,
+        books = books,
+        allBooks = allBooks,
+        reorderBooks = reorderBooks,
+        isReordering = isReordering,
+        isRenaming = isRenaming,
+        renameName = renameName,
+        layoutMode = uiState.bookPreferences.layoutMode,
+        selectedBooks = selectedBooks,
+        isInMultiSelectMode = isInMultiSelectMode,
+        onNavigateBack = onNavigateBack,
+        onEnterMultiSelect = { bookId ->
+            selectedBooks = if (bookId != null) setOf(bookId) else emptySet()
+            isInMultiSelectMode = true
+        },
+        onExitMultiSelect = exitMultiSelect,
+        onSelectAll = { selectedBooks = books.map { it.id }.toSet() },
+        onClearSelection = { selectedBooks = emptySet() },
+        onToggleBookSelection = { bookId ->
+            selectedBooks = if (selectedBooks.contains(bookId)) {
+                selectedBooks - bookId
+            } else {
+                selectedBooks + bookId
+            }
+        },
+        onMarkAsReadUnread = { showMarkAsRead ->
+            viewModel.markBooksReadStatus(selectedBooks, showMarkAsRead)
+            exitMultiSelect()
+        },
+        onArchiveSelected = {
+            viewModel.archiveBooks(selectedBooks)
+            exitMultiSelect()
+        },
+        onDeleteSelected = {
+            viewModel.deleteBooks(selectedBooks)
+            exitMultiSelect()
+        },
+        onOrganizeSelected = {
+            val ids = selectedBooks.joinToString(",")
+            exitMultiSelect()
+            onNavigateToOrganize(ids)
+        },
+        onRenameNameChange = { renameName = it },
+        onStartRename = {
+            val name = shelfWithCovers?.shelf?.name ?: ""
+            renameName = TextFieldValue(text = name, selection = TextRange(name.length))
+            isRenaming = true
+        },
+        onCancelRename = { isRenaming = false },
+        onSaveRename = {
+            if (renameName.text.isNotBlank()) {
+                viewModel.renameShelf(shelfId, renameName.text.trim())
+            }
+            isRenaming = false
+        },
+        onStartReordering = {
+            if (shelfWithCovers != null) {
+                reorderBooks = shelfWithCovers.books.map { Book.fromEntity(it) }
+                isReordering = true
+            }
+        },
+        onCancelReorder = { isReordering = false },
+        onSaveReorder = {
+            viewModel.updateShelfOrder(shelfId, reorderBooks.map { it.id })
+            if (uiState.bookPreferences.sortType != SortType.Custom) {
+                viewModel.onSortTypeChange(SortType.Custom)
+            }
+            isReordering = false
+        },
+        onReorderBooksChange = { reorderBooks = it },
+        onShowFilterSheet = { showFilterSheet = true },
+        onShowDeleteDialog = { showDeleteDialog = true },
+        onBookClick = onNavigateToReader,
+        onBookLongClick = { selectedBookForMenu = it },
+        scrollKey = Triple(
+            uiState.bookPreferences.sortType,
+            uiState.bookPreferences.isAscending,
+            uiState.bookPreferences.selectedStatus
         )
-    }
+    )
 
     if (showFilterSheet) {
         ShelfDetailFilterBottomSheet(
@@ -287,53 +234,239 @@ fun ShelfDetailScreen(
             onLayoutModeChange = viewModel::onLayoutModeChange,
             onSortTypeChange = viewModel::onSortTypeChange,
             onStatusToggle = viewModel::toggleStatusFilter,
-            onDismiss = { showFilterSheet = false })
+            onDismiss = { showFilterSheet = false }
+        )
     }
 
     if (showDeleteDialog && shelfWithCovers != null) {
-        DeleteShelfDialog(shelfName = shelfWithCovers.shelf.name, onConfirm = {
-            viewModel.deleteShelf(shelfId)
-            showDeleteDialog = false
-            onNavigateBack()
-        }, onDismiss = { showDeleteDialog = false })
+        DeleteShelfDialog(
+            shelfName = shelfWithCovers.shelf.name,
+            onConfirm = {
+                viewModel.deleteShelf(shelfId)
+                showDeleteDialog = false
+                onNavigateBack()
+            },
+            onDismiss = { showDeleteDialog = false }
+        )
     }
 
     selectedBookForMenu?.let { bookId ->
         BookContextMenu(
             bookId = bookId,
-            shelfId = shelfId,
             allBooks = allBooks,
             onNavigateToBookInfo = onNavigateToBookInfo,
             onToggleArchive = { viewModel.toggleArchive(bookId) },
             onToggleReadStatus = { viewModel.toggleReadStatus(bookId) },
-            onRemoveFromShelf = { viewModel.removeBookFromShelf(shelfId, bookId) },
-            onAddToShelf = onNavigateToAddToShelf,
+            onOrganize = onNavigateToOrganize,
             onDeleteBook = { viewModel.deleteBook(bookId) },
             onEnterMultiSelect = {
                 selectedBooks = setOf(bookId)
                 isInMultiSelectMode = true
             },
-            onDismiss = { selectedBookForMenu = null })
+            onDismiss = { selectedBookForMenu = null }
+        )
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ShelfDetailContent(
+    shelfId: String,
+    displayTitle: String,
+    displayCount: Int,
+    shelfWithCovers: ShelfWithCovers?,
+    books: List<Book>,
+    allBooks: List<Book>,
+    reorderBooks: List<Book>,
+    isReordering: Boolean,
+    isRenaming: Boolean,
+    renameName: TextFieldValue,
+    layoutMode: LayoutMode,
+    selectedBooks: Set<String>,
+    isInMultiSelectMode: Boolean,
+    onNavigateBack: () -> Unit,
+    onEnterMultiSelect: (String?) -> Unit,
+    onExitMultiSelect: () -> Unit,
+    onSelectAll: () -> Unit,
+    onClearSelection: () -> Unit,
+    onToggleBookSelection: (String) -> Unit,
+    onMarkAsReadUnread: (Boolean) -> Unit,
+    onArchiveSelected: () -> Unit,
+    onDeleteSelected: () -> Unit,
+    onOrganizeSelected: () -> Unit,
+    onRenameNameChange: (TextFieldValue) -> Unit,
+    onStartRename: () -> Unit,
+    onCancelRename: () -> Unit,
+    onSaveRename: () -> Unit,
+    onStartReordering: () -> Unit,
+    onCancelReorder: () -> Unit,
+    onSaveReorder: () -> Unit,
+    onReorderBooksChange: (List<Book>) -> Unit,
+    onShowFilterSheet: () -> Unit,
+    onShowDeleteDialog: () -> Unit,
+    onBookClick: (String) -> Unit,
+    onBookLongClick: (String) -> Unit,
+    scrollKey: Any? = null,
+    modifier: Modifier = Modifier
+) {
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
+    Scaffold(
+        modifier = if (isInMultiSelectMode) modifier else modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            ShelfDetailTopBar(
+                shelfId = shelfId,
+                displayTitle = displayTitle,
+                displayCount = displayCount,
+                books = books,
+                allBooks = allBooks,
+                selectedBooks = selectedBooks,
+                isInMultiSelectMode = isInMultiSelectMode,
+                isReordering = isReordering,
+                isRenaming = isRenaming,
+                renameName = renameName,
+                scrollBehavior = scrollBehavior,
+                onNavigateBack = onNavigateBack,
+                onEnterMultiSelect = { onEnterMultiSelect(null) },
+                onExitMultiSelect = onExitMultiSelect,
+                onSelectAll = onSelectAll,
+                onClearSelection = onClearSelection,
+                onMarkAsReadUnread = onMarkAsReadUnread,
+                onArchiveSelected = onArchiveSelected,
+                onDeleteSelected = onDeleteSelected,
+                onOrganizeSelected = onOrganizeSelected,
+                onRenameNameChange = onRenameNameChange,
+                onStartRename = onStartRename,
+                onCancelRename = onCancelRename,
+                onSaveRename = onSaveRename,
+                onStartReordering = onStartReordering,
+                onCancelReorder = onCancelReorder,
+                onSaveReorder = onSaveReorder,
+                onShowFilterSheet = onShowFilterSheet,
+                onShowDeleteDialog = onShowDeleteDialog
+            )
+        }
+    ) { innerPadding ->
+        ShelfDetailBookListContent(
+            shelfWithCovers = shelfWithCovers,
+            books = books,
+            reorderBooks = reorderBooks,
+            isReordering = isReordering,
+            layoutMode = layoutMode,
+            selectedBooks = selectedBooks,
+            isInMultiSelectMode = isInMultiSelectMode,
+            onReorderBooksChange = onReorderBooksChange,
+            onBookClick = { bookId ->
+                if (isInMultiSelectMode) {
+                    onToggleBookSelection(bookId)
+                } else {
+                    onBookClick(bookId)
+                }
+            },
+            onBookLongClick = onBookLongClick,
+            modifier = Modifier.padding(innerPadding),
+            scrollKey = scrollKey
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ShelfDetailTopBar(
+    shelfId: String,
+    displayTitle: String,
+    displayCount: Int,
+    books: List<Book>,
+    allBooks: List<Book>,
+    selectedBooks: Set<String>,
+    isInMultiSelectMode: Boolean,
+    isReordering: Boolean,
+    isRenaming: Boolean,
+    renameName: TextFieldValue,
+    scrollBehavior: TopAppBarScrollBehavior,
+    onNavigateBack: () -> Unit,
+    onEnterMultiSelect: () -> Unit,
+    onExitMultiSelect: () -> Unit,
+    onSelectAll: () -> Unit,
+    onClearSelection: () -> Unit,
+    onMarkAsReadUnread: (Boolean) -> Unit,
+    onArchiveSelected: () -> Unit,
+    onDeleteSelected: () -> Unit,
+    onOrganizeSelected: () -> Unit,
+    onRenameNameChange: (TextFieldValue) -> Unit,
+    onStartRename: () -> Unit,
+    onCancelRename: () -> Unit,
+    onSaveRename: () -> Unit,
+    onStartReordering: () -> Unit,
+    onCancelReorder: () -> Unit,
+    onSaveReorder: () -> Unit,
+    onShowFilterSheet: () -> Unit,
+    onShowDeleteDialog: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val showMarkAsRead = remember(allBooks, selectedBooks) {
+        allBooks.filter { it.id in selectedBooks }.any { !it.isRead }
+    }
+
+    MultiSelectTopBarTransition(
+        isMultiSelect = isInMultiSelectMode,
+        multiSelectBar = {
+            MultiSelectAppBar(
+                selectedCount = selectedBooks.size,
+                isAllSelected = books.isNotEmpty() && selectedBooks.size == books.size,
+                showMarkAsRead = showMarkAsRead,
+                onCloseMultiSelect = onExitMultiSelect,
+                onClearSelection = onClearSelection,
+                onSelectAll = onSelectAll,
+                onMarkAsReadUnread = { onMarkAsReadUnread(showMarkAsRead) },
+                onOrganize = onOrganizeSelected,
+                onArchive = onArchiveSelected,
+                onDelete = onDeleteSelected
+            )
+        },
+        defaultBar = {
+            ShelfDetailDefaultTopAppBar(
+                shelfId = shelfId,
+                displayTitle = displayTitle,
+                displayCount = displayCount,
+                isReordering = isReordering,
+                isRenaming = isRenaming,
+                renameName = renameName,
+                scrollBehavior = scrollBehavior,
+                onNavigateBack = onNavigateBack,
+                onRenameNameChange = onRenameNameChange,
+                onCancelRename = onCancelRename,
+                onSaveRename = onSaveRename,
+                onStartReordering = onStartReordering,
+                onCancelReorder = onCancelReorder,
+                onSaveReorder = onSaveReorder,
+                onShowFilterSheet = onShowFilterSheet,
+                onRenameClick = onStartRename,
+                onDeleteClick = onShowDeleteDialog,
+                onEnterMultiSelect = onEnterMultiSelect,
+                modifier = modifier
+            )
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun ShelfDetailTopAppBar(
+private fun ShelfDetailDefaultTopAppBar(
+    shelfId: String,
     displayTitle: String,
     displayCount: Int,
     isReordering: Boolean,
     isRenaming: Boolean,
     renameName: TextFieldValue,
+    scrollBehavior: TopAppBarScrollBehavior,
+    onNavigateBack: () -> Unit,
     onRenameNameChange: (TextFieldValue) -> Unit,
     onCancelRename: () -> Unit,
     onSaveRename: () -> Unit,
-    shelfId: String,
-    scrollBehavior: TopAppBarScrollBehavior,
-    onNavigateBack: () -> Unit,
+    onStartReordering: () -> Unit,
     onCancelReorder: () -> Unit,
     onSaveReorder: () -> Unit,
-    onStartReordering: () -> Unit,
     onShowFilterSheet: () -> Unit,
     onRenameClick: () -> Unit,
     onDeleteClick: () -> Unit,
@@ -350,7 +483,9 @@ private fun ShelfDetailTopAppBar(
     }
 
     LibraryTopAppBar(
-        onBack = onNavigateBack, modifier = modifier, title = {
+        onBack = onNavigateBack,
+        modifier = modifier,
+        title = {
             if (isRenaming) {
                 BasicTextField(
                     value = renameName,
@@ -366,16 +501,22 @@ private fun ShelfDetailTopAppBar(
                 )
             } else {
                 Text(
-                    text = displayTitle, maxLines = 1, overflow = TextOverflow.Ellipsis
+                    text = displayTitle,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-        }, subtitle = {
+        },
+        subtitle = {
             Text(
                 pluralStringResource(
-                    R.plurals.library_shelf_count, displayCount, displayCount
+                    R.plurals.library_shelf_count,
+                    displayCount,
+                    displayCount
                 )
             )
-        }, navigationIcon = {
+        },
+        navigationIcon = {
             val isEditMode = isReordering || isRenaming
             val rotation by animateFloatAsState(
                 targetValue = if (isEditMode) 90f else 0f,
@@ -393,17 +534,20 @@ private fun ShelfDetailTopAppBar(
                     } else {
                         onNavigateBack()
                     }
-                }) {
+                }
+            ) {
                 Box(
                     modifier = Modifier.graphicsLayer { rotationZ = rotation },
                     contentAlignment = Alignment.Center
                 ) {
                     AnimatedContent(
-                        targetState = isEditMode, transitionSpec = {
+                        targetState = isEditMode,
+                        transitionSpec = {
                             fadeIn(animationSpec = navEffectsSpec) togetherWith fadeOut(
                                 animationSpec = navEffectsSpec
                             )
-                        }, label = "navigationIconContent"
+                        },
+                        label = "navigationIconContent"
                     ) { targetIsEditMode ->
                         if (targetIsEditMode) {
                             Icon(
@@ -419,7 +563,8 @@ private fun ShelfDetailTopAppBar(
                     }
                 }
             }
-        }, actions = {
+        },
+        actions = {
             val isEditMode = isReordering || isRenaming
             val density = LocalDensity.current
             val slideOffsetPx = remember(density) { with(density) { 30.dp.roundToPx() } }
@@ -427,21 +572,23 @@ private fun ShelfDetailTopAppBar(
             val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
 
             AnimatedContent(
-                targetState = isEditMode, transitionSpec = {
+                targetState = isEditMode,
+                transitionSpec = {
                     if (targetState) {
-                        // Enter Edit Mode: Checkmark fades in, normal actions fade out and slide right by 20dp
                         fadeIn(animationSpec = actionsEffectsSpec) togetherWith fadeOut(
                             animationSpec = actionsEffectsSpec
                         ) + slideOutHorizontally(
-                            targetOffsetX = { slideOffsetPx }, animationSpec = actionsSpatialSpec
+                            targetOffsetX = { slideOffsetPx },
+                            animationSpec = actionsSpatialSpec
                         )
                     } else {
-                        // Exit Edit Mode: Normal actions fade in and slide in from right by 20dp, checkmark fades out
                         fadeIn(animationSpec = actionsEffectsSpec) + slideInHorizontally(
-                            initialOffsetX = { slideOffsetPx }, animationSpec = actionsSpatialSpec
+                            initialOffsetX = { slideOffsetPx },
+                            animationSpec = actionsSpatialSpec
                         ) togetherWith fadeOut(animationSpec = actionsEffectsSpec)
                     }
-                }, label = "actionsContent"
+                },
+                label = "actionsContent"
             ) { targetIsEditMode ->
                 if (targetIsEditMode) {
                     FilledIconButton(
@@ -466,7 +613,8 @@ private fun ShelfDetailTopAppBar(
                     ) {
                         if (shelfId != "unshelved") {
                             IconButton(
-                                shapes = IconButtonDefaults.shapes(), onClick = onStartReordering
+                                shapes = IconButtonDefaults.shapes(),
+                                onClick = onStartReordering
                             ) {
                                 Icon(
                                     MaterialSymbols.Outlined.Format_list_numbered,
@@ -475,7 +623,8 @@ private fun ShelfDetailTopAppBar(
                             }
                         }
                         IconButton(
-                            shapes = IconButtonDefaults.shapes(), onClick = onShowFilterSheet
+                            shapes = IconButtonDefaults.shapes(),
+                            onClick = onShowFilterSheet
                         ) {
                             Icon(
                                 MaterialSymbols.Outlined.Tune,
@@ -485,7 +634,8 @@ private fun ShelfDetailTopAppBar(
                         Box {
                             IconButton(
                                 shapes = IconButtonDefaults.shapes(),
-                                onClick = { showMoreMenu = true }) {
+                                onClick = { showMoreMenu = true }
+                            ) {
                                 Icon(
                                     MaterialSymbols.Outlined.More_vert,
                                     contentDescription = stringResource(R.string.action_more)
@@ -494,7 +644,8 @@ private fun ShelfDetailTopAppBar(
                             val totalItems = if (shelfId == "unshelved") 1 else 3
                             DropdownMenuPopup(
                                 expanded = showMoreMenu,
-                                onDismissRequest = { showMoreMenu = false }) {
+                                onDismissRequest = { showMoreMenu = false }
+                            ) {
                                 val groupInteractionSource =
                                     remember { MutableInteractionSource() }
                                 DropdownMenuGroup(
@@ -515,7 +666,8 @@ private fun ShelfDetailTopAppBar(
                                         onClick = {
                                             onEnterMultiSelect()
                                             showMoreMenu = false
-                                        })
+                                        }
+                                    )
                                     if (shelfId != "unshelved") {
                                         DropdownMenuItem(
                                             selected = false,
@@ -531,7 +683,8 @@ private fun ShelfDetailTopAppBar(
                                             onClick = {
                                                 onRenameClick()
                                                 showMoreMenu = false
-                                            })
+                                            }
+                                        )
                                         DropdownMenuItem(
                                             selected = false,
                                             text = {
@@ -552,7 +705,8 @@ private fun ShelfDetailTopAppBar(
                                             onClick = {
                                                 onDeleteClick()
                                                 showMoreMenu = false
-                                            })
+                                            }
+                                        )
                                     }
                                 }
                             }
@@ -560,15 +714,17 @@ private fun ShelfDetailTopAppBar(
                     }
                 }
             }
-        }, colors = TopAppBarDefaults.topAppBarColors(
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.surface,
             scrolledContainerColor = MaterialTheme.colorScheme.surface
-        ), scrollBehavior = scrollBehavior
+        ),
+        scrollBehavior = scrollBehavior
     )
 }
 
 @Composable
-private fun ShelfDetailContent(
+private fun ShelfDetailBookListContent(
     shelfWithCovers: ShelfWithCovers?,
     books: List<Book>,
     reorderBooks: List<Book>,
@@ -591,7 +747,6 @@ private fun ShelfDetailContent(
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(16.dp)
             )
-
         } else if (books.isEmpty() && !isReordering) {
             EmptyState(
                 icon = MaterialSymbols.Outlined.Book,
@@ -610,18 +765,22 @@ private fun ShelfDetailContent(
             )
         } else {
             AnimatedContent(
-                targetState = isReordering, transitionSpec = {
+                targetState = isReordering,
+                transitionSpec = {
                     fadeIn(
                         animationSpec = tween(
-                            durationMillis = 100, delayMillis = 100
+                            durationMillis = 100,
+                            delayMillis = 100
                         )
                     ) + scaleIn(
                         initialScale = 0.9f,
                         animationSpec = tween(durationMillis = 100, delayMillis = 100)
                     ) togetherWith fadeOut(animationSpec = tween(durationMillis = 100)) + scaleOut(
-                        targetScale = 0.9f, animationSpec = tween(durationMillis = 100)
+                        targetScale = 0.9f,
+                        animationSpec = tween(durationMillis = 100)
                     )
-                }, label = "shelfDetailContentReorderTransition"
+                },
+                label = "shelfDetailContentReorderTransition"
             ) { targetIsReordering ->
                 if (targetIsReordering) {
                     val lazyListState = rememberLazyListState()
@@ -632,7 +791,8 @@ private fun ShelfDetailContent(
                     }
 
                     LazyColumn(
-                        state = lazyListState, modifier = Modifier.fillMaxSize()
+                        state = lazyListState,
+                        modifier = Modifier.fillMaxSize()
                     ) {
                         items(reorderBooks, { it.id }) { item ->
                             ReorderableItem(reorderState, key = item.id) { isDragging ->
@@ -662,7 +822,8 @@ private fun ShelfDetailContent(
                                                     )
                                                 )
                                             }
-                                        })
+                                        }
+                                    )
                                 }
                             }
                         }
@@ -685,7 +846,9 @@ private fun ShelfDetailContent(
 
 @Composable
 private fun DeleteShelfDialog(
-    shelfName: String, onConfirm: () -> Unit, onDismiss: () -> Unit
+    shelfName: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -693,14 +856,16 @@ private fun DeleteShelfDialog(
         text = {
             Text(
                 stringResource(
-                    R.string.library_delete_shelf_message, shelfName
+                    R.string.library_delete_shelf_message,
+                    shelfName
                 )
             )
         },
         confirmButton = {
             TextButton(onClick = onConfirm) {
                 Text(
-                    stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error
+                    stringResource(R.string.action_delete),
+                    color = MaterialTheme.colorScheme.error
                 )
             }
         },
@@ -708,5 +873,6 @@ private fun DeleteShelfDialog(
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.action_cancel))
             }
-        })
+        }
+    )
 }
