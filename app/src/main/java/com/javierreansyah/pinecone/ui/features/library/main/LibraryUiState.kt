@@ -20,6 +20,7 @@ data class LibraryUiState(
 )
 
 data class SearchResults(
+    val query: String = "",
     val books: List<Book> = emptyList(),
     val shelves: List<ShelfEntity> = emptyList(),
     val authors: List<String> = emptyList(),

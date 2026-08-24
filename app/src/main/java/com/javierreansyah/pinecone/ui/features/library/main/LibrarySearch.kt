@@ -219,7 +219,6 @@ fun LibrarySearchTopBar(
                 exit = fadeOut(animationSpec = actionsEffectsSpec)
             ) {
                 ExpandedSearchContent(
-                    isSearchEmpty = textFieldState.text.isEmpty(),
                     searchCategory = searchCategory,
                     searchResults = searchResults,
                     onSearchCategoryChange = onSearchCategoryChange,
