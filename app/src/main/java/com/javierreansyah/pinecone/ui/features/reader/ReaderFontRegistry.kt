@@ -7,10 +7,9 @@ import org.readium.r2.shared.ExperimentalReadiumApi
 
 @OptIn(ExperimentalReadiumApi::class)
 fun EpubNavigatorFragment.Configuration.configureFonts() {
-    // Serve the fonts directory so the navigator can load custom font files.
+
     servedAssets += "fonts/.*"
 
-    // Source Serif 4 — variable font, used as an explicit serif option.
     addFontFamilyDeclaration(FontFamily("Source Serif 4")) {
         addFontFace {
             addSource("fonts/source_serif_4.ttf", preload = true)
@@ -24,7 +23,6 @@ fun EpubNavigatorFragment.Configuration.configureFonts() {
         }
     }
 
-    // Source Sans 3 — variable font, used as the default sans-serif option.
     addFontFamilyDeclaration(FontFamily("Source Sans 3")) {
         addFontFace {
             addSource("fonts/source_sans_3.ttf", preload = true)
@@ -38,7 +36,6 @@ fun EpubNavigatorFragment.Configuration.configureFonts() {
         }
     }
 
-    // Literata — variable font.
     addFontFamilyDeclaration(FontFamily("Literata")) {
         addFontFace {
             addSource("fonts/literata.ttf", preload = true)
@@ -52,7 +49,6 @@ fun EpubNavigatorFragment.Configuration.configureFonts() {
         }
     }
 
-    // Atkinson Hyperlegible — static font family.
     addFontFamilyDeclaration(FontFamily("Atkinson Hyperlegible")) {
         addFontFace {
             addSource("fonts/atkinson_hyperlegible.ttf", preload = true)
@@ -76,7 +72,6 @@ fun EpubNavigatorFragment.Configuration.configureFonts() {
         }
     }
 
-    // Source Code — variable font.
     addFontFamilyDeclaration(FontFamily("Source Code")) {
         addFontFace {
             addSource("fonts/source_code.ttf", preload = true)

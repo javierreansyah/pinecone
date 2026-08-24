@@ -2,7 +2,6 @@ package com.javierreansyah.pinecone.data.local.database.library
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import androidx.room.RoomDatabase.Callback
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
@@ -32,7 +31,7 @@ abstract class AppDatabase : RoomDatabase() {
         private fun installRevisionTracking(db: SupportSQLiteDatabase) {
             db.execSQL(
                 "INSERT OR IGNORE INTO backup_state " +
-                    "(id, revision, pendingSettingsJson) VALUES (1, 0, NULL)"
+                        "(id, revision, pendingSettingsJson) VALUES (1, 0, NULL)"
             )
             val tables = listOf(
                 "books", "bookmarks", "shelves", "shelf_book_cross_ref", "notes",
@@ -41,8 +40,10 @@ abstract class AppDatabase : RoomDatabase() {
             )
             for (table in tables) for (operation in listOf("INSERT", "UPDATE", "DELETE")) {
                 val trigger = "backup_revision_${table}_${operation.lowercase()}"
-                db.execSQL("CREATE TRIGGER IF NOT EXISTS `$trigger` AFTER $operation ON `$table` " +
-                    "BEGIN UPDATE backup_state SET revision = revision + 1 WHERE id = 1; END")
+                db.execSQL(
+                    "CREATE TRIGGER IF NOT EXISTS `$trigger` AFTER $operation ON `$table` " +
+                            "BEGIN UPDATE backup_state SET revision = revision + 1 WHERE id = 1; END"
+                )
             }
         }
     }

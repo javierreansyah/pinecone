@@ -55,7 +55,7 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
         setContentView(R.layout.activity_reader)
 
         navigatorContainer = findViewById(R.id.navigator_container)
-        // Fix 1: pass LifecycleOwner + FragmentManager instead of the whole activity
+
         navigatorController = NavigatorController(
             this,
             supportFragmentManager,
@@ -69,15 +69,12 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
             insets
         }
 
-        // Fix 6: initialize system dark theme now, and keep it current via onConfigurationChanged()
         viewModel.systemDarkThemeFlow.value = isNightMode(resources.configuration)
 
-        // Open the book
         if (savedInstanceState == null) {
             viewModel.openBook()
         }
 
-        // Observe publication and set up navigator
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.publication.filterNotNull().collect { publication ->
@@ -86,7 +83,6 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
             }
         }
 
-        // Setup system and settings observers
         observeWindowBackground()
         observeNavigatorMargins()
         observeBrightness()
@@ -94,7 +90,6 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
         observeScreenTimeout()
         observeSystemBars()
 
-        // Set up Compose overlay
         val composeView = findViewById<ComposeView>(R.id.compose_overlay)
         composeView.setContent {
             val themeColorsState = viewModel.themeColors.collectAsState()
@@ -216,8 +211,7 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
     private fun observeSystemBars() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                // Fix 5: searchState removed from combine; clearSearchHighlight() is now owned
-                //         by NavigatorController's own observer on searchState.isInNavMode.
+
                 combine(
                     viewModel.controlsState,
                     viewModel.settingsFlow
@@ -238,7 +232,6 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
         }
     }
 
-    // Fix 6: keep systemDarkThemeFlow current when the user switches the system theme at runtime
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         viewModel.systemDarkThemeFlow.value = isNightMode(newConfig)

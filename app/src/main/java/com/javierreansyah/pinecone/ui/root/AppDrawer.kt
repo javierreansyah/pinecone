@@ -4,9 +4,13 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
@@ -44,11 +48,6 @@ import com.composables.icons.materialsymbols.outlined.Upload
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import kotlinx.coroutines.launch
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -73,7 +72,9 @@ fun AppDrawer(
         expandedHeaderTopPadding = 0.dp,
         contentPadding = PaddingValues(0.dp)
     ) {
-        Column(modifier = Modifier.fillMaxHeight().verticalScroll(rememberScrollState())) {
+        Column(modifier = Modifier
+            .fillMaxHeight()
+            .verticalScroll(rememberScrollState())) {
             IconButton(
                 onClick = {
                     scope.launch { drawerState.collapse() }
@@ -88,7 +89,6 @@ fun AppDrawer(
                 )
             }
 
-            // FAB for imports with dropdown menu
             Box(
                 modifier = Modifier
                     .padding(start = 20.dp, end = 16.dp, top = 16.dp, bottom = 16.dp)
@@ -110,7 +110,7 @@ fun AppDrawer(
                             contentDescription = null
                         )
                     },
-                    text = { Text(text = "Import") }
+                    text = { Text(text = stringResource(R.string.action_import)) }
                 )
 
                 DropdownMenuPopup(
@@ -160,7 +160,6 @@ fun AppDrawer(
                 }
             }
 
-            // Normal WideNavigationRailItems below the FAB
             WideNavigationRailItem(
                 railExpanded = true,
                 icon = {
@@ -227,7 +226,7 @@ fun AppDrawer(
 
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Spaces",
+                text = stringResource(R.string.library_spaces_title),
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant

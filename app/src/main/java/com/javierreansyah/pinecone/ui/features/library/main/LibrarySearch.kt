@@ -93,19 +93,16 @@ fun LibrarySearchTopBar(
         mutableStateOf(searchBarState.currentValue == SearchBarValue.Expanded)
     }
 
-    // Sync state to parent
     LaunchedEffect(textFieldState.text) {
         onSearchQueryChange(textFieldState.text.toString())
     }
 
-    // Handle focus and keyboard based on search bar state
     HandleSearchBarStateChanges(
         searchBarState = searchBarState,
         textFieldState = textFieldState,
         focusRequester = focusRequester,
         onRestoringChange = { isRestoring = it })
 
-    // Colors
     val searchBarContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
 
     val appBarWithSearchColors = SearchBarDefaults.appBarWithSearchColors(
@@ -255,7 +252,6 @@ private fun HandleSearchBarStateChanges(
 
     var previousValue by remember { mutableStateOf<SearchBarValue?>(null) }
 
-    // Listen to lifecycle resume events to clear focus and keyboard when returning to the screen
     val lifecycle = lifecycleOwner.lifecycle
     DisposableEffect(lifecycle) {
         val observer = LifecycleEventObserver { _, event ->
@@ -267,7 +263,7 @@ private fun HandleSearchBarStateChanges(
                         kotlinx.coroutines.yield()
                         focusManager.clearFocus(force = true)
                         keyboardController?.hide()
-                        // Reset the restoring flag to false once the restoration pass is complete
+
                         onRestoringChange(false)
                     }
                 }
@@ -281,7 +277,7 @@ private fun HandleSearchBarStateChanges(
 
     LaunchedEffect(searchBarState.currentValue) {
         if (searchBarState.currentValue == SearchBarValue.Collapsed) {
-            onRestoringChange(false) // Reset flag when collapsed
+            onRestoringChange(false)
             focusManager.clearFocus()
             keyboardController?.hide()
             if (textFieldState.text.isNotEmpty()) {
@@ -290,7 +286,7 @@ private fun HandleSearchBarStateChanges(
         } else if (searchBarState.currentValue == SearchBarValue.Expanded) {
             // Only request focus/keyboard if we transitioned from Collapsed to Expanded (user clicked search)
             if (previousValue == SearchBarValue.Collapsed) {
-                onRestoringChange(false) // Reset flag when explicitly expanding
+                onRestoringChange(false)
                 lifecycleOwner.lifecycle.withResumed {
                     focusRequester.requestFocus()
                     keyboardController?.show()
@@ -409,5 +405,3 @@ private fun SearchInputField(
         },
     )
 }
-
-

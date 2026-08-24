@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.data.local.database.library
 
-
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -20,6 +19,6 @@ data class NoteEntity(
     val locatorJson: String,
     val chapterTitle: String? = null,
     val noteText: String,
-    val color: Int = -1, // -1 means default
+    val color: Int = -1,
     val createdAt: Long = System.currentTimeMillis()
 )

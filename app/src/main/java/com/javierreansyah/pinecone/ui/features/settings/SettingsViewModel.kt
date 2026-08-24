@@ -58,7 +58,9 @@ class SettingsViewModel(
             _isBackingUp.value = true; onStart()
             val result = backupRepository.createSnapshot(manual = true)
             _isBackingUp.value = false
-            if (result.isSuccess) { loadBackups(); onSuccess() } else onFailure()
+            if (result.isSuccess) {
+                loadBackups(); onSuccess()
+            } else onFailure()
         }
     }
 
@@ -66,8 +68,10 @@ class SettingsViewModel(
         viewModelScope.launch {
             val formatter = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
             _availableBackups.value = backupRepository.listSnapshots().map {
-                BackupFile(it.uri, it.id, it.timestamp, it.isManual,
-                    formatter.format(Date(it.timestamp)))
+                BackupFile(
+                    it.uri, it.id, it.timestamp, it.isManual,
+                    formatter.format(Date(it.timestamp))
+                )
             }
         }
     }
@@ -88,7 +92,11 @@ class SettingsViewModel(
                     getApplication<Application>().imageLoader.diskCache?.clear()
                     onSuccess()
                 }
-                is BackupResult.Partial -> { onWarning(); onSuccess() }
+
+                is BackupResult.Partial -> {
+                    onWarning(); onSuccess()
+                }
+
                 is BackupResult.Failure -> onFailure()
             }
             _isRestoring.value = false
@@ -97,14 +105,20 @@ class SettingsViewModel(
 
     fun exportBackup(uri: Uri, destination: Uri, onSuccess: () -> Unit, onFailure: () -> Unit) {
         viewModelScope.launch {
-            if (backupRepository.exportSnapshot(uri, destination).isSuccess) onSuccess() else onFailure()
+            if (backupRepository.exportSnapshot(
+                    uri,
+                    destination
+                ).isSuccess
+            ) onSuccess() else onFailure()
         }
     }
 
     fun importBackup(uri: Uri, onSuccess: () -> Unit, onFailure: () -> Unit) {
         viewModelScope.launch {
             val result = backupRepository.importPortable(uri)
-            if (result.isSuccess) { loadBackups(); onSuccess() } else onFailure()
+            if (result.isSuccess) {
+                loadBackups(); onSuccess()
+            } else onFailure()
         }
     }
 

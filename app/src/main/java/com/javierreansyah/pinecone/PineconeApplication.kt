@@ -79,7 +79,6 @@ class PineconeApplication : Application() {
             assetRetriever = assetRetriever
         )
 
-        // Schedule initial backup based on preferences
         readerPreferences = ReaderPreferences(applicationContext)
 
         dictionaryRepository = DictionaryRepository(

@@ -39,7 +39,7 @@ object WorkerUtils {
         ).setConstraints(constraints).build()
 
         workManager.enqueueUniquePeriodicWork(
-            BACKUP_WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE, // Update if exists
+            BACKUP_WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE,
             workRequest
         )
     }

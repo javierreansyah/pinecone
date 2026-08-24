@@ -38,10 +38,7 @@ import com.composables.icons.materialsymbols.outlined.Archive
 import com.composables.icons.materialsymbols.outlined.Check_circle
 import com.composables.icons.materialsymbols.outlined.Create_new_folder
 import com.composables.icons.materialsymbols.outlined.Delete
-import com.composables.icons.materialsymbols.outlined.Folder_delete
-import com.composables.icons.materialsymbols.outlined.Forest
 import com.composables.icons.materialsymbols.outlined.Info
-import com.composables.icons.materialsymbols.outlined.Park
 import com.composables.icons.materialsymbols.outlined.Radio_button_unchecked
 import com.composables.icons.materialsymbols.outlined.Select
 import com.composables.icons.materialsymbols.outlined.Unarchive
@@ -52,8 +49,6 @@ import com.javierreansyah.pinecone.data.model.Book
 @Composable
 fun BookContextMenu(
     bookId: String,
-    shelfId: String? = null,
-    spaceId: String? = null,
     allBooks: List<Book>,
     onNavigateToBookInfo: (String) -> Unit,
     onToggleArchive: () -> Unit,
@@ -274,7 +269,6 @@ fun BookContextMenu(
         }
     }
 
-    // Delete Confirmation Dialog
     if (showDeleteConfirmation) {
         AlertDialog(onDismissRequest = { showDeleteConfirmation = false }, title = {
             Text(

@@ -9,6 +9,7 @@ sealed interface BackupResult {
         val phaseDurationsMillis: Map<String, Long> = emptyMap(),
         val warnings: List<BackupFailure> = emptyList()
     ) : BackupResult
+
     data object Skipped : BackupResult
     data class Partial(val warning: BackupFailure) : BackupResult
     data class Failure(val reason: BackupFailure, val cause: Throwable? = null) : BackupResult
@@ -20,11 +21,9 @@ sealed interface BackupResult {
 enum class BackupFailure {
     BACKUP_LOCATION_MISSING,
     PERMISSION_DENIED,
-    INSUFFICIENT_SPACE,
     MALFORMED_ARCHIVE,
     CHECKSUM_MISMATCH,
     UNSUPPORTED_VERSION,
-    INVALID_RELATIONSHIP,
     MISSING_BOOK_FILE,
     MISSING_DICTIONARY,
     INVALID_DATABASE,

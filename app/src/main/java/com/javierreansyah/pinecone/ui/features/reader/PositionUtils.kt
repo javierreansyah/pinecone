@@ -24,7 +24,6 @@ fun List<Locator>.findIndexForLocator(locator: Locator): Int {
         if (bestIndex != -1) return bestIndex
     }
 
-    // Fallback: linear search for href + progression
     val targetHref = locator.href.toString().substringBefore("#")
     val targetProgression = locator.locations.progression ?: 0.0
 

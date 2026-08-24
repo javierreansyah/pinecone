@@ -21,18 +21,12 @@ class StardictParser(private val context: Context) {
         val name: String, val idxOffsetBits: Int, val isHtml: Boolean, val wordCount: Int
     )
 
-    /**
-     * Read a big-endian 32-bit integer from a byte array without allocating a ByteBuffer.
-     */
     private fun readInt(bytes: ByteArray, offset: Int): Int =
         (bytes[offset].toInt() and 0xFF shl 24) or
                 (bytes[offset + 1].toInt() and 0xFF shl 16) or
                 (bytes[offset + 2].toInt() and 0xFF shl 8) or
                 (bytes[offset + 3].toInt() and 0xFF)
 
-    /**
-     * Read a big-endian 64-bit long from a byte array without allocating a ByteBuffer.
-     */
     private fun readLong(bytes: ByteArray, offset: Int): Long =
         (bytes[offset].toLong() and 0xFF shl 56) or
                 (bytes[offset + 1].toLong() and 0xFF shl 48) or
@@ -51,7 +45,7 @@ class StardictParser(private val context: Context) {
         if (!tempDir.exists()) tempDir.mkdirs()
 
         try {
-            // 1. Unzip the file
+
             onProgress(5)
             context.contentResolver.openInputStream(zipUri)?.use { inputStream ->
                 ZipInputStream(BufferedInputStream(inputStream, 65536)).use { zis ->
@@ -70,7 +64,6 @@ class StardictParser(private val context: Context) {
                 }
             }
 
-            // 2. Find necessary files
             val files = tempDir.listFiles() ?: emptyArray()
             val ifoFile =
                 files.find { it.name.endsWith(".ifo") } ?: throw Exception("Missing .ifo file")
@@ -78,10 +71,8 @@ class StardictParser(private val context: Context) {
                 files.find { it.name.endsWith(".idx") } ?: throw Exception("Missing .idx file")
             var dictFile = files.find { it.name.endsWith(".dict") }
 
-            // Find .syn file
             var synFile = files.find { it.name.endsWith(".syn") }
 
-            // 3. Handle dict.dz and syn.dz
             if (dictFile == null) {
                 val dzFile = files.find { it.name.endsWith(".dict.dz") }
                 if (dzFile != null) {
@@ -115,19 +106,15 @@ class StardictParser(private val context: Context) {
                 }
             }
 
-            // 4. Parse .ifo
             onProgress(30)
             val info = parseIfo(ifoFile)
 
-            // 5. Parse .idx and .dict into Database
             onProgress(40)
             val db = DictionaryDatabase.getDatabase(context, dictId)
             val dao = db.dictionaryDao()
 
             val idxBytes = idxFile.readBytes()
 
-            // Memory-map the .dict file for efficient random reads without per-call syscall overhead.
-            // The OS handles paging, so this is both fast and memory-safe on mobile.
             val dictChannel = FileInputStream(dictFile).channel
             val dictMapped = dictChannel.map(
                 FileChannel.MapMode.READ_ONLY, 0, dictChannel.size()
@@ -141,19 +128,16 @@ class StardictParser(private val context: Context) {
 
             val buffer = mutableListOf<DictionaryEntry>()
 
-            // Wrap the entire import in a single database transaction to avoid
-            // per-batch fsync overhead. This is the single largest perf win.
             db.withTransaction {
                 while (idxOffset < totalBytes) {
-                    // Read word (null terminated string)
+
                     val wordStart = idxOffset
                     while (idxOffset < totalBytes && idxBytes[idxOffset].toInt() != 0) {
                         idxOffset++
                     }
                     val word = String(idxBytes, wordStart, idxOffset - wordStart, Charsets.UTF_8)
-                    idxOffset++ // skip null byte
+                    idxOffset++
 
-                    // Read offset and size using manual bit-shifting (avoids ByteBuffer allocation)
                     val dataOffset: Long
 
                     if (info.idxOffsetBits == 64) {
@@ -167,7 +151,6 @@ class StardictParser(private val context: Context) {
                     val dataSize: Int = readInt(idxBytes, idxOffset)
                     idxOffset += 4
 
-                    // Read definition from memory-mapped buffer (no syscall per word)
                     val defBytes = ByteArray(dataSize)
                     val slice = dictMapped.duplicate()
                     slice.position(dataOffset.toInt())
@@ -187,7 +170,6 @@ class StardictParser(private val context: Context) {
                         buffer.clear()
                     }
 
-                    // Update progress
                     val now = System.currentTimeMillis()
                     if (now - lastProgressUpdate > 500) {
                         lastProgressUpdate = now
@@ -200,7 +182,6 @@ class StardictParser(private val context: Context) {
                     dao.insertAll(buffer)
                 }
 
-                // 6. Parse .syn into Database (inside the same transaction)
                 if (synFile != null && synFile.exists()) {
                     val synBytes = synFile.readBytes()
                     var synOffset = 0
@@ -215,7 +196,7 @@ class StardictParser(private val context: Context) {
                         if (synOffset >= synTotalBytes) break
                         val synonym =
                             String(synBytes, synWordStart, synOffset - synWordStart, Charsets.UTF_8)
-                        synOffset++ // skip null byte
+                        synOffset++
 
                         if (synOffset + 4 > synTotalBytes) break
                         val originalWordIndex = readInt(synBytes, synOffset)

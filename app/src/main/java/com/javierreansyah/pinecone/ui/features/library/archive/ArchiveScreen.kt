@@ -204,7 +204,6 @@ fun ArchiveScreen(
     selectedBookForMenu?.let { bookId ->
         BookContextMenu(
             bookId = bookId,
-            shelfId = null,
             allBooks = allBooks,
             onNavigateToBookInfo = onNavigateToBookInfo,
             onToggleArchive = { viewModel.toggleArchive(bookId) },

@@ -8,12 +8,6 @@ import com.javierreansyah.pinecone.ui.components.HtmlPreset
 import com.javierreansyah.pinecone.ui.components.HtmlWebView
 import com.javierreansyah.pinecone.ui.components.HtmlWebViewConfig
 
-/**
- * Renders a dictionary definition HTML string inside a themed WebView.
- *
- * This is a focused wrapper around [HtmlWebView] that opts into the
- * [HtmlPreset.Definition] styling and wires up the word-click JS bridge.
- */
 @Composable
 fun DefinitionWebView(
     htmlContent: String,

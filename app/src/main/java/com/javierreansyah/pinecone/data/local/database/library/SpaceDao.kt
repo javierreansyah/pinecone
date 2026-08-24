@@ -12,9 +12,6 @@ interface SpaceDao {
     @Query("SELECT * FROM spaces ORDER BY name ASC")
     fun getAllSpaces(): Flow<List<SpaceEntity>>
 
-    @Query("SELECT * FROM spaces WHERE id = :id")
-    suspend fun getSpaceById(id: String): SpaceEntity?
-
     @Query("SELECT * FROM spaces WHERE name = :name")
     suspend fun getSpaceByName(name: String): SpaceEntity?
 
@@ -24,9 +21,6 @@ interface SpaceDao {
     @Delete
     suspend fun deleteSpace(space: SpaceEntity)
 
-    @Query("DELETE FROM spaces WHERE id = :id")
-    suspend fun deleteSpaceById(id: String)
-
     @Query("UPDATE spaces SET name = :newName WHERE id = :id")
     suspend fun renameSpace(id: String, newName: String)
 
@@ -35,13 +29,10 @@ interface SpaceDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertBookSpaceCrossRef(crossRef: BookSpaceCrossRef)
-    
+
     @Query("DELETE FROM book_space_cross_ref WHERE spaceId = :spaceId AND bookId = :bookId")
     suspend fun deleteBookSpaceCrossRef(spaceId: String, bookId: String)
-    
-    @Query("DELETE FROM book_space_cross_ref WHERE bookId = :bookId")
-    suspend fun deleteBookSpaceCrossRefsByBookId(bookId: String)
-    
+
     @Query("SELECT * FROM book_space_cross_ref")
     fun getAllBookSpaceCrossRefs(): Flow<List<BookSpaceCrossRef>>
 

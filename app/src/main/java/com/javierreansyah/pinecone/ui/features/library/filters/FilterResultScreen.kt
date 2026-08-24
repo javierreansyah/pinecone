@@ -83,7 +83,7 @@ import com.javierreansyah.pinecone.ui.features.library.components.book.BookConte
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FilterResultScreen(
-    filterType: String, // "author" or "tag"
+    filterType: String,
     filterValue: String,
     onNavigateBack: () -> Unit,
     onNavigateToReader: (String) -> Unit,
@@ -157,9 +157,7 @@ fun FilterResultScreen(
         },
         onToggleArchive = { bookId -> viewModel.toggleArchive(bookId) },
         onToggleReadStatus = { bookId -> viewModel.toggleReadStatus(bookId) },
-        onRemoveFromShelf = { shelfId, bookId -> viewModel.removeBookFromShelf(shelfId, bookId) },
         onNavigateToOrganize = onNavigateToOrganize,
-        onRemoveFromSpace = { spaceId, bookId -> viewModel.removeBookFromSpace(spaceId, bookId) },
         onDeleteBook = { bookId -> viewModel.deleteBook(bookId) }
     )
 }
@@ -183,9 +181,7 @@ private fun FilterResultContent(
     onRenameFilterItem: (String) -> Unit,
     onToggleArchive: (String) -> Unit,
     onToggleReadStatus: (String) -> Unit,
-    onRemoveFromShelf: (String, String) -> Unit,
     onNavigateToOrganize: (String) -> Unit,
-    onRemoveFromSpace: (String, String) -> Unit,
     onDeleteBook: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -357,8 +353,6 @@ private fun FilterResultContent(
         onNavigateToBookInfo = onNavigateToBookInfo,
         onToggleArchive = onToggleArchive,
         onToggleReadStatus = onToggleReadStatus,
-        onRemoveFromShelf = onRemoveFromShelf,
-        onRemoveFromSpace = onRemoveFromSpace,
         onNavigateToOrganize = onNavigateToOrganize,
         onDeleteBook = onDeleteBook,
         onEnterMultiSelect = { bookId ->
@@ -517,14 +511,14 @@ private fun FilterResultTopAppBar(
                     targetState = isRenaming,
                     transitionSpec = {
                         if (targetState) {
-                            // Enter Rename Mode: Checkmark fades in, normal actions fade out and slide right by 20dp
+
                             fadeIn(animationSpec = actionsEffectsSpec) togetherWith
                                     fadeOut(animationSpec = actionsEffectsSpec) + slideOutHorizontally(
                                 targetOffsetX = { slideOffsetPx },
                                 animationSpec = actionsSpatialSpec
                             )
                         } else {
-                            // Exit Rename Mode: Normal actions fade in and slide in from right by 20dp, checkmark fades out
+
                             fadeIn(animationSpec = actionsEffectsSpec) + slideInHorizontally(
                                 initialOffsetX = { slideOffsetPx },
                                 animationSpec = actionsSpatialSpec
@@ -737,8 +731,6 @@ private fun FilterResultDialogsAndSheets(
     onNavigateToBookInfo: (String) -> Unit,
     onToggleArchive: (String) -> Unit,
     onToggleReadStatus: (String) -> Unit,
-    onRemoveFromShelf: (String, String) -> Unit,
-    onRemoveFromSpace: (String, String) -> Unit,
     onNavigateToOrganize: (String) -> Unit,
     onDeleteBook: (String) -> Unit,
     onEnterMultiSelect: (String) -> Unit
@@ -755,10 +747,8 @@ private fun FilterResultDialogsAndSheets(
 
     selectedBookContext?.let { context ->
         val bookId = context.first
-        val contextShelfId = context.second
         BookContextMenu(
             bookId = bookId,
-            shelfId = contextShelfId,
             allBooks = allBooks,
             onNavigateToBookInfo = onNavigateToBookInfo,
             onToggleArchive = { onToggleArchive(bookId) },
@@ -795,4 +785,3 @@ private fun FilterResultDialogsAndSheets(
             })
     }
 }
-

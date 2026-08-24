@@ -154,7 +154,6 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun BookInfoScreen(
@@ -1052,7 +1051,6 @@ private fun NotesTabContent(
     }
 }
 
-
 @Composable
 private fun BookInfoHeader(
     book: Book,
@@ -1175,7 +1173,7 @@ private fun BookButtonGroup(
                     ) {
                         DropdownMenuItem(
                             selected = false,
-                            text = { Text("Read furthest") },
+                            text = { Text(stringResource(R.string.book_read_furthest)) },
                             leadingIcon = {
                                 Icon(
                                     imageVector = MaterialSymbols.Outlined.Book,
@@ -1190,7 +1188,7 @@ private fun BookButtonGroup(
                         )
                         DropdownMenuItem(
                             selected = false,
-                            text = { Text("Read from start") },
+                            text = { Text(stringResource(R.string.book_read_from_start)) },
                             leadingIcon = {
                                 Icon(
                                     imageVector = MaterialSymbols.Outlined.Replay,
@@ -1391,7 +1389,7 @@ private fun BookHeaderDetails(
                             onClick = { isExpanded = true }, label = {
                                 Icon(
                                     imageVector = MaterialSymbols.Outlined.More_vert,
-                                    contentDescription = "Show more tags",
+                                    contentDescription = stringResource(R.string.book_show_more_tags),
                                     modifier = Modifier.size(16.dp)
                                 )
                             }, colors = SuggestionChipDefaults.suggestionChipColors(
@@ -1404,7 +1402,7 @@ private fun BookHeaderDetails(
                             onClick = { isExpanded = false }, label = {
                                 Icon(
                                     imageVector = MaterialSymbols.Outlined.Close,
-                                    contentDescription = "Show less tags",
+                                    contentDescription = stringResource(R.string.book_show_less_tags),
                                     modifier = Modifier.size(16.dp)
                                 )
                             }, colors = SuggestionChipDefaults.suggestionChipColors(
@@ -1462,7 +1460,7 @@ private fun BookDescription(
         val spanned = HtmlCompat.fromHtml(
             description, HtmlCompat.FROM_HTML_MODE_COMPACT
         )
-        // Trim trailing whitespace/newlines that HtmlCompat often leaves
+
         val trimmed = spanned.toString().trimEnd()
         androidx.compose.ui.text.AnnotatedString(trimmed)
     }
@@ -1644,7 +1642,6 @@ private fun BookInfoTopButtons(
     }
 }
 
-
 private fun formatPublishedDate(dateString: String?, defaultValue: String): String {
     if (dateString.isNullOrBlank()) return defaultValue
     return try {
@@ -1682,7 +1679,6 @@ private fun parseBookFormat(mediaType: String?, defaultUnknown: String): String 
         return substring.replace(")", "").trim().uppercase()
     }
 
-    // Fallback parsing for traditional mime types
     val mime = mediaType.trim().lowercase()
     return when {
         mime == "application/epub+zip" -> "EPUB"

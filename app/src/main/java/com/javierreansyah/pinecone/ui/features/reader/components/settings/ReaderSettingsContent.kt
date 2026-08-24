@@ -202,10 +202,10 @@ fun ReaderSettingsContent(
                 val newTheme = CustomPineconeTheme(name, bgColor, textColor, uiTheme)
 
                 val updatedThemes = if (themeToEdit != null) {
-                    // Update existing theme, keeping its position
+
                     settings.customThemes.map { if (it.name == themeToEdit?.name) newTheme else it }
                 } else {
-                    // Add new theme
+
                     settings.customThemes + newTheme
                 }
 
@@ -289,7 +289,7 @@ fun ReaderSettingsContent(
 private fun TextTabContent(
     settings: ReaderSettings, onSettingsChange: (ReaderSettings) -> Unit, locale: Locale
 ) {
-    // Font Selection
+
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.padding(horizontal = 16.dp)
@@ -322,7 +322,6 @@ private fun TextTabContent(
         }
     }
 
-    // Typography
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             stringResource(R.string.reader_settings_typography),
@@ -330,7 +329,6 @@ private fun TextTabContent(
             modifier = Modifier.padding(horizontal = 16.dp)
         )
 
-        // Text Size, Font Weight
         Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.padding(horizontal = 16.dp)
@@ -380,7 +378,6 @@ private fun TextTabContent(
             )
         }
 
-        // Horizontal Margin, Vertical Margin
         Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.padding(horizontal = 16.dp)
@@ -433,13 +430,11 @@ private fun TextTabContent(
             )
         }
 
-        // Publisher Style
         SettingsSwitchRow(
             title = stringResource(R.string.reader_settings_publisher_style),
             isChecked = settings.publisherStyles,
             onCheckedChange = { onSettingsChange(settings.copy(publisherStyles = it)) })
 
-        // Alignment
         val alignmentOptionsMap = mapOf(
             "Left" to stringResource(R.string.reader_settings_alignment_left),
             "Right" to stringResource(R.string.reader_settings_alignment_right),
@@ -463,7 +458,6 @@ private fun TextTabContent(
             modifier = Modifier.padding(horizontal = 16.dp)
         )
 
-        // Line Spacing, Letter Spacing
         Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.padding(horizontal = 16.dp)
@@ -518,7 +512,6 @@ private fun TextTabContent(
             )
         }
 
-        // Word Spacing, Paragraph Spacing
         Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.padding(horizontal = 16.dp)
@@ -573,7 +566,6 @@ private fun TextTabContent(
             )
         }
 
-        // Paragraph Indent
         Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.padding(horizontal = 16.dp)
@@ -617,7 +609,6 @@ private fun LightingTabContent(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
 
-    // Brightness
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.padding(horizontal = 16.dp)
@@ -667,7 +658,6 @@ private fun LightingTabContent(
         }
     }
 
-    // Theme Selection
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.padding(horizontal = 16.dp)
@@ -708,7 +698,6 @@ private fun LightingTabContent(
                 label = stringResource(R.string.reader_settings_theme_sepia)
             )
 
-            // Custom Saved Themes
             settings.customThemes.forEach { theme ->
                 ThemeSwatch(
                     isSelected = settings.pineconeThemePreset == theme.name, onClick = {
@@ -727,7 +716,6 @@ private fun LightingTabContent(
                 )
             }
 
-            // Add New Theme Swatch
             ThemeSwatch(
                 isSelected = false,
                 onClick = onAddThemeClick,
@@ -737,7 +725,6 @@ private fun LightingTabContent(
         }
     }
 
-    // Image Filter
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.padding(horizontal = 16.dp)
@@ -777,7 +764,7 @@ private fun AdvancedTabContent(
     var showOrientationDialog by remember { mutableStateOf(false) }
 
     Column {
-        // Active Dictionary
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -847,7 +834,6 @@ private fun AdvancedTabContent(
                 })
         }
 
-        // Force Orientation
         val orientationOptionsMap = mapOf(
             "Auto" to stringResource(R.string.reader_settings_orientation_auto),
             "Portrait" to stringResource(R.string.reader_settings_orientation_portrait),
@@ -915,7 +901,6 @@ private fun AdvancedTabContent(
                 })
         }
 
-        // Jump History Mode
         val jumpHistoryOptionsMap = mapOf(
             "explicit" to stringResource(R.string.reader_jump_history_mode_explicit),
             "page_turn" to stringResource(R.string.reader_jump_history_mode_page_turn),
@@ -984,13 +969,11 @@ private fun AdvancedTabContent(
                 })
         }
 
-        // Vertical Scroll
         SettingsSwitchRow(
             title = stringResource(R.string.reader_settings_vertical_scroll),
             isChecked = settings.scroll,
             onCheckedChange = { onSettingsChange(settings.copy(scroll = it)) })
 
-        // Hyphens
         SettingsSwitchRow(
             title = stringResource(R.string.reader_settings_hyphens),
             isChecked = settings.hyphens,
@@ -998,26 +981,21 @@ private fun AdvancedTabContent(
             enabled = !settings.publisherStyles
         )
 
-        // Text Normalization
         SettingsSwitchRow(
             title = stringResource(R.string.reader_settings_text_normalization),
             isChecked = settings.textNormalization,
             onCheckedChange = { onSettingsChange(settings.copy(textNormalization = it)) })
 
-        // Prevent Screen Timeout
         SettingsSwitchRow(
             title = stringResource(R.string.reader_settings_prevent_timeout),
             isChecked = settings.preventScreenTimeout,
             onCheckedChange = { onSettingsChange(settings.copy(preventScreenTimeout = it)) })
 
-        // Always Shows Status Bar
         SettingsSwitchRow(
             title = stringResource(R.string.reader_settings_always_status_bar),
             isChecked = settings.alwaysShowStatusBar,
             onCheckedChange = { onSettingsChange(settings.copy(alwaysShowStatusBar = it)) })
 
-
-        // Restore Defaults
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1060,7 +1038,6 @@ private fun SettingsSwitchRow(
         )
     }
 }
-
 
 @SuppressLint("LogNotTimber")
 @Composable

@@ -141,8 +141,10 @@ inline fun SegmentedColumn(
         modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         items.forEachIndexed { index, item ->
-            val isTopDetached = item.selected || index == 0 || (items.getOrNull(index - 1)?.selected == true)
-            val isBottomDetached = item.selected || index == count - 1 || (items.getOrNull(index + 1)?.selected == true)
+            val isTopDetached =
+                item.selected || index == 0 || (items.getOrNull(index - 1)?.selected == true)
+            val isBottomDetached =
+                item.selected || index == count - 1 || (items.getOrNull(index + 1)?.selected == true)
 
             key(item.key ?: index) {
                 item.wrapper {
@@ -186,8 +188,10 @@ inline fun SegmentedLazyColumn(
         items(
             count = count, key = { index -> items[index].key ?: index }) { index ->
             val item = items[index]
-            val isTopDetached = item.selected || index == 0 || (items.getOrNull(index - 1)?.selected == true)
-            val isBottomDetached = item.selected || index == count - 1 || (items.getOrNull(index + 1)?.selected == true)
+            val isTopDetached =
+                item.selected || index == 0 || (items.getOrNull(index - 1)?.selected == true)
+            val isBottomDetached =
+                item.selected || index == count - 1 || (items.getOrNull(index + 1)?.selected == true)
 
             key(item.key ?: index) {
                 item.wrapper {
@@ -264,7 +268,8 @@ fun SegmentedListItem(
         bottomEnd = bottomRadius
     )
 
-    val targetContainerColor = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer
+    val targetContainerColor =
+        if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer
     val containerColor = if (animated) {
         val animatedContainer by animateColorAsState(
             targetValue = targetContainerColor,
@@ -275,7 +280,8 @@ fun SegmentedListItem(
         targetContainerColor
     }
 
-    val targetBaseContentColor = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
+    val targetBaseContentColor =
+        if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
     val baseContentColor = if (animated) {
         val animatedBaseContent by animateColorAsState(
             targetValue = targetBaseContentColor,
@@ -291,43 +297,43 @@ fun SegmentedListItem(
     if (onClick != null || onLongClick != null) {
         ListItem(
             modifier = modifier
-                        .fillMaxWidth()
-                        .clip(shape)
-                        .combinedClickable(
-                            onClick = { onClick?.invoke() },
-                            onLongClick = onLongClick?.let { { it() } },
-                            enabled = enabled
-                        ),
+                .fillMaxWidth()
+                .clip(shape)
+                .combinedClickable(
+                    onClick = { onClick?.invoke() },
+                    onLongClick = onLongClick?.let { { it() } },
+                    enabled = enabled
+                ),
             leadingContent = leadingContent,
             trailingContent = trailingContent,
             overlineContent = null,
             supportingContent = supportingContent,
             colors = ListItemDefaults.colors(
-                        containerColor = if (enabled) containerColor else containerColor.copy(alpha = 0.6f),
-                        headlineColor = contentColor,
-                        supportingColor = contentColor,
-                        leadingIconColor = contentColor,
-                        trailingIconColor = contentColor
-                    ),
+                containerColor = if (enabled) containerColor else containerColor.copy(alpha = 0.6f),
+                headlineColor = contentColor,
+                supportingColor = contentColor,
+                leadingIconColor = contentColor,
+                trailingIconColor = contentColor
+            ),
             elevation = ListItemDefaults.elevation(ListItemDefaults.Elevation),
             content = content,
         )
     } else {
         ListItem(
             modifier = modifier
-                        .fillMaxWidth()
-                        .clip(shape),
+                .fillMaxWidth()
+                .clip(shape),
             leadingContent = leadingContent,
             trailingContent = trailingContent,
             overlineContent = null,
             supportingContent = supportingContent,
             colors = ListItemDefaults.colors(
-                        containerColor = if (enabled) containerColor else containerColor.copy(alpha = 0.6f),
-                        headlineColor = contentColor,
-                        supportingColor = contentColor,
-                        leadingIconColor = contentColor,
-                        trailingIconColor = contentColor
-                    ),
+                containerColor = if (enabled) containerColor else containerColor.copy(alpha = 0.6f),
+                headlineColor = contentColor,
+                supportingColor = contentColor,
+                leadingIconColor = contentColor,
+                trailingIconColor = contentColor
+            ),
             elevation = ListItemDefaults.elevation(ListItemDefaults.Elevation),
             content = content,
         )

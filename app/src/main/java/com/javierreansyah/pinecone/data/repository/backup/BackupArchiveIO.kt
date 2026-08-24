@@ -9,7 +9,6 @@ internal data class StreamDigest(val size: Long, val sha256: String, val crc32: 
 
 internal object BackupArchiveIO {
     const val MAX_ENTRY_BYTES = 4L * 1024 * 1024 * 1024
-    const val MAX_ARCHIVE_BYTES = 16L * 1024 * 1024 * 1024
 
     fun copyAndDigest(input: InputStream, output: OutputStream? = null): StreamDigest {
         val digest = MessageDigest.getInstance("SHA-256")
@@ -34,7 +33,7 @@ internal object BackupArchiveIO {
     fun safeArchivePath(path: String): Boolean {
         val normalized = path.replace('\\', '/')
         return normalized.isNotBlank() && !normalized.startsWith('/') &&
-            normalized.split('/').none { it.isBlank() || it == "." || it == ".." }
+                normalized.split('/').none { it.isBlank() || it == "." || it == ".." }
     }
 
     private fun ByteArray.toHex() = joinToString("") { "%02x".format(it) }
