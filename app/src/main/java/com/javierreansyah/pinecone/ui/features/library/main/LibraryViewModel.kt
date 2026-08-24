@@ -197,6 +197,7 @@ class LibraryViewModel(
                     if (category == SearchCategory.All || category == SearchCategory.Tags) books.flatMap { it.tags }
                         .distinct() else emptyList()
                 SearchResults(
+                    query = query,
                     books = matchedBooks,
                     shelves = matchedShelves,
                     authors = matchedAuthors,
@@ -227,6 +228,7 @@ class LibraryViewModel(
                         .distinct()
                         .filter { it.contains(query, ignoreCase = true) } else emptyList()
                 SearchResults(
+                    query = query,
                     books = matchedBooks,
                     shelves = matchedShelves,
                     authors = matchedAuthors,

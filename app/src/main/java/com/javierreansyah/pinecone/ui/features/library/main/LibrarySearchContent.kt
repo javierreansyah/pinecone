@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library.main
 
+import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -20,21 +21,26 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Chevron_forward
@@ -50,7 +56,6 @@ import com.javierreansyah.pinecone.ui.features.library.components.book.BookItem
 
 @Composable
 internal fun ExpandedSearchContent(
-    isSearchEmpty: Boolean,
     searchCategory: SearchCategory,
     searchResults: SearchResults,
     onSearchCategoryChange: (SearchCategory) -> Unit,
@@ -90,7 +95,6 @@ internal fun ExpandedSearchContent(
         )
 
         SearchResultsContent(
-            isSearchEmpty = isSearchEmpty,
             searchCategory = searchCategory,
             results = searchResults,
             onBookClick = { book -> onNavigateToReader(book.id) },
@@ -105,7 +109,6 @@ internal fun ExpandedSearchContent(
 
 @Composable
 private fun SearchResultsContent(
-    isSearchEmpty: Boolean,
     searchCategory: SearchCategory,
     results: SearchResults,
     onBookClick: (Book) -> Unit,
@@ -115,7 +118,13 @@ private fun SearchResultsContent(
     onAuthorsHeaderClick: () -> Unit,
     onTagsHeaderClick: () -> Unit
 ) {
+    val fastEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+    val fastSpatialSpecIntOffset = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
+
+    val gridState = rememberLazyGridState()
+
     Box(modifier = Modifier.fillMaxSize()) {
+        val isSearchEmpty = results.query.isEmpty()
         val isAll = searchCategory == SearchCategory.All
         val isPreview = isAll && isSearchEmpty
 
@@ -165,7 +174,8 @@ private fun SearchResultsContent(
                     val book = booksToShow.find { it.id == id }
                     if (book != null) onBookClick(book)
                 },
-                scrollKey = results,
+                fastEffectsSpec = fastEffectsSpec,
+                fastSpatialSpecIntOffset = fastSpatialSpecIntOffset,
                 headerContent = {
                     SectionHeader(
                         title = stringResource(R.string.library_tab_books),
@@ -181,55 +191,105 @@ private fun SearchResultsContent(
                 }
             )
         } else {
-            val scrollState = rememberScrollState()
-
-            androidx.compose.runtime.LaunchedEffect(results) {
-                scrollState.scrollTo(0)
-            }
-
-            Column(
+            LazyVerticalGrid(
+                state = gridState,
+                columns = GridCells.Fixed(2),
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(scrollState)
                     .padding(bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 if (booksToShow.isNotEmpty() && isAll) {
-                    BooksSection(
-                        books = booksToShow,
-                        onBookClick = { onBookClick(it) }
-                    )
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        BooksSection(
+                            books = booksToShow,
+                            onBookClick = { onBookClick(it) },
+                            fastEffectsSpec = fastEffectsSpec,
+                            fastSpatialSpecIntOffset = fastSpatialSpecIntOffset
+                        )
+                    }
                 }
 
                 if (shelvesToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Shelves)) {
-                    GridFilterSection(
-                        title = stringResource(R.string.library_tab_shelves),
-                        items = shelvesToShow,
-                        icon = MaterialSymbols.Outlined.Folder,
-                        nameSelector = { it.name },
-                        onClick = { onShelfClick(it) },
-                        onHeaderClick = null
-                    )
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        SectionHeader(
+                            title = stringResource(R.string.library_tab_shelves),
+                            onHeaderClick = null,
+                            paddingValues = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp)
+                        )
+                    }
+                    itemsIndexed(shelvesToShow, key = { _, it -> "shelf_${it.id}" }) { index, shelf ->
+                        SearchFilterItem(
+                            text = shelf.name,
+                            icon = MaterialSymbols.Outlined.Folder,
+                            onClick = { onShelfClick(shelf) },
+                            modifier = Modifier
+                                .padding(
+                                    start = if (index % 2 == 0) 16.dp else 0.dp,
+                                    end = if (index % 2 == 1) 16.dp else 0.dp
+                                )
+                                .animateItem(
+                                    fadeInSpec = fastEffectsSpec,
+                                    fadeOutSpec = fastEffectsSpec,
+                                    placementSpec = fastSpatialSpecIntOffset
+                                )
+                        )
+                    }
                 }
 
                 if (authorsToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Authors)) {
-                    GridFilterSection(
-                        title = stringResource(R.string.library_authors_title),
-                        items = authorsToShow,
-                        icon = MaterialSymbols.Outlined.Person,
-                        nameSelector = { it },
-                        onClick = { onAuthorClick(it) },
-                        onHeaderClick = { onAuthorsHeaderClick() })
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        SectionHeader(
+                            title = stringResource(R.string.library_authors_title),
+                            onHeaderClick = { onAuthorsHeaderClick() },
+                            paddingValues = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp)
+                        )
+                    }
+                    itemsIndexed(authorsToShow, key = { _, it -> "author_$it" }) { index, author ->
+                        SearchFilterItem(
+                            text = author,
+                            icon = MaterialSymbols.Outlined.Person,
+                            onClick = { onAuthorClick(author) },
+                            modifier = Modifier
+                                .padding(
+                                    start = if (index % 2 == 0) 16.dp else 0.dp,
+                                    end = if (index % 2 == 1) 16.dp else 0.dp
+                                )
+                                .animateItem(
+                                    fadeInSpec = fastEffectsSpec,
+                                    fadeOutSpec = fastEffectsSpec,
+                                    placementSpec = fastSpatialSpecIntOffset
+                                )
+                        )
+                    }
                 }
 
                 if (tagsToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Tags)) {
-                    GridFilterSection(
-                        title = stringResource(R.string.library_tags_title),
-                        items = tagsToShow,
-                        icon = MaterialSymbols.Outlined.Label,
-                        nameSelector = { it },
-                        onClick = { onTagClick(it) },
-                        onHeaderClick = { onTagsHeaderClick() })
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        SectionHeader(
+                            title = stringResource(R.string.library_tags_title),
+                            onHeaderClick = { onTagsHeaderClick() },
+                            paddingValues = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp)
+                        )
+                    }
+                    itemsIndexed(tagsToShow, key = { _, it -> "tag_$it" }) { index, tag ->
+                        SearchFilterItem(
+                            text = tag,
+                            icon = MaterialSymbols.Outlined.Label,
+                            onClick = { onTagClick(tag) },
+                            modifier = Modifier
+                                .padding(
+                                    start = if (index % 2 == 0) 16.dp else 0.dp,
+                                    end = if (index % 2 == 1) 16.dp else 0.dp
+                                )
+                                .animateItem(
+                                    fadeInSpec = fastEffectsSpec,
+                                    fadeOutSpec = fastEffectsSpec,
+                                    placementSpec = fastSpatialSpecIntOffset
+                                )
+                        )
+                    }
                 }
             }
         }
@@ -240,8 +300,12 @@ private fun SearchResultsContent(
 private fun BooksSection(
     books: List<Book>,
     onBookClick: (Book) -> Unit,
+    fastEffectsSpec: FiniteAnimationSpec<Float>? = null,
+    fastSpatialSpecIntOffset: FiniteAnimationSpec<IntOffset>? = null,
     modifier: Modifier = Modifier
 ) {
+    val listState = rememberLazyListState()
+
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -252,57 +316,20 @@ private fun BooksSection(
             isBooksSection = true
         )
         LazyRow(
+            state = listState,
             contentPadding = PaddingValues(horizontal = 8.dp)
         ) {
             items(books, key = { it.id }) { book ->
+                val animateModifier = if (fastEffectsSpec != null && fastSpatialSpecIntOffset != null) {
+                    Modifier.animateItem(
+                        fadeInSpec = fastEffectsSpec,
+                        fadeOutSpec = fastEffectsSpec,
+                        placementSpec = fastSpatialSpecIntOffset
+                    )
+                } else Modifier
                 BookItem(
-                    book = book, onClick = { onBookClick(book) }, modifier = Modifier.width(120.dp)
+                    book = book, onClick = { onBookClick(book) }, modifier = animateModifier.width(120.dp)
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun <T> GridFilterSection(
-    modifier: Modifier = Modifier,
-    title: String,
-    items: List<T>,
-    icon: ImageVector,
-    nameSelector: (T) -> String,
-    onClick: (T) -> Unit,
-    onHeaderClick: (() -> Unit)? = null
-) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(2.dp)
-    ) {
-        SectionHeader(
-            title = title,
-            onHeaderClick = onHeaderClick
-        )
-
-        Column(
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items.chunked(2).forEach { chunk ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    chunk.forEach { item ->
-                        SearchFilterItem(
-                            text = nameSelector(item),
-                            icon = icon,
-                            onClick = { onClick(item) },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    if (chunk.size == 1) {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
             }
         }
     }
@@ -378,19 +405,22 @@ private fun BookCollection(
     books: List<Book>,
     onBookClick: (String) -> Unit,
     onBookLongClick: ((String) -> Unit)? = null,
-    scrollKey: Any? = null,
+    fastEffectsSpec: FiniteAnimationSpec<Float>? = null,
+    fastSpatialSpecIntOffset: FiniteAnimationSpec<IntOffset>? = null,
     headerContent: @Composable (() -> Unit)? = null
 ) {
-    key(scrollKey) {
-        val itemWidth = 100.dp
-        val horizontalPadding = 8.dp
+    val gridState = rememberLazyGridState()
 
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = itemWidth),
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = horizontalPadding)
-        ) {
+    val itemWidth = 100.dp
+    val horizontalPadding = 8.dp
+
+    LazyVerticalGrid(
+        state = gridState,
+        columns = GridCells.Adaptive(minSize = itemWidth),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = horizontalPadding)
+    ) {
             if (headerContent != null) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Column {
@@ -404,12 +434,20 @@ private fun BookCollection(
                 key = { "${it.id}-Grid" },
                 contentType = { "Grid" }
             ) { book ->
+                val animateModifier = if (fastEffectsSpec != null && fastSpatialSpecIntOffset != null) {
+                    Modifier.animateItem(
+                        fadeInSpec = fastEffectsSpec,
+                        fadeOutSpec = fastEffectsSpec,
+                        placementSpec = fastSpatialSpecIntOffset
+                    )
+                } else Modifier
+
                 BookItem(
                     book = book,
                     onClick = { onBookClick(book.id) },
                     onLongClick = onBookLongClick?.let { { it(book.id) } },
+                    modifier = animateModifier
                 )
             }
         }
     }
-}
