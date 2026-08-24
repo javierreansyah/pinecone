@@ -84,6 +84,8 @@
     <string name="library_rename_space_title">Rename space</string>
     <string name="library_empty_spaces">No spaces yet</string>
     <string name="library_create_space_title">Create Space</string>
+    <string name="library_new_space">New Space</string>
+    <string name="library_new_shelf">New Shelf</string>
     <string name="library_space_name_label">Space Name</string>
     <string name="library_label_add_to_space">Add to space</string>
     <string name="library_label_remove_from_space">Remove from space</string>

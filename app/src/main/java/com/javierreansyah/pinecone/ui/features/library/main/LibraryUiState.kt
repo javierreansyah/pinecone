@@ -22,7 +22,6 @@ data class LibraryUiState(
 data class SearchResults(
     val books: List<Book> = emptyList(),
     val shelves: List<ShelfEntity> = emptyList(),
-    val spaces: List<SpaceEntity> = emptyList(),
     val authors: List<String> = emptyList(),
     val tags: List<String> = emptyList()
 )

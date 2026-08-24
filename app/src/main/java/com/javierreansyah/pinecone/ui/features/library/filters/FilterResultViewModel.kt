@@ -11,6 +11,7 @@ import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.SortType
 import com.javierreansyah.pinecone.ui.features.library.StatusFilter
 import com.javierreansyah.pinecone.ui.features.library.filterAndSort
+import com.javierreansyah.pinecone.ui.features.library.inSpace
 import com.javierreansyah.pinecone.ui.features.library.sortShelfBooks
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -43,6 +44,12 @@ class FilterResultViewModel(
     private val booksFlow: Flow<List<Book>> =
         bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }
 
+    val allBooksAcrossSpaces: StateFlow<List<Book>> = booksFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
     private val globalSpaceId: StateFlow<String?> = prefsManager.getGlobalSpaceFlow().stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -50,7 +57,7 @@ class FilterResultViewModel(
     )
 
     val allBooks: StateFlow<List<Book>> = combine(booksFlow, globalSpaceId) { books, spaceId ->
-        if (spaceId == null || spaceId == "_all_") books else books.filter { book -> book.spaceIds.contains(spaceId) }
+        books.inSpace(spaceId)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -63,22 +70,26 @@ class FilterResultViewModel(
         sortShelfBooks(shelvesList, crossRefs, spaceId)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val allAuthors =
-        bookRepository.getAllAuthors().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
-    val allTags =
-        bookRepository.getAllTags().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val allAuthors = combine(bookRepository.getAllAuthors(), allBooks) { authors, books ->
+        val namesInSpace = books.flatMap { it.authors }.toSet()
+        authors.filter { it.name in namesInSpace }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val allTags = combine(bookRepository.getAllTags(), allBooks) { tags, books ->
+        val namesInSpace = books.flatMap { it.tags }.toSet()
+        tags.filter { it.name in namesInSpace }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val allSpaces =
         bookRepository.getAllSpaces().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    fun getBooksByAuthor(author: String): Flow<List<Book>> = booksFlow.map { books ->
+    fun getBooksByAuthor(author: String): Flow<List<Book>> = allBooks.map { books ->
         books.filter { it.authors.contains(author) }
     }
 
-    fun getBooksByTag(tag: String): Flow<List<Book>> = booksFlow.map { books ->
+    fun getBooksByTag(tag: String): Flow<List<Book>> = allBooks.map { books ->
         books.filter { it.tags.contains(tag) }
     }
 
-    fun getBooksBySpace(spaceName: String): Flow<List<Book>> = combine(booksFlow, allSpaces) { books, spaces ->
+    fun getBooksBySpace(spaceName: String): Flow<List<Book>> = combine(allBooksAcrossSpaces, allSpaces) { books, spaces ->
         val space = spaces.find { it.name == spaceName }
         if (space != null) {
             books.filter { book -> book.spaceIds.contains(space.id) }

@@ -21,6 +21,7 @@ import com.javierreansyah.pinecone.ui.features.library.ShelfFilter
 import com.javierreansyah.pinecone.ui.features.library.SortType
 import com.javierreansyah.pinecone.ui.features.library.StatusFilter
 import com.javierreansyah.pinecone.ui.features.library.filterAndSort
+import com.javierreansyah.pinecone.ui.features.library.inSpace
 import com.javierreansyah.pinecone.ui.features.library.mapAndSortShelves
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -92,7 +93,7 @@ class LibraryViewModel(
     )
 
     private val allBooks: StateFlow<List<Book>> = combine(booksFlow, globalSpaceId) { books, spaceId ->
-        if (spaceId == null || spaceId == "_all_") books else books.filter { book -> book.spaceIds.contains(spaceId) }
+        books.inSpace(spaceId)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -184,42 +185,53 @@ class LibraryViewModel(
         query to category
     }.flatMapLatest { (query, category) ->
         if (query.isBlank()) {
-            combine(allBooks, shelves, allSpaces) { books, shelfList, spaces ->
+            combine(allBooks, shelves) { books, shelfList ->
                 val matchedBooks =
                     if (category == SearchCategory.All || category == SearchCategory.Books) books else emptyList()
                 val matchedShelves =
                     if (category == SearchCategory.All || category == SearchCategory.Shelves) shelfList.map { it.shelf } else emptyList()
-                val matchedSpaces =
-                    if (category == SearchCategory.All || category == SearchCategory.Spaces) spaces else emptyList()
                 val matchedAuthors =
                     if (category == SearchCategory.All || category == SearchCategory.Authors) books.flatMap { it.authors }
                         .distinct() else emptyList()
                 val matchedTags =
                     if (category == SearchCategory.All || category == SearchCategory.Tags) books.flatMap { it.tags }
                         .distinct() else emptyList()
-                SearchResults(matchedBooks, matchedShelves, matchedSpaces, matchedAuthors, matchedTags)
+                SearchResults(
+                    books = matchedBooks,
+                    shelves = matchedShelves,
+                    authors = matchedAuthors,
+                    tags = matchedTags
+                )
             }
         } else {
             combine(
-                bookRepository.searchBooks(query)
-                    .map { entities -> entities.map { Book.fromEntity(it) } },
-                shelves,
-                bookRepository.searchAuthors(query),
-                bookRepository.searchTags(query),
-                allSpaces
-            ) { books, shelvesList, authors, tags, spaces ->
-                val filteredBooks = if (globalSpaceId.value != null && globalSpaceId.value != "_all_") books.filter { book -> book.spaceIds.contains(globalSpaceId.value) } else books
+                allBooks,
+                shelves
+            ) { books, shelvesList ->
+                val filteredBooks = books.filter { book ->
+                    book.title.contains(query, ignoreCase = true) ||
+                            book.authors.any { it.contains(query, ignoreCase = true) }
+                }
                 val matchedBooks =
                     if (category == SearchCategory.All || category == SearchCategory.Books) filteredBooks else emptyList()
                 val matchedShelves =
                     if (category == SearchCategory.All || category == SearchCategory.Shelves) shelvesList.filter { it.shelf.name.contains(query, ignoreCase = true) }.map { it.shelf } else emptyList()
-                val matchedSpaces =
-                    if (category == SearchCategory.All || category == SearchCategory.Spaces) spaces.filter { it.name.contains(query, ignoreCase = true) } else emptyList()
                 val matchedAuthors =
-                    if (category == SearchCategory.All || category == SearchCategory.Authors) authors else emptyList()
+                    if (category == SearchCategory.All || category == SearchCategory.Authors) books
+                        .flatMap { it.authors }
+                        .distinct()
+                        .filter { it.contains(query, ignoreCase = true) } else emptyList()
                 val matchedTags =
-                    if (category == SearchCategory.All || category == SearchCategory.Tags) tags else emptyList()
-                SearchResults(matchedBooks, matchedShelves, matchedSpaces, matchedAuthors, matchedTags)
+                    if (category == SearchCategory.All || category == SearchCategory.Tags) books
+                        .flatMap { it.tags }
+                        .distinct()
+                        .filter { it.contains(query, ignoreCase = true) } else emptyList()
+                SearchResults(
+                    books = matchedBooks,
+                    shelves = matchedShelves,
+                    authors = matchedAuthors,
+                    tags = matchedTags
+                )
             }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SearchResults())

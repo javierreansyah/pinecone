@@ -168,6 +168,29 @@ fun BookContextMenu(
 
             ListItem(
                 modifier = Modifier.clickable {
+                    onOrganize(bookId)
+                    onDismiss()
+                },
+                leadingContent = {
+                    Icon(
+                        MaterialSymbols.Outlined.Create_new_folder, contentDescription = null
+                    )
+                },
+                trailingContent = null,
+                overlineContent = null,
+                supportingContent = null,
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                elevation = ListItemDefaults.elevation(),
+                content = {
+                    Text(
+                        stringResource(R.string.action_organize),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                },
+            )
+
+            ListItem(
+                modifier = Modifier.clickable {
                     onToggleArchive()
                     onDismiss()
                 },
@@ -187,9 +210,13 @@ fun BookContextMenu(
                         if (book?.isArchived == true) stringResource(R.string.book_unarchive) else stringResource(
                             R.string.book_archive
                         )
-                    Text(labelText, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        labelText,
+                        style = MaterialTheme.typography.titleMedium
+                    )
                 },
             )
+
             ListItem(
                 modifier = Modifier.clickable {
                     showDeleteConfirmation = true
@@ -211,35 +238,6 @@ fun BookContextMenu(
                         stringResource(R.string.action_delete),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.error
-                    )
-                },
-            )
-
-            HorizontalDivider(
-                modifier = Modifier.padding(
-                    horizontal = 16.dp, vertical = 8.dp
-                )
-            )
-
-            ListItem(
-                modifier = Modifier.clickable {
-                    onOrganize(bookId)
-                    onDismiss()
-                },
-                leadingContent = {
-                    Icon(
-                        MaterialSymbols.Outlined.Create_new_folder, contentDescription = null
-                    )
-                },
-                trailingContent = null,
-                overlineContent = null,
-                supportingContent = null,
-                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                elevation = ListItemDefaults.elevation(),
-                content = {
-                    Text(
-                        stringResource(R.string.action_organize),
-                        style = MaterialTheme.typography.titleMedium
                     )
                 },
             )
