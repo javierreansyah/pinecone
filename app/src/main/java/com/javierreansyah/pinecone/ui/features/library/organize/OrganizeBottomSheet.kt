@@ -343,7 +343,7 @@ private fun OrganizeContent(
                             trailingContent = {
                                 TriStateCheckbox(
                                     state = spaceItem.state,
-                                    onClick = { onToggleSpace(space.id, spaceItem.state) }
+                                    onClick = null
                                 )
                             }
                         )
@@ -371,12 +371,7 @@ private fun OrganizeContent(
                                 trailingContent = {
                                     TriStateCheckbox(
                                         state = shelfItem.state,
-                                        onClick = {
-                                            onToggleShelf(
-                                                shelfItem.shelf.id,
-                                                shelfItem.state
-                                            )
-                                        }
+                                        onClick = null
                                     )
                                 }
                             )
