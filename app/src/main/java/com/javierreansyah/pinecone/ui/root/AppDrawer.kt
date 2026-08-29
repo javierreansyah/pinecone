@@ -41,8 +41,8 @@ import com.composables.icons.materialsymbols.outlined.Archive
 import com.composables.icons.materialsymbols.outlined.Book_3
 import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Forest
+import com.composables.icons.materialsymbols.outlined.Inbox
 import com.composables.icons.materialsymbols.outlined.Menu_open
-import com.composables.icons.materialsymbols.outlined.Park
 import com.composables.icons.materialsymbols.outlined.Settings
 import com.composables.icons.materialsymbols.outlined.Upload
 import com.javierreansyah.pinecone.R
@@ -56,6 +56,9 @@ fun AppDrawer(
     allSpaces: List<SpaceEntity> = emptyList(),
     selectedSpaceId: String? = null,
     onSpaceSelected: (String?) -> Unit = {},
+    hasUnsortedBooks: Boolean = false,
+    showAllSpaces: Boolean = true,
+    onNavigateToUnsorted: () -> Unit = {},
     onNavigateToAllSpaces: () -> Unit,
     onNavigateToArchives: () -> Unit,
     onNavigateToSettings: () -> Unit,
@@ -72,9 +75,11 @@ fun AppDrawer(
         expandedHeaderTopPadding = 0.dp,
         contentPadding = PaddingValues(0.dp)
     ) {
-        Column(modifier = Modifier
-            .fillMaxHeight()
-            .verticalScroll(rememberScrollState())) {
+        Column(
+            modifier = Modifier
+                .fillMaxHeight()
+                .verticalScroll(rememberScrollState())
+        ) {
             IconButton(
                 onClick = {
                     scope.launch { drawerState.collapse() }
@@ -160,6 +165,24 @@ fun AppDrawer(
                 }
             }
 
+            if (hasUnsortedBooks) {
+                WideNavigationRailItem(
+                    railExpanded = true,
+                    icon = {
+                        Icon(
+                            imageVector = MaterialSymbols.Outlined.Inbox,
+                            contentDescription = null
+                        )
+                    },
+                    label = { Text(stringResource(R.string.library_unsorted_title)) },
+                    selected = false,
+                    onClick = {
+                        onNavigateToUnsorted()
+                        scope.launch { drawerState.collapse() }
+                    }
+                )
+            }
+
             WideNavigationRailItem(
                 railExpanded = true,
                 icon = {
@@ -232,28 +255,30 @@ fun AppDrawer(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            WideNavigationRailItem(
-                railExpanded = true,
-                icon = {
-                    Icon(
-                        imageVector = MaterialSymbols.Outlined.Forest,
-                        contentDescription = null
-                    )
-                },
-                label = { Text(stringResource(R.string.action_all)) },
-                selected = selectedSpaceId == null || selectedSpaceId == "_all_",
-                onClick = {
-                    onSpaceSelected("_all_")
-                    scope.launch { drawerState.collapse() }
-                }
-            )
+            if (showAllSpaces) {
+                WideNavigationRailItem(
+                    railExpanded = true,
+                    icon = {
+                        Icon(
+                            imageVector = MaterialSymbols.Outlined.Forest,
+                            contentDescription = null
+                        )
+                    },
+                    label = { Text(stringResource(R.string.action_all)) },
+                    selected = selectedSpaceId == null || selectedSpaceId == "_all_",
+                    onClick = {
+                        onSpaceSelected("_all_")
+                        scope.launch { drawerState.collapse() }
+                    }
+                )
+            }
 
             allSpaces.forEach { space ->
                 WideNavigationRailItem(
                     railExpanded = true,
                     icon = {
                         Icon(
-                            imageVector = MaterialSymbols.Outlined.Park,
+                            imageVector = MaterialSymbols.Outlined.Forest,
                             contentDescription = null
                         )
                     },

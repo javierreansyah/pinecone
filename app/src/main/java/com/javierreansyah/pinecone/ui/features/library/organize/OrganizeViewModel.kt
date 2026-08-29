@@ -13,20 +13,20 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-data class OrganizeUiState(
-    val shelves: List<ShelfItemState> = emptyList(),
-    val spaces: List<SpaceItemState> = emptyList(),
-    val isLoading: Boolean = true
-)
-
 data class ShelfItemState(
     val shelf: ShelfEntity,
     val state: ToggleableState
 )
 
-data class SpaceItemState(
+data class SpaceWithShelvesItemState(
     val space: SpaceEntity,
-    val state: ToggleableState
+    val state: ToggleableState,
+    val shelves: List<ShelfItemState>
+)
+
+data class OrganizeUiState(
+    val spaces: List<SpaceWithShelvesItemState> = emptyList(),
+    val isLoading: Boolean = true
 )
 
 class OrganizeViewModel(
@@ -41,38 +41,40 @@ class OrganizeViewModel(
         repository.getAllSpaces(),
         repository.getAllBookSpaceCrossRefs()
     ) { shelvesWithBooks, spaces, spaceCrossRefs ->
-
-        val shelfItems =
-            shelvesWithBooks.filter { it.shelf.id != "unshelved" }.map { shelfWithBooks ->
-                val shelfId = shelfWithBooks.shelf.id
-                val booksInShelf = shelfWithBooks.books.map { it.book.id }
-                val countInShelf = targetBookIds.count { it in booksInShelf }
-
-                val initialState = when (countInShelf) {
-                    0 -> ToggleableState.Off
-                    targetBookIds.size -> ToggleableState.On
-                    else -> ToggleableState.Indeterminate
-                }
-
-                ShelfItemState(shelfWithBooks.shelf, initialState)
-            }.sortedBy { it.shelf.name }
+        val validShelves = shelvesWithBooks.filter { it.shelf.id != "unshelved" }
 
         val spaceItems = spaces.filter { it.id != "_all_" }.map { space ->
             val spaceId = space.id
             val booksInSpace = spaceCrossRefs.filter { it.spaceId == spaceId }.map { it.bookId }
             val countInSpace = targetBookIds.count { it in booksInSpace }
 
-            val initialState = when (countInSpace) {
+            val spaceState = when (countInSpace) {
                 0 -> ToggleableState.Off
                 targetBookIds.size -> ToggleableState.On
                 else -> ToggleableState.Indeterminate
             }
 
-            SpaceItemState(space, initialState)
-        }.sortedBy { it.space.name }
+            val spaceShelves = validShelves
+                .filter { it.shelf.spaceId == spaceId }
+                .map { shelfWithBooks ->
+                    val booksInShelf = shelfWithBooks.books.map { it.book.id }
+                    val countInShelf = targetBookIds.count { it in booksInShelf }
+                    val shelfState = when (countInShelf) {
+                        0 -> ToggleableState.Off
+                        targetBookIds.size -> ToggleableState.On
+                        else -> ToggleableState.Indeterminate
+                    }
+                    ShelfItemState(shelfWithBooks.shelf, shelfState)
+                }.sortedBy { it.shelf.name.lowercase() }
+
+            SpaceWithShelvesItemState(
+                space = space,
+                state = spaceState,
+                shelves = spaceShelves
+            )
+        }.sortedBy { it.space.name.lowercase() }
 
         OrganizeUiState(
-            shelves = shelfItems,
             spaces = spaceItems,
             isLoading = false
         )
@@ -112,9 +114,9 @@ class OrganizeViewModel(
         }
     }
 
-    fun createShelf(name: String) {
+    fun createShelf(spaceId: String, name: String) {
         viewModelScope.launch {
-            val shelfId = repository.createShelf(name)
+            val shelfId = repository.createShelf(spaceId, name)
             targetBookIds.forEach { bookId -> repository.addBookToShelf(shelfId, bookId) }
         }
     }

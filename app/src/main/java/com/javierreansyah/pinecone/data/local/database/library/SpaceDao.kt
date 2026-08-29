@@ -24,9 +24,6 @@ interface SpaceDao {
     @Query("UPDATE spaces SET name = :newName WHERE id = :id")
     suspend fun renameSpace(id: String, newName: String)
 
-    @Query("DELETE FROM spaces WHERE id NOT IN (SELECT DISTINCT spaceId FROM book_space_cross_ref)")
-    suspend fun deleteOrphanSpaces()
-
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertBookSpaceCrossRef(crossRef: BookSpaceCrossRef)
 
@@ -53,6 +50,12 @@ interface SpaceDao {
 
     @Query("DELETE FROM spaces")
     suspend fun deleteAllSpaces()
+
+    @Query("SELECT COUNT(*) FROM book_space_cross_ref WHERE spaceId = :spaceId")
+    suspend fun getBookCountForSpace(spaceId: String): Int
+
+    @Query("DELETE FROM spaces WHERE id NOT IN (SELECT DISTINCT spaceId FROM book_space_cross_ref) AND id != '_all_'")
+    suspend fun deleteEmptySpaces()
 
     @Query("UPDATE OR IGNORE book_space_cross_ref SET spaceId = :newId WHERE spaceId = :oldId")
     suspend fun mergeBookSpaceCrossRef(oldId: String, newId: String)

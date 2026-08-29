@@ -18,6 +18,7 @@ import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +37,7 @@ import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.ui.features.dictionary.DictionariesScreen
 import com.javierreansyah.pinecone.ui.features.dictionary.DictionariesViewModel
 import com.javierreansyah.pinecone.ui.features.library.archive.ArchiveScreen
+import com.javierreansyah.pinecone.ui.features.library.unsorted.UnsortedScreen
 import com.javierreansyah.pinecone.ui.features.library.filters.AllFilterItemsScreen
 import com.javierreansyah.pinecone.ui.features.library.filters.FilterResultScreen
 import com.javierreansyah.pinecone.ui.features.library.info.BookInfoScreen
@@ -81,7 +83,12 @@ fun NavGraph(
             }
         },
         onResult = { uris ->
-            mainViewModel.importBooks(uris)
+            if (uris.isNotEmpty()) {
+                backStack.clear()
+                backStack.add(Screen.Library)
+                backStack.add(Screen.Unsorted)
+                mainViewModel.importBooks(uris)
+            }
         }
     )
 
@@ -99,6 +106,9 @@ fun NavGraph(
         },
         onResult = { uri ->
             uri?.let {
+                backStack.clear()
+                backStack.add(Screen.Library)
+                backStack.add(Screen.Unsorted)
                 mainViewModel.scanFolder(it)
             }
         }
@@ -218,6 +228,11 @@ fun NavGraph(
                     onNavigateToOrganize = { bookIds ->
                         organizeBookIds = bookIds
                     },
+                    onNavigateToUnsorted = {
+                        backStack.clear()
+                        backStack.add(Screen.Library)
+                        backStack.add(Screen.Unsorted)
+                    },
                     onNavigateToArchives = {
                         backStack.clear()
                         backStack.add(Screen.Library)
@@ -262,6 +277,23 @@ fun NavGraph(
             entry<Screen.OpenSourceLicenses> {
                 OpenSourceLicensesScreen(
                     onNavigateBack = navigateBack
+                )
+            }
+            entry<Screen.Unsorted> {
+                UnsortedScreen(
+                    onNavigateBack = navigateBack,
+                    onNavigateToReader = { bookId ->
+                        val intent = Intent(context, ReaderActivity::class.java).apply {
+                            putExtra(ReaderActivity.EXTRA_BOOK_ID, bookId)
+                        }
+                        context.startActivity(intent)
+                    },
+                    onNavigateToBookInfo = { bookId ->
+                        backStack.add(Screen.BookInfo(bookId))
+                    },
+                    onNavigateToOrganize = { bookIds ->
+                        organizeBookIds = bookIds
+                    }
                 )
             }
             entry<Screen.Archives> {
@@ -455,4 +487,13 @@ fun NavGraph(
             onNavigateBack = { organizeBookIds = null }
         )
     }
+
+    val importErrorReport by mainViewModel.importErrorReport.collectAsState()
+    importErrorReport?.let { report ->
+        ImportErrorDialog(
+            report = report,
+            onDismiss = { mainViewModel.dismissImportErrorReport() }
+        )
+    }
 }
+

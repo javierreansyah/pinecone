@@ -718,8 +718,8 @@ class BackupRepository(private val context: Context) {
         db.shelfDao().deleteAllShelves(); db.spaceDao().deleteAllSpaces()
         db.bookDao().deleteAllAuthors(); db.bookDao().deleteAllTags()
         db.bookDao().insertAll(books)
-        db.shelfDao().insertAllShelves(payload.shelves.map { it.toEntity() })
         db.spaceDao().insertAllSpaces(payload.spaces.map { it.toEntity() })
+        db.shelfDao().insertAllShelves(payload.shelves.map { it.toEntity() })
         db.bookDao().insertAllAuthors(payload.authors.map { it.toEntity() })
         db.bookDao().insertAllTags(payload.tags.map { it.toEntity() })
         db.bookmarkDao().insertAll(payload.bookmarks.map { it.toEntity() })
@@ -1028,6 +1028,7 @@ class BackupRepository(private val context: Context) {
             tags.size != payload.tags.size
         ) return false
         return payload.bookmarks.all { it.bookId in books } && payload.notes.all { it.bookId in books } &&
+                payload.shelves.all { it.spaceId in spaces } &&
                 payload.shelfBookCrossRefs.all { it.bookId in books && it.shelfId in shelves } &&
                 payload.bookSpaceCrossRefs.all { it.bookId in books && it.spaceId in spaces } &&
                 payload.bookAuthorCrossRefs.all { it.bookId in books && it.authorId in authors } &&

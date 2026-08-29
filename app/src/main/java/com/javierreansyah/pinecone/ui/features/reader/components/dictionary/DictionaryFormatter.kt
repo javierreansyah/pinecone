@@ -1,7 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.reader.components.dictionary
 
 import com.javierreansyah.pinecone.data.local.database.dictionary.DictionaryEntry
-import com.javierreansyah.pinecone.ui.features.reader.components.dictionary.DictionaryFormatter.PARTS_OF_SPEECH
 
 object DictionaryFormatter {
 

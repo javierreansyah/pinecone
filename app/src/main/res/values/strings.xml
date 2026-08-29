@@ -13,6 +13,7 @@
     <string name="action_deselect_all">Deselect all</string>
     <string name="action_organize">Organize</string>
     <string name="action_import">Import</string>
+    <string name="action_ok">OK</string>
 
     <string name="action_search">Search</string>
     <string name="action_clear">Clear</string>
@@ -57,7 +58,6 @@
     <string name="library_rename_shelf_title">Rename shelf</string>
     <string name="library_shelf_name_label">Shelf name</string>
     <string name="library_create_shelf_title">Create New Shelf</string>
-    <string name="library_select_shelf_title">Select Shelf</string>
     <plurals name="library_shelf_count">
         <item quantity="one">%d book</item>
         <item quantity="other">%d books</item>
@@ -82,13 +82,15 @@
     <string name="library_label_status">Status</string>
     <string name="library_label_unshelved">Unshelved</string>
 
+    <string name="library_unsorted_title">Unsorted</string>
+    <string name="library_empty_unsorted">No unsorted books.</string>
     <string name="library_spaces_title">Spaces</string>
     <string name="library_rename_space_title">Rename space</string>
     <string name="library_empty_spaces">No spaces yet</string>
+    <string name="library_select_space_prompt">Choose which space \"%s\" will belong to:</string>
     <string name="library_new_space">New Space</string>
     <string name="library_new_shelf">New Shelf</string>
     <string name="library_space_name_label">Space Name</string>
-    <string name="library_label_add_to_shelf">Add to Shelf</string>
     <string name="library_sort_title">Title</string>
     <string name="library_sort_author">Author</string>
     <string name="library_sort_last_read">Date last read</string>
@@ -240,6 +242,8 @@
     <string name="settings_color_palette">Color Palette</string>
     <string name="settings_theme_contrast">Theme Contrast</string>
     <string name="settings_language">Language</string>
+    <string name="settings_show_all_spaces">Show All Spaces</string>
+    <string name="settings_show_all_spaces_summary">Show \"All\" in the spaces list</string>
 
     <string name="settings_backup_preferences">Local Backup</string>
     <string name="settings_backup_now">Backup Now</string>
@@ -293,6 +297,23 @@
     </plurals>
     <string name="nav_scanning_folder">Scanning folder for books…</string>
     <string name="nav_folder_scan_complete">Folder scan complete</string>
+    <string name="import_failed_title">Import Failed</string>
+    <string name="import_warning_title">Import Warning</string>
+    <string name="import_failed_single_message">Failed to import \"%1$s\". The file may be damaged, corrupted, or in an unsupported format.</string>
+    <plurals name="import_all_failed_message">
+        <item quantity="one">Failed to import %d book:</item>
+        <item quantity="other">Failed to import %d books:</item>
+    </plurals>
+    <plurals name="import_partial_success_message">
+        <item quantity="one">Successfully imported %d book.</item>
+        <item quantity="other">Successfully imported %d books.</item>
+    </plurals>
+    <plurals name="import_partial_failed_message">
+        <item quantity="one">The following %d book could not be imported:</item>
+        <item quantity="other">The following %d books could not be imported:</item>
+    </plurals>
+    <string name="import_failed_reason_note">These files may be damaged, corrupted, or in an unsupported format.</string>
+    <string name="import_no_books_found">No EPUB files found in the selected folder</string>
 
     <string name="nav_setup_now">Setup now</string>
     <string name="nav_starting_backup">Starting backup…</string>

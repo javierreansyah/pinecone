@@ -87,7 +87,8 @@ data class ReaderSettings(
 
     val activeDictionaryId: String = "",
     val installedDictionaries: List<InstalledDictionary> = emptyList(),
-    val jumpHistoryMode: String = "explicit"
+    val jumpHistoryMode: String = "explicit",
+    val showAllSpaces: Boolean = true
 ) {
 
     @OptIn(ExperimentalReadiumApi::class)
@@ -225,6 +226,7 @@ class ReaderPreferences(private val context: Context) {
         val INSTALLED_DICTIONARIES = stringSetPreferencesKey("installed_dictionaries")
 
         val JUMP_HISTORY_MODE = stringPreferencesKey("jump_history_mode")
+        val SHOW_ALL_SPACES = booleanPreferencesKey("show_all_spaces")
     }
 
     val readerSettings: Flow<ReaderSettings> = context.dataStore.data.map { preferences ->
@@ -296,7 +298,8 @@ class ReaderPreferences(private val context: Context) {
                     InstalledDictionary("", "", 0)
                 }
             }?.filter { it.id.isNotEmpty() } ?: emptyList(),
-            jumpHistoryMode = preferences[JUMP_HISTORY_MODE] ?: "explicit"
+            jumpHistoryMode = preferences[JUMP_HISTORY_MODE] ?: "explicit",
+            showAllSpaces = preferences[SHOW_ALL_SPACES] ?: true
         )
     }
 
@@ -355,6 +358,7 @@ class ReaderPreferences(private val context: Context) {
                 "${it.id}|${it.name}|${it.wordCount}"
             }.toSet()
             preferences[JUMP_HISTORY_MODE] = settings.jumpHistoryMode
+            preferences[SHOW_ALL_SPACES] = settings.showAllSpaces
         }
     }
 

@@ -14,6 +14,7 @@
     <string name="action_deselect_all">Batal Pilih Semua</string>
     <string name="action_organize">Atur</string>
     <string name="action_import">Impor</string>
+    <string name="action_ok">Oke</string>
 
     <string name="action_search">Cari</string>
     <string name="action_clear">Bersihkan</string>
@@ -56,7 +57,6 @@
     <string name="library_rename_shelf_title">Ubah nama rak</string>
     <string name="library_shelf_name_label">Nama rak</string>
     <string name="library_create_shelf_title">Buat Rak Baru</string>
-    <string name="library_select_shelf_title">Pilih Rak</string>
     <plurals name="library_shelf_count">
         <item quantity="other">%d buku</item>
     </plurals>
@@ -79,13 +79,15 @@
     <string name="library_label_status">Status</string>
     <string name="library_label_unshelved">Belum Masuk Rak</string>
 
+    <string name="library_unsorted_title">Belum Disortir</string>
+    <string name="library_empty_unsorted">Tidak ada buku yang belum disortir.</string>
     <string name="library_spaces_title">Ruang</string>
     <string name="library_rename_space_title">Ubah nama ruang</string>
     <string name="library_empty_spaces">Belum ada ruang</string>
+    <string name="library_select_space_prompt">Pilih ruang untuk rak \"%s\":</string>
     <string name="library_new_space">Ruang Baru</string>
     <string name="library_new_shelf">Rak Baru</string>
     <string name="library_space_name_label">Nama ruang</string>
-    <string name="library_label_add_to_shelf">Tambah ke Rak</string>
     <string name="library_sort_title">Judul</string>
     <string name="library_sort_author">Penulis</string>
     <string name="library_sort_last_read">Tanggal terakhir dibaca</string>
@@ -233,6 +235,8 @@
     <string name="settings_color_palette">Palet Warna</string>
     <string name="settings_theme_contrast">Kontras Tema</string>
     <string name="settings_language">Bahasa</string>
+    <string name="settings_show_all_spaces">Tampilkan Semua Ruang</string>
+    <string name="settings_show_all_spaces_summary">Tampilkan \"Semua\" di daftar ruang</string>
 
     <string name="settings_backup_preferences">Cadangan Lokal</string>
     <string name="settings_backup_now">Cadangkan Sekarang</string>
@@ -285,6 +289,20 @@
     </plurals>
     <string name="nav_scanning_folder">Memindai folder untuk mencari buku…</string>
     <string name="nav_folder_scan_complete">Pemindaian folder selesai</string>
+    <string name="import_failed_title">Gagal Mengimpor</string>
+    <string name="import_warning_title">Peringatan Impor</string>
+    <string name="import_failed_single_message">Gagal mengimpor \"%1$s\". File mungkin rusak atau dalam format yang tidak didukung.</string>
+    <plurals name="import_all_failed_message">
+        <item quantity="other">Gagal mengimpor %d buku:</item>
+    </plurals>
+    <plurals name="import_partial_success_message">
+        <item quantity="other">Berhasil mengimpor %d buku.</item>
+    </plurals>
+    <plurals name="import_partial_failed_message">
+        <item quantity="other">%d buku berikut tidak dapat diimpor:</item>
+    </plurals>
+    <string name="import_failed_reason_note">File-file ini mungkin rusak atau dalam format yang tidak didukung.</string>
+    <string name="import_no_books_found">Tidak ada file EPUB yang ditemukan di folder yang dipilih</string>
 
     <string name="nav_setup_now">Konfigurasi sekarang</string>
     <string name="nav_starting_backup">Memulai pencadangan…</string>
