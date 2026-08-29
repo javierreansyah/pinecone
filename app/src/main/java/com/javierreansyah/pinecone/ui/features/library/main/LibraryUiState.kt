@@ -43,5 +43,7 @@ data class LibraryScreenUiState(
     val isShelvesLoading: Boolean = true,
     val allSpaces: List<SpaceEntity> = emptyList(),
     val allShelves: List<ShelfEntity> = emptyList(),
-    val globalSpaceId: String? = null
+    val globalSpaceId: String? = null,
+    val hasUnsortedBooks: Boolean = false,
+    val showAllSpaces: Boolean = true
 )

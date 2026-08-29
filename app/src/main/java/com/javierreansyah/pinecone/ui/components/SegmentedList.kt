@@ -7,19 +7,24 @@ package com.javierreansyah.pinecone.ui.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.Dp
@@ -141,10 +146,8 @@ inline fun SegmentedColumn(
         modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         items.forEachIndexed { index, item ->
-            val isTopDetached =
-                item.selected || index == 0 || (items.getOrNull(index - 1)?.selected == true)
-            val isBottomDetached =
-                item.selected || index == count - 1 || (items.getOrNull(index + 1)?.selected == true)
+            val isTopDetached = item.selected || index == 0
+            val isBottomDetached = item.selected || index == count - 1
 
             key(item.key ?: index) {
                 item.wrapper {
@@ -188,10 +191,8 @@ inline fun SegmentedLazyColumn(
         items(
             count = count, key = { index -> items[index].key ?: index }) { index ->
             val item = items[index]
-            val isTopDetached =
-                item.selected || index == 0 || (items.getOrNull(index - 1)?.selected == true)
-            val isBottomDetached =
-                item.selected || index == count - 1 || (items.getOrNull(index + 1)?.selected == true)
+            val isTopDetached = item.selected || index == 0
+            val isBottomDetached = item.selected || index == count - 1
 
             key(item.key ?: index) {
                 item.wrapper {
@@ -293,49 +294,68 @@ fun SegmentedListItem(
     }
 
     val contentColor = if (enabled) baseContentColor else baseContentColor.copy(alpha = 0.38f)
+    val supportingContentColor =
+        if (enabled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(
+            alpha = 0.38f
+        )
+    val leadingIconColor =
+        if (enabled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(
+            alpha = 0.38f
+        )
+    val trailingIconColor =
+        if (enabled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(
+            alpha = 0.38f
+        )
 
-    if (onClick != null || onLongClick != null) {
-        ListItem(
-            modifier = modifier
-                .fillMaxWidth()
-                .clip(shape)
-                .combinedClickable(
-                    onClick = { onClick?.invoke() },
-                    onLongClick = onLongClick?.let { { it() } },
-                    enabled = enabled
-                ),
-            leadingContent = leadingContent,
-            trailingContent = trailingContent,
-            overlineContent = null,
-            supportingContent = supportingContent,
-            colors = ListItemDefaults.colors(
-                containerColor = if (enabled) containerColor else containerColor.copy(alpha = 0.6f),
-                headlineColor = contentColor,
-                supportingColor = contentColor,
-                leadingIconColor = contentColor,
-                trailingIconColor = contentColor
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(if (enabled) containerColor else containerColor.copy(alpha = 0.6f))
+            .then(
+                if (onClick != null || onLongClick != null) {
+                    Modifier.combinedClickable(
+                        onClick = { onClick?.invoke() },
+                        onLongClick = onLongClick?.let { { it() } },
+                        enabled = enabled
+                    )
+                } else Modifier
+            )
+            .padding(
+                horizontal = 16.dp,
+                vertical = if (supportingContent != null) 12.dp else 16.dp
             ),
-            elevation = ListItemDefaults.elevation(ListItemDefaults.Elevation),
-            content = content,
-        )
-    } else {
-        ListItem(
-            modifier = modifier
-                .fillMaxWidth()
-                .clip(shape),
-            leadingContent = leadingContent,
-            trailingContent = trailingContent,
-            overlineContent = null,
-            supportingContent = supportingContent,
-            colors = ListItemDefaults.colors(
-                containerColor = if (enabled) containerColor else containerColor.copy(alpha = 0.6f),
-                headlineColor = contentColor,
-                supportingColor = contentColor,
-                leadingIconColor = contentColor,
-                trailingIconColor = contentColor
-            ),
-            elevation = ListItemDefaults.elevation(ListItemDefaults.Elevation),
-            content = content,
-        )
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        if (leadingContent != null) {
+            CompositionLocalProvider(LocalContentColor provides leadingIconColor) {
+                Box(contentAlignment = Alignment.Center) {
+                    leadingContent()
+                }
+            }
+        }
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.Center
+        ) {
+            CompositionLocalProvider(LocalContentColor provides contentColor) {
+                content()
+            }
+            if (supportingContent != null) {
+                CompositionLocalProvider(LocalContentColor provides supportingContentColor) {
+                    supportingContent()
+                }
+            }
+        }
+
+        if (trailingContent != null) {
+            CompositionLocalProvider(LocalContentColor provides trailingIconColor) {
+                Box(contentAlignment = Alignment.Center) {
+                    trailingContent()
+                }
+            }
+        }
     }
 }

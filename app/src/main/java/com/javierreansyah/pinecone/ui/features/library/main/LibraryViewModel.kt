@@ -63,6 +63,7 @@ class LibraryViewModel(
 
     private val bookRepository = (application as PineconeApplication).libraryRepository
     private val prefsManager = LibraryPreferencesManager(application)
+    private val readerPreferences = (application as PineconeApplication).readerPreferences
 
     private val _uiState = MutableStateFlow(
         LibraryUiState(
@@ -137,6 +138,32 @@ class LibraryViewModel(
                             .build()
                         application.imageLoader.enqueue(request)
                     }
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            globalSpaceId.collect { spaceId ->
+                _uiState.update { state ->
+                    state.copy(
+                        bookPreferences = prefsManager.getPreferences(
+                            spaceId = spaceId,
+                            screenKey = screenKey,
+                            defaultSort = when (screenKey) {
+                                "shelf_detail" -> SortType.Custom
+                                "library_books" -> SortType.LastRead
+                                else -> SortType.Added
+                            },
+                            defaultAscending = screenKey == "shelf_detail"
+                        ),
+                        shelvesPreferences = prefsManager.getPreferences(
+                            spaceId = spaceId,
+                            screenKey = "library_shelves",
+                            defaultLayout = LayoutMode.BigList,
+                            defaultSort = SortType.Title,
+                            defaultAscending = true
+                        )
+                    )
                 }
             }
         }
@@ -245,6 +272,13 @@ class LibraryViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SearchResults())
 
+    private val hasUnsortedBooks: Flow<Boolean> = booksFlow.map { books ->
+        books.any { it.spaces.isEmpty() }
+    }
+
+    private val showAllSpacesFlow: Flow<Boolean> =
+        readerPreferences.readerSettings.map { it.showAllSpaces }.distinctUntilChanged()
+
     val uiState: StateFlow<LibraryScreenUiState> = combine(
         _uiState,
         filteredBooks,
@@ -254,7 +288,10 @@ class LibraryViewModel(
         _isBooksLoading,
         _isShelvesLoading,
         allSpaces,
-        allShelvesEntities
+        allShelvesEntities,
+        globalSpaceId,
+        hasUnsortedBooks,
+        showAllSpacesFlow
     ) { array ->
         @Suppress("UNCHECKED_CAST")
         val baseState = array[0] as LibraryUiState
@@ -279,6 +316,10 @@ class LibraryViewModel(
         @Suppress("UNCHECKED_CAST")
         val shelvesEntities = array[8] as List<ShelfEntity>
 
+        val spaceId = array[9] as String?
+        val hasUnsorted = array[10] as Boolean
+        val showAllSpaces = array[11] as Boolean
+
         LibraryScreenUiState(
             searchQuery = baseState.searchQuery,
             searchCategory = baseState.searchCategory,
@@ -293,7 +334,9 @@ class LibraryViewModel(
             isShelvesLoading = shelvesLoading,
             allSpaces = spaces,
             allShelves = shelvesEntities,
-            globalSpaceId = globalSpaceId.value
+            globalSpaceId = spaceId,
+            hasUnsortedBooks = hasUnsorted,
+            showAllSpaces = showAllSpaces
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LibraryScreenUiState())
 
@@ -306,12 +349,6 @@ class LibraryViewModel(
     fun deleteBooks(bookIds: Collection<String>) {
         viewModelScope.launch {
             bookIds.forEach { bookRepository.deleteBook(it) }
-        }
-    }
-
-    fun deleteShelf(shelfId: String) {
-        viewModelScope.launch {
-            bookRepository.deleteShelf(shelfId)
         }
     }
 
@@ -377,7 +414,11 @@ class LibraryViewModel(
                 if (isShelvesTab) state.shelvesPreferences.copy(layoutMode = mode) else state.bookPreferences.copy(
                     layoutMode = mode
                 )
-            prefsManager.savePreferences(if (isShelvesTab) "library_shelves" else screenKey, prefs)
+            prefsManager.savePreferences(
+                globalSpaceId.value,
+                if (isShelvesTab) "library_shelves" else screenKey,
+                prefs
+            )
             if (isShelvesTab) state.copy(shelvesPreferences = prefs) else state.copy(bookPreferences = prefs)
         }
     }
@@ -392,7 +433,7 @@ class LibraryViewModel(
                 currentPrefs.copy(sortType = sortType, isAscending = initialAscending)
             }
             prefsManager.savePreferences(
-                if (isShelvesTab) "library_shelves" else screenKey, newPrefs
+                globalSpaceId.value, if (isShelvesTab) "library_shelves" else screenKey, newPrefs
             )
             if (isShelvesTab) state.copy(shelvesPreferences = newPrefs) else state.copy(
                 bookPreferences = newPrefs
@@ -408,7 +449,7 @@ class LibraryViewModel(
             }
             val newPrefs = currentPrefs.copy(selectedStatus = updatedStatus)
             prefsManager.savePreferences(
-                if (isShelvesTab) "library_shelves" else screenKey, newPrefs
+                globalSpaceId.value, if (isShelvesTab) "library_shelves" else screenKey, newPrefs
             )
             if (isShelvesTab) state.copy(shelvesPreferences = newPrefs) else state.copy(
                 bookPreferences = newPrefs
@@ -424,7 +465,7 @@ class LibraryViewModel(
             }
             val newPrefs = currentPrefs.copy(selectedShelfFilter = updatedFilter)
             prefsManager.savePreferences(
-                if (isShelvesTab) "library_shelves" else screenKey, newPrefs
+                globalSpaceId.value, if (isShelvesTab) "library_shelves" else screenKey, newPrefs
             )
             if (isShelvesTab) state.copy(shelvesPreferences = newPrefs) else state.copy(
                 bookPreferences = newPrefs

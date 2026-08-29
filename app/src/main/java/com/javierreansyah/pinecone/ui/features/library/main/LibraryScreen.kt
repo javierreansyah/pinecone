@@ -77,6 +77,7 @@ fun LibraryRoute(
     onNavigateToAllSpaces: () -> Unit = {},
     onNavigateToBookInfo: (String) -> Unit,
     onNavigateToOrganize: (String) -> Unit,
+    onNavigateToUnsorted: () -> Unit = {},
     onNavigateToArchives: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToDictionaries: () -> Unit,
@@ -104,7 +105,6 @@ fun LibraryRoute(
         setGlobalSpace = viewModel::setGlobalSpace,
         deleteBook = viewModel::deleteBook,
         renameShelf = viewModel::renameShelf,
-        deleteShelf = viewModel::deleteShelf,
         markBooksReadStatus = viewModel::markBooksReadStatus,
         archiveBooks = viewModel::archiveBooks,
         deleteBooks = viewModel::deleteBooks,
@@ -118,6 +118,7 @@ fun LibraryRoute(
         onNavigateToAllSpaces = onNavigateToAllSpaces,
         onNavigateToBookInfo = onNavigateToBookInfo,
         onNavigateToOrganize = onNavigateToOrganize,
+        onNavigateToUnsorted = onNavigateToUnsorted,
         onNavigateToArchives = onNavigateToArchives,
         onNavigateToSettings = onNavigateToSettings,
         onNavigateToDictionaries = onNavigateToDictionaries,
@@ -145,7 +146,6 @@ fun LibraryScreen(
     setGlobalSpace: (String?) -> Unit,
     deleteBook: (String) -> Unit,
     renameShelf: (String, String) -> Unit,
-    deleteShelf: (String) -> Unit,
     markBooksReadStatus: (Collection<String>, Boolean) -> Unit = { _, _ -> },
     archiveBooks: (Collection<String>) -> Unit = {},
     deleteBooks: (Collection<String>) -> Unit = {},
@@ -159,6 +159,7 @@ fun LibraryScreen(
     onNavigateToAllSpaces: () -> Unit = {},
     onNavigateToBookInfo: (String) -> Unit,
     onNavigateToOrganize: (String) -> Unit,
+    onNavigateToUnsorted: () -> Unit = {},
     onNavigateToArchives: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToDictionaries: () -> Unit,
@@ -218,6 +219,9 @@ fun LibraryScreen(
                 allSpaces = uiState.allSpaces,
                 selectedSpaceId = uiState.globalSpaceId,
                 onSpaceSelected = { setGlobalSpace(it) },
+                hasUnsortedBooks = uiState.hasUnsortedBooks,
+                showAllSpaces = uiState.showAllSpaces,
+                onNavigateToUnsorted = onNavigateToUnsorted,
                 onNavigateToAllSpaces = onNavigateToAllSpaces,
                 onNavigateToArchives = onNavigateToArchives,
                 onNavigateToSettings = onNavigateToSettings,
@@ -453,7 +457,8 @@ private fun LibraryTopBar(
         isMultiSelect = isInMultiSelectMode,
         multiSelectBar = {
             if (isShelvesTab) {
-                val selectedShelfName = shelves.find { it.shelf.id == selectedShelves.firstOrNull() }?.shelf?.name ?: ""
+                val selectedShelfName =
+                    shelves.find { it.shelf.id == selectedShelves.firstOrNull() }?.shelf?.name ?: ""
                 val selectableShelvesCount = shelves.count { it.shelf.id != "unshelved" }
                 ShelvesMultiSelectAppBar(
                     selectedCount = selectedShelves.size,

@@ -13,14 +13,18 @@ import androidx.navigation3.runtime.NavKey
 
 fun getInitialBackStackFromIntent(intent: Intent): List<NavKey> {
     val uri = intent.data
-    if (intent.action == Intent.ACTION_VIEW && uri != null && uri.scheme == "pinecone" && uri.host == "book_info") {
-        val bookId = uri.lastPathSegment
-        if (bookId != null) {
-            return if (intent.getBooleanExtra("from_reader", false)) {
-                listOf(Screen.BookInfo(bookId))
-            } else {
-                listOf(Screen.Library, Screen.BookInfo(bookId))
+    if (intent.action == Intent.ACTION_VIEW && uri != null) {
+        if (uri.scheme == "pinecone" && uri.host == "book_info") {
+            val bookId = uri.lastPathSegment
+            if (bookId != null) {
+                return if (intent.getBooleanExtra("from_reader", false)) {
+                    listOf(Screen.BookInfo(bookId))
+                } else {
+                    listOf(Screen.Library, Screen.BookInfo(bookId))
+                }
             }
+        } else if (uri.scheme == "file" || uri.scheme == "content") {
+            return listOf(Screen.Library, Screen.Unsorted)
         }
     }
     return listOf(Screen.Library)
@@ -50,6 +54,12 @@ fun HandleDeepLinks(
                 val bookId = uri.lastPathSegment
                 if (bookId != null) {
                     backStack.add(Screen.BookInfo(bookId))
+                }
+            } else if (uri.scheme == "file" || uri.scheme == "content") {
+                if (backStack.lastOrNull() != Screen.Unsorted) {
+                    backStack.clear()
+                    backStack.add(Screen.Library)
+                    backStack.add(Screen.Unsorted)
                 }
             }
         }

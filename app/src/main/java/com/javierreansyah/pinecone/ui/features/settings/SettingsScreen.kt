@@ -33,6 +33,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetValue
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -61,6 +62,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Contrast
 import com.composables.icons.materialsymbols.outlined.Folder
+import com.composables.icons.materialsymbols.outlined.Forest
 import com.composables.icons.materialsymbols.outlined.History
 import com.composables.icons.materialsymbols.outlined.Info
 import com.composables.icons.materialsymbols.outlined.Keyboard_arrow_right
@@ -206,13 +208,20 @@ fun SettingsScreen(
         onThemeContrastSelected = { themeContrast ->
             viewModel.updateSettings(settings.copy(themeContrast = themeContrast))
         },
+        onShowAllSpacesChanged = { enabled ->
+            viewModel.updateSettings(settings.copy(showAllSpaces = enabled))
+        },
         onLanguageSelected = { localeKey ->
             scope.launch {
                 viewModel.updateSettingsSuspended(settings.copy(locale = localeKey))
                 if (localeKey == "System") {
                     AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
                 } else {
-                    AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(localeKey))
+                    AppCompatDelegate.setApplicationLocales(
+                        LocaleListCompat.forLanguageTags(
+                            localeKey
+                        )
+                    )
                 }
             }
         },
@@ -289,7 +298,8 @@ fun SettingsScreen(
                     viewModel.restoreFullBackup(
                         uri = uri,
                         onStart = {
-                            Toast.makeText(context, navRestoringBackupMsg, Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, navRestoringBackupMsg, Toast.LENGTH_SHORT)
+                                .show()
                         },
                         onSuccess = {
                             Toast.makeText(context, navRestoreSuccessMsg, Toast.LENGTH_SHORT).show()
@@ -318,7 +328,8 @@ fun SettingsScreen(
                     themeContrast = "Standard",
                     locale = "System",
                     autoBackupFrequency = "12h",
-                    backupFolderUri = ""
+                    backupFolderUri = "",
+                    showAllSpaces = true
                 )
                 viewModel.updateSettings(defaultSettings)
 
@@ -367,6 +378,7 @@ private fun SettingsContent(
     onThemeModeSelected: (String) -> Unit,
     onColorPaletteClick: () -> Unit,
     onThemeContrastSelected: (String) -> Unit,
+    onShowAllSpacesChanged: (Boolean) -> Unit,
     onLanguageSelected: (String) -> Unit,
     onAutoBackupFrequencySelected: (String) -> Unit,
     onBackupLocationClick: () -> Unit,
@@ -400,6 +412,7 @@ private fun SettingsContent(
                 onThemeModeSelected = onThemeModeSelected,
                 onColorPaletteClick = onColorPaletteClick,
                 onThemeContrastSelected = onThemeContrastSelected,
+                onShowAllSpacesChanged = onShowAllSpacesChanged,
                 onLanguageSelected = onLanguageSelected
             )
 
@@ -455,6 +468,7 @@ private fun GeneralSettingsSection(
     onThemeModeSelected: (String) -> Unit,
     onColorPaletteClick: () -> Unit,
     onThemeContrastSelected: (String) -> Unit,
+    onShowAllSpacesChanged: (Boolean) -> Unit,
     onLanguageSelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -496,6 +510,34 @@ private fun GeneralSettingsSection(
                         Icon(
                             imageVector = MaterialSymbols.Outlined.Translate,
                             contentDescription = null
+                        )
+                    }
+                )
+
+                item(
+                    onClick = { onShowAllSpacesChanged(!settings.showAllSpaces) },
+                    leadingContent = {
+                        Icon(
+                            imageVector = MaterialSymbols.Outlined.Forest,
+                            contentDescription = null
+                        )
+                    },
+                    content = {
+                        Text(
+                            stringResource(R.string.settings_show_all_spaces),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    },
+                    supportingContent = {
+                        Text(
+                            stringResource(R.string.settings_show_all_spaces_summary),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
+                    trailingContent = {
+                        Switch(
+                            checked = settings.showAllSpaces,
+                            onCheckedChange = null
                         )
                     }
                 )

@@ -50,8 +50,25 @@ class ShelfDetailViewModel(
         initialValue = null
     )
 
+    init {
+        viewModelScope.launch {
+            globalSpaceId.collect { spaceId ->
+                _uiState.update { state ->
+                    state.copy(
+                        bookPreferences = prefsManager.getPreferences(
+                            spaceId = spaceId,
+                            screenKey = screenKey,
+                            defaultSort = SortType.Custom,
+                            defaultAscending = true
+                        )
+                    )
+                }
+            }
+        }
+    }
+
     val allBooks: StateFlow<List<Book>> = combine(booksFlow, globalSpaceId) { books, spaceId ->
-        if (spaceId == null || spaceId == "_all_") books else books.filter { book ->
+        if (spaceId == null || spaceId == "_all_") books.filter { it.spaceIds.isNotEmpty() } else books.filter { book ->
             book.spaceIds.contains(
                 spaceId
             )
@@ -69,14 +86,29 @@ class ShelfDetailViewModel(
         globalSpaceId
     ) { shelvesList, crossRefs, allBooksEntities, spaceId ->
         val sortedShelves = sortShelfBooks(shelvesList, crossRefs, spaceId)
-        val shelvedBookIds = crossRefs.map { it.bookId }.toSet()
+        val isSpaceSelected = spaceId != null && spaceId != "_all_"
+        val currentSpaceShelves = if (isSpaceSelected) {
+            shelvesList.filter { it.shelf.spaceId == spaceId }
+        } else {
+            shelvesList
+        }
+        val currentSpaceShelfIds = currentSpaceShelves.map { it.shelf.id }.toSet()
+        val shelvedBookIds =
+            crossRefs.filter { it.shelfId in currentSpaceShelfIds }.map { it.bookId }.toSet()
+
         val unshelvedBooks = allBooksEntities.filter {
-            it.book.id !in shelvedBookIds && (spaceId == null || spaceId == "_all_" || it.spaces.any { space -> space.id == spaceId })
+            val inSpace = if (isSpaceSelected) {
+                it.spaces.any { space -> space.id == spaceId }
+            } else {
+                it.spaces.isNotEmpty()
+            }
+            inSpace && it.book.id !in shelvedBookIds
         }
 
         val unshelvedShelf = ShelfWithCovers(
             shelf = ShelfEntity(
                 id = "unshelved",
+                spaceId = spaceId ?: "_all_",
                 name = application.getString(R.string.library_label_unshelved),
                 createdAt = 0L
             ), books = unshelvedBooks
@@ -94,7 +126,7 @@ class ShelfDetailViewModel(
     fun onLayoutModeChange(mode: LayoutMode) {
         _uiState.update { state ->
             val prefs = state.bookPreferences.copy(layoutMode = mode)
-            prefsManager.savePreferences(screenKey, prefs)
+            prefsManager.savePreferences(globalSpaceId.value, screenKey, prefs)
             state.copy(bookPreferences = prefs)
         }
     }
@@ -108,7 +140,7 @@ class ShelfDetailViewModel(
                 val initialAscending = sortType != SortType.LastRead
                 currentPrefs.copy(sortType = sortType, isAscending = initialAscending)
             }
-            prefsManager.savePreferences(screenKey, newPrefs)
+            prefsManager.savePreferences(globalSpaceId.value, screenKey, newPrefs)
             state.copy(bookPreferences = newPrefs)
         }
     }
@@ -120,7 +152,7 @@ class ShelfDetailViewModel(
                 if (contains(status)) remove(status) else add(status)
             }
             val newPrefs = currentPrefs.copy(selectedStatus = updatedStatus)
-            prefsManager.savePreferences(screenKey, newPrefs)
+            prefsManager.savePreferences(globalSpaceId.value, screenKey, newPrefs)
             state.copy(bookPreferences = newPrefs)
         }
     }

@@ -9,6 +9,9 @@ sealed interface Screen : NavKey {
     data object Library : Screen
 
     @Serializable
+    data object Unsorted : Screen
+
+    @Serializable
     data object Archives : Screen
 
     @Serializable

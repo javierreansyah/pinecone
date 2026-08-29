@@ -81,10 +81,15 @@ fun NoteBackupRecord.toEntity() =
     NoteEntity(id, bookId, locatorJson, chapterTitle, noteText, color, createdAt)
 
 @Serializable
-data class ShelfBackupRecord(val id: String, val name: String, val createdAt: Long)
+data class ShelfBackupRecord(
+    val id: String,
+    val spaceId: String,
+    val name: String,
+    val createdAt: Long
+)
 
-fun ShelfEntity.toBackupRecord() = ShelfBackupRecord(id, name, createdAt)
-fun ShelfBackupRecord.toEntity() = ShelfEntity(id, name, createdAt)
+fun ShelfEntity.toBackupRecord() = ShelfBackupRecord(id, spaceId, name, createdAt)
+fun ShelfBackupRecord.toEntity() = ShelfEntity(id, spaceId, name, createdAt)
 
 @Serializable
 data class ShelfBookBackupRecord(

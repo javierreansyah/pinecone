@@ -2,7 +2,6 @@ package com.javierreansyah.pinecone.ui.features.library.organize
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -17,9 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyItemScope
-import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -38,15 +35,16 @@ import androidx.compose.material3.rememberContainedSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.state.ToggleableState
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Close
@@ -55,7 +53,7 @@ import com.composables.icons.materialsymbols.outlined.Forest
 import com.composables.icons.materialsymbols.outlined.Mic
 import com.composables.icons.materialsymbols.outlined.Search
 import com.javierreansyah.pinecone.R
-import com.javierreansyah.pinecone.ui.components.SegmentedListItem
+import com.javierreansyah.pinecone.ui.components.SegmentedColumn
 import com.javierreansyah.pinecone.ui.components.rememberVoiceSearchLauncher
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -70,19 +68,35 @@ fun OrganizeBottomSheet(
     val searchBarState = rememberContainedSearchBarState(initialValue = SearchBarValue.Expanded)
     val keyboardController = LocalSoftwareKeyboardController.current
 
+    var shelfNameToCreate by remember { mutableStateOf<String?>(null) }
+
     val searchQuery = textFieldState.text.toString().trim()
+
     val filteredSpaces = remember(uiState.spaces, searchQuery) {
-        if (searchQuery.isBlank()) uiState.spaces
-        else uiState.spaces.filter { it.space.name.contains(searchQuery, ignoreCase = true) }
-    }
-    val filteredShelves = remember(uiState.shelves, searchQuery) {
-        if (searchQuery.isBlank()) uiState.shelves
-        else uiState.shelves.filter { it.shelf.name.contains(searchQuery, ignoreCase = true) }
+        if (searchQuery.isBlank()) {
+            uiState.spaces
+        } else {
+            uiState.spaces.mapNotNull { spaceWithShelves ->
+                val spaceMatches =
+                    spaceWithShelves.space.name.contains(searchQuery, ignoreCase = true)
+                val matchingShelves = spaceWithShelves.shelves.filter {
+                    it.shelf.name.contains(searchQuery, ignoreCase = true)
+                }
+                if (spaceMatches || matchingShelves.isNotEmpty()) {
+                    spaceWithShelves.copy(
+                        shelves = if (spaceMatches && matchingShelves.isEmpty()) spaceWithShelves.shelves else matchingShelves
+                    )
+                } else {
+                    null
+                }
+            }
+        }
     }
 
-    val configuration = LocalConfiguration.current
-    val sheetHeight = remember(configuration.screenHeightDp) {
-        (configuration.screenHeightDp * 0.9f).dp
+    val density = LocalDensity.current
+    val windowInfo = LocalWindowInfo.current
+    val sheetHeight = remember(windowInfo.containerSize, density) {
+        with(density) { (windowInfo.containerSize.height * 0.9f).toDp() }
     }
     val sheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
@@ -110,24 +124,36 @@ fun OrganizeBottomSheet(
                 OrganizeContent(
                     searchQuery = searchQuery,
                     spaces = filteredSpaces,
-                    shelves = filteredShelves,
                     allSpaces = uiState.spaces,
-                    allShelves = uiState.shelves,
-                    onCreateSpace = { name ->
+                    onCreateSpaceWithQuery = { name ->
                         viewModel.createSpace(name)
                         textFieldState.edit { replace(0, length, "") }
                         keyboardController?.hide()
                     },
-                    onCreateShelf = { name ->
-                        viewModel.createShelf(name)
-                        textFieldState.edit { replace(0, length, "") }
-                        keyboardController?.hide()
+                    onRequestCreateShelf = { name ->
+                        shelfNameToCreate = name
                     },
                     onToggleSpace = viewModel::toggleSpace,
                     onToggleShelf = viewModel::toggleShelf
                 )
             }
         }
+    }
+
+    shelfNameToCreate?.let { shelfName ->
+        SelectSpaceForShelfDialog(
+            shelfName = shelfName,
+            spaces = uiState.spaces.map { it.space },
+            onDismiss = { shelfNameToCreate = null },
+            onConfirm = { spaceIds ->
+                spaceIds.forEach { spaceId ->
+                    viewModel.createShelf(spaceId, shelfName)
+                }
+                shelfNameToCreate = null
+                textFieldState.edit { replace(0, length, "") }
+                keyboardController?.hide()
+            }
+        )
     }
 }
 
@@ -197,26 +223,24 @@ private fun OrganizeSearchInputField(
 @Composable
 private fun OrganizeContent(
     searchQuery: String,
-    spaces: List<SpaceItemState>,
-    shelves: List<ShelfItemState>,
-    allSpaces: List<SpaceItemState>,
-    allShelves: List<ShelfItemState>,
-    onCreateSpace: (String) -> Unit,
-    onCreateShelf: (String) -> Unit,
+    spaces: List<SpaceWithShelvesItemState>,
+    allSpaces: List<SpaceWithShelvesItemState>,
+    onCreateSpaceWithQuery: (String) -> Unit,
+    onRequestCreateShelf: (String) -> Unit,
     onToggleSpace: (String, ToggleableState) -> Unit,
     onToggleShelf: (String, ToggleableState) -> Unit
 ) {
     val showCreateSpace = searchQuery.isNotBlank() && !allSpaces.any {
         it.space.name.equals(searchQuery, ignoreCase = true)
     }
-    val showCreateShelf = searchQuery.isNotBlank() && !allShelves.any {
-        it.shelf.name.equals(searchQuery, ignoreCase = true)
-    }
-    val isSearchEmpty = searchQuery.isNotBlank() && spaces.isEmpty() && shelves.isEmpty() && !showCreateSpace && !showCreateShelf
+    val showCreateShelf = searchQuery.isNotBlank() && allSpaces.isNotEmpty()
+
+    val isSearchEmpty =
+        searchQuery.isNotBlank() && spaces.isEmpty() && !showCreateSpace && !showCreateShelf
 
     val fastEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
-    val fastSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<androidx.compose.ui.unit.IntSize>()
-    val fastSpatialSpecIntOffset = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
+    val fastSpatialSpec =
+        MaterialTheme.motionScheme.fastSpatialSpec<androidx.compose.ui.unit.IntSize>()
 
     AnimatedContent(
         targetState = isSearchEmpty,
@@ -229,40 +253,140 @@ private fun OrganizeContent(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 8.dp),
-        label = "SearchEmptyState"
-    ) { empty ->
-        if (empty) {
+        label = "OrganizeContentState"
+    ) { emptySearch ->
+        if (emptySearch) {
             OrganizeEmptyResults(searchQuery = searchQuery)
         } else {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                organizeCreateOptions(
-                    searchQuery = searchQuery,
-                    showCreateSpace = showCreateSpace,
-                    showCreateShelf = showCreateShelf,
-                    fastEffectsSpec = fastEffectsSpec,
-                    fastSpatialSpecIntOffset = fastSpatialSpecIntOffset,
-                    onCreateSpace = onCreateSpace,
-                    onCreateShelf = onCreateShelf
-                )
+                if (showCreateSpace || showCreateShelf) {
+                    item(key = "create_section") {
+                        SegmentedColumn(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            if (showCreateSpace) {
+                                item(
+                                    key = "create_space_query",
+                                    selected = false,
+                                    onClick = { onCreateSpaceWithQuery(searchQuery) },
+                                    leadingContent = {
+                                        Icon(
+                                            MaterialSymbols.Outlined.Forest,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    },
+                                    content = {
+                                        Text(
+                                            text = stringResource(R.string.library_new_space) + " \"$searchQuery\"",
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                )
+                            }
 
-                organizeSpacesSection(
-                    spaces = spaces,
-                    fastEffectsSpec = fastEffectsSpec,
-                    fastSpatialSpecIntOffset = fastSpatialSpecIntOffset,
-                    onToggleSpace = onToggleSpace
-                )
+                            if (showCreateShelf) {
+                                item(
+                                    key = "create_shelf_query",
+                                    selected = false,
+                                    onClick = { onRequestCreateShelf(searchQuery) },
+                                    leadingContent = {
+                                        Icon(
+                                            MaterialSymbols.Outlined.Folder,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    },
+                                    content = {
+                                        Text(
+                                            text = stringResource(R.string.library_new_shelf) + " \"$searchQuery\"",
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
 
-                organizeShelvesSection(
-                    shelves = shelves,
-                    fastEffectsSpec = fastEffectsSpec,
-                    fastSpatialSpecIntOffset = fastSpatialSpecIntOffset,
-                    onToggleShelf = onToggleShelf
-                )
+                items(spaces, key = { it.space.id }) { spaceItem ->
+                    val space = spaceItem.space
+                    val spaceShelves = spaceItem.shelves
+                    val isSpaceSelected = spaceItem.state == ToggleableState.On
+
+                    SegmentedColumn(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        // Space header (top of this segmented list)
+                        item(
+                            key = "space_${space.id}",
+                            selected = isSpaceSelected,
+                            onClick = { onToggleSpace(space.id, spaceItem.state) },
+                            leadingContent = {
+                                Icon(
+                                    MaterialSymbols.Outlined.Forest,
+                                    contentDescription = null,
+                                    tint = if (isSpaceSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.primary
+                                )
+                            },
+                            content = {
+                                Text(
+                                    text = space.name,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            },
+                            trailingContent = {
+                                TriStateCheckbox(
+                                    state = spaceItem.state,
+                                    onClick = { onToggleSpace(space.id, spaceItem.state) }
+                                )
+                            }
+                        )
+
+                        // Shelves in this space (below the space in this segmented list)
+                        spaceShelves.forEach { shelfItem ->
+                            val isShelfSelected = shelfItem.state == ToggleableState.On
+                            item(
+                                key = "shelf_${shelfItem.shelf.id}",
+                                selected = isShelfSelected,
+                                onClick = { onToggleShelf(shelfItem.shelf.id, shelfItem.state) },
+                                leadingContent = {
+                                    Icon(
+                                        MaterialSymbols.Outlined.Folder,
+                                        contentDescription = null,
+                                        tint = if (isShelfSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.secondary
+                                    )
+                                },
+                                content = {
+                                    Text(
+                                        text = shelfItem.shelf.name,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                },
+                                trailingContent = {
+                                    TriStateCheckbox(
+                                        state = shelfItem.state,
+                                        onClick = {
+                                            onToggleShelf(
+                                                shelfItem.shelf.id,
+                                                shelfItem.state
+                                            )
+                                        }
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
+
+                item(key = "bottom_spacer") {
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
             }
         }
     }
@@ -294,187 +418,6 @@ private fun OrganizeEmptyResults(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        }
-    }
-}
-
-private fun LazyListScope.organizeCreateOptions(
-    searchQuery: String,
-    showCreateSpace: Boolean,
-    showCreateShelf: Boolean,
-    fastEffectsSpec: FiniteAnimationSpec<Float>,
-    fastSpatialSpecIntOffset: FiniteAnimationSpec<IntOffset>,
-    onCreateSpace: (String) -> Unit,
-    onCreateShelf: (String) -> Unit
-) {
-    if (showCreateSpace) {
-        item(key = "create_space") {
-            CreateOptionItem(
-                label = stringResource(R.string.library_new_space) + " \"$searchQuery\"",
-                icon = MaterialSymbols.Outlined.Forest,
-                index = 0,
-                count = if (showCreateShelf) 2 else 1,
-                isTopDetached = true,
-                isBottomDetached = !showCreateShelf,
-                fastEffectsSpec = fastEffectsSpec,
-                fastSpatialSpecIntOffset = fastSpatialSpecIntOffset,
-                onClick = { onCreateSpace(searchQuery) }
-            )
-        }
-    }
-
-    if (showCreateShelf) {
-        item(key = "create_shelf") {
-            CreateOptionItem(
-                label = stringResource(R.string.library_new_shelf) + " \"$searchQuery\"",
-                icon = MaterialSymbols.Outlined.Folder,
-                index = if (showCreateSpace) 1 else 0,
-                count = if (showCreateSpace) 2 else 1,
-                isTopDetached = !showCreateSpace,
-                isBottomDetached = true,
-                fastEffectsSpec = fastEffectsSpec,
-                fastSpatialSpecIntOffset = fastSpatialSpecIntOffset,
-                onClick = { onCreateShelf(searchQuery) }
-            )
-        }
-    }
-
-    if (showCreateSpace || showCreateShelf) {
-        item(key = "create_spacer") {
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-    }
-}
-
-@Composable
-private fun LazyItemScope.CreateOptionItem(
-    label: String,
-    icon: ImageVector,
-    index: Int,
-    count: Int,
-    isTopDetached: Boolean,
-    isBottomDetached: Boolean,
-    fastEffectsSpec: FiniteAnimationSpec<Float>,
-    fastSpatialSpecIntOffset: FiniteAnimationSpec<IntOffset>,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    SegmentedListItem(
-        modifier = modifier.animateItem(
-            fadeInSpec = fastEffectsSpec,
-            fadeOutSpec = fastEffectsSpec,
-            placementSpec = fastSpatialSpecIntOffset
-        ),
-        selected = false,
-        onClick = onClick,
-        index = index,
-        count = count,
-        isTopDetached = isTopDetached,
-        isBottomDetached = isBottomDetached,
-        leadingContent = {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-        },
-        content = {
-            Text(
-                label,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
-    )
-}
-
-private fun LazyListScope.organizeSpacesSection(
-    spaces: List<SpaceItemState>,
-    fastEffectsSpec: FiniteAnimationSpec<Float>,
-    fastSpatialSpecIntOffset: FiniteAnimationSpec<IntOffset>,
-    onToggleSpace: (String, ToggleableState) -> Unit
-) {
-    if (spaces.isNotEmpty()) {
-        item(key = "spaces_title") {
-            Text(
-                text = stringResource(R.string.library_spaces_title),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-        }
-        itemsIndexed(spaces, key = { _, it -> "space_${it.space.id}" }) { index, spaceItem ->
-            val isTopDetached = spaceItem.state == ToggleableState.On || index == 0 || (spaces.getOrNull(index - 1)?.state == ToggleableState.On)
-            val isBottomDetached = spaceItem.state == ToggleableState.On || index == spaces.size - 1 || (spaces.getOrNull(index + 1)?.state == ToggleableState.On)
-
-            SegmentedListItem(
-                modifier = Modifier.animateItem(
-                    fadeInSpec = fastEffectsSpec,
-                    fadeOutSpec = fastEffectsSpec,
-                    placementSpec = fastSpatialSpecIntOffset
-                ),
-                selected = spaceItem.state == ToggleableState.On,
-                onClick = { onToggleSpace(spaceItem.space.id, spaceItem.state) },
-                index = index,
-                count = spaces.size,
-                isTopDetached = isTopDetached,
-                isBottomDetached = isBottomDetached,
-                content = { Text(spaceItem.space.name) },
-                trailingContent = {
-                    TriStateCheckbox(
-                        state = spaceItem.state,
-                        onClick = { onToggleSpace(spaceItem.space.id, spaceItem.state) }
-                    )
-                }
-            )
-        }
-        item(key = "spaces_spacer") {
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-    }
-}
-
-private fun LazyListScope.organizeShelvesSection(
-    shelves: List<ShelfItemState>,
-    fastEffectsSpec: FiniteAnimationSpec<Float>,
-    fastSpatialSpecIntOffset: FiniteAnimationSpec<IntOffset>,
-    onToggleShelf: (String, ToggleableState) -> Unit
-) {
-    if (shelves.isNotEmpty()) {
-        item(key = "shelves_title") {
-            Text(
-                text = stringResource(R.string.library_tab_shelves),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-        }
-        itemsIndexed(shelves, key = { _, it -> "shelf_${it.shelf.id}" }) { index, shelfItem ->
-            val isTopDetached = shelfItem.state == ToggleableState.On || index == 0 || (shelves.getOrNull(index - 1)?.state == ToggleableState.On)
-            val isBottomDetached = shelfItem.state == ToggleableState.On || index == shelves.size - 1 || (shelves.getOrNull(index + 1)?.state == ToggleableState.On)
-
-            SegmentedListItem(
-                modifier = Modifier.animateItem(
-                    fadeInSpec = fastEffectsSpec,
-                    fadeOutSpec = fastEffectsSpec,
-                    placementSpec = fastSpatialSpecIntOffset
-                ),
-                selected = shelfItem.state == ToggleableState.On,
-                onClick = { onToggleShelf(shelfItem.shelf.id, shelfItem.state) },
-                index = index,
-                count = shelves.size,
-                isTopDetached = isTopDetached,
-                isBottomDetached = isBottomDetached,
-                content = { Text(shelfItem.shelf.name) },
-                trailingContent = {
-                    TriStateCheckbox(
-                        state = shelfItem.state,
-                        onClick = { onToggleShelf(shelfItem.shelf.id, shelfItem.state) }
-                    )
-                }
-            )
-        }
-        item(key = "shelves_spacer") {
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

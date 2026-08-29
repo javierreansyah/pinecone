@@ -61,6 +61,9 @@ interface ShelfDao {
     @Query("SELECT * FROM shelves")
     suspend fun getAllShelvesSync(): List<ShelfEntity>
 
+    @Query("SELECT * FROM shelves WHERE spaceId = :spaceId")
+    suspend fun getShelvesBySpaceSync(spaceId: String): List<ShelfEntity>
+
     @Query("SELECT * FROM shelf_book_cross_ref")
     suspend fun getAllShelfBookCrossRefsSync(): List<ShelfBookCrossRefEntity>
 
@@ -76,6 +79,9 @@ interface ShelfDao {
     @Query("DELETE FROM shelf_book_cross_ref")
     suspend fun deleteAllShelfBookCrossRefs()
 
-    @Query("DELETE FROM shelves WHERE id NOT IN (SELECT shelfId FROM shelf_book_cross_ref)")
-    suspend fun deleteOrphanShelves()
+    @Query("SELECT COUNT(*) FROM shelf_book_cross_ref WHERE shelfId = :shelfId")
+    suspend fun getBookCountForShelf(shelfId: String): Int
+
+    @Query("DELETE FROM shelves WHERE id NOT IN (SELECT DISTINCT shelfId FROM shelf_book_cross_ref) AND id != 'unshelved'")
+    suspend fun deleteEmptyShelves()
 }

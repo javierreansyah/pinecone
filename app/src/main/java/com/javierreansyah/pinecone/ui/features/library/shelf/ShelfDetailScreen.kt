@@ -271,6 +271,7 @@ fun ShelfDetailScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ShelfDetailContent(
+    modifier: Modifier = Modifier,
     shelfId: String,
     displayTitle: String,
     displayCount: Int,
@@ -306,8 +307,7 @@ private fun ShelfDetailContent(
     onShowDeleteDialog: () -> Unit,
     onBookClick: (String) -> Unit,
     onBookLongClick: (String) -> Unit,
-    scrollKey: Any? = null,
-    modifier: Modifier = Modifier
+    scrollKey: Any? = null
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 

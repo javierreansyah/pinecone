@@ -55,5 +55,14 @@ class LibraryBackupPayloadTest {
             id = "id", title = "Title", filePath = "/new/book.epub", addedDate = 10
         )
         assertEquals(record.filePath, record.toEntity().filePath)
+
+        val shelfRecord = ShelfBackupRecord(
+            id = "shelf-1", spaceId = "space-1", name = "Favorites", createdAt = 100L
+        )
+        val entity = shelfRecord.toEntity()
+        assertEquals("shelf-1", entity.id)
+        assertEquals("space-1", entity.spaceId)
+        assertEquals("Favorites", entity.name)
+        assertEquals(shelfRecord, entity.toBackupRecord())
     }
 }

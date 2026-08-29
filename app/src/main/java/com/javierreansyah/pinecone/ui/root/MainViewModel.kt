@@ -33,6 +33,13 @@ class MainViewModel(
     private val _toastMessage = MutableSharedFlow<String>()
     val toastMessage = _toastMessage.asSharedFlow()
 
+    private val _importErrorReport = MutableStateFlow<ImportErrorReport?>(null)
+    val importErrorReport: StateFlow<ImportErrorReport?> = _importErrorReport.asStateFlow()
+
+    fun dismissImportErrorReport() {
+        _importErrorReport.value = null
+    }
+
     init {
         viewModelScope.launch {
             readerPreferences.readerSettings.collect { newSettings ->
@@ -47,9 +54,24 @@ class MainViewModel(
 
     fun importBook(uri: Uri) {
         viewModelScope.launch {
+            val app = getApplication<Application>()
+            _toastMessage.emit(
+                app.resources.getQuantityString(
+                    R.plurals.nav_importing_files,
+                    1,
+                    1
+                )
+            )
+            val fileName = getFileNameFromUri(uri)
             val result = libraryRepository.importBook(uri)
             if (result != null) {
-                _toastMessage.emit(getApplication<Application>().getString(R.string.nav_import_complete))
+                _toastMessage.emit(app.getString(R.string.nav_import_complete))
+            } else {
+                _importErrorReport.value = ImportErrorReport(
+                    failedFiles = listOf(fileName),
+                    totalCount = 1,
+                    successCount = 0
+                )
             }
         }
     }
@@ -57,43 +79,110 @@ class MainViewModel(
     fun importBooks(uris: List<Uri>) {
         if (uris.isEmpty()) return
         viewModelScope.launch {
+            val app = getApplication<Application>()
             _toastMessage.emit(
-                getApplication<Application>().resources.getQuantityString(
+                app.resources.getQuantityString(
                     R.plurals.nav_importing_files,
                     uris.size,
                     uris.size
                 )
             )
+            var successCount = 0
+            val failedFiles = mutableListOf<String>()
             uris.forEach { uri ->
-                libraryRepository.importBook(uri)
+                val fileName = getFileNameFromUri(uri)
+                val result = libraryRepository.importBook(uri)
+                if (result != null) {
+                    successCount++
+                } else {
+                    failedFiles.add(fileName)
+                }
             }
-            _toastMessage.emit(getApplication<Application>().getString(R.string.nav_import_complete))
+            if (failedFiles.isEmpty()) {
+                _toastMessage.emit(app.getString(R.string.nav_import_complete))
+            } else {
+                _importErrorReport.value = ImportErrorReport(
+                    failedFiles = failedFiles,
+                    totalCount = uris.size,
+                    successCount = successCount
+                )
+            }
         }
     }
 
     fun scanFolder(uri: Uri) {
         viewModelScope.launch {
-            _toastMessage.emit(getApplication<Application>().getString(R.string.nav_scanning_folder))
-            val root = DocumentFile.fromTreeUri(getApplication(), uri)
+            val app = getApplication<Application>()
+            _toastMessage.emit(app.getString(R.string.nav_scanning_folder))
+            val root = DocumentFile.fromTreeUri(app, uri)
+            val epubFiles = mutableListOf<DocumentFile>()
             if (root != null) {
-                importFromDocumentFile(root)
+                collectEpubFiles(root, epubFiles)
             }
-            _toastMessage.emit(getApplication<Application>().getString(R.string.nav_folder_scan_complete))
+            if (epubFiles.isEmpty()) {
+                _toastMessage.emit(app.getString(R.string.import_no_books_found))
+                return@launch
+            }
+            var successCount = 0
+            val failedFiles = mutableListOf<String>()
+            epubFiles.forEach { file ->
+                val result = libraryRepository.importBook(file.uri)
+                if (result != null) {
+                    successCount++
+                } else {
+                    failedFiles.add(file.name ?: "Unknown")
+                }
+            }
+            if (failedFiles.isEmpty()) {
+                _toastMessage.emit(app.getString(R.string.nav_folder_scan_complete))
+            } else {
+                _importErrorReport.value = ImportErrorReport(
+                    failedFiles = failedFiles,
+                    totalCount = epubFiles.size,
+                    successCount = successCount
+                )
+            }
         }
     }
 
-    private suspend fun importFromDocumentFile(file: DocumentFile) {
+    private fun collectEpubFiles(file: DocumentFile, result: MutableList<DocumentFile>) {
         if (file.isDirectory) {
             file.listFiles().forEach { child ->
-                importFromDocumentFile(child)
+                collectEpubFiles(child, result)
             }
         } else {
             val name = file.name?.lowercase() ?: ""
             val supportedExtensions = listOf(".epub")
             if (supportedExtensions.any { name.endsWith(it) }) {
-                libraryRepository.importBook(file.uri)
+                result.add(file)
             }
         }
+    }
+
+    private fun getFileNameFromUri(uri: Uri): String {
+        val context = getApplication<Application>()
+        if (uri.scheme == "content") {
+            try {
+                context.contentResolver.query(
+                    uri,
+                    arrayOf(android.provider.OpenableColumns.DISPLAY_NAME),
+                    null,
+                    null,
+                    null
+                )?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val index =
+                            cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                        if (index != -1) {
+                            val name = cursor.getString(index)
+                            if (!name.isNullOrBlank()) return name
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+            }
+        }
+        return uri.lastPathSegment?.substringAfterLast('/') ?: uri.toString()
     }
 
     class Factory(
@@ -107,3 +196,10 @@ class MainViewModel(
         }
     }
 }
+
+data class ImportErrorReport(
+    val failedFiles: List<String>,
+    val totalCount: Int,
+    val successCount: Int
+)
+

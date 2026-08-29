@@ -9,7 +9,7 @@ import com.javierreansyah.pinecone.data.model.Book
 const val ALL_SPACES_ID = "_all_"
 
 fun List<Book>.inSpace(spaceId: String?): List<Book> =
-    if (spaceId == null || spaceId == ALL_SPACES_ID) this
+    if (spaceId == null || spaceId == ALL_SPACES_ID) filter { it.spaceIds.isNotEmpty() }
     else filter { spaceId in it.spaceIds }
 
 fun List<Book>.filterAndSort(
@@ -58,12 +58,18 @@ fun sortShelfBooks(
     globalSpaceId: String? = null
 ): List<ShelfWithCovers> {
     val crossRefsByShelf = crossRefs.groupBy { it.shelfId }
-    return shelvesList.map { shelfWithCovers ->
+    val filteredShelves = if (globalSpaceId != null && globalSpaceId != ALL_SPACES_ID) {
+        shelvesList.filter { it.shelf.spaceId == globalSpaceId }
+    } else {
+        shelvesList
+    }
+
+    return filteredShelves.map { shelfWithCovers ->
         val shelfId = shelfWithCovers.shelf.id
         val shelfCrossRefs = crossRefsByShelf[shelfId].orEmpty()
         val orderMap = shelfCrossRefs.associate { it.bookId to it.orderIndex }
         val filteredBooks = shelfWithCovers.books.filter {
-            globalSpaceId == null || globalSpaceId == "_all_" || it.spaces.any { space -> space.id == globalSpaceId }
+            globalSpaceId == null || globalSpaceId == ALL_SPACES_ID || it.spaces.any { space -> space.id == globalSpaceId }
         }
         val sortedBooks = filteredBooks.sortedBy { book ->
             orderMap[book.book.id] ?: 0
@@ -109,28 +115,35 @@ fun mapAndSortShelves(
         processedShelves.sortedWith(finalComparator)
     }
 
-    val shelvedBookIds = crossRefs.map { it.bookId }.toSet()
+    val isSpaceSelected = globalSpaceId != null && globalSpaceId != ALL_SPACES_ID
+    val currentSpaceShelves = if (isSpaceSelected) {
+        shelvesList.filter { it.shelf.spaceId == globalSpaceId }
+    } else {
+        shelvesList
+    }
+    val currentSpaceShelfIds = currentSpaceShelves.map { it.shelf.id }.toSet()
+    val shelvedBookIdsInCurrentSpace =
+        crossRefs.filter { it.shelfId in currentSpaceShelfIds }.map { it.bookId }.toSet()
+
     val unshelvedBooks = allBooksEntities.filter {
-        it.book.id !in shelvedBookIds && (globalSpaceId == null || globalSpaceId == "_all_" || it.spaces.any { space -> space.id == globalSpaceId })
+        val inSpace = if (isSpaceSelected) {
+            it.spaces.any { space -> space.id == globalSpaceId }
+        } else {
+            it.spaces.isNotEmpty()
+        }
+        inSpace && it.book.id !in shelvedBookIdsInCurrentSpace
     }
 
     val showShelves = prefs.selectedShelfFilter.contains(ShelfFilter.Shelves)
     val showUnshelved = prefs.selectedShelfFilter.contains(ShelfFilter.Unshelved)
 
-    val finalShelves = if (showShelves) {
-        if (globalSpaceId != null && globalSpaceId != "_all_") {
-            sortedShelves.filter { it.books.isNotEmpty() }
-        } else {
-            sortedShelves
-        }
-    } else {
-        emptyList()
-    }
+    val finalShelves = if (showShelves) sortedShelves else emptyList()
 
     return if (showUnshelved && unshelvedBooks.isNotEmpty()) {
         val unshelvedShelf = ShelfWithCovers(
             shelf = ShelfEntity(
                 id = "unshelved",
+                spaceId = globalSpaceId ?: ALL_SPACES_ID,
                 name = unshelvedLabel,
                 createdAt = 0L
             ), books = unshelvedBooks
@@ -140,3 +153,4 @@ fun mapAndSortShelves(
         finalShelves
     }
 }
+
