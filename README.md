@@ -43,3 +43,14 @@
   themes, and reading modes.
 - **Backup & Restore:** Secure your library data, settings, and reading progress with local manual
   and automatic backups.
+## Validation
+
+From the repository root in Windows PowerShell:
+
+```powershell
+# Quick: debug build and JVM unit tests
+.\gradlew.bat :app:assembleDebug :app:testDebugUnitTest --warning-mode all
+```
+
+For **Complete** validation (all build types, JVM tests, and Android lint), see
+[VALIDATION.md](VALIDATION.md). IDE recommendations are handled manually in JetBrains tools.
