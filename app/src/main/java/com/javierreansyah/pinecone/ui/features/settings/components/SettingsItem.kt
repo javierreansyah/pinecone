@@ -30,33 +30,33 @@ import com.javierreansyah.pinecone.ui.components.SegmentedListScope
 
 @Composable
 fun SegmentedListScope.SettingsItem(
-    label: String,
     value: String,
     options: List<String>,
     onSelected: (String) -> Unit,
     enabled: Boolean = true,
-    leadingIcon: (@Composable () -> Unit)? = null
+    leadingIcon: (@Composable () -> Unit)? = null,
+    content: @Composable () -> Unit,
 ) {
-    var showDialog by remember { mutableStateOf(false) }
+    var showDialog by remember { mutableStateOf(value = false) }
 
     item(
         enabled = enabled,
         onClick = { showDialog = true },
         leadingContent = leadingIcon,
-        content = { Text(label, style = MaterialTheme.typography.titleMedium) },
+        content = content,
         supportingContent = { Text(value, style = MaterialTheme.typography.bodyMedium) },
         trailingContent = {
             Icon(
                 MaterialSymbols.Outlined.Keyboard_arrow_right,
-                contentDescription = null
+                contentDescription = null,
             )
-        }
+        },
     )
 
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text(label) },
+            title = content,
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     options.forEach { option ->
@@ -69,19 +69,19 @@ fun SegmentedListScope.SettingsItem(
                                     showDialog = false
                                 }
                                 .clip(MaterialTheme.shapes.small),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             RadioButton(
                                 selected = isSelected,
                                 onClick = {
                                     onSelected(option)
                                     showDialog = false
-                                }
+                                },
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = option,
-                                style = MaterialTheme.typography.bodyLarge
+                                style = MaterialTheme.typography.bodyLarge,
                             )
                         }
                     }
@@ -91,7 +91,7 @@ fun SegmentedListScope.SettingsItem(
                 TextButton(onClick = { showDialog = false }) {
                     Text(stringResource(R.string.action_close))
                 }
-            }
+            },
         )
     }
 }

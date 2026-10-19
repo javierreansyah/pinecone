@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -29,12 +27,11 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.components.SegmentedColumn
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AboutScreen(
     onNavigateBack: () -> Unit,
     onNavigateToOpenSourceLicenses: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -45,21 +42,21 @@ fun AboutScreen(
             LibraryTopAppBar(
                 title = { Text(stringResource(R.string.about_title)) },
                 onBack = onNavigateBack,
-                scrollBehavior = scrollBehavior
+                scrollBehavior = scrollBehavior,
             )
-        }
+        },
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
             Text(
                 text = stringResource(R.string.about_copyright),
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             SegmentedColumn(modifier = Modifier.padding(top = 16.dp)) {
@@ -67,56 +64,56 @@ fun AboutScreen(
                     onClick = {
                         val intent = Intent(
                             Intent.ACTION_VIEW,
-                            "https://github.com/javierreansyah/pinecone/blob/main/COPYING".toUri()
+                            "https://github.com/javierreansyah/pinecone/blob/main/COPYING".toUri(),
                         )
                         context.startActivity(intent)
                     },
                     leadingContent = {
                         Icon(
                             imageVector = MaterialSymbols.Outlined.Gavel,
-                            contentDescription = null
+                            contentDescription = null,
                         )
                     },
                     content = {
                         Text(
                             text = stringResource(R.string.about_view_full_license),
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
                         )
                     },
                     trailingContent = {
                         Icon(
                             imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                            contentDescription = null
+                            contentDescription = null,
                         )
-                    }
+                    },
                 )
 
                 item(
                     onClick = {
                         val intent = Intent(
                             Intent.ACTION_VIEW,
-                            "https://github.com/javierreansyah/pinecone".toUri()
+                            "https://github.com/javierreansyah/pinecone".toUri(),
                         )
                         context.startActivity(intent)
                     },
                     leadingContent = {
                         Icon(
                             imageVector = MaterialSymbols.Outlined.Code,
-                            contentDescription = null
+                            contentDescription = null,
                         )
                     },
                     content = {
                         Text(
                             text = stringResource(R.string.about_source_code),
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
                         )
                     },
                     trailingContent = {
                         Icon(
                             imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                            contentDescription = null
+                            contentDescription = null,
                         )
-                    }
+                    },
                 )
 
                 item(
@@ -124,21 +121,21 @@ fun AboutScreen(
                     leadingContent = {
                         Icon(
                             imageVector = MaterialSymbols.Outlined.Info,
-                            contentDescription = null
+                            contentDescription = null,
                         )
                     },
                     content = {
                         Text(
                             text = stringResource(R.string.about_open_source_licenses),
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
                         )
                     },
                     trailingContent = {
                         Icon(
                             imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                            contentDescription = null
+                            contentDescription = null,
                         )
-                    }
+                    },
                 )
             }
         }

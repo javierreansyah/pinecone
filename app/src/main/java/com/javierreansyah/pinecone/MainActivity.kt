@@ -29,8 +29,8 @@ class MainActivity : AppCompatActivity() {
             MainViewModel.Factory(
                 application = app,
                 libraryRepository = app.libraryRepository,
-                readerPreferences = app.readerPreferences
-            )
+                readerPreferences = app.readerPreferences,
+            ),
         )[MainViewModel::class.java]
 
         // Keep splash screen visible until the real settings are loaded from DataStore,
@@ -47,7 +47,7 @@ class MainActivity : AppCompatActivity() {
                     android.widget.Toast.makeText(
                         context,
                         message,
-                        android.widget.Toast.LENGTH_SHORT
+                        android.widget.Toast.LENGTH_SHORT,
                     ).show()
                 }
             }
@@ -57,8 +57,8 @@ class MainActivity : AppCompatActivity() {
                 return@setContent
             }
 
-            val settings by viewModel.settings.collectAsState()
-            val darkTheme = when (settings.themeMode) {
+            val settings = viewModel.settings.collectAsState()
+            val darkTheme = when (settings.value.themeMode) {
                 "Light" -> false
                 "Dark" -> true
                 else -> isSystemInDarkTheme()
@@ -68,20 +68,20 @@ class MainActivity : AppCompatActivity() {
                 enableEdgeToEdge(
                     statusBarStyle = SystemBarStyle.auto(
                         android.graphics.Color.TRANSPARENT,
-                        android.graphics.Color.TRANSPARENT
+                        android.graphics.Color.TRANSPARENT,
                     ) { darkTheme },
                     navigationBarStyle = SystemBarStyle.auto(
                         android.graphics.Color.TRANSPARENT,
-                        android.graphics.Color.TRANSPARENT
-                    ) { darkTheme }
+                        android.graphics.Color.TRANSPARENT,
+                    ) { darkTheme },
                 )
                 onDispose {}
             }
 
             AppTheme(
                 darkTheme = darkTheme,
-                colorPalette = settings.colorPalette,
-                themeContrast = settings.themeContrast
+                colorPalette = settings.value.colorPalette,
+                themeContrast = settings.value.themeContrast,
             ) {
                 val initialBackStack = androidx.compose.runtime.remember {
                     com.javierreansyah.pinecone.ui.root.getInitialBackStackFromIntent(intent)
@@ -93,12 +93,11 @@ class MainActivity : AppCompatActivity() {
                 com.javierreansyah.pinecone.ui.root.HandleDeepLinks(
                     backStack = backStack,
                     addOnNewIntentListener = { addOnNewIntentListener(it) },
-                    removeOnNewIntentListener = { removeOnNewIntentListener(it) }
-                )
+                ) { removeOnNewIntentListener(it) }
 
                 NavGraph(
                     backStack = backStack,
-                    mainViewModel = viewModel
+                    mainViewModel = viewModel,
                 )
             }
         }
@@ -113,7 +112,7 @@ class MainActivity : AppCompatActivity() {
     private fun handleIntent(intent: Intent) {
         if (intent.action == Intent.ACTION_VIEW) {
             val uri = intent.data ?: return
-            if (uri.scheme == "file" || uri.scheme == "content") {
+            if ((uri.scheme == "file") || (uri.scheme == "content")) {
                 viewModel.importBook(uri)
             }
         }

@@ -7,10 +7,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedTextField
@@ -30,7 +28,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import com.javierreansyah.pinecone.R
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun RenameFilterDialog(
     initialName: String,
@@ -39,15 +36,15 @@ fun RenameFilterDialog(
     label: String = stringResource(R.string.action_rename),
     isMergingMultiple: Boolean = false,
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
+    onConfirm: (String) -> Unit,
 ) {
     var text by remember { mutableStateOf(initialName) }
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(value = false) }
     val focusRequester = remember { FocusRequester() }
 
     val filteredSuggestions = remember(text, suggestions) {
         if (text.isBlank()) emptyList()
-        else suggestions.filter { it.contains(text, ignoreCase = true) && it != text }.take(5)
+        else suggestions.asSequence().filter { it.contains(text, ignoreCase = true) && (it != text) }.take(5).toList()
     }
 
     LaunchedEffect(Unit) {
@@ -69,26 +66,27 @@ fun RenameFilterDialog(
                         .fillMaxWidth()
                         .focusRequester(focusRequester),
                     singleLine = true,
-                    label = { Text(label) })
+                    label = { Text(label) },
+                )
                 DropdownMenuPopup(
                     expanded = expanded && filteredSuggestions.isNotEmpty(),
                     onDismissRequest = { expanded = false },
-                    properties = PopupProperties(focusable = false)
+                    properties = PopupProperties(focusable = false),
                 ) {
                     val groupInteractionSource = remember { MutableInteractionSource() }
                     DropdownMenuGroup(
                         shapes = MenuDefaults.groupShape(0, 1),
-                        interactionSource = groupInteractionSource
+                        interactionSource = groupInteractionSource,
                     ) {
                         filteredSuggestions.forEachIndexed { index, suggestion ->
-                            DropdownMenuItem(
+                            SelectableDropdownMenuItem(
                                 selected = false,
                                 text = { Text(suggestion) },
                                 shapes = MenuDefaults.itemShape(index, filteredSuggestions.size),
                                 onClick = {
                                     text = suggestion
                                     expanded = false
-                                }
+                                },
                             )
                         }
                     }
@@ -98,21 +96,21 @@ fun RenameFilterDialog(
                     Text(
                         text = stringResource(R.string.library_warning_merge_multiple),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                } else if (text.isNotBlank() && suggestions.contains(text) && text != initialName) {
+                } else if (text.isNotBlank() && suggestions.contains(text) && (text != initialName)) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = stringResource(R.string.library_warning_merge),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(text) }, enabled = text.isNotBlank()
+                onClick = { onConfirm(text) }, enabled = text.isNotBlank(),
             ) {
                 Text(stringResource(R.string.action_save))
             }
@@ -121,5 +119,6 @@ fun RenameFilterDialog(
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.action_cancel))
             }
-        })
+        },
+    )
 }

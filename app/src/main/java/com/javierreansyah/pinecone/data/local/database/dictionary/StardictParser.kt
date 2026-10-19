@@ -18,27 +18,27 @@ import java.util.zip.ZipInputStream
 class StardictParser(private val context: Context) {
 
     data class DictionaryInfo(
-        val name: String, val idxOffsetBits: Int, val isHtml: Boolean, val wordCount: Int
+        val name: String, val idxOffsetBits: Int, val isHtml: Boolean, val wordCount: Int,
     )
 
     private fun readInt(bytes: ByteArray, offset: Int): Int =
-        (bytes[offset].toInt() and 0xFF shl 24) or
-                (bytes[offset + 1].toInt() and 0xFF shl 16) or
-                (bytes[offset + 2].toInt() and 0xFF shl 8) or
-                (bytes[offset + 3].toInt() and 0xFF)
+        ((bytes[offset].toInt() and 0xFF) shl 24) or
+            ((bytes[offset + 1].toInt() and 0xFF) shl 16) or
+            ((bytes[offset + 2].toInt() and 0xFF) shl 8) or
+            (bytes[offset + 3].toInt() and 0xFF)
 
     private fun readLong(bytes: ByteArray, offset: Int): Long =
-        (bytes[offset].toLong() and 0xFF shl 56) or
-                (bytes[offset + 1].toLong() and 0xFF shl 48) or
-                (bytes[offset + 2].toLong() and 0xFF shl 40) or
-                (bytes[offset + 3].toLong() and 0xFF shl 32) or
-                (bytes[offset + 4].toLong() and 0xFF shl 24) or
-                (bytes[offset + 5].toLong() and 0xFF shl 16) or
-                (bytes[offset + 6].toLong() and 0xFF shl 8) or
-                (bytes[offset + 7].toLong() and 0xFF)
+        ((bytes[offset].toLong() and 0xFF) shl 56) or
+            ((bytes[offset + 1].toLong() and 0xFF) shl 48) or
+            ((bytes[offset + 2].toLong() and 0xFF) shl 40) or
+            ((bytes[offset + 3].toLong() and 0xFF) shl 32) or
+            ((bytes[offset + 4].toLong() and 0xFF) shl 24) or
+            ((bytes[offset + 5].toLong() and 0xFF) shl 16) or
+            ((bytes[offset + 6].toLong() and 0xFF) shl 8) or
+            (bytes[offset + 7].toLong() and 0xFF)
 
     suspend fun parseDictionary(
-        zipUri: Uri, onProgress: (Int) -> Unit = {}
+        zipUri: Uri, onProgress: (Int) -> Unit = {},
     ): Pair<String, DictionaryInfo> = withContext(Dispatchers.IO) {
         val dictId = UUID.randomUUID().toString()
         val tempDir = File(context.cacheDir, "dict_extract_$dictId")
@@ -117,7 +117,7 @@ class StardictParser(private val context: Context) {
 
             val dictChannel = FileInputStream(dictFile).channel
             val dictMapped = dictChannel.map(
-                FileChannel.MapMode.READ_ONLY, 0, dictChannel.size()
+                FileChannel.MapMode.READ_ONLY, 0, dictChannel.size(),
             ).order(ByteOrder.BIG_ENDIAN)
 
             var idxOffset = 0
@@ -132,7 +132,7 @@ class StardictParser(private val context: Context) {
                 while (idxOffset < totalBytes) {
 
                     val wordStart = idxOffset
-                    while (idxOffset < totalBytes && idxBytes[idxOffset].toInt() != 0) {
+                    while ((idxOffset < totalBytes) && (idxBytes[idxOffset].toInt() != 0)) {
                         idxOffset++
                     }
                     val word = String(idxBytes, wordStart, idxOffset - wordStart, Charsets.UTF_8)
@@ -154,13 +154,13 @@ class StardictParser(private val context: Context) {
                     val defBytes = ByteArray(dataSize)
                     val slice = dictMapped.duplicate()
                     slice.position(dataOffset.toInt())
-                    slice.get(defBytes)
+                    slice[defBytes]
                     val definition = String(defBytes, Charsets.UTF_8)
 
                     buffer.add(
                         DictionaryEntry(
-                            wordIndex = wordIndexCounter, word = word, definition = definition
-                        )
+                            wordIndex = wordIndexCounter, word = word, definition = definition,
+                        ),
                     )
                     wordsParsed++
                     wordIndexCounter++
@@ -171,7 +171,7 @@ class StardictParser(private val context: Context) {
                     }
 
                     val now = System.currentTimeMillis()
-                    if (now - lastProgressUpdate > 500) {
+                    if ((now - lastProgressUpdate) > 500) {
                         lastProgressUpdate = now
                         val p = 40 + ((idxOffset.toFloat() / totalBytes) * 55).toInt()
                         onProgress(p.coerceAtMost(95))
@@ -182,7 +182,7 @@ class StardictParser(private val context: Context) {
                     dao.insertAll(buffer)
                 }
 
-                if (synFile != null && synFile.exists()) {
+                if ((synFile != null) && synFile.exists()) {
                     val synBytes = synFile.readBytes()
                     var synOffset = 0
                     val synTotalBytes = synBytes.size
@@ -190,7 +190,7 @@ class StardictParser(private val context: Context) {
 
                     while (synOffset < synTotalBytes) {
                         val synWordStart = synOffset
-                        while (synOffset < synTotalBytes && synBytes[synOffset].toInt() != 0) {
+                        while ((synOffset < synTotalBytes) && (synBytes[synOffset].toInt() != 0)) {
                             synOffset++
                         }
                         if (synOffset >= synTotalBytes) break
@@ -198,14 +198,14 @@ class StardictParser(private val context: Context) {
                             String(synBytes, synWordStart, synOffset - synWordStart, Charsets.UTF_8)
                         synOffset++
 
-                        if (synOffset + 4 > synTotalBytes) break
+                        if ((synOffset + 4) > synTotalBytes) break
                         val originalWordIndex = readInt(synBytes, synOffset)
                         synOffset += 4
 
                         synBuffer.add(
                             SynonymEntry(
-                                synonym = synonym, originalWordIndex = originalWordIndex
-                            )
+                                synonym = synonym, originalWordIndex = originalWordIndex,
+                            ),
                         )
 
                         if (synBuffer.size >= 3000) {

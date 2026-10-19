@@ -17,18 +17,16 @@ import kotlin.time.Duration.Companion.milliseconds
  */
 class SelectionPoller(
     private val coroutineScope: CoroutineScope,
-    private val onSelectionUpdated: (Locator) -> Unit
+    private val onSelectionUpdated: (Locator) -> Unit,
 ) {
     private var job: Job? = null
 
     fun start(navigator: SelectableNavigator, actionModeProvider: () -> ActionMode?) {
         job?.cancel()
         job = coroutineScope.launch {
-            while (isActive && actionModeProvider() != null) {
+            while (isActive && (actionModeProvider() != null)) {
                 val selection = navigator.currentSelection()
-                if (selection != null) {
-                    onSelectionUpdated(selection.locator)
-                }
+                selection?.let { (itLocator) -> onSelectionUpdated(itLocator) }
                 delay(300.milliseconds)
             }
         }

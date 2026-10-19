@@ -20,7 +20,7 @@ class LibraryPreferencesManager(context: Context) {
         screenKey: String,
         defaultLayout: LayoutMode = LayoutMode.Grid,
         defaultSort: SortType = SortType.Added,
-        defaultAscending: Boolean = false
+        defaultAscending: Boolean = false,
     ): FilterSortPreferences =
         getPreferences(null, screenKey, defaultLayout, defaultSort, defaultAscending)
 
@@ -29,7 +29,7 @@ class LibraryPreferencesManager(context: Context) {
         screenKey: String,
         defaultLayout: LayoutMode = LayoutMode.Grid,
         defaultSort: SortType = SortType.Added,
-        defaultAscending: Boolean = false
+        defaultAscending: Boolean = false,
     ): FilterSortPreferences {
         val fullKey = if (spaceId.isNullOrBlank()) screenKey else "${spaceId}_$screenKey"
         val layoutModeStr =
@@ -37,36 +37,41 @@ class LibraryPreferencesManager(context: Context) {
         val sortTypeStr = prefs.getString("${fullKey}_sort", defaultSort.name) ?: defaultSort.name
         val isAscending = prefs.getBoolean("${fullKey}_asc", defaultAscending)
         val statusSetStr = prefs.getStringSet(
-            "${fullKey}_status", setOf(
-                StatusFilter.NotStarted.name, StatusFilter.Reading.name, StatusFilter.Finished.name
-            )
+            "${fullKey}_status",
+            setOf(
+                StatusFilter.NotStarted.name, StatusFilter.Reading.name, StatusFilter.Finished.name,
+            ),
         ) ?: setOf()
         val shelfFilterSetStr = prefs.getStringSet(
-            "${fullKey}_shelf_filter", setOf(ShelfFilter.Shelves.name, ShelfFilter.Unshelved.name)
+            "${fullKey}_shelf_filter", setOf(ShelfFilter.Shelves.name, ShelfFilter.Unshelved.name),
         ) ?: setOf()
 
         return FilterSortPreferences(
             layoutMode = try {
                 LayoutMode.valueOf(layoutModeStr)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 defaultLayout
-            }, sortType = try {
+            },
+            sortType = try {
                 SortType.valueOf(sortTypeStr)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 defaultSort
-            }, isAscending = isAscending, selectedStatus = statusSetStr.mapNotNull {
+            },
+            isAscending = isAscending,
+            selectedStatus = statusSetStr.asSequence().mapNotNull {
                 try {
                     StatusFilter.valueOf(it)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     null
                 }
-            }.toSet(), selectedShelfFilter = shelfFilterSetStr.mapNotNull {
+            }.toSet(),
+            selectedShelfFilter = shelfFilterSetStr.asSequence().mapNotNull {
                 try {
                     ShelfFilter.valueOf(it)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     null
                 }
-            }.toSet()
+            }.toSet(),
         )
     }
 
@@ -95,12 +100,11 @@ class LibraryPreferencesManager(context: Context) {
             putString("${fullKey}_layout", prefsObj.layoutMode.name)
             putString("${fullKey}_sort", prefsObj.sortType.name)
             putBoolean("${fullKey}_asc", prefsObj.isAscending)
-            putStringSet("${fullKey}_status", prefsObj.selectedStatus.map { it.name }.toSet())
+            putStringSet("${fullKey}_status", prefsObj.selectedStatus.mapTo(mutableSetOf()) { it.name })
             putStringSet(
-                "${fullKey}_shelf_filter", prefsObj.selectedShelfFilter.map { it.name }.toSet()
+                "${fullKey}_shelf_filter", prefsObj.selectedShelfFilter.mapTo(mutableSetOf()) { it.name },
             )
             apply()
         }
     }
 }
-

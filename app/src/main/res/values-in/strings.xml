@@ -20,7 +20,7 @@
     <string name="action_clear">Bersihkan</string>
     <string name="action_proceed">Lanjutkan</string>
     <string name="action_add">Tambah</string>
-    <string name="action_remove">Hapus</string>
+    <string name="action_remove">@string/action_delete</string>
     <string name="action_create">Buat</string>
     <string name="action_copy">Salin</string>
     <string name="action_define">Definisikan</string>
@@ -89,7 +89,7 @@
     <string name="library_new_shelf">Rak Baru</string>
     <string name="library_space_name_label">Nama ruang</string>
     <string name="library_sort_title">Judul</string>
-    <string name="library_sort_author">Penulis</string>
+    <string name="library_sort_author">@string/library_authors_title</string>
     <string name="library_sort_last_read">Tanggal terakhir dibaca</string>
     <string name="library_sort_added">Tanggal ditambahkan</string>
     <string name="library_sort_progress">Persentase selesai</string>
@@ -101,7 +101,7 @@
     <string name="library_status_finished">Selesai</string>
 
     <string name="book_info_title">Info Buku</string>
-    <string name="book_not_found">Buku tidak ditemukan</string>
+    <string name="book_not_found">@string/library_empty_books</string>
     <string name="book_edit_title">Edit Buku</string>
     <string name="book_reading_progress">Kemajuan Membaca</string>
     <string name="book_description">Deskripsi</string>
@@ -123,8 +123,8 @@
     <string name="book_show_less_tags">Tampilkan lebih sedikit tag</string>
     <string name="book_not_available">N/A</string>
     <string name="book_unknown">Tidak Diketahui</string>
-    <string name="book_label_authors">Penulis</string>
-    <string name="book_label_tags">Tag</string>
+    <item type="string" name="book_label_authors">@string/library_authors_title</item>
+    <string name="book_label_tags">@string/library_tags_title</string>
     <string name="book_create_new">Buat baru: \"%s\"</string>
     <string name="book_delete_title">Hapus Buku</string>
     <string name="book_delete_message">Apakah Anda yakin ingin menghapus buku ini? Tindakan ini tidak dapat dibatalkan.</string>
@@ -168,10 +168,10 @@
     <string name="reader_settings_tab_lighting">Pencahayaan</string>
     <string name="reader_settings_tab_advanced">Lanjutan</string>
     <string name="reader_settings_font">Font</string>
-    <string name="reader_settings_dictionary">Kamus</string>
+    <string name="reader_settings_dictionary">@string/dictionaries_title</string>
     <string name="reader_settings_typography">Tipografi</string>
     <string name="reader_menu_content">Konten</string>
-    <string name="reader_menu_settings">Pengaturan</string>
+    <string name="reader_menu_settings">@string/settings_title</string>
     <string name="reader_settings_text_size">Ukuran Teks</string>
     <string name="reader_settings_font_weight">Ketebalan Font</string>
     <string name="reader_settings_line_spacing">Spasi Baris</string>
@@ -186,7 +186,7 @@
     <string name="reader_settings_brightness">Kecerahan</string>
     <string name="reader_settings_auto_brightness">Kecerahan Otomatis</string>
     <string name="reader_settings_theme">Tema</string>
-    <string name="reader_settings_theme_setting">Pengaturan</string>
+    <item type="string" name="reader_settings_theme_setting">@string/settings_title</item>
     <string name="reader_settings_theme_auto">Otomatis</string>
     <string name="reader_settings_theme_light">Terang</string>
     <string name="reader_settings_theme_dark">Gelap</string>
@@ -211,7 +211,7 @@
     <string name="reader_settings_image_filter_none">Tidak Ada</string>
     <string name="reader_settings_image_filter_darken">Gelapkan</string>
     <string name="reader_settings_image_filter_invert">Inversi</string>
-    <string name="reader_settings_orientation_auto">Otomatis</string>
+    <string name="reader_settings_orientation_auto">@string/reader_settings_theme_auto</string>
     <string name="reader_settings_orientation_portrait">Potret</string>
     <string name="reader_settings_orientation_landscape">Lanskap</string>
 
@@ -234,7 +234,7 @@
     <string name="settings_theme_mode">Mode Tema</string>
     <string name="settings_color_palette">Palet Warna</string>
     <string name="settings_theme_contrast">Kontras Tema</string>
-    <string name="settings_language">Bahasa</string>
+    <string name="settings_language">@string/book_language</string>
     <string name="settings_show_all_spaces">Tampilkan Semua Ruang</string>
     <string name="settings_show_all_spaces_summary">Tampilkan \"Semua\" di daftar ruang</string>
 
@@ -252,8 +252,8 @@
     <string name="settings_auto_backup_freq">Frekuensi Cadangan Otomatis</string>
     <string name="settings_backup_location">Lokasi Cadangan</string>
     <string name="settings_option_system">Sistem</string>
-    <string name="settings_option_light">Terang</string>
-    <string name="settings_option_dark">Gelap</string>
+    <string name="settings_option_light">@string/reader_settings_theme_light</string>
+    <string name="settings_option_dark">@string/reader_settings_theme_dark</string>
     <string name="settings_option_standard">Standar</string>
     <string name="settings_option_medium">Sedang</string>
     <string name="settings_option_high">Tinggi</string>
@@ -272,7 +272,7 @@
     <string name="settings_restore_defaults">Pulihkan Setelan Awal</string>
     <string name="settings_restore_backup_warning">Apakah Anda yakin ingin memulihkan? Ini akan menimpa perpustakaan dan pengaturan Anda saat ini.</string>
     <string name="settings_restore_backup_sheet_title">Pilih Cadangan untuk Dipulihkan</string>
-    <string name="settings_backup_auto_label">Otomatis</string>
+    <item type="string" name="settings_backup_auto_label">@string/reader_settings_theme_auto</item>
     <string name="settings_backup_manual_label">Manual</string>
     <string name="settings_no_backups_found">Tidak ada cadangan yang ditemukan di folder yang dipilih.</string>
     <string name="settings_restore_defaults_warning">Apakah Anda yakin ingin memulihkan pengaturan ke nilai default? Tindakan ini akan mereset tema, palet warna, bahasa, dan pengaturan cadangan otomatis Anda.\n\nPengaturan pembaca (seperti ukuran font, kecerahan, dll.) tidak akan diubah.</string>
@@ -313,9 +313,9 @@
     <string name="nav_restore_success">Cadangan berhasil dipulihkan!</string>
     <string name="nav_restore_failed">Gagal memulihkan cadangan</string>
 
-    <string name="reader_jump_go_back">Kembali</string>
+    <string name="reader_jump_go_back">@string/action_back</string>
     <string name="reader_jump_history_mode">Riwayat Lompatan</string>
-    <string name="reader_jump_history_mode_explicit">Manual</string>
+    <string name="reader_jump_history_mode_explicit">@string/settings_backup_manual_label</string>
     <string name="reader_jump_history_mode_page_turn">Pindah halaman</string>
     <string name="reader_jump_history_mode_disabled">Dinonaktifkan</string>
 

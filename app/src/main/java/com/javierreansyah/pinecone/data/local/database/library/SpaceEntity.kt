@@ -7,5 +7,5 @@ import androidx.room.PrimaryKey
 data class SpaceEntity(
     @PrimaryKey val id: String,
     val name: String,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
 )

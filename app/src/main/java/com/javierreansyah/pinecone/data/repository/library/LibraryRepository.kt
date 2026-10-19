@@ -47,7 +47,7 @@ class LibraryRepository(
     private val noteDao: NoteDao,
     private val spaceDao: SpaceDao,
     private val publicationOpener: PublicationOpener,
-    private val assetRetriever: AssetRetriever
+    private val assetRetriever: AssetRetriever,
 ) {
 
     private val booksDir: File
@@ -58,21 +58,21 @@ class LibraryRepository(
 
     fun getAllBooks(): Flow<List<BookWithDetails>> = bookDao.getAllBooks()
 
-    suspend fun cleanupOrphanedFiles() = withContext(Dispatchers.IO) {
+    suspend fun cleanupOrphanedFiles(): Unit? = withContext(Dispatchers.IO) {
         val books = bookDao.getAllBooksSync()
-        val referencedBooks = books.map { File(it.filePath).canonicalPath }.toSet()
-        val referencedCovers = books.mapNotNull { it.coverPath }
+        val referencedBooks = books.asSequence().map { (_, _, _, itFilePath) -> File(itFilePath).canonicalPath }.toSet()
+        val referencedCovers = books.asSequence().mapNotNull { (_, _, itCoverPath) -> itCoverPath }
             .map { File(it).canonicalPath }.toSet()
-        booksDir.listFiles()?.filter { it.isFile && it.canonicalPath !in referencedBooks }
+        booksDir.listFiles()?.asSequence()?.filter { it.isFile && (it.canonicalPath !in referencedBooks) }
             ?.forEach { it.delete() }
-        coversDir.listFiles()?.filter { it.isFile && it.canonicalPath !in referencedCovers }
+        coversDir.listFiles()?.asSequence()?.filter { it.isFile && (it.canonicalPath !in referencedCovers) }
             ?.forEach { it.delete() }
     }
 
     fun getArchivedBooks(): Flow<List<BookWithDetails>> = bookDao.getArchivedBooks()
 
     fun getUnsortedBooks(): Flow<List<BookWithDetails>> =
-        bookDao.getAllBooks().map { list -> list.filter { it.spaces.isEmpty() } }
+        bookDao.getAllBooks().map { list -> list.filter { (_, _, _, _, itSpaces) -> itSpaces.isEmpty() } }
 
     fun searchShelves(query: String): Flow<List<ShelfEntity>> = shelfDao.searchShelves(query)
 
@@ -148,89 +148,84 @@ class LibraryRepository(
     }
 
     suspend fun saveReadingPosition(bookId: String, locator: Locator) {
-        val details = bookDao.getById(bookId) ?: return
-        val book = details.book
+        val (detailsBook) = bookDao.getById(bookId) ?: return
         val progression = locator.locations.totalProgression ?: 0.0
 
-        val hasJumpOrigin = !book.jumpOriginLocatorJson.isNullOrBlank()
-        val isNewProgressionFurther = progression > book.furthestProgression
+        val hasJumpOrigin = !detailsBook.jumpOriginLocatorJson.isNullOrBlank()
+        val isNewProgressionFurther = progression > detailsBook.furthestProgression
 
         val newFurthestProgression =
-            if (!hasJumpOrigin && isNewProgressionFurther) progression else book.furthestProgression
+            if (!hasJumpOrigin && isNewProgressionFurther) progression else detailsBook.furthestProgression
         val newFurthestLocatorJson = if (!hasJumpOrigin && isNewProgressionFurther) locator.toJSON()
-            .toString() else book.furthestLocatorJson
+            .toString() else detailsBook.furthestLocatorJson
 
         bookDao.update(
-            book.copy(
+            detailsBook.copy(
                 progression = progression,
                 lastLocatorJson = locator.toJSON().toString(),
                 lastReadDate = System.currentTimeMillis(),
                 furthestProgression = newFurthestProgression,
-                furthestLocatorJson = newFurthestLocatorJson
-            )
+                furthestLocatorJson = newFurthestLocatorJson,
+            ),
         )
     }
 
     suspend fun saveJumpOrigin(bookId: String, locator: Locator) {
-        val details = bookDao.getById(bookId) ?: return
-        val book = details.book
-        if (book.jumpOriginLocatorJson.isNullOrBlank()) {
+        val (detailsBook2) = bookDao.getById(bookId) ?: return
+        if (detailsBook2.jumpOriginLocatorJson.isNullOrBlank()) {
             bookDao.update(
-                book.copy(
-                    jumpOriginLocatorJson = locator.toJSON().toString()
-                )
+                detailsBook2.copy(
+                    jumpOriginLocatorJson = locator.toJSON().toString(),
+                ),
             )
         }
     }
 
     suspend fun saveJumpReadingPosition(bookId: String, locator: Locator) {
-        val details = bookDao.getById(bookId) ?: return
-        val book = details.book
+        val (detailsBook3) = bookDao.getById(bookId) ?: return
         val progression = locator.locations.totalProgression ?: 0.0
 
-        val existingJumpOrigin = book.jumpOriginLocatorJson
+        val existingJumpOrigin = detailsBook3.jumpOriginLocatorJson
         val newJumpOriginJson = if (existingJumpOrigin.isNullOrBlank()) {
-            book.lastLocatorJson
+            detailsBook3.lastLocatorJson
         } else {
             existingJumpOrigin
         }
 
         bookDao.update(
-            book.copy(
+            detailsBook3.copy(
                 progression = progression,
                 lastLocatorJson = locator.toJSON().toString(),
                 lastReadDate = System.currentTimeMillis(),
-                jumpOriginLocatorJson = newJumpOriginJson
-            )
+                jumpOriginLocatorJson = newJumpOriginJson,
+            ),
         )
     }
 
     suspend fun clearJumpOrigin(bookId: String) {
-        val details = bookDao.getById(bookId) ?: return
-        val book = details.book
-        if (book.jumpOriginLocatorJson != null) {
+        val (detailsBook4) = bookDao.getById(bookId) ?: return
+        if (detailsBook4.jumpOriginLocatorJson != null) {
             bookDao.update(
-                book.copy(
-                    jumpOriginLocatorJson = null
-                )
+                detailsBook4.copy(
+                    jumpOriginLocatorJson = null,
+                ),
             )
         }
     }
 
     suspend fun resetFurthestToCurrent(bookId: String) {
-        val details = bookDao.getById(bookId) ?: return
-        val book = details.book
+        val (detailsBook5) = bookDao.getById(bookId) ?: return
         bookDao.update(
-            book.copy(
-                furthestProgression = book.progression,
-                furthestLocatorJson = book.lastLocatorJson
-            )
+            detailsBook5.copy(
+                furthestProgression = detailsBook5.progression,
+                furthestLocatorJson = detailsBook5.lastLocatorJson,
+            ),
         )
     }
 
     suspend fun getLastLocator(bookId: String): Locator? {
-        val book = bookDao.getById(bookId)?.book ?: return null
-        val json = book.lastLocatorJson ?: return null
+        val (_, _, _, _, _, _, _, _, bookLastLocatorJson) = bookDao.getById(bookId)?.book ?: return null
+        val json = bookLastLocatorJson ?: return null
         return try {
             Locator.fromJSON(JSONObject(json))
         } catch (_: Exception) {
@@ -243,8 +238,8 @@ class LibraryRepository(
             BookmarkEntity(
                 bookId = bookId,
                 locatorJson = locator.toJSON().toString(),
-                chapterTitle = chapterTitle ?: locator.title
-            )
+                chapterTitle = chapterTitle ?: locator.title,
+            ),
         )
     }
 
@@ -254,7 +249,7 @@ class LibraryRepository(
         bookmarkDao.deleteById(id)
     }
 
-    suspend fun deleteBook(bookId: String) = withContext(Dispatchers.IO) {
+    suspend fun deleteBook(bookId: String): Unit = withContext(Dispatchers.IO) {
         val book = bookDao.getById(bookId)?.book ?: return@withContext
 
         File(book.filePath).delete()
@@ -277,12 +272,11 @@ class LibraryRepository(
         description: String?,
         coverUri: Uri?,
         authors: List<String>,
-        tags: List<String>
-    ) = withContext(Dispatchers.IO) {
-        val bookDetails = bookDao.getById(bookId) ?: return@withContext
-        val book = bookDetails.book
+        tags: List<String>,
+    ): Unit = withContext(Dispatchers.IO) {
+        val (bookDetailsBook) = bookDao.getById(bookId) ?: return@withContext
 
-        var newCoverPath = book.coverPath
+        var newCoverPath = bookDetailsBook.coverPath
         if (coverUri != null) {
             val coverFile = File(coversDir, "${bookId}_custom_${System.currentTimeMillis()}.png")
             try {
@@ -292,7 +286,7 @@ class LibraryRepository(
                     }
                 }
                 newCoverPath = coverFile.absolutePath
-                book.coverPath?.let { oldPath ->
+                bookDetailsBook.coverPath?.let { oldPath ->
                     if (oldPath != newCoverPath) {
                         File(oldPath).delete()
                     }
@@ -304,9 +298,9 @@ class LibraryRepository(
 
         database.withTransaction {
             bookDao.update(
-                book.copy(
-                    title = title, description = description, coverPath = newCoverPath
-                )
+                bookDetailsBook.copy(
+                    title = title, description = description, coverPath = newCoverPath,
+                ),
             )
 
             bookDao.deleteBookAuthorCrossRefs(bookId)
@@ -337,7 +331,7 @@ class LibraryRepository(
 
     fun getAllTags(): Flow<List<TagEntity>> = bookDao.getAllTags()
 
-    suspend fun deleteFilterItem(type: String, name: String) = withContext(Dispatchers.IO) {
+    suspend fun deleteFilterItem(type: String, name: String): Unit = withContext(Dispatchers.IO) {
         if (type == "author") {
             bookDao.deleteAuthorByName(name)
         } else if (type == "tag") {
@@ -352,14 +346,14 @@ class LibraryRepository(
         }
     }
 
-    suspend fun renameFilterItem(type: String, oldName: String, newName: String) =
+    suspend fun renameFilterItem(type: String, oldName: String, newName: String): Unit =
         withContext(Dispatchers.IO) {
             val trimmedNewName = newName.trim()
             if (oldName == trimmedNewName) return@withContext
             if (type == "author") {
                 val existingDest = bookDao.getAuthorByName(trimmedNewName)
                 val source = bookDao.getAuthorByName(oldName)
-                if (existingDest != null && source != null) {
+                if ((existingDest != null) && (source != null)) {
                     bookDao.mergeBookAuthorCrossRef(source.id, existingDest.id)
                     bookDao.deleteAuthorByName(oldName)
                 } else {
@@ -368,7 +362,7 @@ class LibraryRepository(
             } else if (type == "tag") {
                 val existingDest = bookDao.getTagByName(trimmedNewName)
                 val source = bookDao.getTagByName(oldName)
-                if (existingDest != null && source != null) {
+                if ((existingDest != null) && (source != null)) {
                     bookDao.mergeBookTagCrossRef(source.id, existingDest.id)
                     bookDao.deleteTagByName(oldName)
                 } else {
@@ -377,13 +371,13 @@ class LibraryRepository(
             } else if (type == "space") {
                 val existingDest = spaceDao.getSpaceByName(trimmedNewName)
                 val source = spaceDao.getSpaceByName(oldName)
-                if (existingDest != null && source != null) {
+                if ((existingDest != null) && (source != null)) {
                     database.withTransaction {
                         spaceDao.mergeBookSpaceCrossRef(source.id, existingDest.id)
                         spaceDao.deleteSpace(source)
                     }
-                } else if (source != null) {
-                    spaceDao.renameSpace(source.id, trimmedNewName)
+                } else {
+                    source?.let { (itId) -> spaceDao.renameSpace(itId, trimmedNewName) }
                 }
             }
         }
@@ -401,7 +395,7 @@ class LibraryRepository(
     fun getAllShelvesWithBooks(): Flow<List<ShelfWithCovers>> =
         shelfDao.getAllShelvesWithBooks().map { shelves ->
             shelves.map { shelf ->
-                shelf.copy(books = shelf.books.filter { !it.book.isArchived })
+                shelf.copy(books = shelf.books.filter { (itBook) -> !itBook.isArchived })
             }
         }
 
@@ -413,31 +407,27 @@ class LibraryRepository(
 
     suspend fun deleteShelf(shelfId: String) {
         val shelf = shelfDao.getShelfById(shelfId)
-        if (shelf != null) {
-            shelfDao.deleteShelf(shelf)
-        }
+        shelf?.let { shelfDao.deleteShelf(it) }
     }
 
     suspend fun renameShelf(shelfId: String, newName: String) {
         val shelf = shelfDao.getShelfById(shelfId)
-        if (shelf != null) {
-            shelfDao.updateShelf(shelf.copy(name = newName))
-        }
+        shelf?.let { shelfDao.updateShelf(it.copy(name = newName)) }
     }
 
     suspend fun addBookToShelf(shelfId: String, bookId: String) {
         database.withTransaction {
-            val shelf = shelfDao.getShelfById(shelfId) ?: return@withTransaction
+            val (_, shelfSpaceId) = shelfDao.getShelfById(shelfId) ?: return@withTransaction
             shelfDao.insertShelfBookCrossRef(
                 ShelfBookCrossRefEntity(
-                    shelfId = shelfId, bookId = bookId
-                )
+                    shelfId = shelfId, bookId = bookId,
+                ),
             )
             spaceDao.insertBookSpaceCrossRef(
                 com.javierreansyah.pinecone.data.local.database.library.BookSpaceCrossRef(
                     bookId = bookId,
-                    spaceId = shelf.spaceId
-                )
+                    spaceId = shelfSpaceId,
+                ),
             )
         }
     }
@@ -458,7 +448,7 @@ class LibraryRepository(
     fun getAllShelfBookCrossRefs(): Flow<List<ShelfBookCrossRefEntity>> =
         shelfDao.getAllShelfBookCrossRefs()
 
-    suspend fun updateShelfOrder(shelfId: String, newBookIdsOrder: List<String>) =
+    suspend fun updateShelfOrder(shelfId: String, newBookIdsOrder: List<String>): Unit =
         withContext(Dispatchers.IO) {
             newBookIdsOrder.forEachIndexed { index, bookId ->
                 shelfDao.updateShelfBookOrderIndex(shelfId, bookId, index)
@@ -478,8 +468,8 @@ class LibraryRepository(
             spaceDao.insertBookSpaceCrossRef(
                 com.javierreansyah.pinecone.data.local.database.library.BookSpaceCrossRef(
                     bookId = bookId,
-                    spaceId = spaceId
-                )
+                    spaceId = spaceId,
+                ),
             )
         }
     }
@@ -497,7 +487,7 @@ class LibraryRepository(
             }
             val remainingInSpace = spaceDao.getBookCountForSpace(spaceId)
             if (remainingInSpace == 0) {
-                val space = spaceDao.getAllSpacesSync().find { it.id == spaceId }
+                val space = spaceDao.getAllSpacesSync().find { (itId2) -> itId2 == spaceId }
                 if (space != null) {
                     spaceDao.deleteSpace(space)
                 }
@@ -513,7 +503,7 @@ class LibraryRepository(
         locator: Locator,
         noteText: String,
         color: Int = -1,
-        chapterTitle: String? = null
+        chapterTitle: String? = null,
     ) {
         noteDao.insert(
             NoteEntity(
@@ -521,8 +511,8 @@ class LibraryRepository(
                 locatorJson = locator.toJSON().toString(),
                 chapterTitle = chapterTitle ?: locator.title,
                 noteText = noteText,
-                color = color
-            )
+                color = color,
+            ),
         )
     }
 
@@ -547,7 +537,7 @@ class LibraryRepository(
     }
 
     private suspend fun createBookEntity(
-        bookId: String, file: File, publication: Publication, mediaType: String? = null
+        bookId: String, file: File, publication: Publication, mediaType: String? = null,
     ): BookEntity {
         val metadata = publication.metadata
 
@@ -580,16 +570,11 @@ class LibraryRepository(
             mediaType = mediaType ?: "application/epub+zip",
             identifier = metadata.identifier,
             language = metadata.languages.firstOrNull(),
-            progression = 0.0,
-            lastLocatorJson = null,
             addedDate = System.currentTimeMillis(),
-            lastReadDate = null,
-            isArchived = false,
             description = metadata.description,
             publisher = metadata.publishers.joinToString(", ") { it.name }
                 .takeIf { it.isNotEmpty() },
             published = metadata.published?.toString(),
-            isRead = false
         )
     }
 

@@ -72,7 +72,7 @@ interface BookDao {
         JOIN book_author_cross_ref ON authors.id = book_author_cross_ref.authorId
         JOIN books ON book_author_cross_ref.bookId = books.id
         WHERE books.isArchived = 0
-    """
+    """,
     )
     fun getAllAuthors(): Flow<List<AuthorEntity>>
 
@@ -82,7 +82,7 @@ interface BookDao {
         JOIN book_tag_cross_ref ON tags.id = book_tag_cross_ref.tagId
         JOIN books ON book_tag_cross_ref.bookId = books.id
         WHERE books.isArchived = 0
-    """
+    """,
     )
     fun getAllTags(): Flow<List<TagEntity>>
 

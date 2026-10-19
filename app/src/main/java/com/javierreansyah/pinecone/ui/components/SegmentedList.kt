@@ -1,8 +1,3 @@
-@file:OptIn(
-    androidx.compose.material3.ExperimentalMaterial3Api::class,
-    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class
-)
-
 package com.javierreansyah.pinecone.ui.components
 
 import androidx.compose.animation.animateColorAsState
@@ -40,7 +35,7 @@ class SegmentedListItemData(
     val trailingContent: @Composable (() -> Unit)?,
     val supportingContent: @Composable (() -> Unit)?,
     val wrapper: @Composable (itemContent: @Composable () -> Unit) -> Unit,
-    val content: @Composable () -> Unit
+    val content: @Composable () -> Unit,
 )
 
 interface SegmentedListScope {
@@ -54,7 +49,7 @@ interface SegmentedListScope {
         trailingContent: (@Composable () -> Unit)? = null,
         supportingContent: (@Composable () -> Unit)? = null,
         wrapper: @Composable (itemContent: @Composable () -> Unit) -> Unit = { it() },
-        content: @Composable () -> Unit
+        content: @Composable () -> Unit,
     )
 
     fun <T> items(
@@ -68,12 +63,12 @@ interface SegmentedListScope {
         trailingContent: (@Composable (item: T) -> Unit)? = null,
         supportingContent: (@Composable (item: T) -> Unit)? = null,
         wrapper: @Composable (item: T, itemContent: @Composable () -> Unit) -> Unit = { _, it -> it() },
-        content: @Composable (item: T) -> Unit
+        content: @Composable (item: T) -> Unit,
     )
 }
 
 class SegmentedListBuilder : SegmentedListScope {
-    val items = mutableListOf<SegmentedListItemData>()
+    val items: MutableList<SegmentedListItemData> = mutableListOf()
 
     override fun item(
         key: Any?,
@@ -85,7 +80,7 @@ class SegmentedListBuilder : SegmentedListScope {
         trailingContent: (@Composable () -> Unit)?,
         supportingContent: (@Composable () -> Unit)?,
         wrapper: @Composable (itemContent: @Composable () -> Unit) -> Unit,
-        content: @Composable () -> Unit
+        content: @Composable () -> Unit,
     ) {
         items.add(
             SegmentedListItemData(
@@ -98,8 +93,8 @@ class SegmentedListBuilder : SegmentedListScope {
                 trailingContent = trailingContent,
                 supportingContent = supportingContent,
                 wrapper = wrapper,
-                content = content
-            )
+                content = content,
+            ),
         )
     }
 
@@ -114,7 +109,7 @@ class SegmentedListBuilder : SegmentedListScope {
         trailingContent: (@Composable (item: T) -> Unit)?,
         supportingContent: (@Composable (item: T) -> Unit)?,
         wrapper: @Composable (item: T, itemContent: @Composable () -> Unit) -> Unit,
-        content: @Composable (item: T) -> Unit
+        content: @Composable (item: T) -> Unit,
     ) {
         items.forEach { item ->
             item(
@@ -127,7 +122,7 @@ class SegmentedListBuilder : SegmentedListScope {
                 trailingContent = trailingContent?.let { { it(item) } },
                 supportingContent = supportingContent?.let { { it(item) } },
                 wrapper = { wrapper(item, it) },
-                content = { content(item) })
+            ) { content(item) }
         }
     }
 }
@@ -136,18 +131,18 @@ class SegmentedListBuilder : SegmentedListScope {
 inline fun SegmentedColumn(
     modifier: Modifier = Modifier,
     animated: Boolean = true,
-    content: @Composable SegmentedListScope.() -> Unit
+    content: @Composable SegmentedListScope.() -> Unit,
 ) {
     val builder = SegmentedListBuilder().apply { content() }
     val items = builder.items
     val count = items.size
 
     Column(
-        modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)
+        modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         items.forEachIndexed { index, item ->
-            val isTopDetached = item.selected || index == 0
-            val isBottomDetached = item.selected || index == count - 1
+            val isTopDetached = item.selected || (index == 0)
+            val isBottomDetached = item.selected || (index == (count - 1))
 
             key(item.key ?: index) {
                 item.wrapper {
@@ -164,7 +159,7 @@ inline fun SegmentedColumn(
                         leadingContent = item.leadingContent,
                         trailingContent = item.trailingContent,
                         supportingContent = item.supportingContent,
-                        content = item.content
+                        content = item.content,
                     )
                 }
             }
@@ -177,7 +172,7 @@ inline fun SegmentedLazyColumn(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
     animated: Boolean = true,
-    content: @Composable SegmentedListScope.() -> Unit
+    content: @Composable SegmentedListScope.() -> Unit,
 ) {
     val builder = SegmentedListBuilder().apply { content() }
     val items = builder.items
@@ -186,13 +181,14 @@ inline fun SegmentedLazyColumn(
     LazyColumn(
         modifier = modifier,
         contentPadding = contentPadding,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         items(
-            count = count, key = { index -> items[index].key ?: index }) { index ->
+            count = count, key = { index -> items[index].key ?: index },
+        ) { index ->
             val item = items[index]
-            val isTopDetached = item.selected || index == 0
-            val isBottomDetached = item.selected || index == count - 1
+            val isTopDetached = item.selected || (index == 0)
+            val isBottomDetached = item.selected || (index == (count - 1))
 
             key(item.key ?: index) {
                 item.wrapper {
@@ -210,7 +206,7 @@ inline fun SegmentedLazyColumn(
                         leadingContent = item.leadingContent,
                         trailingContent = item.trailingContent,
                         supportingContent = item.supportingContent,
-                        content = item.content
+                        content = item.content,
                     )
                 }
             }
@@ -218,7 +214,6 @@ inline fun SegmentedLazyColumn(
     }
 }
 
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun SegmentedListItem(
     modifier: Modifier = Modifier,
@@ -227,14 +222,14 @@ fun SegmentedListItem(
     onLongClick: (() -> Unit)? = null,
     index: Int = 0,
     count: Int = 1,
-    isTopDetached: Boolean = (selected || index == 0),
-    isBottomDetached: Boolean = (selected || index == count - 1),
+    isTopDetached: Boolean = (selected || (index == 0)),
+    isBottomDetached: Boolean = (selected || (index == (count - 1))),
     enabled: Boolean = true,
     animated: Boolean = true,
     leadingContent: @Composable (() -> Unit)? = null,
     trailingContent: @Composable (() -> Unit)? = null,
     supportingContent: @Composable (() -> Unit)? = null,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val defaultRadius = 16.dp
     val innerRadius = 4.dp
@@ -246,7 +241,7 @@ fun SegmentedListItem(
 
     val topRadius = if (animated) {
         val animatedTop by animateDpAsState(
-            targetValue = targetTop, animationSpec = springSpec, label = "topRadius"
+            targetValue = targetTop, animationSpec = springSpec, label = "topRadius",
         )
         animatedTop
     } else {
@@ -255,7 +250,7 @@ fun SegmentedListItem(
 
     val bottomRadius = if (animated) {
         val animatedBottom by animateDpAsState(
-            targetValue = targetBottom, animationSpec = springSpec, label = "bottomRadius"
+            targetValue = targetBottom, animationSpec = springSpec, label = "bottomRadius",
         )
         animatedBottom
     } else {
@@ -266,7 +261,7 @@ fun SegmentedListItem(
         topStart = topRadius,
         topEnd = topRadius,
         bottomStart = bottomRadius,
-        bottomEnd = bottomRadius
+        bottomEnd = bottomRadius,
     )
 
     val targetContainerColor =
@@ -274,7 +269,7 @@ fun SegmentedListItem(
     val containerColor = if (animated) {
         val animatedContainer by animateColorAsState(
             targetValue = targetContainerColor,
-            label = "color"
+            label = "color",
         )
         animatedContainer
     } else {
@@ -286,7 +281,7 @@ fun SegmentedListItem(
     val baseContentColor = if (animated) {
         val animatedBaseContent by animateColorAsState(
             targetValue = targetBaseContentColor,
-            label = "contentColor"
+            label = "contentColor",
         )
         animatedBaseContent
     } else {
@@ -296,15 +291,15 @@ fun SegmentedListItem(
     val contentColor = if (enabled) baseContentColor else baseContentColor.copy(alpha = 0.38f)
     val supportingContentColor =
         if (enabled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(
-            alpha = 0.38f
+            alpha = 0.38f,
         )
     val leadingIconColor =
         if (enabled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(
-            alpha = 0.38f
+            alpha = 0.38f,
         )
     val trailingIconColor =
         if (enabled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(
-            alpha = 0.38f
+            alpha = 0.38f,
         )
 
     Row(
@@ -313,20 +308,20 @@ fun SegmentedListItem(
             .clip(shape)
             .background(if (enabled) containerColor else containerColor.copy(alpha = 0.6f))
             .then(
-                if (onClick != null || onLongClick != null) {
+                if ((onClick != null) || (onLongClick != null)) {
                     Modifier.combinedClickable(
                         onClick = { onClick?.invoke() },
                         onLongClick = onLongClick?.let { { it() } },
-                        enabled = enabled
+                        enabled = enabled,
                     )
-                } else Modifier
+                } else Modifier,
             )
             .padding(
                 horizontal = 16.dp,
-                vertical = if (supportingContent != null) 12.dp else 16.dp
+                vertical = if (supportingContent != null) 12.dp else 16.dp,
             ),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         if (leadingContent != null) {
             CompositionLocalProvider(LocalContentColor provides leadingIconColor) {
@@ -338,7 +333,7 @@ fun SegmentedListItem(
 
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
         ) {
             CompositionLocalProvider(LocalContentColor provides contentColor) {
                 content()

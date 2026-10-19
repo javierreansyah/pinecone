@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ShelfDetailViewModel(
-    application: Application
+    application: Application,
 ) : AndroidViewModel(application) {
     private val bookRepository = (application as PineconeApplication).libraryRepository
     private val prefsManager = LibraryPreferencesManager(application)
@@ -35,9 +35,9 @@ class ShelfDetailViewModel(
     private val _uiState = MutableStateFlow(
         ShelfDetailUiState(
             bookPreferences = prefsManager.getPreferences(
-                screenKey = screenKey, defaultSort = SortType.Custom, defaultAscending = true
-            )
-        )
+                screenKey = screenKey, defaultSort = SortType.Custom, defaultAscending = true,
+            ),
+        ),
     )
     val uiState: StateFlow<ShelfDetailUiState> = _uiState.asStateFlow()
 
@@ -47,7 +47,7 @@ class ShelfDetailViewModel(
     private val globalSpaceId: StateFlow<String?> = prefsManager.getGlobalSpaceFlow().stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = null
+        initialValue = null,
     )
 
     init {
@@ -59,8 +59,8 @@ class ShelfDetailViewModel(
                             spaceId = spaceId,
                             screenKey = screenKey,
                             defaultSort = SortType.Custom,
-                            defaultAscending = true
-                        )
+                            defaultAscending = true,
+                        ),
                     )
                 }
             }
@@ -68,41 +68,41 @@ class ShelfDetailViewModel(
     }
 
     val allBooks: StateFlow<List<Book>> = combine(booksFlow, globalSpaceId) { books, spaceId ->
-        if (spaceId == null || spaceId == "_all_") books.filter { it.spaceIds.isNotEmpty() } else books.filter { book ->
+        if ((spaceId == null) || (spaceId == "_all_")) books.filter { it.spaceIds.isNotEmpty() } else books.filter { book ->
             book.spaceIds.contains(
-                spaceId
+                spaceId,
             )
         }
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
+        initialValue = emptyList(),
     )
 
     val shelves: StateFlow<List<ShelfWithCovers>> = combine(
         bookRepository.getAllShelvesWithBooks(),
         bookRepository.getAllShelfBookCrossRefs(),
         bookRepository.getAllBooks(),
-        globalSpaceId
+        globalSpaceId,
     ) { shelvesList, crossRefs, allBooksEntities, spaceId ->
         val sortedShelves = sortShelfBooks(shelvesList, crossRefs, spaceId)
-        val isSpaceSelected = spaceId != null && spaceId != "_all_"
+        val isSpaceSelected = (spaceId != null) && (spaceId != "_all_")
         val currentSpaceShelves = if (isSpaceSelected) {
-            shelvesList.filter { it.shelf.spaceId == spaceId }
+            shelvesList.filter { (itShelf) -> itShelf.spaceId == spaceId }
         } else {
             shelvesList
         }
-        val currentSpaceShelfIds = currentSpaceShelves.map { it.shelf.id }.toSet()
+        val currentSpaceShelfIds = currentSpaceShelves.map { (itShelf2) -> itShelf2.id }.toSet()
         val shelvedBookIds =
-            crossRefs.filter { it.shelfId in currentSpaceShelfIds }.map { it.bookId }.toSet()
+            crossRefs.filter { (itShelfId) -> itShelfId in currentSpaceShelfIds }.map { (_, itBookId) -> itBookId }.toSet()
 
-        val unshelvedBooks = allBooksEntities.filter {
+        val unshelvedBooks = allBooksEntities.filter { (itBook, _, _, _, itSpaces) ->
             val inSpace = if (isSpaceSelected) {
-                it.spaces.any { space -> space.id == spaceId }
+                itSpaces.any { (spaceId2) -> spaceId2 == spaceId }
             } else {
-                it.spaces.isNotEmpty()
+                itSpaces.isNotEmpty()
             }
-            inSpace && it.book.id !in shelvedBookIds
+            inSpace && (itBook.id !in shelvedBookIds)
         }
 
         val unshelvedShelf = ShelfWithCovers(
@@ -110,16 +110,17 @@ class ShelfDetailViewModel(
                 id = "unshelved",
                 spaceId = spaceId ?: "_all_",
                 name = application.getString(R.string.library_label_unshelved),
-                createdAt = 0L
-            ), books = unshelvedBooks
+                createdAt = 0L,
+            ),
+            books = unshelvedBooks,
         )
 
         sortedShelves + unshelvedShelf
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun getFilteredAndSortedBooks(baseFlow: Flow<List<Book>>): Flow<List<Book>> {
-        return combine(baseFlow, _uiState) { books, state ->
-            books.filterAndSort(state.bookPreferences)
+        return combine(baseFlow, _uiState) { books, (stateBookPreferences) ->
+            books.filterAndSort(stateBookPreferences)
         }
     }
 
@@ -197,8 +198,8 @@ class ShelfDetailViewModel(
         viewModelScope.launch {
             val currentBooks = allBooks.value
             bookIds.forEach { bookId ->
-                val book = currentBooks.find { it.id == bookId }
-                if (book != null && !book.isArchived) {
+                val book = currentBooks.find { (itId) -> itId == bookId }
+                if ((book != null) && !book.isArchived) {
                     bookRepository.toggleArchive(bookId)
                 }
             }
@@ -215,8 +216,8 @@ class ShelfDetailViewModel(
         viewModelScope.launch {
             val currentBooks = allBooks.value
             bookIds.forEach { bookId ->
-                val book = currentBooks.find { it.id == bookId }
-                if (book != null && book.isRead != markAsRead) {
+                val book = currentBooks.find { (itId2) -> itId2 == bookId }
+                if ((book != null) && (book.isRead != markAsRead)) {
                     bookRepository.toggleReadStatus(bookId)
                 }
             }

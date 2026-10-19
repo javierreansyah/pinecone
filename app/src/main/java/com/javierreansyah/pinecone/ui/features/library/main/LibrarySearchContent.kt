@@ -61,19 +61,19 @@ internal fun ExpandedSearchContent(
     onNavigateToAuthor: (String) -> Unit,
     onNavigateToTag: (String) -> Unit,
     onAuthorsHeaderClick: () -> Unit,
-    onTagsHeaderClick: () -> Unit
+    onTagsHeaderClick: () -> Unit,
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
+            .background(MaterialTheme.colorScheme.surface),
     ) {
         val categoryLabels = mapOf(
             SearchCategory.All to stringResource(R.string.action_all),
             SearchCategory.Books to stringResource(R.string.library_tab_books),
             SearchCategory.Shelves to stringResource(R.string.library_tab_shelves),
             SearchCategory.Authors to stringResource(R.string.library_authors_title),
-            SearchCategory.Tags to stringResource(R.string.library_tags_title)
+            SearchCategory.Tags to stringResource(R.string.library_tags_title),
         )
 
         SegmentedButtonGroup(
@@ -81,25 +81,25 @@ internal fun ExpandedSearchContent(
             icons = emptyList(),
             selected = categoryLabels[searchCategory] ?: searchCategory.name,
             onSelected = { selectedLabel ->
-                val category = categoryLabels.entries.find { it.value == selectedLabel }?.key
+                val category = categoryLabels.entries.find { (_, itValue) -> itValue == selectedLabel }?.key
                     ?: SearchCategory.All
                 onSearchCategoryChange(category)
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
+                .padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
         )
 
         SearchResultsContent(
             searchCategory = searchCategory,
             results = searchResults,
-            onBookClick = { book -> onNavigateToReader(book.id) },
-            onShelfClick = { shelf -> onNavigateToShelf(shelf.id, shelf.name, 0) },
+            onBookClick = { (bookId) -> onNavigateToReader(bookId) },
+            onShelfClick = { (shelfId, _, shelfName) -> onNavigateToShelf(shelfId, shelfName, 0) },
             onAuthorClick = { author -> onNavigateToAuthor(author) },
             onTagClick = { tag -> onNavigateToTag(tag) },
             onAuthorsHeaderClick = onAuthorsHeaderClick,
-            onTagsHeaderClick = onTagsHeaderClick
+            onTagsHeaderClick = onTagsHeaderClick,
         )
     }
 }
@@ -113,7 +113,7 @@ private fun SearchResultsContent(
     onAuthorClick: (String) -> Unit,
     onTagClick: (String) -> Unit,
     onAuthorsHeaderClick: () -> Unit,
-    onTagsHeaderClick: () -> Unit
+    onTagsHeaderClick: () -> Unit,
 ) {
     val fastEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
 
@@ -130,7 +130,7 @@ private fun SearchResultsContent(
         val maxTags = if (isPreview) 4 else Int.MAX_VALUE
 
         val booksToShow = if (isPreview) {
-            results.books.sortedByDescending { it.lastOpened ?: 0L }.take(maxBooks)
+            results.books.sortedByDescending { (_, _, _, _, _, itLastOpened) -> itLastOpened ?: 0L }.take(maxBooks)
         } else if (isAll) {
             results.books.take(maxBooks)
         } else {
@@ -138,7 +138,7 @@ private fun SearchResultsContent(
         }
 
         val shelvesToShow = if (isPreview) {
-            results.shelves.sortedBy { it.name }.take(maxShelves)
+            results.shelves.sortedBy { (_, _, itName) -> itName }.take(maxShelves)
         } else if (isAll) {
             results.shelves.take(maxShelves)
         } else {
@@ -164,29 +164,29 @@ private fun SearchResultsContent(
         val isEmptyResults =
             !isSearchEmpty && results.books.isEmpty() && results.shelves.isEmpty() && results.authors.isEmpty() && results.tags.isEmpty()
 
-        val showOnlyBooksGrid = !isAll && searchCategory == SearchCategory.Books
+        val showOnlyBooksGrid = !isAll && (searchCategory == SearchCategory.Books)
 
         if (isEmptyResults) {
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(vertical = 48.dp)
+                    .padding(vertical = 48.dp),
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Icon(
                         MaterialSymbols.Outlined.Search,
                         contentDescription = null,
                         modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                     )
                     Text(
                         stringResource(R.string.reader_search_no_results_for, results.query),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -194,11 +194,11 @@ private fun SearchResultsContent(
             BookCollection(
                 books = booksToShow,
                 onBookClick = { id ->
-                    val book = booksToShow.find { it.id == id }
-                    if (book != null) onBookClick(book)
+                    val book = booksToShow.find { (itId) -> itId == id }
+                    book?.let(onBookClick)
                 },
                 fastEffectsSpec = fastEffectsSpec,
-                headerContent = {
+                content = {
                     SectionHeader(
                         title = stringResource(R.string.library_tab_books),
                         onHeaderClick = null,
@@ -207,10 +207,10 @@ private fun SearchResultsContent(
                             start = 8.dp,
                             end = 8.dp,
                             top = 8.dp,
-                            bottom = 0.dp
-                        )
+                            bottom = 0.dp,
+                        ),
                     )
-                }
+                },
             )
         } else {
             LazyVerticalGrid(
@@ -220,19 +220,19 @@ private fun SearchResultsContent(
                     .fillMaxSize()
                     .padding(bottom = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 if (booksToShow.isNotEmpty() && isAll) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         BooksSection(
                             books = booksToShow,
                             onBookClick = { onBookClick(it) },
-                            fastEffectsSpec = fastEffectsSpec
+                            fastEffectsSpec = fastEffectsSpec,
                         )
                     }
                 }
 
-                if (shelvesToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Shelves)) {
+                if (shelvesToShow.isNotEmpty() && (isAll || (searchCategory == SearchCategory.Shelves))) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         SectionHeader(
                             title = stringResource(R.string.library_tab_shelves),
@@ -241,32 +241,33 @@ private fun SearchResultsContent(
                                 start = 16.dp,
                                 end = 16.dp,
                                 top = 8.dp,
-                                bottom = 4.dp
-                            )
+                                bottom = 4.dp,
+                            ),
                         )
                     }
                     itemsIndexed(
                         shelvesToShow,
-                        key = { _, it -> "shelf_${it.id}" }) { index, shelf ->
+                        key = { _, (itId2) -> "shelf_${itId2}" },
+                    ) { index, shelf ->
                         SearchFilterItem(
                             text = shelf.name,
                             icon = MaterialSymbols.Outlined.Folder,
                             onClick = { onShelfClick(shelf) },
                             modifier = Modifier
                                 .padding(
-                                    start = if (index % 2 == 0) 16.dp else 0.dp,
-                                    end = if (index % 2 == 1) 16.dp else 0.dp
+                                    start = if ((index % 2) == 0) 16.dp else 0.dp,
+                                    end = if ((index % 2) == 1) 16.dp else 0.dp,
                                 )
                                 .animateItem(
                                     fadeInSpec = fastEffectsSpec,
                                     fadeOutSpec = fastEffectsSpec,
-                                    placementSpec = null
-                                )
+                                    placementSpec = null,
+                                ),
                         )
                     }
                 }
 
-                if (authorsToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Authors)) {
+                if (authorsToShow.isNotEmpty() && (isAll || (searchCategory == SearchCategory.Authors))) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         SectionHeader(
                             title = stringResource(R.string.library_authors_title),
@@ -275,8 +276,8 @@ private fun SearchResultsContent(
                                 start = 16.dp,
                                 end = 16.dp,
                                 top = 8.dp,
-                                bottom = 4.dp
-                            )
+                                bottom = 4.dp,
+                            ),
                         )
                     }
                     itemsIndexed(authorsToShow, key = { _, it -> "author_$it" }) { index, author ->
@@ -286,19 +287,19 @@ private fun SearchResultsContent(
                             onClick = { onAuthorClick(author) },
                             modifier = Modifier
                                 .padding(
-                                    start = if (index % 2 == 0) 16.dp else 0.dp,
-                                    end = if (index % 2 == 1) 16.dp else 0.dp
+                                    start = if ((index % 2) == 0) 16.dp else 0.dp,
+                                    end = if ((index % 2) == 1) 16.dp else 0.dp,
                                 )
                                 .animateItem(
                                     fadeInSpec = fastEffectsSpec,
                                     fadeOutSpec = fastEffectsSpec,
-                                    placementSpec = null
-                                )
+                                    placementSpec = null,
+                                ),
                         )
                     }
                 }
 
-                if (tagsToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Tags)) {
+                if (tagsToShow.isNotEmpty() && (isAll || (searchCategory == SearchCategory.Tags))) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         SectionHeader(
                             title = stringResource(R.string.library_tags_title),
@@ -307,8 +308,8 @@ private fun SearchResultsContent(
                                 start = 16.dp,
                                 end = 16.dp,
                                 top = 8.dp,
-                                bottom = 4.dp
-                            )
+                                bottom = 4.dp,
+                            ),
                         )
                     }
                     itemsIndexed(tagsToShow, key = { _, it -> "tag_$it" }) { index, tag ->
@@ -318,14 +319,14 @@ private fun SearchResultsContent(
                             onClick = { onTagClick(tag) },
                             modifier = Modifier
                                 .padding(
-                                    start = if (index % 2 == 0) 16.dp else 0.dp,
-                                    end = if (index % 2 == 1) 16.dp else 0.dp
+                                    start = if ((index % 2) == 0) 16.dp else 0.dp,
+                                    end = if ((index % 2) == 1) 16.dp else 0.dp,
                                 )
                                 .animateItem(
                                     fadeInSpec = fastEffectsSpec,
                                     fadeOutSpec = fastEffectsSpec,
-                                    placementSpec = null
-                                )
+                                    placementSpec = null,
+                                ),
                         )
                     }
                 }
@@ -345,29 +346,29 @@ private fun BooksSection(
 
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(2.dp)
+        verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         SectionHeader(
             title = stringResource(R.string.library_tab_books),
             onHeaderClick = null,
-            isBooksSection = true
+            isBooksSection = true,
         )
         LazyRow(
             state = listState,
-            contentPadding = PaddingValues(horizontal = 8.dp)
+            contentPadding = PaddingValues(horizontal = 8.dp),
         ) {
-            items(books, key = { it.id }) { book ->
+            items(books, key = { (itId3) -> itId3 }) { book ->
                 val animateModifier = if (fastEffectsSpec != null) {
                     Modifier.animateItem(
                         fadeInSpec = fastEffectsSpec,
                         fadeOutSpec = fastEffectsSpec,
-                        placementSpec = null
+                        placementSpec = null,
                     )
                 } else Modifier
                 BookItem(
                     book = book,
                     onClick = { onBookClick(book) },
-                    modifier = animateModifier.width(120.dp)
+                    modifier = animateModifier.width(120.dp),
                 )
             }
         }
@@ -384,8 +385,8 @@ private fun SectionHeader(
         start = 16.dp,
         end = 16.dp,
         top = 8.dp,
-        bottom = if (isBooksSection) 0.dp else 8.dp
-    )
+        bottom = if (isBooksSection) 0.dp else 8.dp,
+    ),
 ) {
     val clickableModifier = Modifier
         .fillMaxWidth()
@@ -395,17 +396,17 @@ private fun SectionHeader(
     Row(
         modifier = clickableModifier.then(modifier),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = title, style = MaterialTheme.typography.titleMedium
+            text = title, style = MaterialTheme.typography.titleMedium,
         )
         if (onHeaderClick != null) {
             Icon(
                 imageVector = MaterialSymbols.Outlined.Chevron_forward,
                 contentDescription = stringResource(R.string.library_view_all, title),
                 modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -413,7 +414,7 @@ private fun SectionHeader(
 
 @Composable
 private fun SearchFilterItem(
-    text: String, icon: ImageVector, onClick: () -> Unit, modifier: Modifier = Modifier
+    text: String, icon: ImageVector, onClick: () -> Unit, modifier: Modifier = Modifier,
 ) {
     Surface(
         modifier = modifier.clickable { onClick() },
@@ -423,17 +424,17 @@ private fun SearchFilterItem(
         Row(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Icon(
-                imageVector = icon, contentDescription = null, modifier = Modifier.size(16.dp)
+                imageVector = icon, contentDescription = null, modifier = Modifier.size(16.dp),
             )
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodySmall,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
         }
     }
@@ -445,7 +446,7 @@ private fun BookCollection(
     onBookClick: (String) -> Unit,
     onBookLongClick: ((String) -> Unit)? = null,
     fastEffectsSpec: FiniteAnimationSpec<Float>? = null,
-    headerContent: @Composable (() -> Unit)? = null
+    content: @Composable (() -> Unit)? = null,
 ) {
     val gridState = rememberLazyGridState()
 
@@ -457,26 +458,26 @@ private fun BookCollection(
         columns = GridCells.Adaptive(minSize = itemWidth),
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = horizontalPadding)
+            .padding(horizontal = horizontalPadding),
     ) {
-        if (headerContent != null) {
+        if (content != null) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Column {
-                    headerContent()
+                    content()
                     Spacer(modifier = Modifier.height(2.dp))
                 }
             }
         }
         items(
             items = books,
-            key = { "${it.id}-Grid" },
-            contentType = { "Grid" }
+            key = { (itId4) -> "${itId4}-Grid" },
+            contentType = { "Grid" },
         ) { book ->
             val animateModifier = if (fastEffectsSpec != null) {
                 Modifier.animateItem(
                     fadeInSpec = fastEffectsSpec,
                     fadeOutSpec = fastEffectsSpec,
-                    placementSpec = null
+                    placementSpec = null,
                 )
             } else Modifier
 
@@ -484,7 +485,7 @@ private fun BookCollection(
                 book = book,
                 onClick = { onBookClick(book.id) },
                 onLongClick = onBookLongClick?.let { { it(book.id) } },
-                modifier = animateModifier
+                modifier = animateModifier,
             )
         }
     }

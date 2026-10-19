@@ -11,7 +11,7 @@ fun generateVersionCode(): Int {
     return ((System.currentTimeMillis() / 1000L) - offset).toInt()
 }
 
-val appVersionName = "1.0"
+val appVersionName: String = "1.0"
 
 android {
     namespace = "com.javierreansyah.pinecone"
@@ -36,7 +36,7 @@ android {
             manifestPlaceholders["appName"] = "Pinecone"
 
             proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro",
             )
 
             signingConfig = signingConfigs.getByName("debug")
@@ -49,7 +49,7 @@ android {
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
-                "proguard-rules-staging.pro"
+                "proguard-rules-staging.pro",
             )
         }
     }
@@ -65,17 +65,32 @@ android {
 
     lint {
         lintConfig = file("../lint.xml")
+        abortOnError = true
+        warningsAsErrors = true
+        checkAllWarnings = true
+        checkTestSources = true
+        checkDependencies = true
+        // Text proofreading is outside this project's code-validation scope.
+        disable += setOf(
+            "TypographyDashes", "TypographyEllipsis", "TypographyFractions",
+            "TypographyOther", "TypographyQuotes",
+        )
     }
 }
 
 @Suppress("UnstableApiUsage")
 androidComponents {
+    beforeVariants { variant ->
+        // Complete validation runs the shared JVM tests against every build type.
+        (variant as com.android.build.api.variant.HasHostTestsBuilder)
+            .hostTests.getValue(com.android.build.api.variant.HostTestBuilder.UNIT_TEST_TYPE).enable = true
+    }
     onVariants { variant ->
         val outputName = when (variant.name) {
-            "release" -> "pinecone-v${appVersionName}.apk"
-            "debug" -> "pinecone-${appVersionName}-debug.apk"
-            "staging" -> "pinecone-${appVersionName}-staging.apk"
-            else -> "pinecone-${appVersionName}-${variant.name}.apk"
+            "release" -> "pinecone-v$appVersionName.apk"
+            "debug" -> "pinecone-$appVersionName-debug.apk"
+            "staging" -> "pinecone-$appVersionName-staging.apk"
+            else -> "pinecone-$appVersionName-${variant.name}.apk"
         }
         variant.outputs.forEach { output ->
             output.outputFileName.set(outputName)
@@ -119,6 +134,16 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.aboutlibraries.compose)
     testImplementation(libs.junit)
+}
+
+kotlin {
+    compilerOptions {
+        allWarningsAsErrors.set(true)
+    }
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add("-Werror")
 }
 
 ksp {

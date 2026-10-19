@@ -13,11 +13,11 @@ class LibraryBackupPayloadTest {
         val payload = LibraryBackupPayload(
             books = listOf(
                 BookBackupRecord(
-                    id = "book-1", title = "Book", filePath = "/source/book.epub", addedDate = 1
-                )
+                    id = "book-1", title = "Book", filePath = "/source/book.epub", addedDate = 1,
+                ),
             ),
             bookmarks = emptyList(), shelves = emptyList(), shelfBookCrossRefs = emptyList(),
-            notes = emptyList()
+            notes = emptyList(),
         )
         val objectInfo = VaultObject(
             kind = VaultObjectKind.BOOK,
@@ -29,7 +29,7 @@ class LibraryBackupPayloadTest {
             fileName = "${"a".repeat(64)}.epub",
             sourcePath = "/source/book.epub",
             sourceSize = 10,
-            sourceLastModified = 20
+            sourceLastModified = 20,
         )
         val snapshot = VaultSnapshot(
             id = "20260805_120000_000",
@@ -43,7 +43,7 @@ class LibraryBackupPayloadTest {
             settings = ReaderSettings(),
             books = listOf(BookObjectReference("book-1", objectInfo)),
             dictionaries = emptyList(),
-            activeDictionaryId = ""
+            activeDictionaryId = "",
         )
 
         assertEquals(snapshot, json.decodeFromString<VaultSnapshot>(json.encodeToString(snapshot)))
@@ -52,12 +52,12 @@ class LibraryBackupPayloadTest {
     @Test
     fun backupRecordConvertsToCurrentEntity() {
         val record = BookBackupRecord(
-            id = "id", title = "Title", filePath = "/new/book.epub", addedDate = 10
+            id = "id", title = "Title", filePath = "/new/book.epub", addedDate = 10,
         )
         assertEquals(record.filePath, record.toEntity().filePath)
 
         val shelfRecord = ShelfBackupRecord(
-            id = "shelf-1", spaceId = "space-1", name = "Favorites", createdAt = 100L
+            id = "shelf-1", spaceId = "space-1", name = "Favorites", createdAt = 100L,
         )
         val entity = shelfRecord.toEntity()
         assertEquals("shelf-1", entity.id)

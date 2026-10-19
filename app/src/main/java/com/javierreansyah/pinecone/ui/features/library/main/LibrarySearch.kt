@@ -5,7 +5,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
@@ -14,7 +13,6 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.AppBarWithSearch
 import androidx.compose.material3.ExpandedFullScreenContainedSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -65,8 +63,6 @@ import kotlinx.coroutines.launch
 
 @OptIn(
     ExperimentalMaterial3Api::class,
-    ExperimentalMaterial3ExpressiveApi::class,
-    ExperimentalFoundationApi::class
 )
 @Composable
 fun LibrarySearchTopBar(
@@ -85,7 +81,7 @@ fun LibrarySearchTopBar(
     onAuthorsHeaderClick: () -> Unit = {},
     onTagsHeaderClick: () -> Unit = {},
     scrollBehavior: SearchBarScrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior(),
-    searchBarState: SearchBarState = rememberContainedSearchBarState()
+    searchBarState: SearchBarState = rememberContainedSearchBarState(),
 ) {
     val textFieldState = rememberTextFieldState(searchQuery)
     val focusRequester = remember { FocusRequester() }
@@ -101,7 +97,7 @@ fun LibrarySearchTopBar(
         searchBarState = searchBarState,
         textFieldState = textFieldState,
         focusRequester = focusRequester,
-        onRestoringChange = { isRestoring = it })
+    ) { isRestoring = it }
 
     val searchBarContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
 
@@ -109,7 +105,7 @@ fun LibrarySearchTopBar(
         searchBarColors = SearchBarDefaults.colors(containerColor = searchBarContainerColor),
         scrolledSearchBarContainerColor = searchBarContainerColor,
         appBarContainerColor = MaterialTheme.colorScheme.surface,
-        scrolledAppBarContainerColor = MaterialTheme.colorScheme.surface
+        scrolledAppBarContainerColor = MaterialTheme.colorScheme.surface,
     )
 
     val scope = rememberCoroutineScope()
@@ -127,14 +123,14 @@ fun LibrarySearchTopBar(
                     isRestoring = isRestoring,
                     onRestoringChange = { isRestoring = it },
                     colors = appBarWithSearchColors.searchBarColors.inputFieldColors,
-                    onSearchQueryChange = onSearchQueryChange
+                    onSearchQueryChange = onSearchQueryChange,
                 )
             },
             navigationIcon = {
                 IconButton(onClick = onOpenDrawerClick) {
                     Icon(
                         MaterialSymbols.Outlined.Menu,
-                        contentDescription = stringResource(R.string.action_menu)
+                        contentDescription = stringResource(R.string.action_menu),
                     )
                 }
             },
@@ -142,7 +138,7 @@ fun LibrarySearchTopBar(
                 IconButton(onClick = onFilterClick) {
                     Icon(
                         MaterialSymbols.Outlined.Tune,
-                        contentDescription = stringResource(R.string.action_filter)
+                        contentDescription = stringResource(R.string.action_filter),
                     )
                 }
             },
@@ -154,8 +150,8 @@ fun LibrarySearchTopBar(
             inputFieldColors = SearchBarDefaults.inputFieldColors(
                 focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-            )
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ),
         )
 
         ExpandedFullScreenContainedSearchBar(
@@ -168,16 +164,16 @@ fun LibrarySearchTopBar(
                     isRestoring = isRestoring,
                     onRestoringChange = { isRestoring = it },
                     colors = expandedSearchBarColors.inputFieldColors,
-                    onSearchQueryChange = onSearchQueryChange
+                    onSearchQueryChange = onSearchQueryChange,
                 )
             },
-            colors = expandedSearchBarColors
+            colors = expandedSearchBarColors,
         ) {
             // Track whether the expansion animation has ever settled so we can
             // defer the expensive search-content composition until the bar is
             // fully open. This eliminates cold-start jank by keeping the UI
             // thread free during the expansion animation.
-            var hasEverExpanded by rememberSaveable { mutableStateOf(false) }
+            var hasEverExpanded by rememberSaveable { mutableStateOf(value = false) }
 
             LaunchedEffect(Unit) {
                 snapshotFlow { searchBarState.currentValue }.collect { value ->
@@ -191,7 +187,7 @@ fun LibrarySearchTopBar(
             // opens never need to re-compose from scratch.
             val showContent by remember {
                 derivedStateOf {
-                    hasEverExpanded || searchBarState.currentValue == SearchBarValue.Expanded
+                    hasEverExpanded || (searchBarState.currentValue == SearchBarValue.Expanded)
                 }
             }
 
@@ -213,7 +209,7 @@ fun LibrarySearchTopBar(
             AnimatedVisibility(
                 visible = showContent,
                 enter = fadeIn(animationSpec = actionsEffectsSpec),
-                exit = fadeOut(animationSpec = actionsEffectsSpec)
+                exit = fadeOut(animationSpec = actionsEffectsSpec),
             ) {
                 ExpandedSearchContent(
                     searchCategory = searchCategory,
@@ -230,20 +226,18 @@ fun LibrarySearchTopBar(
                     },
                     onNavigateToTag = { tag -> navigateAfterCollapse { onNavigateToTag(tag) } },
                     onAuthorsHeaderClick = { navigateAfterCollapse { onAuthorsHeaderClick() } },
-                    onTagsHeaderClick = { navigateAfterCollapse { onTagsHeaderClick() } }
-                )
+                ) { navigateAfterCollapse { onTagsHeaderClick() } }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HandleSearchBarStateChanges(
     searchBarState: SearchBarState,
     textFieldState: TextFieldState,
     focusRequester: FocusRequester,
-    onRestoringChange: (Boolean) -> Unit
+    onRestoringChange: (Boolean) -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -306,7 +300,6 @@ private fun HandleSearchBarStateChanges(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SearchInputField(
     searchBarState: SearchBarState,
@@ -315,7 +308,7 @@ private fun SearchInputField(
     isRestoring: Boolean,
     onRestoringChange: (Boolean) -> Unit,
     colors: TextFieldColors,
-    onSearchQueryChange: (String) -> Unit
+    onSearchQueryChange: (String) -> Unit,
 ) {
     val isExpanded = searchBarState.targetValue == SearchBarValue.Expanded
     val focusManager = LocalFocusManager.current
@@ -323,7 +316,7 @@ private fun SearchInputField(
     val scope = rememberCoroutineScope()
 
     val alignmentBias by animateFloatAsState(
-        targetValue = if (isExpanded) -1f else 0f, label = "placeholderAlignment"
+        targetValue = if (isExpanded) -1f else 0f, label = "placeholderAlignment",
     )
 
     val launchVoiceSearch = rememberVoiceSearchLauncher { spokenText ->
@@ -351,12 +344,12 @@ private fun SearchInputField(
         placeholder = {
             Box(
                 modifier = Modifier.fillMaxWidth(),
-                contentAlignment = BiasAlignment(horizontalBias = alignmentBias, verticalBias = 0f)
+                contentAlignment = BiasAlignment(horizontalBias = alignmentBias, verticalBias = 0f),
             ) {
                 Text(
                     modifier = Modifier.clearAndSetSemantics {},
                     text = stringResource(R.string.library_search_placeholder),
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
                 )
             }
         },
@@ -364,16 +357,18 @@ private fun SearchInputField(
             AnimatedVisibility(
                 visible = isExpanded,
                 enter = fadeIn(animationSpec = tween(durationMillis = 150, delayMillis = 200)),
-                exit = fadeOut(animationSpec = tween(durationMillis = 50))
+                exit = fadeOut(animationSpec = tween(durationMillis = 50)),
             ) {
-                IconButton(onClick = {
-                    focusManager.clearFocus()
-                    scope.launch { searchBarState.animateToCollapsed() }
-                }) {
+                IconButton(
+                    onClick = {
+                        focusManager.clearFocus()
+                        scope.launch { searchBarState.animateToCollapsed() }
+                    },
+                ) {
                     Icon(
                         MaterialSymbols.Outlined.Chevron_backward,
                         contentDescription = stringResource(R.string.action_back),
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(28.dp),
                     )
                 }
             }
@@ -382,22 +377,24 @@ private fun SearchInputField(
             AnimatedVisibility(
                 visible = isExpanded,
                 enter = fadeIn(animationSpec = tween(durationMillis = 150, delayMillis = 200)),
-                exit = fadeOut(animationSpec = tween(durationMillis = 50))
+                exit = fadeOut(animationSpec = tween(durationMillis = 50)),
             ) {
                 if (textFieldState.text.isNotEmpty()) {
-                    IconButton(onClick = {
-                        textFieldState.edit { replace(0, length, "") }
-                    }) {
+                    IconButton(
+                        onClick = {
+                            textFieldState.edit { replace(0, length, "") }
+                        },
+                    ) {
                         Icon(
                             MaterialSymbols.Outlined.Close,
-                            contentDescription = stringResource(R.string.action_clear)
+                            contentDescription = stringResource(R.string.action_clear),
                         )
                     }
                 } else {
                     IconButton(onClick = { launchVoiceSearch() }) {
                         Icon(
                             MaterialSymbols.Outlined.Mic,
-                            contentDescription = stringResource(R.string.action_voice_search)
+                            contentDescription = stringResource(R.string.action_voice_search),
                         )
                     }
                 }

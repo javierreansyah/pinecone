@@ -29,16 +29,16 @@ fun List<Locator>.findIndexForLocator(locator: Locator): Int {
 
     var bestIndex = -1
     for (i in indices.reversed()) {
-        val pos = this[i]
-        val posHref = pos.href.toString().substringBefore("#")
-        if (posHref == targetHref && (pos.locations.progression ?: 0.0) <= targetProgression) {
+        val (posHref2, _, _, posLocations) = this[i]
+        val posHref = posHref2.toString().substringBefore("#")
+        if ((posHref == targetHref) && ((posLocations.progression ?: 0.0) <= targetProgression)) {
             bestIndex = i
             break
         }
     }
     if (bestIndex != -1) return bestIndex
 
-    return indexOfFirst { it.href.toString().substringBefore("#") == targetHref }
+    return indexOfFirst { (itHref) -> itHref.toString().substringBefore("#") == targetHref }
 }
 
 fun List<Locator>.findClosestByProgression(targetProgression: Double): Locator? {
@@ -83,21 +83,17 @@ fun Locator.isSamePosition(other: Locator): Boolean {
 
     val thisProg = this.locations.progression
     val otherProg = other.locations.progression
-    if (thisProg != null && otherProg != null) {
+    if ((thisProg != null) && (otherProg != null)) {
         return abs(thisProg - otherProg) < 0.0001
     }
 
     val thisTotalProg = this.locations.totalProgression
     val otherTotalProg = other.locations.totalProgression
-    if (thisTotalProg != null && otherTotalProg != null) {
+    if ((thisTotalProg != null) && (otherTotalProg != null)) {
         return abs(thisTotalProg - otherTotalProg) < 0.0001
     }
 
     val thisPos = this.locations.position
     val otherPos = other.locations.position
-    if (thisPos != null && otherPos != null) {
-        return thisPos == otherPos
-    }
-
-    return false
+    return (thisPos != null) && (otherPos != null) && (thisPos == otherPos)
 }

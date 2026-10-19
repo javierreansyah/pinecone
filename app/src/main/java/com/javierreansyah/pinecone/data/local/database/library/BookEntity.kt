@@ -23,5 +23,5 @@ data class BookEntity(
     val isRead: Boolean = false,
     val furthestProgression: Double = 0.0,
     val furthestLocatorJson: String? = null,
-    val jumpOriginLocatorJson: String? = null
+    val jumpOriginLocatorJson: String? = null,
 )

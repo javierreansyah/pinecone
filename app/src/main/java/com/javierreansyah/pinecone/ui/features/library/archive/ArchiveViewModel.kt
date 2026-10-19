@@ -31,9 +31,9 @@ class ArchiveViewModel(application: Application) : AndroidViewModel(application)
     private val _uiState = MutableStateFlow(
         ArchiveUiState(
             bookPreferences = prefsManager.getPreferences(
-                screenKey = screenKey, defaultSort = SortType.Added, defaultAscending = false
-            )
-        )
+                screenKey = screenKey, defaultSort = SortType.Added,
+            ),
+        ),
     )
     val uiState: StateFlow<ArchiveUiState> = _uiState.asStateFlow()
 
@@ -43,15 +43,15 @@ class ArchiveViewModel(application: Application) : AndroidViewModel(application)
     val allBooks: StateFlow<List<Book>> = booksFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
+        initialValue = emptyList(),
     )
 
-    val archivedBooks: StateFlow<List<Book>> = combine(booksFlow, _uiState) { books, state ->
-        books.filterAndSort(state.bookPreferences)
+    val archivedBooks: StateFlow<List<Book>> = combine(booksFlow, _uiState) { books, (stateBookPreferences) ->
+        books.filterAndSort(stateBookPreferences)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val shelves: StateFlow<List<ShelfWithCovers>> = combine(
-        bookRepository.getAllShelvesWithBooks(), bookRepository.getAllShelfBookCrossRefs()
+        bookRepository.getAllShelvesWithBooks(), bookRepository.getAllShelfBookCrossRefs(),
     ) { shelvesList, crossRefs ->
         sortShelfBooks(shelvesList, crossRefs)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -124,8 +124,8 @@ class ArchiveViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             val currentBooks = allBooks.value
             bookIds.forEach { bookId ->
-                val book = currentBooks.find { it.id == bookId }
-                if (book != null && book.isRead != markAsRead) {
+                val book = currentBooks.find { (itId) -> itId == bookId }
+                if ((book != null) && (book.isRead != markAsRead)) {
                     bookRepository.toggleReadStatus(bookId)
                 }
             }

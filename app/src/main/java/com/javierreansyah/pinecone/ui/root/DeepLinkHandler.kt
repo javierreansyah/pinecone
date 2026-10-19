@@ -13,8 +13,8 @@ import androidx.navigation3.runtime.NavKey
 
 fun getInitialBackStackFromIntent(intent: Intent): List<NavKey> {
     val uri = intent.data
-    if (intent.action == Intent.ACTION_VIEW && uri != null) {
-        if (uri.scheme == "pinecone" && uri.host == "book_info") {
+    if ((intent.action == Intent.ACTION_VIEW) && (uri != null)) {
+        if ((uri.scheme == "pinecone") && (uri.host == "book_info")) {
             val bookId = uri.lastPathSegment
             if (bookId != null) {
                 return if (intent.getBooleanExtra("from_reader", false)) {
@@ -23,7 +23,7 @@ fun getInitialBackStackFromIntent(intent: Intent): List<NavKey> {
                     listOf(Screen.Library, Screen.BookInfo(bookId))
                 }
             }
-        } else if (uri.scheme == "file" || uri.scheme == "content") {
+        } else if ((uri.scheme == "file") || (uri.scheme == "content")) {
             return listOf(Screen.Library, Screen.Unsorted)
         }
     }
@@ -34,7 +34,7 @@ fun getInitialBackStackFromIntent(intent: Intent): List<NavKey> {
 fun HandleDeepLinks(
     backStack: MutableList<NavKey>,
     addOnNewIntentListener: (Consumer<Intent>) -> Unit,
-    removeOnNewIntentListener: (Consumer<Intent>) -> Unit
+    removeOnNewIntentListener: (Consumer<Intent>) -> Unit,
 ) {
     var currentIntent by remember { mutableStateOf<Intent?>(null) }
 
@@ -49,13 +49,11 @@ fun HandleDeepLinks(
     LaunchedEffect(currentIntent) {
         val intentToProcess = currentIntent ?: return@LaunchedEffect
         val uri = intentToProcess.data
-        if (intentToProcess.action == Intent.ACTION_VIEW && uri != null) {
-            if (uri.scheme == "pinecone" && uri.host == "book_info") {
+        if ((intentToProcess.action == Intent.ACTION_VIEW) && (uri != null)) {
+            if ((uri.scheme == "pinecone") && (uri.host == "book_info")) {
                 val bookId = uri.lastPathSegment
-                if (bookId != null) {
-                    backStack.add(Screen.BookInfo(bookId))
-                }
-            } else if (uri.scheme == "file" || uri.scheme == "content") {
+                bookId?.let { backStack.add(Screen.BookInfo(it)) }
+            } else if ((uri.scheme == "file") || (uri.scheme == "content")) {
                 if (backStack.lastOrNull() != Screen.Unsorted) {
                     backStack.clear()
                     backStack.add(Screen.Library)

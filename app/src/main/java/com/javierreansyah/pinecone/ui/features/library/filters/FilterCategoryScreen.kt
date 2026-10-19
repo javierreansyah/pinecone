@@ -11,10 +11,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -56,24 +54,25 @@ import com.javierreansyah.pinecone.ui.features.library.components.FilterMultiSel
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectTopBarTransition
 import com.javierreansyah.pinecone.ui.features.library.components.RenameFilterDialog
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AllFilterItemsScreen(
     filterType: String,
-    onNavigateBack: () -> Unit, onNavigateToDetail: (String) -> Unit
+    onNavigateBack: () -> Unit, onNavigateToDetail: (String) -> Unit,
 ) {
     val context = LocalContext.current
-    val viewModel: FilterCategoryViewModel = viewModel(factory = object :
-        ViewModelProvider.AndroidViewModelFactory(context.applicationContext as Application) {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(FilterCategoryViewModel::class.java)) {
-                @Suppress("UNCHECKED_CAST") return FilterCategoryViewModel(
-                    context.applicationContext as Application
-                ) as T
+    val viewModel: FilterCategoryViewModel = viewModel(
+        factory = object :
+            ViewModelProvider.AndroidViewModelFactory(context.applicationContext as Application) {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                if (modelClass.isAssignableFrom(FilterCategoryViewModel::class.java)) {
+                    @Suppress("UNCHECKED_CAST") return FilterCategoryViewModel(
+                        context.applicationContext as Application,
+                    ) as T
+                }
+                throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             }
-            throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
-        }
-    })
+        },
+    )
 
     val itemsWithCounts by when (filterType) {
         "author" -> viewModel.authorsWithCounts.collectAsState()
@@ -87,9 +86,9 @@ fun AllFilterItemsScreen(
 
     val suggestionList = remember(filterType, allAuthors, allTags, allSpaces) {
         when (filterType) {
-            "author" -> allAuthors.map { it.name }
-            "space" -> allSpaces.map { it.name }
-            else -> allTags.map { it.name }
+            "author" -> allAuthors.map { (_, itName) -> itName }
+            "space" -> allSpaces.map { (_, itName2) -> itName2 }
+            else -> allTags.map { (_, itName3) -> itName3 }
         }
     }
 
@@ -107,11 +106,10 @@ fun AllFilterItemsScreen(
         },
         onRenameItemsConfirm = { oldNames, newName ->
             viewModel.renameFilterItems(filterType, oldNames, newName) {}
-        }
+        },
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun AllFilterItemsContent(
     filterType: String,
@@ -122,14 +120,14 @@ private fun AllFilterItemsContent(
     onDeleteConfirm: (String) -> Unit,
     onRenameConfirm: (String, String) -> Unit,
     onRenameItemsConfirm: (List<String>, String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var selectedItemForMenu by remember { mutableStateOf<String?>(null) }
     var itemToDelete by remember { mutableStateOf<String?>(null) }
     var itemToRename by remember { mutableStateOf<String?>(null) }
-    var isMultiRename by remember { mutableStateOf(false) }
+    var isMultiRename by remember { mutableStateOf(value = false) }
     var selectedItems by remember { mutableStateOf(setOf<String>()) }
-    var isInMultiSelectMode by remember { mutableStateOf(false) }
+    var isInMultiSelectMode by remember { mutableStateOf(value = false) }
 
     BackHandler(enabled = isInMultiSelectMode) {
         selectedItems = emptySet()
@@ -137,8 +135,8 @@ private fun AllFilterItemsContent(
     }
 
     var sortType by remember { mutableStateOf(FilterItemSortType.Label) }
-    var sortAscending by remember { mutableStateOf(true) }
-    var showSortSheet by remember { mutableStateOf(false) }
+    var sortAscending by remember { mutableStateOf(value = true) }
+    var showSortSheet by remember { mutableStateOf(value = false) }
 
     val sortedItems = remember(items, sortType, sortAscending) {
         items.sortedWith { a, b ->
@@ -177,7 +175,7 @@ private fun AllFilterItemsContent(
                             isInMultiSelectMode = false
                         },
                         onClearSelection = { selectedItems = emptySet() },
-                        onSelectAll = { selectedItems = sortedItems.map { it.first }.toSet() },
+                        onSelectAll = { selectedItems = sortedItems.map { (itFirst) -> itFirst }.toSet() },
                         onRenameClick = {
                             itemToRename = selectedItems.firstOrNull() ?: ""
                             isMultiRename = selectedItems.size > 1
@@ -188,25 +186,24 @@ private fun AllFilterItemsContent(
                             }
                             selectedItems = emptySet()
                             isInMultiSelectMode = false
-                        }
+                        },
                     )
                 },
-                defaultBar = {
+            ) {
                     AllFilterItemsTopAppBar(
                         filterType = filterType,
                         isEmpty = isEmpty,
                         onNavigateBack = onNavigateBack,
                         onSortClick = { showSortSheet = true },
-                        scrollBehavior = scrollBehavior
+                        scrollBehavior = scrollBehavior,
                     )
                 }
-            )
-        }
+        },
     ) { innerPadding ->
         if (isEmpty) {
             AllFilterItemsEmptyState(
                 filterType = filterType,
-                innerPadding = innerPadding
+                innerPadding = innerPadding,
             )
         } else {
             AllFilterItemsList(
@@ -239,7 +236,7 @@ private fun AllFilterItemsContent(
                         selectedItems = setOf(name)
                         isInMultiSelectMode = true
                     }
-                }
+                },
             )
         }
 
@@ -281,12 +278,10 @@ private fun AllFilterItemsContent(
                     sortAscending = true
                 }
             },
-            onSortDismiss = { showSortSheet = false }
-        )
+        ) { showSortSheet = false }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AllFilterItemsTopAppBar(
     filterType: String,
@@ -294,7 +289,7 @@ private fun AllFilterItemsTopAppBar(
     onNavigateBack: () -> Unit,
     onSortClick: () -> Unit,
     scrollBehavior: androidx.compose.material3.TopAppBarScrollBehavior,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val titleText = when (filterType) {
         "author" -> stringResource(R.string.library_authors_title)
@@ -312,10 +307,10 @@ private fun AllFilterItemsTopAppBar(
             IconButton(onClick = onSortClick) {
                 Icon(
                     MaterialSymbols.Outlined.Tune,
-                    contentDescription = stringResource(R.string.action_sort)
+                    contentDescription = stringResource(R.string.action_sort),
                 )
             }
-        }
+        },
     )
 }
 
@@ -323,7 +318,7 @@ private fun AllFilterItemsTopAppBar(
 private fun AllFilterItemsEmptyState(
     filterType: String,
     innerPadding: PaddingValues,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val icon = when (filterType) {
         "author" -> MaterialSymbols.Outlined.Person
@@ -343,7 +338,7 @@ private fun AllFilterItemsEmptyState(
         modifier = modifier
             .padding(innerPadding)
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(16.dp),
     )
 }
 
@@ -361,54 +356,53 @@ private fun AllFilterItemsList(
     onDeleteClick: (String) -> Unit,
     onToggleSelect: (String) -> Unit,
     onLongClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     SegmentedLazyColumn(
         modifier = modifier
             .padding(innerPadding)
             .fillMaxSize()
             .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(bottom = 16.dp)
+        contentPadding = PaddingValues(bottom = 16.dp),
     ) {
-        sortedItems.forEach { item ->
-            val isSelected = selectedItems.contains(item.first)
+        sortedItems.forEach { (itemFirst, itemSecond) ->
+            val isSelected = selectedItems.contains(itemFirst)
             item(
                 selected = isSelected,
                 onClick = {
-                    if (isInMultiSelectMode) onToggleSelect(item.first)
-                    else onNavigateToDetail(item.first)
+                    if (isInMultiSelectMode) onToggleSelect(itemFirst)
+                    else onNavigateToDetail(itemFirst)
                 },
-                onLongClick = { onLongClick(item.first) },
-                content = { Text(item.first) },
+                onLongClick = { onLongClick(itemFirst) },
+                content = { Text(itemFirst) },
                 supportingContent = {
                     Text(
                         pluralStringResource(
-                            R.plurals.library_books_count, item.second, item.second
-                        )
+                            R.plurals.library_books_count, itemSecond, itemSecond,
+                        ),
                     )
                 },
                 trailingContent = {
                     if (isInMultiSelectMode) {
                         Checkbox(
-                            checked = selectedItems.contains(item.first),
-                            onCheckedChange = { onToggleSelect(item.first) }
+                            checked = selectedItems.contains(itemFirst),
+                            onCheckedChange = { onToggleSelect(itemFirst) },
                         )
                     } else {
                         AllFilterItemsItemActions(
-                            isMenuExpanded = selectedItemForMenu == item.first,
-                            onMoreClick = { onMoreClick(item.first) },
+                            isMenuExpanded = selectedItemForMenu == itemFirst,
+                            onMoreClick = { onMoreClick(itemFirst) },
                             onMenuDismiss = onMenuDismiss,
-                            onRenameClick = { onRenameClick(item.first) },
-                            onDeleteClick = { onDeleteClick(item.first) }
+                            onRenameClick = { onRenameClick(itemFirst) },
+                            onDeleteClick = { onDeleteClick(itemFirst) },
                         )
                     }
-                }
+                },
             )
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun AllFilterItemsItemActions(
     isMenuExpanded: Boolean,
@@ -416,25 +410,25 @@ private fun AllFilterItemsItemActions(
     onMenuDismiss: () -> Unit,
     onRenameClick: () -> Unit,
     onDeleteClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
         IconButton(onClick = onMoreClick) {
             Icon(
                 MaterialSymbols.Outlined.More_vert,
-                contentDescription = stringResource(R.string.action_more)
+                contentDescription = stringResource(R.string.action_more),
             )
         }
         DropdownMenuPopup(
             expanded = isMenuExpanded,
-            onDismissRequest = onMenuDismiss
+            onDismissRequest = onMenuDismiss,
         ) {
             val groupInteractionSource = remember { MutableInteractionSource() }
             DropdownMenuGroup(
                 shapes = MenuDefaults.groupShape(0, 1),
-                interactionSource = groupInteractionSource
+                interactionSource = groupInteractionSource,
             ) {
-                DropdownMenuItem(
+                SelectableDropdownMenuItem(
                     selected = false,
                     text = { Text(stringResource(R.string.action_rename)) },
                     shapes = MenuDefaults.itemShape(0, 2),
@@ -442,17 +436,17 @@ private fun AllFilterItemsItemActions(
                         Icon(
                             MaterialSymbols.Outlined.Edit,
                             modifier = Modifier.size(MenuDefaults.LeadingIconSize),
-                            contentDescription = null
+                            contentDescription = null,
                         )
                     },
-                    onClick = onRenameClick
+                    onClick = onRenameClick,
                 )
-                DropdownMenuItem(
+                SelectableDropdownMenuItem(
                     selected = false,
                     text = {
                         Text(
                             stringResource(R.string.action_delete),
-                            color = MaterialTheme.colorScheme.error
+                            color = MaterialTheme.colorScheme.error,
                         )
                     },
                     shapes = MenuDefaults.itemShape(1, 2),
@@ -461,10 +455,10 @@ private fun AllFilterItemsItemActions(
                             MaterialSymbols.Outlined.Delete,
                             modifier = Modifier.size(MenuDefaults.LeadingIconSize),
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error
+                            tint = MaterialTheme.colorScheme.error,
                         )
                     },
-                    onClick = onDeleteClick
+                    onClick = onDeleteClick,
                 )
             }
         }
@@ -486,12 +480,12 @@ private fun AllFilterItemsDialogs(
     onRenameDismiss: () -> Unit,
     onRenameConfirm: (String, String) -> Unit,
     onSortTypeChange: (FilterItemSortType) -> Unit,
-    onSortDismiss: () -> Unit
+    onSortDismiss: () -> Unit,
 ) {
     itemToDelete?.let { name ->
         val titleType =
             if (filterType == "author") stringResource(R.string.library_sort_author) else stringResource(
-                R.string.library_sort_label
+                R.string.library_sort_label,
             )
         AlertDialog(
             onDismissRequest = onDeleteDismiss,
@@ -501,7 +495,7 @@ private fun AllFilterItemsDialogs(
                 TextButton(onClick = { onDeleteConfirm(name) }) {
                     Text(
                         stringResource(R.string.action_delete),
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             },
@@ -509,7 +503,8 @@ private fun AllFilterItemsDialogs(
                 TextButton(onClick = onDeleteDismiss) {
                     Text(stringResource(R.string.action_cancel))
                 }
-            })
+            },
+        )
     }
 
     itemToRename?.let { oldName ->
@@ -530,8 +525,7 @@ private fun AllFilterItemsDialogs(
             label = fieldLabel,
             isMergingMultiple = isMultiRename,
             onDismiss = onRenameDismiss,
-            onConfirm = { newName -> onRenameConfirm(oldName, newName) }
-        )
+        ) { newName -> onRenameConfirm(oldName, newName) }
     }
 
     if (showSortSheet) {
@@ -539,7 +533,7 @@ private fun AllFilterItemsDialogs(
             currentSortType = sortType,
             isAscending = sortAscending,
             onSortTypeChange = onSortTypeChange,
-            onDismiss = onSortDismiss
+            onDismiss = onSortDismiss,
         )
     }
 }

@@ -17,8 +17,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
+import coil3.compose.rememberAsyncImagePainter
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.model.Book
 import java.io.File
@@ -26,7 +27,7 @@ import java.io.File
 @Composable
 fun CoverImage(
     book: Book, modifier: Modifier = Modifier,
-    coverOverlay: @Composable BoxScope.() -> Unit = {}
+    content: @Composable BoxScope.() -> Unit = {},
 ) {
     if (book.coverPath != null) {
         val context = LocalContext.current
@@ -40,14 +41,14 @@ fun CoverImage(
 
         val painter = rememberAsyncImagePainter(
             model = imageRequest,
-            contentScale = ContentScale.Crop
+            contentScale = ContentScale.Crop,
         )
 
         val intrinsicSize = painter.intrinsicSize
         val imageAspectRatio = if (
-            intrinsicSize != Size.Unspecified &&
-            intrinsicSize.width > 0f &&
-            intrinsicSize.height > 0f
+            (intrinsicSize != Size.Unspecified) &&
+            (intrinsicSize.width > 0f) &&
+            (intrinsicSize.height > 0f)
         ) {
             intrinsicSize.width / intrinsicSize.height
         } else {
@@ -56,35 +57,35 @@ fun CoverImage(
 
         Box(
             modifier = modifier,
-            contentAlignment = Alignment.TopCenter
+            contentAlignment = Alignment.TopCenter,
         ) {
 
             Box(
                 modifier = Modifier
                     .aspectRatio(imageAspectRatio)
-                    .clip(MaterialTheme.shapes.small)
+                    .clip(MaterialTheme.shapes.small),
             ) {
                 Image(
                     painter = painter,
                     contentDescription = stringResource(
                         R.string.book_cover_description,
-                        book.title
+                        book.title,
                     ),
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
                 )
-                coverOverlay()
+                content()
             }
         }
     } else {
         Surface(
             color = MaterialTheme.colorScheme.secondaryContainer,
             modifier = modifier
-                .clip(MaterialTheme.shapes.small)
+                .clip(MaterialTheme.shapes.small),
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Text(text = book.title.take(1), style = MaterialTheme.typography.displayMedium)
-                coverOverlay()
+                content()
             }
         }
     }
@@ -93,7 +94,7 @@ fun CoverImage(
 @Composable
 fun AutoWidthCoverImage(
     book: Book,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     if (book.coverPath != null) {
         val context = LocalContext.current
@@ -106,20 +107,20 @@ fun AutoWidthCoverImage(
         }
         val painter = rememberAsyncImagePainter(
             model = imageRequest,
-            contentScale = ContentScale.Fit
+            contentScale = ContentScale.Fit,
         )
         Image(
             painter = painter,
             contentDescription = stringResource(R.string.book_cover_description, book.title),
             modifier = modifier.clip(MaterialTheme.shapes.small),
-            contentScale = ContentScale.Fit
+            contentScale = ContentScale.Fit,
         )
     } else {
         Surface(
             color = MaterialTheme.colorScheme.secondaryContainer,
             modifier = modifier
                 .aspectRatio(2f / 3f)
-                .clip(MaterialTheme.shapes.small)
+                .clip(MaterialTheme.shapes.small),
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Text(text = book.title.take(1), style = MaterialTheme.typography.displayMedium)

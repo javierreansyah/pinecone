@@ -2,7 +2,6 @@ package com.javierreansyah.pinecone.ui.features.library.components
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -26,7 +25,6 @@ import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Select_all
 import com.javierreansyah.pinecone.R
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FilterMultiSelectAppBar(
     selectedCount: Int,
@@ -36,66 +34,68 @@ fun FilterMultiSelectAppBar(
     onSelectAll: () -> Unit,
     onRenameClick: () -> Unit,
     onDelete: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var showDeleteConfirmation by remember { mutableStateOf(value = false) }
 
     TopAppBar(
         title = {
-            Text(text = "$selectedCount")
+            Text(text = selectedCount.toString())
         },
         navigationIcon = {
             IconButton(onClick = onCloseMultiSelect) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Close,
-                    contentDescription = stringResource(R.string.action_cancel)
+                    contentDescription = stringResource(R.string.action_cancel),
                 )
             }
         },
         actions = {
-            IconButton(onClick = {
-                if (isAllSelected) {
-                    onClearSelection()
-                } else {
-                    onSelectAll()
-                }
-            }) {
+            IconButton(
+                onClick = {
+                    if (isAllSelected) {
+                        onClearSelection()
+                    } else {
+                        onSelectAll()
+                    }
+                },
+            ) {
                 Icon(
                     imageVector = if (isAllSelected) MaterialSymbols.Outlined.Deselect else MaterialSymbols.Outlined.Select_all,
                     contentDescription = stringResource(
-                        if (isAllSelected) R.string.action_deselect_all else R.string.action_select_all
-                    )
+                        if (isAllSelected) R.string.action_deselect_all else R.string.action_select_all,
+                    ),
                 )
             }
             IconButton(
                 onClick = onRenameClick,
-                enabled = selectedCount > 0
+                enabled = selectedCount > 0,
             ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Edit,
                     contentDescription = stringResource(R.string.action_rename),
                     tint = if (selectedCount > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(
-                        alpha = 0.38f
-                    )
+                        alpha = 0.38f,
+                    ),
                 )
             }
             IconButton(
                 onClick = { showDeleteConfirmation = true },
-                enabled = selectedCount > 0
+                enabled = selectedCount > 0,
             ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Delete,
                     contentDescription = stringResource(R.string.action_delete),
                     tint = if (selectedCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(
-                        alpha = 0.38f
-                    )
+                        alpha = 0.38f,
+                    ),
                 )
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surface,
         ),
-        modifier = modifier
+        modifier = modifier,
     )
 
     if (showDeleteConfirmation) {
@@ -104,7 +104,7 @@ fun FilterMultiSelectAppBar(
             title = {
                 Text(
                     stringResource(R.string.action_delete),
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.titleLarge,
                 )
             },
             text = {
@@ -112,9 +112,9 @@ fun FilterMultiSelectAppBar(
                     pluralStringResource(
                         R.plurals.library_delete_items_message,
                         selectedCount,
-                        selectedCount
+                        selectedCount,
                     ),
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             },
             confirmButton = {
@@ -123,11 +123,11 @@ fun FilterMultiSelectAppBar(
                         onDelete()
                         showDeleteConfirmation = false
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
                 ) {
                     Text(
                         stringResource(R.string.action_delete),
-                        style = MaterialTheme.typography.labelLarge
+                        style = MaterialTheme.typography.labelLarge,
                     )
                 }
             },
@@ -135,10 +135,10 @@ fun FilterMultiSelectAppBar(
                 TextButton(onClick = { showDeleteConfirmation = false }) {
                     Text(
                         stringResource(R.string.action_cancel),
-                        style = MaterialTheme.typography.labelLarge
+                        style = MaterialTheme.typography.labelLarge,
                     )
                 }
-            }
+            },
         )
     }
 }

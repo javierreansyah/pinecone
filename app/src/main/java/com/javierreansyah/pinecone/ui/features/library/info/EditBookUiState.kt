@@ -12,5 +12,5 @@ data class EditBookUiState(
     val authors: List<String> = emptyList(),
     val isSaving: Boolean = false,
     val saveSuccess: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
 )

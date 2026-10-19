@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
 
     companion object {
-        const val EXTRA_BOOK_ID = "bookId"
+        const val EXTRA_BOOK_ID: String = "bookId"
     }
 
     private val viewModel: ReaderViewModel by viewModels {
@@ -61,11 +61,12 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
             supportFragmentManager,
             viewModel,
             searchViewModel,
-            notesViewModel
+            notesViewModel,
         )
 
         // Ensure the navigator container doesn't shift when bars toggle or keyboard appears
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(navigatorContainer!!) { _, insets ->
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(navigatorContainer
+            ?: return) { _, insets ->
             insets
         }
 
@@ -108,14 +109,11 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
                     },
                     onSeekToProgression = { progression ->
                         val locator = viewModel.locatorForProgression(progression)
-                        if (locator != null) {
-                            navigatorController.go(locator)
-                        }
+                        locator?.let(navigatorController::go)
                     },
-                    onNavigateToLocator = { locator ->
+                ) { locator ->
                         navigatorController.go(locator)
                     }
-                )
             }
         }
     }
@@ -136,8 +134,8 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
     private fun observeWindowBackground() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.themeColors.collect { colors ->
-                    window.decorView.setBackgroundColor(colors.backgroundColorInt)
+                viewModel.themeColors.collect { (_, _, colorsBackgroundColorInt) ->
+                    window.decorView.setBackgroundColor(colorsBackgroundColorInt)
                 }
             }
         }
@@ -146,18 +144,18 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
     private fun observeNavigatorMargins() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.settingsFlow.collect { settings ->
+                viewModel.settingsFlow.collect { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, settingsScroll, _, _, _, _, settingsVerticalMargin) ->
                     val density = resources.displayMetrics.density
                     val newTop =
-                        if (settings.scroll) 0 else (settings.verticalMargin * density).toInt()
-                    val newBottom = if (settings.scroll) 0 else (maxOf(
+                        if (settingsScroll) 0 else (settingsVerticalMargin * density).toInt()
+                    val newBottom = if (settingsScroll) 0 else (maxOf(
                         0.0,
-                        settings.verticalMargin - 4
+                        settingsVerticalMargin - 4,
                     ) * density).toInt()
 
                     navigatorContainer?.let { container ->
                         val lp = container.layoutParams as android.widget.FrameLayout.LayoutParams
-                        if (lp.topMargin != newTop || lp.bottomMargin != newBottom) {
+                        if ((lp.topMargin != newTop) || (lp.bottomMargin != newBottom)) {
                             lp.topMargin = newTop
                             lp.bottomMargin = newBottom
                             container.layoutParams = lp
@@ -183,8 +181,8 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
     private fun observeOrientation() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.settingsFlow.collect { settings ->
-                    requestedOrientation = when (settings.forceOrientation) {
+                viewModel.settingsFlow.collect { (_, _, _, _, _, _, settingsForceOrientation) ->
+                    requestedOrientation = when (settingsForceOrientation) {
                         "Portrait" -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
                         "Landscape" -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                         else -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
@@ -197,8 +195,8 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
     private fun observeScreenTimeout() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.settingsFlow.collect { settings ->
-                    if (settings.preventScreenTimeout) {
+                viewModel.settingsFlow.collect { (_, _, _, _, _, _, _, settingsPreventScreenTimeout) ->
+                    if (settingsPreventScreenTimeout) {
                         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     } else {
                         window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -214,7 +212,7 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
 
                 combine(
                     viewModel.controlsState,
-                    viewModel.settingsFlow
+                    viewModel.settingsFlow,
                 ) { controls, settings ->
                     controls to settings
                 }.collect { (controls, settings) ->

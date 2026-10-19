@@ -28,7 +28,7 @@ fun BookmarksList(
     bookmarks: List<BookmarkEntity>,
     getPositionLabel: (Locator) -> String,
     onBookmarkClick: (Locator) -> Unit,
-    onDeleteBookmark: (Long) -> Unit
+    onDeleteBookmark: (Long) -> Unit,
 ) {
     val context = LocalContext.current
     if (bookmarks.isEmpty()) {
@@ -37,27 +37,27 @@ fun BookmarksList(
             text = stringResource(R.string.reader_no_bookmarks),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(32.dp)
+                .padding(32.dp),
         )
     } else {
         LazyColumn(
-            modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 8.dp)
+            modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 8.dp),
         ) {
-            items(bookmarks) { bookmark ->
+            items(bookmarks) { (bookmarkId, _, bookmarkLocatorJson, bookmarkChapterTitle, bookmarkCreatedAt) ->
                 val locator = try {
-                    Locator.fromJSON(org.json.JSONObject(bookmark.locatorJson))
+                    Locator.fromJSON(org.json.JSONObject(bookmarkLocatorJson))
                 } catch (_: Exception) {
                     null
                 }
                 if (locator != null) {
                     val inDocument = stringResource(R.string.reader_in_document)
                     val chapterTitle =
-                        bookmark.chapterTitle?.takeIf { it.isNotBlank() && it != inDocument }
+                        bookmarkChapterTitle?.takeIf { it.isNotBlank() && (it != inDocument) }
                             ?: inDocument
 
                     val positionLabel = getPositionLabel(locator)
-                    val formattedDate = remember(bookmark.createdAt, context) {
-                        val date = Date(bookmark.createdAt)
+                    val formattedDate = remember(bookmarkCreatedAt, context) {
+                        val date = Date(bookmarkCreatedAt)
                         val locale = Locale.getDefault()
                         val dateStr = if (locale.language == "en") {
                             SimpleDateFormat("MM/dd/yyyy", locale).format(date)
@@ -78,11 +78,13 @@ fun BookmarksList(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { onBookmarkClick(locator) }
-                            .padding(horizontal = 20.dp, vertical = 12.dp)) {
+                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                    ) {
                         EntryHeader(
                             title = chapterTitle,
                             positionLabel = subtitle,
-                            onDelete = { onDeleteBookmark(bookmark.id) })
+                            onDelete = { onDeleteBookmark(bookmarkId) },
+                        )
                     }
                 }
             }

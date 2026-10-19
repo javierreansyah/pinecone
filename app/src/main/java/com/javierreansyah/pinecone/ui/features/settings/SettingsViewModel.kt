@@ -6,8 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import coil.annotation.ExperimentalCoilApi
-import coil.imageLoader
+import coil3.imageLoader
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.data.repository.backup.BackupRepository
@@ -25,19 +24,19 @@ data class BackupFile(
     val name: String,
     val timestamp: Long,
     val isManual: Boolean,
-    val formattedDate: String
+    val formattedDate: String,
 )
 
 class SettingsViewModel(
     application: Application,
-    private val readerPreferences: ReaderPreferences
+    private val readerPreferences: ReaderPreferences,
 ) : AndroidViewModel(application) {
     private val backupRepository = BackupRepository(application)
     private val _settings = MutableStateFlow(ReaderSettings())
     val settings: StateFlow<ReaderSettings> = _settings.asStateFlow()
-    private val _isBackingUp = MutableStateFlow(false)
+    private val _isBackingUp = MutableStateFlow(value = false)
     val isBackingUp: StateFlow<Boolean> = _isBackingUp.asStateFlow()
-    private val _isRestoring = MutableStateFlow(false)
+    private val _isRestoring = MutableStateFlow(value = false)
     val isRestoring: StateFlow<Boolean> = _isRestoring.asStateFlow()
     private val _availableBackups = MutableStateFlow<List<BackupFile>>(emptyList())
     val availableBackups: StateFlow<List<BackupFile>> = _availableBackups.asStateFlow()
@@ -50,7 +49,7 @@ class SettingsViewModel(
         viewModelScope.launch { readerPreferences.updateAllSettings(settings) }
     }
 
-    suspend fun updateSettingsSuspended(settings: ReaderSettings) =
+    suspend fun updateSettingsSuspended(settings: ReaderSettings): Unit =
         readerPreferences.updateAllSettings(settings)
 
     fun performFullBackup(onStart: () -> Unit, onSuccess: () -> Unit, onFailure: () -> Unit) {
@@ -67,22 +66,21 @@ class SettingsViewModel(
     fun loadBackups() {
         viewModelScope.launch {
             val formatter = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
-            _availableBackups.value = backupRepository.listSnapshots().map {
+            _availableBackups.value = backupRepository.listSnapshots().map { (itUri, itId, itTimestamp, itIsManual) ->
                 BackupFile(
-                    it.uri, it.id, it.timestamp, it.isManual,
-                    formatter.format(Date(it.timestamp))
+                    itUri, itId, itTimestamp, itIsManual,
+                    formatter.format(Date(itTimestamp)),
                 )
             }
         }
     }
 
-    @OptIn(ExperimentalCoilApi::class)
     fun restoreFullBackup(
         uri: Uri,
         onStart: () -> Unit,
         onSuccess: () -> Unit,
         onWarning: () -> Unit,
-        onFailure: () -> Unit
+        onFailure: () -> Unit,
     ) {
         viewModelScope.launch {
             _isRestoring.value = true; onStart()
@@ -107,7 +105,7 @@ class SettingsViewModel(
         viewModelScope.launch {
             if (backupRepository.exportSnapshot(
                     uri,
-                    destination
+                    destination,
                 ).isSuccess
             ) onSuccess() else onFailure()
         }
@@ -124,7 +122,7 @@ class SettingsViewModel(
 
     class Factory(
         private val application: Application,
-        private val readerPreferences: ReaderPreferences
+        private val readerPreferences: ReaderPreferences,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {

@@ -1,8 +1,6 @@
 package com.javierreansyah.pinecone.ui.components
 
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
@@ -21,7 +19,6 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.javierreansyah.pinecone.R
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun LibraryTopAppBar(
     title: @Composable () -> Unit,
@@ -36,19 +33,19 @@ fun LibraryTopAppBar(
         containerColor = MaterialTheme.colorScheme.surface,
         scrolledContainerColor = MaterialTheme.colorScheme.surface,
     ),
-    expandedHeight: Dp = 180.dp
+    expandedHeight: Dp = 180.dp,
 ) {
     val finalNavigationIcon = navigationIcon ?: {
         FilledTonalIconButton(
             shapes = IconButtonDefaults.shapes(),
             colors = IconButtonDefaults.filledTonalIconButtonColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             ),
-            onClick = onBack
+            onClick = onBack,
         ) {
             Icon(
                 MaterialSymbols.Outlined.Arrow_back,
-                contentDescription = stringResource(R.string.action_back)
+                contentDescription = stringResource(R.string.action_back),
             )
         }
     }
@@ -59,7 +56,7 @@ fun LibraryTopAppBar(
             navigationIcon = finalNavigationIcon,
             actions = actions,
             colors = colors,
-            modifier = modifier
+            modifier = modifier,
         )
     } else {
         LargeFlexibleTopAppBar(
@@ -70,7 +67,7 @@ fun LibraryTopAppBar(
             actions = actions,
             colors = colors,
             scrollBehavior = scrollBehavior,
-            modifier = modifier
+            modifier = modifier,
         )
     }
 }

@@ -1,7 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.reader.components.settings
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -32,7 +31,6 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Add
 import com.javierreansyah.pinecone.R
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ThemeSwatch(
     modifier: Modifier = Modifier,
@@ -48,7 +46,7 @@ fun ThemeSwatch(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(1.dp),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Box(
             modifier = Modifier
@@ -59,28 +57,30 @@ fun ThemeSwatch(
                         m.border(
                             width = 2.dp,
                             color = MaterialTheme.colorScheme.primary,
-                            shape = CircleShape
+                            shape = CircleShape,
                         )
                     } else m
                 }
                 .padding(4.dp)
                 .clip(CircleShape)
-                .background(if (isAuto || isCustom || iconRes != null) Color.Transparent else color)
+                .background(if (isAuto || isCustom || (iconRes != null)) Color.Transparent else color)
                 .border(
                     width = 1.5.dp,
                     color = MaterialTheme.colorScheme.outlineVariant,
-                    shape = CircleShape
+                    shape = CircleShape,
                 )
                 .combinedClickable(
-                    onClick = onClick, onLongClick = onLongClick
-                ), contentAlignment = Alignment.Center) {
+                    onClick = onClick, onLongClick = onLongClick,
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
             if (isAuto) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     drawArc(
-                        color = Color.White, startAngle = 90f, sweepAngle = 180f, useCenter = true
+                        color = Color.White, startAngle = 90f, sweepAngle = 180f, useCenter = true,
                     )
                     drawArc(
-                        color = Color.Black, startAngle = 270f, sweepAngle = 180f, useCenter = true
+                        color = Color.Black, startAngle = 270f, sweepAngle = 180f, useCenter = true,
                     )
                 }
             } else if (iconRes != null) {
@@ -88,13 +88,13 @@ fun ThemeSwatch(
                     painter = painterResource(id = iconRes),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
                 )
             } else if (isCustom) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Add,
                     contentDescription = stringResource(R.string.reader_settings_add_theme),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -104,7 +104,7 @@ fun ThemeSwatch(
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.width(68.dp),
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }

@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 
 class DictionaryImportManager(
-    context: Context, private val preferences: ReaderPreferences
+    context: Context, private val preferences: ReaderPreferences,
 ) {
     private val parser = StardictParser(context)
 
@@ -27,15 +27,15 @@ class DictionaryImportManager(
 
             val currentSettings = preferences.readerSettings.first()
             val newInstalled = currentSettings.installedDictionaries + InstalledDictionary(
-                id = dictId, name = info.name, wordCount = info.wordCount
+                id = dictId, name = info.name, wordCount = info.wordCount,
             )
 
             val newActiveId = currentSettings.activeDictionaryId.ifEmpty { dictId }
 
             preferences.updateSettings(
                 currentSettings.copy(
-                    installedDictionaries = newInstalled, activeDictionaryId = newActiveId
-                )
+                    installedDictionaries = newInstalled, activeDictionaryId = newActiveId,
+                ),
             )
 
             _importState.value = DictionaryState.Success

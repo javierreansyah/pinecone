@@ -26,10 +26,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
@@ -106,21 +104,21 @@ fun ShelfDetailScreen(
     onNavigateToReader: (String) -> Unit,
     onNavigateToBookInfo: (String) -> Unit,
     onNavigateToOrganize: (String) -> Unit,
-    viewModel: ShelfDetailViewModel = viewModel()
+    viewModel: ShelfDetailViewModel = viewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    var showFilterSheet by remember { mutableStateOf(false) }
-    var isReordering by remember { mutableStateOf(false) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var isRenaming by remember { mutableStateOf(false) }
+    val uiState = viewModel.uiState.collectAsState()
+    var showFilterSheet by remember { mutableStateOf(value = false) }
+    var isReordering by remember { mutableStateOf(value = false) }
+    var showDeleteDialog by remember { mutableStateOf(value = false) }
+    var isRenaming by remember { mutableStateOf(value = false) }
     var renameName by remember { mutableStateOf(TextFieldValue("")) }
     var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
     var selectedBooks by remember { mutableStateOf(emptySet<String>()) }
-    var isInMultiSelectMode by remember { mutableStateOf(false) }
+    var isInMultiSelectMode by remember { mutableStateOf(value = false) }
 
     val shelves by viewModel.shelves.collectAsState()
     val allBooks by viewModel.allBooks.collectAsState()
-    val shelfWithCovers = shelves.find { it.shelf.id == shelfId }
+    val shelfWithCovers = shelves.find { (itShelf) -> itShelf.id == shelfId }
 
     val baseBooksFlow = remember(shelfWithCovers) {
         flowOf(shelfWithCovers?.books?.map { Book.fromEntity(it) } ?: emptyList())
@@ -153,16 +151,16 @@ fun ShelfDetailScreen(
         isReordering = isReordering,
         isRenaming = isRenaming,
         renameName = renameName,
-        layoutMode = uiState.bookPreferences.layoutMode,
+        layoutMode = uiState.value.bookPreferences.layoutMode,
         selectedBooks = selectedBooks,
         isInMultiSelectMode = isInMultiSelectMode,
         onNavigateBack = onNavigateBack,
         onEnterMultiSelect = { bookId ->
-            selectedBooks = if (bookId != null) setOf(bookId) else emptySet()
+            selectedBooks = bookId?.let(::setOf) ?: emptySet()
             isInMultiSelectMode = true
         },
         onExitMultiSelect = exitMultiSelect,
-        onSelectAll = { selectedBooks = books.map { it.id }.toSet() },
+        onSelectAll = { selectedBooks = books.map { (itId) -> itId }.toSet() },
         onClearSelection = { selectedBooks = emptySet() },
         onToggleBookSelection = { bookId ->
             selectedBooks = if (selectedBooks.contains(bookId)) {
@@ -209,8 +207,8 @@ fun ShelfDetailScreen(
         },
         onCancelReorder = { isReordering = false },
         onSaveReorder = {
-            viewModel.updateShelfOrder(shelfId, reorderBooks.map { it.id })
-            if (uiState.bookPreferences.sortType != SortType.Custom) {
+            viewModel.updateShelfOrder(shelfId, reorderBooks.map { (itId2) -> itId2 })
+            if (uiState.value.bookPreferences.sortType != SortType.Custom) {
                 viewModel.onSortTypeChange(SortType.Custom)
             }
             isReordering = false
@@ -221,24 +219,23 @@ fun ShelfDetailScreen(
         onBookClick = onNavigateToReader,
         onBookLongClick = { selectedBookForMenu = it },
         scrollKey = Triple(
-            uiState.bookPreferences.sortType,
-            uiState.bookPreferences.isAscending,
-            uiState.bookPreferences.selectedStatus
-        )
+            uiState.value.bookPreferences.sortType,
+            uiState.value.bookPreferences.isAscending,
+            uiState.value.bookPreferences.selectedStatus,
+        ),
     )
 
     if (showFilterSheet) {
         ShelfDetailFilterBottomSheet(
             shelfId = shelfId,
-            preferences = uiState.bookPreferences,
+            preferences = uiState.value.bookPreferences,
             onLayoutModeChange = viewModel::onLayoutModeChange,
             onSortTypeChange = viewModel::onSortTypeChange,
             onStatusToggle = viewModel::toggleStatusFilter,
-            onDismiss = { showFilterSheet = false }
-        )
+        ) { showFilterSheet = false }
     }
 
-    if (showDeleteDialog && shelfWithCovers != null) {
+    if (showDeleteDialog && (shelfWithCovers != null)) {
         DeleteShelfDialog(
             shelfName = shelfWithCovers.shelf.name,
             onConfirm = {
@@ -246,8 +243,7 @@ fun ShelfDetailScreen(
                 showDeleteDialog = false
                 onNavigateBack()
             },
-            onDismiss = { showDeleteDialog = false }
-        )
+        ) { showDeleteDialog = false }
     }
 
     selectedBookForMenu?.let { bookId ->
@@ -263,12 +259,10 @@ fun ShelfDetailScreen(
                 selectedBooks = setOf(bookId)
                 isInMultiSelectMode = true
             },
-            onDismiss = { selectedBookForMenu = null }
-        )
+        ) { selectedBookForMenu = null }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ShelfDetailContent(
     modifier: Modifier = Modifier,
@@ -307,7 +301,7 @@ private fun ShelfDetailContent(
     onShowDeleteDialog: () -> Unit,
     onBookClick: (String) -> Unit,
     onBookLongClick: (String) -> Unit,
-    scrollKey: Any? = null
+    scrollKey: Any? = null,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -343,9 +337,9 @@ private fun ShelfDetailContent(
                 onCancelReorder = onCancelReorder,
                 onSaveReorder = onSaveReorder,
                 onShowFilterSheet = onShowFilterSheet,
-                onShowDeleteDialog = onShowDeleteDialog
+                onShowDeleteDialog = onShowDeleteDialog,
             )
-        }
+        },
     ) { innerPadding ->
         ShelfDetailBookListContent(
             shelfWithCovers = shelfWithCovers,
@@ -365,12 +359,11 @@ private fun ShelfDetailContent(
             },
             onBookLongClick = onBookLongClick,
             modifier = Modifier.padding(innerPadding),
-            scrollKey = scrollKey
+            scrollKey = scrollKey,
         )
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ShelfDetailTopBar(
     shelfId: String,
@@ -402,10 +395,10 @@ private fun ShelfDetailTopBar(
     onSaveReorder: () -> Unit,
     onShowFilterSheet: () -> Unit,
     onShowDeleteDialog: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val showMarkAsRead = remember(allBooks, selectedBooks) {
-        allBooks.filter { it.id in selectedBooks }.any { !it.isRead }
+        allBooks.filter { (itId3) -> itId3 in selectedBooks }.any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itIsRead) -> !itIsRead }
     }
 
     MultiSelectTopBarTransition(
@@ -413,7 +406,7 @@ private fun ShelfDetailTopBar(
         multiSelectBar = {
             MultiSelectAppBar(
                 selectedCount = selectedBooks.size,
-                isAllSelected = books.isNotEmpty() && selectedBooks.size == books.size,
+                isAllSelected = books.isNotEmpty() && (selectedBooks.size == books.size),
                 showMarkAsRead = showMarkAsRead,
                 onCloseMultiSelect = onExitMultiSelect,
                 onClearSelection = onClearSelection,
@@ -421,10 +414,10 @@ private fun ShelfDetailTopBar(
                 onMarkAsReadUnread = { onMarkAsReadUnread(showMarkAsRead) },
                 onOrganize = onOrganizeSelected,
                 onArchive = onArchiveSelected,
-                onDelete = onDeleteSelected
+                onDelete = onDeleteSelected,
             )
         },
-        defaultBar = {
+    ) {
             ShelfDetailDefaultTopAppBar(
                 shelfId = shelfId,
                 displayTitle = displayTitle,
@@ -444,13 +437,11 @@ private fun ShelfDetailTopBar(
                 onRenameClick = onStartRename,
                 onDeleteClick = onShowDeleteDialog,
                 onEnterMultiSelect = onEnterMultiSelect,
-                modifier = modifier
+                modifier = modifier,
             )
         }
-    )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ShelfDetailDefaultTopAppBar(
     shelfId: String,
@@ -471,9 +462,9 @@ private fun ShelfDetailDefaultTopAppBar(
     onRenameClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onEnterMultiSelect: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    var showMoreMenu by remember { mutableStateOf(false) }
+    var showMoreMenu by remember { mutableStateOf(value = false) }
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(isRenaming) {
@@ -491,19 +482,19 @@ private fun ShelfDetailDefaultTopAppBar(
                     value = renameName,
                     onValueChange = onRenameNameChange,
                     textStyle = LocalTextStyle.current.copy(
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
                     ),
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .focusRequester(focusRequester)
+                        .focusRequester(focusRequester),
                 )
             } else {
                 Text(
                     text = displayTitle,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         },
@@ -512,8 +503,8 @@ private fun ShelfDetailDefaultTopAppBar(
                 pluralStringResource(
                     R.plurals.library_shelf_count,
                     displayCount,
-                    displayCount
-                )
+                    displayCount,
+                ),
             )
         },
         navigationIcon = {
@@ -521,7 +512,7 @@ private fun ShelfDetailDefaultTopAppBar(
             val rotation by animateFloatAsState(
                 targetValue = if (isEditMode) 90f else 0f,
                 animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
-                label = "navigationIconRotation"
+                label = "navigationIconRotation",
             )
             val navEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
 
@@ -534,30 +525,30 @@ private fun ShelfDetailDefaultTopAppBar(
                     } else {
                         onNavigateBack()
                     }
-                }
+                },
             ) {
                 Box(
                     modifier = Modifier.graphicsLayer { rotationZ = rotation },
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     AnimatedContent(
                         targetState = isEditMode,
                         transitionSpec = {
                             fadeIn(animationSpec = navEffectsSpec) togetherWith fadeOut(
-                                animationSpec = navEffectsSpec
+                                animationSpec = navEffectsSpec,
                             )
                         },
-                        label = "navigationIconContent"
+                        label = "navigationIconContent",
                     ) { targetIsEditMode ->
                         if (targetIsEditMode) {
                             Icon(
                                 MaterialSymbols.Outlined.Close,
-                                contentDescription = stringResource(R.string.action_cancel)
+                                contentDescription = stringResource(R.string.action_cancel),
                             )
                         } else {
                             Icon(
                                 MaterialSymbols.Outlined.Arrow_back,
-                                contentDescription = stringResource(R.string.action_back)
+                                contentDescription = stringResource(R.string.action_back),
                             )
                         }
                     }
@@ -575,20 +566,20 @@ private fun ShelfDetailDefaultTopAppBar(
                 targetState = isEditMode,
                 transitionSpec = {
                     if (targetState) {
-                        fadeIn(animationSpec = actionsEffectsSpec) togetherWith fadeOut(
-                            animationSpec = actionsEffectsSpec
+                        fadeIn(animationSpec = actionsEffectsSpec) togetherWith (fadeOut(
+                            animationSpec = actionsEffectsSpec,
                         ) + slideOutHorizontally(
                             targetOffsetX = { slideOffsetPx },
-                            animationSpec = actionsSpatialSpec
-                        )
+                            animationSpec = actionsSpatialSpec,
+                        ))
                     } else {
-                        fadeIn(animationSpec = actionsEffectsSpec) + slideInHorizontally(
+                        (fadeIn(animationSpec = actionsEffectsSpec) + slideInHorizontally(
                             initialOffsetX = { slideOffsetPx },
-                            animationSpec = actionsSpatialSpec
-                        ) togetherWith fadeOut(animationSpec = actionsEffectsSpec)
+                            animationSpec = actionsSpatialSpec,
+                        )) togetherWith fadeOut(animationSpec = actionsEffectsSpec)
                     }
                 },
-                label = "actionsContent"
+                label = "actionsContent",
             ) { targetIsEditMode ->
                 if (targetIsEditMode) {
                     FilledIconButton(
@@ -596,55 +587,55 @@ private fun ShelfDetailDefaultTopAppBar(
                             .padding(end = 6.dp)
                             .size(
                                 IconButtonDefaults.smallContainerSize(
-                                    widthOption = IconButtonDefaults.IconButtonWidthOption.Wide
-                                )
+                                    widthOption = IconButtonDefaults.IconButtonWidthOption.Wide,
+                                ),
                             ),
                         shapes = IconButtonDefaults.shapes(),
-                        onClick = if (isReordering) onSaveReorder else onSaveRename
+                        onClick = if (isReordering) onSaveReorder else onSaveRename,
                     ) {
                         Icon(
                             imageVector = MaterialSymbols.Outlined.Check,
-                            contentDescription = stringResource(R.string.action_save)
+                            contentDescription = stringResource(R.string.action_save),
                         )
                     }
                 } else {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         if (shelfId != "unshelved") {
                             IconButton(
                                 shapes = IconButtonDefaults.shapes(),
-                                onClick = onStartReordering
+                                onClick = onStartReordering,
                             ) {
                                 Icon(
                                     MaterialSymbols.Outlined.Format_list_numbered,
-                                    contentDescription = stringResource(R.string.action_sort)
+                                    contentDescription = stringResource(R.string.action_sort),
                                 )
                             }
                         }
                         IconButton(
                             shapes = IconButtonDefaults.shapes(),
-                            onClick = onShowFilterSheet
+                            onClick = onShowFilterSheet,
                         ) {
                             Icon(
                                 MaterialSymbols.Outlined.Tune,
-                                contentDescription = stringResource(R.string.action_filter)
+                                contentDescription = stringResource(R.string.action_filter),
                             )
                         }
                         Box {
                             IconButton(
                                 shapes = IconButtonDefaults.shapes(),
-                                onClick = { showMoreMenu = true }
+                                onClick = { showMoreMenu = true },
                             ) {
                                 Icon(
                                     MaterialSymbols.Outlined.More_vert,
-                                    contentDescription = stringResource(R.string.action_more)
+                                    contentDescription = stringResource(R.string.action_more),
                                 )
                             }
                             val totalItems = if (shelfId == "unshelved") 1 else 3
                             DropdownMenuPopup(
                                 expanded = showMoreMenu,
-                                onDismissRequest = { showMoreMenu = false }
+                                onDismissRequest = { showMoreMenu = false },
                             ) {
                                 val groupInteractionSource =
                                     remember { MutableInteractionSource() }
@@ -652,7 +643,7 @@ private fun ShelfDetailDefaultTopAppBar(
                                     shapes = MenuDefaults.groupShape(0, 1),
                                     interactionSource = groupInteractionSource,
                                 ) {
-                                    DropdownMenuItem(
+                                    SelectableDropdownMenuItem(
                                         selected = false,
                                         text = { Text(stringResource(R.string.action_select_multiple)) },
                                         shapes = MenuDefaults.itemShape(0, totalItems),
@@ -666,10 +657,10 @@ private fun ShelfDetailDefaultTopAppBar(
                                         onClick = {
                                             onEnterMultiSelect()
                                             showMoreMenu = false
-                                        }
+                                        },
                                     )
                                     if (shelfId != "unshelved") {
-                                        DropdownMenuItem(
+                                        SelectableDropdownMenuItem(
                                             selected = false,
                                             text = { Text(stringResource(R.string.action_rename)) },
                                             shapes = MenuDefaults.itemShape(1, totalItems),
@@ -683,14 +674,14 @@ private fun ShelfDetailDefaultTopAppBar(
                                             onClick = {
                                                 onRenameClick()
                                                 showMoreMenu = false
-                                            }
+                                            },
                                         )
-                                        DropdownMenuItem(
+                                        SelectableDropdownMenuItem(
                                             selected = false,
                                             text = {
                                                 Text(
                                                     stringResource(R.string.action_delete),
-                                                    color = MaterialTheme.colorScheme.error
+                                                    color = MaterialTheme.colorScheme.error,
                                                 )
                                             },
                                             shapes = MenuDefaults.itemShape(2, totalItems),
@@ -699,13 +690,13 @@ private fun ShelfDetailDefaultTopAppBar(
                                                     MaterialSymbols.Outlined.Delete,
                                                     modifier = Modifier.size(MenuDefaults.LeadingIconSize),
                                                     contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.error
+                                                    tint = MaterialTheme.colorScheme.error,
                                                 )
                                             },
                                             onClick = {
                                                 onDeleteClick()
                                                 showMoreMenu = false
-                                            }
+                                            },
                                         )
                                     }
                                 }
@@ -717,9 +708,9 @@ private fun ShelfDetailDefaultTopAppBar(
         },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.surface,
-            scrolledContainerColor = MaterialTheme.colorScheme.surface
+            scrolledContainerColor = MaterialTheme.colorScheme.surface,
         ),
-        scrollBehavior = scrollBehavior
+        scrollBehavior = scrollBehavior,
     )
 }
 
@@ -736,16 +727,16 @@ private fun ShelfDetailBookListContent(
     onBookClick: (String) -> Unit,
     onBookLongClick: (String) -> Unit,
     modifier: Modifier = Modifier,
-    scrollKey: Any? = null
+    scrollKey: Any? = null,
 ) {
     Box(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize(),
     ) {
         if (shelfWithCovers == null) {
             Text(
                 stringResource(R.string.library_empty_shelves),
                 style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(16.dp),
             )
         } else if (books.isEmpty() && !isReordering) {
             EmptyState(
@@ -753,7 +744,7 @@ private fun ShelfDetailBookListContent(
                 text = stringResource(R.string.library_empty_books),
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
+                    .padding(16.dp),
             )
         } else if (reorderBooks.isEmpty() && isReordering) {
             EmptyState(
@@ -761,57 +752,59 @@ private fun ShelfDetailBookListContent(
                 text = stringResource(R.string.library_empty_books),
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
+                    .padding(16.dp),
             )
         } else {
             AnimatedContent(
                 targetState = isReordering,
                 transitionSpec = {
-                    fadeIn(
+                    (fadeIn(
                         animationSpec = tween(
                             durationMillis = 100,
-                            delayMillis = 100
-                        )
+                            delayMillis = 100,
+                        ),
                     ) + scaleIn(
                         initialScale = 0.9f,
-                        animationSpec = tween(durationMillis = 100, delayMillis = 100)
-                    ) togetherWith fadeOut(animationSpec = tween(durationMillis = 100)) + scaleOut(
+                        animationSpec = tween(durationMillis = 100, delayMillis = 100),
+                    )) togetherWith (fadeOut(animationSpec = tween(durationMillis = 100)) + scaleOut(
                         targetScale = 0.9f,
-                        animationSpec = tween(durationMillis = 100)
-                    )
+                        animationSpec = tween(durationMillis = 100),
+                    ))
                 },
-                label = "shelfDetailContentReorderTransition"
+                label = "shelfDetailContentReorderTransition",
             ) { targetIsReordering ->
                 if (targetIsReordering) {
                     val lazyListState = rememberLazyListState()
                     val reorderState = rememberReorderableLazyListState(lazyListState) { from, to ->
-                        onReorderBooksChange(reorderBooks.toMutableList().apply {
-                            add(to.index, removeAt(from.index))
-                        })
+                        onReorderBooksChange(
+                            reorderBooks.toMutableList().apply {
+                                add(to.index, removeAt(from.index))
+                            },
+                        )
                     }
 
                     LazyColumn(
                         state = lazyListState,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     ) {
-                        items(reorderBooks, { it.id }) { item ->
+                        items(reorderBooks, { (itId4) -> itId4 }) { item ->
                             ReorderableItem(reorderState, key = item.id) { isDragging ->
                                 val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp)
                                 Surface(
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = if (isDragging) MaterialTheme.shapes.small else RectangleShape,
                                     tonalElevation = elevation,
-                                    shadowElevation = elevation
+                                    shadowElevation = elevation,
                                 ) {
                                     BookItem(
                                         book = item,
                                         onClick = {},
                                         onLongClick = { onBookLongClick(item.id) },
                                         isList = true,
-                                        trailingContent = {
+                                    ) {
                                             Box(
                                                 modifier = Modifier.height(100.dp),
-                                                contentAlignment = Alignment.Center
+                                                contentAlignment = Alignment.Center,
                                             ) {
                                                 Icon(
                                                     imageVector = MaterialSymbols.Outlined.Drag_handle,
@@ -819,11 +812,10 @@ private fun ShelfDetailBookListContent(
                                                     modifier = Modifier.draggableHandle(
                                                         onDragStarted = {},
                                                         onDragStopped = {},
-                                                    )
+                                                    ),
                                                 )
                                             }
                                         }
-                                    )
                                 }
                             }
                         }
@@ -836,7 +828,7 @@ private fun ShelfDetailBookListContent(
                         onBookLongClick = onBookLongClick,
                         selectedBooks = selectedBooks,
                         isInMultiSelectMode = isInMultiSelectMode,
-                        scrollKey = scrollKey
+                        scrollKey = scrollKey,
                     )
                 }
             }
@@ -848,7 +840,7 @@ private fun ShelfDetailBookListContent(
 private fun DeleteShelfDialog(
     shelfName: String,
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -857,15 +849,15 @@ private fun DeleteShelfDialog(
             Text(
                 stringResource(
                     R.string.library_delete_shelf_message,
-                    shelfName
-                )
+                    shelfName,
+                ),
             )
         },
         confirmButton = {
             TextButton(onClick = onConfirm) {
                 Text(
                     stringResource(R.string.action_delete),
-                    color = MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.error,
                 )
             }
         },
@@ -873,6 +865,6 @@ private fun DeleteShelfDialog(
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.action_cancel))
             }
-        }
+        },
     )
 }

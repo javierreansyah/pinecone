@@ -24,7 +24,7 @@ import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.services.positions
 
 class BookInfoViewModel(
-    application: Application, private val bookId: String
+    application: Application, private val bookId: String,
 ) : AndroidViewModel(application) {
 
     private val repository: LibraryRepository =
@@ -34,20 +34,20 @@ class BookInfoViewModel(
         .map { entity ->
             BookInfoUiState(
                 book = entity?.let { Book.fromEntity(it) },
-                isLoading = false
+                isLoading = false,
             )
         }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = BookInfoUiState(isLoading = true)
+            initialValue = BookInfoUiState(),
         )
 
     val bookmarks: StateFlow<List<BookmarkEntity>> = repository.getBookmarks(bookId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val notes: StateFlow<List<NoteEntity>> = repository.getNotes(bookId)
-        .map { list -> list.filter { it.noteText.isNotBlank() } }
+        .map { list -> list.filter { (_, _, _, _, itNoteText) -> itNoteText.isNotBlank() } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _tableOfContents = MutableStateFlow<List<Link>>(emptyList())
@@ -70,7 +70,7 @@ class BookInfoViewModel(
                     } else {
                         null
                     }
-                } ?: (emptyList<Link>() to emptyList<Locator>())
+                } ?: (emptyList<Link>() to emptyList())
 
                 _tableOfContents.value = toc
                 _positions.value = pos
@@ -131,7 +131,7 @@ class BookInfoViewModel(
     }
 
     class Factory(
-        private val application: Application, private val bookId: String
+        private val application: Application, private val bookId: String,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {

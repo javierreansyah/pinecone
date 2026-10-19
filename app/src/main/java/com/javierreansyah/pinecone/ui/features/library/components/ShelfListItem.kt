@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.library.components
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,7 +26,6 @@ import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.ui.features.library.components.book.CoverImage
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ShelfListItem(
     shelfWithCovers: ShelfWithCovers,
@@ -36,19 +34,19 @@ fun ShelfListItem(
     isInMultiSelectMode: Boolean = false,
     isSelected: Boolean = false,
     onLongClick: (() -> Unit)? = null,
-    onToggleSelect: (() -> Unit)? = null
+    onToggleSelect: (() -> Unit)? = null,
 ) {
     val visibleBooks = shelfWithCovers.books
     val booksCount = visibleBooks.size
 
-    val booksForThumbnail = visibleBooks.take(2).map { Book.fromEntity(it) }
+    val booksForThumbnail = visibleBooks.asSequence().take(2).map { Book.fromEntity(it) }.toList()
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .combinedClickable(
                 onClick = {
-                    if (isInMultiSelectMode && onToggleSelect != null) {
+                    if (isInMultiSelectMode && (onToggleSelect != null)) {
                         onToggleSelect()
                     } else {
                         onClick()
@@ -56,17 +54,17 @@ fun ShelfListItem(
                 },
                 onLongClick = {
                     onLongClick?.invoke()
-                }
+                },
             )
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
 
         Box(
             modifier = Modifier
                 .height(100.dp)
-                .width(76.dp)
+                .width(76.dp),
         ) {
 
             booksForThumbnail.forEachIndexed { index, book ->
@@ -75,10 +73,10 @@ fun ShelfListItem(
                         .fillMaxHeight()
                         .aspectRatio(2f / 3f)
                         .offset(x = (index * 9).dp)
-                        .zIndex(3f - index)
+                        .zIndex(3f - index),
                 ) {
                     CoverImage(
-                        book = book, modifier = Modifier.fillMaxSize()
+                        book = book, modifier = Modifier.fillMaxSize(),
                     )
                 }
             }
@@ -88,28 +86,28 @@ fun ShelfListItem(
             modifier = Modifier
                 .height(100.dp)
                 .weight(1f),
-            verticalArrangement = Arrangement.Top
+            verticalArrangement = Arrangement.Top,
         ) {
             Text(
                 text = shelfWithCovers.shelf.name,
                 style = MaterialTheme.typography.titleMedium,
                 maxLines = 2,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             )
             val countText = androidx.compose.ui.res.pluralStringResource(
-                R.plurals.library_shelf_count, booksCount, booksCount
+                R.plurals.library_shelf_count, booksCount, booksCount,
             )
             Text(
                 text = countText,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
         if (isInMultiSelectMode) {
             Checkbox(
                 checked = isSelected,
-                onCheckedChange = { onToggleSelect?.invoke() }
+                onCheckedChange = { onToggleSelect?.invoke() },
             )
         }
     }

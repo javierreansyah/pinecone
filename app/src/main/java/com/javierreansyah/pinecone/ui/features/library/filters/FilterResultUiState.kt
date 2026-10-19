@@ -4,5 +4,5 @@ import com.javierreansyah.pinecone.ui.features.library.FilterSortPreferences
 import com.javierreansyah.pinecone.ui.features.library.SortType
 
 data class FilterResultUiState(
-    val bookPreferences: FilterSortPreferences = FilterSortPreferences(sortType = SortType.Added)
+    val bookPreferences: FilterSortPreferences = FilterSortPreferences(sortType = SortType.Added),
 )

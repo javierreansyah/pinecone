@@ -14,5 +14,5 @@ data class SearchResultItem(
 
     val highlight: String?,
 
-    val textAfter: String?
+    val textAfter: String?,
 )

@@ -35,86 +35,86 @@ fun ExternalLinkBottomSheet(
     onCopy: () -> Unit,
     onOpenInBrowser: () -> Unit,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val sheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
-        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
     )
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        modifier = modifier
+        modifier = modifier,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(bottom = 16.dp)
+                .padding(bottom = 16.dp),
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.Top,
             ) {
                 Column {
                     Text(
                         text = stringResource(R.string.reader_external_link_title),
                         style = MaterialTheme.typography.titleMedium,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = url,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary,
                         maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
             HorizontalDivider(
                 modifier = Modifier.padding(
-                    horizontal = 16.dp, vertical = 8.dp
-                )
+                    horizontal = 16.dp, vertical = 8.dp,
+                ),
             )
 
             ListItem(
-                headlineContent = {
+                content = {
                     Text(
                         stringResource(R.string.reader_copy_link),
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
                     )
                 },
                 leadingContent = {
                     Icon(
-                        MaterialSymbols.Outlined.Content_copy, contentDescription = null
+                        MaterialSymbols.Outlined.Content_copy, contentDescription = null,
                     )
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 modifier = Modifier.clickable {
                     onCopy()
-                }
+                },
             )
 
             ListItem(
-                headlineContent = {
+                content = {
                     Text(
                         stringResource(R.string.reader_open_in_browser),
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
                     )
                 },
                 leadingContent = {
                     Icon(
-                        MaterialSymbols.Outlined.Open_in_new, contentDescription = null
+                        MaterialSymbols.Outlined.Open_in_new, contentDescription = null,
                     )
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 modifier = Modifier.clickable {
                     onOpenInBrowser()
-                }
+                },
             )
         }
     }

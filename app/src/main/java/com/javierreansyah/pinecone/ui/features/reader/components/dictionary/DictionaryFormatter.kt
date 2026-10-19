@@ -6,7 +6,7 @@ object DictionaryFormatter {
 
     private val HTML_TAG_REGEX = Regex(
         "<(?:p|div|span|ol|ul|li|table|br|h[1-6]|a |dl|dt|dd|blockquote|em|strong)[ >/]",
-        RegexOption.IGNORE_CASE
+        RegexOption.IGNORE_CASE,
     )
 
     private val PARTS_OF_SPEECH = setOf(
@@ -39,24 +39,24 @@ object DictionaryFormatter {
         "Pronunciation",
         "Alternative forms",
         "Determiner",
-        "Contraction"
+        "Contraction",
     )
 
     fun prepareHtmlForMultipleEntries(entries: List<DictionaryEntry>): String {
         val sb = StringBuilder()
-        entries.forEachIndexed { index, entry ->
-            sb.append("<h2 class=\"word-title\">").append(escapeHtml(entry.word)).append("</h2>\n")
+        entries.forEachIndexed { index, (_, _, entryWord, entryDefinition) ->
+            sb.append("<h2 class=\"word-title\">").append(escapeHtml(entryWord)).append("</h2>\n")
             sb.append("<div class=\"definition-content\">\n")
-            sb.append(prepareHtml(entry.definition))
+            sb.append(prepareHtml(entryDefinition))
             sb.append("\n</div>\n")
-            if (index < entries.size - 1) {
+            if (index < (entries.size - 1)) {
                 sb.append("<hr class=\"definition-divider\">\n")
             }
         }
         return sb.toString()
     }
 
-    fun prepareHtml(definition: String): String {
+    private fun prepareHtml(definition: String): String {
         val trimmed = definition.trim()
         if (trimmed.isEmpty()) return ""
 

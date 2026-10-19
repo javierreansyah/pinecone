@@ -15,22 +15,22 @@ import androidx.room.RoomDatabase
 import java.util.concurrent.ConcurrentHashMap
 
 @Entity(
-    tableName = "dictionary_entries", indices = [Index(value = ["word"])]
+    tableName = "dictionary_entries", indices = [Index(value = ["word"])],
 )
 data class DictionaryEntry(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val wordIndex: Int = 0,
     @ColumnInfo(collate = ColumnInfo.NOCASE) val word: String,
-    val definition: String
+    val definition: String,
 )
 
 @Entity(
-    tableName = "synonym_entries", indices = [Index(value = ["synonym"])]
+    tableName = "synonym_entries", indices = [Index(value = ["synonym"])],
 )
 data class SynonymEntry(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     @ColumnInfo(collate = ColumnInfo.NOCASE) val synonym: String,
-    val originalWordIndex: Int
+    val originalWordIndex: Int,
 )
 
 @Dao
@@ -55,7 +55,7 @@ interface DictionaryDao {
 }
 
 @Database(
-    entities = [DictionaryEntry::class, SynonymEntry::class], version = 1, exportSchema = true
+    entities = [DictionaryEntry::class, SynonymEntry::class], version = 1, exportSchema = true,
 )
 abstract class DictionaryDatabase : RoomDatabase() {
     abstract fun dictionaryDao(): DictionaryDao
@@ -69,8 +69,8 @@ abstract class DictionaryDatabase : RoomDatabase() {
                 Room.databaseBuilder(
                     context.applicationContext,
                     DictionaryDatabase::class.java,
-                    "dict_$dictionaryId.db"
-                ).fallbackToDestructiveMigration(false)
+                    "dict_$dictionaryId.db",
+                ).fallbackToDestructiveMigration(dropAllTables = false)
                     .build()
             }
         }

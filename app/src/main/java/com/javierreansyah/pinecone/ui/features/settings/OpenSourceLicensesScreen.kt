@@ -10,7 +10,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -37,11 +36,10 @@ import com.mikepenz.aboutlibraries.util.withContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OpenSourceLicensesScreen(
     onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -55,11 +53,11 @@ fun OpenSourceLicensesScreen(
             val customJson =
                 resources.openRawResource(R.raw.custom_libraries).bufferedReader()
                     .use { it.readText() }
-            val generatedLibs = Libs.Builder().withContext(context).build()
-            val customLibs = Libs.Builder().withJson(customJson).build()
+            val (generatedLibsLibraries) = Libs.Builder().withContext(context).build()
+            val (customLibsLibraries) = Libs.Builder().withJson(customJson).build()
 
             libraries =
-                (generatedLibs.libraries + customLibs.libraries).sortedBy { it.name.lowercase() }
+                (generatedLibsLibraries + customLibsLibraries).sortedBy { (_, _, itName) -> itName.lowercase() }
         }
     }
 
@@ -70,17 +68,17 @@ fun OpenSourceLicensesScreen(
                 title = { Text(stringResource(R.string.about_open_source_licenses)) },
                 onBack = onNavigateBack,
                 scrollBehavior = scrollBehavior,
-                isEmpty = libraries?.isEmpty() == true
+                isEmpty = libraries?.isEmpty() == true,
             )
-        }
+        },
     ) { innerPadding ->
         val libs = libraries
-        if (libs != null && libs.isEmpty()) {
+        if ((libs != null) && libs.isEmpty()) {
             Text(
                 text = stringResource(R.string.about_no_libraries),
                 modifier = Modifier
                     .padding(innerPadding)
-                    .padding(16.dp)
+                    .padding(16.dp),
             )
         } else {
             LazyColumn(
@@ -89,39 +87,40 @@ fun OpenSourceLicensesScreen(
                     .padding(innerPadding)
                     .padding(horizontal = 16.dp),
                 contentPadding = PaddingValues(vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 itemsIndexed(
                     libs ?: emptyList(),
-                    key = { _, item -> item.uniqueId }) { index, library ->
+                    key = { _, (itemUniqueId) -> itemUniqueId },
+                ) { index, library ->
                     val license = library.licenses.firstOrNull()
                     SegmentedListItem(
                         selected = false,
                         index = index,
-                        count = libs!!.size,
+                        count = (libs ?: return@itemsIndexed).size,
                         onClick = {
                             selectedLibrary = library
                         },
                         content = {
                             Text(
                                 text = library.name,
-                                style = MaterialTheme.typography.titleMedium
+                                style = MaterialTheme.typography.titleMedium,
                             )
                         },
                         supportingContent = {
                             Text(
                                 text = license?.name
                                     ?: stringResource(R.string.about_unknown_license),
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyMedium,
                             )
-                        }
+                        },
                     )
                 }
             }
         }
 
-        selectedLibrary?.let { library ->
-            val license = library.licenses.firstOrNull()
+        selectedLibrary?.let { (_, _, libraryName, _, _, _, _, _, libraryLicenses) ->
+            val license = libraryLicenses.firstOrNull()
             AlertDialog(
                 onDismissRequest = { selectedLibrary = null },
                 confirmButton = {
@@ -130,17 +129,17 @@ fun OpenSourceLicensesScreen(
                     }
                 },
                 title = {
-                    Text(text = library.name)
+                    Text(text = libraryName)
                 },
                 text = {
                     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                         Text(
                             text = license?.licenseContent
                                 ?: stringResource(R.string.about_unknown_license),
-                            style = MaterialTheme.typography.bodySmall
+                            style = MaterialTheme.typography.bodySmall,
                         )
                     }
-                }
+                },
             )
         }
     }

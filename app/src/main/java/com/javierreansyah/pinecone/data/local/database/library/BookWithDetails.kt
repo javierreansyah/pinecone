@@ -8,30 +8,36 @@ data class BookWithDetails(
     @Embedded val book: BookEntity,
 
     @Relation(
-        parentColumn = "id", entityColumn = "id", associateBy = Junction(
-            value = BookAuthorCrossRef::class, parentColumn = "bookId", entityColumn = "authorId"
-        )
+        parentColumn = "id", entityColumn = "id",
+        associateBy = Junction(
+            value = BookAuthorCrossRef::class, parentColumn = "bookId", entityColumn = "authorId",
+        ),
     ) val authors: List<AuthorEntity>,
 
     @Relation(
-        parentColumn = "id", entityColumn = "bookId"
+        parentColumn = "id", entityColumn = "bookId",
     ) val authorCrossRefs: List<BookAuthorCrossRef>,
 
     @Relation(
-        parentColumn = "id", entityColumn = "id", associateBy = Junction(
-            value = BookTagCrossRef::class, parentColumn = "bookId", entityColumn = "tagId"
-        )
+        parentColumn = "id", entityColumn = "id",
+        associateBy = Junction(
+            value = BookTagCrossRef::class, parentColumn = "bookId", entityColumn = "tagId",
+        ),
     ) val tags: List<TagEntity>,
 
     @Relation(
-        parentColumn = "id", entityColumn = "id", associateBy = Junction(
-            value = BookSpaceCrossRef::class, parentColumn = "bookId", entityColumn = "spaceId"
-        )
-    ) val spaces: List<SpaceEntity>
+        parentColumn = "id", entityColumn = "id",
+        associateBy = Junction(
+            value = BookSpaceCrossRef::class, parentColumn = "bookId", entityColumn = "spaceId",
+        ),
+    ) val spaces: List<SpaceEntity>,
 ) {
     val sortedAuthors: List<AuthorEntity>
         get() {
-            val orderMap = authorCrossRefs.associate { it.authorId to it.authorOrder }
-            return authors.sortedBy { orderMap[it.id] ?: 0 }
+            val orderMap = authorCrossRefs.associateBy(
+                BookAuthorCrossRef::authorId,
+                BookAuthorCrossRef::authorOrder,
+            )
+            return authors.sortedBy { (itId) -> orderMap[itId] ?: 0 }
         }
 }

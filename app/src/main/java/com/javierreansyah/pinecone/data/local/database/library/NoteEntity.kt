@@ -6,12 +6,16 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
-    tableName = "notes", foreignKeys = [ForeignKey(
-        entity = BookEntity::class,
-        parentColumns = ["id"],
-        childColumns = ["bookId"],
-        onDelete = ForeignKey.CASCADE
-    )], indices = [Index("bookId")]
+    tableName = "notes",
+    foreignKeys = [
+        ForeignKey(
+            entity = BookEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["bookId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("bookId")],
 )
 data class NoteEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -20,5 +24,5 @@ data class NoteEntity(
     val chapterTitle: String? = null,
     val noteText: String,
     val color: Int = -1,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
 )

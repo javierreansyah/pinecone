@@ -25,11 +25,11 @@ data class SearchState(
     val isLoading: Boolean = false,
     val searchPerformed: Boolean = false,
     val isInNavMode: Boolean = false,
-    val activeIndex: Int? = null
+    val activeIndex: Int? = null,
 )
 
 class ReaderSearchViewModel(
-    private val application: Application
+    private val application: Application,
 ) : ViewModel() {
 
     private val _searchState = MutableStateFlow(SearchState())
@@ -55,7 +55,7 @@ class ReaderSearchViewModel(
                     isLoading = false,
                     searchPerformed = false,
                     isInNavMode = false,
-                    activeIndex = null
+                    activeIndex = null,
                 )
             }
             return
@@ -69,7 +69,7 @@ class ReaderSearchViewModel(
                 isLoading = true,
                 searchPerformed = true,
                 isInNavMode = false,
-                activeIndex = null
+                activeIndex = null,
             )
         }
 
@@ -83,18 +83,18 @@ class ReaderSearchViewModel(
 
                 while (true) {
                     val result = iterator.next()
-                    val page = result.getOrNull() ?: break
-                    val newItems = page.locators.map { locator ->
+                    val (_, _, pageLocators) = result.getOrNull() ?: break
+                    val newItems = pageLocators.map { locator ->
                         val posIndex = positions.findIndexForLocator(locator)
 
                         val positionLabel = when {
                             posIndex != -1 -> application.resources.getQuantityString(
-                                R.plurals.reader_page_num, posIndex + 1, posIndex + 1
+                                R.plurals.reader_page_num, posIndex + 1, posIndex + 1,
                             )
 
                             locator.locations.totalProgression != null -> application.getString(
                                 R.string.reader_position_at,
-                                "${(locator.locations.totalProgression!! * 100).toInt()}%"
+                                "${(locator.locations.totalProgression!! * 100).toInt()}%",
                             )
 
                             else -> ""
@@ -106,7 +106,7 @@ class ReaderSearchViewModel(
                             positionLabel = positionLabel,
                             textBefore = locator.text.before,
                             highlight = locator.text.highlight,
-                            textAfter = locator.text.after
+                            textAfter = locator.text.after,
                         )
                     }
 
@@ -124,32 +124,30 @@ class ReaderSearchViewModel(
 
     fun selectSearchResult(index: Int) {
         val results = _searchState.value.results
-        if (index < 0 || index >= results.size) return
+        if ((index < 0) || (index >= results.size)) return
         _searchState.update {
             it.copy(
                 activeIndex = index,
-                isInNavMode = true
+                isInNavMode = true,
             )
         }
         _navigateToLocator.tryEmit(results[index].locator)
     }
 
     fun nextSearchResult() {
-        val state = _searchState.value
-        val results = state.results
-        if (results.isEmpty()) return
-        val next = ((state.activeIndex ?: -1) + 1).coerceAtMost(results.size - 1)
+        val (_, stateResults, _, _, _, stateActiveIndex) = _searchState.value
+        if (stateResults.isEmpty()) return
+        val next = ((stateActiveIndex ?: -1) + 1).coerceAtMost(stateResults.size - 1)
         _searchState.update { it.copy(activeIndex = next) }
-        _navigateToLocator.tryEmit(results[next].locator)
+        _navigateToLocator.tryEmit(stateResults[next].locator)
     }
 
     fun prevSearchResult() {
-        val state = _searchState.value
-        val results = state.results
-        if (results.isEmpty()) return
-        val prev = ((state.activeIndex ?: 1) - 1).coerceAtLeast(0)
+        val (_, stateResults2, _, _, _, stateActiveIndex2) = _searchState.value
+        if (stateResults2.isEmpty()) return
+        val prev = ((stateActiveIndex2 ?: 1) - 1).coerceAtLeast(0)
         _searchState.update { it.copy(activeIndex = prev) }
-        _navigateToLocator.tryEmit(results[prev].locator)
+        _navigateToLocator.tryEmit(stateResults2[prev].locator)
     }
 
     fun exitSearchNavigation() {
@@ -159,7 +157,7 @@ class ReaderSearchViewModel(
                 activeIndex = null,
                 query = "",
                 results = emptyList(),
-                searchPerformed = false
+                searchPerformed = false,
             )
         }
     }
@@ -169,7 +167,7 @@ class ReaderSearchViewModel(
     }
 
     class Factory(
-        private val application: Application
+        private val application: Application,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {

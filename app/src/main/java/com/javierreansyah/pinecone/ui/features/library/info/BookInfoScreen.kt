@@ -14,7 +14,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -45,10 +44,9 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
@@ -111,7 +109,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.text.HtmlCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Archive
 import com.composables.icons.materialsymbols.outlined.Arrow_back
@@ -145,26 +143,25 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun BookInfoScreen(
     bookId: String,
     onNavigateBack: () -> Unit,
     onNavigateToEdit: (String) -> Unit,
     onNavigateToTag: (String) -> Unit,
-    onNavigateToOrganize: (String) -> Unit
+    onNavigateToOrganize: (String) -> Unit,
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as Application
     val viewModel: BookInfoViewModel = viewModel(
-        key = bookId, factory = BookInfoViewModel.Factory(application, bookId)
+        key = bookId, factory = BookInfoViewModel.Factory(application, bookId),
     )
 
-    val uiState by viewModel.uiState.collectAsState()
-    val book = uiState.book
-    val isLoading = uiState.isLoading
+    val uiState = viewModel.uiState.collectAsState()
+    val book = uiState.value.book
+    val isLoading = uiState.value.isLoading
 
-    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(value = false) }
 
     Scaffold { innerPadding ->
         Box(
@@ -173,23 +170,23 @@ fun BookInfoScreen(
                 .padding(
                     start = innerPadding.calculateStartPadding(LocalLayoutDirection.current),
                     end = innerPadding.calculateEndPadding(LocalLayoutDirection.current),
-                    bottom = innerPadding.calculateBottomPadding()
-                )
+                    bottom = innerPadding.calculateBottomPadding(),
+                ),
         ) {
             if (isLoading) {
                 Box(
-                    modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+                    modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator()
                 }
             } else if (book == null) {
                 Box(
-                    modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+                    modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         stringResource(R.string.book_not_found),
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             } else {
@@ -201,49 +198,54 @@ fun BookInfoScreen(
                     onNavigateToEdit = onNavigateToEdit,
                     onNavigateToTag = onNavigateToTag,
                     onOrganizeClick = { onNavigateToOrganize(bookId) },
-                    showDeleteConfirm = { showDeleteConfirm = true })
+                ) { showDeleteConfirm = true }
             }
         }
     }
 
     if (showDeleteConfirm) {
-        AlertDialog(onDismissRequest = { showDeleteConfirm = false }, title = {
-            Text(
-                stringResource(R.string.book_delete_title),
-                style = MaterialTheme.typography.titleLarge
-            )
-        }, text = {
-            Text(
-                stringResource(R.string.book_delete_message),
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }, confirmButton = {
-            TextButton(
-                onClick = {
-                    viewModel.deleteBook {
-                        showDeleteConfirm = false
-                        onNavigateBack()
-                    }
-                },
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-            ) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = {
                 Text(
-                    stringResource(R.string.action_delete),
-                    style = MaterialTheme.typography.labelLarge
+                    stringResource(R.string.book_delete_title),
+                    style = MaterialTheme.typography.titleLarge,
                 )
-            }
-        }, dismissButton = {
-            TextButton(onClick = { showDeleteConfirm = false }) {
+            },
+            text = {
                 Text(
-                    stringResource(R.string.action_cancel),
-                    style = MaterialTheme.typography.labelLarge
+                    stringResource(R.string.book_delete_message),
+                    style = MaterialTheme.typography.bodyMedium,
                 )
-            }
-        })
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteBook {
+                            showDeleteConfirm = false
+                            onNavigateBack()
+                        }
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                ) {
+                    Text(
+                        stringResource(R.string.action_delete),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text(
+                        stringResource(R.string.action_cancel),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
+            },
+        )
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun BookInfoContent(
     book: Book,
@@ -253,7 +255,7 @@ private fun BookInfoContent(
     onNavigateToEdit: (String) -> Unit,
     onNavigateToTag: (String) -> Unit,
     onOrganizeClick: () -> Unit,
-    showDeleteConfirm: () -> Unit
+    showDeleteConfirm: () -> Unit,
 ) {
     val scrollState = rememberScrollState()
     val context = LocalContext.current
@@ -308,7 +310,7 @@ private fun BookInfoContent(
 
     Box(modifier = Modifier.fillMaxSize()) {
         BookBackgroundBanner(
-            book = book, scrollState = scrollState
+            book = book, scrollState = scrollState,
         )
 
         val nestedScrollConnection = remember {
@@ -324,7 +326,7 @@ private fun BookInfoContent(
                 }
 
                 override fun onPostScroll(
-                    consumed: Offset, available: Offset, source: NestedScrollSource
+                    consumed: Offset, available: Offset, source: NestedScrollSource,
                 ): Offset {
                     val delta = available.y
                     return if (delta > 0) {
@@ -341,7 +343,8 @@ private fun BookInfoContent(
             modifier = Modifier
                 .fillMaxSize()
                 .nestedScroll(nestedScrollConnection)
-                .verticalScroll(scrollState), horizontalAlignment = Alignment.CenterHorizontally
+                .verticalScroll(scrollState),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             BookInfoHeader(
                 book = book,
@@ -361,7 +364,7 @@ private fun BookInfoContent(
                             Locator(
                                 href = link.url(),
                                 mediaType = link.mediaType ?: MediaType.XHTML,
-                                title = link.title
+                                title = link.title,
                             )
                         }
                     firstPos?.let { jumpToLocator(it) }
@@ -369,34 +372,38 @@ private fun BookInfoContent(
                 onToggleReadStatus = { viewModel.toggleReadStatus() },
                 onOrganizeClick = onOrganizeClick,
                 onToggleArchive = { viewModel.toggleArchive() },
-                onDeleteClick = showDeleteConfirm
+                onDeleteClick = showDeleteConfirm,
             )
 
-            val pagerState = rememberPagerState(pageCount = { 4 })
+            val pagerState = rememberPagerState { 4 }
             val coroutineScope = rememberCoroutineScope()
             val tabs = listOf(
                 stringResource(R.string.book_info_title),
                 stringResource(R.string.reader_chapters_title),
                 stringResource(R.string.reader_bookmarks_title),
-                stringResource(R.string.reader_notes_title)
+                stringResource(R.string.reader_notes_title),
             )
 
             SecondaryScrollableTabRow(
                 selectedTabIndex = pagerState.currentPage,
                 containerColor = Color.Transparent,
                 edgePadding = 16.dp,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 tabs.forEachIndexed { index, title ->
-                    Tab(selected = pagerState.currentPage == index, onClick = {
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(index)
-                        }
-                    }, text = {
-                        Text(
-                            text = title, style = MaterialTheme.typography.titleMedium
-                        )
-                    })
+                    Tab(
+                        selected = pagerState.currentPage == index,
+                        onClick = {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(index)
+                            }
+                        },
+                        text = {
+                            Text(
+                                text = title, style = MaterialTheme.typography.titleMedium,
+                            )
+                        },
+                    )
                 }
             }
 
@@ -406,11 +413,11 @@ private fun BookInfoContent(
                     .fillMaxWidth()
                     .wrapContentHeight()
                     .animateContentSize(),
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.Top,
             ) { page ->
                 when (page) {
                     0 -> AboutTabContent(
-                        book = book, maxTabHeight = maxTabHeight
+                        book = book, maxTabHeight = maxTabHeight,
                     )
 
                     1 -> ChaptersTabContent(
@@ -418,7 +425,7 @@ private fun BookInfoContent(
                         currentLocator = currentLocator,
                         positions = positions,
                         onChapterClick = jumpToLocator,
-                        maxTabHeight = maxTabHeight
+                        maxTabHeight = maxTabHeight,
                     )
 
                     2 -> BookmarksTabContent(
@@ -431,7 +438,7 @@ private fun BookInfoContent(
                         onJumpToLocator = jumpToLocator,
                         onDeleteBookmark = { viewModel.deleteBookmark(it) },
                         onDeleteFurthestPosition = { viewModel.deleteFurthestPosition() },
-                        maxTabHeight = maxTabHeight
+                        maxTabHeight = maxTabHeight,
                     )
 
                     3 -> NotesTabContent(
@@ -440,7 +447,7 @@ private fun BookInfoContent(
                         positions = positions,
                         onNoteClick = jumpToLocator,
                         onDeleteNote = { viewModel.deleteNote(it) },
-                        maxTabHeight = maxTabHeight
+                        maxTabHeight = maxTabHeight,
                     )
                 }
             }
@@ -450,14 +457,14 @@ private fun BookInfoContent(
             bookId = bookId,
             onNavigateBack = onNavigateBack,
             onNavigateToEdit = onNavigateToEdit,
-            modifier = Modifier.statusBarsPadding()
+            modifier = Modifier.statusBarsPadding(),
         )
     }
 }
 
 @Composable
 private fun BookBackgroundBanner(
-    book: Book, scrollState: ScrollState, modifier: Modifier = Modifier
+    book: Book, scrollState: ScrollState, modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier
@@ -466,7 +473,8 @@ private fun BookBackgroundBanner(
             .graphicsLayer {
                 translationY = -scrollState.value.toFloat()
             }
-            .clipToBounds()) {
+            .clipToBounds(),
+    ) {
         if (book.coverPath != null) {
             val coverModel = remember(book.coverPath) { File(book.coverPath) }
             AsyncImage(
@@ -480,7 +488,8 @@ private fun BookBackgroundBanner(
                         translationY = scrollState.value * 0.5f
                     }
                     .blur(radius = 32.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded)
-                    .scale(1.2f))
+                    .scale(1.2f),
+            )
         } else {
             Box(
                 modifier = Modifier
@@ -489,10 +498,10 @@ private fun BookBackgroundBanner(
                         Brush.verticalGradient(
                             colors = listOf(
                                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
-                                MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
-                            )
-                        )
-                    )
+                                MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
+                            ),
+                        ),
+                    ),
             )
         }
 
@@ -504,17 +513,17 @@ private fun BookBackgroundBanner(
                         colors = listOf(
                             MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
                             MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
-                            MaterialTheme.colorScheme.surface
-                        )
-                    )
-                )
+                            MaterialTheme.colorScheme.surface,
+                        ),
+                    ),
+                ),
         )
     }
 }
 
 @Composable
 private fun AboutTabContent(
-    book: Book, maxTabHeight: Dp, modifier: Modifier = Modifier
+    book: Book, maxTabHeight: Dp, modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier
@@ -523,7 +532,7 @@ private fun AboutTabContent(
             .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 24.dp)
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         BookProgress(progress = book.furthestProgression)
 
@@ -542,13 +551,13 @@ private fun ChaptersTabContent(
     positions: List<Locator>,
     onChapterClick: (Locator) -> Unit,
     maxTabHeight: Dp,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     if (tableOfContents.isEmpty()) {
         Box(
             modifier = modifier
                 .fillMaxWidth()
-                .height(maxTabHeight)
+                .height(maxTabHeight),
         ) {
             EmptyState(
                 icon = MaterialSymbols.Outlined.Format_list_bulleted,
@@ -556,7 +565,7 @@ private fun ChaptersTabContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .wrapContentHeight()
-                    .padding(top = 32.dp, start = 16.dp, end = 16.dp)
+                    .padding(top = 32.dp, start = 16.dp, end = 16.dp),
             )
         }
     } else {
@@ -564,7 +573,7 @@ private fun ChaptersTabContent(
             modifier = modifier
                 .fillMaxWidth()
                 .height(maxTabHeight),
-            contentPadding = PaddingValues(vertical = 8.dp)
+            contentPadding = PaddingValues(vertical = 8.dp),
         ) {
             val currentHref = currentLocator?.href?.toString()?.substringBefore("#")
             items(tableOfContents) { link ->
@@ -573,14 +582,14 @@ private fun ChaptersTabContent(
                 val pageLabel = getChapterPageLabel(link, positions)
                 ListItem(
                     modifier = Modifier.clickable {
-                        val targetLocator = positions.firstOrNull {
-                            it.href.toString().substringBefore("#") == link.href.toString()
+                        val targetLocator = positions.firstOrNull { (itHref) ->
+                            itHref.toString().substringBefore("#") == link.href.toString()
                                 .substringBefore("#")
                         } ?: Locator(
                             href = link.url(),
                             mediaType = link.mediaType ?: positions.firstOrNull()?.mediaType
                             ?: MediaType.XHTML,
-                            title = link.title
+                            title = link.title,
                         )
                         onChapterClick(targetLocator)
                     },
@@ -592,7 +601,7 @@ private fun ChaptersTabContent(
                             Text(
                                 text = pageLabel,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     } else null,
@@ -602,7 +611,7 @@ private fun ChaptersTabContent(
                         Text(
                             text = link.title ?: link.href.toString(),
                             style = MaterialTheme.typography.titleMedium,
-                            color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else Color.Unspecified
+                            color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else Color.Unspecified,
                         )
                     },
                 )
@@ -623,14 +632,14 @@ private fun BookmarksTabContent(
     onDeleteBookmark: (Long) -> Unit,
     onDeleteFurthestPosition: () -> Unit,
     maxTabHeight: Dp,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    val hasBookmarks = bookmarks.isNotEmpty() || currentLocator != null || furthestLocator != null
+    val hasBookmarks = bookmarks.isNotEmpty() || (currentLocator != null) || (furthestLocator != null)
     if (!hasBookmarks) {
         Box(
             modifier = modifier
                 .fillMaxWidth()
-                .height(maxTabHeight)
+                .height(maxTabHeight),
         ) {
             EmptyState(
                 icon = MaterialSymbols.Outlined.Bookmark,
@@ -638,7 +647,7 @@ private fun BookmarksTabContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .wrapContentHeight()
-                    .padding(top = 32.dp, start = 16.dp, end = 16.dp)
+                    .padding(top = 32.dp, start = 16.dp, end = 16.dp),
             )
         }
     } else {
@@ -646,7 +655,7 @@ private fun BookmarksTabContent(
             modifier = modifier
                 .fillMaxWidth()
                 .height(maxTabHeight),
-            contentPadding = PaddingValues(vertical = 8.dp)
+            contentPadding = PaddingValues(vertical = 8.dp),
         ) {
             currentLocator?.let { locator ->
                 item {
@@ -658,7 +667,7 @@ private fun BookmarksTabContent(
                             Icon(
                                 imageVector = MaterialSymbols.Outlined.Book,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = MaterialTheme.colorScheme.primary,
                             )
                         },
                         trailingContent = null,
@@ -668,7 +677,7 @@ private fun BookmarksTabContent(
                             Text(
                                 text = label.ifBlank { stringResource(R.string.reader_in_document) },
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
@@ -676,7 +685,7 @@ private fun BookmarksTabContent(
                         content = {
                             Text(
                                 text = stringResource(R.string.book_info_current_position),
-                                style = MaterialTheme.typography.titleMedium
+                                style = MaterialTheme.typography.titleMedium,
                             )
                         },
                     )
@@ -693,17 +702,17 @@ private fun BookmarksTabContent(
                             Icon(
                                 imageVector = MaterialSymbols.Outlined.Book,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.secondary
+                                tint = MaterialTheme.colorScheme.secondary,
                             )
                         },
                         trailingContent = {
                             androidx.compose.material3.IconButton(
-                                onClick = onDeleteFurthestPosition
+                                onClick = onDeleteFurthestPosition,
                             ) {
                                 Icon(
                                     imageVector = MaterialSymbols.Outlined.Delete,
                                     contentDescription = stringResource(R.string.action_delete),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         },
@@ -713,7 +722,7 @@ private fun BookmarksTabContent(
                             Text(
                                 text = label.ifBlank { stringResource(R.string.reader_in_document) },
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
@@ -721,7 +730,7 @@ private fun BookmarksTabContent(
                         content = {
                             Text(
                                 text = stringResource(R.string.book_info_furthest_position),
-                                style = MaterialTheme.typography.titleMedium
+                                style = MaterialTheme.typography.titleMedium,
                             )
                         },
                     )
@@ -735,23 +744,23 @@ private fun BookmarksTabContent(
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(
-                            horizontal = 16.dp, vertical = 8.dp
-                        )
+                            horizontal = 16.dp, vertical = 8.dp,
+                        ),
                     )
                 }
 
-                items(bookmarks) { bookmark ->
+                items(bookmarks) { (bookmarkId, _, bookmarkLocatorJson, bookmarkChapterTitle) ->
                     val locator = try {
-                        Locator.fromJSON(JSONObject(bookmark.locatorJson))
+                        Locator.fromJSON(JSONObject(bookmarkLocatorJson))
                     } catch (_: Exception) {
                         null
                     }
                     if (locator != null) {
                         val inDocument = stringResource(R.string.reader_in_document)
                         val chapterTitle =
-                            bookmark.chapterTitle?.takeIf { it.isNotBlank() && it != inDocument }
-                                ?: tableOfContents.find {
-                                    it.href.toString()
+                            bookmarkChapterTitle?.takeIf { it.isNotBlank() && (it != inDocument) }
+                                ?: tableOfContents.find { (itHref2) ->
+                                    itHref2.toString()
                                         .substringBefore("#") == locator.href.toString()
                                         .substringBefore("#")
                                 }?.title ?: inDocument
@@ -763,11 +772,12 @@ private fun BookmarksTabContent(
                             leadingContent = null,
                             trailingContent = {
                                 androidx.compose.material3.IconButton(
-                                    onClick = { onDeleteBookmark(bookmark.id) }) {
+                                    onClick = { onDeleteBookmark(bookmarkId) },
+                                ) {
                                     Icon(
                                         imageVector = MaterialSymbols.Outlined.Delete,
                                         contentDescription = stringResource(R.string.action_delete),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
                             },
@@ -777,7 +787,7 @@ private fun BookmarksTabContent(
                                 Text(
                                     text = label.ifBlank { inDocument },
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
@@ -785,7 +795,7 @@ private fun BookmarksTabContent(
                             content = {
                                 Text(
                                     text = chapterTitle,
-                                    style = MaterialTheme.typography.titleMedium
+                                    style = MaterialTheme.typography.titleMedium,
                                 )
                             },
                         )
@@ -804,13 +814,13 @@ private fun NotesTabContent(
     onNoteClick: (Locator) -> Unit,
     onDeleteNote: (Long) -> Unit,
     maxTabHeight: Dp,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     if (notes.isEmpty()) {
         Box(
             modifier = modifier
                 .fillMaxWidth()
-                .height(maxTabHeight)
+                .height(maxTabHeight),
         ) {
             EmptyState(
                 icon = MaterialSymbols.Outlined.Edit,
@@ -818,7 +828,7 @@ private fun NotesTabContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .wrapContentHeight()
-                    .padding(top = 32.dp, start = 16.dp, end = 16.dp)
+                    .padding(top = 32.dp, start = 16.dp, end = 16.dp),
             )
         }
     } else {
@@ -826,20 +836,20 @@ private fun NotesTabContent(
             modifier = modifier
                 .fillMaxWidth()
                 .height(maxTabHeight),
-            contentPadding = PaddingValues(vertical = 8.dp)
+            contentPadding = PaddingValues(vertical = 8.dp),
         ) {
-            items(notes) { note ->
+            items(notes) { (noteId, _, noteLocatorJson, noteChapterTitle, noteNoteText, noteColor) ->
                 val locator = try {
-                    Locator.fromJSON(JSONObject(note.locatorJson))
+                    Locator.fromJSON(JSONObject(noteLocatorJson))
                 } catch (_: Exception) {
                     null
                 }
                 if (locator != null) {
                     val inDocument = stringResource(R.string.reader_in_document)
                     val chapterTitle =
-                        note.chapterTitle?.takeIf { it.isNotBlank() && it != inDocument }
-                            ?: tableOfContents.find {
-                                it.href.toString().substringBefore("#") == locator.href.toString()
+                        noteChapterTitle?.takeIf { it.isNotBlank() && (it != inDocument) }
+                            ?: tableOfContents.find { (itHref3) ->
+                                itHref3.toString().substringBefore("#") == locator.href.toString()
                                     .substringBefore("#")
                             }?.title ?: inDocument
 
@@ -848,40 +858,41 @@ private fun NotesTabContent(
                             .fillMaxWidth()
                             .clickable { onNoteClick(locator) }
                             .padding(horizontal = 20.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .padding(end = 16.dp)
+                                    .padding(end = 16.dp),
                             ) {
                                 Text(
                                     text = chapterTitle,
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis
+                                    overflow = TextOverflow.Ellipsis,
                                 )
                                 val label = getPositionLabel(locator, positions)
                                 if (label.isNotBlank()) {
                                     Text(
                                         text = label,
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
                             }
                             androidx.compose.material3.IconButton(
-                                onClick = { onDeleteNote(note.id) }, modifier = Modifier.size(24.dp)
+                                onClick = { onDeleteNote(noteId) }, modifier = Modifier.size(24.dp),
                             ) {
                                 Icon(
                                     imageVector = MaterialSymbols.Outlined.Delete,
                                     contentDescription = stringResource(R.string.action_delete),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
@@ -890,7 +901,7 @@ private fun NotesTabContent(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(IntrinsicSize.Min)
+                                    .height(IntrinsicSize.Min),
                             ) {
                                 Box(
                                     modifier = Modifier
@@ -898,25 +909,25 @@ private fun NotesTabContent(
                                         .fillMaxHeight()
                                         .clip(CircleShape)
                                         .background(
-                                            Color(note.color).copy(
-                                                alpha = 1f
-                                            )
-                                        )
+                                            Color(noteColor).copy(
+                                                alpha = 1f,
+                                            ),
+                                        ),
                                 )
                                 Text(
                                     text = highlight,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(start = 12.dp)
+                                    modifier = Modifier.padding(start = 12.dp),
                                 )
                             }
                         }
 
-                        if (note.noteText.isNotBlank()) {
+                        if (noteNoteText.isNotBlank()) {
                             Text(
-                                text = note.noteText,
+                                text = noteNoteText,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface,
                             )
                         }
                     }
@@ -937,7 +948,7 @@ private fun BookInfoHeader(
     onOrganizeClick: () -> Unit,
     onToggleArchive: () -> Unit,
     onDeleteClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier
@@ -945,18 +956,18 @@ private fun BookInfoHeader(
             .statusBarsPadding()
             .padding(top = 64.dp, start = 16.dp, end = 16.dp, bottom = 0.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         BookCoverImage(
-            coverPath = book.coverPath, title = book.title
+            coverPath = book.coverPath, title = book.title,
         )
 
         BookHeaderDetails(
             title = book.title,
             authors = book.authors,
-            spaces = book.spaces.map { it.name },
+            spaces = book.spaces.map { (_, itName) -> itName },
             tags = book.tags,
-            onNavigateToTag = onNavigateToTag
+            onNavigateToTag = onNavigateToTag,
         )
 
         BookButtonGroup(
@@ -967,12 +978,12 @@ private fun BookInfoHeader(
             onToggleReadStatus = onToggleReadStatus,
             onOrganizeClick = onOrganizeClick,
             onToggleArchive = onToggleArchive,
-            onDeleteClick = onDeleteClick
+            onDeleteClick = onDeleteClick,
         )
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BookButtonGroup(
     book: Book,
@@ -983,7 +994,7 @@ private fun BookButtonGroup(
     onOrganizeClick: () -> Unit,
     onToggleArchive: () -> Unit,
     onDeleteClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier
@@ -991,155 +1002,165 @@ private fun BookButtonGroup(
             .horizontalScroll(rememberScrollState())
             .padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        var splitMenuExpanded by remember { mutableStateOf(false) }
+        var splitMenuExpanded by remember { mutableStateOf(value = false) }
 
-        SplitButtonLayout(leadingButton = {
-            SplitButtonDefaults.LeadingButton(
-                onClick = onReadClick,
-            ) {
-                Icon(
-                    imageVector = MaterialSymbols.Outlined.Book,
-                    contentDescription = null,
-                    modifier = Modifier.size(SplitButtonDefaults.LeadingIconSize)
-                )
-                Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
-                Text(stringResource(R.string.action_read))
-            }
-        }, trailingButton = {
-            val description = stringResource(R.string.action_more)
-            Box {
-                TooltipBox(
-                    positionProvider = TooltipDefaults.rememberTooltipPositionProvider(positioning = TooltipAnchorPosition.Above),
-                    tooltip = {
-                        PlainTooltip { Text(description) }
-                    },
-                    state = rememberTooltipState()
+        SplitButtonLayout(
+            leadingButton = {
+                SplitButtonDefaults.LeadingButton(
+                    onClick = onReadClick,
                 ) {
-                    SplitButtonDefaults.TrailingButton(
-                        checked = splitMenuExpanded,
-                        onCheckedChange = { splitMenuExpanded = it },
-                        modifier = Modifier.semantics {
-                            stateDescription = if (splitMenuExpanded) "Expanded" else "Collapsed"
-                            contentDescription = description
-                        }) {
-                        val rotation: Float by animateFloatAsState(
-                            targetValue = if (splitMenuExpanded) 180f else 0f,
-                            label = "Trailing Icon Rotation"
-                        )
-                        Icon(
-                            MaterialSymbols.Outlined.Arrow_drop_down,
-                            modifier = Modifier
-                                .size(SplitButtonDefaults.TrailingIconSize)
-                                .graphicsLayer { rotationZ = rotation },
-                            contentDescription = description
-                        )
-                    }
+                    Icon(
+                        imageVector = MaterialSymbols.Outlined.Book,
+                        contentDescription = null,
+                        modifier = Modifier.size(SplitButtonDefaults.LeadingIconSize),
+                    )
+                    Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
+                    Text(stringResource(R.string.action_read))
                 }
-
-                DropdownMenuPopup(
-                    expanded = splitMenuExpanded,
-                    onDismissRequest = { splitMenuExpanded = false }) {
-                    val groupInteractionSource = remember { MutableInteractionSource() }
-                    DropdownMenuGroup(
-                        shapes = MenuDefaults.groupShape(0, 1),
-                        interactionSource = groupInteractionSource
+            },
+            trailingButton = {
+                val description = stringResource(R.string.action_more)
+                Box {
+                    TooltipBox(
+                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+                            positioning = TooltipAnchorPosition.Above,
+                        ),
+                        tooltip = {
+                            PlainTooltip { Text(description) }
+                        },
+                        state = rememberTooltipState(),
                     ) {
-                        DropdownMenuItem(
-                            selected = false,
-                            text = { Text(stringResource(R.string.book_read_furthest)) },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = MaterialSymbols.Outlined.Book,
-                                    contentDescription = null
-                                )
+                        SplitButtonDefaults.TrailingButton(
+                            checked = splitMenuExpanded,
+                            onCheckedChange = { splitMenuExpanded = it },
+                            modifier = Modifier.semantics {
+                                stateDescription =
+                                    if (splitMenuExpanded) "Expanded" else "Collapsed"
+                                contentDescription = description
                             },
-                            onClick = {
-                                splitMenuExpanded = false
-                                onReadFurthestClick()
-                            },
-                            shapes = MenuDefaults.itemShape(0, 2)
-                        )
-                        DropdownMenuItem(
-                            selected = false,
-                            text = { Text(stringResource(R.string.book_read_from_start)) },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = MaterialSymbols.Outlined.Replay,
-                                    contentDescription = null
-                                )
-                            },
-                            onClick = {
-                                splitMenuExpanded = false
-                                onReadFromStartClick()
-                            },
-                            shapes = MenuDefaults.itemShape(1, 2)
-                        )
+                        ) {
+                            val rotation: Float by animateFloatAsState(
+                                targetValue = if (splitMenuExpanded) 180f else 0f,
+                                label = "Trailing Icon Rotation",
+                            )
+                            Icon(
+                                MaterialSymbols.Outlined.Arrow_drop_down,
+                                modifier = Modifier
+                                    .size(SplitButtonDefaults.TrailingIconSize)
+                                    .graphicsLayer { rotationZ = rotation },
+                                contentDescription = description,
+                            )
+                        }
+                    }
+
+                    DropdownMenuPopup(
+                        expanded = splitMenuExpanded,
+                        onDismissRequest = { splitMenuExpanded = false },
+                    ) {
+                        val groupInteractionSource = remember { MutableInteractionSource() }
+                        DropdownMenuGroup(
+                            shapes = MenuDefaults.groupShape(0, 1),
+                            interactionSource = groupInteractionSource,
+                        ) {
+                            SelectableDropdownMenuItem(
+                                selected = false,
+                                text = { Text(stringResource(R.string.book_read_furthest)) },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = MaterialSymbols.Outlined.Book,
+                                        contentDescription = null,
+                                    )
+                                },
+                                onClick = {
+                                    splitMenuExpanded = false
+                                    onReadFurthestClick()
+                                },
+                                shapes = MenuDefaults.itemShape(0, 2),
+                            )
+                            SelectableDropdownMenuItem(
+                                selected = false,
+                                text = { Text(stringResource(R.string.book_read_from_start)) },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = MaterialSymbols.Outlined.Replay,
+                                        contentDescription = null,
+                                    )
+                                },
+                                onClick = {
+                                    splitMenuExpanded = false
+                                    onReadFromStartClick()
+                                },
+                                shapes = MenuDefaults.itemShape(1, 2),
+                            )
+                        }
                     }
                 }
-            }
-        })
+            },
+        )
 
         Box(
             modifier = Modifier
                 .height(24.dp)
                 .width(1.dp)
-                .background(MaterialTheme.colorScheme.outlineVariant)
+                .background(MaterialTheme.colorScheme.outlineVariant),
         )
 
         FilledTonalButton(
             onClick = onToggleReadStatus,
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         ) {
             Icon(
                 imageVector = if (book.isRead) MaterialSymbols.Outlined.Radio_button_unchecked else MaterialSymbols.Outlined.Check_circle,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(20.dp),
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 if (book.isRead) stringResource(R.string.book_mark_as_unread)
-                else stringResource(R.string.book_mark_as_read)
+                else stringResource(R.string.book_mark_as_read),
             )
         }
 
         FilledTonalButton(
             onClick = onOrganizeClick,
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         ) {
             Icon(
                 imageVector = MaterialSymbols.Outlined.Create_new_folder,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(20.dp),
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(stringResource(R.string.action_organize))
         }
 
         FilledTonalIconButton(
-            onClick = onToggleArchive, colors = IconButtonDefaults.filledTonalIconButtonColors(
+            onClick = onToggleArchive,
+            colors = IconButtonDefaults.filledTonalIconButtonColors(
                 containerColor = if (book.isArchived) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                contentColor = if (book.isArchived) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
-            )
+                contentColor = if (book.isArchived) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
         ) {
             Icon(
                 imageVector = MaterialSymbols.Outlined.Archive,
                 contentDescription = if (book.isArchived) stringResource(R.string.book_unarchive) else stringResource(
-                    R.string.book_archive
-                )
+                    R.string.book_archive,
+                ),
             )
         }
 
         FilledTonalIconButton(
-            onClick = onDeleteClick, colors = IconButtonDefaults.filledTonalIconButtonColors(
+            onClick = onDeleteClick,
+            colors = IconButtonDefaults.filledTonalIconButtonColors(
                 containerColor = MaterialTheme.colorScheme.errorContainer,
-                contentColor = MaterialTheme.colorScheme.onErrorContainer
-            )
+                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+            ),
         ) {
             Icon(
                 imageVector = MaterialSymbols.Outlined.Delete,
-                contentDescription = stringResource(R.string.action_delete)
+                contentDescription = stringResource(R.string.action_delete),
             )
         }
     }
@@ -1147,7 +1168,7 @@ private fun BookButtonGroup(
 
 @Composable
 private fun BookCoverImage(
-    coverPath: String?, title: String, modifier: Modifier = Modifier
+    coverPath: String?, title: String, modifier: Modifier = Modifier,
 ) {
     if (coverPath != null) {
         val coverModel = remember(coverPath) { File(coverPath) }
@@ -1158,7 +1179,7 @@ private fun BookCoverImage(
                 .height(300.dp)
                 .shadow(8.dp, RoundedCornerShape(12.dp))
                 .clip(RoundedCornerShape(12.dp)),
-            contentScale = ContentScale.Fit
+            contentScale = ContentScale.Fit,
         )
     } else {
         Box(
@@ -1171,21 +1192,21 @@ private fun BookCoverImage(
                     Brush.verticalGradient(
                         colors = listOf(
                             MaterialTheme.colorScheme.primaryContainer,
-                            MaterialTheme.colorScheme.secondaryContainer
-                        )
-                    )
-                ), contentAlignment = Alignment.Center
+                            MaterialTheme.colorScheme.secondaryContainer,
+                        ),
+                    ),
+                ),
+            contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = title.take(1).uppercase(),
                 style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun BookHeaderDetails(
     title: String,
@@ -1193,10 +1214,10 @@ private fun BookHeaderDetails(
     spaces: List<String>,
     tags: List<String>,
     onNavigateToTag: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    var isExpanded by remember { mutableStateOf(false) }
-    val showMoreChip = tags.size > 5 && !isExpanded
+    var isExpanded by remember { mutableStateOf(value = false) }
+    val showMoreChip = (tags.size > 5) && !isExpanded
 
     val tagsToShow = if (isExpanded) {
         tags
@@ -1215,14 +1236,14 @@ private fun BookHeaderDetails(
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 3,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
         Text(
             text = if (authors.isNotEmpty()) authors.joinToString(", ") else stringResource(
-                R.string.book_unknown_author
+                R.string.book_unknown_author,
             ),
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         if (spaces.isNotEmpty()) {
@@ -1230,7 +1251,7 @@ private fun BookHeaderDetails(
                 text = spaces.joinToString(", "),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = 4.dp)
+                modifier = Modifier.padding(top = 4.dp),
             )
         }
 
@@ -1241,49 +1262,58 @@ private fun BookHeaderDetails(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp)
+                        .padding(top = 8.dp),
                 ) {
                     tagsToShow.forEach { tag ->
                         SuggestionChip(
-                            onClick = { onNavigateToTag(tag) }, label = {
+                            onClick = { onNavigateToTag(tag) },
+                            label = {
                                 Text(
                                     text = tag,
                                     style = MaterialTheme.typography.labelMedium,
                                     maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                                    overflow = TextOverflow.Ellipsis,
                                 )
-                            }, colors = SuggestionChipDefaults.suggestionChipColors(
+                            },
+                            colors = SuggestionChipDefaults.suggestionChipColors(
                                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            ), border = null
+                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
+                            border = null,
                         )
                     }
 
                     if (showMoreChip) {
                         SuggestionChip(
-                            onClick = { isExpanded = true }, label = {
+                            onClick = { isExpanded = true },
+                            label = {
                                 Icon(
                                     imageVector = MaterialSymbols.Outlined.More_vert,
                                     contentDescription = stringResource(R.string.book_show_more_tags),
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(16.dp),
                                 )
-                            }, colors = SuggestionChipDefaults.suggestionChipColors(
+                            },
+                            colors = SuggestionChipDefaults.suggestionChipColors(
                                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            ), border = null
+                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
+                            border = null,
                         )
-                    } else if (isExpanded && tags.size > 5) {
+                    } else if (isExpanded && (tags.size > 5)) {
                         SuggestionChip(
-                            onClick = { isExpanded = false }, label = {
+                            onClick = { isExpanded = false },
+                            label = {
                                 Icon(
                                     imageVector = MaterialSymbols.Outlined.Close,
                                     contentDescription = stringResource(R.string.book_show_less_tags),
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(16.dp),
                                 )
-                            }, colors = SuggestionChipDefaults.suggestionChipColors(
+                            },
+                            colors = SuggestionChipDefaults.suggestionChipColors(
                                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            ), border = null
+                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
+                            border = null,
                         )
                     }
                 }
@@ -1294,25 +1324,25 @@ private fun BookHeaderDetails(
 
 @Composable
 private fun BookProgress(
-    progress: Double, modifier: Modifier = Modifier
+    progress: Double, modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = stringResource(R.string.book_reading_progress),
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
                 text = "${(progress * 100).toInt()}%",
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
         }
         LinearProgressIndicator(
@@ -1320,20 +1350,20 @@ private fun BookProgress(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(8.dp)
-                .clip(RoundedCornerShape(4.dp))
+                .clip(RoundedCornerShape(4.dp)),
         )
     }
 }
 
 @Composable
 private fun BookDescription(
-    description: String, modifier: Modifier = Modifier
+    description: String, modifier: Modifier = Modifier,
 ) {
-    var isExpanded by remember { mutableStateOf(false) }
+    var isExpanded by remember { mutableStateOf(value = false) }
 
     val annotatedDescription = remember(description) {
         val spanned = HtmlCompat.fromHtml(
-            description, HtmlCompat.FROM_HTML_MODE_COMPACT
+            description, HtmlCompat.FROM_HTML_MODE_COMPACT,
         )
 
         val trimmed = spanned.toString().trimEnd()
@@ -1341,12 +1371,12 @@ private fun BookDescription(
     }
 
     Column(
-        modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
             text = stringResource(R.string.book_description),
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
             text = annotatedDescription,
@@ -1356,54 +1386,55 @@ private fun BookDescription(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
                 .fillMaxWidth()
-                .animateContentSize()
+                .animateContentSize(),
         )
         if (description.length > 200) {
             val labelText =
                 if (isExpanded) stringResource(R.string.book_read_less) else stringResource(
-                    R.string.book_read_more
+                    R.string.book_read_more,
                 )
             Text(
                 text = labelText,
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.clickable(
-                    interactionSource = remember { MutableInteractionSource() }, indication = null
+                    interactionSource = remember { MutableInteractionSource() }, indication = null,
                 ) {
                     isExpanded = !isExpanded
-                })
+                },
+            )
         }
     }
 }
 
 @Composable
 private fun BookMetadata(
-    book: Book, modifier: Modifier = Modifier
+    book: Book, modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
             text = stringResource(R.string.book_publication_details),
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
         )
 
         val notAvailable = stringResource(R.string.book_not_available)
         SegmentedColumn(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
                         text = stringResource(R.string.book_publisher),
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = book.publisher ?: notAvailable,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }
@@ -1412,12 +1443,12 @@ private fun BookMetadata(
                     Text(
                         text = stringResource(R.string.book_published_date),
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = formatPublishedDate(book.published, notAvailable),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }
@@ -1426,12 +1457,12 @@ private fun BookMetadata(
                     Text(
                         text = stringResource(R.string.book_language),
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = book.language ?: notAvailable,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }
@@ -1440,12 +1471,12 @@ private fun BookMetadata(
                     Text(
                         text = stringResource(R.string.book_identifier),
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = book.identifier ?: notAvailable,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }
@@ -1454,14 +1485,14 @@ private fun BookMetadata(
                     Text(
                         text = stringResource(R.string.book_format),
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = parseBookFormat(
-                            book.mediaType, stringResource(R.string.book_unknown)
+                            book.mediaType, stringResource(R.string.book_unknown),
                         ),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }
@@ -1469,33 +1500,32 @@ private fun BookMetadata(
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun BookInfoTopButtons(
     bookId: String,
     onNavigateBack: () -> Unit,
     onNavigateToEdit: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         FilledTonalIconButton(
             shapes = IconButtonDefaults.shapes(),
             onClick = onNavigateBack,
             colors = IconButtonDefaults.filledTonalIconButtonColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(
-                    alpha = 0.8f
-                )
-            )
+                    alpha = 0.8f,
+                ),
+            ),
         ) {
             Icon(
                 MaterialSymbols.Outlined.Arrow_back,
-                contentDescription = stringResource(R.string.action_back)
+                contentDescription = stringResource(R.string.action_back),
             )
         }
 
@@ -1504,14 +1534,14 @@ private fun BookInfoTopButtons(
             onClick = { onNavigateToEdit(bookId) },
             colors = IconButtonDefaults.filledTonalIconButtonColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(
-                    alpha = 0.8f
-                )
-            )
+                    alpha = 0.8f,
+                ),
+            ),
         ) {
             Icon(
                 MaterialSymbols.Outlined.Edit,
                 contentDescription = stringResource(R.string.action_edit),
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(20.dp),
             )
         }
     }
@@ -1573,19 +1603,19 @@ private fun parseBookFormat(mediaType: String?, defaultUnknown: String): String 
 @Composable
 private fun getPositionLabel(locator: Locator, positions: List<Locator>): String {
     val posIndex = locator.locations.totalProgression?.let { target ->
-        positions.indexOfLast { (it.locations.totalProgression ?: -1.0) <= target }
-    }?.takeIf { it != -1 } ?: positions.indexOfLast { pos ->
-        pos.href == locator.href && (pos.locations.progression
-            ?: 0.0) <= (locator.locations.progression ?: 0.0)
+        positions.indexOfLast { (_, _, _, itLocations) -> (itLocations.totalProgression ?: -1.0) <= target }
+    }?.takeIf { it != -1 } ?: positions.indexOfLast { (posHref, _, _, posLocations) ->
+        (posHref == locator.href) && ((posLocations.progression
+            ?: 0.0) <= (locator.locations.progression ?: 0.0))
     }.takeIf { it != -1 }
 
     return when {
         posIndex != null -> pluralStringResource(
-            R.plurals.reader_page_num, posIndex + 1, posIndex + 1
+            R.plurals.reader_page_num, posIndex + 1, posIndex + 1,
         )
 
         locator.locations.totalProgression != null -> stringResource(
-            R.string.reader_position_at, "${(locator.locations.totalProgression!! * 100).toInt()}%"
+            R.string.reader_position_at, "${(locator.locations.totalProgression!! * 100).toInt()}%",
         )
 
         else -> ""
@@ -1596,12 +1626,12 @@ private fun getPositionLabel(locator: Locator, positions: List<Locator>): String
 private fun getChapterPageLabel(link: Link, positions: List<Locator>): String {
     if (positions.isEmpty()) return ""
     val linkHref = link.href.toString().substringBefore("#")
-    val posIndex = positions.indexOfFirst {
-        it.href.toString().substringBefore("#") == linkHref
+    val posIndex = positions.indexOfFirst { (itHref4) ->
+        itHref4.toString().substringBefore("#") == linkHref
     }
     return if (posIndex != -1) {
         pluralStringResource(
-            R.plurals.reader_page_num, posIndex + 1, posIndex + 1
+            R.plurals.reader_page_num, posIndex + 1, posIndex + 1,
         )
     } else ""
 }

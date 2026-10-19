@@ -38,39 +38,39 @@ fun IncrementDecrementControl(
     value: String,
     onIncrement: () -> Unit,
     onDecrement: () -> Unit,
-    enabled: Boolean = true
+    enabled: Boolean = true,
 ) {
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.Start,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
             color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(
-                alpha = 0.38f
-            )
+                alpha = 0.38f,
+            ),
         )
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start
+            horizontalArrangement = Arrangement.Start,
         ) {
             IconButton(
                 onClick = onDecrement,
                 enabled = enabled,
                 colors = IconButtonDefaults.iconButtonColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
                 shapes = IconButtonDefaults.shapes(),
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier.size(36.dp),
             ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Remove,
                     contentDescription = stringResource(R.string.action_decrease),
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
             }
 
@@ -91,26 +91,22 @@ fun IncrementDecrementControl(
                     if (isIncrement) {
                         (slideInVertically(
                             animationSpec = actionsSpatialSpec,
-                            initialOffsetY = { offsetPx }
-                        ) + fadeIn(animationSpec = actionsEffectsSpec)).togetherWith(
+                        ) { offsetPx } + fadeIn(animationSpec = actionsEffectsSpec)).togetherWith(
                             slideOutVertically(
                                 animationSpec = actionsSpatialSpec,
-                                targetOffsetY = { -offsetPx }
-                            ) + fadeOut(animationSpec = actionsEffectsSpec)
+                            ) { -offsetPx } + fadeOut(animationSpec = actionsEffectsSpec),
                         )
                     } else {
                         (slideInVertically(
                             animationSpec = actionsSpatialSpec,
-                            initialOffsetY = { -offsetPx }
-                        ) + fadeIn(animationSpec = actionsEffectsSpec)).togetherWith(
+                        ) { -offsetPx } + fadeIn(animationSpec = actionsEffectsSpec)).togetherWith(
                             slideOutVertically(
                                 animationSpec = actionsSpatialSpec,
-                                targetOffsetY = { offsetPx }
-                            ) + fadeOut(animationSpec = actionsEffectsSpec)
+                            ) { offsetPx } + fadeOut(animationSpec = actionsEffectsSpec),
                         )
                     }
                 },
-                label = "ValueAnimation"
+                label = "ValueAnimation",
             ) { targetValue ->
                 Text(
                     text = targetValue,
@@ -118,9 +114,9 @@ fun IncrementDecrementControl(
                     fontWeight = FontWeight.SemiBold,
                     textAlign = TextAlign.Center,
                     color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(
-                        alpha = 0.38f
+                        alpha = 0.38f,
                     ),
-                    modifier = Modifier.widthIn(min = 60.dp)
+                    modifier = Modifier.widthIn(min = 60.dp),
                 )
             }
 
@@ -129,15 +125,15 @@ fun IncrementDecrementControl(
                 enabled = enabled,
                 colors = IconButtonDefaults.iconButtonColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
                 shapes = IconButtonDefaults.shapes(),
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier.size(36.dp),
             ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Add,
                     contentDescription = stringResource(R.string.action_increase),
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
             }
         }

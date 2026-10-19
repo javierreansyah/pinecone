@@ -4,8 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -44,16 +42,16 @@ fun UnsortedScreen(
     onNavigateToReader: (String) -> Unit,
     onNavigateToBookInfo: (String) -> Unit,
     onNavigateToOrganize: (String) -> Unit,
-    viewModel: UnsortedViewModel = viewModel()
+    viewModel: UnsortedViewModel = viewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val unsortedBooks by viewModel.unsortedBooks.collectAsState()
     val allBooks by viewModel.allBooks.collectAsState()
 
     var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
-    var showFilterSheet by remember { mutableStateOf(false) }
+    var showFilterSheet by remember { mutableStateOf(value = false) }
     var selectedBooks by remember { mutableStateOf(emptySet<String>()) }
-    var isInMultiSelectMode by remember { mutableStateOf(false) }
+    var isInMultiSelectMode by remember { mutableStateOf(value = false) }
 
     val exitMultiSelect = {
         selectedBooks = emptySet()
@@ -70,11 +68,11 @@ fun UnsortedScreen(
         isInMultiSelectMode = isInMultiSelectMode,
         onNavigateBack = onNavigateBack,
         onEnterMultiSelect = { bookId ->
-            selectedBooks = if (bookId != null) setOf(bookId) else emptySet()
+            selectedBooks = bookId?.let(::setOf) ?: emptySet()
             isInMultiSelectMode = true
         },
         onExitMultiSelect = exitMultiSelect,
-        onSelectAll = { selectedBooks = unsortedBooks.map { it.id }.toSet() },
+        onSelectAll = { selectedBooks = unsortedBooks.map { (itId) -> itId }.toSet() },
         onClearSelection = { selectedBooks = emptySet() },
         onToggleBookSelection = { bookId ->
             selectedBooks = if (selectedBooks.contains(bookId)) {
@@ -102,7 +100,7 @@ fun UnsortedScreen(
         },
         onOpenFilter = { showFilterSheet = true },
         onBookClick = onNavigateToReader,
-        onBookLongClick = { selectedBookForMenu = it }
+        onBookLongClick = { selectedBookForMenu = it },
     )
 
     selectedBookForMenu?.let { bookId ->
@@ -118,8 +116,7 @@ fun UnsortedScreen(
                 selectedBooks = setOf(bookId)
                 isInMultiSelectMode = true
             },
-            onDismiss = { selectedBookForMenu = null }
-        )
+        ) { selectedBookForMenu = null }
     }
 
     if (showFilterSheet) {
@@ -128,12 +125,10 @@ fun UnsortedScreen(
             onLayoutModeChange = viewModel::onLayoutModeChange,
             onSortTypeChange = viewModel::onSortTypeChange,
             onStatusToggle = viewModel::toggleStatusFilter,
-            onDismiss = { showFilterSheet = false }
-        )
+        ) { showFilterSheet = false }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UnsortedContent(
     unsortedBooks: List<Book>,
@@ -154,15 +149,15 @@ fun UnsortedContent(
     onOpenFilter: () -> Unit,
     onBookClick: (String) -> Unit,
     onBookLongClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val isEmpty = unsortedBooks.isEmpty()
 
     val showMarkAsRead = remember(allBooks, selectedBooks) {
         allBooks
-            .filter { it.id in selectedBooks }
-            .any { !it.isRead }
+            .filter { (itId2) -> itId2 in selectedBooks }
+            .any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itIsRead) -> !itIsRead }
     }
 
     Scaffold(
@@ -176,7 +171,7 @@ fun UnsortedContent(
                 isInMultiSelectMode = isInMultiSelectMode,
                 isEmpty = isEmpty,
                 selectedCount = selectedBooks.size,
-                isAllSelected = unsortedBooks.isNotEmpty() && selectedBooks.size == unsortedBooks.size,
+                isAllSelected = unsortedBooks.isNotEmpty() && (selectedBooks.size == unsortedBooks.size),
                 showMarkAsRead = showMarkAsRead,
                 scrollBehavior = scrollBehavior,
                 onNavigateBack = onNavigateBack,
@@ -188,14 +183,14 @@ fun UnsortedContent(
                 onArchive = onArchiveSelected,
                 onDelete = onDeleteSelected,
                 onOrganize = onOrganizeSelected,
-                onOpenFilter = onOpenFilter
+                onOpenFilter = onOpenFilter,
             )
-        }
+        },
     ) { innerPadding ->
         Box(
             modifier = Modifier
                 .padding(innerPadding)
-                .fillMaxSize()
+                .fillMaxSize(),
         ) {
             if (isEmpty) {
                 EmptyState(
@@ -203,7 +198,7 @@ fun UnsortedContent(
                     text = stringResource(R.string.library_empty_unsorted),
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp)
+                        .padding(16.dp),
                 )
             } else {
                 BookCollection(
@@ -222,15 +217,14 @@ fun UnsortedContent(
                     scrollKey = Triple(
                         uiState.bookPreferences.sortType,
                         uiState.bookPreferences.isAscending,
-                        uiState.bookPreferences.selectedStatus
-                    )
+                        uiState.bookPreferences.selectedStatus,
+                    ),
                 )
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun UnsortedTopBar(
     isInMultiSelectMode: Boolean,
@@ -248,7 +242,7 @@ private fun UnsortedTopBar(
     onArchive: () -> Unit,
     onDelete: () -> Unit,
     onOrganize: () -> Unit,
-    onOpenFilter: () -> Unit
+    onOpenFilter: () -> Unit,
 ) {
     MultiSelectTopBarTransition(
         isMultiSelect = isInMultiSelectMode,
@@ -264,10 +258,9 @@ private fun UnsortedTopBar(
                 onOrganize = onOrganize,
                 onArchive = onArchive,
                 onDelete = onDelete,
-                isUnarchive = false
             )
         },
-        defaultBar = {
+    ) {
             LibraryTopAppBar(
                 title = { Text(stringResource(R.string.library_unsorted_title)) },
                 onBack = onNavigateBack,
@@ -276,24 +269,23 @@ private fun UnsortedTopBar(
                 actions = {
                     IconButton(
                         shapes = IconButtonDefaults.shapes(),
-                        onClick = onEnterMultiSelect
+                        onClick = onEnterMultiSelect,
                     ) {
                         Icon(
                             MaterialSymbols.Outlined.Select,
-                            contentDescription = stringResource(R.string.action_select_multiple)
+                            contentDescription = stringResource(R.string.action_select_multiple),
                         )
                     }
                     IconButton(
                         shapes = IconButtonDefaults.shapes(),
-                        onClick = onOpenFilter
+                        onClick = onOpenFilter,
                     ) {
                         Icon(
                             MaterialSymbols.Outlined.Tune,
-                            contentDescription = stringResource(R.string.action_filter)
+                            contentDescription = stringResource(R.string.action_filter),
                         )
                     }
-                }
+                },
             )
         }
-    )
 }

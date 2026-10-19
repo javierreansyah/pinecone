@@ -10,7 +10,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
@@ -31,10 +30,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
@@ -75,7 +72,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Check
@@ -85,21 +82,16 @@ import com.composables.icons.materialsymbols.outlined.Image
 import com.javierreansyah.pinecone.R
 import java.io.File
 
-@OptIn(
-    ExperimentalMaterial3Api::class,
-    ExperimentalLayoutApi::class,
-    ExperimentalMaterial3ExpressiveApi::class
-)
 @Composable
 fun EditBookScreen(
-    bookId: String, onNavigateBack: () -> Unit
+    bookId: String, onNavigateBack: () -> Unit,
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as Application
 
     val viewModel: EditBookViewModel = viewModel(
         key = bookId,
-        factory = EditBookViewModel.Factory(application, bookId)
+        factory = EditBookViewModel.Factory(application, bookId),
     )
 
     val uiState by viewModel.uiState.collectAsState()
@@ -117,35 +109,36 @@ fun EditBookScreen(
             EditBookTopAppBar(
                 isSaving = uiState.isSaving,
                 onNavigateBack = onNavigateBack,
-                onSave = { viewModel.saveChanges() }
+                onSave = { viewModel.saveChanges() },
             )
-        }) { innerPadding ->
+        },
+    ) { innerPadding ->
         if (uiState.isLoading) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator()
             }
-        } else if (uiState.error != null && !uiState.isSaving) {
+        } else if ((uiState.error != null) && !uiState.isSaving) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
                     uiState.error ?: stringResource(R.string.book_not_found),
-                    color = MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.error,
                 )
             }
         } else {
             EditBookContent(
                 uiState = uiState,
-                allAuthors = allAuthors.map { it.name },
-                allTags = allTags.map { it.name },
+                allAuthors = allAuthors.map { (_, itName) -> itName },
+                allTags = allTags.map { (_, itName2) -> itName2 },
                 onTitleChange = { viewModel.updateTitle(it) },
                 onDescriptionChange = { viewModel.updateDescription(it) },
                 onCoverUriChange = { viewModel.updateCoverUri(it) },
@@ -153,19 +146,18 @@ fun EditBookScreen(
                 onRemoveAuthor = { viewModel.removeAuthor(it) },
                 onAddTag = { viewModel.addTag(it) },
                 onRemoveTag = { viewModel.removeTag(it) },
-                innerPadding = innerPadding
+                innerPadding = innerPadding,
             )
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun EditBookTopAppBar(
     isSaving: Boolean,
     onNavigateBack: () -> Unit,
     onSave: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     TopAppBar(
         title = { Text(stringResource(R.string.book_edit_title)) },
@@ -173,11 +165,11 @@ private fun EditBookTopAppBar(
             FilledTonalIconButton(
                 shapes = IconButtonDefaults.shapes(),
                 onClick = onNavigateBack,
-                colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+                colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
             ) {
                 Icon(
                     MaterialSymbols.Outlined.Arrow_back,
-                    contentDescription = stringResource(R.string.action_back)
+                    contentDescription = stringResource(R.string.action_back),
                 )
             }
         },
@@ -187,24 +179,23 @@ private fun EditBookTopAppBar(
                     .padding(end = 6.dp)
                     .size(
                         IconButtonDefaults.smallContainerSize(
-                            widthOption = IconButtonDefaults.IconButtonWidthOption.Wide
-                        )
+                            widthOption = IconButtonDefaults.IconButtonWidthOption.Wide,
+                        ),
                     ),
                 shapes = IconButtonDefaults.shapes(),
                 onClick = onSave,
-                enabled = !isSaving
+                enabled = !isSaving,
             ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Check,
-                    contentDescription = stringResource(R.string.action_save)
+                    contentDescription = stringResource(R.string.action_save),
                 )
             }
         },
-        modifier = modifier
+        modifier = modifier,
     )
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun EditBookContent(
     uiState: EditBookUiState,
@@ -218,7 +209,7 @@ private fun EditBookContent(
     onAddTag: (String) -> Unit,
     onRemoveTag: (String) -> Unit,
     innerPadding: PaddingValues,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier
@@ -229,12 +220,12 @@ private fun EditBookContent(
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         BookCoverPicker(
             coverUri = uiState.coverUri,
             existingCoverPath = uiState.existingCoverPath,
-            onCoverUriChange = onCoverUriChange
+            onCoverUriChange = onCoverUriChange,
         )
 
         OutlinedTextField(
@@ -242,7 +233,7 @@ private fun EditBookContent(
             onValueChange = onTitleChange,
             label = { Text(stringResource(R.string.library_sort_title)) },
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true
+            singleLine = true,
         )
 
         AutocompleteChipTextField(
@@ -251,7 +242,7 @@ private fun EditBookContent(
             suggestions = allAuthors,
             onAdd = onAddAuthor,
             onRemove = onRemoveAuthor,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         )
 
         AutocompleteChipTextField(
@@ -260,7 +251,7 @@ private fun EditBookContent(
             suggestions = allTags,
             onAdd = onAddTag,
             onRemove = onRemoveTag,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         )
 
         OutlinedTextField(
@@ -269,7 +260,7 @@ private fun EditBookContent(
             label = { Text(stringResource(R.string.book_description)) },
             modifier = Modifier
                 .fillMaxWidth()
-                .defaultMinSize(minHeight = 160.dp)
+                .defaultMinSize(minHeight = 160.dp),
         )
     }
 }
@@ -279,11 +270,11 @@ private fun BookCoverPicker(
     coverUri: Uri?,
     existingCoverPath: String?,
     onCoverUriChange: (Uri?) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    var isImagePickerOpen by remember { mutableStateOf(false) }
+    var isImagePickerOpen by remember { mutableStateOf(value = false) }
     val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        contract = ActivityResultContracts.GetContent(),
     ) { uri: Uri? ->
         isImagePickerOpen = false
         onCoverUriChange(uri)
@@ -301,13 +292,14 @@ private fun BookCoverPicker(
                     isImagePickerOpen = true
                     launcher.launch("image/*")
                 }
-            }) {
+            },
+    ) {
         if (coverUri != null) {
             AsyncImage(
                 model = coverUri,
                 contentDescription = stringResource(R.string.book_info_title),
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
             )
         } else if (existingCoverPath != null) {
             val coverModel = remember(existingCoverPath) { File(existingCoverPath) }
@@ -315,7 +307,7 @@ private fun BookCoverPicker(
                 model = coverModel,
                 contentDescription = stringResource(R.string.book_info_title),
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
             )
         } else {
             Box(
@@ -325,16 +317,17 @@ private fun BookCoverPicker(
                         Brush.verticalGradient(
                             colors = listOf(
                                 MaterialTheme.colorScheme.primaryContainer,
-                                MaterialTheme.colorScheme.secondaryContainer
-                            )
-                        )
-                    ), contentAlignment = Alignment.Center
+                                MaterialTheme.colorScheme.secondaryContainer,
+                            ),
+                        ),
+                    ),
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Image,
                     contentDescription = stringResource(R.string.book_info_title),
                     modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 )
             }
         }
@@ -345,25 +338,20 @@ private fun BookCoverPicker(
                 .padding(8.dp)
                 .background(
                     color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
-                    shape = CircleShape
+                    shape = CircleShape,
                 )
-                .padding(6.dp)
+                .padding(6.dp),
         ) {
             Icon(
                 imageVector = MaterialSymbols.Outlined.Edit,
                 contentDescription = stringResource(R.string.action_edit),
                 tint = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(16.dp),
             )
         }
     }
 }
 
-@OptIn(
-    ExperimentalMaterial3Api::class,
-    ExperimentalLayoutApi::class,
-    ExperimentalMaterial3ExpressiveApi::class
-)
 @Composable
 private fun AutocompleteChipTextField(
     label: String,
@@ -371,10 +359,10 @@ private fun AutocompleteChipTextField(
     suggestions: List<String>,
     onAdd: (String) -> Unit,
     onRemove: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var text by remember { mutableStateOf("") }
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(value = false) }
     var textFieldWidth by remember { mutableIntStateOf(0) }
 
     val filteredSuggestions = remember(suggestions, items, text) {
@@ -384,7 +372,8 @@ private fun AutocompleteChipTextField(
     Box(
         modifier = modifier.onGloballyPositioned { coordinates ->
             textFieldWidth = coordinates.size.width
-        }) {
+        },
+    ) {
         val interactionSource = remember { MutableInteractionSource() }
 
         BasicTextField(
@@ -405,7 +394,8 @@ private fun AutocompleteChipTextField(
                         text = ""
                         expanded = false
                     }
-                })
+                },
+            ),
         ) { innerTextField ->
             OutlinedTextFieldDefaults.DecorationBox(
                 value = if (items.isNotEmpty()) " " else text,
@@ -414,9 +404,9 @@ private fun AutocompleteChipTextField(
                         FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalArrangement = Arrangement.spacedBy(
-                                8.dp, Alignment.CenterVertically
+                                8.dp, Alignment.CenterVertically,
                             ),
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
                             items.forEach { item ->
                                 InputChip(
@@ -429,14 +419,16 @@ private fun AutocompleteChipTextField(
                                             contentDescription = stringResource(R.string.action_remove),
                                             modifier = Modifier
                                                 .size(16.dp)
-                                                .clickable { onRemove(item) })
-                                    })
+                                                .clickable { onRemove(item) },
+                                        )
+                                    },
+                                )
                             }
                             Box(
                                 modifier = Modifier
                                     .weight(1f, fill = false)
                                     .align(Alignment.CenterVertically)
-                                    .defaultMinSize(minWidth = 60.dp)
+                                    .defaultMinSize(minWidth = 60.dp),
                             ) {
                                 innerTextField()
                             }
@@ -461,19 +453,20 @@ private fun AutocompleteChipTextField(
                         focusedBorderThickness = FocusedBorderThickness,
                         unfocusedBorderThickness = UnfocusedBorderThickness,
                     )
-                })
+                },
+            )
         }
 
         DropdownMenuPopup(
             expanded = expanded && text.isNotBlank(),
             onDismissRequest = { expanded = false },
             modifier = Modifier.width(with(LocalDensity.current) { textFieldWidth.toDp() }),
-            properties = PopupProperties(focusable = false)
+            properties = PopupProperties(focusable = false),
         ) {
             val groupInteractionSource = remember { MutableInteractionSource() }
             DropdownMenuGroup(
                 shapes = MenuDefaults.groupShape(0, 1),
-                interactionSource = groupInteractionSource
+                interactionSource = groupInteractionSource,
             ) {
                 val finalSuggestions = filteredSuggestions.take(5)
                 val showCreateNew =
@@ -481,7 +474,7 @@ private fun AutocompleteChipTextField(
                 val totalCount = finalSuggestions.size + (if (showCreateNew) 1 else 0)
 
                 finalSuggestions.forEachIndexed { index, suggestion ->
-                    DropdownMenuItem(
+                    SelectableDropdownMenuItem(
                         selected = false,
                         text = { Text(suggestion) },
                         shapes = MenuDefaults.itemShape(index, totalCount),
@@ -489,12 +482,12 @@ private fun AutocompleteChipTextField(
                             onAdd(suggestion)
                             text = ""
                             expanded = false
-                        }
+                        },
                     )
                 }
 
                 if (showCreateNew) {
-                    DropdownMenuItem(
+                    SelectableDropdownMenuItem(
                         selected = false,
                         text = { Text(stringResource(R.string.book_create_new, text)) },
                         shapes = MenuDefaults.itemShape(finalSuggestions.size, totalCount),
@@ -502,7 +495,7 @@ private fun AutocompleteChipTextField(
                             onAdd(text)
                             text = ""
                             expanded = false
-                        }
+                        },
                     )
                 }
             }

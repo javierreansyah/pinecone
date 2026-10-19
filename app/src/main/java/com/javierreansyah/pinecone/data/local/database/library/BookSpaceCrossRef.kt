@@ -12,21 +12,21 @@ import androidx.room.Index
             entity = BookEntity::class,
             parentColumns = ["id"],
             childColumns = ["bookId"],
-            onDelete = ForeignKey.CASCADE
+            onDelete = ForeignKey.CASCADE,
         ),
         ForeignKey(
             entity = SpaceEntity::class,
             parentColumns = ["id"],
             childColumns = ["spaceId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
     indices = [
         Index(value = ["bookId"]),
-        Index(value = ["spaceId"])
-    ]
+        Index(value = ["spaceId"]),
+    ],
 )
 data class BookSpaceCrossRef(
     val bookId: String,
-    val spaceId: String
+    val spaceId: String,
 )

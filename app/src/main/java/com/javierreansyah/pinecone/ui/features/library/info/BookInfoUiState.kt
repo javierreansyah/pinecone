@@ -4,5 +4,5 @@ import com.javierreansyah.pinecone.data.model.Book
 
 data class BookInfoUiState(
     val book: Book? = null,
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
 )

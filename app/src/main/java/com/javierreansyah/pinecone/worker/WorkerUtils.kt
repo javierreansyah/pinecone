@@ -8,7 +8,7 @@ import androidx.work.WorkManager
 import java.util.concurrent.TimeUnit
 
 object WorkerUtils {
-    const val BACKUP_WORK_NAME = "automated_backup_work"
+    private const val BACKUP_WORK_NAME: String = "automated_backup_work"
 
     fun scheduleBackupWork(context: Context, frequencyString: String) {
         val workManager = WorkManager.getInstance(context)
@@ -18,7 +18,7 @@ object WorkerUtils {
             return
         }
 
-        val repeatInterval = when (frequencyString) {
+        val (repeatIntervalFirst, repeatIntervalSecond) = when (frequencyString) {
             "3h" -> 3L to TimeUnit.HOURS
             "6h" -> 6L to TimeUnit.HOURS
             "12h" -> 12L to TimeUnit.HOURS
@@ -30,17 +30,17 @@ object WorkerUtils {
         }
 
         val constraints = Constraints.Builder()
-            .setRequiresStorageNotLow(true)
-            .setRequiresBatteryNotLow(true)
+            .setRequiresStorageNotLow(requiresStorageNotLow = true)
+            .setRequiresBatteryNotLow(requiresBatteryNotLow = true)
             .build()
 
         val workRequest = PeriodicWorkRequestBuilder<BackupWorker>(
-            repeatInterval.first, repeatInterval.second
+            repeatIntervalFirst, repeatIntervalSecond,
         ).setConstraints(constraints).build()
 
         workManager.enqueueUniquePeriodicWork(
             BACKUP_WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE,
-            workRequest
+            workRequest,
         )
     }
 }
