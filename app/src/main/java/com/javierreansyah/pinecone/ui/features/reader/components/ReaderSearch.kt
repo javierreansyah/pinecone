@@ -21,8 +21,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearWavyProgressIndicator
@@ -63,7 +61,6 @@ import com.javierreansyah.pinecone.ui.components.rememberVoiceSearchLauncher
 import com.javierreansyah.pinecone.ui.features.reader.SearchResultItem
 import kotlin.coroutines.cancellation.CancellationException
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ReaderSearch(
     query: String,
@@ -74,7 +71,7 @@ fun ReaderSearch(
     onSearch: (String) -> Unit,
     onResultClick: (Int) -> Unit,
     onClose: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -136,13 +133,13 @@ fun ReaderSearch(
         backProgress = backProgress,
         swipeEdge = swipeEdge,
         modifier = modifier,
-        backgroundColor = backgroundColor
+        backgroundColor = backgroundColor,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(top = 8.dp)
+                .padding(top = 8.dp),
         ) {
 
             SearchBarDefaults.InputField(
@@ -155,7 +152,7 @@ fun ReaderSearch(
                 colors = SearchBarDefaults.inputFieldColors(
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                     unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                 ),
                 onSearch = {
                     onSearch(textFieldState.text.toString())
@@ -164,7 +161,7 @@ fun ReaderSearch(
                 placeholder = {
                     Text(
                         stringResource(R.string.reader_search_in_book),
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.bodyLarge,
                     )
                 },
                 leadingIcon = {
@@ -173,24 +170,26 @@ fun ReaderSearch(
                             MaterialSymbols.Outlined.Chevron_backward,
                             contentDescription = stringResource(R.string.action_close),
                             tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(28.dp)
+                            modifier = Modifier.size(28.dp),
                         )
                     }
                 },
                 trailingIcon = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(end = 4.dp)
+                        modifier = Modifier.padding(end = 4.dp),
                     ) {
                         if (textFieldState.text.isNotEmpty()) {
-                            IconButton(onClick = {
-                                textFieldState.edit { replace(0, length, "") }
-                                onQueryChange("")
-                            }) {
+                            IconButton(
+                                onClick = {
+                                    textFieldState.edit { replace(0, length, "") }
+                                    onQueryChange("")
+                                },
+                            ) {
                                 Icon(
                                     MaterialSymbols.Outlined.Close,
                                     contentDescription = stringResource(R.string.action_clear),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         } else {
@@ -198,12 +197,12 @@ fun ReaderSearch(
                                 Icon(
                                     MaterialSymbols.Outlined.Mic,
                                     contentDescription = stringResource(R.string.action_voice_search),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
                     }
-                }
+                },
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -217,29 +216,29 @@ fun ReaderSearch(
                             val progress = backProgress.coerceIn(0f, 1f)
                             val targetWidth = constraints.maxWidth
                             val originalWidth = if (progress > 0f) {
-                                (targetWidth / (1f - progress * 0.112f)).toInt()
+                                (targetWidth / (1f - (progress * 0.112f))).toInt()
                             } else {
                                 targetWidth
                             }
                             val childConstraints = constraints.copy(
                                 minWidth = originalWidth.coerceAtLeast(0),
-                                maxWidth = originalWidth.coerceAtLeast(0)
+                                maxWidth = originalWidth.coerceAtLeast(0),
                             )
                             val placeable = measurable.measure(childConstraints)
                             layout(targetWidth, placeable.height) {
                                 placeable.placeRelative(0, 0)
                             }
-                        }
+                        },
                 ) {
                     if (searchPerformed && results.isNotEmpty()) {
                         item {
                             Surface(
-                                color = backgroundColor, modifier = Modifier.fillMaxWidth()
+                                color = backgroundColor, modifier = Modifier.fillMaxWidth(),
                             ) {
                                 val resultsText = androidx.compose.ui.res.pluralStringResource(
                                     R.plurals.reader_search_results_count,
                                     results.size,
-                                    results.size
+                                    results.size,
                                 )
                                 Text(
                                     text = resultsText,
@@ -249,7 +248,7 @@ fun ReaderSearch(
                                         start = 20.dp,
                                         end = 20.dp,
                                         bottom = 16.dp,
-                                    )
+                                    ),
                                 )
                             }
                         }
@@ -260,7 +259,7 @@ fun ReaderSearch(
                             item = item,
                             index = index,
                             query = query,
-                            onClick = { onResultClick(index) }
+                            onClick = { onResultClick(index) },
                         )
                     }
 
@@ -270,25 +269,25 @@ fun ReaderSearch(
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 64.dp)
+                                    .padding(top = 64.dp),
                             ) {
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                    verticalArrangement = Arrangement.spacedBy(16.dp),
                                 ) {
                                     Icon(
                                         MaterialSymbols.Outlined.Search,
                                         contentDescription = null,
                                         modifier = Modifier.size(48.dp),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                                     )
                                     Text(
                                         stringResource(
                                             R.string.reader_search_no_results_for,
-                                            query
+                                            query,
                                         ),
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
                             }
@@ -301,14 +300,14 @@ fun ReaderSearch(
                     visible = isLoading,
                     enter = fadeIn(animationSpec = actionsEffectsSpec),
                     exit = fadeOut(animationSpec = actionsEffectsSpec),
-                    modifier = Modifier.align(Alignment.TopCenter)
+                    modifier = Modifier.align(Alignment.TopCenter),
                 ) {
                     LinearWavyProgressIndicator(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(8.dp),
                         color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
                     )
                 }
             }
@@ -322,7 +321,7 @@ fun SearchResultCard(
     index: Int,
     query: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val primary = MaterialTheme.colorScheme.primary
     val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
@@ -332,25 +331,25 @@ fun SearchResultCard(
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Column {
 
             Text(
                 text = item.chapterTitle ?: "Unknown Chapter",
                 style = MaterialTheme.typography.titleMedium,
-                color = primary
+                color = primary,
             )
 
             val subtitleText = if (item.positionLabel.isNotBlank()) {
                 "${index + 1} | ${item.positionLabel}"
             } else {
-                "${index + 1}"
+                (index + 1).toString()
             }
             Text(
                 text = subtitleText,
                 style = MaterialTheme.typography.bodySmall,
-                color = onSurfaceVariant
+                color = onSurfaceVariant,
             )
         }
 
@@ -370,8 +369,8 @@ fun SearchResultCard(
                     color = primary,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
-                    background = primary.copy(alpha = 0.12f)
-                )
+                    background = primary.copy(alpha = 0.12f),
+                ),
             ) {
                 append(highlight)
             }
@@ -387,7 +386,7 @@ fun SearchResultCard(
             text = snippet,
             style = MaterialTheme.typography.bodyMedium,
             lineHeight = 20.sp,
-            modifier = Modifier.widthIn(max = 600.dp)
+            modifier = Modifier.widthIn(max = 600.dp),
         )
 
     }

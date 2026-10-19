@@ -17,7 +17,7 @@ data class LibraryBackupPayload(
     val bookAuthorCrossRefs: List<BookAuthorBackupRecord> = emptyList(),
     val bookTagCrossRefs: List<BookTagBackupRecord> = emptyList(),
     val spaces: List<SpaceBackupRecord> = emptyList(),
-    val bookSpaceCrossRefs: List<BookSpaceBackupRecord> = emptyList()
+    val bookSpaceCrossRefs: List<BookSpaceBackupRecord> = emptyList(),
 )
 
 @Serializable
@@ -34,20 +34,20 @@ data class VaultObject(
     val fileName: String,
     val sourcePath: String,
     val sourceSize: Long,
-    val sourceLastModified: Long
+    val sourceLastModified: Long,
 )
 
 @Serializable
 data class BookObjectReference(
     val bookId: String,
     val book: VaultObject,
-    val cover: VaultObject? = null
+    val cover: VaultObject? = null,
 )
 
 @Serializable
 data class DictionaryObjectReference(
     val dictionary: InstalledDictionary,
-    val objectInfo: VaultObject
+    val objectInfo: VaultObject,
 )
 
 @Serializable
@@ -65,18 +65,18 @@ data class VaultSnapshot(
     val settings: ReaderSettings,
     val books: List<BookObjectReference>,
     val dictionaries: List<DictionaryObjectReference>,
-    val activeDictionaryId: String
+    val activeDictionaryId: String,
 )
 
 @Serializable
 data class VaultFormat(
     val format: String = "pinecone-backup-vault",
-    val formatVersion: Int = 1
+    val formatVersion: Int = 1,
 )
 
 @Serializable
 data class PortableBackupManifest(
     val format: String = "pinecone-portable-backup",
     val formatVersion: Int = 1,
-    val snapshot: VaultSnapshot
+    val snapshot: VaultSnapshot,
 )

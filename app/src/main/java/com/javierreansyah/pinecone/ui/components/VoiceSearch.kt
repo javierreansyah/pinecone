@@ -10,10 +10,10 @@ import androidx.compose.runtime.remember
 
 @Composable
 fun rememberVoiceSearchLauncher(
-    onVoiceResult: (String) -> Unit
+    onVoiceResult: (String) -> Unit,
 ): () -> Unit {
     val speechRecognizerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
+        contract = ActivityResultContracts.StartActivityForResult(),
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             val spokenText =
@@ -28,12 +28,12 @@ fun rememberVoiceSearchLauncher(
         {
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(
-                    RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+                    RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM,
                 )
             }
             try {
                 speechRecognizerLauncher.launch(intent)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
 
             }
         }

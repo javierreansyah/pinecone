@@ -43,11 +43,11 @@ fun CustomColorPickerDialog(
     initialUiTheme: String = "Setting",
     onDismiss: () -> Unit,
     onDelete: (() -> Unit)? = null,
-    onConfirm: (String, String, String, String) -> Unit
+    onConfirm: (String, String, String, String) -> Unit,
 ) {
     var name by remember { mutableStateOf(initialName) }
-    var bgColorInput by remember { mutableStateOf(if (initialBgColor.isBlank() || initialBgColor == "#") "#" else initialBgColor) }
-    var textColorInput by remember { mutableStateOf(if (initialTextColor.isBlank() || initialTextColor == "#") "#" else initialTextColor) }
+    var bgColorInput by remember { mutableStateOf(if (initialBgColor.isBlank() || (initialBgColor == "#")) "#" else initialBgColor) }
+    var textColorInput by remember { mutableStateOf(if (initialTextColor.isBlank() || (initialTextColor == "#")) "#" else initialTextColor) }
     var uiThemeInput by remember { mutableStateOf(initialUiTheme) }
 
     val formatColorInput = { input: String ->
@@ -56,7 +56,7 @@ fun CustomColorPickerDialog(
     }
 
     fun parseColorSafe(colorStr: String): Color? {
-        if (colorStr.length != 7 && colorStr.length != 9) return null
+        if ((colorStr.length != 7) && (colorStr.length != 9)) return null
         return try {
             Color(colorStr.toColorInt())
         } catch (_: Exception) {
@@ -67,25 +67,26 @@ fun CustomColorPickerDialog(
     val parsedBg = parseColorSafe(bgColorInput)
     val parsedText = parseColorSafe(textColorInput)
 
-    val isValid = name.isNotBlank() && parsedBg != null && parsedText != null
+    val isValid = name.isNotBlank() && (parsedBg != null) && (parsedText != null)
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp), shape = RoundedCornerShape(16.dp)
+                .padding(16.dp),
+            shape = RoundedCornerShape(16.dp),
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     text = if (onDelete != null) stringResource(R.string.reader_settings_edit_theme) else stringResource(
-                        R.string.reader_settings_new_theme
+                        R.string.reader_settings_new_theme,
                     ),
                     style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.align(Alignment.Start)
+                    modifier = Modifier.align(Alignment.Start),
                 )
 
                 Box(
@@ -96,13 +97,14 @@ fun CustomColorPickerDialog(
                         .border(
                             width = 2.dp,
                             color = MaterialTheme.colorScheme.outlineVariant,
-                            shape = CircleShape
-                        ), contentAlignment = Alignment.Center
+                            shape = CircleShape,
+                        ),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = "Aa",
                         style = MaterialTheme.typography.headlineLarge,
-                        color = parsedText ?: MaterialTheme.colorScheme.onSurface
+                        color = parsedText ?: MaterialTheme.colorScheme.onSurface,
                     )
                 }
 
@@ -111,7 +113,7 @@ fun CustomColorPickerDialog(
                     onValueChange = { name = it },
                     label = { Text(stringResource(R.string.reader_settings_theme_name)) },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 OutlinedTextField(
@@ -121,7 +123,7 @@ fun CustomColorPickerDialog(
                     placeholder = { Text("#FFFFFF") },
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters),
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 OutlinedTextField(
@@ -131,32 +133,32 @@ fun CustomColorPickerDialog(
                     placeholder = { Text("#000000") },
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters),
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     val uiThemeOptions = listOf(
                         stringResource(R.string.reader_settings_theme_setting) to "Setting",
                         stringResource(R.string.settings_option_light) to "Light",
-                        stringResource(R.string.settings_option_dark) to "Dark"
+                        stringResource(R.string.settings_option_dark) to "Dark",
                     )
 
                     SegmentedButtonGroup(
                         title = stringResource(R.string.settings_theme_mode),
-                        options = uiThemeOptions.map { it.first },
+                        options = uiThemeOptions.map { (itFirst) -> itFirst },
                         icons = emptyList(),
-                        selected = uiThemeOptions.find { it.second == uiThemeInput }?.first
+                        selected = uiThemeOptions.find { (_, itSecond) -> itSecond == uiThemeInput }?.first
                             ?: stringResource(R.string.reader_settings_theme_setting),
                         onSelected = { selectedLabel ->
-                            uiThemeInput = uiThemeOptions.find { it.first == selectedLabel }?.second
+                            uiThemeInput = uiThemeOptions.find { (itFirst2) -> itFirst2 == selectedLabel }?.second
                                 ?: "Setting"
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         if (onDelete != null) {
                             TextButton(
@@ -164,7 +166,7 @@ fun CustomColorPickerDialog(
                             ) {
                                 Text(
                                     stringResource(R.string.action_delete),
-                                    color = MaterialTheme.colorScheme.error
+                                    color = MaterialTheme.colorScheme.error,
                                 )
                             }
                         } else {
@@ -181,10 +183,11 @@ fun CustomColorPickerDialog(
                                             name,
                                             bgColorInput.uppercase(),
                                             textColorInput.uppercase(),
-                                            uiThemeInput
+                                            uiThemeInput,
                                         )
                                     }
-                                }, enabled = isValid
+                                },
+                                enabled = isValid,
                             ) { Text(stringResource(R.string.action_save)) }
                         }
                     }

@@ -27,7 +27,7 @@ sealed interface Screen : NavKey {
     data class ShelfDetail(
         val shelfId: String,
         val name: String = "",
-        val count: Int = 0
+        val count: Int = 0,
     ) : Screen
 
     @Serializable

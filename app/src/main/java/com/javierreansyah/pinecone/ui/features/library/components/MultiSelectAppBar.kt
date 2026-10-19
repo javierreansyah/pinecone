@@ -6,8 +6,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,7 +32,6 @@ import com.composables.icons.materialsymbols.outlined.Select_all
 import com.composables.icons.materialsymbols.outlined.Unarchive
 import com.javierreansyah.pinecone.R
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MultiSelectAppBar(
     selectedCount: Int,
@@ -48,66 +45,68 @@ fun MultiSelectAppBar(
     onArchive: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
-    isUnarchive: Boolean = false
+    isUnarchive: Boolean = false,
 ) {
-    var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var showDeleteConfirmation by remember { mutableStateOf(value = false) }
 
     TopAppBar(
         title = {
-            Text(text = "$selectedCount")
+            Text(text = selectedCount.toString())
         },
         navigationIcon = {
             IconButton(onClick = onCloseMultiSelect) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Close,
-                    contentDescription = stringResource(R.string.action_cancel)
+                    contentDescription = stringResource(R.string.action_cancel),
                 )
             }
         },
         actions = {
-            IconButton(onClick = {
-                if (isAllSelected) {
-                    onClearSelection()
-                } else {
-                    onSelectAll()
-                }
-            }) {
+            IconButton(
+                onClick = {
+                    if (isAllSelected) {
+                        onClearSelection()
+                    } else {
+                        onSelectAll()
+                    }
+                },
+            ) {
                 Icon(
                     imageVector = if (isAllSelected) MaterialSymbols.Outlined.Deselect else MaterialSymbols.Outlined.Select_all,
                     contentDescription = stringResource(
-                        if (isAllSelected) R.string.action_deselect_all else R.string.action_select_all
-                    )
+                        if (isAllSelected) R.string.action_deselect_all else R.string.action_select_all,
+                    ),
                 )
             }
             IconButton(onClick = onMarkAsReadUnread, enabled = selectedCount > 0) {
                 if (showMarkAsRead) {
                     Icon(
                         imageVector = MaterialSymbols.Outlined.Check_circle,
-                        contentDescription = stringResource(R.string.book_mark_as_read)
+                        contentDescription = stringResource(R.string.book_mark_as_read),
                     )
                 } else {
                     Icon(
                         imageVector = MaterialSymbols.Outlined.Circle,
-                        contentDescription = stringResource(R.string.book_mark_as_unread)
+                        contentDescription = stringResource(R.string.book_mark_as_unread),
                     )
                 }
             }
             IconButton(onClick = onOrganize, enabled = selectedCount > 0) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Create_new_folder,
-                    contentDescription = stringResource(R.string.action_organize)
+                    contentDescription = stringResource(R.string.action_organize),
                 )
             }
             IconButton(onClick = onArchive, enabled = selectedCount > 0) {
                 if (isUnarchive) {
                     Icon(
                         imageVector = MaterialSymbols.Outlined.Unarchive,
-                        contentDescription = stringResource(R.string.book_unarchive)
+                        contentDescription = stringResource(R.string.book_unarchive),
                     )
                 } else {
                     Icon(
                         imageVector = MaterialSymbols.Outlined.Archive,
-                        contentDescription = stringResource(R.string.book_archive)
+                        contentDescription = stringResource(R.string.book_archive),
                     )
                 }
             }
@@ -116,15 +115,15 @@ fun MultiSelectAppBar(
                     imageVector = MaterialSymbols.Outlined.Delete,
                     contentDescription = stringResource(R.string.action_delete),
                     tint = if (selectedCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(
-                        alpha = 0.38f
-                    )
+                        alpha = 0.38f,
+                    ),
                 )
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surface,
         ),
-        modifier = modifier
+        modifier = modifier,
     )
 
     if (showDeleteConfirmation) {
@@ -133,13 +132,13 @@ fun MultiSelectAppBar(
             title = {
                 Text(
                     stringResource(R.string.book_delete_title),
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.titleLarge,
                 )
             },
             text = {
                 Text(
                     stringResource(R.string.book_delete_message),
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             },
             confirmButton = {
@@ -148,11 +147,11 @@ fun MultiSelectAppBar(
                         onDelete()
                         showDeleteConfirmation = false
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
                 ) {
                     Text(
                         stringResource(R.string.action_delete),
-                        style = MaterialTheme.typography.labelLarge
+                        style = MaterialTheme.typography.labelLarge,
                     )
                 }
             },
@@ -160,20 +159,19 @@ fun MultiSelectAppBar(
                 TextButton(onClick = { showDeleteConfirmation = false }) {
                     Text(
                         stringResource(R.string.action_cancel),
-                        style = MaterialTheme.typography.labelLarge
+                        style = MaterialTheme.typography.labelLarge,
                     )
                 }
-            }
+            },
         )
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MultiSelectTopBarTransition(
     isMultiSelect: Boolean,
     multiSelectBar: @Composable () -> Unit,
-    defaultBar: @Composable () -> Unit
+    defaultBar: @Composable () -> Unit,
 ) {
     val motionScheme = MaterialTheme.motionScheme
     val actionsEffectsSpec = motionScheme.fastEffectsSpec<Float>()
@@ -182,10 +180,10 @@ fun MultiSelectTopBarTransition(
         targetState = isMultiSelect,
         transitionSpec = {
             fadeIn(animationSpec = actionsEffectsSpec).togetherWith(
-                fadeOut(animationSpec = actionsEffectsSpec)
+                fadeOut(animationSpec = actionsEffectsSpec),
             )
         },
-        label = "topBarTransition"
+        label = "topBarTransition",
     ) { showMultiSelect ->
         if (showMultiSelect) {
             multiSelectBar()

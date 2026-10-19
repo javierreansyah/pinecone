@@ -28,12 +28,12 @@ import org.readium.r2.shared.publication.Locator
 data class SelectionState(
     val selectionLocator: Locator? = null,
     val editingNote: NoteEntity? = null,
-    val viewingHighlight: NoteEntity? = null
+    val viewingHighlight: NoteEntity? = null,
 )
 
 class ReaderNotesViewModel(
     private val bookId: String,
-    private val repository: LibraryRepository
+    private val repository: LibraryRepository,
 ) : ViewModel() {
 
     private val _selectionState = MutableStateFlow(SelectionState())
@@ -60,8 +60,8 @@ class ReaderNotesViewModel(
         _tableOfContents.value = toc
     }
 
-    val sortedBookmarks = combine(bookmarks, _sortOption, _tableOfContents) { bms, sort, toc ->
-        bms.map { bookmark ->
+    val sortedBookmarks: StateFlow<List<BookmarkEntity>> = combine(bookmarks, _sortOption, _tableOfContents) { bms, sort, toc ->
+        bms.asSequence().map { bookmark ->
             val locator = try {
                 Locator.fromJSON(JSONObject(bookmark.locatorJson))
             } catch (_: Exception) {
@@ -78,11 +78,11 @@ class ReaderNotesViewModel(
                 SortOption.BOOK_ORDER_DESC -> compareLocatorsWithFallback(l2, l1, toc)
                     ?: b2.createdAt.compareTo(b1.createdAt)
             }
-        }.map { it.first }
+        }.map { (itFirst) -> itFirst }.toList()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val sortedNotes = combine(notes, _sortOption, _tableOfContents) { nts, sort, toc ->
-        nts.map { note ->
+    val sortedNotes: StateFlow<List<NoteEntity>> = combine(notes, _sortOption, _tableOfContents) { nts, sort, toc ->
+        nts.asSequence().map { note ->
             val locator = try {
                 Locator.fromJSON(JSONObject(note.locatorJson))
             } catch (_: Exception) {
@@ -99,7 +99,7 @@ class ReaderNotesViewModel(
                 SortOption.BOOK_ORDER_DESC -> compareLocatorsWithFallback(l2, l1, toc)
                     ?: n2.createdAt.compareTo(n1.createdAt)
             }
-        }.map { it.first }
+        }.map { (itFirst2) -> itFirst2 }.toList()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun setSortOption(option: SortOption) {
@@ -107,7 +107,7 @@ class ReaderNotesViewModel(
     }
 
     private fun compareLocatorsWithFallback(loc1: Locator?, loc2: Locator?, toc: List<Link>): Int? {
-        if (loc1 != null && loc2 != null) {
+        if ((loc1 != null) && (loc2 != null)) {
             val comp = compareLocators(loc1, loc2, toc)
             if (comp != 0) return comp
             return null
@@ -120,16 +120,16 @@ class ReaderNotesViewModel(
     private fun compareLocators(loc1: Locator, loc2: Locator, tableOfContents: List<Link>): Int {
         val tp1 = loc1.locations.totalProgression
         val tp2 = loc2.locations.totalProgression
-        if (tp1 != null && tp2 != null) return tp1.compareTo(tp2)
+        if ((tp1 != null) && (tp2 != null)) return tp1.compareTo(tp2)
 
         val href1 = loc1.href.toString().substringBefore("#")
         val href2 = loc2.href.toString().substringBefore("#")
         if (href1 != href2) {
             val idx1 =
-                tableOfContents.indexOfFirst { it.href.toString().substringBefore("#") == href1 }
+                tableOfContents.indexOfFirst { (itHref) -> itHref.toString().substringBefore("#") == href1 }
             val idx2 =
-                tableOfContents.indexOfFirst { it.href.toString().substringBefore("#") == href2 }
-            if (idx1 != -1 && idx2 != -1) return idx1.compareTo(idx2)
+                tableOfContents.indexOfFirst { (itHref2) -> itHref2.toString().substringBefore("#") == href2 }
+            if ((idx1 != -1) && (idx2 != -1)) return idx1.compareTo(idx2)
             if (idx1 != -1) return -1
             if (idx2 != -1) return 1
             return href1.compareTo(href2)
@@ -137,21 +137,21 @@ class ReaderNotesViewModel(
 
         val p1 = loc1.locations.progression
         val p2 = loc2.locations.progression
-        if (p1 != null && p2 != null) return p1.compareTo(p2)
+        if ((p1 != null) && (p2 != null)) return p1.compareTo(p2)
 
         val pos1 = loc1.locations.position
         val pos2 = loc2.locations.position
-        if (pos1 != null && pos2 != null) return pos1.compareTo(pos2)
+        if ((pos1 != null) && (pos2 != null)) return pos1.compareTo(pos2)
 
         return 0
     }
 
     fun toggleBookmark(locator: Locator, chapterTitle: String?) {
         viewModelScope.launch {
-            val existing = bookmarks.value.find { bookmark ->
+            val existing = bookmarks.value.find { (_, _, bookmarkLocatorJson) ->
                 try {
-                    val bmLocator = Locator.fromJSON(JSONObject(bookmark.locatorJson))
-                    bmLocator != null && bmLocator.isSamePosition(locator)
+                    val bmLocator = Locator.fromJSON(JSONObject(bookmarkLocatorJson))
+                    (bmLocator != null) && bmLocator.isSamePosition(locator)
                 } catch (_: Exception) {
                     false
                 }
@@ -174,7 +174,7 @@ class ReaderNotesViewModel(
         locator: Locator,
         noteText: String,
         color: Int = "#40FFEB3B".toColorInt(),
-        chapterTitle: String?
+        chapterTitle: String?,
     ) {
         viewModelScope.launch {
             repository.addNote(bookId, locator, noteText, color, chapterTitle)
@@ -184,7 +184,7 @@ class ReaderNotesViewModel(
     fun addHighlight(
         locator: Locator,
         color: Int = "#4003A9F4".toColorInt(),
-        chapterTitle: String?
+        chapterTitle: String?,
     ) {
         viewModelScope.launch {
             repository.addNote(bookId, locator, "", color, chapterTitle)
@@ -196,10 +196,10 @@ class ReaderNotesViewModel(
             if (note.id == 0L) {
                 repository.addNote(
                     bookId = bookId,
-                    locator = Locator.fromJSON(JSONObject(note.locatorJson))!!,
+                    locator = Locator.fromJSON(JSONObject(note.locatorJson)) ?: return@launch,
                     noteText = note.noteText,
                     color = note.color,
-                    chapterTitle = note.chapterTitle
+                    chapterTitle = note.chapterTitle,
                 )
             } else {
                 repository.updateNote(note)
@@ -228,12 +228,11 @@ class ReaderNotesViewModel(
 
     fun addNoteAndEdit(locator: Locator, chapterTitle: String?) {
         val newNote = NoteEntity(
-            id = 0,
             bookId = bookId,
             locatorJson = locator.toJSON().toString(),
             chapterTitle = chapterTitle,
             noteText = "",
-            color = "#40FFEB3B".toColorInt()
+            color = "#40FFEB3B".toColorInt(),
         )
         editNote(newNote)
     }
@@ -256,7 +255,7 @@ class ReaderNotesViewModel(
 
     class Factory(
         private val application: Application,
-        private val bookId: String
+        private val bookId: String,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {

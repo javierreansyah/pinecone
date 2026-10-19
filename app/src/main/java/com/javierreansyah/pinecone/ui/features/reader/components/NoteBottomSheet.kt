@@ -45,11 +45,11 @@ fun NoteBottomSheet(
     onUpdateNote: (NoteEntity) -> Unit,
     onDeleteNote: (Long) -> Unit,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val sheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
-        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
     )
     var text by remember { mutableStateOf(note.noteText) }
     var selectedColor by remember { mutableIntStateOf(note.color) }
@@ -57,13 +57,13 @@ fun NoteBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        modifier = modifier
+        modifier = modifier,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 16.dp)
+                .padding(horizontal = 16.dp, vertical = 16.dp),
         ) {
             BasicTextField(
                 value = text,
@@ -72,7 +72,7 @@ fun NoteBottomSheet(
                     .fillMaxWidth()
                     .padding(bottom = 16.dp),
                 textStyle = MaterialTheme.typography.bodyLarge.copy(
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
                 ),
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 minLines = 3,
@@ -83,12 +83,12 @@ fun NoteBottomSheet(
                             Text(
                                 text = stringResource(R.string.reader_enter_note_placeholder),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                style = MaterialTheme.typography.bodyLarge
+                                style = MaterialTheme.typography.bodyLarge,
                             )
                         }
                         innerTextField()
                     }
-                }
+                },
             )
 
             Row(
@@ -96,13 +96,13 @@ fun NoteBottomSheet(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp)
+                    .padding(bottom = 16.dp),
             ) {
                 val swatches = listOf(
                     "#40fac02e".toColorInt(),
                     "#40fd7142".toColorInt(),
                     "#408bc24a".toColorInt(),
-                    "#4025c6da".toColorInt()
+                    "#4025c6da".toColorInt(),
                 )
                 swatches.forEach { colorInt ->
                     val isSelected = selectedColor == colorInt
@@ -113,26 +113,26 @@ fun NoteBottomSheet(
                             .border(
                                 width = if (isSelected) 2.dp else 0.dp,
                                 color = if (isSelected) Color(colorInt).copy(alpha = 1f) else Color.Transparent,
-                                shape = CircleShape
+                                shape = CircleShape,
                             )
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) { selectedColor = colorInt }
+                                indication = null,
+                            ) { selectedColor = colorInt },
                     ) {
                         Box(
                             modifier = Modifier
                                 .size(24.dp)
                                 .background(
-                                    color = Color(colorInt).copy(alpha = 1f), shape = CircleShape
-                                )
+                                    color = Color(colorInt).copy(alpha = 1f), shape = CircleShape,
+                                ),
                         )
                     }
                 }
             }
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 FilledTonalButton(
                     onClick = {
@@ -141,12 +141,12 @@ fun NoteBottomSheet(
                         }
                         onDismiss()
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     Text(
                         stringResource(
-                            if (note.id != 0L) R.string.action_delete else R.string.action_cancel
-                        )
+                            if (note.id != 0L) R.string.action_delete else R.string.action_cancel,
+                        ),
                     )
                 }
                 Button(
@@ -154,7 +154,7 @@ fun NoteBottomSheet(
                         onUpdateNote(note.copy(noteText = text, color = selectedColor))
                         onDismiss()
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     Text(stringResource(R.string.action_save))
                 }

@@ -19,12 +19,12 @@ data class DefinitionState(
     val showDefinition: Boolean = false,
     val definitionWord: String = "",
     val definitionResults: List<DictionaryEntry> = emptyList(),
-    val wordHistory: List<Pair<String, List<DictionaryEntry>>> = emptyList()
+    val wordHistory: List<Pair<String, List<DictionaryEntry>>> = emptyList(),
 )
 
 class ReaderDictionaryViewModel(
     private val dictionaryRepository: DictionaryRepository,
-    private val readerPreferences: ReaderPreferences
+    private val readerPreferences: ReaderPreferences,
 ) : ViewModel() {
 
     private val _definitionState = MutableStateFlow(DefinitionState())
@@ -40,7 +40,7 @@ class ReaderDictionaryViewModel(
             _definitionState.update { state ->
                 val newHistory = if (clearHistory) {
                     emptyList()
-                } else if (state.showDefinition && state.definitionWord.isNotBlank() && cleanWord != state.definitionWord) {
+                } else if (state.showDefinition && state.definitionWord.isNotBlank() && (cleanWord != state.definitionWord)) {
                     state.wordHistory + (state.definitionWord to state.definitionResults)
                 } else {
                     state.wordHistory
@@ -50,7 +50,7 @@ class ReaderDictionaryViewModel(
                     showDefinition = true,
                     definitionWord = cleanWord,
                     definitionResults = results,
-                    wordHistory = newHistory
+                    wordHistory = newHistory,
                 )
             }
         }
@@ -59,11 +59,11 @@ class ReaderDictionaryViewModel(
     fun popDefinition() {
         _definitionState.update { state ->
             if (state.wordHistory.isNotEmpty()) {
-                val previous = state.wordHistory.last()
+                val (previousFirst, previousSecond) = state.wordHistory.last()
                 state.copy(
-                    definitionWord = previous.first,
-                    definitionResults = previous.second,
-                    wordHistory = state.wordHistory.dropLast(1)
+                    definitionWord = previousFirst,
+                    definitionResults = previousSecond,
+                    wordHistory = state.wordHistory.dropLast(1),
                 )
             } else {
                 state
@@ -76,14 +76,14 @@ class ReaderDictionaryViewModel(
     }
 
     class Factory(
-        private val application: Application
+        private val application: Application,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             val app = application as PineconeApplication
             return ReaderDictionaryViewModel(
                 dictionaryRepository = app.dictionaryRepository,
-                readerPreferences = app.readerPreferences
+                readerPreferences = app.readerPreferences,
             ) as T
         }
     }

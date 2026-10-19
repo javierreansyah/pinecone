@@ -18,13 +18,13 @@ import kotlinx.coroutines.launch
 class DictionariesViewModel(
     private val repository: DictionaryRepository,
     private val importManager: DictionaryImportManager,
-    preferences: ReaderPreferences
+    preferences: ReaderPreferences,
 ) : ViewModel() {
 
     val importState: StateFlow<DictionaryState> = importManager.importState
 
     val installedDictionaries: StateFlow<List<InstalledDictionary>> = preferences.readerSettings
-        .map { it.installedDictionaries }
+        .map { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itInstalledDictionaries) -> itInstalledDictionaries }
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     fun importDictionary(uri: Uri) {
@@ -52,7 +52,7 @@ class DictionariesViewModel(
     class Factory(
         private val repository: DictionaryRepository,
         private val importManager: DictionaryImportManager,
-        private val preferences: ReaderPreferences
+        private val preferences: ReaderPreferences,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {

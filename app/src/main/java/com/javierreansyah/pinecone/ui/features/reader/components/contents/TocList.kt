@@ -28,7 +28,7 @@ fun TocList(
     tableOfContents: List<Link>,
     currentLocator: Locator?,
     getChapterPageLabel: (Link) -> String,
-    onChapterClick: (Link) -> Unit
+    onChapterClick: (Link) -> Unit,
 ) {
     if (tableOfContents.isEmpty()) {
         EmptyState(
@@ -36,26 +36,26 @@ fun TocList(
             text = stringResource(R.string.reader_no_toc),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(32.dp)
+                .padding(32.dp),
         )
     } else {
         val currentChapterIndex = remember(tableOfContents, currentLocator) {
             if (currentLocator == null) return@remember 0
             val currentHref = currentLocator.href.toString().substringBefore("#")
-            val index = tableOfContents.indexOfFirst {
-                it.href.toString().substringBefore("#") == currentHref
+            val index = tableOfContents.indexOfFirst { (itHref) ->
+                itHref.toString().substringBefore("#") == currentHref
             }
             if (index >= 0) index else 0
         }
 
         val listState = rememberLazyListState(
-            initialFirstVisibleItemIndex = currentChapterIndex
+            initialFirstVisibleItemIndex = currentChapterIndex,
         )
 
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(vertical = 8.dp)
+            contentPadding = PaddingValues(vertical = 8.dp),
         ) {
             items(tableOfContents.size) { index ->
                 val link = tableOfContents[index]
@@ -64,11 +64,11 @@ fun TocList(
                 val isCurrentChapter = currentHref == linkHref
                 val pageLabel = getChapterPageLabel(link)
                 ListItem(
-                    headlineContent = {
+                    content = {
                         Text(
                             text = link.title ?: link.href.toString(),
                             style = MaterialTheme.typography.titleMedium,
-                            color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else Color.Unspecified
+                            color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else Color.Unspecified,
                         )
                     },
                     supportingContent = if (pageLabel.isNotBlank()) {
@@ -76,12 +76,12 @@ fun TocList(
                             Text(
                                 text = pageLabel,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     } else null,
                     modifier = Modifier.clickable { onChapterClick(link) },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 )
             }
         }

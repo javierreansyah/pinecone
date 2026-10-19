@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -56,13 +55,13 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.SegmentedColumn
 import com.javierreansyah.pinecone.ui.components.rememberVoiceSearchLauncher
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrganizeBottomSheet(
     viewModel: OrganizeViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState = viewModel.uiState.collectAsState()
 
     val textFieldState = remember { TextFieldState() }
     val searchBarState = rememberContainedSearchBarState(initialValue = SearchBarValue.Expanded)
@@ -72,19 +71,19 @@ fun OrganizeBottomSheet(
 
     val searchQuery = textFieldState.text.toString().trim()
 
-    val filteredSpaces = remember(uiState.spaces, searchQuery) {
+    val filteredSpaces = remember(uiState.value.spaces, searchQuery) {
         if (searchQuery.isBlank()) {
-            uiState.spaces
+            uiState.value.spaces
         } else {
-            uiState.spaces.mapNotNull { spaceWithShelves ->
+            uiState.value.spaces.mapNotNull { spaceWithShelves ->
                 val spaceMatches =
                     spaceWithShelves.space.name.contains(searchQuery, ignoreCase = true)
-                val matchingShelves = spaceWithShelves.shelves.filter {
-                    it.shelf.name.contains(searchQuery, ignoreCase = true)
+                val matchingShelves = spaceWithShelves.shelves.filter { (itShelf) ->
+                    itShelf.name.contains(searchQuery, ignoreCase = true)
                 }
                 if (spaceMatches || matchingShelves.isNotEmpty()) {
                     spaceWithShelves.copy(
-                        shelves = if (spaceMatches && matchingShelves.isEmpty()) spaceWithShelves.shelves else matchingShelves
+                        shelves = if (spaceMatches && matchingShelves.isEmpty()) spaceWithShelves.shelves else matchingShelves,
                     )
                 } else {
                     null
@@ -100,31 +99,31 @@ fun OrganizeBottomSheet(
     }
     val sheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
-        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
     )
 
     ModalBottomSheet(
         onDismissRequest = onNavigateBack,
-        sheetState = sheetState
+        sheetState = sheetState,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(sheetHeight)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 16.dp),
         ) {
             OrganizeSearchInputField(
                 textFieldState = textFieldState,
                 searchBarState = searchBarState,
                 onSearch = { keyboardController?.hide() },
-                onClear = { textFieldState.edit { replace(0, length, "") } }
+                onClear = { textFieldState.edit { replace(0, length, "") } },
             )
 
-            if (!uiState.isLoading) {
+            if (!uiState.value.isLoading) {
                 OrganizeContent(
                     searchQuery = searchQuery,
                     spaces = filteredSpaces,
-                    allSpaces = uiState.spaces,
+                    allSpaces = uiState.value.spaces,
                     onCreateSpaceWithQuery = { name ->
                         viewModel.createSpace(name)
                         textFieldState.edit { replace(0, length, "") }
@@ -134,7 +133,7 @@ fun OrganizeBottomSheet(
                         shelfNameToCreate = name
                     },
                     onToggleSpace = viewModel::toggleSpace,
-                    onToggleShelf = viewModel::toggleShelf
+                    onToggleShelf = viewModel::toggleShelf,
                 )
             }
         }
@@ -143,9 +142,9 @@ fun OrganizeBottomSheet(
     shelfNameToCreate?.let { shelfName ->
         SelectSpaceForShelfDialog(
             shelfName = shelfName,
-            spaces = uiState.spaces.map { it.space },
+            spaces = uiState.value.spaces.map { (itSpace) -> itSpace },
             onDismiss = { shelfNameToCreate = null },
-            onConfirm = { spaceIds ->
+        ) { spaceIds ->
                 spaceIds.forEach { spaceId ->
                     viewModel.createShelf(spaceId, shelfName)
                 }
@@ -153,18 +152,16 @@ fun OrganizeBottomSheet(
                 textFieldState.edit { replace(0, length, "") }
                 keyboardController?.hide()
             }
-        )
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun OrganizeSearchInputField(
     textFieldState: TextFieldState,
     searchBarState: SearchBarState,
     onSearch: () -> Unit,
     onClear: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val launchVoiceSearch = rememberVoiceSearchLauncher { spokenText ->
         textFieldState.edit { replace(0, length, spokenText) }
@@ -177,33 +174,33 @@ private fun OrganizeSearchInputField(
         colors = SearchBarDefaults.inputFieldColors(
             focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         ),
         onSearch = { onSearch() },
         placeholder = {
             Text(
                 stringResource(R.string.action_search),
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodyLarge,
             )
         },
         leadingIcon = {
             Icon(
                 MaterialSymbols.Outlined.Search,
                 contentDescription = stringResource(R.string.action_search),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         },
         trailingIcon = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(end = 4.dp)
+                modifier = Modifier.padding(end = 4.dp),
             ) {
                 if (textFieldState.text.isNotEmpty()) {
                     IconButton(onClick = onClear) {
                         Icon(
                             MaterialSymbols.Outlined.Close,
                             contentDescription = stringResource(R.string.action_clear),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 } else {
@@ -211,12 +208,12 @@ private fun OrganizeSearchInputField(
                         Icon(
                             MaterialSymbols.Outlined.Mic,
                             contentDescription = stringResource(R.string.action_voice_search),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
             }
-        }
+        },
     )
 }
 
@@ -228,10 +225,10 @@ private fun OrganizeContent(
     onCreateSpaceWithQuery: (String) -> Unit,
     onRequestCreateShelf: (String) -> Unit,
     onToggleSpace: (String, ToggleableState) -> Unit,
-    onToggleShelf: (String, ToggleableState) -> Unit
+    onToggleShelf: (String, ToggleableState) -> Unit,
 ) {
-    val showCreateSpace = searchQuery.isNotBlank() && !allSpaces.any {
-        it.space.name.equals(searchQuery, ignoreCase = true)
+    val showCreateSpace = searchQuery.isNotBlank() && !allSpaces.any { (itSpace2) ->
+        itSpace2.name.equals(searchQuery, ignoreCase = true)
     }
     val showCreateShelf = searchQuery.isNotBlank() && allSpaces.isNotEmpty()
 
@@ -245,15 +242,15 @@ private fun OrganizeContent(
     AnimatedContent(
         targetState = isSearchEmpty,
         transitionSpec = {
-            fadeIn(animationSpec = fastEffectsSpec) togetherWith
-                    fadeOut(animationSpec = fastEffectsSpec) using SizeTransform { _, _ ->
+            (fadeIn(animationSpec = fastEffectsSpec) togetherWith
+                fadeOut(animationSpec = fastEffectsSpec)) using SizeTransform { _, _ ->
                 fastSpatialSpec
             }
         },
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 8.dp),
-        label = "OrganizeContentState"
+        label = "OrganizeContentState",
     ) { emptySearch ->
         if (emptySearch) {
             OrganizeEmptyResults(searchQuery = searchQuery)
@@ -262,118 +259,114 @@ private fun OrganizeContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 if (showCreateSpace || showCreateShelf) {
                     item(key = "create_section") {
                         SegmentedColumn(
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
                             if (showCreateSpace) {
                                 item(
                                     key = "create_space_query",
-                                    selected = false,
                                     onClick = { onCreateSpaceWithQuery(searchQuery) },
                                     leadingContent = {
                                         Icon(
                                             MaterialSymbols.Outlined.Forest,
                                             contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary
+                                            tint = MaterialTheme.colorScheme.primary,
                                         )
                                     },
-                                    content = {
+                                ) {
                                         Text(
                                             text = stringResource(R.string.library_new_space) + " \"$searchQuery\"",
-                                            color = MaterialTheme.colorScheme.primary
+                                            color = MaterialTheme.colorScheme.primary,
                                         )
                                     }
-                                )
                             }
 
                             if (showCreateShelf) {
                                 item(
                                     key = "create_shelf_query",
-                                    selected = false,
                                     onClick = { onRequestCreateShelf(searchQuery) },
                                     leadingContent = {
                                         Icon(
                                             MaterialSymbols.Outlined.Folder,
                                             contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary
+                                            tint = MaterialTheme.colorScheme.primary,
                                         )
                                     },
-                                    content = {
+                                ) {
                                         Text(
                                             text = stringResource(R.string.library_new_shelf) + " \"$searchQuery\"",
-                                            color = MaterialTheme.colorScheme.primary
+                                            color = MaterialTheme.colorScheme.primary,
                                         )
                                     }
-                                )
                             }
                         }
                     }
                 }
 
-                items(spaces, key = { it.space.id }) { spaceItem ->
-                    val space = spaceItem.space
-                    val spaceShelves = spaceItem.shelves
-                    val isSpaceSelected = spaceItem.state == ToggleableState.On
+                items(spaces, key = { (itSpace3) -> itSpace3.id }) { (spaceItemSpace, spaceItemState, spaceItemShelves) ->
+                    val (spaceId2, spaceName) = spaceItemSpace
+                    val spaceShelves = spaceItemShelves
+                    val isSpaceSelected = spaceItemState == ToggleableState.On
 
                     SegmentedColumn(
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         // Space header (top of this segmented list)
                         item(
-                            key = "space_${space.id}",
+                            key = "space_${spaceId2}",
                             selected = isSpaceSelected,
-                            onClick = { onToggleSpace(space.id, spaceItem.state) },
+                            onClick = { onToggleSpace(spaceId2, spaceItemState) },
                             leadingContent = {
                                 Icon(
                                     MaterialSymbols.Outlined.Forest,
                                     contentDescription = null,
-                                    tint = if (isSpaceSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.primary
+                                    tint = if (isSpaceSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.primary,
                                 )
                             },
                             content = {
                                 Text(
-                                    text = space.name,
-                                    style = MaterialTheme.typography.titleMedium
+                                    text = spaceName,
+                                    style = MaterialTheme.typography.titleMedium,
                                 )
                             },
                             trailingContent = {
                                 TriStateCheckbox(
-                                    state = spaceItem.state,
-                                    onClick = null
+                                    state = spaceItemState,
+                                    onClick = null,
                                 )
-                            }
+                            },
                         )
 
                         // Shelves in this space (below the space in this segmented list)
-                        spaceShelves.forEach { shelfItem ->
-                            val isShelfSelected = shelfItem.state == ToggleableState.On
+                        spaceShelves.forEach { (shelfItemShelf, shelfItemState) ->
+                            val isShelfSelected = shelfItemState == ToggleableState.On
                             item(
-                                key = "shelf_${shelfItem.shelf.id}",
+                                key = "shelf_${shelfItemShelf.id}",
                                 selected = isShelfSelected,
-                                onClick = { onToggleShelf(shelfItem.shelf.id, shelfItem.state) },
+                                onClick = { onToggleShelf(shelfItemShelf.id, shelfItemState) },
                                 leadingContent = {
                                     Icon(
                                         MaterialSymbols.Outlined.Folder,
                                         contentDescription = null,
-                                        tint = if (isShelfSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.secondary
+                                        tint = if (isShelfSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.secondary,
                                     )
                                 },
                                 content = {
                                     Text(
-                                        text = shelfItem.shelf.name,
-                                        style = MaterialTheme.typography.bodyMedium
+                                        text = shelfItemShelf.name,
+                                        style = MaterialTheme.typography.bodyMedium,
                                     )
                                 },
                                 trailingContent = {
                                     TriStateCheckbox(
-                                        state = shelfItem.state,
-                                        onClick = null
+                                        state = shelfItemState,
+                                        onClick = null,
                                     )
-                                }
+                                },
                             )
                         }
                     }
@@ -390,28 +383,28 @@ private fun OrganizeContent(
 @Composable
 private fun OrganizeEmptyResults(
     searchQuery: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .fillMaxSize()
-            .padding(vertical = 48.dp)
+            .padding(vertical = 48.dp),
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Icon(
                 MaterialSymbols.Outlined.Search,
                 contentDescription = null,
                 modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
             )
             Text(
                 stringResource(R.string.reader_search_no_results_for, searchQuery),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

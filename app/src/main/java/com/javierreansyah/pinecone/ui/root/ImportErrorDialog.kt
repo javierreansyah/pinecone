@@ -34,7 +34,7 @@ import com.javierreansyah.pinecone.R
 @Composable
 fun ImportErrorDialog(
     report: ImportErrorReport,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     val isPartialSuccess = report.successCount > 0
     val title = if (isPartialSuccess) {
@@ -62,27 +62,27 @@ fun ImportErrorDialog(
                 imageVector = icon,
                 contentDescription = null,
                 tint = iconTint,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(28.dp),
             )
         },
         title = {
             Text(
                 text = title,
-                style = MaterialTheme.typography.headlineSmall
+                style = MaterialTheme.typography.headlineSmall,
             )
         },
         text = {
             Column(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                if (report.failedFiles.size == 1 && report.totalCount == 1) {
+                if ((report.failedFiles.size == 1) && (report.totalCount == 1)) {
                     Text(
                         text = stringResource(
                             R.string.import_failed_single_message,
-                            report.failedFiles.first()
+                            report.failedFiles.first(),
                         ),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
                     if (isPartialSuccess) {
@@ -91,27 +91,27 @@ fun ImportErrorDialog(
                                 pluralStringResource(
                                     R.plurals.import_partial_success_message,
                                     report.successCount,
-                                    report.successCount
+                                    report.successCount,
                                 )
                             } ${
                                 pluralStringResource(
                                     R.plurals.import_partial_failed_message,
                                     report.failedFiles.size,
-                                    report.failedFiles.size
+                                    report.failedFiles.size,
                                 )
                             }",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     } else {
                         Text(
                             text = pluralStringResource(
                                 R.plurals.import_all_failed_message,
                                 report.failedFiles.size,
-                                report.failedFiles.size
+                                report.failedFiles.size,
                             ),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
 
@@ -123,32 +123,32 @@ fun ImportErrorDialog(
                             .heightIn(max = 160.dp)
                             .background(
                                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(12.dp),
                             )
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
                     ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .verticalScroll(rememberScrollState()),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
                             report.failedFiles.forEach { fileName ->
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.Top
+                                    verticalAlignment = Alignment.Top,
                                 ) {
                                     Text(
                                         text = "•",
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.padding(end = 6.dp)
+                                        modifier = Modifier.padding(end = 6.dp),
                                     )
                                     Text(
                                         text = fileName,
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
                             }
@@ -160,7 +160,7 @@ fun ImportErrorDialog(
                     Text(
                         text = stringResource(R.string.import_failed_reason_note),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                     )
                 }
             }
@@ -169,6 +169,6 @@ fun ImportErrorDialog(
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.action_ok))
             }
-        }
+        },
     )
 }

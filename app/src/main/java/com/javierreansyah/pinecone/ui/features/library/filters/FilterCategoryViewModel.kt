@@ -4,12 +4,16 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.javierreansyah.pinecone.PineconeApplication
+import com.javierreansyah.pinecone.data.local.database.library.AuthorEntity
+import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
+import com.javierreansyah.pinecone.data.local.database.library.TagEntity
 import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.ui.features.library.inSpace
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -23,7 +27,7 @@ class FilterCategoryViewModel(application: Application) : AndroidViewModel(appli
         bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }
 
     private val globalSpaceId = prefsManager.getGlobalSpaceFlow().stateIn(
-        viewModelScope, SharingStarted.WhileSubscribed(5000), null
+        viewModelScope, SharingStarted.WhileSubscribed(5000), null,
     )
 
     private val booksFlow: Flow<List<Book>> =
@@ -31,35 +35,35 @@ class FilterCategoryViewModel(application: Application) : AndroidViewModel(appli
             books.inSpace(spaceId)
         }
 
-    val allAuthors = combine(bookRepository.getAllAuthors(), booksFlow) { authors, books ->
-        val namesInSpace = books.flatMap { it.authors }.toSet()
-        authors.filter { it.name in namesInSpace }
+    val allAuthors: StateFlow<List<AuthorEntity>> = combine(bookRepository.getAllAuthors(), booksFlow) { authors, books ->
+        val namesInSpace = books.flatMapTo(mutableSetOf()) { (_, _, itAuthors) -> itAuthors }
+        authors.filter { (_, itName) -> itName in namesInSpace }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
-    val allTags = combine(bookRepository.getAllTags(), booksFlow) { tags, books ->
-        val namesInSpace = books.flatMap { it.tags }.toSet()
-        tags.filter { it.name in namesInSpace }
+    val allTags: StateFlow<List<TagEntity>> = combine(bookRepository.getAllTags(), booksFlow) { tags, books ->
+        val namesInSpace = books.flatMapTo(mutableSetOf()) { (_, _, _, _, _, _, _, _, _, _, _, _, itTags) -> itTags }
+        tags.filter { (_, itName2) -> itName2 in namesInSpace }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
-    val allSpaces =
+    val allSpaces: StateFlow<List<SpaceEntity>> =
         bookRepository.getAllSpaces().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    val authorsWithCounts = combine(allAuthors, booksFlow) { authors, books ->
-        authors.map { author ->
-            val count = books.count { it.authors.contains(author.name) }
-            Pair(author.name, count)
+    val authorsWithCounts: StateFlow<List<Pair<String, Int>>> = combine(allAuthors, booksFlow) { authors, books ->
+        authors.map { (_, authorName) ->
+            val count = books.count { (_, _, itAuthors2) -> itAuthors2.contains(authorName) }
+            Pair(authorName, count)
         }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    val tagsWithCounts = combine(allTags, booksFlow) { tags, books ->
-        tags.map { tag ->
-            val count = books.count { it.tags.contains(tag.name) }
-            Pair(tag.name, count)
+    val tagsWithCounts: StateFlow<List<Pair<String, Int>>> = combine(allTags, booksFlow) { tags, books ->
+        tags.map { (_, tagName) ->
+            val count = books.count { (_, _, _, _, _, _, _, _, _, _, _, _, itTags2) -> itTags2.contains(tagName) }
+            Pair(tagName, count)
         }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    val spacesWithCounts = combine(allSpaces, unfilteredBooks) { spaces, books ->
-        spaces.map { space ->
-            val count = books.count { book -> book.spaceIds.contains(space.id) }
-            Pair(space.name, count)
+    val spacesWithCounts: StateFlow<List<Pair<String, Int>>> = combine(allSpaces, unfilteredBooks) { spaces, books ->
+        spaces.map { (spaceId2, spaceName) ->
+            val count = books.count { book -> book.spaceIds.contains(spaceId2) }
+            Pair(spaceName, count)
         }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
@@ -71,7 +75,7 @@ class FilterCategoryViewModel(application: Application) : AndroidViewModel(appli
     }
 
     fun renameFilterItem(
-        type: String, oldName: String, newName: String, onSuccess: (String) -> Unit
+        type: String, oldName: String, newName: String, onSuccess: (String) -> Unit,
     ) {
         onSuccess(newName.trim())
         viewModelScope.launch(Dispatchers.IO) {
@@ -80,7 +84,7 @@ class FilterCategoryViewModel(application: Application) : AndroidViewModel(appli
     }
 
     fun renameFilterItems(
-        type: String, oldNames: List<String>, newName: String, onSuccess: (String) -> Unit
+        type: String, oldNames: List<String>, newName: String, onSuccess: (String) -> Unit,
     ) {
         onSuccess(newName.trim())
         viewModelScope.launch(Dispatchers.IO) {

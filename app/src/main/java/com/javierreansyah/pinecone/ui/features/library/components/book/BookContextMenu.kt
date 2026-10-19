@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -45,7 +44,7 @@ import com.composables.icons.materialsymbols.outlined.Unarchive
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.model.Book
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookContextMenu(
     bookId: String,
@@ -57,35 +56,35 @@ fun BookContextMenu(
     onDeleteBook: () -> Unit,
     showSelectMultiple: Boolean = true,
     onEnterMultiSelect: () -> Unit = {},
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
-    var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var showDeleteConfirmation by remember { mutableStateOf(value = false) }
     val sheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
-        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
     )
 
-    val book = allBooks.find { it.id == bookId }
+    val book = allBooks.find { (itId) -> itId == bookId }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = sheetState
+        sheetState = sheetState,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp)
+                .padding(bottom = 16.dp),
         ) {
             if (book != null) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.Top
+                    verticalAlignment = Alignment.Top,
                 ) {
                     AutoWidthCoverImage(
                         book = book,
-                        modifier = Modifier.heightIn(max = 80.dp)
+                        modifier = Modifier.heightIn(max = 80.dp),
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
@@ -93,23 +92,23 @@ fun BookContextMenu(
                             text = book.title,
                             style = MaterialTheme.typography.titleMedium,
                             maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                         Text(
                             text = if (book.authors.isNotEmpty()) book.authors.joinToString(", ") else stringResource(
-                                R.string.book_unknown_author
+                                R.string.book_unknown_author,
                             ),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
                 HorizontalDivider(
                     modifier = Modifier.padding(
-                        horizontal = 16.dp, vertical = 8.dp
-                    )
+                        horizontal = 16.dp, vertical = 8.dp,
+                    ),
                 )
             }
 
@@ -120,7 +119,7 @@ fun BookContextMenu(
                 },
                 leadingContent = {
                     Icon(
-                        MaterialSymbols.Outlined.Info, contentDescription = null
+                        MaterialSymbols.Outlined.Info, contentDescription = null,
                     )
                 },
                 trailingContent = null,
@@ -131,7 +130,7 @@ fun BookContextMenu(
                 content = {
                     Text(
                         stringResource(R.string.book_info_title),
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
                     )
                 },
             )
@@ -144,7 +143,7 @@ fun BookContextMenu(
                 leadingContent = {
                     Icon(
                         if (book?.isRead == true) MaterialSymbols.Outlined.Radio_button_unchecked else MaterialSymbols.Outlined.Check_circle,
-                        contentDescription = null
+                        contentDescription = null,
                     )
                 },
                 trailingContent = null,
@@ -155,7 +154,7 @@ fun BookContextMenu(
                 content = {
                     val labelText =
                         if (book?.isRead == true) stringResource(R.string.book_mark_as_unread) else stringResource(
-                            R.string.book_mark_as_read
+                            R.string.book_mark_as_read,
                         )
                     Text(labelText, style = MaterialTheme.typography.titleMedium)
                 },
@@ -168,7 +167,7 @@ fun BookContextMenu(
                 },
                 leadingContent = {
                     Icon(
-                        MaterialSymbols.Outlined.Create_new_folder, contentDescription = null
+                        MaterialSymbols.Outlined.Create_new_folder, contentDescription = null,
                     )
                 },
                 trailingContent = null,
@@ -179,7 +178,7 @@ fun BookContextMenu(
                 content = {
                     Text(
                         stringResource(R.string.action_organize),
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
                     )
                 },
             )
@@ -192,7 +191,7 @@ fun BookContextMenu(
                 leadingContent = {
                     Icon(
                         if (book?.isArchived == true) MaterialSymbols.Outlined.Unarchive else MaterialSymbols.Outlined.Archive,
-                        contentDescription = null
+                        contentDescription = null,
                     )
                 },
                 trailingContent = null,
@@ -203,11 +202,11 @@ fun BookContextMenu(
                 content = {
                     val labelText =
                         if (book?.isArchived == true) stringResource(R.string.book_unarchive) else stringResource(
-                            R.string.book_archive
+                            R.string.book_archive,
                         )
                     Text(
                         labelText,
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
                     )
                 },
             )
@@ -220,7 +219,7 @@ fun BookContextMenu(
                     Icon(
                         MaterialSymbols.Outlined.Delete,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error
+                        tint = MaterialTheme.colorScheme.error,
                     )
                 },
                 trailingContent = null,
@@ -232,7 +231,7 @@ fun BookContextMenu(
                     Text(
                         stringResource(R.string.action_delete),
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
                     )
                 },
             )
@@ -240,8 +239,8 @@ fun BookContextMenu(
             if (showSelectMultiple) {
                 HorizontalDivider(
                     modifier = Modifier.padding(
-                        horizontal = 16.dp, vertical = 8.dp
-                    )
+                        horizontal = 16.dp, vertical = 8.dp,
+                    ),
                 )
                 ListItem(
                     modifier = Modifier.clickable {
@@ -250,7 +249,7 @@ fun BookContextMenu(
                     },
                     leadingContent = {
                         Icon(
-                            MaterialSymbols.Outlined.Select, contentDescription = null
+                            MaterialSymbols.Outlined.Select, contentDescription = null,
                         )
                     },
                     trailingContent = null,
@@ -261,7 +260,7 @@ fun BookContextMenu(
                     content = {
                         Text(
                             stringResource(R.string.action_select_multiple),
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
                         )
                     },
                 )
@@ -270,37 +269,43 @@ fun BookContextMenu(
     }
 
     if (showDeleteConfirmation) {
-        AlertDialog(onDismissRequest = { showDeleteConfirmation = false }, title = {
-            Text(
-                stringResource(R.string.book_delete_title),
-                style = MaterialTheme.typography.titleLarge
-            )
-        }, text = {
-            Text(
-                stringResource(R.string.book_delete_message),
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }, confirmButton = {
-            TextButton(
-                onClick = {
-                    onDeleteBook()
-                    showDeleteConfirmation = false
-                    onDismiss()
-                },
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-            ) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            title = {
                 Text(
-                    stringResource(R.string.action_delete),
-                    style = MaterialTheme.typography.labelLarge
+                    stringResource(R.string.book_delete_title),
+                    style = MaterialTheme.typography.titleLarge,
                 )
-            }
-        }, dismissButton = {
-            TextButton(onClick = { showDeleteConfirmation = false }) {
+            },
+            text = {
                 Text(
-                    stringResource(R.string.action_cancel),
-                    style = MaterialTheme.typography.labelLarge
+                    stringResource(R.string.book_delete_message),
+                    style = MaterialTheme.typography.bodyMedium,
                 )
-            }
-        })
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteBook()
+                        showDeleteConfirmation = false
+                        onDismiss()
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                ) {
+                    Text(
+                        stringResource(R.string.action_delete),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmation = false }) {
+                    Text(
+                        stringResource(R.string.action_cancel),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
+            },
+        )
     }
 }

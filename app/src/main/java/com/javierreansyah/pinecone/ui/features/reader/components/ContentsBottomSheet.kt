@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -19,7 +18,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -63,7 +62,6 @@ import org.readium.r2.shared.publication.Locator
 @SuppressLint("ConfigurationScreenWidthHeight")
 @OptIn(
     ExperimentalMaterial3Api::class,
-    ExperimentalFoundationApi::class
 )
 @Composable
 fun ReaderBottomSheet(
@@ -82,7 +80,7 @@ fun ReaderBottomSheet(
     onDismiss: () -> Unit,
     getPositionLabel: (Locator) -> String,
     getChapterPageLabel: (Link) -> String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current
@@ -92,29 +90,29 @@ fun ReaderBottomSheet(
 
     val sheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
-        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
     )
-    val pagerState = rememberPagerState(pageCount = { 3 })
+    val pagerState = rememberPagerState { 3 }
     val coroutineScope = rememberCoroutineScope()
 
-    var showAddNoteDialog by remember { mutableStateOf(false) }
+    var showAddNoteDialog by remember { mutableStateOf(value = false) }
     var noteText by remember { mutableStateOf("") }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        modifier = modifier
+        modifier = modifier,
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(maxSheetHeight)
+                .height(maxSheetHeight),
         ) {
             Column(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             ) {
                 PrimaryTabRow(
-                    selectedTabIndex = pagerState.currentPage, containerColor = Color.Transparent
+                    selectedTabIndex = pagerState.currentPage, containerColor = Color.Transparent,
                 ) {
                     Tab(
                         selected = pagerState.currentPage == 0,
@@ -122,31 +120,34 @@ fun ReaderBottomSheet(
                         text = {
                             Text(
                                 stringResource(R.string.reader_chapters_title),
-                                style = MaterialTheme.typography.titleMedium
+                                style = MaterialTheme.typography.titleMedium,
                             )
-                        })
+                        },
+                    )
                     Tab(
                         selected = pagerState.currentPage == 1,
                         onClick = { coroutineScope.launch { pagerState.animateScrollToPage(1) } },
                         text = {
                             Text(
                                 stringResource(R.string.reader_bookmarks_title),
-                                style = MaterialTheme.typography.titleMedium
+                                style = MaterialTheme.typography.titleMedium,
                             )
-                        })
+                        },
+                    )
                     Tab(
                         selected = pagerState.currentPage == 2,
                         onClick = { coroutineScope.launch { pagerState.animateScrollToPage(2) } },
                         text = {
                             Text(
                                 stringResource(R.string.reader_notes_title),
-                                style = MaterialTheme.typography.titleMedium
+                                style = MaterialTheme.typography.titleMedium,
                             )
-                        })
+                        },
+                    )
                 }
 
-                @OptIn(ExperimentalFoundationApi::class) CompositionLocalProvider(
-                    LocalOverscrollFactory provides null
+                CompositionLocalProvider(
+                    LocalOverscrollFactory provides null,
                 ) {
                     HorizontalPager(
                         state = pagerState,
@@ -154,25 +155,25 @@ fun ReaderBottomSheet(
                             .fillMaxWidth()
                             .weight(1f),
                         beyondViewportPageCount = 2,
-                        verticalAlignment = Alignment.Top
+                        verticalAlignment = Alignment.Top,
                     ) { page ->
                         when (page) {
                             0 -> TocList(
-                                tableOfContents, currentLocator, getChapterPageLabel, onChapterClick
+                                tableOfContents, currentLocator, getChapterPageLabel, onChapterClick,
                             )
 
                             1 -> BookmarksList(
                                 sortedBookmarks,
                                 getPositionLabel,
                                 onBookmarkClick,
-                                onDeleteBookmark
+                                onDeleteBookmark,
                             )
 
                             2 -> NotesList(
                                 sortedNotes,
                                 getPositionLabel,
                                 onNoteClick,
-                                onDeleteNote
+                                onDeleteNote,
                             )
                         }
                     }
@@ -180,15 +181,15 @@ fun ReaderBottomSheet(
             }
 
             this@ModalBottomSheet.AnimatedVisibility(
-                visible = pagerState.currentPage == 1 || pagerState.currentPage == 2,
+                visible = (pagerState.currentPage == 1) || (pagerState.currentPage == 2),
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(end = 16.dp, bottom = 16.dp),
                 enter = fadeIn() + scaleIn(initialScale = 0.8f),
-                exit = fadeOut() + scaleOut(targetScale = 0.8f)
+                exit = fadeOut() + scaleOut(targetScale = 0.8f),
             ) {
                 Box {
-                    var showSortMenu by remember { mutableStateOf(false) }
+                    var showSortMenu by remember { mutableStateOf(value = false) }
                     FloatingActionButton(
                         onClick = { showSortMenu = true },
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -196,20 +197,20 @@ fun ReaderBottomSheet(
                     ) {
                         Icon(
                             imageVector = MaterialSymbols.Outlined.Sort,
-                            contentDescription = stringResource(R.string.action_sort)
+                            contentDescription = stringResource(R.string.action_sort),
                         )
                     }
 
                     DropdownMenuPopup(
                         expanded = showSortMenu,
-                        onDismissRequest = { showSortMenu = false }
+                        onDismissRequest = { showSortMenu = false },
                     ) {
                         val groupInteractionSource = remember { MutableInteractionSource() }
                         DropdownMenuGroup(
                             shapes = MenuDefaults.groupShape(0, 1),
-                            interactionSource = groupInteractionSource
+                            interactionSource = groupInteractionSource,
                         ) {
-                            DropdownMenuItem(
+                            SelectableDropdownMenuItem(
                                 selected = sortOption == SortOption.CREATION_DATE_DESC,
                                 text = {
                                     Text(stringResource(R.string.reader_sort_creation_date_desc))
@@ -218,9 +219,9 @@ fun ReaderBottomSheet(
                                     onSortOptionChange(SortOption.CREATION_DATE_DESC)
                                     showSortMenu = false
                                 },
-                                shapes = MenuDefaults.itemShape(0, 4)
+                                shapes = MenuDefaults.itemShape(0, 4),
                             )
-                            DropdownMenuItem(
+                            SelectableDropdownMenuItem(
                                 selected = sortOption == SortOption.CREATION_DATE_ASC,
                                 text = {
                                     Text(stringResource(R.string.reader_sort_creation_date_asc))
@@ -229,9 +230,9 @@ fun ReaderBottomSheet(
                                     onSortOptionChange(SortOption.CREATION_DATE_ASC)
                                     showSortMenu = false
                                 },
-                                shapes = MenuDefaults.itemShape(1, 4)
+                                shapes = MenuDefaults.itemShape(1, 4),
                             )
-                            DropdownMenuItem(
+                            SelectableDropdownMenuItem(
                                 selected = sortOption == SortOption.BOOK_ORDER_ASC,
                                 text = {
                                     Text(stringResource(R.string.reader_sort_book_order_asc))
@@ -240,9 +241,9 @@ fun ReaderBottomSheet(
                                     onSortOptionChange(SortOption.BOOK_ORDER_ASC)
                                     showSortMenu = false
                                 },
-                                shapes = MenuDefaults.itemShape(2, 4)
+                                shapes = MenuDefaults.itemShape(2, 4),
                             )
-                            DropdownMenuItem(
+                            SelectableDropdownMenuItem(
                                 selected = sortOption == SortOption.BOOK_ORDER_DESC,
                                 text = {
                                     Text(stringResource(R.string.reader_sort_book_order_desc))
@@ -251,7 +252,7 @@ fun ReaderBottomSheet(
                                     onSortOptionChange(SortOption.BOOK_ORDER_DESC)
                                     showSortMenu = false
                                 },
-                                shapes = MenuDefaults.itemShape(3, 4)
+                                shapes = MenuDefaults.itemShape(3, 4),
                             )
                         }
                     }
@@ -261,47 +262,57 @@ fun ReaderBottomSheet(
     }
 
     if (showAddNoteDialog) {
-        AlertDialog(onDismissRequest = { showAddNoteDialog = false }, title = {
-            Text(
-                stringResource(R.string.reader_add_note),
-                style = MaterialTheme.typography.titleLarge
-            )
-        }, text = {
-            OutlinedTextField(
-                value = noteText,
-                onValueChange = { noteText = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = {
+        AlertDialog(
+            onDismissRequest = { showAddNoteDialog = false },
+            title = {
+                Text(
+                    stringResource(R.string.reader_add_note),
+                    style = MaterialTheme.typography.titleLarge,
+                )
+            },
+            text = {
+                OutlinedTextField(
+                    value = noteText,
+                    onValueChange = { noteText = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = {
+                        Text(
+                            stringResource(R.string.reader_enter_note_placeholder),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    },
+                    minLines = 3,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (noteText.isNotBlank()) {
+                            onAddNote(noteText)
+                        }
+                        noteText = ""
+                        showAddNoteDialog = false
+                    },
+                ) {
                     Text(
-                        stringResource(R.string.reader_enter_note_placeholder),
-                        style = MaterialTheme.typography.bodyLarge
+                        stringResource(R.string.action_save),
+                        style = MaterialTheme.typography.labelLarge,
                     )
-                },
-                minLines = 3
-            )
-        }, confirmButton = {
-            TextButton(onClick = {
-                if (noteText.isNotBlank()) {
-                    onAddNote(noteText)
                 }
-                noteText = ""
-                showAddNoteDialog = false
-            }) {
-                Text(
-                    stringResource(R.string.action_save),
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
-        }, dismissButton = {
-            TextButton(onClick = {
-                noteText = ""
-                showAddNoteDialog = false
-            }) {
-                Text(
-                    stringResource(R.string.action_cancel),
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
-        })
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        noteText = ""
+                        showAddNoteDialog = false
+                    },
+                ) {
+                    Text(
+                        stringResource(R.string.action_cancel),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
+            },
+        )
     }
 }

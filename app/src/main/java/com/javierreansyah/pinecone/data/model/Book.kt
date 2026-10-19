@@ -24,15 +24,15 @@ data class Book(
     val furthestProgression: Double = 0.0,
     val lastLocatorJson: String? = null,
     val furthestLocatorJson: String? = null,
-    val spaces: List<SpaceEntity> = emptyList()
+    val spaces: List<SpaceEntity> = emptyList(),
 ) {
-    val spaceIds: List<String> get() = spaces.map { it.id }
+    val spaceIds: List<String> get() = spaces.map { (itId) -> itId }
 
     companion object {
         fun fromEntity(entity: BookWithDetails): Book = Book(
             id = entity.book.id,
             title = entity.book.title,
-            authors = entity.sortedAuthors.map { it.name },
+            authors = entity.sortedAuthors.map { (_, itName) -> itName },
             coverPath = entity.book.coverPath,
             progress = entity.book.progression,
             lastOpened = entity.book.lastReadDate,
@@ -42,7 +42,7 @@ data class Book(
             description = entity.book.description,
             publisher = entity.book.publisher,
             published = entity.book.published,
-            tags = entity.tags.map { it.name },
+            tags = entity.tags.map { (_, itName2) -> itName2 },
             identifier = entity.book.identifier,
             mediaType = entity.book.mediaType,
             filePath = entity.book.filePath,
@@ -50,7 +50,7 @@ data class Book(
             furthestProgression = entity.book.furthestProgression,
             lastLocatorJson = entity.book.lastLocatorJson,
             furthestLocatorJson = entity.book.furthestLocatorJson,
-            spaces = entity.spaces
+            spaces = entity.spaces,
         )
     }
 }

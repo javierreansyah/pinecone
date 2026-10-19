@@ -29,7 +29,7 @@ fun SelectSpaceForShelfDialog(
     shelfName: String,
     spaces: List<SpaceEntity>,
     onDismiss: () -> Unit,
-    onConfirm: (spaceIds: List<String>) -> Unit
+    onConfirm: (spaceIds: List<String>) -> Unit,
 ) {
     var selectedSpaceIds by remember { mutableStateOf(setOf<String>()) }
 
@@ -42,44 +42,43 @@ fun SelectSpaceForShelfDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(rememberScrollState()),
             ) {
                 Text(
                     text = stringResource(R.string.library_select_space_prompt, shelfName),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 12.dp)
+                    modifier = Modifier.padding(bottom = 12.dp),
                 )
 
                 SegmentedColumn(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
-                    spaces.forEach { space ->
-                        val isSelected = space.id in selectedSpaceIds
+                    spaces.forEach { (spaceId, spaceName) ->
+                        val isSelected = spaceId in selectedSpaceIds
                         item(
-                            key = space.id,
+                            key = spaceId,
                             selected = isSelected,
                             onClick = {
                                 selectedSpaceIds = if (isSelected) {
-                                    selectedSpaceIds - space.id
+                                    selectedSpaceIds - spaceId
                                 } else {
-                                    selectedSpaceIds + space.id
+                                    selectedSpaceIds + spaceId
                                 }
                             },
                             leadingContent = {
                                 Icon(
                                     MaterialSymbols.Outlined.Forest,
                                     contentDescription = null,
-                                    tint = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.primary
+                                    tint = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.primary,
                                 )
                             },
-                            content = {
+                        ) {
                                 Text(
-                                    text = space.name,
-                                    style = MaterialTheme.typography.bodyLarge
+                                    text = spaceName,
+                                    style = MaterialTheme.typography.bodyLarge,
                                 )
                             }
-                        )
                     }
                 }
             }
@@ -91,7 +90,7 @@ fun SelectSpaceForShelfDialog(
                         onConfirm(selectedSpaceIds.toList())
                     }
                 },
-                enabled = selectedSpaceIds.isNotEmpty()
+                enabled = selectedSpaceIds.isNotEmpty(),
             ) {
                 Text(stringResource(R.string.action_create))
             }
@@ -100,6 +99,6 @@ fun SelectSpaceForShelfDialog(
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.action_cancel))
             }
-        }
+        },
     )
 }

@@ -12,7 +12,7 @@ data class FilterSortPreferences(
     val sortType: SortType = SortType.Added,
     val isAscending: Boolean = false,
     val selectedStatus: Set<StatusFilter> = setOf(
-        StatusFilter.NotStarted, StatusFilter.Reading, StatusFilter.Finished
+        StatusFilter.NotStarted, StatusFilter.Reading, StatusFilter.Finished,
     ),
-    val selectedShelfFilter: Set<ShelfFilter> = setOf(ShelfFilter.Shelves, ShelfFilter.Unshelved)
+    val selectedShelfFilter: Set<ShelfFilter> = setOf(ShelfFilter.Shelves, ShelfFilter.Unshelved),
 )

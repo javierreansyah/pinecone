@@ -7,7 +7,7 @@ import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import kotlinx.coroutines.flow.first
 
 class DictionaryRepository(
-    private val context: Context, private val preferences: ReaderPreferences
+    private val context: Context, private val preferences: ReaderPreferences,
 ) {
     suspend fun lookupWord(dictionaryId: String, word: String): List<DictionaryEntry> {
         if (dictionaryId.isEmpty()) return emptyList()
@@ -19,8 +19,8 @@ class DictionaryRepository(
         results.addAll(dao.getDefinitions(word))
 
         val synonyms = dao.getSynonyms(word)
-        for (syn in synonyms) {
-            val baseEntries = dao.getDefinitionsByIndex(syn.originalWordIndex)
+        for ((_, _, synOriginalWordIndex) in synonyms) {
+            val baseEntries = dao.getDefinitionsByIndex(synOriginalWordIndex)
             results.addAll(baseEntries)
         }
 
@@ -28,13 +28,13 @@ class DictionaryRepository(
             results.addAll(dao.getPrefixDefinitions(word))
         }
 
-        return results.distinctBy { it.definition }
+        return results.distinctBy { (_, _, _, itDefinition) -> itDefinition }
     }
 
     suspend fun deleteDictionary(dictionaryId: String) {
 
         val currentSettings = preferences.readerSettings.first()
-        val newInstalled = currentSettings.installedDictionaries.filter { it.id != dictionaryId }
+        val newInstalled = currentSettings.installedDictionaries.filter { (itId) -> itId != dictionaryId }
         val newActiveId = if (currentSettings.activeDictionaryId == dictionaryId) {
             newInstalled.firstOrNull()?.id ?: ""
         } else {
@@ -42,8 +42,8 @@ class DictionaryRepository(
         }
         preferences.updateSettings(
             currentSettings.copy(
-                installedDictionaries = newInstalled, activeDictionaryId = newActiveId
-            )
+                installedDictionaries = newInstalled, activeDictionaryId = newActiveId,
+            ),
         )
 
         DictionaryDatabase.closeDatabase(dictionaryId)
@@ -62,7 +62,7 @@ class DictionaryRepository(
             if (it.id == dictionaryId) it.copy(name = newName) else it
         }
         preferences.updateSettings(
-            currentSettings.copy(installedDictionaries = newInstalled)
+            currentSettings.copy(installedDictionaries = newInstalled),
         )
     }
 }

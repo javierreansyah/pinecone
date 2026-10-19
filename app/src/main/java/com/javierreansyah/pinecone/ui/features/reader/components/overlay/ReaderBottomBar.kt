@@ -24,9 +24,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -70,16 +69,17 @@ enum class BottomBarMode {
 
 @Composable
 fun ReaderBottomBarContainer(
-    modifier: Modifier = Modifier, readerBgColor: Color, content: @Composable () -> Unit
+    modifier: Modifier = Modifier, readerBgColor: Color, content: @Composable () -> Unit,
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color.Transparent, readerBgColor), startY = 0f
-                )
-            ), contentAlignment = Alignment.Center
+                    colors = listOf(Color.Transparent, readerBgColor), startY = 0f,
+                ),
+            ),
+        contentAlignment = Alignment.Center,
     ) {
         content()
     }
@@ -92,9 +92,9 @@ fun ReaderProgressTracker(
     currentPage: Int?,
     totalPages: Int?,
     readerTextColor: Color,
-    onSeekToProgression: (Double) -> Unit
+    onSeekToProgression: (Double) -> Unit,
 ) {
-    var isSeeking by remember { mutableStateOf(false) }
+    var isSeeking by remember { mutableStateOf(value = false) }
     var sliderPosition by remember { mutableFloatStateOf(progression.toFloat()) }
     var pendingSeek by remember { mutableStateOf<Double?>(null) }
     var seekBarWidthPx by remember { mutableFloatStateOf(1f) }
@@ -102,7 +102,7 @@ fun ReaderProgressTracker(
     LaunchedEffect(progression) {
         val target = pendingSeek
         if (!isSeeking) {
-            if (target == null || abs(progression - target) < 0.02) {
+            if ((target == null) || (abs(progression - target) < 0.02)) {
                 pendingSeek = null
                 sliderPosition = progression.toFloat().coerceIn(0f, 1f)
             }
@@ -120,9 +120,9 @@ fun ReaderProgressTracker(
                 top = 8.dp,
                 bottom = if (WindowInsets.navigationBars.asPaddingValues()
                         .calculateBottomPadding() > 0.dp
-                ) 2.dp else 12.dp
+                ) 2.dp else 12.dp,
             )
-            .height(48.dp)
+            .height(48.dp),
     ) {
 
         val density = LocalDensity.current
@@ -146,27 +146,33 @@ fun ReaderProgressTracker(
                     }
                 }
                 .pointerInput(Unit) {
-                    detectDragGestures(onDragStart = { offset ->
-                        isSeeking = true
-                        val p = (offset.x / seekBarWidthPx).coerceIn(0f, 1f)
-                        sliderPosition = p
-                    }, onDrag = { change, _ ->
-                        change.consume()
-                        val p = (change.position.x / seekBarWidthPx).coerceIn(0f, 1f)
-                        sliderPosition = p
-                    }, onDragEnd = {
-                        isSeeking = false
-                        pendingSeek = sliderPosition.toDouble()
-                        onSeekToProgression(sliderPosition.toDouble())
-                    }, onDragCancel = {
-                        isSeeking = false
-                    })
-                }, contentAlignment = Alignment.CenterStart
+                    detectDragGestures(
+                        onDragStart = { offset ->
+                            isSeeking = true
+                            val p = (offset.x / seekBarWidthPx).coerceIn(0f, 1f)
+                            sliderPosition = p
+                        },
+                        onDrag = { change, _ ->
+                            change.consume()
+                            val p = (change.position.x / seekBarWidthPx).coerceIn(0f, 1f)
+                            sliderPosition = p
+                        },
+                        onDragEnd = {
+                            isSeeking = false
+                            pendingSeek = sliderPosition.toDouble()
+                            onSeekToProgression(sliderPosition.toDouble())
+                        },
+                        onDragCancel = {
+                            isSeeking = false
+                        },
+                    )
+                },
+            contentAlignment = Alignment.CenterStart,
         ) {
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(20.dp)
+                    .height(20.dp),
             ) {
                 val trackY = size.height / 2f
                 val thumbX = size.width * sliderPosition
@@ -180,7 +186,7 @@ fun ReaderProgressTracker(
                             start = Offset(0f, trackY),
                             end = Offset(gapLeft, trackY),
                             strokeWidth = trackStrokeWidthPx,
-                            cap = StrokeCap.Round
+                            cap = StrokeCap.Round,
                         )
                     }
                     if (gapRight < size.width) {
@@ -189,7 +195,7 @@ fun ReaderProgressTracker(
                             start = Offset(gapRight, trackY),
                             end = Offset(size.width, trackY),
                             strokeWidth = trackStrokeWidthPx,
-                            cap = StrokeCap.Round
+                            cap = StrokeCap.Round,
                         )
                     }
 
@@ -199,7 +205,7 @@ fun ReaderProgressTracker(
                         start = Offset(thumbX, trackY - halfThumb),
                         end = Offset(thumbX, trackY + halfThumb),
                         strokeWidth = thumbWidthPx,
-                        cap = StrokeCap.Round
+                        cap = StrokeCap.Round,
                     )
                 } else {
                     drawLine(
@@ -207,32 +213,32 @@ fun ReaderProgressTracker(
                         start = Offset(0f, trackY),
                         end = Offset(thumbX, trackY),
                         strokeWidth = trackStrokeWidthPx,
-                        cap = StrokeCap.Round
+                        cap = StrokeCap.Round,
                     )
                     drawLine(
                         color = readerTextColor.copy(alpha = 0.24f),
                         start = Offset(thumbX, trackY),
                         end = Offset(size.width, trackY),
                         strokeWidth = trackStrokeWidthPx,
-                        cap = StrokeCap.Round
+                        cap = StrokeCap.Round,
                     )
                 }
             }
         }
 
-        val pageText = if (isSeeking || pendingSeek != null) {
+        val pageText = if (isSeeking || (pendingSeek != null)) {
             if (totalPages != null) {
                 val page = (sliderPosition * totalPages).roundToInt().coerceIn(1, totalPages)
                 androidx.compose.ui.res.pluralStringResource(
-                    R.plurals.reader_page_of, totalPages, page, totalPages
+                    R.plurals.reader_page_of, totalPages, page, totalPages,
                 )
             } else {
                 "${(sliderPosition * 100).toInt()}%"
             }
         } else {
-            if (currentPage != null && totalPages != null) {
+            if ((currentPage != null) && (totalPages != null)) {
                 androidx.compose.ui.res.pluralStringResource(
-                    R.plurals.reader_page_of, totalPages, currentPage, totalPages
+                    R.plurals.reader_page_of, totalPages, currentPage, totalPages,
                 )
             } else {
                 "${(progression * 100).toInt()}%"
@@ -240,7 +246,7 @@ fun ReaderProgressTracker(
         }
 
         Text(
-            text = pageText, style = MaterialTheme.typography.labelMedium, color = readerTextColor
+            text = pageText, style = MaterialTheme.typography.labelMedium, color = readerTextColor,
         )
     }
 }
@@ -252,50 +258,50 @@ fun ReaderSearchNavigator(
     totalResults: Int,
     textColor: Color,
     onPrev: () -> Unit,
-    onNext: () -> Unit
+    onNext: () -> Unit,
 ) {
     val currentNum = if (activeIndex != null) activeIndex + 1 else 0
 
     BottomAppBar(
         containerColor = Color.Transparent,
         contentPadding = BottomAppBarDefaults.ContentPadding,
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
     ) {
         Text(
             text = if (totalResults == 0) stringResource(R.string.reader_no_matches) else stringResource(
-                R.string.reader_result_num_of, currentNum, totalResults
-            ), style = MaterialTheme.typography.labelMedium, color = textColor,
-            modifier = Modifier.padding(start = 8.dp)
+                R.string.reader_result_num_of, currentNum, totalResults,
+            ),
+            style = MaterialTheme.typography.labelMedium, color = textColor,
+            modifier = Modifier.padding(start = 8.dp),
         )
 
         Spacer(modifier = Modifier.weight(1f))
 
         IconButton(
             onClick = onPrev,
-            enabled = activeIndex != null && activeIndex > 0
+            enabled = (activeIndex != null) && (activeIndex > 0),
         ) {
             Icon(
                 MaterialSymbols.Outlined.Arrow_back,
                 contentDescription = stringResource(R.string.action_back),
-                tint = if (activeIndex != null && activeIndex > 0) textColor
-                else textColor.copy(alpha = 0.3f)
+                tint = if ((activeIndex != null) && (activeIndex > 0)) textColor
+                else textColor.copy(alpha = 0.3f),
             )
         }
         IconButton(
             onClick = onNext,
-            enabled = activeIndex != null && activeIndex < totalResults - 1
+            enabled = (activeIndex != null) && (activeIndex < (totalResults - 1)),
         ) {
             Icon(
                 MaterialSymbols.Outlined.Arrow_forward,
                 contentDescription = stringResource(R.string.action_more),
-                tint = if (activeIndex != null && activeIndex < totalResults - 1) textColor
-                else textColor.copy(alpha = 0.3f)
+                tint = if ((activeIndex != null) && (activeIndex < (totalResults - 1))) textColor
+                else textColor.copy(alpha = 0.3f),
             )
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ReaderTextSelectionControl(
     modifier: Modifier = Modifier,
@@ -307,35 +313,35 @@ fun ReaderTextSelectionControl(
     onMakeNote: () -> Unit,
     onDefine: () -> Unit,
     onDelete: () -> Unit,
-    onColorSelected: (Int) -> Unit
+    onColorSelected: (Int) -> Unit,
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(value = false) }
 
     BottomAppBar(
         containerColor = Color.Transparent,
         contentPadding = BottomAppBarDefaults.ContentPadding,
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
     ) {
 
         IconButton(onClick = onCopy) {
             Icon(
                 MaterialSymbols.Outlined.Content_copy,
                 contentDescription = stringResource(R.string.action_copy),
-                tint = readerTextColor
+                tint = readerTextColor,
             )
         }
         IconButton(onClick = onSearch) {
             Icon(
                 MaterialSymbols.Outlined.Search,
                 contentDescription = stringResource(R.string.action_search),
-                tint = readerTextColor
+                tint = readerTextColor,
             )
         }
         IconButton(onClick = onDefine) {
             Icon(
                 MaterialSymbols.Outlined.Book_3,
                 contentDescription = stringResource(R.string.action_define),
-                tint = readerTextColor
+                tint = readerTextColor,
             )
         }
 
@@ -346,7 +352,7 @@ fun ReaderTextSelectionControl(
                 Icon(
                     MaterialSymbols.Outlined.Delete,
                     contentDescription = stringResource(R.string.action_delete),
-                    tint = readerTextColor
+                    tint = readerTextColor,
                 )
             }
         }
@@ -354,7 +360,7 @@ fun ReaderTextSelectionControl(
             Icon(
                 MaterialSymbols.Outlined.Edit,
                 contentDescription = stringResource(R.string.reader_make_note),
-                tint = readerTextColor
+                tint = readerTextColor,
             )
         }
         Box {
@@ -362,50 +368,50 @@ fun ReaderTextSelectionControl(
                 Icon(
                     MaterialSymbols.Outlined.Ink_highlighter,
                     contentDescription = stringResource(R.string.reader_highlight_color),
-                    tint = selectedColorInt?.let { Color(it).copy(alpha = 1f) } ?: readerTextColor
+                    tint = selectedColorInt?.let { Color(it).copy(alpha = 1f) } ?: readerTextColor,
                 )
             }
             DropdownMenuPopup(
                 expanded = expanded,
-                onDismissRequest = { expanded = false }
+                onDismissRequest = { expanded = false },
             ) {
                 val swatches = listOf(
                     "#40fac02e".toColorInt(),
                     "#40fd7142".toColorInt(),
                     "#408bc24a".toColorInt(),
-                    "#4025c6da".toColorInt()
+                    "#4025c6da".toColorInt(),
                 )
                 val totalItems = swatches.size
                 val groupInteractionSource = remember { MutableInteractionSource() }
                 DropdownMenuGroup(
                     shapes = MenuDefaults.groupShape(0, 1),
-                    interactionSource = groupInteractionSource
+                    interactionSource = groupInteractionSource,
                 ) {
                     swatches.forEachIndexed { index, colorInt ->
                         val isSelected = selectedColorInt == colorInt
-                        DropdownMenuItem(
+                        SelectableDropdownMenuItem(
                             selected = isSelected,
                             modifier = Modifier
                                 .width(64.dp),
                             text = {
                                 Box(
                                     modifier = Modifier.fillMaxWidth(),
-                                    contentAlignment = Alignment.Center
+                                    contentAlignment = Alignment.Center,
                                 ) {
                                     Box(
                                         modifier = Modifier
                                             .size(24.dp)
                                             .background(
                                                 color = Color(colorInt).copy(alpha = 1f),
-                                                shape = CircleShape
+                                                shape = CircleShape,
                                             )
                                             .border(
                                                 width = 2.dp,
                                                 color = MaterialTheme.colorScheme.surfaceContainer.copy(
-                                                    alpha = 0.2f
+                                                    alpha = 0.2f,
                                                 ),
-                                                shape = CircleShape
-                                            )
+                                                shape = CircleShape,
+                                            ),
                                     )
                                 }
                             },
@@ -414,7 +420,7 @@ fun ReaderTextSelectionControl(
                             onClick = {
                                 onColorSelected(colorInt)
                                 expanded = false
-                            }
+                            },
                         )
                     }
                 }

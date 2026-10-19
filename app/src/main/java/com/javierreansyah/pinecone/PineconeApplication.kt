@@ -33,11 +33,9 @@ class PineconeApplication : Application() {
     lateinit var readerPreferences: ReaderPreferences
         private set
 
-    lateinit var publicationOpener: PublicationOpener
-        private set
+    private lateinit var publicationOpener: PublicationOpener
 
-    lateinit var assetRetriever: AssetRetriever
-        private set
+    private lateinit var assetRetriever: AssetRetriever
 
     override fun onCreate() {
         super.onCreate()
@@ -45,17 +43,17 @@ class PineconeApplication : Application() {
         database = Room.databaseBuilder(
             applicationContext,
             AppDatabase::class.java,
-            "reader_database"
+            "reader_database",
         )
             .addCallback(AppDatabase.BACKUP_REVISION_CALLBACK)
-            .fallbackToDestructiveMigration(false)
+            .fallbackToDestructiveMigration(dropAllTables = false)
             .build()
 
         val httpClient = DefaultHttpClient()
 
         assetRetriever = AssetRetriever(
             contentResolver = contentResolver,
-            httpClient = httpClient
+            httpClient = httpClient,
         )
 
         publicationOpener = PublicationOpener(
@@ -63,8 +61,8 @@ class PineconeApplication : Application() {
                 context = this,
                 httpClient = httpClient,
                 assetRetriever = assetRetriever,
-                pdfFactory = null
-            )
+                pdfFactory = null,
+            ),
         )
 
         libraryRepository = LibraryRepository(
@@ -76,19 +74,19 @@ class PineconeApplication : Application() {
             noteDao = database.noteDao(),
             spaceDao = database.spaceDao(),
             publicationOpener = publicationOpener,
-            assetRetriever = assetRetriever
+            assetRetriever = assetRetriever,
         )
 
         readerPreferences = ReaderPreferences(applicationContext)
 
         dictionaryRepository = DictionaryRepository(
             context = applicationContext,
-            preferences = readerPreferences
+            preferences = readerPreferences,
         )
 
         dictionaryImportManager = DictionaryImportManager(
             context = applicationContext,
-            preferences = readerPreferences
+            preferences = readerPreferences,
         )
 
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {

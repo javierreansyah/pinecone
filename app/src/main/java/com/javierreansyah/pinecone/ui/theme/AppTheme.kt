@@ -19,7 +19,7 @@ fun AppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     colorPalette: String = "Dynamic",
     themeContrast: String = "Standard",
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
 
@@ -61,6 +61,6 @@ fun AppTheme(
     MaterialTheme(
         colorScheme = resolvedColorScheme,
         motionScheme = MotionScheme.expressive(),
-        content = content
+        content = content,
     )
 }

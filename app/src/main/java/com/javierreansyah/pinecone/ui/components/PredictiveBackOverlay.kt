@@ -29,7 +29,7 @@ fun PredictiveBackOverlay(
     swipeEdge: Int,
     modifier: Modifier = Modifier,
     backgroundColor: Color = MaterialTheme.colorScheme.surface,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
 
     val customShape = remember(backProgress) {
@@ -37,7 +37,7 @@ fun PredictiveBackOverlay(
             override fun createOutline(
                 size: Size,
                 layoutDirection: LayoutDirection,
-                density: Density
+                density: Density,
             ): Outline {
                 val w = size.width
                 val h = size.height
@@ -48,11 +48,11 @@ fun PredictiveBackOverlay(
                     left = 0f,
                     top = 0f,
                     right = w,
-                    bottom = h - bottomClipPx
+                    bottom = h - bottomClipPx,
                 )
                 val roundRect = RoundRect(
                     rect = rect,
-                    cornerRadius = CornerRadius(cornerRadiusPx)
+                    cornerRadius = CornerRadius(cornerRadiusPx),
                 )
                 return Outline.Rounded(roundRect)
             }
@@ -66,13 +66,13 @@ fun PredictiveBackOverlay(
                 val w = constraints.maxWidth
                 val h = constraints.maxHeight
 
-                if (backProgress > 0f && w > 0) {
-                    val targetWidth = (w * (1f - backProgress * 0.112f)).toInt()
+                if ((backProgress > 0f) && (w > 0)) {
+                    val targetWidth = (w * (1f - (backProgress * 0.112f))).toInt()
                     val childConstraints = constraints.copy(
                         minWidth = targetWidth.coerceAtMost(w),
                         maxWidth = targetWidth.coerceAtMost(w),
                         minHeight = h,
-                        maxHeight = h
+                        maxHeight = h,
                     )
                     val placeable = measurable.measure(childConstraints)
 
@@ -103,7 +103,7 @@ fun PredictiveBackOverlay(
                     clip = false
                 }
             }
-            .background(backgroundColor)
+            .background(backgroundColor),
     ) {
         content()
     }

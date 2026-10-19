@@ -13,15 +13,15 @@ import java.util.UUID
             entity = SpaceEntity::class,
             parentColumns = ["id"],
             childColumns = ["spaceId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
-    indices = [Index("spaceId")]
+    indices = [Index("spaceId")],
 )
 data class ShelfEntity(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
     val spaceId: String,
     val name: String,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
 )
 

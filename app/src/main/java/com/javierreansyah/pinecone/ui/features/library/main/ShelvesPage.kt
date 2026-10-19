@@ -7,7 +7,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,7 +55,7 @@ fun ShelvesPage(
     isInMultiSelectMode: Boolean = false,
     selectedShelves: Set<String> = emptySet(),
     onShelfLongClick: ((String) -> Unit)? = null,
-    onShelfToggleSelect: ((String) -> Unit)? = null
+    onShelfToggleSelect: ((String) -> Unit)? = null,
 ) {
 
     key(scrollKey) {
@@ -65,28 +64,29 @@ fun ShelvesPage(
                 AnimatedContent(
                     targetState = layoutMode,
                     transitionSpec = {
-                        fadeIn(animationSpec = tween(durationMillis = 100, delayMillis = 100)) +
-                                scaleIn(
-                                    initialScale = 0.9f,
-                                    animationSpec = tween(durationMillis = 100, delayMillis = 100)
-                                ) togetherWith
-                                fadeOut(animationSpec = tween(durationMillis = 100)) +
-                                scaleOut(
-                                    targetScale = 0.9f,
-                                    animationSpec = tween(durationMillis = 100)
-                                )
+                        (fadeIn(animationSpec = tween(durationMillis = 100, delayMillis = 100)) +
+                            scaleIn(
+                                initialScale = 0.9f,
+                                animationSpec = tween(durationMillis = 100, delayMillis = 100),
+                            )) togetherWith
+                            (fadeOut(animationSpec = tween(durationMillis = 100)) +
+                            scaleOut(
+                                targetScale = 0.9f,
+                                animationSpec = tween(durationMillis = 100),
+                            ))
                     },
-                    label = "shelvesPageLayoutTransition"
+                    label = "shelvesPageLayoutTransition",
                 ) { targetLayoutMode ->
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
                             .then(
                                 if (targetLayoutMode != LayoutMode.List) Modifier.padding(vertical = 4.dp)
-                                else Modifier
-                            ), contentPadding = PaddingValues(top = 8.dp)
+                                else Modifier,
+                            ),
+                        contentPadding = PaddingValues(top = 8.dp),
                     ) {
-                        items(shelves, key = { it.shelf.id }) { shelfWithCovers ->
+                        items(shelves, key = { (itShelf) -> itShelf.id }) { shelfWithCovers ->
                             val visibleBooks = shelfWithCovers.books
                             val booksCount = visibleBooks.size
 
@@ -101,7 +101,7 @@ fun ShelvesPage(
                                         onShelfClick(
                                             shelfWithCovers.shelf.id,
                                             shelfWithCovers.shelf.name,
-                                            booksCount
+                                            booksCount,
                                         )
                                     },
                                     isInMultiSelectMode = itemInMultiSelectMode,
@@ -111,7 +111,7 @@ fun ShelvesPage(
                                     } else null,
                                     onToggleSelect = if (isItemSelectable) {
                                         { onShelfToggleSelect?.invoke(shelfWithCovers.shelf.id) }
-                                    } else null
+                                    } else null,
                                 )
                             } else {
                                 ShelfRowItem(
@@ -128,7 +128,7 @@ fun ShelvesPage(
                                     } else null,
                                     onToggleSelect = if (isItemSelectable) {
                                         { onShelfToggleSelect?.invoke(shelfWithCovers.shelf.id) }
-                                    } else null
+                                    } else null,
                                 )
                             }
                         }
@@ -140,14 +140,13 @@ fun ShelvesPage(
                     text = stringResource(R.string.library_empty_shelves),
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp)
+                        .padding(16.dp),
                 )
             }
         }
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ShelfRowItem(
     shelfWithCovers: ShelfWithCovers,
@@ -159,41 +158,41 @@ private fun ShelfRowItem(
     isInMultiSelectMode: Boolean = false,
     isSelected: Boolean = false,
     onLongClick: (() -> Unit)? = null,
-    onToggleSelect: (() -> Unit)? = null
+    onToggleSelect: (() -> Unit)? = null,
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
                 onClick = {
-                    if (isInMultiSelectMode && onToggleSelect != null) {
+                    if (isInMultiSelectMode && (onToggleSelect != null)) {
                         onToggleSelect()
                     } else {
                         onShelfClick(
                             shelfWithCovers.shelf.id,
                             shelfWithCovers.shelf.name,
-                            booksCount
+                            booksCount,
                         )
                     }
                 },
                 onLongClick = {
                     onLongClick?.invoke()
-                }
+                },
             )
-            .padding(vertical = 4.dp)
+            .padding(vertical = 4.dp),
     ) {
         ShelfRowHeader(
             shelfName = shelfWithCovers.shelf.name,
             booksCount = booksCount,
             isInMultiSelectMode = isInMultiSelectMode,
             isSelected = isSelected,
-            onToggleSelect = onToggleSelect
+            onToggleSelect = onToggleSelect,
         )
         ShelfBooksHorizontalRow(
             shelfId = shelfWithCovers.shelf.id,
             visibleBooks = visibleBooks,
             onBookClick = onBookClick,
-            onBookLongClick = onBookLongClick
+            onBookLongClick = onBookLongClick,
         )
     }
 }
@@ -204,36 +203,36 @@ private fun ShelfRowHeader(
     booksCount: Int,
     isInMultiSelectMode: Boolean = false,
     isSelected: Boolean = false,
-    onToggleSelect: (() -> Unit)? = null
+    onToggleSelect: (() -> Unit)? = null,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(vertical = 4.dp)
+                .padding(vertical = 4.dp),
         ) {
             Text(
                 text = shelfName,
-                style = MaterialTheme.typography.titleMediumEmphasized
+                style = MaterialTheme.typography.titleMediumEmphasized,
             )
             val countText = pluralStringResource(
-                R.plurals.library_shelf_count, booksCount, booksCount
+                R.plurals.library_shelf_count, booksCount, booksCount,
             )
             Text(
                 text = countText,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
         }
         if (isInMultiSelectMode) {
             Checkbox(
                 checked = isSelected,
-                onCheckedChange = { onToggleSelect?.invoke() }
+                onCheckedChange = { onToggleSelect?.invoke() },
             )
         }
     }
@@ -244,7 +243,7 @@ private fun ShelfBooksHorizontalRow(
     shelfId: String,
     visibleBooks: List<com.javierreansyah.pinecone.data.local.database.library.BookWithDetails>,
     onBookClick: (String) -> Unit,
-    onBookLongClick: ((String, String) -> Unit)?
+    onBookLongClick: ((String, String) -> Unit)?,
 ) {
     if (visibleBooks.isEmpty()) {
         EmptyState(
@@ -253,26 +252,26 @@ private fun ShelfBooksHorizontalRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(140.dp)
-                .padding(horizontal = 8.dp)
+                .padding(horizontal = 8.dp),
         )
     } else {
         val density = LocalDensity.current
         val containerSize = LocalWindowInfo.current.containerSize
         val screenWidth = with(density) { containerSize.width.toDp() }
-        val fitsOnScreen = (120.dp * visibleBooks.size + 16.dp) <= screenWidth
+        val fitsOnScreen = ((120.dp * visibleBooks.size) + 16.dp) <= screenWidth
 
         LazyRow(
             userScrollEnabled = !fitsOnScreen,
             contentPadding = PaddingValues(horizontal = 8.dp),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            items(visibleBooks, key = { it.book.id }) { bookEntity ->
+            items(visibleBooks, key = { (itBook) -> itBook.id }) { bookEntity ->
                 val book = Book.fromEntity(bookEntity)
                 BookItem(
                     book = book,
                     onClick = { onBookClick(book.id) },
                     onLongClick = onBookLongClick?.let { { it(book.id, shelfId) } },
-                    modifier = Modifier.width(120.dp)
+                    modifier = Modifier.width(120.dp),
                 )
             }
         }

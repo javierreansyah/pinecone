@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -19,7 +18,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SegmentedButtonGroup(
     options: List<String>,
@@ -37,12 +35,12 @@ fun SegmentedButtonGroup(
         selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
         selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary,
     ),
-    border: BorderStroke? = null
+    border: BorderStroke? = null,
 ) {
     val buttonRow = @Composable {
         Row(
             modifier = if (title == null) modifier else Modifier,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             options.forEachIndexed { index, option ->
                 val isSelected = option == selected
@@ -53,7 +51,7 @@ fun SegmentedButtonGroup(
                     onClick = { onSelected(option) },
                     label = {
                         Text(
-                            text = option, style = MaterialTheme.typography.labelLarge
+                            text = option, style = MaterialTheme.typography.labelLarge,
                         )
                     },
                     leadingIcon = icon?.let {
@@ -61,13 +59,13 @@ fun SegmentedButtonGroup(
                             Icon(
                                 imageVector = it,
                                 contentDescription = null,
-                                modifier = Modifier.size(FilterChipDefaults.IconSize)
+                                modifier = Modifier.size(FilterChipDefaults.IconSize),
                             )
                         }
                     },
                     enabled = enabled,
                     colors = colors,
-                    border = border
+                    border = border,
                 )
             }
         }
@@ -77,15 +75,15 @@ fun SegmentedButtonGroup(
         Column(
             modifier = modifier,
             horizontalAlignment = Alignment.Start,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(
-                    alpha = 0.38f
-                )
+                    alpha = 0.38f,
+                ),
             )
             buttonRow()
         }

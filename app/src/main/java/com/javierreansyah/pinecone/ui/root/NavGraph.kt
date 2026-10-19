@@ -15,7 +15,6 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.systemGestureExclusion
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -49,12 +48,11 @@ import com.javierreansyah.pinecone.ui.features.settings.AboutScreen
 import com.javierreansyah.pinecone.ui.features.settings.OpenSourceLicensesScreen
 import com.javierreansyah.pinecone.ui.features.settings.SettingsScreen
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun NavGraph(
     backStack: MutableList<NavKey>,
     mainViewModel: MainViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = object :
@@ -67,22 +65,21 @@ fun NavGraph(
                     addCategory(Intent.CATEGORY_OPENABLE)
                     val uri = DocumentsContract.buildDocumentUri(
                         "com.android.externalstorage.documents",
-                        "primary:Download"
+                        "primary:Download",
                     )
                     putExtra(DocumentsContract.EXTRA_INITIAL_URI, uri)
                 }
             }
 
             override fun parseResult(resultCode: Int, intent: Intent?): List<Uri> {
-                if (resultCode != Activity.RESULT_OK || intent == null) return emptyList()
+                if ((resultCode != Activity.RESULT_OK) || (intent == null)) return emptyList()
                 val clipData = intent.clipData
-                if (clipData != null) {
-                    return (0 until clipData.itemCount).map { clipData.getItemAt(it).uri }
-                }
-                return listOfNotNull(intent.data)
+                return clipData?.let { data ->
+                    (0 until data.itemCount).map { data.getItemAt(it).uri }
+                } ?: listOfNotNull(intent.data)
             }
         },
-        onResult = { uris ->
+    ) { uris ->
             if (uris.isNotEmpty()) {
                 backStack.clear()
                 backStack.add(Screen.Library)
@@ -90,7 +87,6 @@ fun NavGraph(
                 mainViewModel.importBooks(uris)
             }
         }
-    )
 
     val folderPickerLauncher = rememberLauncherForActivityResult(
         contract = object : ActivityResultContracts.OpenDocumentTree() {
@@ -98,13 +94,13 @@ fun NavGraph(
                 val intent = super.createIntent(context, input)
                 val uri = DocumentsContract.buildDocumentUri(
                     "com.android.externalstorage.documents",
-                    "primary:"
+                    "primary:",
                 )
                 intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, uri)
                 return intent
             }
         },
-        onResult = { uri ->
+    ) { uri ->
             uri?.let {
                 backStack.clear()
                 backStack.add(Screen.Library)
@@ -112,7 +108,6 @@ fun NavGraph(
                 mainViewModel.scanFolder(it)
             }
         }
-    )
     val context = LocalContext.current
     val app = context.applicationContext as PineconeApplication
     val readerPreferences = app.readerPreferences
@@ -122,13 +117,13 @@ fun NavGraph(
     // Debounce to prevent rapid double-clicks from crashing the transition state machine
     var lastBackClickTime by androidx.compose.runtime.remember {
         androidx.compose.runtime.mutableLongStateOf(
-            0L
+            0L,
         )
     }
 
     val navigateBack: () -> Unit = {
         val now = android.os.SystemClock.elapsedRealtime()
-        if (now - lastBackClickTime > 300L) {
+        if ((now - lastBackClickTime) > 300L) {
             lastBackClickTime = now
             if (backStack.size > 1) {
                 backStack.removeLastOrNull()
@@ -156,7 +151,7 @@ fun NavGraph(
             },
         onBack = {
             val now = android.os.SystemClock.elapsedRealtime()
-            if (now - lastBackClickTime > 400L || backStack.size == 1) {
+            if (((now - lastBackClickTime) > 400L) || (backStack.size == 1)) {
                 lastBackClickTime = now
                 if (backStack.size > 1) {
                     backStack.removeLastOrNull()
@@ -166,32 +161,32 @@ fun NavGraph(
             }
         },
         transitionSpec = {
-            (fadeIn(animationSpec = effectsSpec) + scaleIn(
+            ((fadeIn(animationSpec = effectsSpec) + scaleIn(
                 initialScale = 0.9f,
-                animationSpec = spatialSpec
-            ) togetherWith
-                    fadeOut(animationSpec = effectsSpec) + scaleOut(
+                animationSpec = spatialSpec,
+            )) togetherWith
+                (fadeOut(animationSpec = effectsSpec) + scaleOut(
                 targetScale = 0.9f,
-                animationSpec = spatialSpec
-            )).apply {
+                animationSpec = spatialSpec,
+            ))).apply {
                 targetContentZIndex = 1f
             }
         },
         popTransitionSpec = {
             (fadeIn(animationSpec = effectsSpec) togetherWith
-                    fadeOut(animationSpec = effectsSpec) + scaleOut(
+                (fadeOut(animationSpec = effectsSpec) + scaleOut(
                 targetScale = 0.9f,
-                animationSpec = spatialSpec
-            )).apply {
+                animationSpec = spatialSpec,
+            ))).apply {
                 targetContentZIndex = -1f
             }
         },
         predictivePopTransitionSpec = {
             (fadeIn(animationSpec = effectsSpec) togetherWith
-                    fadeOut(animationSpec = effectsSpec) + scaleOut(
+                (fadeOut(animationSpec = effectsSpec) + scaleOut(
                 targetScale = 0.9f,
-                animationSpec = spatialSpec
-            )).apply {
+                animationSpec = spatialSpec,
+            ))).apply {
                 targetContentZIndex = -1f
             }
         },
@@ -251,32 +246,30 @@ fun NavGraph(
                     onImportFilesClick = {
                         filePickerLauncher.launch(
                             arrayOf(
-                                "application/epub+zip"
-                            )
+                                "application/epub+zip",
+                            ),
                         )
                     },
-                    onScanFolderClick = { folderPickerLauncher.launch(null) }
-                )
+                ) { folderPickerLauncher.launch(null) }
             }
             entry<Screen.Settings> {
                 SettingsScreen(
                     onNavigateBack = navigateBack,
-                    onNavigateToAbout = {
+                ) {
                         backStack.add(Screen.About)
                     }
-                )
             }
             entry<Screen.About> {
                 AboutScreen(
                     onNavigateBack = navigateBack,
                     onNavigateToOpenSourceLicenses = {
                         backStack.add(Screen.OpenSourceLicenses)
-                    }
+                    },
                 )
             }
             entry<Screen.OpenSourceLicenses> {
                 OpenSourceLicensesScreen(
-                    onNavigateBack = navigateBack
+                    onNavigateBack = navigateBack,
                 )
             }
             entry<Screen.Unsorted> {
@@ -293,7 +286,7 @@ fun NavGraph(
                     },
                     onNavigateToOrganize = { bookIds ->
                         organizeBookIds = bookIds
-                    }
+                    },
                 )
             }
             entry<Screen.Archives> {
@@ -310,14 +303,14 @@ fun NavGraph(
                     },
                     onNavigateToOrganize = { bookIds ->
                         organizeBookIds = bookIds
-                    }
+                    },
                 )
             }
-            entry<Screen.ShelfDetail> { args ->
+            entry<Screen.ShelfDetail> { (argsShelfId, argsName, argsCount) ->
                 ShelfDetailScreen(
-                    shelfId = args.shelfId,
-                    initialShelfName = args.name,
-                    initialBookCount = args.count,
+                    shelfId = argsShelfId,
+                    initialShelfName = argsName,
+                    initialBookCount = argsCount,
                     onNavigateBack = navigateBack,
                     onNavigateToReader = { bookId ->
                         val intent = Intent(context, ReaderActivity::class.java).apply {
@@ -330,13 +323,13 @@ fun NavGraph(
                     },
                     onNavigateToOrganize = { bookIds ->
                         organizeBookIds = bookIds
-                    }
+                    },
                 )
             }
-            entry<Screen.AuthorDetail> { args ->
+            entry<Screen.AuthorDetail> { (argsAuthorName) ->
                 FilterResultScreen(
                     filterType = "author",
-                    filterValue = args.authorName,
+                    filterValue = argsAuthorName,
                     onNavigateBack = navigateBack,
                     onNavigateToReader = { bookId ->
                         val intent = Intent(context, ReaderActivity::class.java).apply {
@@ -353,13 +346,13 @@ fun NavGraph(
                     },
                     onNavigateToOrganize = { bookIds ->
                         organizeBookIds = bookIds
-                    }
+                    },
                 )
             }
-            entry<Screen.TagDetail> { args ->
+            entry<Screen.TagDetail> { (argsTagName) ->
                 FilterResultScreen(
                     filterType = "tag",
-                    filterValue = args.tagName,
+                    filterValue = argsTagName,
                     onNavigateBack = navigateBack,
                     onNavigateToReader = { bookId ->
                         val intent = Intent(context, ReaderActivity::class.java).apply {
@@ -376,13 +369,13 @@ fun NavGraph(
                     },
                     onNavigateToOrganize = { bookIds ->
                         organizeBookIds = bookIds
-                    }
+                    },
                 )
             }
-            entry<Screen.SpaceDetail> { args ->
+            entry<Screen.SpaceDetail> { (argsSpaceName) ->
                 FilterResultScreen(
                     filterType = "space",
-                    filterValue = args.spaceName,
+                    filterValue = argsSpaceName,
                     onNavigateBack = navigateBack,
                     onNavigateToReader = { bookId ->
                         val intent = Intent(context, ReaderActivity::class.java).apply {
@@ -399,51 +392,48 @@ fun NavGraph(
                     },
                     onNavigateToOrganize = { bookIds ->
                         organizeBookIds = bookIds
-                    }
+                    },
                 )
             }
             entry<Screen.AllAuthors> {
                 AllFilterItemsScreen(
                     filterType = "author",
                     onNavigateBack = navigateBack,
-                    onNavigateToDetail = { authorName ->
+                ) { authorName ->
                         backStack.add(Screen.AuthorDetail(authorName))
                     }
-                )
             }
             entry<Screen.AllTags> {
                 AllFilterItemsScreen(
                     filterType = "tag",
                     onNavigateBack = navigateBack,
-                    onNavigateToDetail = { tagName ->
+                ) { tagName ->
                         backStack.add(Screen.TagDetail(tagName))
                     }
-                )
             }
             entry<Screen.AllSpaces> {
                 AllFilterItemsScreen(
                     filterType = "space",
                     onNavigateBack = navigateBack,
-                    onNavigateToDetail = { spaceName ->
+                ) { spaceName ->
                         backStack.add(Screen.SpaceDetail(spaceName))
                     }
-                )
             }
             entry<Screen.Dictionaries> {
                 val factory = DictionariesViewModel.Factory(
                     app.dictionaryRepository,
                     app.dictionaryImportManager,
-                    readerPreferences
+                    readerPreferences,
                 )
                 val dictViewModel: DictionariesViewModel = viewModel(factory = factory)
                 DictionariesScreen(
                     viewModel = dictViewModel,
-                    onBack = navigateBack
+                    onBack = navigateBack,
                 )
             }
-            entry<Screen.BookInfo> { args ->
+            entry<Screen.BookInfo> { (argsBookId) ->
                 BookInfoScreen(
-                    bookId = args.bookId,
+                    bookId = argsBookId,
                     onNavigateBack = navigateBack,
                     onNavigateToEdit = { id ->
                         backStack.add(Screen.EditBook(id))
@@ -451,18 +441,17 @@ fun NavGraph(
                     onNavigateToTag = { tagName ->
                         backStack.add(Screen.TagDetail(tagName))
                     },
-                    onNavigateToOrganize = { bookIds ->
+                ) { bookIds ->
                         organizeBookIds = bookIds
                     }
-                )
             }
-            entry<Screen.EditBook> { args ->
+            entry<Screen.EditBook> { (argsBookId2) ->
                 EditBookScreen(
-                    bookId = args.bookId,
-                    onNavigateBack = navigateBack
+                    bookId = argsBookId2,
+                    onNavigateBack = navigateBack,
                 )
             }
-        }
+        },
     )
 
     organizeBookIds?.let { bookIds ->
@@ -475,25 +464,23 @@ fun NavGraph(
                         if (modelClass.isAssignableFrom(com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel::class.java)) {
                             @Suppress("UNCHECKED_CAST") return com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel(
                                 app,
-                                bookIds
+                                bookIds,
                             ) as T
                         }
                         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
                     }
-                }
+                },
             )
         com.javierreansyah.pinecone.ui.features.library.organize.OrganizeBottomSheet(
             viewModel = organizeViewModel,
-            onNavigateBack = { organizeBookIds = null }
-        )
+        ) { organizeBookIds = null }
     }
 
     val importErrorReport by mainViewModel.importErrorReport.collectAsState()
     importErrorReport?.let { report ->
         ImportErrorDialog(
             report = report,
-            onDismiss = { mainViewModel.dismissImportErrorReport() }
-        )
+        ) { mainViewModel.dismissImportErrorReport() }
     }
 }
 

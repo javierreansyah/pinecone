@@ -24,7 +24,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -87,7 +86,7 @@ import java.util.Date
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToAbout: () -> Unit = {}
+    onNavigateToAbout: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val navRestoringBackupMsg = stringResource(R.string.nav_restoring_backup)
@@ -105,8 +104,8 @@ fun SettingsScreen(
     val viewModel: SettingsViewModel = viewModel(
         factory = SettingsViewModel.Factory(
             application = app,
-            readerPreferences = app.readerPreferences
-        )
+            readerPreferences = app.readerPreferences,
+        ),
     )
 
     val settings by viewModel.settings.collectAsState()
@@ -114,10 +113,10 @@ fun SettingsScreen(
     val isRestoring by viewModel.isRestoring.collectAsState()
     val availableBackups by viewModel.availableBackups.collectAsState()
 
-    var showColorPicker by remember { mutableStateOf(false) }
-    var showRestoreDefaultWarning by remember { mutableStateOf(false) }
-    var showRestoreWarning by remember { mutableStateOf(false) }
-    var showRestoreBottomSheet by remember { mutableStateOf(false) }
+    var showColorPicker by remember { mutableStateOf(value = false) }
+    var showRestoreDefaultWarning by remember { mutableStateOf(value = false) }
+    var showRestoreWarning by remember { mutableStateOf(value = false) }
+    var showRestoreBottomSheet by remember { mutableStateOf(value = false) }
     var selectedBackupToRestore by remember { mutableStateOf<BackupFile?>(null) }
     var selectedBackupToExport by remember { mutableStateOf<BackupFile?>(null) }
 
@@ -125,13 +124,11 @@ fun SettingsScreen(
         contract = object : ActivityResultContracts.OpenDocumentTree() {
             override fun createIntent(context: android.content.Context, input: Uri?): Intent {
                 val intent = super.createIntent(context, input)
-                if (input != null) {
-                    intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, input)
-                }
+                input?.let { intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, it) }
                 return intent
             }
         },
-        onResult = { uri ->
+    ) { uri ->
             uri?.let {
                 val takeFlags: Int =
                     Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
@@ -139,28 +136,26 @@ fun SettingsScreen(
                 viewModel.updateSettings(settings.copy(backupFolderUri = it.toString()))
             }
         }
-    )
 
     val exportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/octet-stream")
+        contract = ActivityResultContracts.CreateDocument("application/octet-stream"),
     ) { destination ->
         val selected = selectedBackupToExport
-        if (destination != null && selected != null) {
+        if ((destination != null) && (selected != null)) {
             viewModel.exportBackup(
                 selected.uri, destination,
                 onSuccess = {
                     Toast.makeText(context, navBackupSuccessMsg, Toast.LENGTH_SHORT).show()
                 },
-                onFailure = {
+            ) {
                     Toast.makeText(context, navBackupFailedMsg, Toast.LENGTH_SHORT).show()
                 }
-            )
         }
         selectedBackupToExport = null
     }
 
     val importLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
+        contract = ActivityResultContracts.OpenDocument(),
     ) { source ->
         source?.let {
             viewModel.importBackup(
@@ -168,27 +163,26 @@ fun SettingsScreen(
                 onSuccess = {
                     Toast.makeText(context, navBackupSuccessMsg, Toast.LENGTH_SHORT).show()
                 },
-                onFailure = {
+            ) {
                     Toast.makeText(context, navBackupFailedMsg, Toast.LENGTH_SHORT).show()
                 }
-            )
         }
     }
 
     val hasPermission = settings.backupFolderUri.isNotEmpty() &&
-            context.contentResolver.persistedUriPermissions.any { it.uri.toString() == settings.backupFolderUri }
+        context.contentResolver.persistedUriPermissions.any { it.uri.toString() == settings.backupFolderUri }
 
     val launchFolderPicker = {
         val pineconeDir = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-            "Pinecone"
+            "Pinecone",
         )
         if (!pineconeDir.exists()) {
             pineconeDir.mkdirs()
         }
         val initialUri = DocumentsContract.buildDocumentUri(
             "com.android.externalstorage.documents",
-            "primary:Documents/Pinecone"
+            "primary:Documents/Pinecone",
         )
         folderPickerLauncher.launch(initialUri)
     }
@@ -219,8 +213,8 @@ fun SettingsScreen(
                 } else {
                     AppCompatDelegate.setApplicationLocales(
                         LocaleListCompat.forLanguageTags(
-                            localeKey
-                        )
+                            localeKey,
+                        ),
                     )
                 }
             }
@@ -241,10 +235,9 @@ fun SettingsScreen(
                     onSuccess = {
                         Toast.makeText(context, navBackupSuccessMsg, Toast.LENGTH_SHORT).show()
                     },
-                    onFailure = {
+                ) {
                         Toast.makeText(context, navBackupFailedMsg, Toast.LENGTH_SHORT).show()
                     }
-                )
             }
         },
         onRestoreClick = {
@@ -258,7 +251,7 @@ fun SettingsScreen(
         },
         onImportClick = {
             importLauncher.launch(arrayOf("application/octet-stream", "application/zip"))
-        }
+        },
     )
 
     if (showColorPicker) {
@@ -275,7 +268,7 @@ fun SettingsScreen(
         ColorSchemePickerDialog(
             currentColor = currentPaletteColor,
             setShowDialog = { showColorPicker = it },
-            onColorChange = { color ->
+        ) { color ->
                 val newPalette = if (color == Color.White) {
                     "Dynamic"
                 } else {
@@ -283,7 +276,6 @@ fun SettingsScreen(
                 }
                 viewModel.updateSettings(settings.copy(colorPalette = newPalette))
             }
-        )
     }
 
     if (showRestoreWarning) {
@@ -292,7 +284,7 @@ fun SettingsScreen(
                 showRestoreWarning = false
                 selectedBackupToRestore = null
             },
-            onConfirm = {
+        ) {
                 showRestoreWarning = false
                 selectedBackupToRestore?.uri?.let { uri ->
                     viewModel.restoreFullBackup(
@@ -307,20 +299,18 @@ fun SettingsScreen(
                         onWarning = {
                             Toast.makeText(context, restorePartialMsg, Toast.LENGTH_LONG).show()
                         },
-                        onFailure = {
+                    ) {
                             Toast.makeText(context, navRestoreFailedMsg, Toast.LENGTH_SHORT).show()
                         }
-                    )
                 }
                 selectedBackupToRestore = null
             }
-        )
     }
 
     if (showRestoreDefaultWarning) {
         RestoreDefaultWarningDialog(
             onDismiss = { showRestoreDefaultWarning = false },
-            onConfirm = {
+        ) {
                 showRestoreDefaultWarning = false
                 val defaultSettings = settings.copy(
                     themeMode = "System",
@@ -329,12 +319,12 @@ fun SettingsScreen(
                     locale = "System",
                     autoBackupFrequency = "12h",
                     backupFolderUri = "",
-                    showAllSpaces = true
+                    showAllSpaces = true,
                 )
                 viewModel.updateSettings(defaultSettings)
 
                 AppCompatDelegate.setApplicationLocales(
-                    LocaleListCompat.getEmptyLocaleList()
+                    LocaleListCompat.getEmptyLocaleList(),
                 )
 
                 WorkerUtils.scheduleBackupWork(context, "12h")
@@ -342,10 +332,9 @@ fun SettingsScreen(
                 Toast.makeText(
                     context,
                     restoreSuccessMsg,
-                    Toast.LENGTH_SHORT
+                    Toast.LENGTH_SHORT,
                 ).show()
             }
-        )
     }
 
     if (showRestoreBottomSheet) {
@@ -357,15 +346,13 @@ fun SettingsScreen(
                 showRestoreBottomSheet = false
                 showRestoreWarning = true
             },
-            onExportBackup = { backup ->
+        ) { backup ->
                 selectedBackupToExport = backup
                 exportLauncher.launch("pinecone_${backup.name}.pine")
             }
-        )
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SettingsContent(
     settings: ReaderSettings,
@@ -385,7 +372,7 @@ private fun SettingsContent(
     onBackupClick: () -> Unit,
     onRestoreClick: () -> Unit,
     onImportClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -395,9 +382,9 @@ private fun SettingsContent(
             SettingsTopBar(
                 onNavigateBack = onNavigateBack,
                 onRestoreDefaultClick = onRestoreDefaultClick,
-                scrollBehavior = scrollBehavior
+                scrollBehavior = scrollBehavior,
             )
-        }
+        },
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -405,7 +392,7 @@ private fun SettingsContent(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             GeneralSettingsSection(
                 settings = settings,
@@ -413,7 +400,7 @@ private fun SettingsContent(
                 onColorPaletteClick = onColorPaletteClick,
                 onThemeContrastSelected = onThemeContrastSelected,
                 onShowAllSpacesChanged = onShowAllSpacesChanged,
-                onLanguageSelected = onLanguageSelected
+                onLanguageSelected = onLanguageSelected,
             )
 
             BackupSettingsSection(
@@ -425,23 +412,22 @@ private fun SettingsContent(
                 onBackupLocationClick = onBackupLocationClick,
                 onBackupClick = onBackupClick,
                 onRestoreClick = onRestoreClick,
-                onImportClick = onImportClick
+                onImportClick = onImportClick,
             )
 
             AboutSettingsSection(
-                onNavigateToAbout = onNavigateToAbout
+                onNavigateToAbout = onNavigateToAbout,
             )
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SettingsTopBar(
     onNavigateBack: () -> Unit,
     onRestoreDefaultClick: () -> Unit,
     scrollBehavior: TopAppBarScrollBehavior,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LibraryTopAppBar(
         title = { Text(stringResource(R.string.settings_title)) },
@@ -449,16 +435,16 @@ private fun SettingsTopBar(
         actions = {
             IconButton(
                 shapes = IconButtonDefaults.shapes(),
-                onClick = onRestoreDefaultClick
+                onClick = onRestoreDefaultClick,
             ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Restart_alt,
-                    contentDescription = stringResource(R.string.settings_restore_defaults)
+                    contentDescription = stringResource(R.string.settings_restore_defaults),
                 )
             }
         },
         scrollBehavior = scrollBehavior,
-        modifier = modifier
+        modifier = modifier,
     )
 }
 
@@ -470,18 +456,18 @@ private fun GeneralSettingsSection(
     onThemeContrastSelected: (String) -> Unit,
     onShowAllSpacesChanged: (Boolean) -> Unit,
     onLanguageSelected: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Column {
             Text(
                 text = stringResource(R.string.settings_general),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = 8.dp),
             )
 
             SegmentedColumn(modifier = Modifier.padding(bottom = 16.dp)) {
@@ -490,28 +476,28 @@ private fun GeneralSettingsSection(
                     "en" to "English",
                     "id" to "Bahasa Indonesia",
                     "de" to "Deutsch",
-                    "zh" to "中文 (简体)"
+                    "zh" to "中文 (简体)",
                 )
 
                 val languageLabel = stringResource(R.string.settings_language)
                 val currentLanguageName = languagesMap[settings.locale] ?: settings.locale
 
                 SettingsItem(
-                    label = languageLabel,
+                    content = { Text(languageLabel, style = MaterialTheme.typography.titleMedium) },
                     value = currentLanguageName,
                     options = languagesMap.values.toList(),
                     onSelected = { selectedName ->
                         val selectedKey =
-                            languagesMap.entries.find { it.value == selectedName }?.key
+                            languagesMap.entries.find { (_, itValue) -> itValue == selectedName }?.key
                                 ?: selectedName
                         onLanguageSelected(selectedKey)
                     },
                     leadingIcon = {
                         Icon(
                             imageVector = MaterialSymbols.Outlined.Translate,
-                            contentDescription = null
+                            contentDescription = null,
                         )
-                    }
+                    },
                 )
 
                 item(
@@ -519,27 +505,27 @@ private fun GeneralSettingsSection(
                     leadingContent = {
                         Icon(
                             imageVector = MaterialSymbols.Outlined.Forest,
-                            contentDescription = null
+                            contentDescription = null,
                         )
                     },
                     content = {
                         Text(
                             stringResource(R.string.settings_show_all_spaces),
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
                         )
                     },
                     supportingContent = {
                         Text(
                             stringResource(R.string.settings_show_all_spaces_summary),
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                     },
                     trailingContent = {
                         Switch(
                             checked = settings.showAllSpaces,
-                            onCheckedChange = null
+                            onCheckedChange = null,
                         )
-                    }
+                    },
                 )
             }
         }
@@ -549,31 +535,31 @@ private fun GeneralSettingsSection(
                 text = stringResource(R.string.reader_settings_theme),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = 8.dp),
             )
 
             SegmentedColumn(modifier = Modifier.padding(bottom = 16.dp)) {
                 val themeOptionsMap = mapOf(
                     "System" to stringResource(R.string.settings_option_system),
                     "Light" to stringResource(R.string.settings_option_light),
-                    "Dark" to stringResource(R.string.settings_option_dark)
+                    "Dark" to stringResource(R.string.settings_option_dark),
                 )
 
                 val themeLabel = stringResource(R.string.settings_theme_mode)
                 SettingsItem(
-                    label = themeLabel,
+                    content = { Text(themeLabel, style = MaterialTheme.typography.titleMedium) },
                     value = themeOptionsMap[settings.themeMode] ?: settings.themeMode,
                     options = themeOptionsMap.values.toList(),
                     onSelected = { label ->
-                        val key = themeOptionsMap.entries.find { it.value == label }?.key ?: label
+                        val key = themeOptionsMap.entries.find { (_, itValue2) -> itValue2 == label }?.key ?: label
                         onThemeModeSelected(key)
                     },
                     leadingIcon = {
                         Icon(
                             imageVector = MaterialSymbols.Outlined.Contrast,
-                            contentDescription = null
+                            contentDescription = null,
                         )
-                    }
+                    },
                 )
 
                 val colorPaletteLabel = stringResource(R.string.settings_color_palette)
@@ -597,27 +583,27 @@ private fun GeneralSettingsSection(
                     leadingContent = {
                         Icon(
                             imageVector = MaterialSymbols.Outlined.Palette,
-                            contentDescription = null
+                            contentDescription = null,
                         )
                     },
                     content = {
                         Text(
                             colorPaletteLabel,
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
                         )
                     },
                     supportingContent = {
                         Text(
                             colorPaletteValue,
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                     },
                     trailingContent = {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            if (!isDynamic && parsedColor != null) {
+                            if (!isDynamic && (parsedColor != null)) {
                                 Box(
                                     modifier = Modifier
                                         .size(24.dp)
@@ -626,40 +612,45 @@ private fun GeneralSettingsSection(
                                         .border(
                                             1.dp,
                                             MaterialTheme.colorScheme.outlineVariant,
-                                            CircleShape
-                                        )
+                                            CircleShape,
+                                        ),
                                 )
                             }
                             Icon(
                                 imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                                contentDescription = null
+                                contentDescription = null,
                             )
                         }
-                    }
+                    },
                 )
 
                 val themeContrastMap = mapOf(
                     "Standard" to stringResource(R.string.settings_option_standard),
                     "Medium" to stringResource(R.string.settings_option_medium),
-                    "High" to stringResource(R.string.settings_option_high)
+                    "High" to stringResource(R.string.settings_option_high),
                 )
 
                 val themeContrastLabel = stringResource(R.string.settings_theme_contrast)
                 SettingsItem(
-                    label = themeContrastLabel,
+                    content = {
+                        Text(
+                            themeContrastLabel,
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                    },
                     value = themeContrastMap[settings.themeContrast] ?: settings.themeContrast,
                     options = themeContrastMap.values.toList(),
                     onSelected = { label ->
                         val key =
-                            themeContrastMap.entries.find { it.value == label }?.key ?: label
+                            themeContrastMap.entries.find { (_, itValue3) -> itValue3 == label }?.key ?: label
                         onThemeContrastSelected(key)
                     },
                     leadingIcon = {
                         Icon(
                             imageVector = MaterialSymbols.Outlined.Contrast,
-                            contentDescription = null
+                            contentDescription = null,
                         )
-                    }
+                    },
                 )
             }
         }
@@ -677,18 +668,18 @@ private fun BackupSettingsSection(
     onBackupClick: () -> Unit,
     onRestoreClick: () -> Unit,
     onImportClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Column {
             Text(
                 text = stringResource(R.string.settings_backup_preferences),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = 8.dp),
             )
 
             SegmentedColumn(modifier = Modifier.padding(bottom = 16.dp)) {
@@ -698,28 +689,28 @@ private fun BackupSettingsSection(
                     leadingContent = {
                         Icon(
                             imageVector = MaterialSymbols.Outlined.Folder,
-                            contentDescription = null
+                            contentDescription = null,
                         )
                     },
                     content = {
                         Text(
                             backupLocationLabel,
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
                         )
                     },
                     supportingContent = {
                         Text(
                             if (hasPermission) stringResource(R.string.settings_option_selected)
                             else stringResource(R.string.settings_option_not_selected),
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                     },
                     trailingContent = {
                         Icon(
                             imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                            contentDescription = null
+                            contentDescription = null,
                         )
-                    }
+                    },
                 )
 
                 val frequencyOptionsMap = mapOf(
@@ -728,27 +719,32 @@ private fun BackupSettingsSection(
                     "1d" to stringResource(R.string.settings_backup_freq_1d),
                     "3d" to stringResource(R.string.settings_backup_freq_3d),
                     "1w" to stringResource(R.string.settings_backup_freq_1w),
-                    "never" to stringResource(R.string.settings_option_never)
+                    "never" to stringResource(R.string.settings_option_never),
                 )
 
                 val autoBackupFrequencyLabel = stringResource(R.string.settings_auto_backup_freq)
                 SettingsItem(
-                    label = autoBackupFrequencyLabel,
+                    content = {
+                        Text(
+                            autoBackupFrequencyLabel,
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                    },
                     value = frequencyOptionsMap[settings.autoBackupFrequency]
                         ?: settings.autoBackupFrequency,
                     options = frequencyOptionsMap.values.toList(),
                     onSelected = { label ->
                         val key =
-                            frequencyOptionsMap.entries.find { it.value == label }?.key ?: label
+                            frequencyOptionsMap.entries.find { (_, itValue4) -> itValue4 == label }?.key ?: label
                         onAutoBackupFrequencySelected(key)
                     },
                     enabled = hasPermission,
                     leadingIcon = {
                         Icon(
                             imageVector = MaterialSymbols.Outlined.Tune,
-                            contentDescription = null
+                            contentDescription = null,
                         )
-                    }
+                    },
                 )
 
                 val lastBackupTimeText = if (settings.lastBackupTime > 0) {
@@ -756,7 +752,7 @@ private fun BackupSettingsSection(
                         SimpleDateFormat("MMM dd, HH:mm", LocalLocale.current.platformLocale)
                     stringResource(
                         R.string.settings_last_backup_format,
-                        formatter.format(Date(settings.lastBackupTime))
+                        formatter.format(Date(settings.lastBackupTime)),
                     )
                 } else {
                     stringResource(R.string.settings_option_never)
@@ -768,13 +764,13 @@ private fun BackupSettingsSection(
                     leadingContent = {
                         Icon(
                             imageVector = MaterialSymbols.Outlined.Save,
-                            contentDescription = null
+                            contentDescription = null,
                         )
                     },
                     content = {
                         Text(
                             stringResource(R.string.settings_backup_now),
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
                         )
                     },
                     supportingContent = {
@@ -783,18 +779,18 @@ private fun BackupSettingsSection(
                                 if (hasPermission) {
                                     stringResource(
                                         R.string.settings_backup_now_summary,
-                                        lastBackupTimeText
+                                        lastBackupTimeText,
                                     ).replace(" (", "\n(")
                                 } else {
                                     stringResource(R.string.nav_setup_now)
                                 },
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyMedium,
                             )
                             AnimatedVisibility(visible = isBackingUp) {
                                 LinearWavyProgressIndicator(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(top = 8.dp)
+                                        .padding(top = 8.dp),
                                 )
                             }
                         }
@@ -802,9 +798,9 @@ private fun BackupSettingsSection(
                     trailingContent = {
                         Icon(
                             imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                            contentDescription = null
+                            contentDescription = null,
                         )
-                    }
+                    },
                 )
 
                 item(
@@ -813,26 +809,26 @@ private fun BackupSettingsSection(
                     leadingContent = {
                         Icon(
                             imageVector = MaterialSymbols.Outlined.History,
-                            contentDescription = null
+                            contentDescription = null,
                         )
                     },
                     content = {
                         Text(
                             stringResource(R.string.settings_restore),
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
                         )
                     },
                     supportingContent = {
                         Column {
                             Text(
                                 stringResource(R.string.settings_restore_summary),
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyMedium,
                             )
                             AnimatedVisibility(visible = isRestoring) {
                                 LinearWavyProgressIndicator(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(top = 8.dp)
+                                        .padding(top = 8.dp),
                                 )
                             }
                         }
@@ -840,9 +836,9 @@ private fun BackupSettingsSection(
                     trailingContent = {
                         Icon(
                             imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                            contentDescription = null
+                            contentDescription = null,
                         )
-                    }
+                    },
                 )
 
                 item(
@@ -854,21 +850,21 @@ private fun BackupSettingsSection(
                     content = {
                         Text(
                             stringResource(R.string.settings_import_backup),
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
                         )
                     },
                     supportingContent = {
                         Text(
                             stringResource(R.string.settings_import_backup_summary),
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                     },
                     trailingContent = {
                         Icon(
                             MaterialSymbols.Outlined.Keyboard_arrow_right,
-                            contentDescription = null
+                            contentDescription = null,
                         )
-                    }
+                    },
                 )
             }
         }
@@ -878,14 +874,14 @@ private fun BackupSettingsSection(
 @Composable
 private fun AboutSettingsSection(
     onNavigateToAbout: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
         Text(
             text = stringResource(R.string.settings_about_section),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(bottom = 8.dp)
+            modifier = Modifier.padding(bottom = 8.dp),
         )
 
         SegmentedColumn(modifier = Modifier.padding(bottom = 16.dp)) {
@@ -894,21 +890,21 @@ private fun AboutSettingsSection(
                 leadingContent = {
                     Icon(
                         imageVector = MaterialSymbols.Outlined.Info,
-                        contentDescription = null
+                        contentDescription = null,
                     )
                 },
                 content = {
                     Text(
                         stringResource(R.string.settings_about_app),
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
                     )
                 },
                 trailingContent = {
                     Icon(
                         imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                        contentDescription = null
+                        contentDescription = null,
                     )
-                }
+                },
             )
         }
     }
@@ -917,7 +913,7 @@ private fun AboutSettingsSection(
 @Composable
 private fun RestoreDefaultWarningDialog(
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -927,7 +923,7 @@ private fun RestoreDefaultWarningDialog(
             TextButton(onClick = onConfirm) {
                 Text(
                     stringResource(R.string.action_proceed),
-                    color = MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.error,
                 )
             }
         },
@@ -935,14 +931,14 @@ private fun RestoreDefaultWarningDialog(
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.action_cancel))
             }
-        }
+        },
     )
 }
 
 @Composable
 private fun RestoreBackupWarningDialog(
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -952,7 +948,7 @@ private fun RestoreBackupWarningDialog(
             TextButton(onClick = onConfirm) {
                 Text(
                     stringResource(R.string.action_proceed),
-                    color = MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.error,
                 )
             }
         },
@@ -960,7 +956,7 @@ private fun RestoreBackupWarningDialog(
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.action_cancel))
             }
-        }
+        },
     )
 }
 
@@ -970,25 +966,25 @@ private fun RestoreBottomSheet(
     availableBackups: List<BackupFile>,
     onDismiss: () -> Unit,
     onSelectBackup: (BackupFile) -> Unit,
-    onExportBackup: (BackupFile) -> Unit
+    onExportBackup: (BackupFile) -> Unit,
 ) {
     val bottomSheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
     val scope = rememberCoroutineScope()
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = bottomSheetState
+        sheetState = bottomSheetState,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .padding(bottom = 32.dp)
+                .padding(bottom = 32.dp),
         ) {
             Text(
                 text = stringResource(R.string.settings_restore_backup_sheet_title),
                 style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = 16.dp),
             )
 
             if (availableBackups.isEmpty()) {
@@ -996,17 +992,17 @@ private fun RestoreBottomSheet(
                     text = stringResource(R.string.settings_no_backups_found),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 16.dp)
+                    modifier = Modifier.padding(vertical = 16.dp),
                 )
             } else {
-                val groupedBackups = availableBackups.groupBy { it.isManual }
-                val groups = groupedBackups.entries.sortedByDescending { entry ->
-                    entry.value.maxOfOrNull { it.timestamp } ?: 0L
+                val groupedBackups = availableBackups.groupBy { (_, _, _, itIsManual) -> itIsManual }
+                val groups = groupedBackups.entries.sortedByDescending { (_, entryValue) ->
+                    entryValue.maxOfOrNull { (_, _, itTimestamp) -> itTimestamp } ?: 0L
                 }
 
                 Column(
                     modifier = Modifier.verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     groups.forEach { (isManual, backups) ->
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1014,10 +1010,10 @@ private fun RestoreBottomSheet(
                                 text = if (isManual) stringResource(R.string.settings_backup_manual_label)
                                 else stringResource(R.string.settings_backup_auto_label),
                                 style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.primary,
                             )
                             SegmentedColumn {
-                                backups.sortedByDescending { it.timestamp }.forEach { backup ->
+                                backups.sortedByDescending { (_, _, itTimestamp2) -> itTimestamp2 }.forEach { backup ->
                                     item(
                                         onClick = {
                                             onSelectBackup(backup)
@@ -1031,13 +1027,13 @@ private fun RestoreBottomSheet(
                                         leadingContent = {
                                             Icon(
                                                 imageVector = MaterialSymbols.Outlined.History,
-                                                contentDescription = null
+                                                contentDescription = null,
                                             )
                                         },
                                         content = {
                                             Text(
                                                 text = backup.formattedDate,
-                                                style = MaterialTheme.typography.bodyLarge
+                                                style = MaterialTheme.typography.bodyLarge,
                                             )
                                         },
                                         trailingContent = {
@@ -1045,15 +1041,15 @@ private fun RestoreBottomSheet(
                                                 IconButton(onClick = { onExportBackup(backup) }) {
                                                     Icon(
                                                         imageVector = MaterialSymbols.Outlined.Save,
-                                                        contentDescription = stringResource(R.string.settings_export_backup)
+                                                        contentDescription = stringResource(R.string.settings_export_backup),
                                                     )
                                                 }
                                                 Icon(
                                                     imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                                                    contentDescription = null
+                                                    contentDescription = null,
                                                 )
                                             }
-                                        }
+                                        },
                                     )
                                 }
                             }

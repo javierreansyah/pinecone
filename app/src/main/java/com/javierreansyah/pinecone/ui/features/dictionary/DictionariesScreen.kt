@@ -12,10 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,10 +50,9 @@ import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.components.SegmentedLazyColumn
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun DictionariesScreen(
-    viewModel: DictionariesViewModel, onBack: () -> Unit
+    viewModel: DictionariesViewModel, onBack: () -> Unit,
 ) {
     val context = LocalContext.current
     val installedDictionaries by viewModel.installedDictionaries.collectAsStateWithLifecycle()
@@ -71,25 +68,25 @@ fun DictionariesScreen(
     val animatedProgress by animateFloatAsState(
         targetValue = progressTarget,
         animationSpec = progressSpec,
-        label = "ImportProgress"
+        label = "ImportProgress",
     )
 
-    val filePicker = rememberLauncherForActivityResult(contract = object :
-        ActivityResultContracts.OpenDocument() {
-        override fun createIntent(
-            context: android.content.Context, input: Array<String>
-        ): android.content.Intent {
-            val intent = super.createIntent(context, input)
-            val uri = android.provider.DocumentsContract.buildDocumentUri(
-                "com.android.externalstorage.documents", "primary:Download"
-            )
-            intent.putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, uri)
-            return intent
-        }
-    }) { uri ->
-        if (uri != null) {
-            viewModel.importDictionary(uri)
-        }
+    val filePicker = rememberLauncherForActivityResult(
+        contract = object :
+            ActivityResultContracts.OpenDocument() {
+            override fun createIntent(
+                context: android.content.Context, input: Array<String>,
+            ): android.content.Intent {
+                val intent = super.createIntent(context, input)
+                val uri = android.provider.DocumentsContract.buildDocumentUri(
+                    "com.android.externalstorage.documents", "primary:Download",
+                )
+                intent.putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, uri)
+                return intent
+            }
+        },
+    ) { uri ->
+        uri?.let(viewModel::importDictionary)
     }
 
     val installSuccessMsg = stringResource(R.string.dictionaries_install_success)
@@ -109,7 +106,7 @@ fun DictionariesScreen(
     val uiState = remember(installedDictionaries, importState) {
         DictionariesUiState(
             installedDictionaries = installedDictionaries,
-            importState = importState
+            importState = importState,
         )
     }
 
@@ -123,13 +120,11 @@ fun DictionariesScreen(
         onRenameDictionary = { id, name ->
             viewModel.renameDictionary(id, name)
         },
-        onDeleteDictionary = { id ->
+    ) { id ->
             viewModel.deleteDictionary(id)
         }
-    )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DictionariesContent(
     uiState: DictionariesUiState,
@@ -137,7 +132,7 @@ private fun DictionariesContent(
     onBack: () -> Unit,
     onImportClick: () -> Unit,
     onRenameDictionary: (String, String) -> Unit,
-    onDeleteDictionary: (String) -> Unit
+    onDeleteDictionary: (String) -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -155,34 +150,34 @@ private fun DictionariesContent(
             DictionariesTopAppBar(
                 isEmpty = isEmpty,
                 onBack = onBack,
-                scrollBehavior = scrollBehavior
+                scrollBehavior = scrollBehavior,
             )
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = onImportClick
+                onClick = onImportClick,
             ) {
                 Icon(
                     MaterialSymbols.Outlined.Add,
-                    contentDescription = stringResource(R.string.dictionaries_import_stardict)
+                    contentDescription = stringResource(R.string.dictionaries_import_stardict),
                 )
             }
-        }
+        },
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(padding),
         ) {
             val isLoadingImport = uiState.importState is DictionaryState.Loading
             val totalCount = uiState.installedDictionaries.size +
-                    (if (isLoadingImport) 1 else 0)
+                (if (isLoadingImport) 1 else 0)
 
             if (totalCount == 0) {
                 EmptyState(
                     icon = MaterialSymbols.Outlined.Book,
                     text = stringResource(R.string.dictionaries_empty),
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
                 )
             } else {
                 DictionariesList(
@@ -199,55 +194,51 @@ private fun DictionariesContent(
                         selectedItemForMenu = null
                         itemToDelete = dict
                     },
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
 
-            itemToDelete?.let { dict ->
+            itemToDelete?.let { (dictId2, dictName2) ->
                 DeleteDictionaryDialog(
-                    dictName = dict.name,
+                    dictName = dictName2,
                     onDismissRequest = { itemToDelete = null },
-                    onConfirm = {
-                        val dictId = dict.id
+                ) {
+                        val dictId = dictId2
                         itemToDelete = null
                         onDeleteDictionary(dictId)
                     }
-                )
             }
 
-            itemToRename?.let { dict ->
+            itemToRename?.let { (dictId3, dictName3) ->
                 RenameDictionaryDialog(
-                    initialName = dict.name,
+                    initialName = dictName3,
                     onDismissRequest = { itemToRename = null },
-                    onConfirm = { newName ->
-                        val dictId = dict.id
+                ) { newName ->
+                        val dictId = dictId3
                         itemToRename = null
                         onRenameDictionary(dictId, newName)
                     }
-                )
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DictionariesTopAppBar(
     isEmpty: Boolean,
     onBack: () -> Unit,
     scrollBehavior: androidx.compose.material3.TopAppBarScrollBehavior,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LibraryTopAppBar(
         title = { Text(stringResource(R.string.dictionaries_title)) },
         onBack = onBack,
         isEmpty = isEmpty,
         scrollBehavior = scrollBehavior,
-        modifier = modifier
+        modifier = modifier,
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DictionariesList(
     uiState: DictionariesUiState,
@@ -257,7 +248,7 @@ private fun DictionariesList(
     onMoreClick: (String) -> Unit,
     onRenameClick: (InstalledDictionary) -> Unit,
     onDeleteClick: (InstalledDictionary) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     SegmentedLazyColumn(
         modifier = modifier.padding(horizontal = 16.dp),
@@ -271,8 +262,8 @@ private fun DictionariesList(
                         androidx.compose.ui.res.pluralStringResource(
                             R.plurals.dictionaries_word_count,
                             dict.wordCount,
-                            dict.wordCount
-                        )
+                            dict.wordCount,
+                        ),
                     )
                 },
                 trailingContent = {
@@ -281,9 +272,9 @@ private fun DictionariesList(
                         onMoreClick = { onMoreClick(dict.id) },
                         onMenuDismiss = onMenuDismiss,
                         onRenameClick = { onRenameClick(dict) },
-                        onDeleteClick = { onDeleteClick(dict) }
+                        onDeleteClick = { onDeleteClick(dict) },
                     )
-                }
+                },
             )
         }
 
@@ -296,17 +287,16 @@ private fun DictionariesList(
                         progress = { animatedProgress },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 8.dp)
+                            .padding(top = 8.dp),
                     )
                 },
-                trailingContent = { Text("${(animatedProgress * 100).toInt()}%") }
+                trailingContent = { Text("${(animatedProgress * 100).toInt()}%") },
             )
         }
 
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DictionaryItemActions(
     isMenuExpanded: Boolean,
@@ -314,25 +304,25 @@ private fun DictionaryItemActions(
     onMenuDismiss: () -> Unit,
     onRenameClick: () -> Unit,
     onDeleteClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
         IconButton(onClick = onMoreClick) {
             Icon(
                 MaterialSymbols.Outlined.More_vert,
-                contentDescription = stringResource(R.string.action_more)
+                contentDescription = stringResource(R.string.action_more),
             )
         }
         DropdownMenuPopup(
             expanded = isMenuExpanded,
-            onDismissRequest = onMenuDismiss
+            onDismissRequest = onMenuDismiss,
         ) {
             val groupInteractionSource = remember { MutableInteractionSource() }
             DropdownMenuGroup(
                 shapes = MenuDefaults.groupShape(0, 1),
-                interactionSource = groupInteractionSource
+                interactionSource = groupInteractionSource,
             ) {
-                DropdownMenuItem(
+                SelectableDropdownMenuItem(
                     selected = false,
                     text = { Text(stringResource(R.string.action_rename)) },
                     shapes = MenuDefaults.itemShape(0, 2),
@@ -340,17 +330,17 @@ private fun DictionaryItemActions(
                         Icon(
                             MaterialSymbols.Outlined.Edit,
                             modifier = Modifier.size(MenuDefaults.LeadingIconSize),
-                            contentDescription = null
+                            contentDescription = null,
                         )
                     },
-                    onClick = onRenameClick
+                    onClick = onRenameClick,
                 )
-                DropdownMenuItem(
+                SelectableDropdownMenuItem(
                     selected = false,
                     text = {
                         Text(
                             stringResource(R.string.action_delete),
-                            color = MaterialTheme.colorScheme.error
+                            color = MaterialTheme.colorScheme.error,
                         )
                     },
                     shapes = MenuDefaults.itemShape(1, 2),
@@ -359,10 +349,10 @@ private fun DictionaryItemActions(
                             MaterialSymbols.Outlined.Delete,
                             modifier = Modifier.size(MenuDefaults.LeadingIconSize),
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error
+                            tint = MaterialTheme.colorScheme.error,
                         )
                     },
-                    onClick = onDeleteClick
+                    onClick = onDeleteClick,
                 )
             }
         }
@@ -373,7 +363,7 @@ private fun DictionaryItemActions(
 private fun DeleteDictionaryDialog(
     dictName: String,
     onDismissRequest: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -381,15 +371,15 @@ private fun DeleteDictionaryDialog(
         text = {
             Text(
                 stringResource(
-                    R.string.dictionaries_delete_message, dictName
-                )
+                    R.string.dictionaries_delete_message, dictName,
+                ),
             )
         },
         confirmButton = {
             TextButton(onClick = onConfirm) {
                 Text(
                     stringResource(R.string.action_delete),
-                    color = MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.error,
                 )
             }
         },
@@ -397,7 +387,7 @@ private fun DeleteDictionaryDialog(
             TextButton(onClick = onDismissRequest) {
                 Text(stringResource(R.string.action_cancel))
             }
-        }
+        },
     )
 }
 
@@ -405,7 +395,7 @@ private fun DeleteDictionaryDialog(
 private fun RenameDictionaryDialog(
     initialName: String,
     onDismissRequest: () -> Unit,
-    onConfirm: (String) -> Unit
+    onConfirm: (String) -> Unit,
 ) {
     var newName by remember(initialName) { mutableStateOf(initialName) }
     AlertDialog(
@@ -417,7 +407,7 @@ private fun RenameDictionaryDialog(
                 onValueChange = { newName = it },
                 singleLine = true,
                 label = { Text(stringResource(R.string.dictionaries_rename_title)) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
         },
         confirmButton = {
@@ -426,7 +416,7 @@ private fun RenameDictionaryDialog(
                     if (newName.isNotBlank()) {
                         onConfirm(newName.trim())
                     }
-                }
+                },
             ) {
                 Text(stringResource(R.string.action_rename))
             }
@@ -435,6 +425,6 @@ private fun RenameDictionaryDialog(
             TextButton(onClick = onDismissRequest) {
                 Text(stringResource(R.string.action_cancel))
             }
-        }
+        },
     )
 }

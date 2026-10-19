@@ -11,7 +11,7 @@ import androidx.compose.ui.graphics.luminance
 @Composable
 fun PineconeTheme(
     readerBackgroundColor: Color,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val isDarkBackground = readerBackgroundColor.luminance() < 0.5f
 
@@ -33,7 +33,7 @@ fun PineconeTheme(
             onSurface = Color.White,
             onSurfaceVariant = Color.White.copy(alpha = 0.7f),
             primary = primaryColor,
-            onPrimary = onPrimaryColor
+            onPrimary = onPrimaryColor,
         )
     } else {
         lightColorScheme(
@@ -42,13 +42,13 @@ fun PineconeTheme(
             onSurface = Color.Black,
             onSurfaceVariant = Color.Black.copy(alpha = 0.7f),
             primary = primaryColor,
-            onPrimary = onPrimaryColor
+            onPrimary = onPrimaryColor,
         )
     }
 
     MaterialTheme(
         colorScheme = colorScheme,
         motionScheme = MotionScheme.expressive(),
-        content = content
+        content = content,
     )
 }

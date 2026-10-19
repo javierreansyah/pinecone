@@ -11,30 +11,30 @@ class LibraryCommonTest {
     private val books = listOf(
         book(id = "work-only", spaces = listOf(work)),
         book(id = "both", spaces = listOf(work, leisure)),
-        book(id = "no-space")
+        book(id = "no-space"),
     )
 
     @Test
     fun `specific space keeps only books assigned to it`() {
-        assertEquals(listOf("work-only", "both"), books.inSpace(work.id).map { it.id })
+        assertEquals(listOf("work-only", "both"), books.inSpace(work.id).map { (itId) -> itId })
     }
 
     @Test
     fun `all spaces and unset selection keep only books assigned to at least one space`() {
-        assertEquals(listOf("work-only", "both"), books.inSpace(ALL_SPACES_ID).map { it.id })
-        assertEquals(listOf("work-only", "both"), books.inSpace(null).map { it.id })
+        assertEquals(listOf("work-only", "both"), books.inSpace(ALL_SPACES_ID).map { (itId2) -> itId2 })
+        assertEquals(listOf("work-only", "both"), books.inSpace(null).map { (itId3) -> itId3 })
     }
 
     @Test
     fun `unsorted books are correctly identified when book has no spaces`() {
-        val hasUnsorted = books.any { it.spaces.isEmpty() }
+        val hasUnsorted = books.any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itSpaces) -> itSpaces.isEmpty() }
         assertEquals(true, hasUnsorted)
 
         val allSortedBooks = listOf(
             book(id = "work-only", spaces = listOf(work)),
-            book(id = "both", spaces = listOf(work, leisure))
+            book(id = "both", spaces = listOf(work, leisure)),
         )
-        assertEquals(false, allSortedBooks.any { it.spaces.isEmpty() })
+        assertEquals(false, allSortedBooks.any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itSpaces2) -> itSpaces2.isEmpty() })
     }
 
     private fun book(id: String, spaces: List<SpaceEntity> = emptyList()) = Book(
@@ -47,6 +47,6 @@ class LibraryCommonTest {
         language = null,
         addedDate = 0L,
         isArchived = false,
-        spaces = spaces
+        spaces = spaces,
     )
 }

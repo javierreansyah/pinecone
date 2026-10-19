@@ -7,7 +7,7 @@ sealed interface BackupResult {
         val bytesReused: Long = 0,
         val durationMillis: Long = 0,
         val phaseDurationsMillis: Map<String, Long> = emptyMap(),
-        val warnings: List<BackupFailure> = emptyList()
+        val warnings: List<BackupFailure> = emptyList(),
     ) : BackupResult
 
     data object Skipped : BackupResult
@@ -15,7 +15,7 @@ sealed interface BackupResult {
     data class Failure(val reason: BackupFailure, val cause: Throwable? = null) : BackupResult
 
     val isSuccess: Boolean
-        get() = this is Success || this is Skipped
+        get() = (this is Success) || (this is Skipped)
 }
 
 enum class BackupFailure {

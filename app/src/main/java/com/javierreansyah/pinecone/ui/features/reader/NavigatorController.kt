@@ -42,7 +42,7 @@ class NavigatorController(
     private val fragmentManager: FragmentManager,
     private val viewModel: ReaderViewModel,
     private val searchViewModel: ReaderSearchViewModel,
-    private val notesViewModel: ReaderNotesViewModel
+    private val notesViewModel: ReaderNotesViewModel,
 ) : DefaultLifecycleObserver {
 
     companion object {
@@ -94,9 +94,7 @@ class NavigatorController(
                     menu?.clear()
                     currentActionMode = mode
                     val nav = navigator as? SelectableNavigator
-                    if (nav != null) {
-                        selectionPoller.start(nav) { currentActionMode }
-                    }
+                    nav?.let { selectionPoller.start(it) { currentActionMode } }
                     return true
                 }
 
@@ -107,7 +105,7 @@ class NavigatorController(
 
                 override fun onActionItemClicked(
                     mode: ActionMode?,
-                    item: android.view.MenuItem?
+                    item: android.view.MenuItem?,
                 ): Boolean = false
 
                 override fun onDestroyActionMode(mode: ActionMode?) {
@@ -127,7 +125,7 @@ class NavigatorController(
                 val urlString = url.toString()
                 if (urlString.startsWith(
                         "http://",
-                        ignoreCase = true
+                        ignoreCase = true,
                     ) || urlString.startsWith("https://", ignoreCase = true)
                 ) {
                     viewModel.showExternalLinkMenu(urlString)
@@ -139,14 +137,14 @@ class NavigatorController(
             initialLocator = initialLocator,
             initialPreferences = initialPreferences,
             listener = listener,
-            configuration = configuration
+            configuration = configuration,
         )
 
         fragmentManager.beginTransaction().replace(
             R.id.navigator_container,
             EpubNavigatorFragment::class.java,
             Bundle(),
-            NAVIGATOR_TAG
+            NAVIGATOR_TAG,
         ).commit()
 
         fragmentManager.executePendingTransactions()
@@ -169,46 +167,51 @@ class NavigatorController(
         (nav as? OverflowableNavigator)?.let { overflowableNav ->
             nav.addInputListener(
                 DirectionalNavigationAdapter(
-                    navigator = overflowableNav, animatedTransition = true
-                )
+                    navigator = overflowableNav, animatedTransition = true,
+                ),
             )
         }
 
-        nav.addInputListener(object : InputListener {
-            override fun onTap(event: TapEvent): Boolean {
-                if (notesViewModel.selectionState.value.selectionLocator != null || notesViewModel.selectionState.value.viewingHighlight != null) {
-                    notesViewModel.hideSelectionMenu()
-                    notesViewModel.hideViewHighlight()
+        nav.addInputListener(
+            object : InputListener {
+                override fun onTap(event: TapEvent): Boolean {
+                    if ((notesViewModel.selectionState.value.selectionLocator != null) || (notesViewModel.selectionState.value.viewingHighlight != null)) {
+                        notesViewModel.hideSelectionMenu()
+                        notesViewModel.hideViewHighlight()
+                        return true
+                    }
+                    viewModel.toggleControls()
                     return true
                 }
-                viewModel.toggleControls()
-                return true
-            }
-        })
+            },
+        )
 
-        nav.addDecorationListener("notes", object : DecorableNavigator.Listener {
-            override fun onDecorationActivated(event: DecorableNavigator.OnActivatedEvent): Boolean {
-                val noteIdStr = event.decoration.id.removePrefix("note_")
-                val noteId = noteIdStr.toLongOrNull() ?: return false
-                val note =
-                    notesViewModel.allNotesAndHighlights.value.find { it.id == noteId }
-                        ?: return false
+        nav.addDecorationListener(
+            "notes",
+            object : DecorableNavigator.Listener {
+                override fun onDecorationActivated(event: DecorableNavigator.OnActivatedEvent): Boolean {
+                    val noteIdStr = event.decoration.id.removePrefix("note_")
+                    val noteId = noteIdStr.toLongOrNull() ?: return false
+                    val note =
+                        notesViewModel.allNotesAndHighlights.value.find { (itId) -> itId == noteId }
+                            ?: return false
 
-                if (note.noteText.isBlank()) {
-                    notesViewModel.viewHighlight(note)
-                } else {
-                    notesViewModel.editNote(note)
+                    if (note.noteText.isBlank()) {
+                        notesViewModel.viewHighlight(note)
+                    } else {
+                        notesViewModel.editNote(note)
+                    }
+                    return true
                 }
-                return true
-            }
-        })
+            },
+        )
     }
 
     private fun setupObservers() {
         lifecycleScope.launch {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.themeColors.collect { colors ->
-                    injectSelectionCss(colors.backgroundColorInt)
+                viewModel.themeColors.collect { (_, _, colorsBackgroundColorInt) ->
+                    injectSelectionCss(colorsBackgroundColorInt)
                 }
             }
         }
@@ -249,26 +252,26 @@ class NavigatorController(
         lifecycleScope.launch {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 combine(
-                    _navigatorFlow.filterNotNull(), notesViewModel.allNotesAndHighlights
+                    _navigatorFlow.filterNotNull(), notesViewModel.allNotesAndHighlights,
                 ) { nav, notes ->
                     nav to notes
                 }.collectLatest { (nav, notes) ->
-                    val decorations = notes.mapNotNull { note ->
+                    val decorations = notes.mapNotNull { (noteId2, _, noteLocatorJson, _, noteNoteText, noteColor) ->
                         try {
                             val locator = Locator.fromJSON(
-                                org.json.JSONObject(note.locatorJson)
+                                org.json.JSONObject(noteLocatorJson),
                             )
                             if (locator != null) {
-                                val isHighlight = note.noteText.isEmpty()
-                                val tintColor = if (note.color != -1) note.color else {
+                                val isHighlight = noteNoteText.isEmpty()
+                                val tintColor = if (noteColor != -1) noteColor else {
                                     if (isHighlight) "#4003A9F4".toColorInt() else "#40FFEB3B".toColorInt()
                                 }
                                 Decoration(
-                                    id = "note_${note.id}",
+                                    id = "note_${noteId2}",
                                     locator = locator,
                                     style = Decoration.Style.Highlight(
-                                        tint = tintColor, isActive = false
-                                    )
+                                        tint = tintColor, isActive = false,
+                                    ),
                                 )
                             } else null
                         } catch (_: Exception) {
@@ -294,7 +297,7 @@ class NavigatorController(
         lifecycleScope.launch {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 searchViewModel.searchState
-                    .map { it.isInNavMode }
+                    .map { (_, _, _, _, itIsInNavMode) -> itIsInNavMode }
                     .distinctUntilChanged()
                     .collect { isInNavMode ->
                         if (!isInNavMode) clearSearchHighlight()
@@ -307,7 +310,7 @@ class NavigatorController(
         saveCurrentPosition()
     }
 
-    fun saveCurrentPosition() {
+    private fun saveCurrentPosition() {
         navigator?.currentLocator?.value?.let { locator ->
             lifecycleScope.launch {
                 viewModel.savePosition(locator)
@@ -372,18 +375,19 @@ class NavigatorController(
     }
 
     private suspend fun applySearchHighlight(locator: Locator) {
-        val nav = navigator as? DecorableNavigator ?: return
+        val nav = (navigator as? DecorableNavigator) ?: return
         val decoration = Decoration(
-            id = "search_current", locator = locator, style = Decoration.Style.Highlight(
+            id = "search_current", locator = locator,
+            style = Decoration.Style.Highlight(
                 tint = "#FFEB3B".toColorInt(),
-                isActive = false
-            )
+                isActive = false,
+            ),
         )
         nav.applyDecorations(listOf(decoration), group = "search")
     }
 
-    fun clearSearchHighlight() {
-        val nav = navigator as? DecorableNavigator ?: return
+    private fun clearSearchHighlight() {
+        val nav = (navigator as? DecorableNavigator) ?: return
         lifecycleScope.launch {
             nav.applyDecorations(emptyList(), group = "search")
         }

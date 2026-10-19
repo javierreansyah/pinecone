@@ -22,16 +22,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.PlainTooltip
-import androidx.compose.material3.SplitButton
+import androidx.compose.material3.SplitButtonLayout
 import androidx.compose.material3.SplitButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipAnchorPosition
@@ -70,10 +69,6 @@ import org.readium.r2.shared.publication.Locator
 
 enum class TopBarState { NORMAL, JUMP, SEARCH }
 
-@OptIn(
-    ExperimentalMaterial3Api::class,
-    ExperimentalMaterial3ExpressiveApi::class
-)
 @Composable
 fun ReaderTopBar(
     isBookmarked: Boolean,
@@ -92,16 +87,16 @@ fun ReaderTopBar(
     jumpOrigin: Locator?,
     onGoBackToOriginClick: () -> Unit,
     onClearJumpOriginClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(readerBgColor, Color.Transparent)
-                )
-            )
+                    colors = listOf(readerBgColor, Color.Transparent),
+                ),
+            ),
     ) {
         TopAppBar(
             title = {
@@ -109,7 +104,7 @@ fun ReaderTopBar(
                 AnimatedVisibility(
                     visible = isInSearchMode,
                     enter = fadeIn(animationSpec = actionsEffectsSpec),
-                    exit = fadeOut(animationSpec = actionsEffectsSpec)
+                    exit = fadeOut(animationSpec = actionsEffectsSpec),
                 ) {
                     Box(
                         modifier = Modifier
@@ -117,16 +112,16 @@ fun ReaderTopBar(
                             .clickable(
                                 onClick = onSearchTextClick,
                                 interactionSource = remember { MutableInteractionSource() },
-                                indication = null
+                                indication = null,
                             )
-                            .padding(vertical = 8.dp)
+                            .padding(vertical = 8.dp),
                     ) {
                         Text(
                             text = searchQuery,
                             color = readerTextColor,
                             style = MaterialTheme.typography.titleMedium,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
@@ -136,7 +131,7 @@ fun ReaderTopBar(
                     Icon(
                         MaterialSymbols.Outlined.Arrow_back,
                         contentDescription = stringResource(R.string.action_back),
-                        tint = readerTextColor
+                        tint = readerTextColor,
                     )
                 }
             },
@@ -155,28 +150,28 @@ fun ReaderTopBar(
                 AnimatedContent(
                     targetState = topBarState,
                     transitionSpec = {
-                        if (targetState != TopBarState.NORMAL && initialState == TopBarState.NORMAL) {
+                        if ((targetState != TopBarState.NORMAL) && (initialState == TopBarState.NORMAL)) {
 
                             fadeIn(animationSpec = actionsEffectsSpec) togetherWith
-                                    fadeOut(animationSpec = actionsEffectsSpec) + slideOutHorizontally(
+                                (fadeOut(animationSpec = actionsEffectsSpec) + slideOutHorizontally(
                                 targetOffsetX = { slideOffsetPx },
-                                animationSpec = actionsSpatialSpec
-                            )
-                        } else if (targetState == TopBarState.NORMAL && initialState != TopBarState.NORMAL) {
+                                animationSpec = actionsSpatialSpec,
+                            ))
+                        } else if ((targetState == TopBarState.NORMAL) && (initialState != TopBarState.NORMAL)) {
 
-                            fadeIn(animationSpec = actionsEffectsSpec) + slideInHorizontally(
+                            (fadeIn(animationSpec = actionsEffectsSpec) + slideInHorizontally(
                                 initialOffsetX = { slideOffsetPx },
-                                animationSpec = actionsSpatialSpec
-                            ) togetherWith
-                                    fadeOut(animationSpec = actionsEffectsSpec)
+                                animationSpec = actionsSpatialSpec,
+                            )) togetherWith
+                                fadeOut(animationSpec = actionsEffectsSpec)
                         } else {
 
                             fadeIn(animationSpec = actionsEffectsSpec) togetherWith fadeOut(
-                                animationSpec = actionsEffectsSpec
+                                animationSpec = actionsEffectsSpec,
                             )
                         }
                     },
-                    label = "readerTopBarActionsTransition"
+                    label = "readerTopBarActionsTransition",
                 ) { state ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (state == TopBarState.SEARCH) {
@@ -184,7 +179,7 @@ fun ReaderTopBar(
                                 Icon(
                                     MaterialSymbols.Outlined.Close,
                                     contentDescription = stringResource(R.string.action_close),
-                                    tint = readerTextColor
+                                    tint = readerTextColor,
                                 )
                             }
                         } else {
@@ -192,7 +187,7 @@ fun ReaderTopBar(
                                 JumpHistoryPill(
                                     onGoBack = onGoBackToOriginClick,
                                     onClear = onClearJumpOriginClick,
-                                    textColor = readerTextColor
+                                    textColor = readerTextColor,
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                             }
@@ -201,9 +196,9 @@ fun ReaderTopBar(
                                 Icon(
                                     imageVector = if (isBookmarked) MaterialSymbols.Outlined.Bookmark_check else MaterialSymbols.Outlined.Bookmark,
                                     contentDescription = if (isBookmarked) stringResource(R.string.reader_remove_bookmark) else stringResource(
-                                        R.string.reader_add_bookmark
+                                        R.string.reader_add_bookmark,
                                     ),
-                                    tint = readerTextColor
+                                    tint = readerTextColor,
                                 )
                             }
 
@@ -213,7 +208,7 @@ fun ReaderTopBar(
                                         MaterialSymbols.Outlined.List,
                                         contentDescription = stringResource(R.string.reader_toc_title),
                                         modifier = Modifier.size(28.dp),
-                                        tint = readerTextColor
+                                        tint = readerTextColor,
                                     )
                                 }
 
@@ -222,29 +217,29 @@ fun ReaderTopBar(
                                         MaterialSymbols.Outlined.Match_case,
                                         contentDescription = stringResource(R.string.reader_settings_typography),
                                         modifier = Modifier.size(28.dp),
-                                        tint = readerTextColor
+                                        tint = readerTextColor,
                                     )
                                 }
                             }
 
-                            var showMoreMenu by remember { mutableStateOf(false) }
+                            var showMoreMenu by remember { mutableStateOf(value = false) }
                             Box {
                                 IconButton(onClick = { showMoreMenu = true }) {
                                     Icon(
                                         MaterialSymbols.Outlined.More_vert,
                                         contentDescription = stringResource(R.string.action_more),
-                                        tint = readerTextColor
+                                        tint = readerTextColor,
                                     )
                                 }
                                 DropdownMenuPopup(
                                     expanded = showMoreMenu,
-                                    onDismissRequest = { showMoreMenu = false }
+                                    onDismissRequest = { showMoreMenu = false },
                                 ) {
                                     val groupInteractionSource =
                                         remember { MutableInteractionSource() }
                                     DropdownMenuGroup(
                                         shapes = MenuDefaults.groupShape(0, 1),
-                                        interactionSource = groupInteractionSource
+                                        interactionSource = groupInteractionSource,
                                     ) {
                                         val items = remember(state) {
                                             buildList {
@@ -259,7 +254,7 @@ fun ReaderTopBar(
                                         items.forEachIndexed { index, item ->
                                             when (item) {
                                                 "content" -> {
-                                                    DropdownMenuItem(
+                                                    SelectableDropdownMenuItem(
                                                         selected = false,
                                                         text = {
                                                             Text(stringResource(R.string.reader_menu_content))
@@ -273,19 +268,19 @@ fun ReaderTopBar(
                                                                 MaterialSymbols.Outlined.List,
                                                                 contentDescription = null,
                                                                 modifier = Modifier.size(
-                                                                    MenuDefaults.LeadingIconSize
-                                                                )
+                                                                    MenuDefaults.LeadingIconSize,
+                                                                ),
                                                             )
                                                         },
                                                         shapes = MenuDefaults.itemShape(
                                                             index,
-                                                            items.size
-                                                        )
+                                                            items.size,
+                                                        ),
                                                     )
                                                 }
 
                                                 "settings" -> {
-                                                    DropdownMenuItem(
+                                                    SelectableDropdownMenuItem(
                                                         selected = false,
                                                         text = {
                                                             Text(stringResource(R.string.reader_menu_settings))
@@ -299,19 +294,19 @@ fun ReaderTopBar(
                                                                 MaterialSymbols.Outlined.Match_case,
                                                                 contentDescription = null,
                                                                 modifier = Modifier.size(
-                                                                    MenuDefaults.LeadingIconSize
-                                                                )
+                                                                    MenuDefaults.LeadingIconSize,
+                                                                ),
                                                             )
                                                         },
                                                         shapes = MenuDefaults.itemShape(
                                                             index,
-                                                            items.size
-                                                        )
+                                                            items.size,
+                                                        ),
                                                     )
                                                 }
 
                                                 "search" -> {
-                                                    DropdownMenuItem(
+                                                    SelectableDropdownMenuItem(
                                                         selected = false,
                                                         text = {
                                                             Text(stringResource(R.string.action_search))
@@ -325,19 +320,19 @@ fun ReaderTopBar(
                                                                 MaterialSymbols.Outlined.Search,
                                                                 contentDescription = null,
                                                                 modifier = Modifier.size(
-                                                                    MenuDefaults.LeadingIconSize
-                                                                )
+                                                                    MenuDefaults.LeadingIconSize,
+                                                                ),
                                                             )
                                                         },
                                                         shapes = MenuDefaults.itemShape(
                                                             index,
-                                                            items.size
-                                                        )
+                                                            items.size,
+                                                        ),
                                                     )
                                                 }
 
                                                 "info" -> {
-                                                    DropdownMenuItem(
+                                                    SelectableDropdownMenuItem(
                                                         selected = false,
                                                         text = {
                                                             Text(stringResource(R.string.book_info_title))
@@ -351,14 +346,14 @@ fun ReaderTopBar(
                                                                 MaterialSymbols.Outlined.Info,
                                                                 contentDescription = null,
                                                                 modifier = Modifier.size(
-                                                                    MenuDefaults.LeadingIconSize
-                                                                )
+                                                                    MenuDefaults.LeadingIconSize,
+                                                                ),
                                                             )
                                                         },
                                                         shapes = MenuDefaults.itemShape(
                                                             index,
-                                                            items.size
-                                                        )
+                                                            items.size,
+                                                        ),
                                                     )
                                                 }
                                             }
@@ -373,25 +368,25 @@ fun ReaderTopBar(
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = Color.Transparent,
                 navigationIconContentColor = readerTextColor,
-                actionIconContentColor = readerTextColor
-            )
+                actionIconContentColor = readerTextColor,
+            ),
         )
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JumpHistoryPill(
     onGoBack: () -> Unit,
     onClear: () -> Unit,
     textColor: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val description = stringResource(R.string.action_clear)
     val size = SplitButtonDefaults.ExtraSmallContainerHeight
     val transparentOutline = textColor.copy(alpha = 0.3f)
 
-    SplitButton(
+    SplitButtonLayout(
         leadingButton = {
             SplitButtonDefaults.OutlinedLeadingButton(
                 onClick = onGoBack,
@@ -400,21 +395,21 @@ fun JumpHistoryPill(
                 contentPadding = SplitButtonDefaults.leadingButtonContentPaddingFor(size),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = textColor,
-                    containerColor = Color.Transparent
+                    containerColor = Color.Transparent,
                 ),
-                border = BorderStroke(1.dp, transparentOutline)
+                border = BorderStroke(1.dp, transparentOutline),
             ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Restart_alt,
                     modifier = Modifier.size(SplitButtonDefaults.leadingButtonIconSizeFor(size)),
                     contentDescription = null,
-                    tint = textColor
+                    tint = textColor,
                 )
                 Spacer(modifier = Modifier.size(ButtonDefaults.iconSpacingFor(size)))
                 Text(
                     text = stringResource(R.string.reader_jump_go_back),
                     style = ButtonDefaults.textStyleFor(size),
-                    color = textColor
+                    color = textColor,
                 )
             }
         },
@@ -427,7 +422,7 @@ fun JumpHistoryPill(
                     }
                 },
                 state = rememberTooltipState(),
-                modifier = Modifier.fillMaxHeight()
+                modifier = Modifier.fillMaxHeight(),
             ) {
                 SplitButtonDefaults.OutlinedTrailingButton(
                     checked = false,
@@ -439,19 +434,19 @@ fun JumpHistoryPill(
                     contentPadding = SplitButtonDefaults.trailingButtonContentPaddingFor(size),
                     colors = ButtonDefaults.outlinedButtonColors(
                         contentColor = textColor,
-                        containerColor = Color.Transparent
+                        containerColor = Color.Transparent,
                     ),
-                    border = BorderStroke(1.dp, transparentOutline)
+                    border = BorderStroke(1.dp, transparentOutline),
                 ) {
                     Icon(
                         imageVector = MaterialSymbols.Outlined.Close,
                         modifier = Modifier.size(SplitButtonDefaults.trailingButtonIconSizeFor(size)),
                         contentDescription = description,
-                        tint = textColor
+                        tint = textColor,
                     )
                 }
             }
         },
-        modifier = modifier
+        modifier = modifier,
     )
 }

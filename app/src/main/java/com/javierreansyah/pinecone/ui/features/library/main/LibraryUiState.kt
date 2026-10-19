@@ -15,8 +15,8 @@ data class LibraryUiState(
     val isImporting: Boolean = false,
     val bookPreferences: FilterSortPreferences = FilterSortPreferences(sortType = SortType.LastRead),
     val shelvesPreferences: FilterSortPreferences = FilterSortPreferences(
-        layoutMode = LayoutMode.BigList, sortType = SortType.Title, isAscending = true
-    )
+        layoutMode = LayoutMode.BigList, sortType = SortType.Title, isAscending = true,
+    ),
 )
 
 data class SearchResults(
@@ -24,7 +24,7 @@ data class SearchResults(
     val books: List<Book> = emptyList(),
     val shelves: List<ShelfEntity> = emptyList(),
     val authors: List<String> = emptyList(),
-    val tags: List<String> = emptyList()
+    val tags: List<String> = emptyList(),
 )
 
 data class LibraryScreenUiState(
@@ -33,7 +33,7 @@ data class LibraryScreenUiState(
     val isImporting: Boolean = false,
     val bookPreferences: FilterSortPreferences = FilterSortPreferences(sortType = SortType.LastRead),
     val shelvesPreferences: FilterSortPreferences = FilterSortPreferences(
-        layoutMode = LayoutMode.BigList, sortType = SortType.Title, isAscending = true
+        layoutMode = LayoutMode.BigList, sortType = SortType.Title, isAscending = true,
     ),
     val filteredBooks: List<Book> = emptyList(),
     val shelves: List<ShelfWithCovers> = emptyList(),
@@ -45,5 +45,5 @@ data class LibraryScreenUiState(
     val allShelves: List<ShelfEntity> = emptyList(),
     val globalSpaceId: String? = null,
     val hasUnsortedBooks: Boolean = false,
-    val showAllSpaces: Boolean = true
+    val showAllSpaces: Boolean = true,
 )

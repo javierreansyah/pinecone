@@ -13,16 +13,17 @@ import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 data class ShelfWithCovers(
-    @Embedded val shelf: ShelfEntity, @Relation(
+    @Embedded val shelf: ShelfEntity,
+    @Relation(
         entity = BookEntity::class,
         parentColumn = "id",
         entityColumn = "id",
         associateBy = Junction(
             value = ShelfBookCrossRefEntity::class,
             parentColumn = "shelfId",
-            entityColumn = "bookId"
-        )
-    ) val books: List<BookWithDetails>
+            entityColumn = "bookId",
+        ),
+    ) val books: List<BookWithDetails>,
 )
 
 @Dao

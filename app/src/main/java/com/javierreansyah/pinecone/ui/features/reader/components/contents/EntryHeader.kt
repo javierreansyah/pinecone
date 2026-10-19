@@ -22,40 +22,40 @@ import com.javierreansyah.pinecone.R
 
 @Composable
 fun EntryHeader(
-    title: String, positionLabel: String, onDelete: () -> Unit, modifier: Modifier = Modifier
+    title: String, positionLabel: String, onDelete: () -> Unit, modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(end = 16.dp)
+                .padding(end = 16.dp),
         ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             if (positionLabel.isNotBlank()) {
                 Text(
                     text = positionLabel,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
         IconButton(
-            onClick = onDelete, modifier = Modifier.size(24.dp)
+            onClick = onDelete, modifier = Modifier.size(24.dp),
         ) {
             Icon(
                 imageVector = MaterialSymbols.Outlined.Delete,
                 contentDescription = stringResource(R.string.action_delete),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

@@ -22,7 +22,7 @@ enum class HtmlPreset { Definition, Description }
 data class HtmlWebViewConfig(
     val preset: HtmlPreset = HtmlPreset.Definition,
     val onWordClick: ((String) -> Unit)? = null,
-    val extraCss: String = ""
+    val extraCss: String = "",
 )
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -31,7 +31,7 @@ fun HtmlWebView(
     htmlContent: String,
     modifier: Modifier = Modifier,
     config: HtmlWebViewConfig = HtmlWebViewConfig(),
-    baseFontSize: TextUnit = MaterialTheme.typography.bodyMedium.fontSize
+    baseFontSize: TextUnit = MaterialTheme.typography.bodyMedium.fontSize,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val density = LocalDensity.current
@@ -54,7 +54,7 @@ fun HtmlWebView(
         config.extraCss,
         onSurface, onSurfaceVariant, primary, primaryContainer, onPrimaryContainer,
         surfaceContainerHigh, outline, outlineVariant, secondary, tertiary,
-        fontSizeCss
+        fontSizeCss,
     ) {
         buildHtml(
             body = normaliseHtml(htmlContent, config.preset),
@@ -71,43 +71,51 @@ fun HtmlWebView(
             outline = outline,
             outlineVariant = outlineVariant,
             secondary = secondary,
-            tertiary = tertiary
+            tertiary = tertiary,
         )
     }
 
-    AndroidView(modifier = modifier.fillMaxWidth(), factory = { context ->
-        WebView(context).apply {
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-            isSaveEnabled = false
-            setBackgroundColor(AndroidColor.TRANSPARENT)
-            isVerticalScrollBarEnabled = false
-            isHorizontalScrollBarEnabled = false
-            overScrollMode = WebView.OVER_SCROLL_NEVER
-            settings.apply {
-                javaScriptEnabled = config.onWordClick != null
-                loadWithOverviewMode = false
-                useWideViewPort = false
-                setSupportZoom(false)
-                builtInZoomControls = false
-                displayZoomControls = false
+    AndroidView(
+        modifier = modifier.fillMaxWidth(),
+        factory = { context ->
+            WebView(context).apply {
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+                isSaveEnabled = false
+                setBackgroundColor(AndroidColor.TRANSPARENT)
+                isVerticalScrollBarEnabled = false
+                isHorizontalScrollBarEnabled = false
+                overScrollMode = WebView.OVER_SCROLL_NEVER
+                settings.apply {
+                    javaScriptEnabled = config.onWordClick != null
+                    loadWithOverviewMode = false
+                    useWideViewPort = false
+                    setSupportZoom(false)
+                    builtInZoomControls = false
+                    displayZoomControls = false
+                }
+                if (config.onWordClick != null) {
+                    addJavascriptInterface(
+                        object {
+                            @android.webkit.JavascriptInterface
+                            fun onWordClick(word: String) {
+                                post { config.onWordClick.invoke(word) }
+                            }
+                        },
+                        "Android",
+                    )
+                }
             }
-            if (config.onWordClick != null) {
-                addJavascriptInterface(object {
-                    @android.webkit.JavascriptInterface
-                    fun onWordClick(word: String) {
-                        post { config.onWordClick.invoke(word) }
-                    }
-                }, "Android")
-            }
-        }
-    }, update = { webView ->
-        webView.loadDataWithBaseURL(null, fullHtml, "text/html", "UTF-8", null)
-    }, onRelease = { webView ->
-        webView.destroy()
-    })
+        },
+        update = { webView ->
+            webView.loadDataWithBaseURL(null, fullHtml, "text/html", "UTF-8", null)
+        },
+        onRelease = { webView ->
+            webView.destroy()
+        },
+    )
 }
 
 private fun normaliseHtml(html: String, preset: HtmlPreset): String {
@@ -146,7 +154,7 @@ private fun buildHtml(
     outline: Color,
     outlineVariant: Color,
     secondary: Color,
-    tertiary: Color
+    tertiary: Color,
 ): String {
     val presetCss = when (preset) {
         HtmlPreset.Definition -> definitionCss()

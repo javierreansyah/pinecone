@@ -9,7 +9,7 @@ import androidx.room.Query
 data class BackupStateEntity(
     @PrimaryKey val id: Int = 1,
     val revision: Long = 0L,
-    val pendingSettingsJson: String? = null
+    val pendingSettingsJson: String? = null,
 )
 
 @Dao

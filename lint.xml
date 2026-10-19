@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- jsoup 1.23.2 supports Android. Its optional Java 11 HTTP executor is
+         reflectively loaded by RequestDispatch; Android uses UrlConnectionExecutor
+         instead. Only this guarded, upstream reference is a false positive.
+         Evidence: https://github.com/jhy/jsoup/blob/jsoup-1.23.2/src/main/java/org/jsoup/helper/RequestDispatch.java
+         Keep InvalidPackage enabled for all other classes/packages. Recheck on upgrades. -->
+    <issue id="InvalidPackage">
+        <ignore regexp="Invalid package reference.*java\.net\.http.*org\.jsoup\.helper\.HttpClientExecutor.*" />
+    </issue>
+</lint>

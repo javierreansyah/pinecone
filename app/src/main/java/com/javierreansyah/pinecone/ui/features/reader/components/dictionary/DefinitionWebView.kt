@@ -13,7 +13,7 @@ fun DefinitionWebView(
     htmlContent: String,
     modifier: Modifier = Modifier,
     baseFontSize: TextUnit = MaterialTheme.typography.bodyMedium.fontSize,
-    onWordClick: (String) -> Unit = {}
+    onWordClick: (String) -> Unit = {},
 ) {
     HtmlWebView(
         htmlContent = htmlContent,
@@ -21,7 +21,7 @@ fun DefinitionWebView(
         baseFontSize = baseFontSize,
         config = HtmlWebViewConfig(
             preset = HtmlPreset.Definition,
-            onWordClick = onWordClick
-        )
+            onWordClick = onWordClick,
+        ),
     )
 }

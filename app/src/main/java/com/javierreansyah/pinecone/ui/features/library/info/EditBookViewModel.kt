@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class EditBookViewModel(
-    application: Application, private val bookId: String
+    application: Application, private val bookId: String,
 ) : AndroidViewModel(application) {
 
     private val repository: LibraryRepository =
@@ -43,15 +43,16 @@ class EditBookViewModel(
             _uiState.update { it.copy(isLoading = true, error = null) }
             val bookDetails = repository.getBook(bookId)
             if (bookDetails != null) {
-                val book = bookDetails.book
+                val (_, bookTitle, bookCoverPath, _, _, _, _, _, _, _, _, _, bookDescription) = bookDetails.book
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        title = book.title,
-                        description = book.description ?: "",
-                        existingCoverPath = book.coverPath,
-                        tags = bookDetails.tags.map { tag -> tag.name },
-                        authors = bookDetails.sortedAuthors.map { author -> author.name })
+                        title = bookTitle,
+                        description = bookDescription ?: "",
+                        existingCoverPath = bookCoverPath,
+                        tags = bookDetails.tags.map { (_, tagName) -> tagName },
+                        authors = bookDetails.sortedAuthors.map { (_, authorName) -> authorName },
+                    )
                 }
             } else {
                 _uiState.update { it.copy(isLoading = false, error = "Book not found") }
@@ -97,14 +98,14 @@ class EditBookViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
             try {
-                val state = _uiState.value
+                val (_, stateTitle, stateDescription, stateCoverUri, _, stateTags, stateAuthors) = _uiState.value
                 repository.updateBookMetadata(
                     bookId = bookId,
-                    title = state.title,
-                    description = state.description.ifBlank { null },
-                    coverUri = state.coverUri,
-                    authors = state.authors,
-                    tags = state.tags
+                    title = stateTitle,
+                    description = stateDescription.ifBlank { null },
+                    coverUri = stateCoverUri,
+                    authors = stateAuthors,
+                    tags = stateTags,
                 )
                 _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
             } catch (e: Exception) {
@@ -114,7 +115,7 @@ class EditBookViewModel(
     }
 
     class Factory(
-        private val application: Application, private val bookId: String
+        private val application: Application, private val bookId: String,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {

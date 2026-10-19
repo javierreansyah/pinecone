@@ -94,22 +94,22 @@ fun ReaderOverlay(
     bookId: String,
     onNavigateToChapter: (Link) -> Unit,
     onSeekToProgression: (Double) -> Unit,
-    onNavigateToLocator: (Locator) -> Unit
+    onNavigateToLocator: (Locator) -> Unit,
 ) {
-    val bookState by viewModel.bookState.collectAsStateWithLifecycle()
-    val controlsState by viewModel.controlsState.collectAsStateWithLifecycle()
-    val selectionState by notesViewModel.selectionState.collectAsStateWithLifecycle()
-    val searchState by searchViewModel.searchState.collectAsStateWithLifecycle()
-    val definitionState by dictionaryViewModel.definitionState.collectAsStateWithLifecycle()
-    val externalLinkState by viewModel.externalLinkState.collectAsStateWithLifecycle()
+    val bookState = viewModel.bookState.collectAsStateWithLifecycle()
+    val controlsState = viewModel.controlsState.collectAsStateWithLifecycle()
+    val selectionState = notesViewModel.selectionState.collectAsStateWithLifecycle()
+    val searchState = searchViewModel.searchState.collectAsStateWithLifecycle()
+    val definitionState = dictionaryViewModel.definitionState.collectAsStateWithLifecycle()
+    val externalLinkState = viewModel.externalLinkState.collectAsStateWithLifecycle()
 
-    val themeColors by viewModel.themeColors.collectAsStateWithLifecycle()
+    val themeColors = viewModel.themeColors.collectAsStateWithLifecycle()
     val settings by viewModel.settingsFlow.collectAsStateWithLifecycle(
-        initialValue = ReaderSettings()
+        initialValue = ReaderSettings(),
     )
 
-    val readerBgColor = themeColors.backgroundColor
-    val readerTextColor = themeColors.textColor
+    val readerBgColor = themeColors.value.backgroundColor
+    val readerTextColor = themeColors.value.textColor
 
     val sortedBookmarks by notesViewModel.sortedBookmarks.collectAsStateWithLifecycle()
     val sortedNotes by notesViewModel.sortedNotes.collectAsStateWithLifecycle()
@@ -123,21 +123,21 @@ fun ReaderOverlay(
     }
 
     val isBookmarked = remember(sortedBookmarks, currentLocator) {
-        if (currentLocator == null) false
-        else sortedBookmarks.any {
+        val locator = currentLocator
+        (locator != null) && sortedBookmarks.any { (_, _, itLocatorJson) ->
             val loc = try {
-                Locator.fromJSON(JSONObject(it.locatorJson))
+                Locator.fromJSON(JSONObject(itLocatorJson))
             } catch (_: Exception) {
                 null
             }
-            loc != null && loc.isSamePosition(currentLocator!!)
+            (loc != null) && loc.isSamePosition(locator)
         }
     }
 
     val context = LocalContext.current
 
-    LaunchedEffect(bookState.isLoading) {
-        if (!bookState.isLoading && bookState.error == null) {
+    LaunchedEffect(bookState.value.isLoading) {
+        if (!bookState.value.isLoading && (bookState.value.error == null)) {
             launch(Dispatchers.Default) {
                 // Pre-warm material icons used in the text selection control and bottom bar.
                 // This prevents main-thread jank when they are first rendered.
@@ -153,40 +153,40 @@ fun ReaderOverlay(
         }
     }
 
-    BackHandler(enabled = searchState.isInNavMode) {
+    BackHandler(enabled = searchState.value.isInNavMode) {
         searchViewModel.exitSearchNavigation()
     }
 
-    val uiDarkTheme = themeColors.isDarkTheme
+    val uiDarkTheme = themeColors.value.isDarkTheme
     PineconeThemedContent(uiDarkTheme = uiDarkTheme, settings = settings) {
         Box(modifier = Modifier.fillMaxSize()) {
 
-            if (bookState.isLoading) {
+            if (bookState.value.isLoading) {
                 Box(
-                    modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+                    modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             }
 
-            bookState.error?.let { error ->
+            bookState.value.error?.let { error ->
                 Box(
-                    modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+                    modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = error,
                         color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.bodyLarge,
                     )
                 }
             }
 
             ReaderTopBarSection(
                 modifier = Modifier.align(Alignment.TopCenter),
-                showControls = controlsState.showControls,
-                showSearch = controlsState.showSearch,
-                isInSearchNavigationMode = searchState.isInNavMode,
-                searchQuery = searchState.query,
+                showControls = controlsState.value.showControls,
+                showSearch = controlsState.value.showSearch,
+                isInSearchNavigationMode = searchState.value.isInNavMode,
+                searchQuery = searchState.value.query,
                 isBookmarked = isBookmarked,
                 readerBgColor = readerBgColor,
                 readerTextColor = readerTextColor,
@@ -208,25 +208,25 @@ fun ReaderOverlay(
                     currentLocator?.let {
                         notesViewModel.toggleBookmark(
                             it,
-                            it.title ?: bookState.chapter
+                            it.title ?: bookState.value.chapter,
                         )
                     }
                 },
-                onInfoClick = { router.navigateToBookInfo(bookId) }
+                onInfoClick = { router.navigateToBookInfo(bookId) },
             )
 
             ReaderBottomBarSection(
                 modifier = Modifier.align(Alignment.BottomCenter),
-                showControls = controlsState.showControls,
-                showSearch = controlsState.showSearch,
-                isInSearchNavigationMode = searchState.isInNavMode,
-                activeSearchIndex = searchState.activeIndex,
-                searchResultsSize = searchState.results.size,
-                selectionLocator = selectionState.selectionLocator,
-                viewingHighlight = selectionState.viewingHighlight,
-                progression = bookState.progression,
-                currentPage = bookState.currentPage,
-                totalPages = bookState.totalPages,
+                showControls = controlsState.value.showControls,
+                showSearch = controlsState.value.showSearch,
+                isInSearchNavigationMode = searchState.value.isInNavMode,
+                activeSearchIndex = searchState.value.activeIndex,
+                searchResultsSize = searchState.value.results.size,
+                selectionLocator = selectionState.value.selectionLocator,
+                viewingHighlight = selectionState.value.viewingHighlight,
+                progression = bookState.value.progression,
+                currentPage = bookState.value.currentPage,
+                totalPages = bookState.value.totalPages,
                 readerBgColor = readerBgColor,
                 readerTextColor = readerTextColor,
                 onSeekToProgression = { progression ->
@@ -245,6 +245,9 @@ fun ReaderOverlay(
                     val clipboard =
                         context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                     val clip = ClipData.newPlainText("highlight", highlightText)
+                    // primaryClip is read-only in Kotlin: the nullable getter and
+                    // non-null setter do not form a writable synthetic property.
+                    @Suppress("UsePropertyAccessSyntax")
                     clipboard.setPrimaryClip(clip)
                     notesViewModel.hideSelectionMenu()
                     notesViewModel.hideViewHighlight()
@@ -257,15 +260,15 @@ fun ReaderOverlay(
                     searchViewModel.performSearch(
                         highlightText,
                         viewModel.publication.value,
-                        positions
+                        positions,
                     )
                 },
                 onMakeNote = {
-                    selectionState.selectionLocator?.let { loc ->
-                        notesViewModel.addNoteAndEdit(loc, loc.title ?: bookState.chapter)
+                    selectionState.value.selectionLocator?.let { loc ->
+                        notesViewModel.addNoteAndEdit(loc, loc.title ?: bookState.value.chapter)
                         notesViewModel.hideSelectionMenu()
                         notesViewModel.hideViewHighlight()
-                    } ?: selectionState.viewingHighlight?.let { note ->
+                    } ?: selectionState.value.viewingHighlight?.let { note ->
                         notesViewModel.editNote(note)
                         notesViewModel.hideViewHighlight()
                     }
@@ -276,32 +279,32 @@ fun ReaderOverlay(
                     notesViewModel.hideViewHighlight()
                 },
                 onDelete = {
-                    selectionState.viewingHighlight?.let { note ->
-                        notesViewModel.deleteNote(note.id)
+                    selectionState.value.viewingHighlight?.let { (noteId) ->
+                        notesViewModel.deleteNote(noteId)
                         notesViewModel.hideViewHighlight()
                     }
                 },
                 onColorSelected = { colorInt ->
-                    selectionState.selectionLocator?.let { loc ->
-                        notesViewModel.addHighlight(loc, colorInt, loc.title ?: bookState.chapter)
+                    selectionState.value.selectionLocator?.let { loc ->
+                        notesViewModel.addHighlight(loc, colorInt, loc.title ?: bookState.value.chapter)
                         notesViewModel.hideSelectionMenu()
                         notesViewModel.hideViewHighlight()
-                    } ?: selectionState.viewingHighlight?.let { note ->
+                    } ?: selectionState.value.viewingHighlight?.let { note ->
                         notesViewModel.updateNote(note.copy(color = colorInt))
                         notesViewModel.hideViewHighlight()
                     }
-                }
+                },
             )
 
             ReaderSheetsLayer(
-                showToc = controlsState.showToc,
-                showSettings = controlsState.showSettings,
-                showSearch = controlsState.showSearch,
-                showDefinition = definitionState.showDefinition,
-                editingNote = selectionState.editingNote,
-                definitionWord = definitionState.definitionWord,
-                definitionResults = definitionState.definitionResults,
-                definitionWordHistorySize = definitionState.wordHistory.size,
+                showToc = controlsState.value.showToc,
+                showSettings = controlsState.value.showSettings,
+                showSearch = controlsState.value.showSearch,
+                showDefinition = definitionState.value.showDefinition,
+                editingNote = selectionState.value.editingNote,
+                definitionWord = definitionState.value.definitionWord,
+                definitionResults = definitionState.value.definitionResults,
+                definitionWordHistorySize = definitionState.value.wordHistory.size,
                 tableOfContents = viewModel.tableOfContents,
                 sortedBookmarks = sortedBookmarks,
                 sortedNotes = sortedNotes,
@@ -309,10 +312,10 @@ fun ReaderOverlay(
                 onSortOptionChange = { notesViewModel.setSortOption(it) },
                 currentLocator = currentLocator,
                 settings = settings,
-                searchQuery = searchState.query,
-                searchResults = searchState.results,
-                searchLoading = searchState.isLoading,
-                searchPerformed = searchState.searchPerformed,
+                searchQuery = searchState.value.query,
+                searchResults = searchState.value.results,
+                searchLoading = searchState.value.isLoading,
+                searchPerformed = searchState.value.searchPerformed,
                 getPositionLabel = { viewModel.getPositionLabel(it) },
                 getChapterPageLabel = { viewModel.getChapterPageLabel(it) },
                 onNavigateToChapter = onNavigateToChapter,
@@ -325,7 +328,7 @@ fun ReaderOverlay(
                         notesViewModel.addNote(
                             it,
                             text,
-                            chapterTitle = it.title ?: bookState.chapter
+                            chapterTitle = it.title ?: bookState.value.chapter,
                         )
                     }
                 },
@@ -338,7 +341,7 @@ fun ReaderOverlay(
                     searchViewModel.performSearch(
                         it,
                         viewModel.publication.value,
-                        positions
+                        positions,
                     )
                 },
                 onSelectSearchResult = {
@@ -350,14 +353,16 @@ fun ReaderOverlay(
                 onUpdateNote = { notesViewModel.updateNote(it) },
                 onHideEditNote = { notesViewModel.hideEditNote() },
                 onHideDefinition = { dictionaryViewModel.hideDefinition() },
-                onDefineWord = { dictionaryViewModel.lookupDefinition(it, clearHistory = false) },
+                onDefineWord = { dictionaryViewModel.lookupDefinition(it) },
                 onPopDefinition = { dictionaryViewModel.popDefinition() },
-                showExternalLinkMenu = externalLinkState.showMenu,
-                externalLinkUrl = externalLinkState.url,
+                showExternalLinkMenu = externalLinkState.value.showMenu,
+                externalLinkUrl = externalLinkState.value.url,
                 onCopyExternalLink = { url ->
                     val clipboard =
                         context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                     val clip = ClipData.newPlainText("url", url)
+                    // The platform getter/setter nullability makes primaryClip read-only in Kotlin.
+                    @Suppress("UsePropertyAccessSyntax")
                     clipboard.setPrimaryClip(clip)
                 },
                 onOpenExternalLink = { url ->
@@ -367,8 +372,7 @@ fun ReaderOverlay(
                     } catch (_: Exception) {
                     }
                 },
-                onHideExternalLinkMenu = { viewModel.hideExternalLinkMenu() }
-            )
+            ) { viewModel.hideExternalLinkMenu() }
         }
     }
 }
@@ -393,7 +397,7 @@ fun ReaderTopBarSection(
     onSettingsClick: () -> Unit,
     onToggleBookmark: () -> Unit,
     onInfoClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val actionsSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
     val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
@@ -403,12 +407,12 @@ fun ReaderTopBarSection(
     AnimatedVisibility(
         visible = showControls && !showSearch,
         enter = slideInVertically(
-            initialOffsetY = { -offset }, animationSpec = actionsSpatialSpec
+            initialOffsetY = { -offset }, animationSpec = actionsSpatialSpec,
         ) + fadeIn(animationSpec = actionsEffectsSpec),
         exit = slideOutVertically(
-            targetOffsetY = { -offset }, animationSpec = actionsSpatialSpec
+            targetOffsetY = { -offset }, animationSpec = actionsSpatialSpec,
         ) + fadeOut(animationSpec = actionsEffectsSpec),
-        modifier = modifier
+        modifier = modifier,
     ) {
         ReaderTopBar(
             isBookmarked = isBookmarked,
@@ -432,7 +436,7 @@ fun ReaderTopBarSection(
             readerTextColor = readerTextColor,
             jumpOrigin = jumpOrigin,
             onGoBackToOriginClick = onGoBackToOriginClick,
-            onClearJumpOriginClick = onClearJumpOriginClick
+            onClearJumpOriginClick = onClearJumpOriginClick,
         )
     }
 }
@@ -460,9 +464,9 @@ fun ReaderBottomBarSection(
     onDefine: (String) -> Unit,
     onDelete: () -> Unit,
     onColorSelected: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    val isSelectionActive = selectionLocator != null || viewingHighlight != null
+    val isSelectionActive = (selectionLocator != null) || (viewingHighlight != null)
     val showBottomBar = (showControls && !showSearch) || isSelectionActive
 
     val actionsSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
@@ -474,21 +478,21 @@ fun ReaderBottomBarSection(
         visible = showBottomBar,
         enter = slideInVertically(
             initialOffsetY = { offset },
-            animationSpec = actionsSpatialSpec
+            animationSpec = actionsSpatialSpec,
         ) + fadeIn(
-            animationSpec = actionsEffectsSpec
+            animationSpec = actionsEffectsSpec,
         ),
         exit = slideOutVertically(
             targetOffsetY = { offset },
-            animationSpec = actionsSpatialSpec
+            animationSpec = actionsSpatialSpec,
         ) + fadeOut(
-            animationSpec = actionsEffectsSpec
+            animationSpec = actionsEffectsSpec,
         ),
-        modifier = modifier
+        modifier = modifier,
     ) {
         ReaderBottomBarContainer(
             modifier = Modifier,
-            readerBgColor = readerBgColor
+            readerBgColor = readerBgColor,
         ) {
             val currentMode = when {
                 isSelectionActive -> BottomBarMode.TEXT_SELECTION
@@ -506,13 +510,13 @@ fun ReaderBottomBarSection(
                 label = "BottomBarMode",
                 transitionSpec = {
                     (slideInVertically(
-                        initialOffsetY = { offset }, animationSpec = actionsSpatialSpec
+                        initialOffsetY = { offset }, animationSpec = actionsSpatialSpec,
                     ) + fadeIn(animationSpec = actionsEffectsSpec)) togetherWith (
-                            slideOutVertically(
-                                targetOffsetY = { offset }, animationSpec = actionsSpatialSpec
-                            ) + fadeOut(animationSpec = actionsEffectsSpec)
-                            )
-                }
+                        slideOutVertically(
+                            targetOffsetY = { offset }, animationSpec = actionsSpatialSpec,
+                        ) + fadeOut(animationSpec = actionsEffectsSpec)
+                        )
+                },
             ) { mode ->
                 when (mode) {
                     BottomBarMode.PROGRESS -> {
@@ -521,7 +525,7 @@ fun ReaderBottomBarSection(
                             currentPage = currentPage,
                             totalPages = totalPages,
                             readerTextColor = readerTextColor,
-                            onSeekToProgression = onSeekToProgression
+                            onSeekToProgression = onSeekToProgression,
                         )
                     }
 
@@ -531,7 +535,7 @@ fun ReaderBottomBarSection(
                             totalResults = searchResultsSize,
                             textColor = readerTextColor,
                             onPrev = onPrevSearchResult,
-                            onNext = onNextSearchResult
+                            onNext = onNextSearchResult,
                         )
                     }
 
@@ -540,8 +544,8 @@ fun ReaderBottomBarSection(
                             Locator.fromJSON(
                                 JSONObject(
                                     viewingHighlight?.locatorJson ?: selectionLocator?.toJSON()
-                                        ?.toString() ?: ""
-                                )
+                                        ?.toString() ?: "",
+                                ),
                             )?.text?.highlight ?: ""
                         } catch (_: Exception) {
                             ""
@@ -552,13 +556,13 @@ fun ReaderBottomBarSection(
                         ReaderTextSelectionControl(
                             selectedColorInt = selectedColorInt,
                             readerTextColor = readerTextColor,
-                            showDeleteOption = viewingHighlight != null && selectionLocator == null,
+                            showDeleteOption = (viewingHighlight != null) && (selectionLocator == null),
                             onCopy = { onCopy(highlightText) },
                             onSearch = { onSearch(highlightText) },
                             onMakeNote = onMakeNote,
                             onDefine = { onDefine(highlightText) },
                             onDelete = onDelete,
-                            onColorSelected = onColorSelected
+                            onColorSelected = onColorSelected,
                         )
                     }
                 }
@@ -614,11 +618,11 @@ fun ReaderSheetsLayer(
     externalLinkUrl: String,
     onCopyExternalLink: (String) -> Unit,
     onOpenExternalLink: (String) -> Unit,
-    onHideExternalLinkMenu: () -> Unit
+    onHideExternalLinkMenu: () -> Unit,
 ) {
     val settingsSheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
-        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
     )
 
     val actionsEffectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
@@ -654,18 +658,18 @@ fun ReaderSheetsLayer(
             onAddNote = onAddNote,
             onDeleteBookmark = onDeleteBookmark,
             onDeleteNote = onDeleteNote,
-            onDismiss = onHideToc
+            onDismiss = onHideToc,
         )
     }
 
     if (showSettings) {
         ModalBottomSheet(
             onDismissRequest = onHideSettings,
-            sheetState = settingsSheetState
+            sheetState = settingsSheetState,
         ) {
             ReaderSettingsContent(
                 settings = settings,
-                onSettingsChange = onUpdateSettings
+                onSettingsChange = onUpdateSettings,
             )
         }
     }
@@ -673,7 +677,7 @@ fun ReaderSheetsLayer(
     AnimatedVisibility(
         visible = showSearch,
         enter = fadeIn(animationSpec = actionsEffectsSpec),
-        exit = fadeOut(animationSpec = actionsEffectsSpec)
+        exit = fadeOut(animationSpec = actionsEffectsSpec),
     ) {
         ReaderSearch(
             query = searchQuery,
@@ -683,7 +687,7 @@ fun ReaderSheetsLayer(
             onQueryChange = onUpdateSearchQuery,
             onSearch = onPerformSearch,
             onResultClick = onSelectSearchResult,
-            onClose = onHideSearch
+            onClose = onHideSearch,
         )
     }
 
@@ -692,7 +696,7 @@ fun ReaderSheetsLayer(
             note = note,
             onUpdateNote = onUpdateNote,
             onDeleteNote = onDeleteNote,
-            onDismiss = onHideEditNote
+            onDismiss = onHideEditNote,
         )
     }
 
@@ -703,7 +707,7 @@ fun ReaderSheetsLayer(
             historySize = definitionWordHistorySize,
             onDismiss = onHideDefinition,
             onPop = onPopDefinition,
-            onWordClick = onDefineWord
+            onWordClick = onDefineWord,
         )
     }
 
@@ -712,7 +716,7 @@ fun ReaderSheetsLayer(
             url = externalLinkUrl,
             onCopy = { onCopyExternalLink(externalLinkUrl) },
             onOpenInBrowser = { onOpenExternalLink(externalLinkUrl) },
-            onDismiss = onHideExternalLinkMenu
+            onDismiss = onHideExternalLinkMenu,
         )
     }
 }
@@ -721,13 +725,13 @@ fun ReaderSheetsLayer(
 fun PineconeThemedContent(
     uiDarkTheme: Boolean,
     settings: ReaderSettings,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     AppTheme(
         darkTheme = uiDarkTheme,
         colorPalette = settings.colorPalette,
         themeContrast = settings.themeContrast,
-        content = content
+        content = content,
     )
 }
 
@@ -740,7 +744,7 @@ private fun ReaderDefinitionBottomSheet(
     historySize: Int,
     onDismiss: () -> Unit,
     onPop: () -> Unit,
-    onWordClick: (String) -> Unit
+    onWordClick: (String) -> Unit,
 ) {
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current
@@ -749,18 +753,18 @@ private fun ReaderDefinitionBottomSheet(
     }
     val sheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
-        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
     )
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = sheetState
+        sheetState = sheetState,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(max = maxSheetHeight)
-                .padding(top = 8.dp, bottom = 24.dp)
+                .padding(top = 8.dp, bottom = 24.dp),
         ) {
             val levelHeights = remember { mutableStateMapOf<Int, Int>() }
             val minEnforcedHeight = remember(historySize, levelHeights) {
@@ -778,7 +782,7 @@ private fun ReaderDefinitionBottomSheet(
                     .heightIn(min = with(density) { minEnforcedHeight.toDp() })
                     .onSizeChanged { size ->
                         levelHeights[historySize] = size.height
-                    }
+                    },
             ) {
                 val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
 
@@ -787,7 +791,7 @@ private fun ReaderDefinitionBottomSheet(
                         text = stringResource(R.string.reader_no_definition),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 24.dp)
+                        modifier = Modifier.padding(horizontal = 24.dp),
                     )
                 } else {
                     val scrollState = rememberScrollState()
@@ -798,23 +802,25 @@ private fun ReaderDefinitionBottomSheet(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .verticalScroll(scrollState)
+                            .verticalScroll(scrollState),
                     ) {
                         val sortedResults =
-                            definitionResults.sortedWith(compareBy<DictionaryEntry> { entry ->
-                                when {
-                                    entry.word == definitionWord -> 0
-                                    entry.word.firstOrNull()?.isLowerCase() == true -> 1
-                                    else -> 2
-                                }
-                            }.thenBy { it.word })
+                            definitionResults.sortedWith(
+                                compareBy<DictionaryEntry> { (_, _, entryWord) ->
+                                    when {
+                                        entryWord == definitionWord -> 0
+                                        entryWord.firstOrNull()?.isLowerCase() == true -> 1
+                                        else -> 2
+                                    }
+                                }.thenBy { (_, _, itWord) -> itWord },
+                            )
 
                         val combinedHtmlContent =
                             DictionaryFormatter.prepareHtmlForMultipleEntries(sortedResults)
                         DefinitionWebView(
                             htmlContent = combinedHtmlContent,
                             modifier = Modifier.fillMaxWidth(),
-                            onWordClick = onWordClick
+                            onWordClick = onWordClick,
                         )
                     }
                 }
@@ -822,23 +828,23 @@ private fun ReaderDefinitionBottomSheet(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(end = 16.dp)
+                        .padding(end = 16.dp),
                 ) {
                     this@Column.AnimatedVisibility(
                         visible = historySize > 0,
                         enter = fadeIn(animationSpec = actionsEffectsSpec),
-                        exit = fadeOut(animationSpec = actionsEffectsSpec)
+                        exit = fadeOut(animationSpec = actionsEffectsSpec),
                     ) {
                         FilledTonalIconButton(
                             shape = androidx.compose.foundation.shape.CircleShape,
                             colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                             ),
-                            onClick = onPop
+                            onClick = onPop,
                         ) {
                             Icon(
                                 MaterialSymbols.Outlined.Arrow_back,
-                                contentDescription = stringResource(R.string.action_back)
+                                contentDescription = stringResource(R.string.action_back),
                             )
                         }
                     }

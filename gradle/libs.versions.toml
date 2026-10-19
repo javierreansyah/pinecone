@@ -1,27 +1,27 @@
 [versions]
-agp = "9.2.1"
-coreKtx = "1.19.0"
+agp = "9.4.1"
+coreKtx = "1.19.1"
 lifecycleRuntimeKtx = "2.11.0"
 activityCompose = "1.13.0"
-kotlin = "2.4.10"
+kotlin = "2.4.21"
 kotlinxSerialization = "1.11.0"
-composeBom = "2026.08.00"
-material3 = "1.5.0-alpha26"
-navigation3 = "1.1.6"
+composeBom = "2026.09.00"
+material3 = "1.5.0-beta01"
+navigation3 = "1.2.0"
 datastorePreferences = "1.2.1"
-coilCompose = "2.7.0"
-readium = "3.3.0"
-room = "2.8.4"
+coilCompose = "3.6.3"
+readium = "3.4.0"
+room = "2.8.5"
 desugar = "2.1.5"
-ksp = "2.2.10-2.0.2"
-work = "2.11.2"
+ksp = "2.3.12"
+work = "2.12.0"
 appcompat = "1.8.0"
-fragmentKtx = "1.9.0"
+fragmentKtx = "1.9.1"
 coreSplashscreen = "1.2.0"
 documentfile = "1.1.0"
 reorderable = "3.1.0"
-materialKolor = "5.0.0"
-aboutlibraries = "15.1.1"
+materialKolor = "5.0.1"
+aboutlibraries = "15.3.0"
 junit = "4.13.2"
 materialSymbols = "2.2.1"
 
@@ -43,7 +43,7 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 androidx-navigation3-ui = { group = "androidx.navigation3", name = "navigation3-ui", version.ref = "navigation3" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastorePreferences" }
-coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coilCompose" }
+coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coilCompose" }
 readium-shared = { group = "org.readium.kotlin-toolkit", name = "readium-shared", version.ref = "readium" }
 readium-streamer = { group = "org.readium.kotlin-toolkit", name = "readium-streamer", version.ref = "readium" }
 readium-navigator = { group = "org.readium.kotlin-toolkit", name = "readium-navigator", version.ref = "readium" }

@@ -29,21 +29,21 @@ fun BookCollection(
     onBookLongClick: (String) -> Unit,
     selectedBooks: Set<String> = emptySet(),
     isInMultiSelectMode: Boolean = false,
-    scrollKey: Any? = null
+    scrollKey: Any? = null,
 ) {
     key(scrollKey) {
         AnimatedContent(
             targetState = layoutMode,
             transitionSpec = {
-                fadeIn(animationSpec = tween(durationMillis = 100, delayMillis = 100)) +
-                        scaleIn(
-                            initialScale = 0.9f,
-                            animationSpec = tween(durationMillis = 100, delayMillis = 100)
-                        ) togetherWith
-                        fadeOut(animationSpec = tween(durationMillis = 100)) +
-                        scaleOut(targetScale = 0.9f, animationSpec = tween(durationMillis = 100))
+                (fadeIn(animationSpec = tween(durationMillis = 100, delayMillis = 100)) +
+                    scaleIn(
+                        initialScale = 0.9f,
+                        animationSpec = tween(durationMillis = 100, delayMillis = 100),
+                    )) togetherWith
+                    (fadeOut(animationSpec = tween(durationMillis = 100)) +
+                    scaleOut(targetScale = 0.9f, animationSpec = tween(durationMillis = 100)))
             },
-            label = "bookCollectionLayoutTransition"
+            label = "bookCollectionLayoutTransition",
         ) { targetLayoutMode ->
             if (targetLayoutMode != LayoutMode.List) {
                 BookGrid(
@@ -52,7 +52,7 @@ fun BookCollection(
                     onBookClick = onBookClick,
                     onBookLongClick = onBookLongClick,
                     selectedBooks = selectedBooks,
-                    isInMultiSelectMode = isInMultiSelectMode
+                    isInMultiSelectMode = isInMultiSelectMode,
                 )
             } else {
                 BookList(
@@ -60,7 +60,7 @@ fun BookCollection(
                     onBookClick = onBookClick,
                     onBookLongClick = onBookLongClick,
                     selectedBooks = selectedBooks,
-                    isInMultiSelectMode = isInMultiSelectMode
+                    isInMultiSelectMode = isInMultiSelectMode,
                 )
             }
         }
@@ -74,7 +74,7 @@ private fun BookGrid(
     onBookClick: (String) -> Unit,
     onBookLongClick: ((String) -> Unit)? = null,
     selectedBooks: Set<String> = emptySet(),
-    isInMultiSelectMode: Boolean = false
+    isInMultiSelectMode: Boolean = false,
 ) {
     val density = LocalDensity.current
     val containerSize = LocalWindowInfo.current.containerSize
@@ -96,12 +96,12 @@ private fun BookGrid(
         columns = GridCells.Adaptive(minSize = itemWidth),
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = horizontalPadding)
+            .padding(horizontal = horizontalPadding),
     ) {
         items(
             items = books,
-            key = { "${it.id}-${layoutMode.name}" },
-            contentType = { layoutMode }
+            key = { (itId) -> "$itId-${layoutMode.name}" },
+            contentType = { layoutMode },
         ) { book ->
             BookItem(
                 book = book,
@@ -109,9 +109,8 @@ private fun BookGrid(
                 onLongClick = if (selectedBooks.isNotEmpty()) null else {
                     { onBookLongClick?.invoke(book.id) }
                 },
-                isList = false,
                 isSelected = selectedBooks.contains(book.id),
-                isInMultiSelectMode = isInMultiSelectMode
+                isInMultiSelectMode = isInMultiSelectMode,
             )
         }
     }
@@ -123,7 +122,7 @@ private fun BookList(
     onBookClick: (String) -> Unit,
     onBookLongClick: ((String) -> Unit)? = null,
     selectedBooks: Set<String> = emptySet(),
-    isInMultiSelectMode: Boolean = false
+    isInMultiSelectMode: Boolean = false,
 ) {
     val density = LocalDensity.current
     val containerSize = LocalWindowInfo.current.containerSize
@@ -135,9 +134,9 @@ private fun BookList(
         columns = GridCells.Fixed(columns),
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = horizontalPadding)
+            .padding(horizontal = horizontalPadding),
     ) {
-        items(books, key = { it.id }) { book ->
+        items(books, key = { (itId2) -> itId2 }) { book ->
             BookItem(
                 book = book,
                 onClick = { onBookClick(book.id) },
@@ -146,7 +145,7 @@ private fun BookList(
                 },
                 isList = true,
                 isSelected = selectedBooks.contains(book.id),
-                isInMultiSelectMode = isInMultiSelectMode
+                isInMultiSelectMode = isInMultiSelectMode,
             )
         }
     }

@@ -41,7 +41,7 @@ fun NotesList(
     notes: List<NoteEntity>,
     getPositionLabel: (Locator) -> String,
     onNoteClick: (Locator) -> Unit,
-    onDeleteNote: (Long) -> Unit
+    onDeleteNote: (Long) -> Unit,
 ) {
     val context = LocalContext.current
     if (notes.isEmpty()) {
@@ -50,27 +50,27 @@ fun NotesList(
             text = stringResource(R.string.reader_no_notes),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(32.dp)
+                .padding(32.dp),
         )
     } else {
         LazyColumn(
-            modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 8.dp)
+            modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 8.dp),
         ) {
-            items(notes) { note ->
+            items(notes) { (noteId, _, noteLocatorJson, noteChapterTitle, noteNoteText, noteColor, noteCreatedAt) ->
                 val locator = try {
-                    Locator.fromJSON(org.json.JSONObject(note.locatorJson))
+                    Locator.fromJSON(org.json.JSONObject(noteLocatorJson))
                 } catch (_: Exception) {
                     null
                 }
                 if (locator != null) {
                     val inDocument = stringResource(R.string.reader_in_document)
                     val chapterTitle =
-                        note.chapterTitle?.takeIf { it.isNotBlank() && it != inDocument }
+                        noteChapterTitle?.takeIf { it.isNotBlank() && (it != inDocument) }
                             ?: inDocument
 
                     val positionLabel = getPositionLabel(locator)
-                    val formattedDate = remember(note.createdAt, context) {
-                        val date = Date(note.createdAt)
+                    val formattedDate = remember(noteCreatedAt, context) {
+                        val date = Date(noteCreatedAt)
                         val locale = Locale.getDefault()
                         val dateStr = if (locale.language == "en") {
                             SimpleDateFormat("MM/dd/yyyy", locale).format(date)
@@ -91,18 +91,18 @@ fun NotesList(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { onNoteClick(locator) }
-                            .padding(horizontal = 20.dp, vertical = 12.dp)
+                            .padding(horizontal = 20.dp, vertical = 12.dp),
                     ) {
                         EntryHeader(
                             title = chapterTitle,
                             positionLabel = subtitle,
-                            onDelete = { onDeleteNote(note.id) }
+                            onDelete = { onDeleteNote(noteId) },
                         )
 
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = 8.dp)
+                                .padding(top = 8.dp),
                         ) {
                             val quote = locator.text.highlight
                             if (!quote.isNullOrBlank()) {
@@ -111,28 +111,28 @@ fun NotesList(
                                         .fillMaxWidth()
                                         .height(IntrinsicSize.Min)
                                         .padding(bottom = 8.dp),
-                                    verticalAlignment = Alignment.Top
+                                    verticalAlignment = Alignment.Top,
                                 ) {
                                     Box(
                                         modifier = Modifier
                                             .width(4.dp)
                                             .fillMaxHeight()
                                             .clip(RoundedCornerShape(2.dp))
-                                            .background(Color(note.color).copy(alpha = 1.0f))
+                                            .background(Color(noteColor).copy(alpha = 1.0f)),
                                     )
                                     Text(
                                         text = quote,
                                         style = MaterialTheme.typography.bodyMedium.copy(
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         ),
-                                        modifier = Modifier.padding(start = 12.dp)
+                                        modifier = Modifier.padding(start = 12.dp),
                                     )
                                 }
-                                if (note.noteText.isNotBlank()) {
+                                if (noteNoteText.isNotBlank()) {
                                     Text(
-                                        text = note.noteText,
+                                        text = noteNoteText,
                                         style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurface
+                                        color = MaterialTheme.colorScheme.onSurface,
                                     )
                                 }
                             } else {
@@ -140,20 +140,20 @@ fun NotesList(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(IntrinsicSize.Min),
-                                    verticalAlignment = Alignment.Top
+                                    verticalAlignment = Alignment.Top,
                                 ) {
                                     Box(
                                         modifier = Modifier
                                             .width(4.dp)
                                             .fillMaxHeight()
                                             .clip(RoundedCornerShape(2.dp))
-                                            .background(Color(note.color).copy(alpha = 1.0f))
+                                            .background(Color(noteColor).copy(alpha = 1.0f)),
                                     )
                                     Text(
-                                        text = note.noteText,
+                                        text = noteNoteText,
                                         style = MaterialTheme.typography.bodyLarge,
                                         color = MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.padding(start = 12.dp)
+                                        modifier = Modifier.padding(start = 12.dp),
                                     )
                                 }
                             }
