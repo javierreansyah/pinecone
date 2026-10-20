@@ -92,4 +92,6 @@
     <string name="publication_age_rating">Batas usia</string>
     <string name="publication_published">@string/book_published_date</string>
     <string name="publication_credit_hint">Satu kontributor per baris; peran disimpan secara terpisah.</string>
+    <string name="reader_reparse_pdf">Urai ulang PDF</string>
+    <string name="reader_reparse_pdf_description">Buat ulang mode baca dari PDF asli. Posisi baca tersimpan tetap dipertahankan.</string>
 </resources>

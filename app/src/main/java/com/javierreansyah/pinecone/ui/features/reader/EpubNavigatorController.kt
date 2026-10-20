@@ -1,6 +1,7 @@
 package com.javierreansyah.pinecone.ui.features.reader
 
 import android.graphics.Color.colorToHSV
+import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import android.os.Bundle
 import android.view.ActionMode
 import android.view.Menu
@@ -229,7 +230,18 @@ class EpubNavigatorController(
         lifecycleScope.launch {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 _navigatorFlow.collectLatest { nav ->
-                    nav?.currentLocator?.collect { locator ->
+                    nav?.currentLocator?.collect { position ->
+                        // Readium's position stream is progression-based. Resolve the visible
+                        // block so chapter/page identity remains exact within the single HTML.
+                        val visible = if (renditionKey == "read-mode" &&
+                            GeneratedEpubLocations.isContent(position.href.toString())) {
+                            nav.firstVisibleElementLocator()
+                        } else null
+                        val locator = viewModel.withReadModeChapter(if (visible != null) {
+                            position.copy(locations = position.locations.copy(
+                                otherLocations = position.locations.otherLocations + visible.locations.otherLocations,
+                            ), text = visible.text)
+                        } else position)
                         if (viewModel.activeRendition.value == renditionKey) viewModel.onLocatorChanged(
                             locator
                         )
@@ -316,7 +328,8 @@ class EpubNavigatorController(
     private fun saveCurrentPosition() {
         navigator?.currentLocator?.value?.let { locator ->
             lifecycleScope.launch {
-                viewModel.savePosition(locator, renditionKey)
+                val current = if (renditionKey == "read-mode") viewModel.currentLocator.value else null
+                viewModel.savePosition(current ?: locator, renditionKey)
             }
         }
     }

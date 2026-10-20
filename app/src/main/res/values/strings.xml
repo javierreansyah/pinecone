@@ -103,6 +103,7 @@
     <string name="library_status_reading">Currently reading</string>
     <string name="library_status_finished">Finished</string>
 
+    <string name="reader_menu_info">Info</string>
     <string name="book_info_title">Book Info</string>
     <string name="book_not_found">Book not found</string>
     <string name="book_edit_title">Edit Book</string>
