@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -22,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -121,8 +121,8 @@ fun DictionariesScreen(
             viewModel.renameDictionary(id, name)
         },
     ) { id ->
-            viewModel.deleteDictionary(id)
-        }
+        viewModel.deleteDictionary(id)
+    }
 }
 
 @Composable
@@ -171,7 +171,7 @@ private fun DictionariesContent(
         ) {
             val isLoadingImport = uiState.importState is DictionaryState.Loading
             val totalCount = uiState.installedDictionaries.size +
-                (if (isLoadingImport) 1 else 0)
+                    (if (isLoadingImport) 1 else 0)
 
             if (totalCount == 0) {
                 EmptyState(
@@ -203,10 +203,10 @@ private fun DictionariesContent(
                     dictName = dictName2,
                     onDismissRequest = { itemToDelete = null },
                 ) {
-                        val dictId = dictId2
-                        itemToDelete = null
-                        onDeleteDictionary(dictId)
-                    }
+                    val dictId = dictId2
+                    itemToDelete = null
+                    onDeleteDictionary(dictId)
+                }
             }
 
             itemToRename?.let { (dictId3, dictName3) ->
@@ -214,10 +214,10 @@ private fun DictionariesContent(
                     initialName = dictName3,
                     onDismissRequest = { itemToRename = null },
                 ) { newName ->
-                        val dictId = dictId3
-                        itemToRename = null
-                        onRenameDictionary(dictId, newName)
-                    }
+                    val dictId = dictId3
+                    itemToRename = null
+                    onRenameDictionary(dictId, newName)
+                }
             }
         }
     }

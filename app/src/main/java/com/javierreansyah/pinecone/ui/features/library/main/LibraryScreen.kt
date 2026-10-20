@@ -280,18 +280,18 @@ fun LibraryScreen(
                                 exitMultiSelect()
                             },
                         ) {
-                                deleteBooks(selectedBooks)
-                                exitMultiSelect()
-                            }
+                            deleteBooks(selectedBooks)
+                            exitMultiSelect()
+                        }
                     },
                     bottomBar = {
                         LibraryShortBottomNavigation(
                             currentPage = pagerState.currentPage,
                         ) { page ->
-                                scope.launch {
-                                    pagerState.animateScrollToPage(page)
-                                }
+                            scope.launch {
+                                pagerState.animateScrollToPage(page)
                             }
+                        }
                     },
                 ) { innerPadding ->
                     HorizontalPager(
@@ -352,12 +352,12 @@ fun LibraryScreen(
                                             isInMultiSelectMode = true
                                         },
                                     ) { id ->
-                                            selectedShelves = if (selectedShelves.contains(id)) {
-                                                selectedShelves - id
-                                            } else {
-                                                selectedShelves + id
-                                            }
+                                        selectedShelves = if (selectedShelves.contains(id)) {
+                                            selectedShelves - id
+                                        } else {
+                                            selectedShelves + id
                                         }
+                                    }
                                 }
                             }
                         }
@@ -437,8 +437,10 @@ private fun LibraryTopBar(
         multiSelectBar = {
             if (isShelvesTab) {
                 val selectedShelfName =
-                    shelves.find { (itShelf3) -> itShelf3.id == selectedShelves.firstOrNull() }?.shelf?.name ?: ""
-                val selectableShelvesCount = shelves.count { (itShelf4) -> itShelf4.id != "unshelved" }
+                    shelves.find { (itShelf3) -> itShelf3.id == selectedShelves.firstOrNull() }?.shelf?.name
+                        ?: ""
+                val selectableShelvesCount =
+                    shelves.count { (itShelf4) -> itShelf4.id != "unshelved" }
                 ShelvesMultiSelectAppBar(
                     selectedCount = selectedShelves.size,
                     isAllSelected = selectedShelves.isNotEmpty() && (selectedShelves.size == selectableShelvesCount),
@@ -468,23 +470,23 @@ private fun LibraryTopBar(
             }
         },
     ) {
-            LibrarySearchTopBar(
-                searchQuery = searchQuery,
-                searchCategory = searchCategory,
-                searchResults = searchResults,
-                onSearchQueryChange = onSearchQueryChange,
-                onSearchCategoryChange = onSearchCategoryChange,
-                onOpenDrawerClick = onOpenDrawerClick,
-                onFilterClick = onFilterClick,
-                onNavigateToReader = onNavigateToReader,
-                onNavigateToShelf = onNavigateToShelf,
-                onNavigateToAuthor = onNavigateToAuthor,
-                onNavigateToTag = onNavigateToTag,
-                onAuthorsHeaderClick = onAuthorsHeaderClick,
-                onTagsHeaderClick = onTagsHeaderClick,
-                scrollBehavior = scrollBehavior,
-            )
-        }
+        LibrarySearchTopBar(
+            searchQuery = searchQuery,
+            searchCategory = searchCategory,
+            searchResults = searchResults,
+            onSearchQueryChange = onSearchQueryChange,
+            onSearchCategoryChange = onSearchCategoryChange,
+            onOpenDrawerClick = onOpenDrawerClick,
+            onFilterClick = onFilterClick,
+            onNavigateToReader = onNavigateToReader,
+            onNavigateToShelf = onNavigateToShelf,
+            onNavigateToAuthor = onNavigateToAuthor,
+            onNavigateToTag = onNavigateToTag,
+            onAuthorsHeaderClick = onAuthorsHeaderClick,
+            onTagsHeaderClick = onTagsHeaderClick,
+            scrollBehavior = scrollBehavior,
+        )
+    }
 }
 
 @Composable

@@ -26,7 +26,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
@@ -37,6 +36,7 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -398,7 +398,8 @@ private fun ShelfDetailTopBar(
     modifier: Modifier = Modifier,
 ) {
     val showMarkAsRead = remember(allBooks, selectedBooks) {
-        allBooks.filter { (itId3) -> itId3 in selectedBooks }.any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itIsRead) -> !itIsRead }
+        allBooks.filter { (itId3) -> itId3 in selectedBooks }
+            .any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itIsRead) -> !itIsRead }
     }
 
     MultiSelectTopBarTransition(
@@ -418,28 +419,28 @@ private fun ShelfDetailTopBar(
             )
         },
     ) {
-            ShelfDetailDefaultTopAppBar(
-                shelfId = shelfId,
-                displayTitle = displayTitle,
-                displayCount = displayCount,
-                isReordering = isReordering,
-                isRenaming = isRenaming,
-                renameName = renameName,
-                scrollBehavior = scrollBehavior,
-                onNavigateBack = onNavigateBack,
-                onRenameNameChange = onRenameNameChange,
-                onCancelRename = onCancelRename,
-                onSaveRename = onSaveRename,
-                onStartReordering = onStartReordering,
-                onCancelReorder = onCancelReorder,
-                onSaveReorder = onSaveReorder,
-                onShowFilterSheet = onShowFilterSheet,
-                onRenameClick = onStartRename,
-                onDeleteClick = onShowDeleteDialog,
-                onEnterMultiSelect = onEnterMultiSelect,
-                modifier = modifier,
-            )
-        }
+        ShelfDetailDefaultTopAppBar(
+            shelfId = shelfId,
+            displayTitle = displayTitle,
+            displayCount = displayCount,
+            isReordering = isReordering,
+            isRenaming = isRenaming,
+            renameName = renameName,
+            scrollBehavior = scrollBehavior,
+            onNavigateBack = onNavigateBack,
+            onRenameNameChange = onRenameNameChange,
+            onCancelRename = onCancelRename,
+            onSaveRename = onSaveRename,
+            onStartReordering = onStartReordering,
+            onCancelReorder = onCancelReorder,
+            onSaveReorder = onSaveReorder,
+            onShowFilterSheet = onShowFilterSheet,
+            onRenameClick = onStartRename,
+            onDeleteClick = onShowDeleteDialog,
+            onEnterMultiSelect = onEnterMultiSelect,
+            modifier = modifier,
+        )
+    }
 }
 
 @Composable
@@ -802,20 +803,20 @@ private fun ShelfDetailBookListContent(
                                         onLongClick = { onBookLongClick(item.id) },
                                         isList = true,
                                     ) {
-                                            Box(
-                                                modifier = Modifier.height(100.dp),
-                                                contentAlignment = Alignment.Center,
-                                            ) {
-                                                Icon(
-                                                    imageVector = MaterialSymbols.Outlined.Drag_handle,
-                                                    contentDescription = stringResource(R.string.action_sort),
-                                                    modifier = Modifier.draggableHandle(
-                                                        onDragStarted = {},
-                                                        onDragStopped = {},
-                                                    ),
-                                                )
-                                            }
+                                        Box(
+                                            modifier = Modifier.height(100.dp),
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            Icon(
+                                                imageVector = MaterialSymbols.Outlined.Drag_handle,
+                                                contentDescription = stringResource(R.string.action_sort),
+                                                modifier = Modifier.draggableHandle(
+                                                    onDragStarted = {},
+                                                    onDragStopped = {},
+                                                ),
+                                            )
                                         }
+                                    }
                                 }
                             }
                         }

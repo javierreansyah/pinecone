@@ -43,12 +43,24 @@ class ReaderNotesViewModel(
     val clearSelectionEvent: SharedFlow<Unit> = _clearSelectionEvent.asSharedFlow()
 
     private val _sortOption = MutableStateFlow(SortOption.BOOK_ORDER_ASC)
+    private val renditionKey = MutableStateFlow("original")
+    fun setRendition(key: String) {
+        renditionKey.value = key
+        _selectionState.value = SelectionState()
+    }
+
     val sortOption: StateFlow<SortOption> = _sortOption.asStateFlow()
 
-    val bookmarks: StateFlow<List<BookmarkEntity>> = repository.getBookmarks(bookId)
+    val bookmarks: StateFlow<List<BookmarkEntity>> = combine(
+        repository.getBookmarks(bookId),
+        renditionKey
+    ) { items, key -> items.filter { it.renditionKey == key } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val allNotesAndHighlights: StateFlow<List<NoteEntity>> = repository.getNotes(bookId)
+    val allNotesAndHighlights: StateFlow<List<NoteEntity>> = combine(
+        repository.getNotes(bookId),
+        renditionKey
+    ) { items, key -> items.filter { it.renditionKey == key } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val notes: StateFlow<List<NoteEntity>> = allNotesAndHighlights
@@ -60,47 +72,49 @@ class ReaderNotesViewModel(
         _tableOfContents.value = toc
     }
 
-    val sortedBookmarks: StateFlow<List<BookmarkEntity>> = combine(bookmarks, _sortOption, _tableOfContents) { bms, sort, toc ->
-        bms.asSequence().map { bookmark ->
-            val locator = try {
-                Locator.fromJSON(JSONObject(bookmark.locatorJson))
-            } catch (_: Exception) {
-                null
-            }
-            bookmark to locator
-        }.sortedWith { (b1, l1), (b2, l2) ->
-            when (sort) {
-                SortOption.CREATION_DATE_ASC -> b1.createdAt.compareTo(b2.createdAt)
-                SortOption.CREATION_DATE_DESC -> b2.createdAt.compareTo(b1.createdAt)
-                SortOption.BOOK_ORDER_ASC -> compareLocatorsWithFallback(l1, l2, toc)
-                    ?: b1.createdAt.compareTo(b2.createdAt)
+    val sortedBookmarks: StateFlow<List<BookmarkEntity>> =
+        combine(bookmarks, _sortOption, _tableOfContents) { bms, sort, toc ->
+            bms.asSequence().map { bookmark ->
+                val locator = try {
+                    Locator.fromJSON(JSONObject(bookmark.locatorJson))
+                } catch (_: Exception) {
+                    null
+                }
+                bookmark to locator
+            }.sortedWith { (b1, l1), (b2, l2) ->
+                when (sort) {
+                    SortOption.CREATION_DATE_ASC -> b1.createdAt.compareTo(b2.createdAt)
+                    SortOption.CREATION_DATE_DESC -> b2.createdAt.compareTo(b1.createdAt)
+                    SortOption.BOOK_ORDER_ASC -> compareLocatorsWithFallback(l1, l2, toc)
+                        ?: b1.createdAt.compareTo(b2.createdAt)
 
-                SortOption.BOOK_ORDER_DESC -> compareLocatorsWithFallback(l2, l1, toc)
-                    ?: b2.createdAt.compareTo(b1.createdAt)
-            }
-        }.map { (itFirst) -> itFirst }.toList()
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+                    SortOption.BOOK_ORDER_DESC -> compareLocatorsWithFallback(l2, l1, toc)
+                        ?: b2.createdAt.compareTo(b1.createdAt)
+                }
+            }.map { (itFirst) -> itFirst }.toList()
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val sortedNotes: StateFlow<List<NoteEntity>> = combine(notes, _sortOption, _tableOfContents) { nts, sort, toc ->
-        nts.asSequence().map { note ->
-            val locator = try {
-                Locator.fromJSON(JSONObject(note.locatorJson))
-            } catch (_: Exception) {
-                null
-            }
-            note to locator
-        }.sortedWith { (n1, l1), (n2, l2) ->
-            when (sort) {
-                SortOption.CREATION_DATE_ASC -> n1.createdAt.compareTo(n2.createdAt)
-                SortOption.CREATION_DATE_DESC -> n2.createdAt.compareTo(n1.createdAt)
-                SortOption.BOOK_ORDER_ASC -> compareLocatorsWithFallback(l1, l2, toc)
-                    ?: n1.createdAt.compareTo(n2.createdAt)
+    val sortedNotes: StateFlow<List<NoteEntity>> =
+        combine(notes, _sortOption, _tableOfContents) { nts, sort, toc ->
+            nts.asSequence().map { note ->
+                val locator = try {
+                    Locator.fromJSON(JSONObject(note.locatorJson))
+                } catch (_: Exception) {
+                    null
+                }
+                note to locator
+            }.sortedWith { (n1, l1), (n2, l2) ->
+                when (sort) {
+                    SortOption.CREATION_DATE_ASC -> n1.createdAt.compareTo(n2.createdAt)
+                    SortOption.CREATION_DATE_DESC -> n2.createdAt.compareTo(n1.createdAt)
+                    SortOption.BOOK_ORDER_ASC -> compareLocatorsWithFallback(l1, l2, toc)
+                        ?: n1.createdAt.compareTo(n2.createdAt)
 
-                SortOption.BOOK_ORDER_DESC -> compareLocatorsWithFallback(l2, l1, toc)
-                    ?: n2.createdAt.compareTo(n1.createdAt)
-            }
-        }.map { (itFirst2) -> itFirst2 }.toList()
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+                    SortOption.BOOK_ORDER_DESC -> compareLocatorsWithFallback(l2, l1, toc)
+                        ?: n2.createdAt.compareTo(n1.createdAt)
+                }
+            }.map { (itFirst2) -> itFirst2 }.toList()
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun setSortOption(option: SortOption) {
         _sortOption.value = option
@@ -126,9 +140,13 @@ class ReaderNotesViewModel(
         val href2 = loc2.href.toString().substringBefore("#")
         if (href1 != href2) {
             val idx1 =
-                tableOfContents.indexOfFirst { (itHref) -> itHref.toString().substringBefore("#") == href1 }
+                tableOfContents.indexOfFirst { (itHref) ->
+                    itHref.toString().substringBefore("#") == href1
+                }
             val idx2 =
-                tableOfContents.indexOfFirst { (itHref2) -> itHref2.toString().substringBefore("#") == href2 }
+                tableOfContents.indexOfFirst { (itHref2) ->
+                    itHref2.toString().substringBefore("#") == href2
+                }
             if ((idx1 != -1) && (idx2 != -1)) return idx1.compareTo(idx2)
             if (idx1 != -1) return -1
             if (idx2 != -1) return 1
@@ -159,7 +177,7 @@ class ReaderNotesViewModel(
             if (existing != null) {
                 repository.removeBookmark(existing.id)
             } else {
-                repository.addBookmark(bookId, locator, chapterTitle)
+                repository.addBookmark(bookId, locator, chapterTitle, renditionKey.value)
             }
         }
     }
@@ -177,7 +195,7 @@ class ReaderNotesViewModel(
         chapterTitle: String?,
     ) {
         viewModelScope.launch {
-            repository.addNote(bookId, locator, noteText, color, chapterTitle)
+            repository.addNote(bookId, locator, noteText, color, chapterTitle, renditionKey.value)
         }
     }
 
@@ -187,7 +205,7 @@ class ReaderNotesViewModel(
         chapterTitle: String?,
     ) {
         viewModelScope.launch {
-            repository.addNote(bookId, locator, "", color, chapterTitle)
+            repository.addNote(bookId, locator, "", color, chapterTitle, renditionKey.value)
         }
     }
 
@@ -200,6 +218,7 @@ class ReaderNotesViewModel(
                     noteText = note.noteText,
                     color = note.color,
                     chapterTitle = note.chapterTitle,
+                    renditionKey = note.renditionKey,
                 )
             } else {
                 repository.updateNote(note)
@@ -233,6 +252,7 @@ class ReaderNotesViewModel(
             chapterTitle = chapterTitle,
             noteText = "",
             color = "#40FFEB3B".toColorInt(),
+            renditionKey = renditionKey.value,
         )
         editNote(newNote)
     }

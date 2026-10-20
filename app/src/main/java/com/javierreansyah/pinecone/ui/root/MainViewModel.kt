@@ -116,20 +116,32 @@ class MainViewModel(
             val app = getApplication<Application>()
             _toastMessage.emit(app.getString(R.string.nav_scanning_folder))
             val root = DocumentFile.fromTreeUri(app, uri)
-            val epubFiles = mutableListOf<DocumentFile>()
-            root?.let { collectEpubFiles(it, epubFiles) }
-            if (epubFiles.isEmpty()) {
+            val publicationFiles =
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    mutableListOf<DocumentFile>().also { files ->
+                        root?.let {
+                            collectPublicationFiles(
+                                it,
+                                files
+                            )
+                        }
+                    }
+                }
+            if (publicationFiles.isEmpty()) {
                 _toastMessage.emit(app.getString(R.string.import_no_books_found))
                 return@launch
             }
             var successCount = 0
             val failedFiles = mutableListOf<String>()
-            epubFiles.forEach { file ->
-                val result = libraryRepository.importBook(file.uri)
+            publicationFiles.forEach { file ->
+                val result =
+                    if (file.isDirectory) libraryRepository.importPublicationFolder(file) else libraryRepository.importBook(
+                        file.uri
+                    )
                 if (result != null) {
                     successCount++
                 } else {
-                    failedFiles.add(file.name ?: "Unknown")
+                    failedFiles.add(file.name ?: app.getString(R.string.book_unknown))
                 }
             }
             if (failedFiles.isEmpty()) {
@@ -137,22 +149,25 @@ class MainViewModel(
             } else {
                 _importErrorReport.value = ImportErrorReport(
                     failedFiles = failedFiles,
-                    totalCount = epubFiles.size,
+                    totalCount = publicationFiles.size,
                     successCount = successCount,
                 )
             }
         }
     }
 
-    private fun collectEpubFiles(file: DocumentFile, result: MutableList<DocumentFile>) {
+    private fun collectPublicationFiles(file: DocumentFile, result: MutableList<DocumentFile>) {
         if (file.isDirectory) {
+            if (file.findFile("manifest.json") != null) {
+                result.add(file)
+                return
+            }
             file.listFiles().forEach { child ->
-                collectEpubFiles(child, result)
+                collectPublicationFiles(child, result)
             }
         } else {
             val name = file.name?.lowercase() ?: ""
-            val supportedExtensions = listOf(".epub")
-            if (supportedExtensions.any { name.endsWith(it) }) {
+            if (name.substringAfterLast('.') in com.javierreansyah.pinecone.data.publication.PublicationFormats.extensions) {
                 result.add(file)
             }
         }
@@ -201,4 +216,3 @@ data class ImportErrorReport(
     val totalCount: Int,
     val successCount: Int,
 )
-

@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "90f1a957300ab60416e527df8b49b1bc",
+    "identityHash": "af0f3ffd7f606934a9b2cf5037de1e15",
     "entities": [
       {
         "tableName": "books",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `coverPath` TEXT, `filePath` TEXT NOT NULL, `mediaType` TEXT, `identifier` TEXT, `language` TEXT, `progression` REAL NOT NULL, `lastLocatorJson` TEXT, `addedDate` INTEGER NOT NULL, `lastReadDate` INTEGER, `isArchived` INTEGER NOT NULL, `description` TEXT, `publisher` TEXT, `published` TEXT, `isRead` INTEGER NOT NULL, `furthestProgression` REAL NOT NULL, `furthestLocatorJson` TEXT, `jumpOriginLocatorJson` TEXT, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `coverPath` TEXT, `filePath` TEXT NOT NULL, `mediaType` TEXT, `identifier` TEXT, `language` TEXT, `progression` REAL NOT NULL, `lastLocatorJson` TEXT, `addedDate` INTEGER NOT NULL, `lastReadDate` INTEGER, `isArchived` INTEGER NOT NULL, `description` TEXT, `publisher` TEXT, `published` TEXT, `isRead` INTEGER NOT NULL, `furthestProgression` REAL NOT NULL, `furthestLocatorJson` TEXT, `jumpOriginLocatorJson` TEXT, `activeRendition` TEXT NOT NULL, `metadataJson` TEXT NOT NULL, `sourceMetadataJson` TEXT NOT NULL, `originalFilename` TEXT NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -110,6 +110,30 @@
             "fieldPath": "jumpOriginLocatorJson",
             "columnName": "jumpOriginLocatorJson",
             "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "activeRendition",
+            "columnName": "activeRendition",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "metadataJson",
+            "columnName": "metadataJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceMetadataJson",
+            "columnName": "sourceMetadataJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "originalFilename",
+            "columnName": "originalFilename",
+            "affinity": "TEXT",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -121,7 +145,7 @@
       },
       {
         "tableName": "bookmarks",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `bookId` TEXT NOT NULL, `locatorJson` TEXT NOT NULL, `chapterTitle` TEXT, `createdAt` INTEGER NOT NULL, FOREIGN KEY(`bookId`) REFERENCES `books`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `bookId` TEXT NOT NULL, `locatorJson` TEXT NOT NULL, `chapterTitle` TEXT, `createdAt` INTEGER NOT NULL, `renditionKey` TEXT NOT NULL, FOREIGN KEY(`bookId`, `renditionKey`) REFERENCES `publication_renditions`(`bookId`, `key`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`bookId`) REFERENCES `books`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -151,6 +175,12 @@
             "columnName": "createdAt",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "renditionKey",
+            "columnName": "renditionKey",
+            "affinity": "TEXT",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -168,9 +198,32 @@
             ],
             "orders": [],
             "createSql": "CREATE INDEX IF NOT EXISTS `index_bookmarks_bookId` ON `${TABLE_NAME}` (`bookId`)"
+          },
+          {
+            "name": "index_bookmarks_bookId_renditionKey",
+            "unique": false,
+            "columnNames": [
+              "bookId",
+              "renditionKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_bookmarks_bookId_renditionKey` ON `${TABLE_NAME}` (`bookId`, `renditionKey`)"
           }
         ],
         "foreignKeys": [
+          {
+            "table": "publication_renditions",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "bookId",
+              "renditionKey"
+            ],
+            "referencedColumns": [
+              "bookId",
+              "key"
+            ]
+          },
           {
             "table": "books",
             "onDelete": "CASCADE",
@@ -327,7 +380,7 @@
       },
       {
         "tableName": "notes",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `bookId` TEXT NOT NULL, `locatorJson` TEXT NOT NULL, `chapterTitle` TEXT, `noteText` TEXT NOT NULL, `color` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, FOREIGN KEY(`bookId`) REFERENCES `books`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `bookId` TEXT NOT NULL, `locatorJson` TEXT NOT NULL, `chapterTitle` TEXT, `noteText` TEXT NOT NULL, `color` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `renditionKey` TEXT NOT NULL, FOREIGN KEY(`bookId`, `renditionKey`) REFERENCES `publication_renditions`(`bookId`, `key`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`bookId`) REFERENCES `books`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -369,6 +422,12 @@
             "columnName": "createdAt",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "renditionKey",
+            "columnName": "renditionKey",
+            "affinity": "TEXT",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -386,9 +445,32 @@
             ],
             "orders": [],
             "createSql": "CREATE INDEX IF NOT EXISTS `index_notes_bookId` ON `${TABLE_NAME}` (`bookId`)"
+          },
+          {
+            "name": "index_notes_bookId_renditionKey",
+            "unique": false,
+            "columnNames": [
+              "bookId",
+              "renditionKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_notes_bookId_renditionKey` ON `${TABLE_NAME}` (`bookId`, `renditionKey`)"
           }
         ],
         "foreignKeys": [
+          {
+            "table": "publication_renditions",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "bookId",
+              "renditionKey"
+            ],
+            "referencedColumns": [
+              "bookId",
+              "key"
+            ]
+          },
           {
             "table": "books",
             "onDelete": "CASCADE",
@@ -743,11 +825,300 @@
             "id"
           ]
         }
+      },
+      {
+        "tableName": "publication_renditions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`bookId` TEXT NOT NULL, `key` TEXT NOT NULL, `filePath` TEXT NOT NULL, `mediaType` TEXT NOT NULL, `profile` TEXT NOT NULL, `sha256` TEXT NOT NULL, `converterVersion` INTEGER, `sourceMapJson` TEXT, `lastLocatorJson` TEXT, `progression` REAL NOT NULL, `furthestLocatorJson` TEXT, `furthestProgression` REAL NOT NULL, `jumpOriginLocatorJson` TEXT, `preferencesJson` TEXT NOT NULL, PRIMARY KEY(`bookId`, `key`), FOREIGN KEY(`bookId`) REFERENCES `books`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "bookId",
+            "columnName": "bookId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "key",
+            "columnName": "key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "filePath",
+            "columnName": "filePath",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mediaType",
+            "columnName": "mediaType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profile",
+            "columnName": "profile",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sha256",
+            "columnName": "sha256",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "converterVersion",
+            "columnName": "converterVersion",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "sourceMapJson",
+            "columnName": "sourceMapJson",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastLocatorJson",
+            "columnName": "lastLocatorJson",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "progression",
+            "columnName": "progression",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "furthestLocatorJson",
+            "columnName": "furthestLocatorJson",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "furthestProgression",
+            "columnName": "furthestProgression",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "jumpOriginLocatorJson",
+            "columnName": "jumpOriginLocatorJson",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "preferencesJson",
+            "columnName": "preferencesJson",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "bookId",
+            "key"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_publication_renditions_bookId",
+            "unique": false,
+            "columnNames": [
+              "bookId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_publication_renditions_bookId` ON `${TABLE_NAME}` (`bookId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "books",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "bookId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "publication_credits",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`bookId` TEXT NOT NULL, `role` TEXT NOT NULL, `position` INTEGER NOT NULL, `name` TEXT NOT NULL, `identifier` TEXT, `metadataJson` TEXT NOT NULL, PRIMARY KEY(`bookId`, `role`, `position`), FOREIGN KEY(`bookId`) REFERENCES `books`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "bookId",
+            "columnName": "bookId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "role",
+            "columnName": "role",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "identifier",
+            "columnName": "identifier",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "metadataJson",
+            "columnName": "metadataJson",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "bookId",
+            "role",
+            "position"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_publication_credits_bookId",
+            "unique": false,
+            "columnNames": [
+              "bookId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_publication_credits_bookId` ON `${TABLE_NAME}` (`bookId`)"
+          },
+          {
+            "name": "index_publication_credits_name",
+            "unique": false,
+            "columnNames": [
+              "name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_publication_credits_name` ON `${TABLE_NAME}` (`name`)"
+          },
+          {
+            "name": "index_publication_credits_role",
+            "unique": false,
+            "columnNames": [
+              "role"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_publication_credits_role` ON `${TABLE_NAME}` (`role`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "books",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "bookId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "publication_collections",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`bookId` TEXT NOT NULL, `kind` TEXT NOT NULL, `position` INTEGER NOT NULL, `name` TEXT NOT NULL, `number` TEXT, `metadataJson` TEXT NOT NULL, PRIMARY KEY(`bookId`, `kind`, `position`), FOREIGN KEY(`bookId`) REFERENCES `books`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "bookId",
+            "columnName": "bookId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kind",
+            "columnName": "kind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "number",
+            "columnName": "number",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "metadataJson",
+            "columnName": "metadataJson",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "bookId",
+            "kind",
+            "position"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_publication_collections_bookId",
+            "unique": false,
+            "columnNames": [
+              "bookId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_publication_collections_bookId` ON `${TABLE_NAME}` (`bookId`)"
+          },
+          {
+            "name": "index_publication_collections_name",
+            "unique": false,
+            "columnNames": [
+              "name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_publication_collections_name` ON `${TABLE_NAME}` (`name`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "books",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "bookId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '90f1a957300ab60416e527df8b49b1bc')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'af0f3ffd7f606934a9b2cf5037de1e15')"
     ]
   }
 }

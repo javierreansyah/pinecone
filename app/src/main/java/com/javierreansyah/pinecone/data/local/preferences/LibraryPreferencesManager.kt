@@ -100,9 +100,12 @@ class LibraryPreferencesManager(context: Context) {
             putString("${fullKey}_layout", prefsObj.layoutMode.name)
             putString("${fullKey}_sort", prefsObj.sortType.name)
             putBoolean("${fullKey}_asc", prefsObj.isAscending)
-            putStringSet("${fullKey}_status", prefsObj.selectedStatus.mapTo(mutableSetOf()) { it.name })
             putStringSet(
-                "${fullKey}_shelf_filter", prefsObj.selectedShelfFilter.mapTo(mutableSetOf()) { it.name },
+                "${fullKey}_status",
+                prefsObj.selectedStatus.mapTo(mutableSetOf()) { it.name })
+            putStringSet(
+                "${fullKey}_shelf_filter",
+                prefsObj.selectedShelfFilter.mapTo(mutableSetOf()) { it.name },
             )
             apply()
         }

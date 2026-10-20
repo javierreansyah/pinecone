@@ -279,7 +279,7 @@
     <string name="settings_restore_defaults">Restore Defaults</string>
     <string name="settings_restore_backup_warning">Are you sure you want to restore? This will overwrite your current library and settings.</string>
     <string name="settings_restore_backup_sheet_title">Select Backup to Restore</string>
-    <item type="string" name="settings_backup_auto_label">@string/reader_settings_theme_auto</item>
+    <item name="settings_backup_auto_label" type="string">@string/reader_settings_theme_auto</item>
     <string name="settings_backup_manual_label">Manual</string>
     <string name="settings_no_backups_found">No backups found in the selected folder.</string>
     <string name="settings_restore_defaults_warning">Are you sure you want to restore settings to their default values? This will reset your theme, color palette, language, and auto-backup settings.\n\nReader settings (like font size, brightness, etc.) will not be changed.</string>

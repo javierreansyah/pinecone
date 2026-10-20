@@ -8,9 +8,16 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.data.local.preferences.FormatPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
+import com.javierreansyah.pinecone.data.local.preferences.withReadingPreferencesFrom
+import com.javierreansyah.pinecone.data.publication.PublicationFormats
+import com.javierreansyah.pinecone.data.publication.ReaderProfile
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
+import com.javierreansyah.pinecone.reader.audio.AudioReadingSession
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -48,6 +55,13 @@ data class BookState(
     val totalPages: Int? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
+    val sourceIsPdf: Boolean = false,
+    val readMode: Boolean = false,
+    val converting: Boolean = false,
+    val conversionPage: Int = 0,
+    val conversionTotal: Int = 0,
+    val conversionError: String? = null,
+    val coverPath: String? = null,
 )
 
 data class ControlsState(
@@ -72,12 +86,23 @@ class ReaderViewModel(
 
     private val _publication = MutableStateFlow<Publication?>(null)
     val publication: StateFlow<Publication?> = _publication.asStateFlow()
+    val profile: MutableStateFlow<ReaderProfile> = MutableStateFlow(ReaderProfile.EPUB)
+    val activeRendition: MutableStateFlow<String> = MutableStateFlow("original")
+    val audioSession: AudioReadingSession get() = (application as PineconeApplication).audioSession
+    private var conversionJob: Job? = null
+    private var audioLocatorJob: Job? = null
 
     private val _positions = MutableStateFlow<List<Locator>>(emptyList())
     val positions: StateFlow<List<Locator>> = _positions.asStateFlow()
 
     var initialLocator: Locator? = null
         private set
+    private val retiredPublications = mutableListOf<Publication>()
+
+    fun onNavigatorDetached() {
+        retiredPublications.forEach(Publication::close)
+        retiredPublications.clear()
+    }
 
     private val _bookState = MutableStateFlow(BookState())
     val bookState: StateFlow<BookState> = _bookState.asStateFlow()
@@ -104,10 +129,18 @@ class ReaderViewModel(
         }
         .stateIn(viewModelScope, WhileSubscribed(5000), null)
 
-    val settingsFlow: Flow<ReaderSettings> = readerPreferences.readerSettings
+    private val readingOverrides = MutableStateFlow<ReaderSettings?>(null)
+    val useBookSettings: StateFlow<Boolean> =
+        readingOverrides.map { it != null }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val settingsFlow: Flow<ReaderSettings> =
+        combine(readerPreferences.readerSettings, readingOverrides) { global, local ->
+            if (local == null) global else global.withReadingPreferencesFrom(local)
+        }
+    val formatSettings: StateFlow<FormatPreferences> = settingsFlow.map { it.formatPreferences }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, FormatPreferences())
 
     val brightness: StateFlow<Float> =
-        readerPreferences.readerSettings.map { (_, _, _, _, itBrightness, itAutoBrightness) -> if (itAutoBrightness) -1.0f else itBrightness }
+        settingsFlow.map { if (it.autoBrightness) -1.0f else it.brightness }
             .stateIn(viewModelScope, SharingStarted.Eagerly, -1.0f)
 
     val systemDarkThemeFlow: MutableStateFlow<Boolean> = MutableStateFlow(initialSystemDark)
@@ -115,7 +148,8 @@ class ReaderViewModel(
     val themeColors: StateFlow<PineconeThemeColors> = combine(
         settingsFlow, systemDarkThemeFlow,
     ) { (settingsThemeMode, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, settingsPineconeThemePreset, settingsCustomBackgroundColor, settingsCustomTextColor, settingsCustomThemes), isSystemDark ->
-        val customTheme = settingsCustomThemes.find { (itName) -> itName == settingsPineconeThemePreset }
+        val customTheme =
+            settingsCustomThemes.find { (itName) -> itName == settingsPineconeThemePreset }
         val uiThemeSetting = customTheme?.uiTheme ?: "Setting"
         val effectiveThemeMode =
             if ((uiThemeSetting == "Setting") || (uiThemeSetting == "setting")) settingsThemeMode else uiThemeSetting
@@ -172,7 +206,7 @@ class ReaderViewModel(
     )
 
     val epubPreferences: StateFlow<EpubPreferences> = combine(
-        readerPreferences.readerSettings, systemDarkThemeFlow,
+        settingsFlow, systemDarkThemeFlow,
     ) { settings, isDark ->
         settings.toEpubPreferences(isDark)
     }.stateIn(
@@ -182,7 +216,20 @@ class ReaderViewModel(
     )
 
     val tableOfContents: List<Link>
-        get() = _publication.value?.tableOfContents ?: emptyList()
+        get() = _publication.value?.let { publication ->
+            publication.tableOfContents.ifEmpty {
+                if (profile.value == ReaderProfile.AUDIO || profile.value == ReaderProfile.IMAGE) {
+                    publication.readingOrder.mapIndexed { index, link ->
+                        link.copy(
+                            title = link.title ?: application.getString(
+                                if (profile.value == ReaderProfile.AUDIO) R.string.reader_track_label else R.string.reader_page_label,
+                                index + 1
+                            )
+                        )
+                    }
+                } else emptyList()
+            }
+        } ?: emptyList()
 
     init {
         viewModelScope.launch {
@@ -212,28 +259,48 @@ class ReaderViewModel(
                     return@launch
                 }
 
+                activeRendition.value = book.book.activeRendition
+                loadReadingOverrides(book.book.activeRendition)
+
                 val pub = repository.openPublication(book)
                 if (pub == null) {
-                    _bookState.update { it.copy(isLoading = false, error = "Could not open book") }
+                    _bookState.update {
+                        it.copy(
+                            isLoading = false,
+                            error = application.getString(R.string.reader_open_failed)
+                        )
+                    }
                     return@launch
                 }
 
                 _publication.value = pub
+                profile.value = PublicationFormats.profile(pub)
 
                 viewModelScope.launch {
-                    val p = pub.positions()
+                    val p =
+                        if (profile.value == ReaderProfile.AUDIO) emptyList() else pub.positions()
                     _positions.value = p
                     _currentLocator.value?.let { onLocatorChanged(it) }
                 }
 
+                val sourceIsPdf =
+                    repository.rendition(bookId, "original")?.profile == ReaderProfile.PDF.name
                 _bookState.update {
                     it.copy(
-                        isLoading = false, title = pub.metadata.title ?: book.book.title,
+                        isLoading = false, title = book.book.title,
+                        sourceIsPdf = sourceIsPdf,
+                        readMode = book.book.activeRendition == "read-mode",
+                        coverPath = book.book.coverPath,
                     )
                 }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (e: Exception) {
                 _bookState.update {
-                    it.copy(isLoading = false, error = "Error: ${e.message}")
+                    it.copy(
+                        isLoading = false,
+                        error = application.getString(R.string.reader_open_failed)
+                    )
                 }
             }
         }
@@ -332,10 +399,135 @@ class ReaderViewModel(
         ) else ""
     }
 
-    fun savePosition(locator: Locator) {
+    fun savePosition(locator: Locator, renditionKey: String = activeRendition.value) {
         viewModelScope.launch {
-            repository.saveReadingPosition(bookId, locator)
+            repository.saveReadingPosition(bookId, locator, renditionKey)
         }
+    }
+
+    fun togglePdfReadMode() {
+        if (!_bookState.value.sourceIsPdf || conversionJob?.isActive == true) return
+        conversionJob = viewModelScope.launch {
+            val old = _publication.value ?: return@launch
+            val source = _currentLocator.value
+            val destination = if (activeRendition.value == "original") "read-mode" else "original"
+            _bookState.update { it.copy(converting = true, conversionError = null) }
+            var next: Publication? = null
+            try {
+                source?.let { repository.saveReadingPosition(bookId, it, activeRendition.value) }
+                if (destination == "read-mode") repository.createReadMode(bookId) { page, total ->
+                    _bookState.update { it.copy(conversionPage = page, conversionTotal = total) }
+                }
+                repository.activateRendition(bookId, destination)
+                val item = requireNotNull(repository.getBook(bookId))
+                next = requireNotNull(repository.openPublication(item))
+                val target = requireNotNull(repository.rendition(bookId, destination))
+                val sourceMap = repository.rendition(bookId, "read-mode")?.sourceMapJson?.let {
+                    kotlinx.serialization.json.Json.decodeFromString<List<com.javierreansyah.pinecone.data.publication.conversion.SourcePage>>(
+                        it
+                    )
+                }.orEmpty()
+
+                fun mappedPage(locator: Locator): Int =
+                    if (locator.mediaType.toString() == "application/pdf") {
+                        val page = sourcePage(locator)
+                        sourceMap.firstOrNull { it.sourceHref == locator.href.toString() && it.sourcePage == page }?.page
+                            ?: page
+                    } else sourcePage(locator)
+
+                val sourcePage = source?.let(::mappedPage) ?: 1
+                val stored = target.lastLocatorJson?.let { fromJSON(JSONObject(it)) }
+                val nextLocator = stored?.takeIf { mappedPage(it) == sourcePage }
+                    ?: if (destination == "read-mode") {
+                        next.readingOrder.find {
+                            it.href.toString().endsWith("text/page-$sourcePage.xhtml")
+                        }?.let(next::locatorFromLink)
+                    } else {
+                        val mapping = sourceMap.firstOrNull { it.page == sourcePage }
+                        val link =
+                            next.readingOrder.find { it.href.toString() == mapping?.sourceHref }
+                                ?: next.readingOrder.firstOrNull()
+                        link?.let(next::locatorFromLink)?.copyWithLocations(
+                            fragments = listOf("page=${mapping?.sourcePage ?: sourcePage}"),
+                            position = sourcePage,
+                        )
+                    }
+                val nextPositions = next.positions()
+                loadReadingOverrides(destination)
+                initialLocator = nextLocator
+                activeRendition.value = destination
+                profile.value = PublicationFormats.profile(next)
+                _currentLocator.value = null
+                _positions.value = nextPositions
+                retiredPublications += old
+                _publication.value = next
+                next = null
+                _bookState.update {
+                    it.copy(
+                        readMode = destination == "read-mode",
+                        converting = false
+                    )
+                }
+            } catch (cancelled: CancellationException) {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                    repository.activateRendition(
+                        bookId,
+                        activeRendition.value
+                    )
+                }
+                throw cancelled
+            } catch (failure: Exception) {
+                repository.activateRendition(bookId, activeRendition.value)
+                timber.log.Timber.e(failure, "PDF conversion failed")
+                _bookState.update { it.copy(conversionError = application.getString(R.string.reader_conversion_failed)) }
+            } finally {
+                next?.close()
+                _bookState.update { it.copy(converting = false) }
+            }
+        }
+    }
+
+    private fun sourcePage(locator: Locator): Int =
+        Regex("page-(\\d+)\\.xhtml").find(locator.href.toString())?.groupValues?.get(1)
+            ?.toIntOrNull()
+            ?: locator.locations.fragments.firstNotNullOfOrNull {
+                it.removePrefix("page=").toIntOrNull()
+            }
+            ?: locator.locations.position ?: 1
+
+    fun cancelConversion() {
+        conversionJob?.cancel()
+    }
+
+    fun dismissConversionError() {
+        _bookState.update { it.copy(conversionError = null) }
+    }
+
+    fun startAudio() {
+        application.startService(
+            android.content.Intent(
+                application,
+                com.javierreansyah.pinecone.reader.audio.AudioPlaybackService::class.java
+            )
+                .putExtra("bookId", bookId)
+        )
+        _controlsState.update { it.copy(showControls = true) }
+        audioLocatorJob?.cancel()
+        audioLocatorJob = viewModelScope.launch {
+            audioSession.locator.collect { locator ->
+                if (locator != null && audioSession.state.value.bookId == bookId) onLocatorChanged(
+                    locator
+                )
+            }
+        }
+    }
+
+    fun audioGo(locator: Locator) {
+        audioSession.go(locator)
+    }
+
+    fun audioGo(link: Link) {
+        audioSession.go(link)
     }
 
     fun recordJumpOrigin() {
@@ -393,11 +585,37 @@ class ReaderViewModel(
 
     fun updateSettings(settings: ReaderSettings) {
         viewModelScope.launch {
-            readerPreferences.updateAllSettings(settings)
+            if (readingOverrides.value != null) {
+                val local = ReaderSettings().withReadingPreferencesFrom(settings)
+                readingOverrides.value = local
+                repository.setReadingOverrides(
+                    bookId,
+                    activeRendition.value,
+                    kotlinx.serialization.json.Json.encodeToString(local)
+                )
+            } else readerPreferences.updateAllSettings(settings)
+        }
+    }
+
+    private suspend fun loadReadingOverrides(key: String) {
+        val encoded = repository.rendition(bookId, key)?.preferencesJson
+        readingOverrides.value = encoded?.takeUnless { it == "{}" }
+            ?.let { kotlinx.serialization.json.Json.decodeFromString<ReaderSettings>(it) }
+    }
+
+    fun setUseBookSettings(enabled: Boolean) {
+        viewModelScope.launch {
+            readingOverrides.value =
+                if (enabled) ReaderSettings().withReadingPreferencesFrom(settingsFlow.first()) else null
+            repository.setReadingOverrides(
+                bookId, activeRendition.value,
+                readingOverrides.value?.let { kotlinx.serialization.json.Json.encodeToString(it) }
+                    ?: "{}")
         }
     }
 
     private fun closeBook() {
+        onNavigatorDetached()
         _publication.value?.close()
         _publication.value = null
     }

@@ -7,11 +7,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -44,7 +44,8 @@ fun RenameFilterDialog(
 
     val filteredSuggestions = remember(text, suggestions) {
         if (text.isBlank()) emptyList()
-        else suggestions.asSequence().filter { it.contains(text, ignoreCase = true) && (it != text) }.take(5).toList()
+        else suggestions.asSequence()
+            .filter { it.contains(text, ignoreCase = true) && (it != text) }.take(5).toList()
     }
 
     LaunchedEffect(Unit) {

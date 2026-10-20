@@ -262,10 +262,10 @@ fun LibraryFilterBottomSheet(
                 selectedOptions = preferences.selectedStatus,
                 onOptionToggled = onStatusToggle,
             ) { status ->
-                    Text(
-                        stringResource(statusLabelRes(status)),
-                    )
-                }
+                Text(
+                    stringResource(statusLabelRes(status)),
+                )
+            }
         } else {
             MultiToggleGroupSection(
                 title = stringResource(R.string.action_filter),
@@ -273,12 +273,12 @@ fun LibraryFilterBottomSheet(
                 selectedOptions = preferences.selectedShelfFilter,
                 onOptionToggled = onShelfFilterToggle,
             ) { filter ->
-                    Text(
-                        if (filter == ShelfFilter.Shelves) stringResource(R.string.library_tab_shelves) else stringResource(
-                            R.string.library_label_unshelved,
-                        ),
-                    )
-                }
+                Text(
+                    if (filter == ShelfFilter.Shelves) stringResource(R.string.library_tab_shelves) else stringResource(
+                        R.string.library_label_unshelved,
+                    ),
+                )
+            }
         }
     }
 }
@@ -318,10 +318,10 @@ fun ShelfDetailFilterBottomSheet(
             selectedOptions = preferences.selectedStatus,
             onOptionToggled = onStatusToggle,
         ) { status ->
-                Text(
-                    stringResource(statusLabelRes(status)),
-                )
-            }
+            Text(
+                stringResource(statusLabelRes(status)),
+            )
+        }
     }
 }
 
@@ -360,10 +360,10 @@ fun FilterResultBottomSheet(
             selectedOptions = preferences.selectedStatus,
             onOptionToggled = onStatusToggle,
         ) { status ->
-                Text(
-                    stringResource(statusLabelRes(status)),
-                )
-            }
+            Text(
+                stringResource(statusLabelRes(status)),
+            )
+        }
     }
 }
 
@@ -383,10 +383,10 @@ fun FilterItemSortBottomSheet(
             isAscending = isAscending,
             onOptionSelected = onSortTypeChange,
         ) {
-                if (it == FilterItemSortType.Label) stringResource(R.string.library_sort_label) else stringResource(
-                    R.string.library_sort_size,
-                )
-            }
+            if (it == FilterItemSortType.Label) stringResource(R.string.library_sort_label) else stringResource(
+                R.string.library_sort_size,
+            )
+        }
     }
 }
 

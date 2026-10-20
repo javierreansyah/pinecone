@@ -13,6 +13,27 @@ fun generateVersionCode(): Int {
 
 val appVersionName: String = "1.0"
 
+abstract class PublicationLicenseAssetsTask : DefaultTask() {
+    @get:InputFiles
+    abstract val licenseFiles: ConfigurableFileCollection
+
+    @get:OutputDirectory
+    abstract val outputDirectory: DirectoryProperty
+
+    @TaskAction
+    fun generate() {
+        val directory = outputDirectory.get().asFile.apply { mkdirs() }
+        licenseFiles.files.forEach { it.copyTo(directory.resolve(it.name), overwrite = true) }
+    }
+}
+
+val publicationLicenseAssets: TaskProvider<PublicationLicenseAssetsTask> =
+    tasks.register<PublicationLicenseAssetsTask>("publicationLicenseAssets") {
+        description = ""
+        licenseFiles.from(rootProject.file("COPYING"), rootProject.file("LICENSE.md"))
+        outputDirectory.set(layout.buildDirectory.dir("generated/publicationLicenseAssets"))
+    }
+
 android {
     namespace = "com.javierreansyah.pinecone"
     compileSdk = 37
@@ -23,6 +44,7 @@ android {
         targetSdk = 37
         versionCode = generateVersionCode()
         versionName = appVersionName
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -83,9 +105,14 @@ androidComponents {
     beforeVariants { variant ->
         // Complete validation runs the shared JVM tests against every build type.
         (variant as com.android.build.api.variant.HasHostTestsBuilder)
-            .hostTests.getValue(com.android.build.api.variant.HostTestBuilder.UNIT_TEST_TYPE).enable = true
+            .hostTests.getValue(com.android.build.api.variant.HostTestBuilder.UNIT_TEST_TYPE).enable =
+            true
     }
     onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(
+            publicationLicenseAssets,
+            PublicationLicenseAssetsTask::outputDirectory
+        )
         val outputName = when (variant.name) {
             "release" -> "pinecone-v$appVersionName.apk"
             "debug" -> "pinecone-$appVersionName-debug.apk"
@@ -122,6 +149,11 @@ dependencies {
     implementation(libs.readium.shared)
     implementation(libs.readium.streamer)
     implementation(libs.readium.navigator)
+    implementation(libs.readium.audio)
+    implementation(libs.readium.exoplayer)
+    implementation(libs.mupdf)
+    implementation(libs.androidx.media3.session)
+    implementation(libs.timber)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.room.runtime)
@@ -134,6 +166,8 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.aboutlibraries.compose)
     testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.junit)
 }
 
 kotlin {

@@ -2,7 +2,7 @@
   <img src="Screenshots/AppIcon.jpg" width="160" alt="Pinecone Icon" />
   <h1>Pinecone</h1>
   <p>
-    Pinecone is a modern Android EPUB reader that combines a stunning Material 3 Expressive design with the powerful Readium engine for a deeply customizable, smooth reading experience.
+    Pinecone is a modern Android publication reader that combines Material 3 Expressive design with Readium navigators and MuPDF for a customizable reading and listening experience.
   </p>
 </div>
 
@@ -20,8 +20,14 @@
 
 ## Features
 
-- **EPUB Support:** Powered by Readium for a standard-compliant, robust, and smooth reading
-  experience.
+- **Multi-format:** Readium navigators for reflowable/fixed-layout EPUB, PDF, CBZ/image
+  publications, audiobook packages, and supported standalone audio.
+- **PDF read mode:** An on-device MuPDF pipeline reconstructs text and illustrations into EPUB 3.
+  Switch using the reader header. Complex vector graphics use a labeled original-page image
+  fallback; scanned pages remain images (no OCR). Reading order and semantic reconstruction are
+  best-effort.
+- **Rich metadata:** Ordered contributor roles, series, issue/volume, languages, identifiers, and
+  ComicInfo.xml import, with metadata editing.
 - **Material 3 Expressive:** Designed according to the latest Material 3 Expressive design
   guidelines for a beautiful and modern interface.
 - **Dynamic Colors & Palettes:** Enjoy deep personalization with Material You dynamic colors,
@@ -43,6 +49,31 @@
   themes, and reading modes.
 - **Backup & Restore:** Secure your library data, settings, and reading progress with local manual
   and automatic backups.
+
+## Local publication import
+
+Import files or scan folders. For an unpackaged Readium manifest, select its folder containing
+`manifest.json` and all referenced resources; Pinecone copies them into a self-contained package.
+Remote manifests/streaming, CBR, DRM/LCP, and OCR are not supported. Readium's WebPub/Divina support
+is partial; image and audio codecs also depend on the renderer/platform.
+
+PDF and generated EPUB renditions share one library item, but retain separate locators, annotations,
+and optional reader settings. Generated renditions and source-page maps are durable backup assets,
+not disposable caches.
+
+### Development data reset
+
+This development revision starts a fresh Room v1 database named
+`publication_library`; no migration from `reader_database` is provided. Backup
+vault/snapshot/portable formats are now v2. Old v1 backups are not importable. Keep old
+installations/backups separately if you need their data. The old database and its asset directories
+are not deleted by this revision.
+
+## License
+
+AGPL-3.0-or-later; see [COPYING](COPYING) and [LICENSE.md](LICENSE.md), including the
+corresponding-source obligations for the bundled MuPDF native engine.
+
 ## Validation
 
 From the repository root in Windows PowerShell:

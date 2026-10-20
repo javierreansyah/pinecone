@@ -1,42 +1,34 @@
+@file:OptIn(org.readium.r2.shared.ExperimentalReadiumApi::class)
+
 package com.javierreansyah.pinecone.ui.features.reader
 
-import android.graphics.Color.colorToHSV
 import android.os.Bundle
-import android.view.ActionMode
-import android.view.Menu
-import androidx.core.graphics.toColorInt
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import com.javierreansyah.pinecone.R
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.map
+import com.javierreansyah.pinecone.data.publication.PublicationFormats
+import com.javierreansyah.pinecone.data.publication.ReaderProfile
+import com.javierreansyah.pinecone.reader.pdf.MuPdfEngineProvider
+import com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences
+import com.javierreansyah.pinecone.reader.pdf.MuPdfSettings
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import org.readium.r2.navigator.DecorableNavigator
-import org.readium.r2.navigator.Decoration
+import org.readium.r2.navigator.Navigator
 import org.readium.r2.navigator.OverflowableNavigator
-import org.readium.r2.navigator.SelectableNavigator
-import org.readium.r2.navigator.epub.EpubNavigatorFactory
-import org.readium.r2.navigator.epub.EpubNavigatorFragment
+import org.readium.r2.navigator.VisualNavigator
+import org.readium.r2.navigator.image.ImageNavigatorFragment
 import org.readium.r2.navigator.input.InputListener
 import org.readium.r2.navigator.input.TapEvent
+import org.readium.r2.navigator.pdf.PdfNavigatorFactory
+import org.readium.r2.navigator.pdf.PdfNavigatorFragment
 import org.readium.r2.navigator.util.DirectionalNavigationAdapter
-import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
-import kotlin.time.Duration.Companion.milliseconds
 
-@OptIn(ExperimentalReadiumApi::class)
+/** Owns only presentation. Publications and background audio have independent session lifetimes. */
 class NavigatorController(
     private val lifecycleOwner: LifecycleOwner,
     private val fragmentManager: FragmentManager,
@@ -44,352 +36,119 @@ class NavigatorController(
     private val searchViewModel: ReaderSearchViewModel,
     private val notesViewModel: ReaderNotesViewModel,
 ) : DefaultLifecycleObserver {
-
-    companion object {
-        private const val NAVIGATOR_TAG = "epub_navigator"
-    }
-
-    private var navigator: EpubNavigatorFragment? = null
-
-    private val _navigatorFlow = MutableStateFlow<EpubNavigatorFragment?>(null)
-
-    private var currentActionMode: ActionMode? = null
-
-    private val lifecycleScope: LifecycleCoroutineScope
-        get() = lifecycleOwner.lifecycleScope
-
-    private val selectionPoller = SelectionPoller(lifecycleOwner.lifecycleScope) { locator ->
-        val currentHighlight = notesViewModel.selectionState.value.selectionLocator?.text?.highlight
-        if (locator.text.highlight != currentHighlight) {
-            notesViewModel.showSelectionMenu(locator)
-        }
-    }
-
-    private var lastSelectionCssColor: String? = null
-
-    private var observersStarted = false
+    private var epub: EpubNavigatorController? = null
+    private var navigator: Navigator? = null
+    private var publication: Publication? = null
+    private var locationJob: Job? = null
+    private var preferencesJob: Job? = null
 
     init {
         lifecycleOwner.lifecycle.addObserver(this)
     }
 
     fun setupNavigator(publication: Publication) {
-        if (fragmentManager.findFragmentByTag(NAVIGATOR_TAG) != null) {
-            navigator = fragmentManager.findFragmentByTag(NAVIGATOR_TAG) as? EpubNavigatorFragment
-            navigator?.let {
-                setupNavigatorListener(it)
-                _navigatorFlow.value = it
-            }
-            startObserversOnce()
-            return
+        if (this.publication === publication) return
+        locationJob?.cancel(); preferencesJob?.cancel(); epub?.close(); epub = null
+        navigator = null
+        fragmentManager.fragments.filter { it.id == R.id.navigator_container }.forEach {
+            fragmentManager.beginTransaction().remove(it).commitNow()
         }
-
-        val navigatorFactory = EpubNavigatorFactory(publication = publication)
-        val initialLocator = viewModel.initialLocator
-        val initialPreferences = viewModel.epubPreferences.value
-
-        val configuration = EpubNavigatorFragment.Configuration {
-            selectionActionModeCallback = object : ActionMode.Callback {
-                override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
-                    menu?.clear()
-                    currentActionMode = mode
-                    val nav = navigator as? SelectableNavigator
-                    nav?.let { selectionPoller.start(it) { currentActionMode } }
-                    return true
+        viewModel.onNavigatorDetached()
+        this.publication = publication
+        notesViewModel.setRendition(viewModel.activeRendition.value)
+        searchViewModel.exitSearchNavigation()
+        val rendition = viewModel.activeRendition.value
+        when (PublicationFormats.profile(publication)) {
+            ReaderProfile.EPUB -> {
+                epub = EpubNavigatorController(
+                    lifecycleOwner,
+                    fragmentManager,
+                    viewModel,
+                    searchViewModel,
+                    notesViewModel
+                ).also {
+                    it.setupNavigator(publication)
                 }
-
-                override fun onPrepareActionMode(mode: ActionMode?, menu: Menu?): Boolean {
-                    menu?.clear()
-                    return false
-                }
-
-                override fun onActionItemClicked(
-                    mode: ActionMode?,
-                    item: android.view.MenuItem?,
-                ): Boolean = false
-
-                override fun onDestroyActionMode(mode: ActionMode?) {
-                    if (mode == currentActionMode) {
-                        currentActionMode = null
-                        selectionPoller.stop()
-                        notesViewModel.dismissSelectionBar()
-                    }
-                }
+                return
             }
 
-            configureFonts()
-        }
+            ReaderProfile.IMAGE -> {
+                fragmentManager.fragmentFactory = ImageNavigatorFragment.createFactory(
+                    publication,
+                    viewModel.currentLocator.value ?: viewModel.initialLocator
+                )
+                fragmentManager.beginTransaction().replace(
+                    R.id.navigator_container,
+                    ImageNavigatorFragment::class.java,
+                    Bundle(),
+                    "image_navigator"
+                ).commitNow()
+                navigator =
+                    fragmentManager.findFragmentByTag("image_navigator") as ImageNavigatorFragment
+            }
 
-        val listener = object : EpubNavigatorFragment.Listener {
-            override fun onExternalLinkActivated(url: org.readium.r2.shared.util.AbsoluteUrl) {
-                val urlString = url.toString()
-                if (urlString.startsWith(
-                        "http://",
-                        ignoreCase = true,
-                    ) || urlString.startsWith("https://", ignoreCase = true)
-                ) {
-                    viewModel.showExternalLinkMenu(urlString)
+            ReaderProfile.PDF -> {
+                val factory = PdfNavigatorFactory(publication, MuPdfEngineProvider())
+                fragmentManager.fragmentFactory = factory.createFragmentFactory(
+                    viewModel.currentLocator.value ?: viewModel.initialLocator,
+                    viewModel.formatSettings.value.pdf
+                )
+                val fragment = fragmentManager.fragmentFactory.instantiate(
+                    javaClass.classLoader ?: return,
+                    PdfNavigatorFragment::class.java.name
+                )
+                fragmentManager.beginTransaction()
+                    .replace(R.id.navigator_container, fragment, "pdf_navigator").commitNow()
+                @Suppress("UNCHECKED_CAST")
+                val pdf = fragment as PdfNavigatorFragment<MuPdfSettings, MuPdfPreferences>
+                navigator = pdf
+                preferencesJob = lifecycleOwner.lifecycleScope.launch {
+                    viewModel.formatSettings.collect { pdf.submitPreferences(it.pdf) }
                 }
             }
+
+            ReaderProfile.AUDIO -> {
+                // The service owns the AudioNavigator. UI destruction must not close it.
+                viewModel.startAudio()
+                return
+            }
         }
-
-        fragmentManager.fragmentFactory = navigatorFactory.createFragmentFactory(
-            initialLocator = initialLocator,
-            initialPreferences = initialPreferences,
-            listener = listener,
-            configuration = configuration,
-        )
-
-        fragmentManager.beginTransaction().replace(
-            R.id.navigator_container,
-            EpubNavigatorFragment::class.java,
-            Bundle(),
-            NAVIGATOR_TAG,
-        ).commit()
-
-        fragmentManager.executePendingTransactions()
-        navigator = fragmentManager.findFragmentByTag(NAVIGATOR_TAG) as? EpubNavigatorFragment
-        navigator?.let {
-            setupNavigatorListener(it)
-            _navigatorFlow.value = it
-        }
-
-        startObserversOnce()
-    }
-
-    private fun startObserversOnce() {
-        if (observersStarted) return
-        observersStarted = true
-        setupObservers()
-    }
-
-    private fun setupNavigatorListener(nav: EpubNavigatorFragment) {
-        (nav as? OverflowableNavigator)?.let { overflowableNav ->
-            nav.addInputListener(
-                DirectionalNavigationAdapter(
-                    navigator = overflowableNav, animatedTransition = true,
-                ),
+        val nav = navigator ?: return
+        (nav as? OverflowableNavigator)?.addInputListener(
+            DirectionalNavigationAdapter(
+                nav,
+                animatedTransition = true
             )
-        }
-
-        nav.addInputListener(
-            object : InputListener {
-                override fun onTap(event: TapEvent): Boolean {
-                    if ((notesViewModel.selectionState.value.selectionLocator != null) || (notesViewModel.selectionState.value.viewingHighlight != null)) {
-                        notesViewModel.hideSelectionMenu()
-                        notesViewModel.hideViewHighlight()
-                        return true
-                    }
-                    viewModel.toggleControls()
-                    return true
-                }
-            },
         )
-
-        nav.addDecorationListener(
-            "notes",
-            object : DecorableNavigator.Listener {
-                override fun onDecorationActivated(event: DecorableNavigator.OnActivatedEvent): Boolean {
-                    val noteIdStr = event.decoration.id.removePrefix("note_")
-                    val noteId = noteIdStr.toLongOrNull() ?: return false
-                    val note =
-                        notesViewModel.allNotesAndHighlights.value.find { (itId) -> itId == noteId }
-                            ?: return false
-
-                    if (note.noteText.isBlank()) {
-                        notesViewModel.viewHighlight(note)
-                    } else {
-                        notesViewModel.editNote(note)
-                    }
-                    return true
-                }
-            },
-        )
-    }
-
-    private fun setupObservers() {
-        lifecycleScope.launch {
-            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.themeColors.collect { (_, _, colorsBackgroundColorInt) ->
-                    injectSelectionCss(colorsBackgroundColorInt)
-                }
+        (nav as? VisualNavigator)?.addInputListener(object : InputListener {
+            override fun onTap(event: TapEvent): Boolean {
+                viewModel.toggleControls(); return true
             }
-        }
-
-        lifecycleScope.launch {
-            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                combine(_navigatorFlow.filterNotNull(), viewModel.epubPreferences) { nav, prefs ->
-                    nav to prefs
-                }.collect { (nav, prefs) ->
-                    nav.submitPreferences(prefs)
-                }
-            }
-        }
-
-        lifecycleScope.launch {
-            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                _navigatorFlow.collectLatest { nav ->
-                    nav?.currentLocator?.collect { locator ->
-                        viewModel.onLocatorChanged(locator)
-                        viewModel.savePosition(locator)
-                        lifecycleScope.launch {
-                            delay(300.milliseconds)
-                            reapplySelectionCss()
-                        }
-                    }
-                }
-            }
-        }
-
-        lifecycleScope.launch {
-            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                notesViewModel.clearSelectionEvent.collect {
-                    (navigator as? SelectableNavigator)?.clearSelection()
-                }
-            }
-        }
-
-        lifecycleScope.launch {
-            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                combine(
-                    _navigatorFlow.filterNotNull(), notesViewModel.allNotesAndHighlights,
-                ) { nav, notes ->
-                    nav to notes
-                }.collectLatest { (nav, notes) ->
-                    val decorations = notes.mapNotNull { (noteId2, _, noteLocatorJson, _, noteNoteText, noteColor) ->
-                        try {
-                            val locator = Locator.fromJSON(
-                                org.json.JSONObject(noteLocatorJson),
-                            )
-                            if (locator != null) {
-                                val isHighlight = noteNoteText.isEmpty()
-                                val tintColor = if (noteColor != -1) noteColor else {
-                                    if (isHighlight) "#4003A9F4".toColorInt() else "#40FFEB3B".toColorInt()
-                                }
-                                Decoration(
-                                    id = "note_${noteId2}",
-                                    locator = locator,
-                                    style = Decoration.Style.Highlight(
-                                        tint = tintColor, isActive = false,
-                                    ),
-                                )
-                            } else null
-                        } catch (_: Exception) {
-                            null
-                        }
-                    }
-                    nav.applyDecorations(decorations, group = "notes")
-                }
-            }
-        }
-
-        lifecycleScope.launch {
-            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                searchViewModel.navigateToLocator.collectLatest { locator ->
-                    navigator?.go(locator, animated = true)
-                    delay(100.milliseconds)
-                    navigator?.go(locator, animated = false)
-                    applySearchHighlight(locator)
-                }
-            }
-        }
-
-        lifecycleScope.launch {
-            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                searchViewModel.searchState
-                    .map { (_, _, _, _, itIsInNavMode) -> itIsInNavMode }
-                    .distinctUntilChanged()
-                    .collect { isInNavMode ->
-                        if (!isInNavMode) clearSearchHighlight()
-                    }
-            }
-        }
-    }
-
-    override fun onPause(owner: LifecycleOwner) {
-        saveCurrentPosition()
-    }
-
-    private fun saveCurrentPosition() {
-        navigator?.currentLocator?.value?.let { locator ->
-            lifecycleScope.launch {
-                viewModel.savePosition(locator)
+        })
+        locationJob = lifecycleOwner.lifecycleScope.launch {
+            nav.currentLocator.collect {
+                if (viewModel.activeRendition.value == rendition) viewModel.onLocatorChanged(it)
+                viewModel.savePosition(it, rendition)
             }
         }
     }
 
     fun go(locator: Locator) {
-        lifecycleScope.launch {
-            navigator?.go(locator)
+        if (viewModel.profile.value == ReaderProfile.AUDIO) viewModel.audioGo(locator)
+        else {
+            epub?.go(locator); navigator?.go(locator)
         }
     }
 
     fun go(link: Link) {
-        lifecycleScope.launch {
-            navigator?.go(link)
+        if (viewModel.profile.value == ReaderProfile.AUDIO) viewModel.audioGo(link)
+        else {
+            epub?.go(link); navigator?.go(link)
         }
     }
 
-    private fun injectSelectionCss(bgColor: Int) {
-        val cssBgColor = "rgba(128, 128, 128, 0.35)"
-        val hsv = FloatArray(3)
-        colorToHSV(bgColor, hsv)
-        val isDark = hsv[2] < 0.5f
-        val cssTextColor = if (isDark) "#ffffff" else "#000000"
-
-        lastSelectionCssColor = "$cssBgColor|$cssTextColor"
-        applySelectionCssToWebView(cssBgColor, cssTextColor)
-    }
-
-    private fun reapplySelectionCss() {
-        val parts = lastSelectionCssColor?.split("|") ?: return
-        if (parts.size == 2) {
-            applySelectionCssToWebView(parts[0], parts[1])
-        }
-    }
-
-    private fun applySelectionCssToWebView(cssBgColor: String, cssTextColor: String) {
-        val nav = navigator ?: return
-        val js = """
-            (function() {
-                var id = '__pinecone_selection_style';
-                var existing = document.getElementById(id);
-                if (existing) existing.remove();
-                var s = document.createElement('style');
-                s.id = id;
-                s.textContent = '\n'
-                    + '*::selection { background: $cssBgColor !important; color: $cssTextColor !important; text-shadow: none !important; }\n'
-                    + '*::-webkit-selection { background: $cssBgColor !important; color: $cssTextColor !important; text-shadow: none !important; }\n'
-                    + '::selection { background: $cssBgColor !important; color: $cssTextColor !important; text-shadow: none !important; }\n'
-                    + '::-webkit-selection { background: $cssBgColor !important; color: $cssTextColor !important; text-shadow: none !important; }\n';
-                document.head.appendChild(s);
-                document.documentElement.style.setProperty('--USER__selectionBackgroundColor', '$cssBgColor');
-            })();
-        """.trimIndent()
-        lifecycleScope.launch {
-            try {
-                nav.evaluateJavascript(js)
-            } catch (_: Exception) {
-            }
-        }
-    }
-
-    private suspend fun applySearchHighlight(locator: Locator) {
-        val nav = (navigator as? DecorableNavigator) ?: return
-        val decoration = Decoration(
-            id = "search_current", locator = locator,
-            style = Decoration.Style.Highlight(
-                tint = "#FFEB3B".toColorInt(),
-                isActive = false,
-            ),
-        )
-        nav.applyDecorations(listOf(decoration), group = "search")
-    }
-
-    private fun clearSearchHighlight() {
-        val nav = (navigator as? DecorableNavigator) ?: return
-        lifecycleScope.launch {
-            nav.applyDecorations(emptyList(), group = "search")
-        }
+    override fun onDestroy(owner: LifecycleOwner) {
+        locationJob?.cancel(); preferencesJob?.cancel(); epub?.close()
+        owner.lifecycle.removeObserver(this)
     }
 }

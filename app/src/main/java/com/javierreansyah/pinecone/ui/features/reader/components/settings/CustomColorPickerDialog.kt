@@ -150,8 +150,9 @@ fun CustomColorPickerDialog(
                         selected = uiThemeOptions.find { (_, itSecond) -> itSecond == uiThemeInput }?.first
                             ?: stringResource(R.string.reader_settings_theme_setting),
                         onSelected = { selectedLabel ->
-                            uiThemeInput = uiThemeOptions.find { (itFirst2) -> itFirst2 == selectedLabel }?.second
-                                ?: "Setting"
+                            uiThemeInput =
+                                uiThemeOptions.find { (itFirst2) -> itFirst2 == selectedLabel }?.second
+                                    ?: "Setting"
                         },
                         modifier = Modifier.fillMaxWidth(),
                     )

@@ -34,18 +34,24 @@ data class BookBackupRecord(
     val furthestProgression: Double = 0.0,
     val furthestLocatorJson: String? = null,
     val jumpOriginLocatorJson: String? = null,
+    val activeRendition: String = "original",
+    val metadataJson: String = "{}",
+    val sourceMetadataJson: String = "{}",
+    val originalFilename: String = "",
 )
 
 fun BookEntity.toBackupRecord(): BookBackupRecord = BookBackupRecord(
     id, title, coverPath, filePath, mediaType, identifier, language, progression,
     lastLocatorJson, addedDate, lastReadDate, isArchived, description, publisher,
     published, isRead, furthestProgression, furthestLocatorJson, jumpOriginLocatorJson,
+    activeRendition, metadataJson, sourceMetadataJson, originalFilename,
 )
 
 fun BookBackupRecord.toEntity(): BookEntity = BookEntity(
     id, title, coverPath, filePath, mediaType, identifier, language, progression,
     lastLocatorJson, addedDate, lastReadDate, isArchived, description, publisher,
     published, isRead, furthestProgression, furthestLocatorJson, jumpOriginLocatorJson,
+    activeRendition, metadataJson, sourceMetadataJson, originalFilename,
 )
 
 @Serializable
@@ -55,13 +61,14 @@ data class BookmarkBackupRecord(
     val locatorJson: String,
     val chapterTitle: String? = null,
     val createdAt: Long,
+    val renditionKey: String = "original",
 )
 
 fun BookmarkEntity.toBackupRecord(): BookmarkBackupRecord =
-    BookmarkBackupRecord(id, bookId, locatorJson, chapterTitle, createdAt)
+    BookmarkBackupRecord(id, bookId, locatorJson, chapterTitle, createdAt, renditionKey)
 
 fun BookmarkBackupRecord.toEntity(): BookmarkEntity =
-    BookmarkEntity(id, bookId, locatorJson, chapterTitle, createdAt)
+    BookmarkEntity(id, bookId, locatorJson, chapterTitle, createdAt, renditionKey)
 
 @Serializable
 data class NoteBackupRecord(
@@ -72,13 +79,23 @@ data class NoteBackupRecord(
     val noteText: String,
     val color: Int = -1,
     val createdAt: Long,
+    val renditionKey: String = "original",
 )
 
 fun NoteEntity.toBackupRecord(): NoteBackupRecord =
-    NoteBackupRecord(id, bookId, locatorJson, chapterTitle, noteText, color, createdAt)
+    NoteBackupRecord(
+        id,
+        bookId,
+        locatorJson,
+        chapterTitle,
+        noteText,
+        color,
+        createdAt,
+        renditionKey
+    )
 
 fun NoteBackupRecord.toEntity(): NoteEntity =
-    NoteEntity(id, bookId, locatorJson, chapterTitle, noteText, color, createdAt)
+    NoteEntity(id, bookId, locatorJson, chapterTitle, noteText, color, createdAt, renditionKey)
 
 @Serializable
 data class ShelfBackupRecord(
@@ -88,7 +105,9 @@ data class ShelfBackupRecord(
     val createdAt: Long,
 )
 
-fun ShelfEntity.toBackupRecord(): ShelfBackupRecord = ShelfBackupRecord(id, spaceId, name, createdAt)
+fun ShelfEntity.toBackupRecord(): ShelfBackupRecord =
+    ShelfBackupRecord(id, spaceId, name, createdAt)
+
 fun ShelfBackupRecord.toEntity(): ShelfEntity = ShelfEntity(id, spaceId, name, createdAt)
 
 @Serializable
@@ -124,8 +143,11 @@ data class BookAuthorBackupRecord(
     val authorOrder: Int = 0,
 )
 
-fun BookAuthorCrossRef.toBackupRecord(): BookAuthorBackupRecord = BookAuthorBackupRecord(bookId, authorId, authorOrder)
-fun BookAuthorBackupRecord.toEntity(): BookAuthorCrossRef = BookAuthorCrossRef(bookId, authorId, authorOrder)
+fun BookAuthorCrossRef.toBackupRecord(): BookAuthorBackupRecord =
+    BookAuthorBackupRecord(bookId, authorId, authorOrder)
+
+fun BookAuthorBackupRecord.toEntity(): BookAuthorCrossRef =
+    BookAuthorCrossRef(bookId, authorId, authorOrder)
 
 @Serializable
 data class BookTagBackupRecord(val bookId: String, val tagId: Long)
@@ -142,5 +164,7 @@ fun SpaceBackupRecord.toEntity(): SpaceEntity = SpaceEntity(id, name, createdAt)
 @Serializable
 data class BookSpaceBackupRecord(val bookId: String, val spaceId: String)
 
-fun BookSpaceCrossRef.toBackupRecord(): BookSpaceBackupRecord = BookSpaceBackupRecord(bookId, spaceId)
+fun BookSpaceCrossRef.toBackupRecord(): BookSpaceBackupRecord =
+    BookSpaceBackupRecord(bookId, spaceId)
+
 fun BookSpaceBackupRecord.toEntity(): BookSpaceCrossRef = BookSpaceCrossRef(bookId, spaceId)

@@ -46,9 +46,10 @@ class ArchiveViewModel(application: Application) : AndroidViewModel(application)
         initialValue = emptyList(),
     )
 
-    val archivedBooks: StateFlow<List<Book>> = combine(booksFlow, _uiState) { books, (stateBookPreferences) ->
-        books.filterAndSort(stateBookPreferences)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val archivedBooks: StateFlow<List<Book>> =
+        combine(booksFlow, _uiState) { books, (stateBookPreferences) ->
+            books.filterAndSort(stateBookPreferences)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val shelves: StateFlow<List<ShelfWithCovers>> = combine(
         bookRepository.getAllShelvesWithBooks(), bookRepository.getAllShelfBookCrossRefs(),

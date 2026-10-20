@@ -145,13 +145,13 @@ fun OrganizeBottomSheet(
             spaces = uiState.value.spaces.map { (itSpace) -> itSpace },
             onDismiss = { shelfNameToCreate = null },
         ) { spaceIds ->
-                spaceIds.forEach { spaceId ->
-                    viewModel.createShelf(spaceId, shelfName)
-                }
-                shelfNameToCreate = null
-                textFieldState.edit { replace(0, length, "") }
-                keyboardController?.hide()
+            spaceIds.forEach { spaceId ->
+                viewModel.createShelf(spaceId, shelfName)
             }
+            shelfNameToCreate = null
+            textFieldState.edit { replace(0, length, "") }
+            keyboardController?.hide()
+        }
     }
 }
 
@@ -243,7 +243,7 @@ private fun OrganizeContent(
         targetState = isSearchEmpty,
         transitionSpec = {
             (fadeIn(animationSpec = fastEffectsSpec) togetherWith
-                fadeOut(animationSpec = fastEffectsSpec)) using SizeTransform { _, _ ->
+                    fadeOut(animationSpec = fastEffectsSpec)) using SizeTransform { _, _ ->
                 fastSpatialSpec
             }
         },
@@ -278,11 +278,11 @@ private fun OrganizeContent(
                                         )
                                     },
                                 ) {
-                                        Text(
-                                            text = stringResource(R.string.library_new_space) + " \"$searchQuery\"",
-                                            color = MaterialTheme.colorScheme.primary,
-                                        )
-                                    }
+                                    Text(
+                                        text = stringResource(R.string.library_new_space) + " \"$searchQuery\"",
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
                             }
 
                             if (showCreateShelf) {
@@ -297,17 +297,19 @@ private fun OrganizeContent(
                                         )
                                     },
                                 ) {
-                                        Text(
-                                            text = stringResource(R.string.library_new_shelf) + " \"$searchQuery\"",
-                                            color = MaterialTheme.colorScheme.primary,
-                                        )
-                                    }
+                                    Text(
+                                        text = stringResource(R.string.library_new_shelf) + " \"$searchQuery\"",
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
                             }
                         }
                     }
                 }
 
-                items(spaces, key = { (itSpace3) -> itSpace3.id }) { (spaceItemSpace, spaceItemState, spaceItemShelves) ->
+                items(
+                    spaces,
+                    key = { (itSpace3) -> itSpace3.id }) { (spaceItemSpace, spaceItemState, spaceItemShelves) ->
                     val (spaceId2, spaceName) = spaceItemSpace
                     val spaceShelves = spaceItemShelves
                     val isSpaceSelected = spaceItemState == ToggleableState.On

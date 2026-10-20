@@ -36,13 +36,13 @@ import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.ui.features.dictionary.DictionariesScreen
 import com.javierreansyah.pinecone.ui.features.dictionary.DictionariesViewModel
 import com.javierreansyah.pinecone.ui.features.library.archive.ArchiveScreen
-import com.javierreansyah.pinecone.ui.features.library.unsorted.UnsortedScreen
 import com.javierreansyah.pinecone.ui.features.library.filters.AllFilterItemsScreen
 import com.javierreansyah.pinecone.ui.features.library.filters.FilterResultScreen
 import com.javierreansyah.pinecone.ui.features.library.info.BookInfoScreen
 import com.javierreansyah.pinecone.ui.features.library.info.EditBookScreen
 import com.javierreansyah.pinecone.ui.features.library.main.LibraryRoute
 import com.javierreansyah.pinecone.ui.features.library.shelf.ShelfDetailScreen
+import com.javierreansyah.pinecone.ui.features.library.unsorted.UnsortedScreen
 import com.javierreansyah.pinecone.ui.features.reader.ReaderActivity
 import com.javierreansyah.pinecone.ui.features.settings.AboutScreen
 import com.javierreansyah.pinecone.ui.features.settings.OpenSourceLicensesScreen
@@ -80,13 +80,13 @@ fun NavGraph(
             }
         },
     ) { uris ->
-            if (uris.isNotEmpty()) {
-                backStack.clear()
-                backStack.add(Screen.Library)
-                backStack.add(Screen.Unsorted)
-                mainViewModel.importBooks(uris)
-            }
+        if (uris.isNotEmpty()) {
+            backStack.clear()
+            backStack.add(Screen.Library)
+            backStack.add(Screen.Unsorted)
+            mainViewModel.importBooks(uris)
         }
+    }
 
     val folderPickerLauncher = rememberLauncherForActivityResult(
         contract = object : ActivityResultContracts.OpenDocumentTree() {
@@ -101,13 +101,13 @@ fun NavGraph(
             }
         },
     ) { uri ->
-            uri?.let {
-                backStack.clear()
-                backStack.add(Screen.Library)
-                backStack.add(Screen.Unsorted)
-                mainViewModel.scanFolder(it)
-            }
+        uri?.let {
+            backStack.clear()
+            backStack.add(Screen.Library)
+            backStack.add(Screen.Unsorted)
+            mainViewModel.scanFolder(it)
         }
+    }
     val context = LocalContext.current
     val app = context.applicationContext as PineconeApplication
     val readerPreferences = app.readerPreferences
@@ -165,28 +165,28 @@ fun NavGraph(
                 initialScale = 0.9f,
                 animationSpec = spatialSpec,
             )) togetherWith
-                (fadeOut(animationSpec = effectsSpec) + scaleOut(
-                targetScale = 0.9f,
-                animationSpec = spatialSpec,
-            ))).apply {
+                    (fadeOut(animationSpec = effectsSpec) + scaleOut(
+                        targetScale = 0.9f,
+                        animationSpec = spatialSpec,
+                    ))).apply {
                 targetContentZIndex = 1f
             }
         },
         popTransitionSpec = {
             (fadeIn(animationSpec = effectsSpec) togetherWith
-                (fadeOut(animationSpec = effectsSpec) + scaleOut(
-                targetScale = 0.9f,
-                animationSpec = spatialSpec,
-            ))).apply {
+                    (fadeOut(animationSpec = effectsSpec) + scaleOut(
+                        targetScale = 0.9f,
+                        animationSpec = spatialSpec,
+                    ))).apply {
                 targetContentZIndex = -1f
             }
         },
         predictivePopTransitionSpec = {
             (fadeIn(animationSpec = effectsSpec) togetherWith
-                (fadeOut(animationSpec = effectsSpec) + scaleOut(
-                targetScale = 0.9f,
-                animationSpec = spatialSpec,
-            ))).apply {
+                    (fadeOut(animationSpec = effectsSpec) + scaleOut(
+                        targetScale = 0.9f,
+                        animationSpec = spatialSpec,
+                    ))).apply {
                 targetContentZIndex = -1f
             }
         },
@@ -245,9 +245,7 @@ fun NavGraph(
                     },
                     onImportFilesClick = {
                         filePickerLauncher.launch(
-                            arrayOf(
-                                "application/epub+zip",
-                            ),
+                            com.javierreansyah.pinecone.data.publication.PublicationFormats.pickerMimeTypes,
                         )
                     },
                 ) { folderPickerLauncher.launch(null) }
@@ -256,8 +254,8 @@ fun NavGraph(
                 SettingsScreen(
                     onNavigateBack = navigateBack,
                 ) {
-                        backStack.add(Screen.About)
-                    }
+                    backStack.add(Screen.About)
+                }
             }
             entry<Screen.About> {
                 AboutScreen(
@@ -400,24 +398,24 @@ fun NavGraph(
                     filterType = "author",
                     onNavigateBack = navigateBack,
                 ) { authorName ->
-                        backStack.add(Screen.AuthorDetail(authorName))
-                    }
+                    backStack.add(Screen.AuthorDetail(authorName))
+                }
             }
             entry<Screen.AllTags> {
                 AllFilterItemsScreen(
                     filterType = "tag",
                     onNavigateBack = navigateBack,
                 ) { tagName ->
-                        backStack.add(Screen.TagDetail(tagName))
-                    }
+                    backStack.add(Screen.TagDetail(tagName))
+                }
             }
             entry<Screen.AllSpaces> {
                 AllFilterItemsScreen(
                     filterType = "space",
                     onNavigateBack = navigateBack,
                 ) { spaceName ->
-                        backStack.add(Screen.SpaceDetail(spaceName))
-                    }
+                    backStack.add(Screen.SpaceDetail(spaceName))
+                }
             }
             entry<Screen.Dictionaries> {
                 val factory = DictionariesViewModel.Factory(
@@ -442,8 +440,8 @@ fun NavGraph(
                         backStack.add(Screen.TagDetail(tagName))
                     },
                 ) { bookIds ->
-                        organizeBookIds = bookIds
-                    }
+                    organizeBookIds = bookIds
+                }
             }
             entry<Screen.EditBook> { (argsBookId2) ->
                 EditBookScreen(
@@ -483,4 +481,3 @@ fun NavGraph(
         ) { mainViewModel.dismissImportErrorReport() }
     }
 }
-

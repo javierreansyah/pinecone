@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class LibraryBackupPayload(
-    val version: Int = 1,
+    val version: Int = 2,
     val books: List<BookBackupRecord>,
     val bookmarks: List<BookmarkBackupRecord>,
     val shelves: List<ShelfBackupRecord>,
@@ -18,6 +18,9 @@ data class LibraryBackupPayload(
     val bookTagCrossRefs: List<BookTagBackupRecord> = emptyList(),
     val spaces: List<SpaceBackupRecord> = emptyList(),
     val bookSpaceCrossRefs: List<BookSpaceBackupRecord> = emptyList(),
+    val renditions: List<com.javierreansyah.pinecone.data.local.database.library.PublicationRenditionEntity> = emptyList(),
+    val credits: List<com.javierreansyah.pinecone.data.local.database.library.PublicationCreditEntity> = emptyList(),
+    val collections: List<com.javierreansyah.pinecone.data.local.database.library.PublicationCollectionEntity> = emptyList(),
 )
 
 @Serializable
@@ -51,9 +54,16 @@ data class DictionaryObjectReference(
 )
 
 @Serializable
+data class RenditionObjectReference(
+    val bookId: String,
+    val key: String,
+    val objectInfo: VaultObject
+)
+
+@Serializable
 data class VaultSnapshot(
     val format: String = "pinecone-vault-snapshot",
-    val formatVersion: Int = 1,
+    val formatVersion: Int = 2,
     val id: String,
     val createdAt: Long,
     val backupKind: String,
@@ -66,17 +76,18 @@ data class VaultSnapshot(
     val books: List<BookObjectReference>,
     val dictionaries: List<DictionaryObjectReference>,
     val activeDictionaryId: String,
+    val renditions: List<RenditionObjectReference> = emptyList(),
 )
 
 @Serializable
 data class VaultFormat(
     val format: String = "pinecone-backup-vault",
-    val formatVersion: Int = 1,
+    val formatVersion: Int = 2,
 )
 
 @Serializable
 data class PortableBackupManifest(
     val format: String = "pinecone-portable-backup",
-    val formatVersion: Int = 1,
+    val formatVersion: Int = 2,
     val snapshot: VaultSnapshot,
 )

@@ -11,13 +11,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -175,7 +175,9 @@ private fun AllFilterItemsContent(
                             isInMultiSelectMode = false
                         },
                         onClearSelection = { selectedItems = emptySet() },
-                        onSelectAll = { selectedItems = sortedItems.map { (itFirst) -> itFirst }.toSet() },
+                        onSelectAll = {
+                            selectedItems = sortedItems.map { (itFirst) -> itFirst }.toSet()
+                        },
                         onRenameClick = {
                             itemToRename = selectedItems.firstOrNull() ?: ""
                             isMultiRename = selectedItems.size > 1
@@ -190,14 +192,14 @@ private fun AllFilterItemsContent(
                     )
                 },
             ) {
-                    AllFilterItemsTopAppBar(
-                        filterType = filterType,
-                        isEmpty = isEmpty,
-                        onNavigateBack = onNavigateBack,
-                        onSortClick = { showSortSheet = true },
-                        scrollBehavior = scrollBehavior,
-                    )
-                }
+                AllFilterItemsTopAppBar(
+                    filterType = filterType,
+                    isEmpty = isEmpty,
+                    onNavigateBack = onNavigateBack,
+                    onSortClick = { showSortSheet = true },
+                    scrollBehavior = scrollBehavior,
+                )
+            }
         },
     ) { innerPadding ->
         if (isEmpty) {

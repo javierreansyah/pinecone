@@ -173,7 +173,11 @@ class LibraryViewModel(
     }
 
     private fun getFilteredAndSortedBooks(baseFlow: Flow<List<Book>>): Flow<List<Book>> {
-        return combine(baseFlow, _uiState, allCrossRefs) { books, (_, _, _, stateBookPreferences), _ ->
+        return combine(
+            baseFlow,
+            _uiState,
+            allCrossRefs
+        ) { books, (_, _, _, stateBookPreferences), _ ->
             books.filterAndSort(stateBookPreferences)
         }
     }
@@ -223,10 +227,12 @@ class LibraryViewModel(
                 val matchedShelves =
                     if ((category == SearchCategory.All) || (category == SearchCategory.Shelves)) shelfList.map { (itShelf) -> itShelf } else emptyList()
                 val matchedAuthors =
-                    if ((category == SearchCategory.All) || (category == SearchCategory.Authors)) books.asSequence().flatMap { (_, _, itAuthors) -> itAuthors }
+                    if ((category == SearchCategory.All) || (category == SearchCategory.Authors)) books.asSequence()
+                        .flatMap { (_, _, itAuthors) -> itAuthors }
                         .distinct().toList() else emptyList()
                 val matchedTags =
-                    if ((category == SearchCategory.All) || (category == SearchCategory.Tags)) books.asSequence().flatMap { (_, _, _, _, _, _, _, _, _, _, _, _, itTags) -> itTags }
+                    if ((category == SearchCategory.All) || (category == SearchCategory.Tags)) books.asSequence()
+                        .flatMap { (_, _, _, _, _, _, _, _, _, _, _, _, itTags) -> itTags }
                         .distinct().toList() else emptyList()
                 SearchResults(
                     query = query,
@@ -241,10 +247,7 @@ class LibraryViewModel(
                 allBooks,
                 shelves,
             ) { books, shelvesList ->
-                val filteredBooks = books.filter { (_, bookTitle, bookAuthors) ->
-                    bookTitle.contains(query, ignoreCase = true) ||
-                        bookAuthors.any { it.contains(query, ignoreCase = true) }
-                }
+                val filteredBooks = books.filter { it.matchesLibraryQuery(query) }
                 val matchedBooks =
                     if ((category == SearchCategory.All) || (category == SearchCategory.Books)) filteredBooks else emptyList()
                 val matchedShelves =
@@ -280,7 +283,8 @@ class LibraryViewModel(
     }
 
     private val showAllSpacesFlow: Flow<Boolean> =
-        readerPreferences.readerSettings.map { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itShowAllSpaces) -> itShowAllSpaces }.distinctUntilChanged()
+        readerPreferences.readerSettings.map { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itShowAllSpaces) -> itShowAllSpaces }
+            .distinctUntilChanged()
 
     val uiState: StateFlow<LibraryScreenUiState> = combine(
         _uiState,

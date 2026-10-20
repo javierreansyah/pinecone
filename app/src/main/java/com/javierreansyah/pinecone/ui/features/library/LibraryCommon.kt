@@ -27,8 +27,11 @@ fun List<Book>.filterAndSort(
 
     }.let { filtered ->
         val baseComparator = when (prefs.sortType) {
-            SortType.Title -> compareBy { (_, itTitle) -> itTitle.lowercase() }
-            SortType.Author -> compareBy { (_, _, itAuthors) -> itAuthors.firstOrNull()?.lowercase() ?: "" }
+            SortType.Title -> compareBy { it.metadata.sortTitle.ifBlank { it.title }.lowercase() }
+            SortType.Author -> compareBy { (_, _, itAuthors) ->
+                itAuthors.firstOrNull()?.lowercase() ?: ""
+            }
+
             SortType.LastRead -> compareBy { (_, _, _, _, _, itLastOpened) -> itLastOpened ?: 0L }
             SortType.Added -> compareBy { (_, _, _, _, _, _, _, itAddedDate) -> itAddedDate }
             SortType.Progress -> compareBy { (_, _, _, _, itProgress) -> itProgress }
@@ -104,7 +107,8 @@ fun mapAndSortShelves(
             }
 
             SortType.Progress -> compareBy { shelf: ShelfWithCovers ->
-                if (shelf.books.isEmpty()) 0.0 else shelf.books.asSequence().map { (itBook2) -> itBook2.progression }
+                if (shelf.books.isEmpty()) 0.0 else shelf.books.asSequence()
+                    .map { (itBook2) -> itBook2.progression }
                     .average()
             }
 
@@ -127,9 +131,11 @@ fun mapAndSortShelves(
     } else {
         shelvesList
     }
-    val currentSpaceShelfIds = currentSpaceShelves.asSequence().map { (itShelf7) -> itShelf7.id }.toSet()
+    val currentSpaceShelfIds =
+        currentSpaceShelves.asSequence().map { (itShelf7) -> itShelf7.id }.toSet()
     val shelvedBookIdsInCurrentSpace =
-        crossRefs.asSequence().filter { (itShelfId2) -> itShelfId2 in currentSpaceShelfIds }.map { (_, itBookId2) -> itBookId2 }.toSet()
+        crossRefs.asSequence().filter { (itShelfId2) -> itShelfId2 in currentSpaceShelfIds }
+            .map { (_, itBookId2) -> itBookId2 }.toSet()
 
     val unshelvedBooks = allBooksEntities.filter { (itBook3, _, _, _, itSpaces2) ->
         val inSpace = if (isSpaceSelected) {

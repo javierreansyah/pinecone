@@ -6,6 +6,7 @@
          Evidence: https://github.com/jhy/jsoup/blob/jsoup-1.23.2/src/main/java/org/jsoup/helper/RequestDispatch.java
          Keep InvalidPackage enabled for all other classes/packages. Recheck on upgrades. -->
     <issue id="InvalidPackage">
-        <ignore regexp="Invalid package reference.*java\.net\.http.*org\.jsoup\.helper\.HttpClientExecutor.*" />
+        <ignore
+            regexp="Invalid package reference.*java\.net\.http.*org\.jsoup\.helper\.HttpClientExecutor.*" />
     </issue>
 </lint>

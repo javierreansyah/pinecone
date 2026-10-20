@@ -94,7 +94,8 @@ class ShelfDetailViewModel(
         }
         val currentSpaceShelfIds = currentSpaceShelves.map { (itShelf2) -> itShelf2.id }.toSet()
         val shelvedBookIds =
-            crossRefs.filter { (itShelfId) -> itShelfId in currentSpaceShelfIds }.map { (_, itBookId) -> itBookId }.toSet()
+            crossRefs.filter { (itShelfId) -> itShelfId in currentSpaceShelfIds }
+                .map { (_, itBookId) -> itBookId }.toSet()
 
         val unshelvedBooks = allBooksEntities.filter { (itBook, _, _, _, itSpaces) ->
             val inSpace = if (isSpaceSelected) {

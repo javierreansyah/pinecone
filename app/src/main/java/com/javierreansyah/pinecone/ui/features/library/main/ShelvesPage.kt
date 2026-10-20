@@ -65,15 +65,15 @@ fun ShelvesPage(
                     targetState = layoutMode,
                     transitionSpec = {
                         (fadeIn(animationSpec = tween(durationMillis = 100, delayMillis = 100)) +
-                            scaleIn(
-                                initialScale = 0.9f,
-                                animationSpec = tween(durationMillis = 100, delayMillis = 100),
-                            )) togetherWith
-                            (fadeOut(animationSpec = tween(durationMillis = 100)) +
-                            scaleOut(
-                                targetScale = 0.9f,
-                                animationSpec = tween(durationMillis = 100),
-                            ))
+                                scaleIn(
+                                    initialScale = 0.9f,
+                                    animationSpec = tween(durationMillis = 100, delayMillis = 100),
+                                )) togetherWith
+                                (fadeOut(animationSpec = tween(durationMillis = 100)) +
+                                        scaleOut(
+                                            targetScale = 0.9f,
+                                            animationSpec = tween(durationMillis = 100),
+                                        ))
                     },
                     label = "shelvesPageLayoutTransition",
                 ) { targetLayoutMode ->

@@ -35,12 +35,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
-import androidx.compose.material3.rememberSliderState
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberSliderState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -87,8 +87,21 @@ import kotlin.math.roundToInt
 @Composable
 fun ReaderSettingsContent(
     settings: ReaderSettings, onSettingsChange: (ReaderSettings) -> Unit,
+    profile: com.javierreansyah.pinecone.data.publication.ReaderProfile = com.javierreansyah.pinecone.data.publication.ReaderProfile.EPUB,
+    fixedEpub: Boolean = false,
+    publication: org.readium.r2.shared.publication.Publication? = null,
 ) {
+    if (profile != com.javierreansyah.pinecone.data.publication.ReaderProfile.EPUB || fixedEpub) {
+        FormatReaderSettings(settings, onSettingsChange, profile, fixedEpub)
+        return
+    }
     val context = LocalContext.current
+    val editor = remember(publication, settings) {
+        publication?.let {
+            org.readium.r2.navigator.epub.EpubNavigatorFactory(it)
+                .createPreferencesEditor(settings.toEpubPreferences(false))
+        }
+    }
     val restoreDefaultsSuccessMsg =
         stringResource(R.string.reader_settings_restore_defaults_success)
     val configuration = LocalConfiguration.current
@@ -151,7 +164,38 @@ fun ReaderSettingsContent(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     when (page) {
-                        0 -> TextTabContent(settings, onSettingsChange, locale)
+                        0 -> {
+                            TextTabContent(settings, onSettingsChange, locale)
+                            editor?.let { preferences ->
+                                if (preferences.ligatures.isEffective) PreferenceSwitch(
+                                    stringResource(R.string.reader_ligatures),
+                                    preferences.ligatures.value
+                                        ?: preferences.ligatures.effectiveValue,
+                                ) {
+                                    onSettingsChange(
+                                        settings.copy(
+                                            formatPreferences = settings.formatPreferences.copy(
+                                                epubLigatures = it
+                                            )
+                                        )
+                                    )
+                                }
+                                if (preferences.verticalText.isEffective) PreferenceSwitch(
+                                    stringResource(R.string.reader_vertical_text),
+                                    preferences.verticalText.value
+                                        ?: preferences.verticalText.effectiveValue,
+                                ) {
+                                    onSettingsChange(
+                                        settings.copy(
+                                            formatPreferences = settings.formatPreferences.copy(
+                                                epubVerticalText = it
+                                            )
+                                        )
+                                    )
+                                }
+                            }
+                        }
+
                         1 -> LightingTabContent(
                             settings = settings,
                             onSettingsChange = onSettingsChange,
@@ -160,9 +204,9 @@ fun ReaderSettingsContent(
                                 showColorPicker = true
                             },
                         ) {
-                                themeToEdit = it
-                                showColorPicker = true
-                            }
+                            themeToEdit = it
+                            showColorPicker = true
+                        }
 
                         2 -> AdvancedTabContent(
                             settings = settings,
@@ -186,7 +230,8 @@ fun ReaderSettingsContent(
             },
             onDelete = if (themeToEdit != null) {
                 {
-                    val newThemes = settings.customThemes.filter { (itName) -> itName != themeToEdit?.name }
+                    val newThemes =
+                        settings.customThemes.filter { (itName) -> itName != themeToEdit?.name }
                     val newPreset =
                         if (settings.pineconeThemePreset == themeToEdit?.name) "Auto" else settings.pineconeThemePreset
                     onSettingsChange(
@@ -199,30 +244,30 @@ fun ReaderSettingsContent(
                 }
             } else null,
         ) { name, bgColor, textColor, uiTheme ->
-                val newTheme = CustomPineconeTheme(name, bgColor, textColor, uiTheme)
+            val newTheme = CustomPineconeTheme(name, bgColor, textColor, uiTheme)
 
-                val updatedThemes = if (themeToEdit != null) {
+            val updatedThemes = if (themeToEdit != null) {
 
-                    settings.customThemes.map { if (it.name == themeToEdit?.name) newTheme else it }
-                } else {
+                settings.customThemes.map { if (it.name == themeToEdit?.name) newTheme else it }
+            } else {
 
-                    settings.customThemes + newTheme
-                }
-
-                val newPreset =
-                    if ((settings.pineconeThemePreset == themeToEdit?.name) || (themeToEdit == null)) name else settings.pineconeThemePreset
-
-                onSettingsChange(
-                    settings.copy(
-                        customThemes = updatedThemes,
-                        pineconeThemePreset = newPreset,
-                        customBackgroundColor = if (newPreset == name) bgColor else settings.customBackgroundColor,
-                        customTextColor = if (newPreset == name) textColor else settings.customTextColor,
-                    ),
-                )
-                showColorPicker = false
-                themeToEdit = null
+                settings.customThemes + newTheme
             }
+
+            val newPreset =
+                if ((settings.pineconeThemePreset == themeToEdit?.name) || (themeToEdit == null)) name else settings.pineconeThemePreset
+
+            onSettingsChange(
+                settings.copy(
+                    customThemes = updatedThemes,
+                    pineconeThemePreset = newPreset,
+                    customBackgroundColor = if (newPreset == name) bgColor else settings.customBackgroundColor,
+                    customTextColor = if (newPreset == name) textColor else settings.customTextColor,
+                ),
+            )
+            showColorPicker = false
+            themeToEdit = null
+        }
     }
 
     if (showRestoreDefaultWarning) {
@@ -264,6 +309,11 @@ fun ReaderSettingsContent(
                             customTextColor = "#000000",
                             customThemes = emptyList(),
                             jumpHistoryMode = "explicit",
+                            formatPreferences = settings.formatPreferences.copy(
+                                epubSpread = "auto",
+                                epubLigatures = null,
+                                epubVerticalText = null
+                            ),
                         )
                         onSettingsChange(defaultReaderSettings)
                         Toast.makeText(
@@ -451,8 +501,9 @@ private fun TextTabContent(
             ),
             selected = alignmentOptionsMap[settings.textAlign] ?: settings.textAlign,
             onSelected = { localizedValue ->
-                val key = alignmentOptionsMap.entries.find { (_, itValue) -> itValue == localizedValue }?.key
-                    ?: localizedValue
+                val key =
+                    alignmentOptionsMap.entries.find { (_, itValue) -> itValue == localizedValue }?.key
+                        ?: localizedValue
                 onSettingsChange(settings.copy(textAlign = key))
             },
             enabled = !settings.publisherStyles,
@@ -754,8 +805,9 @@ private fun LightingTabContent(
             ),
             selected = imageFilterOptionsMap[settings.imageFilter] ?: settings.imageFilter,
             onSelected = { localizedValue ->
-                val key = imageFilterOptionsMap.entries.find { (_, itValue2) -> itValue2 == localizedValue }?.key
-                    ?: localizedValue
+                val key =
+                    imageFilterOptionsMap.entries.find { (_, itValue2) -> itValue2 == localizedValue }?.key
+                        ?: localizedValue
                 onSettingsChange(settings.copy(imageFilter = key))
             },
         )

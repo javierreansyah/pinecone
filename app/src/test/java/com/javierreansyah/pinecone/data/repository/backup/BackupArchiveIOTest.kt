@@ -14,7 +14,10 @@ class BackupArchiveIOTest {
     fun copyCalculatesDigestAndCrcInSinglePass() {
         val bytes = "pinecone-object".repeat(1_000).toByteArray()
         val output = ByteArrayOutputStream()
-        val (resultSize, resultSha256, resultCrc32) = BackupArchiveIO.copyAndDigest(ByteArrayInputStream(bytes), output)
+        val (resultSize, resultSha256, resultCrc32) = BackupArchiveIO.copyAndDigest(
+            ByteArrayInputStream(bytes),
+            output
+        )
         val crc = CRC32().apply { update(bytes) }
 
         assertArrayEquals(bytes, output.toByteArray())

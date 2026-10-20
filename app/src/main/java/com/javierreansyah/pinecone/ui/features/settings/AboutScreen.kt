@@ -12,6 +12,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -34,6 +38,21 @@ fun AboutScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    var showLicense by remember { mutableStateOf(false) }
+    if (showLicense) {
+        val license =
+            remember { context.assets.open("COPYING").bufferedReader().use { it.readText() } }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showLicense = false },
+            title = { Text(stringResource(R.string.about_agpl_title)) },
+            text = { Text(license, modifier = Modifier.verticalScroll(rememberScrollState())) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    showLicense = false
+                }) { Text(stringResource(R.string.action_close)) }
+            },
+        )
+    }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
@@ -62,11 +81,7 @@ fun AboutScreen(
             SegmentedColumn(modifier = Modifier.padding(top = 16.dp)) {
                 item(
                     onClick = {
-                        val intent = Intent(
-                            Intent.ACTION_VIEW,
-                            "https://github.com/javierreansyah/pinecone/blob/main/COPYING".toUri(),
-                        )
-                        context.startActivity(intent)
+                        showLicense = true
                     },
                     leadingContent = {
                         Icon(
