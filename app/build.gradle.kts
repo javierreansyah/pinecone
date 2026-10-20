@@ -6,11 +6,14 @@ plugins {
     alias(libs.plugins.aboutlibraries)
 }
 
-fun generateVersionCode(): Int {
-    val offset = 1_704_067_200L
-    return ((System.currentTimeMillis() / 1000L) - offset).toInt()
+abstract class BuildTimestampVersionCode : ValueSource<Int, ValueSourceParameters.None> {
+    override fun obtain(): Int {
+        val offset = 1_704_067_200L // 2024-01-01 UTC; keep existing installed versions compatible.
+        return Math.toIntExact(System.currentTimeMillis() / 1000L - offset)
+    }
 }
 
+val buildVersionCode = providers.of(BuildTimestampVersionCode::class) {}
 val appVersionName: String = "1.0"
 
 abstract class PublicationLicenseAssetsTask : DefaultTask() {
@@ -42,7 +45,6 @@ android {
         applicationId = "com.javierreansyah.pinecone"
         minSdk = 34
         targetSdk = 37
-        versionCode = generateVersionCode()
         versionName = appVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -120,6 +122,8 @@ androidComponents {
             else -> "pinecone-$appVersionName-${variant.name}.apk"
         }
         variant.outputs.forEach { output ->
+            // Keep the clock lazy so cached task graphs cannot restore an older timestamp.
+            output.versionCode.set(buildVersionCode)
             output.outputFileName.set(outputName)
         }
     }

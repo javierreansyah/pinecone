@@ -8,6 +8,9 @@ import com.javierreansyah.pinecone.data.publication.conversion.ReflowRun
 import com.javierreansyah.pinecone.data.publication.conversion.ReflowSource
 import com.javierreansyah.pinecone.data.publication.conversion.ReflowTable
 import com.javierreansyah.pinecone.data.publication.conversion.ReflowTableCell
+import com.javierreansyah.pinecone.data.publication.conversion.ReflowMath
+import com.javierreansyah.pinecone.data.publication.conversion.ReflowMathText
+import com.javierreansyah.pinecone.data.publication.conversion.ReflowListMarker
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -234,6 +237,70 @@ class EpubWriterTest {
             }
         }
         error("Missing reading document")
+    }
+
+    @Test fun formulaSvgPreservesPositionsScalesWithTextAndDeclaresEpubCapability() {
+        val math = ReflowMath(FigureBounds(100f, 90f, 150f, 120f), listOf(
+            ReflowMathText("a", 110f, 100f, 8f, 10f), ReflowMathText("b", 110f, 118f, 8f, 10f)),
+            listOf(FigureBounds(108f, 106f, 120f, 106.5f)), 10f, 110f)
+        val source = ReflowSource("fraction", math.bounds, "a b", listOf(ReflowRun("a b", 0, 3, math = math)))
+        val output = ByteArrayOutputStream()
+        EpubWriter(output, "test:math", "Math", "en", labels).use {
+            it.page(1, listOf(ReflowBlock(sources = listOf(source)))); it.finish()
+        }
+        val entries = mutableMapOf<String, ByteArray>()
+        ZipInputStream(output.toByteArray().inputStream()).use { zip ->
+            while (true) { val entry = zip.nextEntry ?: break; entries[entry.name] = zip.readBytes() }
+        }
+        val doc = parse(entries.getValue("EPUB/text/content.xhtml"))
+        val svg = doc.getElementsByTagNameNS("http://www.w3.org/2000/svg", "svg").item(0) as org.w3c.dom.Element
+        assertEquals("100.0 90.0 50.0 30.0", svg.getAttribute("viewBox"))
+        assertTrue(svg.getAttribute("style").contains("height:3.0em"))
+        assertTrue(svg.getAttribute("style").contains("vertical-align:-1.0em"))
+        assertEquals(1, svg.getElementsByTagNameNS("*", "line").length)
+        assertEquals(0, doc.getElementsByTagNameNS("*", "img").length)
+        assertTrue(entries.keys.none { it.startsWith("EPUB/images/") })
+        val manifest = parse(entries.getValue("EPUB/package.opf")).getElementsByTagNameNS("*", "item")
+        assertTrue((0 until manifest.length).map { manifest.item(it) as org.w3c.dom.Element }
+            .any { it.getAttribute("id") == "content" && it.getAttribute("properties") == "svg" })
+    }
+
+    @Test fun repairsEscapedSurrogatePairsWithoutChangingOtherCharacterReferences() {
+        val broken = "<p>&#65;&#55349;&#56413; &#xD83D;&#xDE00; &#945; &amp;#55349;&amp;#56413;</p>"
+        val fixed = EpubWriter.repairSerializedUnicode(broken)
+        val doc = parse(fixed.toByteArray(Charsets.UTF_8))
+        assertEquals("A\uD835\uDC5D \uD83D\uDE00 \u03b1 &#55349;&#56413;", doc.documentElement.textContent)
+        assertEquals(fixed, EpubWriter.repairSerializedUnicode(fixed))
+    }
+
+    @Test fun supplementaryMathCharactersAndFollowingPagesRoundTripAsValidXhtml() {
+        val first = "Probability \uD835\uDC5D and temperature \uD835\uDC47 with \uD83D\uDE00."
+        val doc = writtenDocument { writer ->
+            writer.page(1, listOf(ReflowBlock(text = first)))
+            writer.page(2, listOf(ReflowBlock(text = "The rest of the publication remains readable.")))
+        }
+        assertTrue(doc.documentElement.textContent.contains(first))
+        assertTrue(doc.documentElement.textContent.contains("The rest of the publication remains readable."))
+        assertEquals(2, doc.getElementsByTagNameNS("*", "section").length)
+    }
+
+    @Test fun listItemsKeepSemanticsAndDoubleDigitMarkersInSeparateColumns() {
+        val box = FigureBounds(0f, 0f, 100f, 10f)
+        fun item(marker: String, value: Int?, depth: Int = 0) = ReflowBlock(kind = "list",
+            listMarker = ReflowListMarker(marker, value, depth), sources = listOf(ReflowSource("item-$marker", box,
+                "An item", listOf(ReflowRun("An item", 0, 7)))))
+        val doc = writtenDocument { writer -> writer.page(1, listOf(item("9.", 9), item("10.", 10), item("bullet", null, 1))) }
+        val ordered = doc.getElementsByTagNameNS("*", "ol").item(0) as org.w3c.dom.Element
+        assertEquals("9", ordered.getAttribute("start"))
+        val items = ordered.getElementsByTagNameNS("*", "li")
+        assertEquals("9", (items.item(0) as org.w3c.dom.Element).getAttribute("value"))
+        assertEquals("10", (items.item(1) as org.w3c.dom.Element).getAttribute("value"))
+        val first = items.item(0) as org.w3c.dom.Element
+        assertEquals("9.", first.firstChild.textContent)
+        assertEquals("list-marker", (first.firstChild as org.w3c.dom.Element).getAttribute("class"))
+        assertEquals("An item", first.childNodes.item(1).textContent)
+        assertEquals("list-content", (first.childNodes.item(1) as org.w3c.dom.Element).getAttribute("class"))
+        assertEquals(items.item(1), doc.getElementsByTagNameNS("*", "ul").item(0).parentNode)
     }
 
     private fun parse(bytes: ByteArray): Document =

@@ -74,6 +74,20 @@ data class ReflowRun(
     val bold: Boolean = false, val italic: Boolean = false, val script: Int = 0,
     val crop: FigureBounds? = null, val image: String? = null, val heightEm: Float? = null, val hidden: Boolean = false,
     val bounds: FigureBounds? = null,
+    val math: ReflowMath? = null,
+)
+
+/** Original PDF positions, in font-relative units at rendering time; no bitmap or math OCR. */
+data class ReflowMathText(
+    val text: String, val x: Float, val baseline: Float, val width: Float, val size: Float,
+    val bold: Boolean = false, val italic: Boolean = false,
+    val radical: Boolean = false,
+)
+data class ReflowRadical(val bounds: FigureBounds, val shoulder: Float, val strokeWidth: Float)
+data class ReflowMath(
+    val bounds: FigureBounds, val texts: List<ReflowMathText>, val rules: List<FigureBounds>,
+    val bodySize: Float, val baseline: Float,
+    val radicals: List<ReflowRadical> = emptyList(),
 )
 data class ReflowSource(
     val anchor: String, val bounds: FigureBounds, val text: String, val runs: List<ReflowRun>,
@@ -151,7 +165,8 @@ internal class PdfLayoutReconstructor(private val profile: PdfDocumentProfile) {
             val title = headings[block.anchor]
             val members = listOfNotNull(block, title)
             val text = members.joinToString(" ") { it.text }
-            val heading = headingLevel(text, title ?: block, outlineTitles, blocks)
+            val heading = if (PdfListReconstructor.marker.containsMatchIn(text)) null
+                else headingLevel(text, title ?: block, outlineTitles, blocks)
             if (heading == null && !block.image && PdfDocumentProfile.inMargin(block.bounds, page.bounds)) {
                 val pageNumber = sectionNumber.matches(text) && (block.bounds.top > page.bounds.bottom - page.bounds.height * .08f ||
                     (block.bounds.bottom < page.bounds.top + page.bounds.height * .04f &&
@@ -166,11 +181,12 @@ internal class PdfLayoutReconstructor(private val profile: PdfDocumentProfile) {
             } else members.map { source(it, page.rules) }
             val caption = Regex("^(?:Figure|Fig\\.|Table)\\s+\\d", RegexOption.IGNORE_CASE).containsMatchIn(text)
             val list = Regex("^(?:\\d+[.)]|[\u2022\u25e6\u25aa\u2013])\\s+").containsMatchIn(text)
-            val equation = heading == null && !block.image && sources.any { it.runs.any { run -> run.crop != null } } && members.flatMap { it.runs }.none(::prose)
+            val equation = heading == null && !block.image && sources.any { it.runs.any { run -> run.math != null } } && members.flatMap { it.runs }.none(::prose)
             result += ReflowBlock(headingLevel = heading,
                 kind = when { block.image -> "figure"; equation -> "equation"; caption -> "caption"; list -> "list"; else -> "paragraph" }, sources = sources)
         }
-        return bibliography.reconstruct(mergeEquationFragments(result, remaining, page.rules), page.bounds, outlineTitles)
+        return PdfListReconstructor(bodySize).reconstruct(
+            bibliography.reconstruct(mergeEquationFragments(result, remaining, page.rules), page.bounds, outlineTitles), remaining)
     }
 
     private fun headingLevel(text: String, block: PdfLayoutBlock, outline: Set<String>, neighbors: List<PdfLayoutBlock>): Int? {
@@ -237,13 +253,56 @@ internal class PdfLayoutReconstructor(private val profile: PdfDocumentProfile) {
         val text = normalized.joinToString("") { it.char.toString() }
         val seen = mutableSetOf<FigureBounds>()
         return ReflowSource(block.anchor, block.bounds, text, output.map {
-            it.copy(text = text.substring(it.start, it.end), hidden = it.crop != null && !seen.add(it.crop))
+            it.copy(text = text.substring(it.start, it.end), crop = null,
+                math = it.crop?.let { box -> math(box, block.runs, rules) },
+                hidden = it.crop != null && !seen.add(it.crop))
         })
+    }
+
+    private fun math(box: FigureBounds, runs: List<PdfTextRun>, rules: List<FigureBounds>): ReflowMath {
+        val selected = runs.filter { inside(it.bounds, box) && it.text.isNotBlank() }
+        val baseline = selected.filter { it.size >= bodySize * .85f }.groupBy { (it.baseline * 2).roundToInt() }
+            .maxByOrNull { (_, row) -> row.sumOf { it.text.length } }?.value?.first()?.baseline ?: box.bottom
+        val rootRules = mutableSetOf<FigureBounds>()
+        val roots = mutableMapOf<FigureBounds, ReflowRadical>()
+        selected.filter { it.text.trim() == "\u221a" }.forEach { root ->
+            // TeX radical fonts can place their glyph origin above the radicand baseline.
+            // Reconstruct its stroke from the actual overbar and radicand, not font metrics.
+            val bar = rules.filter { it.left >= root.bounds.left + root.bounds.width * .5f &&
+                abs(it.left - root.bounds.right) <= root.size * .65f && it.width >= root.size * .3f &&
+                it.top in root.bounds.top..root.bounds.bottom + root.size * .5f }
+                .minByOrNull { abs(it.left - root.bounds.right) + abs(it.top - root.baseline) }
+            if (bar != null) {
+                val radicand = selected.filter { it !== root && it.bounds.left >= bar.left - root.size * .2f &&
+                    it.bounds.right <= bar.right + root.size * .2f && it.bounds.top >= bar.top - root.size * .2f &&
+                    it.bounds.bottom <= bar.top + root.size * 1.8f }
+                if (radicand.isNotEmpty()) {
+                    val top = (bar.top + bar.bottom) / 2
+                    val bottom = radicand.maxOf { it.bounds.bottom }
+                    if (bottom - top >= root.size * .5f) {
+                        roots[root.bounds] = ReflowRadical(FigureBounds(root.bounds.left, top, bar.right, bottom),
+                            bar.left, max(bar.height, root.size * .045f))
+                        rootRules += bar
+                    }
+                }
+            }
+        }
+        val padded = roots.values.fold(box) { region, root ->
+            val padding = root.strokeWidth / 2 + .25f
+            region.union(FigureBounds(root.bounds.left - padding, root.bounds.top - padding,
+                root.bounds.right + padding, root.bounds.bottom + padding))
+        }
+        return ReflowMath(padded, selected.map { ReflowMathText(it.text, it.bounds.left, it.baseline, it.bounds.width, it.size,
+            it.bold, it.italic, it.bounds in roots) },
+            rules.filter { it !in rootRules && it.top >= box.top && it.bottom <= box.bottom && it.left >= box.left && it.right <= box.right },
+            bodySize, baseline, roots.values.toList())
     }
 
     private fun formulaCrops(runs: List<PdfTextRun>, rules: List<FigureBounds>): List<FigureBounds> {
         val regions = mutableListOf<FigureBounds>()
         val sorted = runs.filterNot(::prose).sortedBy { it.bounds.top }
+        val proseBaselines = runs.filter { !it.mathFont && prose(it) }.map { it.baseline }.distinct()
+        fun proseRow(run: PdfTextRun) = proseBaselines.any { abs(it - run.baseline) <= run.size * .25f }
         for (i in sorted.indices) {
             val a = sorted[i]
             for (j in i + 1 until min(sorted.size, i + 129)) {
@@ -254,9 +313,13 @@ internal class PdfLayoutReconstructor(private val profile: PdfDocumentProfile) {
                 val union = a.bounds.union(b.bounds)
                 val bar = rules.any { it.width >= min(a.bounds.width, b.bounds.width) * .6f && it.width <= union.width * 1.6f &&
                     it.top in min(a.baseline, b.baseline)..max(a.baseline, b.baseline) && overlaps(it, union) > 0 }
+                // Repeated variables at the same x on consecutive prose lines are not a fraction.
+                if (!bar && proseRow(a) && proseRow(b)) continue
                 if (!bar && (!(mathLike(a) && mathLike(b)) || min(a.size, b.size) < bodySize * .85f)) continue
                 var region = union
-                runs.filter { mathLike(it) && !prose(it) && it.bounds.near(union, bodySize * .4f) }.forEach { region = region.union(it.bounds) }
+                runs.filter { mathLike(it) && !prose(it) && it.bounds.near(union, bodySize * .4f) &&
+                    (!proseRow(it) || it.baseline in min(a.baseline, b.baseline) - it.size * .1f..max(a.baseline, b.baseline) + it.size * .1f) }
+                    .forEach { region = region.union(it.bounds) }
                 val at = regions.indexOfFirst { it.near(region, 2f) }
                 if (at >= 0) regions[at] = regions[at].union(region) else regions += region
             }
@@ -268,14 +331,23 @@ internal class PdfLayoutReconstructor(private val profile: PdfDocumentProfile) {
     }
 
     private fun mergeEquationFragments(output: List<ReflowBlock>, original: List<PdfLayoutBlock>, rules: List<FigureBounds>): List<ReflowBlock> {
-        val candidates = original.filter { !it.image && it.text.length < 160 && it.runs.none(::prose) }
-        val crops = formulaCrops(candidates.flatMap { it.runs }, rules)
-        if (crops.isEmpty()) return output
-        val groups = crops.map { core ->
-            val affected = candidates.filter { inside(it.bounds, core) }.toMutableList()
+        val eligible = output.filter { it.headingLevel == null && it.kind in setOf("paragraph", "equation") }
+            .flatMap { it.sources }.filterNot { it.hidden }.map { it.anchor }.toSet()
+        val candidates = original.filter { it.anchor in eligible && !it.image && it.text.length < 300 && it.runs.none(::prose) }
+        val proseBlocks = original.filter { !it.image && it.runs.any(::prose) }
+        val textLeft = proseBlocks.minOfOrNull { it.bounds.left } ?: original.minOfOrNull { it.bounds.left } ?: 0f
+        val displays = candidates.filter { block ->
+            val signal = block.text.contains('=') || block.runs.filter { it.mathFont }.sumOf { it.text.count(Char::isLetter) } >= 6
+            signal && block.bounds.left > textLeft + bodySize * 2 &&
+                proseBlocks.none { it.bounds.top < block.bounds.bottom && it.bounds.bottom > block.bounds.top }
+        }
+        val cores = formulaCrops(candidates.flatMap { it.runs }, rules) + displays.map { it.bounds }
+        if (cores.isEmpty()) return output
+        data class Group(var bounds: FigureBounds, val blocks: MutableSet<PdfLayoutBlock>)
+        val groups = cores.mapNotNull { core ->
+            val affected = candidates.filter { inside(it.bounds, core) }.toMutableSet()
+            if (affected.isEmpty()) return@mapNotNull null
             var crop = affected.fold(core) { box, part -> box.union(part.bounds) }
-            // If an entire source block is replaced by an equation image, include its
-            // entire bounds, including function names, closing brackets and attached labels.
             var changed = true
             while (changed) {
                 changed = false
@@ -287,25 +359,40 @@ internal class PdfLayoutReconstructor(private val profile: PdfDocumentProfile) {
                     }
                 }
             }
-            val label = candidates.filter { it !in affected && it.text.matches(Regex("\\(\\d+[a-z]?\\)")) &&
+            candidates.filter { it !in affected && it.text.matches(Regex("\\(\\d+[a-z]?\\)")) &&
                 it.bounds.left >= crop.right && it.bounds.left - crop.right < bodySize * 24 &&
                 abs((it.bounds.top + it.bounds.bottom) / 2 - (crop.top + crop.bottom) / 2) < crop.height / 2 + bodySize }
-                .minByOrNull { it.bounds.left - crop.right }
-            Triple(FigureBounds(crop.left - 1, crop.top - 1, crop.right + 1, crop.bottom + 1), affected, label)
-        }.filter { it.second.isNotEmpty() }
+                .minByOrNull { it.bounds.left - crop.right }?.let { affected += it }
+            Group(affected.fold(crop) { box, part -> box.union(part.bounds) }, affected)
+        }.toMutableList()
+        // A fraction and a display-equation seed can describe the same expression.
+        var merged = true
+        while (merged) {
+            merged = false
+            loop@ for (i in groups.indices) for (j in i + 1 until groups.size) {
+                if (groups[i].blocks.any { it in groups[j].blocks }) {
+                    groups[i].bounds = groups[i].bounds.union(groups[j].bounds)
+                    groups[i].blocks += groups[j].blocks
+                    groups.removeAt(j); merged = true; break@loop
+                }
+            }
+        }
         val emitted = mutableSetOf<Int>()
         return output.mapNotNull { block ->
-            if (block.headingLevel != null || block.kind == "caption") return@mapNotNull block
-            if (block.kind == "figure" && groups.any { (crop, _, _) -> block.sources.any {
-                    inside(it.bounds, crop) && it.bounds.width < crop.width * 1.15f && it.bounds.height < crop.height * 1.15f
+            if (block.headingLevel != null || block.kind !in setOf("paragraph", "equation", "figure")) return@mapNotNull block
+            if (block.kind == "figure" && groups.any { group -> block.sources.any {
+                    inside(it.bounds, group.bounds) && it.bounds.width < group.bounds.width * 1.15f && it.bounds.height < group.bounds.height * 1.15f
                 } }) return@mapNotNull null
-            val index = groups.indexOfFirst { (_, affected, label) -> block.sources.any { source -> affected.any { it.anchor == source.anchor } || label?.anchor == source.anchor } }
+            val index = groups.indexOfFirst { group -> block.sources.any { source -> group.blocks.any { it.anchor == source.anchor } } }
             if (index < 0) return@mapNotNull block
             if (!emitted.add(index)) return@mapNotNull null
-            val (crop, affected, label) = groups[index]
-            val sources = affected.mapIndexed { part, item -> ReflowSource(item.anchor, item.bounds, item.text,
-                listOf(ReflowRun(item.text, 0, item.text.length, crop = if (part == 0) crop else null)), hidden = part > 0) } +
-                listOfNotNull(label?.let { source(it, rules).copy(equationLabel = true) })
+            val group = groups[index]
+            val region = group.bounds.let { FigureBounds(it.left - 1, it.top - 1, it.right + 1, it.bottom + 1) }
+            val parts = original.filter { it in group.blocks }
+            val equation = math(region, parts.flatMap { it.runs }, rules)
+            val sources = parts.mapIndexed { part, item -> ReflowSource(item.anchor, item.bounds, item.text,
+                listOf(ReflowRun(item.text, 0, item.text.length, math = if (part == 0) equation else null)),
+                equationLabel = item.text.matches(Regex("\\(\\d+[a-z]?\\)")), hidden = part > 0) }
             block.copy(kind = "equation", sources = sources)
         }
     }

@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.data.publication.conversion
 
-import android.graphics.BitmapFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.artifex.mupdf.fitz.Document
@@ -18,7 +17,142 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class PdfReadModeConverterTest {
     @Test
-    fun convertsFilledVectorArtWithoutNullStrokeFailureOrFullPageDuplication() = runBlocking {
+    fun aVectorChartKeepsItsPathsColorsAndLabelsInOneSvg() = runBlocking {
+        val commands = "BT /F1 12 Tf 50 740 Td (This paragraph stays outside the chart.) Tj ET\n" +
+            "0 0 0 RG 1 w 100 300 m 100 550 l 420 550 l S\n" +
+            "0.1 0.4 0.8 rg 125 350 55 120 re f\n" +
+            "0.8 0.2 0.1 rg 225 350 55 180 re f\n" +
+            "0.2 0.7 0.3 rg 325 350 55 150 re f\n" +
+            "0 0 0 rg BT /F1 12 Tf 150 580 Td (Quarterly results) Tj ET\n" +
+            "BT /F1 10 Tf 140 330 Td (Alpha) Tj ET\n" +
+            "BT /F1 10 Tf 240 330 Td (Beta) Tj ET\n" +
+            "BT /F1 10 Tf 340 330 Td (Gamma) Tj ET\n" +
+            "BT /F1 10 Tf 300 20 Td (1) Tj ET\n"
+        val pdf = MuPdfDocument(Document.openDocument(vectorPdf(commands), "application/pdf"))
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val destination = File(context.cacheDir, "native-chart-audit.epub")
+        try {
+            val map = PdfReadModeConverter().convert(listOf(PdfSource(pdf, "chart.pdf")), destination,
+                "test:chart", "Chart audit", "en",
+                GeneratedPublicationStrings("Contents", "Scanned", "Original") { "Page $it" }) { _, _ -> }
+            val entries = mutableMapOf<String, ByteArray>()
+            ZipInputStream(destination.inputStream()).use { zip ->
+                while (true) { val entry = zip.nextEntry ?: break; entries[entry.name] = zip.readBytes() }
+            }
+            val page = MuPdfStructure.parse(entries.getValue("EPUB/text/content.xhtml").toString(Charsets.UTF_8))
+            assertTrue(page.textContent.contains("This paragraph stays outside the chart."))
+            assertTrue("Chart labels must not become separate reading paragraphs", !page.textContent.contains("Quarterly results"))
+            val assets = entries.filterKeys { it.startsWith("EPUB/images/") }
+            assertEquals("All paths and labels belong to one chart", 1, assets.size)
+            assertTrue(assets.keys.single().endsWith(".svg"))
+            val svg = MuPdfStructure.parse(assets.values.single().toString(Charsets.UTF_8))
+            assertTrue("A distant printed page number must not enlarge the chart crop",
+                svg.getAttribute("viewBox").split(' ')[3].toFloat() < 400f)
+            assertTrue(svg.descendants("path").size >= 3)
+            assertTrue("Native glyph outlines must keep the labels in the chart", svg.descendants("use").isNotEmpty())
+            val colors = svg.descendants().map { it.getAttribute("fill") }.filter { it.isNotBlank() }.toSet()
+            assertTrue("Keep original chart colors", colors.size >= 3)
+            val sourceMap = kotlinx.serialization.json.Json.decodeFromString<List<SourcePage>>(map)
+            assertTrue(sourceMap.single().blocks.any { block -> block.textRuns.any { it.image } })
+        } finally { pdf.close() }
+    }
+
+    @Test
+    fun nativeXmlSerializationPreservesSupplementaryMathAndLaterPages() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val content = File.createTempFile("unicode-content-", ".xhtml", context.cacheDir)
+        val output = ByteArrayOutputStream()
+        val symbol = "\uD835\uDC5D"
+        val math = ReflowMath(FigureBounds(0f, 0f, 10f, 10f),
+            listOf(ReflowMathText(symbol, 0f, 8f, 8f, 10f)), emptyList(), 10f, 8f)
+        EpubWriter(output, "test:unicode", "Math $symbol", "en",
+            GeneratedPublicationStrings("Contents", "Scanned", "Original") { "Page $it" }, content).use {
+            it.page(1, listOf(ReflowBlock(text = "Probability $symbol")))
+            it.page(2, listOf(ReflowBlock(kind = "equation", sources = listOf(ReflowSource("math", math.bounds, symbol,
+                listOf(ReflowRun(symbol, 0, symbol.length, math = math)))))))
+            it.page(3, listOf(ReflowBlock(text = "The final page is still readable.")))
+            it.finish()
+        }
+        ZipInputStream(output.toByteArray().inputStream()).use { zip ->
+            while (true) {
+                val entry = zip.nextEntry ?: break
+                if (entry.name.endsWith(".xml") || entry.name.endsWith(".opf") || entry.name.endsWith(".xhtml")) {
+                    val xml = javax.xml.parsers.DocumentBuilderFactory.newInstance().apply { isNamespaceAware = true }
+                        .newDocumentBuilder().parse(zip.readBytes().inputStream())
+                    if (entry.name == "EPUB/text/content.xhtml") {
+                        assertEquals(3, xml.getElementsByTagNameNS("*", "section").length)
+                        assertTrue(xml.documentElement.textContent.contains(symbol))
+                        assertTrue(xml.documentElement.textContent.contains("The final page is still readable."))
+                        val svg = xml.getElementsByTagNameNS("http://www.w3.org/2000/svg", "svg").item(0) as org.w3c.dom.Element
+                        assertEquals(symbol, svg.getAttribute("aria-label"))
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun optionalThesisConversionReachesTheFinalPdfPage() = runBlocking {
+        val path = InstrumentationRegistry.getArguments().getString("thesisPath")
+        org.junit.Assume.assumeTrue("Pass thesisPath to audit the local thesis", path != null)
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val native = MuPdfDocument(Document.openDocument(requireNotNull(path)))
+        val destination = File(context.cacheDir, "thesis-reconstruction-audit.epub")
+        val started = System.nanoTime()
+        try {
+            var completed = 0
+            val map = PdfReadModeConverter().convert(listOf(PdfSource(native, "thesis.pdf")), destination,
+                "test:thesis", "Thesis conversion audit", "id",
+                GeneratedPublicationStrings("Contents", "Scanned", "Original") { "Page $it" }) { done, total ->
+                assertEquals(native.pageCount * 2, total); completed = done
+            }
+            assertEquals(native.pageCount * 2, completed)
+            val sourceMap = kotlinx.serialization.json.Json.decodeFromString<List<SourcePage>>(map)
+            assertEquals(native.pageCount, sourceMap.size)
+            val entries = mutableMapOf<String, ByteArray>()
+            ZipInputStream(destination.inputStream()).use { zip ->
+                while (true) { val entry = zip.nextEntry ?: break; entries[entry.name] = zip.readBytes() }
+            }
+            val bytes = entries.getValue("EPUB/text/content.xhtml")
+            val xml = javax.xml.parsers.DocumentBuilderFactory.newInstance().apply { isNamespaceAware = true }
+                .newDocumentBuilder().parse(bytes.inputStream())
+            assertEquals(native.pageCount, xml.getElementsByTagNameNS("*", "section").length)
+            val all = xml.getElementsByTagName("*")
+            val ids = (0 until all.length).mapNotNull { all.item(it).attributes.getNamedItem("id")?.nodeValue }.toSet()
+            (1..native.pageCount).forEach { assertTrue("Missing original page $it", "source-page-$it" in ids) }
+            assertTrue("Supplementary math letters must survive serialization", xml.documentElement.textContent.contains("\uD835\uDC5D"))
+            assertEquals(1, entries.keys.count { it.startsWith("EPUB/text/") })
+            verifyWebViewReachesLastPage(bytes.toString(Charsets.UTF_8), native.pageCount)
+            println("THESIS_RECONSTRUCTION: pages=${native.pageCount}, htmlBytes=${bytes.size}, elapsedMs=${(System.nanoTime() - started) / 1_000_000}")
+        } finally { native.close() }
+    }
+
+    private fun verifyWebViewReachesLastPage(html: String, pages: Int) {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val ready = java.util.concurrent.CountDownLatch(1)
+        val result = java.util.concurrent.atomic.AtomicReference<String>()
+        var view: android.webkit.WebView? = null
+        instrumentation.runOnMainSync {
+            view = android.webkit.WebView(instrumentation.targetContext).apply {
+                settings.javaScriptEnabled = true
+                settings.blockNetworkLoads = true
+                webViewClient = object : android.webkit.WebViewClient() {
+                    override fun onPageFinished(webView: android.webkit.WebView, url: String) {
+                        webView.evaluateJavascript("[document.querySelectorAll('section[data-source-page]').length," +
+                            "!!document.getElementById('source-page-$pages')]") { value -> result.set(value); ready.countDown() }
+                    }
+                }
+                loadDataWithBaseURL("https://localhost/thesis.xhtml", html, "application/xhtml+xml", "UTF-8", null)
+            }
+        }
+        try {
+            assertTrue("WebView did not finish parsing the converted thesis", ready.await(30, java.util.concurrent.TimeUnit.SECONDS))
+            assertEquals("The reader DOM must reach the final source page", "[$pages,true]", result.get())
+        } finally { instrumentation.runOnMainSync { view?.destroy() } }
+    }
+
+    @Test
+    fun convertsFilledVectorArtToNativeSvgWithoutFullPageDuplication() = runBlocking {
         val pdf = MuPdfDocument(Document.openDocument(vectorPdf(), "application/pdf"))
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val destination = File.createTempFile("vector-conversion-", ".epub", context.cacheDir)
@@ -43,15 +177,11 @@ class PdfReadModeConverterTest {
             assertTrue(page.contains("A PDF with extractable text."))
             val images = entries.filterKeys { it.startsWith("EPUB/images/") }
             assertEquals(1, images.size)
-            val bytes = images.values.single()
-            val image = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-            try {
-                // The original renders at 1800px wide; this must be a figure crop.
-                assertTrue(image.width in 100..999)
-                assertTrue(image.height in 100..999)
-            } finally {
-                image.recycle()
-            }
+            assertTrue(images.keys.single().endsWith(".svg"))
+            val svg = MuPdfStructure.parse(images.values.single().toString(Charsets.UTF_8))
+            val viewport = svg.getAttribute("viewBox").split(' ').map(String::toFloat)
+            assertTrue("Keep the drawing as a vector region, not the whole 600 x 800 page", viewport[2] in 150f..160f && viewport[3] in 100f..110f)
+            assertTrue(svg.descendants("path").isNotEmpty())
         } finally {
             pdf.close()
             destination.delete()
@@ -177,17 +307,40 @@ class PdfReadModeConverterTest {
             assertEquals("All four research-paper tables should contain selectable HTML cells", 4, tables.length)
             assertTrue(tables.item(0).textContent.contains("Sequential Operations"))
             val tableTwo = tables.item(1) as org.w3c.dom.Element
-            val tableTwoHeaders = tableTwo.getElementsByTagNameNS("*", "th")
-            assertTrue((0 until tableTwoHeaders.length).any {
-                val cell = tableTwoHeaders.item(it) as org.w3c.dom.Element
-                cell.textContent.trim() == "BLEU" && cell.getAttribute("colspan") == "2"
+            val tableTwoCells = tableTwo.getElementsByTagNameNS("*", "td")
+            assertTrue((0 until tableTwoCells.length).any {
+                val cell = tableTwoCells.item(it) as org.w3c.dom.Element
+                cell.textContent.trim() == "BLEU"
             })
             val paragraphs = xml.getElementsByTagNameNS("*", "p")
+            val convolution = (0 until paragraphs.length).map { paragraphs.item(it) as org.w3c.dom.Element }
+                .single { it.textContent.contains("Separable convolutions") }
+            assertTrue(convolution.textContent.contains("factor of k. Separable convolutions"))
+            assertEquals("Inline math on consecutive prose lines must not create a spurious stacked expression",
+                0, convolution.getElementsByTagNameNS("http://www.w3.org/2000/svg", "svg").length)
             val references = (0 until paragraphs.length).map { paragraphs.item(it) as org.w3c.dom.Element }
                 .filter { it.getAttribute("class") == "reference" }
             assertEquals("Line fragments should form the original 40 bibliography entries", 40, references.size)
             assertTrue(references.first().textContent.contains("arXiv:1607.06450, 2016."))
             assertTrue(references[8].textContent.contains("sequence to sequence learning."))
+            val vectors = xml.getElementsByTagNameNS("http://www.w3.org/2000/svg", "svg")
+            val attention = (0 until vectors.length).map { vectors.item(it) as org.w3c.dom.Element }
+                .single { it.getAttribute("aria-label").startsWith("Attention(") }
+            assertTrue("Use MuPDF's original glyph outlines, including the denominator radical",
+                attention.getElementsByTagNameNS("*", "path").length > 1)
+            assertTrue(attention.getAttribute("aria-label").contains("\u221a"))
+            val optimizer = (0 until vectors.length).map { vectors.item(it) as org.w3c.dom.Element }
+                .single { it.textContent.startsWith("lrate") }
+            assertTrue("The complete optimizer expression must stay together", optimizer.textContent.contains("warmup"))
+            assertTrue(optimizer.textContent.contains("model"))
+            assertTrue(optimizer.getAttribute("aria-label").contains("warmup"))
+            assertEquals("Extracted formulas must not contain bitmap images", 0, optimizer.getElementsByTagNameNS("*", "img").length)
+            val bullets = xml.getElementsByTagNameNS("*", "ul")
+            val applications = (0 until bullets.length).map { bullets.item(it) as org.w3c.dom.Element }
+                .single { it.textContent.contains("encoder-decoder attention") }
+            assertEquals("Section 3.2.3 must have exactly three list items", 3, applications.getElementsByTagNameNS("*", "li").length)
+            assertTrue("A separate continuation block must stay inside the second item",
+                applications.getElementsByTagNameNS("*", "li").item(1).textContent.trim().endsWith("encoder."))
             val all = xml.getElementsByTagName("*")
             val ids = (0 until all.length).mapNotNull { all.item(it).attributes.getNamedItem("id")?.nodeValue }
             assertEquals("Source and run anchors must remain unique inside tables", ids.size, ids.toSet().size)
