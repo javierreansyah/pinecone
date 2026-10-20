@@ -174,16 +174,11 @@ private fun MetadataField(label: String, value: String, change: (String) -> Unit
 }
 
 @Composable
-fun RichMetadataDetails(book: Book) {
+internal fun richMetadataFields(book: Book): List<Pair<String, String>> {
     val metadata = book.metadata
     val numbers = java.text.NumberFormat.getIntegerInstance(LocalLocale.current.platformLocale)
     val fields = buildList {
         if (metadata.subtitle.isNotBlank()) add(stringResource(R.string.publication_subtitle) to metadata.subtitle)
-        if (metadata.languages.isNotEmpty()) add(
-            stringResource(R.string.publication_language_label) to metadata.languages.joinToString(
-                ", "
-            )
-        )
         if (metadata.volume.isNotBlank()) add(stringResource(R.string.publication_volume) to metadata.volume)
         if (metadata.issue.isNotBlank()) add(stringResource(R.string.publication_issue) to metadata.issue)
         if (metadata.ageRating.isNotBlank()) add(stringResource(R.string.publication_age_rating) to metadata.ageRating)
@@ -198,7 +193,9 @@ fun RichMetadataDetails(book: Book) {
                 )
             )
         }
-        metadata.identifiers.forEach { (scheme, value) -> add(scheme to value) }
+        metadata.identifiers.forEach { (scheme, value) ->
+            if (value.isNotBlank() && value != book.identifier) add(scheme to value)
+        }
         book.collections.forEach {
             add(
                 roleLabel(it.kind) to listOfNotNull(
@@ -211,30 +208,7 @@ fun RichMetadataDetails(book: Book) {
             add(roleLabel(role) to credits.sortedBy { it.position }.joinToString(", ") { it.name })
         }
     }
-    if (fields.isEmpty()) return
-    Card(shape = RoundedCornerShape(28.dp), modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                stringResource(R.string.publication_metadata),
-                style = MaterialTheme.typography.titleLarge
-            )
-            fields.forEach { (label, value) ->
-                Column {
-                    Text(
-                        label,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    androidx.compose.foundation.text.selection.SelectionContainer {
-                        Text(
-                            value,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                    }
-                }
-            }
-        }
-    }
+    return fields.filter { (_, value) -> value.isNotBlank() }
 }
 
 @Composable

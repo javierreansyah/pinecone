@@ -93,4 +93,6 @@
     <string name="publication_age_rating">Age rating</string>
     <string name="publication_published">Publication date</string>
     <string name="publication_credit_hint">One contributor per line; roles are preserved separately.</string>
+    <string name="reader_reparse_pdf">Reparse PDF</string>
+    <string name="reader_reparse_pdf_description">Rebuild reading mode from the original PDF. Your saved reading state is kept.</string>
 </resources>

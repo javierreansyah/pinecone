@@ -29,4 +29,9 @@ interface NoteDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(notes: List<NoteEntity>)
+    @Query("SELECT * FROM notes WHERE bookId = :bookId AND renditionKey = :renditionKey")
+    suspend fun getByRendition(bookId: String, renditionKey: String): List<NoteEntity>
+
+    @Query("UPDATE notes SET locatorJson = :locatorJson WHERE id = :id")
+    suspend fun updateLocator(id: Long, locatorJson: String)
 }

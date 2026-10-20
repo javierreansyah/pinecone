@@ -61,6 +61,7 @@ import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Bookmark
 import com.composables.icons.materialsymbols.outlined.Bookmark_check
 import com.composables.icons.materialsymbols.outlined.Close
+import com.composables.icons.materialsymbols.outlined.Description
 import com.composables.icons.materialsymbols.outlined.Info
 import com.composables.icons.materialsymbols.outlined.List
 import com.composables.icons.materialsymbols.outlined.Match_case
@@ -144,16 +145,6 @@ fun ReaderTopBar(
                 }
             },
             actions = {
-                if (showReadMode) {
-                    androidx.compose.material3.FilledIconToggleButton(
-                        checked = readMode,
-                        onCheckedChange = { onToggleReadMode() }) {
-                        Icon(
-                            Icons.AutoMirrored.Rounded.MenuBook,
-                            contentDescription = stringResource(if (readMode) R.string.reader_original_pdf else R.string.reader_read_mode)
-                        )
-                    }
-                }
                 val topBarState = when {
                     isInSearchMode -> TopBarState.SEARCH
                     jumpOrigin != null -> TopBarState.JUMP
@@ -210,6 +201,16 @@ fun ReaderTopBar(
                                 Spacer(modifier = Modifier.width(4.dp))
                             }
 
+                            if (showReadMode) {
+                                IconButton(onClick = onToggleReadMode) {
+                                    Icon(
+                                        imageVector = if (readMode) MaterialSymbols.Outlined.Description else Icons.AutoMirrored.Rounded.MenuBook,
+                                        contentDescription = stringResource(if (readMode) R.string.reader_original_pdf else R.string.reader_read_mode),
+                                        tint = readerTextColor,
+                                    )
+                                }
+                            }
+
                             IconButton(onClick = onToggleBookmark) {
                                 Icon(
                                     imageVector = if (isBookmarked) MaterialSymbols.Outlined.Bookmark_check else MaterialSymbols.Outlined.Bookmark,
@@ -221,7 +222,7 @@ fun ReaderTopBar(
                             }
 
                             if (state == TopBarState.NORMAL) {
-                                IconButton(onClick = onTocClick) {
+                                if (!showReadMode) IconButton(onClick = onTocClick) {
                                     Icon(
                                         MaterialSymbols.Outlined.List,
                                         contentDescription = stringResource(R.string.reader_toc_title),
@@ -259,12 +260,10 @@ fun ReaderTopBar(
                                         shapes = MenuDefaults.groupShape(0, 1),
                                         interactionSource = groupInteractionSource,
                                     ) {
-                                        val items = remember(state, canSearch) {
+                                        val items = remember(state, canSearch, showReadMode) {
                                             buildList {
-                                                if (state == TopBarState.JUMP) {
-                                                    add("content")
-                                                    add("settings")
-                                                }
+                                                if (state == TopBarState.JUMP || showReadMode) add("content")
+                                                if (state == TopBarState.JUMP) add("settings")
                                                 if (canSearch) add("search")
                                                 add("info")
                                             }
@@ -353,7 +352,7 @@ fun ReaderTopBar(
                                                     SelectableDropdownMenuItem(
                                                         selected = false,
                                                         text = {
-                                                            Text(stringResource(R.string.book_info_title))
+                                                            Text(stringResource(R.string.reader_menu_info))
                                                         },
                                                         onClick = {
                                                             onInfoClick()

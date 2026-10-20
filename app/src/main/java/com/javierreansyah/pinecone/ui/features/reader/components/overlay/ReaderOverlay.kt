@@ -234,7 +234,7 @@ fun ReaderOverlay(
                 },
                 onInfoClick = { router.navigateToBookInfo(bookId) },
                 canSearch = profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.EPUB || profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF,
-                typographySettings = profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.EPUB && !fixedEpub,
+                typographySettings = profile != com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO,
                 showReadMode = bookState.value.sourceIsPdf,
                 readMode = bookState.value.readMode,
                 onToggleReadMode = viewModel::togglePdfReadMode,
@@ -405,6 +405,7 @@ fun ReaderOverlay(
                 fixedEpub = fixedEpub,
                 useBookSettings = useBookSettings,
                 onUseBookSettings = viewModel::setUseBookSettings,
+                onReparsePdf = viewModel::reparsePdf,
                 onHideExternalLinkMenu = viewModel::hideExternalLinkMenu,
                 publication = publication,
             )
@@ -712,6 +713,7 @@ fun ReaderSheetsLayer(
     fixedEpub: Boolean = false,
     useBookSettings: Boolean = false,
     onUseBookSettings: (Boolean) -> Unit = {},
+    onReparsePdf: (() -> Unit)? = null,
     publication: org.readium.r2.shared.publication.Publication? = null,
 ) {
     val settingsSheetState = rememberBottomSheetState(
@@ -761,17 +763,15 @@ fun ReaderSheetsLayer(
             onDismissRequest = onHideSettings,
             sheetState = settingsSheetState,
         ) {
-            com.javierreansyah.pinecone.ui.features.reader.components.settings.PreferenceSwitch(
-                stringResource(R.string.reader_settings_this_publication),
-                useBookSettings,
-                onUseBookSettings,
-            )
             ReaderSettingsContent(
                 settings = settings,
                 onSettingsChange = onUpdateSettings,
                 profile = profile,
                 fixedEpub = fixedEpub,
                 publication = publication,
+                useBookSettings = useBookSettings,
+                onUseBookSettings = onUseBookSettings,
+                onReparsePdf = onReparsePdf,
             )
         }
     }

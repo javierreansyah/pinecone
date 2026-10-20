@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.reader.components.contents
 
+import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -42,6 +43,12 @@ fun TocList(
         val currentChapterIndex = remember(tableOfContents, currentLocator) {
             if (currentLocator == null) return@remember 0
             val currentHref = currentLocator.href.toString().substringBefore("#")
+            GeneratedEpubLocations.page(currentLocator.href.toString(),
+                currentLocator.locations["cssSelector"] as? String, currentLocator.locations.fragments)?.let { page ->
+                return@remember tableOfContents.indexOfLast { link ->
+                    GeneratedEpubLocations.page(link.href.toString())?.let { it <= page } == true
+                }.coerceAtLeast(0)
+            }
             val index = tableOfContents.indexOfFirst { (itHref) ->
                 itHref.toString().substringBefore("#") == currentHref
             }
@@ -61,7 +68,9 @@ fun TocList(
                 val link = tableOfContents[index]
                 val currentHref = currentLocator?.href?.toString()?.substringBefore("#")
                 val linkHref = link.href.toString().substringBefore("#")
-                val isCurrentChapter = currentHref == linkHref
+                val isCurrentChapter = if (currentHref != null && GeneratedEpubLocations.isContent(currentHref)) {
+                    index == currentChapterIndex
+                } else currentHref == linkHref
                 val pageLabel = getChapterPageLabel(link)
                 ListItem(
                     content = {

@@ -130,6 +130,7 @@ import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.ui.components.EmptyState
+import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import com.javierreansyah.pinecone.ui.components.SegmentedColumn
 import com.javierreansyah.pinecone.ui.features.reader.ReaderActivity
 import kotlinx.coroutines.launch
@@ -541,7 +542,6 @@ private fun AboutTabContent(
         }
 
         BookMetadata(book = book)
-        RichMetadataDetails(book)
     }
 }
 
@@ -577,13 +577,25 @@ private fun ChaptersTabContent(
             contentPadding = PaddingValues(vertical = 8.dp),
         ) {
             val currentHref = currentLocator?.href?.toString()?.substringBefore("#")
+            val sourcePage = currentLocator?.let { GeneratedEpubLocations.page(it.href.toString(),
+                it.locations["cssSelector"] as? String, it.locations.fragments) }
+            val currentChapter = sourcePage?.let { page -> tableOfContents.lastOrNull {
+                GeneratedEpubLocations.page(it.href.toString())?.let { it <= page } == true
+            } }
             items(tableOfContents) { link ->
                 val linkHref = link.href.toString().substringBefore("#")
-                val isCurrentChapter = currentHref == linkHref
+                val isCurrentChapter = if (sourcePage != null) link == currentChapter else currentHref == linkHref
                 val pageLabel = getChapterPageLabel(link, positions)
                 ListItem(
                     modifier = Modifier.clickable {
-                        val targetLocator = positions.firstOrNull { (itHref) ->
+                        val targetLocator = if (GeneratedEpubLocations.page(link.href.toString()) != null) {
+                            Locator(
+                                href = positions.firstOrNull()?.href ?: link.url(),
+                                mediaType = link.mediaType ?: MediaType.XHTML,
+                                title = link.title,
+                                locations = Locator.Locations(fragments = listOf(link.href.toString().substringAfter('#'))),
+                            )
+                        } else positions.firstOrNull { (itHref) ->
                             itHref.toString().substringBefore("#") == link.href.toString()
                                 .substringBefore("#")
                         } ?: Locator(
@@ -1423,6 +1435,7 @@ private fun BookMetadata(
         )
 
         val notAvailable = stringResource(R.string.book_not_available)
+        val extraFields = richMetadataFields(book)
         SegmentedColumn(
             modifier = Modifier.fillMaxWidth(),
         ) {
@@ -1462,7 +1475,8 @@ private fun BookMetadata(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        text = book.language ?: notAvailable,
+                        text = book.metadata.languages.takeIf { it.isNotEmpty() }?.joinToString(", ")
+                            ?: book.language ?: notAvailable,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
@@ -1496,6 +1510,16 @@ private fun BookMetadata(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
+                }
+            }
+            extraFields.forEach { (label, value) ->
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(label, style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(value, style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface)
+                    }
                 }
             }
         }
@@ -1628,6 +1652,9 @@ private fun getPositionLabel(locator: Locator, positions: List<Locator>): String
 
 @Composable
 private fun getChapterPageLabel(link: Link, positions: List<Locator>): String {
+    GeneratedEpubLocations.page(link.href.toString())?.let { page ->
+        return pluralStringResource(R.plurals.reader_page_num, page, page)
+    }
     if (positions.isEmpty()) return ""
     val linkHref = link.href.toString().substringBefore("#")
     val posIndex = positions.indexOfFirst { (itHref4) ->

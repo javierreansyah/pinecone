@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -90,9 +89,12 @@ fun ReaderSettingsContent(
     profile: com.javierreansyah.pinecone.data.publication.ReaderProfile = com.javierreansyah.pinecone.data.publication.ReaderProfile.EPUB,
     fixedEpub: Boolean = false,
     publication: org.readium.r2.shared.publication.Publication? = null,
+    useBookSettings: Boolean = false,
+    onUseBookSettings: (Boolean) -> Unit = {},
+    onReparsePdf: (() -> Unit)? = null,
 ) {
     if (profile != com.javierreansyah.pinecone.data.publication.ReaderProfile.EPUB || fixedEpub) {
-        FormatReaderSettings(settings, onSettingsChange, profile, fixedEpub)
+        FormatReaderSettings(settings, onSettingsChange, profile, fixedEpub, useBookSettings, onUseBookSettings, onReparsePdf)
         return
     }
     val context = LocalContext.current
@@ -126,7 +128,7 @@ fun ReaderSettingsContent(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(max = maxSheetHeight)
+            .height(maxSheetHeight)
             .padding(bottom = 4.dp),
     ) {
         PrimaryTabRow(
@@ -138,7 +140,7 @@ fun ReaderSettingsContent(
                     onClick = {
                         scope.launch { pagerState.animateScrollToPage(index) }
                     },
-                    text = { Text(title, style = MaterialTheme.typography.titleMedium) },
+                    text = { Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f)) },
                 )
             }
         }
@@ -208,10 +210,13 @@ fun ReaderSettingsContent(
                             showColorPicker = true
                         }
 
-                        2 -> AdvancedTabContent(
-                            settings = settings,
-                            onSettingsChange = onSettingsChange,
-                        ) { showRestoreDefaultWarning = true }
+                        2 -> {
+                            PreferenceSwitch(stringResource(R.string.reader_settings_this_publication), useBookSettings, onUseBookSettings)
+                            AdvancedTabContent(
+                                settings = settings,
+                                onSettingsChange = onSettingsChange,
+                            ) { showRestoreDefaultWarning = true }
+                        }
                     }
                 }
             }
@@ -658,59 +663,7 @@ private fun LightingTabContent(
     onAddThemeClick: () -> Unit,
     onThemeLongClick: (CustomPineconeTheme) -> Unit,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.padding(horizontal = 16.dp),
-    ) {
-        Text(
-            stringResource(R.string.reader_settings_brightness),
-            style = MaterialTheme.typography.titleMedium,
-        )
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            FilledIconToggleButton(
-                checked = settings.autoBrightness,
-                onCheckedChange = { onSettingsChange(settings.copy(autoBrightness = it)) },
-                shapes = IconButtonDefaults.toggleableShapes(),
-                modifier = Modifier.size(48.dp),
-            ) {
-                Icon(
-                    imageVector = if (settings.autoBrightness) MaterialSymbols.Outlined.Brightness_auto else MaterialSymbols.Outlined.Brightness_medium,
-                    contentDescription = stringResource(R.string.reader_settings_auto_brightness),
-                )
-            }
-            val brightnessSliderState = rememberSliderState(value = settings.brightness)
-            // The settings flow can update brightness independently of slider gestures.
-            brightnessSliderState.value = settings.brightness
-            Slider(
-                state = brightnessSliderState,
-                onValueChange = { onSettingsChange(settings.copy(brightness = it)) },
-                enabled = !settings.autoBrightness,
-                interactionSource = interactionSource,
-                track = { sliderState ->
-                    SliderDefaults.Track(
-                        sliderState = sliderState,
-                        enabled = !settings.autoBrightness,
-                        modifier = Modifier.height(16.dp),
-                        trackCornerSize = 8.dp,
-                    )
-                },
-                thumb = { _ ->
-                    SliderDefaults.Thumb(
-                        interactionSource = interactionSource,
-                        modifier = Modifier,
-                        colors = SliderDefaults.colors(),
-                        enabled = !settings.autoBrightness,
-                        thumbSize = DpSize(4.dp, 48.dp),
-                    )
-                },
-            )
-        }
-    }
+    ReaderBrightnessControl(settings, onSettingsChange)
 
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -815,9 +768,68 @@ private fun LightingTabContent(
 }
 
 @Composable
-private fun AdvancedTabContent(
+internal fun ReaderBrightnessControl(settings: ReaderSettings, onSettingsChange: (ReaderSettings) -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(horizontal = 16.dp),
+    ) {
+        Text(
+            stringResource(R.string.reader_settings_brightness),
+            style = MaterialTheme.typography.titleMedium,
+        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            FilledIconToggleButton(
+                checked = settings.autoBrightness,
+                onCheckedChange = { onSettingsChange(settings.copy(autoBrightness = it)) },
+                shapes = IconButtonDefaults.toggleableShapes(),
+                modifier = Modifier.size(48.dp),
+            ) {
+                Icon(
+                    imageVector = if (settings.autoBrightness) MaterialSymbols.Outlined.Brightness_auto else MaterialSymbols.Outlined.Brightness_medium,
+                    contentDescription = stringResource(R.string.reader_settings_auto_brightness),
+                )
+            }
+            val brightnessSliderState = rememberSliderState(value = settings.brightness)
+            // The settings flow can update brightness independently of slider gestures.
+            brightnessSliderState.value = settings.brightness
+            Slider(
+                state = brightnessSliderState,
+                onValueChange = { onSettingsChange(settings.copy(brightness = it)) },
+                enabled = !settings.autoBrightness,
+                interactionSource = interactionSource,
+                track = { sliderState ->
+                    SliderDefaults.Track(
+                        sliderState = sliderState,
+                        enabled = !settings.autoBrightness,
+                        modifier = Modifier.height(16.dp),
+                        trackCornerSize = 8.dp,
+                    )
+                },
+                thumb = { _ ->
+                    SliderDefaults.Thumb(
+                        interactionSource = interactionSource,
+                        modifier = Modifier,
+                        colors = SliderDefaults.colors(),
+                        enabled = !settings.autoBrightness,
+                        thumbSize = DpSize(4.dp, 48.dp),
+                    )
+                },
+            )
+        }
+    }
+
+}
+
+@Composable
+internal fun AdvancedTabContent(
     settings: ReaderSettings,
     onSettingsChange: (ReaderSettings) -> Unit,
+    includeTextPreferences: Boolean = true,
     onRestoreDefaultsClick: () -> Unit,
 ) {
     var showDictionaryDialog by remember { mutableStateOf(value = false) }
@@ -825,75 +837,78 @@ private fun AdvancedTabContent(
 
     Column {
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { showDictionaryDialog = true }
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                stringResource(R.string.reader_settings_dictionary),
-                style = MaterialTheme.typography.titleMedium,
-            )
-            val activeName =
-                settings.installedDictionaries.find { (itId) -> itId == settings.activeDictionaryId }?.name
-                    ?: stringResource(R.string.reader_settings_image_filter_none)
-            Text(
-                activeName,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        if (includeTextPreferences) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showDictionaryDialog = true }
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.reader_settings_dictionary),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                val activeName =
+                    settings.installedDictionaries.find { (itId) -> itId == settings.activeDictionaryId }?.name
+                        ?: stringResource(R.string.reader_settings_image_filter_none)
+                Text(
+                    activeName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
 
-        if (showDictionaryDialog) {
-            AlertDialog(
-                onDismissRequest = { showDictionaryDialog = false },
-                title = { Text(stringResource(R.string.dictionaries_select)) },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (settings.installedDictionaries.isEmpty()) {
-                            Text(
-                                text = stringResource(R.string.dictionaries_none_installed),
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
-                        } else {
-                            settings.installedDictionaries.forEach { (dictId, dictName) ->
-                                val isSelected = settings.activeDictionaryId == dictId
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(MaterialTheme.shapes.small)
-                                        .clickable {
-                                            onSettingsChange(settings.copy(activeDictionaryId = dictId))
-                                            showDictionaryDialog = false
-                                        },
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    RadioButton(
-                                        selected = isSelected,
-                                        onClick = {
-                                            onSettingsChange(settings.copy(activeDictionaryId = dictId))
-                                            showDictionaryDialog = false
-                                        },
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = dictName,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                    )
+            if (showDictionaryDialog) {
+                AlertDialog(
+                    onDismissRequest = { showDictionaryDialog = false },
+                    title = { Text(stringResource(R.string.dictionaries_select)) },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (settings.installedDictionaries.isEmpty()) {
+                                Text(
+                                    text = stringResource(R.string.dictionaries_none_installed),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                            } else {
+                                settings.installedDictionaries.forEach { (dictId, dictName) ->
+                                    val isSelected = settings.activeDictionaryId == dictId
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(MaterialTheme.shapes.small)
+                                            .clickable {
+                                                onSettingsChange(settings.copy(activeDictionaryId = dictId))
+                                                showDictionaryDialog = false
+                                            },
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        RadioButton(
+                                            selected = isSelected,
+                                            onClick = {
+                                                onSettingsChange(settings.copy(activeDictionaryId = dictId))
+                                                showDictionaryDialog = false
+                                            },
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = dictName,
+                                            style = MaterialTheme.typography.bodyLarge,
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = { showDictionaryDialog = false }) {
-                        Text(stringResource(R.string.action_close))
-                    }
-                },
-            )
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showDictionaryDialog = false }) {
+                            Text(stringResource(R.string.action_close))
+                        }
+                    },
+                )
+            }
+
         }
 
         val orientationOptionsMap = mapOf(
@@ -1035,24 +1050,27 @@ private fun AdvancedTabContent(
             )
         }
 
-        SettingsSwitchRow(
-            title = stringResource(R.string.reader_settings_vertical_scroll),
-            isChecked = settings.scroll,
-            onCheckedChange = { onSettingsChange(settings.copy(scroll = it)) },
-        )
+        if (includeTextPreferences) {
+            SettingsSwitchRow(
+                title = stringResource(R.string.reader_settings_vertical_scroll),
+                isChecked = settings.scroll,
+                onCheckedChange = { onSettingsChange(settings.copy(scroll = it)) },
+            )
 
-        SettingsSwitchRow(
-            title = stringResource(R.string.reader_settings_hyphens),
-            isChecked = settings.hyphens,
-            onCheckedChange = { onSettingsChange(settings.copy(hyphens = it)) },
-            enabled = !settings.publisherStyles,
-        )
+            SettingsSwitchRow(
+                title = stringResource(R.string.reader_settings_hyphens),
+                isChecked = settings.hyphens,
+                onCheckedChange = { onSettingsChange(settings.copy(hyphens = it)) },
+                enabled = !settings.publisherStyles,
+            )
 
-        SettingsSwitchRow(
-            title = stringResource(R.string.reader_settings_text_normalization),
-            isChecked = settings.textNormalization,
-            onCheckedChange = { onSettingsChange(settings.copy(textNormalization = it)) },
-        )
+            SettingsSwitchRow(
+                title = stringResource(R.string.reader_settings_text_normalization),
+                isChecked = settings.textNormalization,
+                onCheckedChange = { onSettingsChange(settings.copy(textNormalization = it)) },
+            )
+
+        }
 
         SettingsSwitchRow(
             title = stringResource(R.string.reader_settings_prevent_timeout),
@@ -1088,7 +1106,7 @@ private fun AdvancedTabContent(
 }
 
 @Composable
-private fun SettingsSwitchRow(
+internal fun SettingsSwitchRow(
     title: String,
     isChecked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
@@ -1103,7 +1121,7 @@ private fun SettingsSwitchRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(title, style = MaterialTheme.typography.titleMedium)
+        Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
         Switch(
             checked = isChecked, onCheckedChange = onCheckedChange, enabled = enabled,
         )

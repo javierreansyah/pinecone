@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.reader
 
+import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import android.app.Application
 import androidx.compose.ui.graphics.Color
 import androidx.core.graphics.toColorInt
@@ -310,6 +311,12 @@ class ReaderViewModel(
 
     private fun getChapterTitle(locator: Locator): String? {
         val href = locator.href.toString().substringBefore("#")
+        GeneratedEpubLocations.page(locator.href.toString(), locator.locations["cssSelector"] as? String,
+            locator.locations.fragments)?.let { page ->
+            return tableOfContents.lastOrNull { link ->
+                GeneratedEpubLocations.page(link.href.toString())?.let { it <= page } == true
+            }?.title
+        }
         return findTitleInLinks(href, tableOfContents)
     }
 
@@ -388,6 +395,9 @@ class ReaderViewModel(
     }
 
     fun getChapterPageLabel(link: Link): String {
+        GeneratedEpubLocations.page(link.href.toString())?.let { page ->
+            return application.resources.getQuantityString(R.plurals.reader_page_num, page, page)
+        }
         val allPositions = _positions.value
         if (allPositions.isEmpty()) return ""
         val linkHref = link.href.toString().substringBefore("#")
@@ -405,18 +415,35 @@ class ReaderViewModel(
         }
     }
 
-    fun togglePdfReadMode() {
+    fun togglePdfReadMode() = preparePdfRendition(forceReparse = false)
+
+    fun reparsePdf() {
+        hideSettings()
+        preparePdfRendition(forceReparse = true)
+    }
+
+    private fun preparePdfRendition(forceReparse: Boolean) {
         if (!_bookState.value.sourceIsPdf || conversionJob?.isActive == true) return
         conversionJob = viewModelScope.launch {
             val old = _publication.value ?: return@launch
             val source = _currentLocator.value
-            val destination = if (activeRendition.value == "original") "read-mode" else "original"
-            _bookState.update { it.copy(converting = true, conversionError = null) }
+            val destination = if (forceReparse || activeRendition.value == "original") "read-mode" else "original"
+            _bookState.update { it.copy(conversionError = null) }
             var next: Publication? = null
             try {
                 source?.let { repository.saveReadingPosition(bookId, it, activeRendition.value) }
-                if (destination == "read-mode") repository.createReadMode(bookId) { page, total ->
-                    _bookState.update { it.copy(conversionPage = page, conversionTotal = total) }
+                if (destination == "read-mode") {
+                    repository.createReadMode(
+                        bookId,
+                        forceReparse = forceReparse,
+                        onConversionStart = {
+                            _bookState.update { it.copy(converting = true, conversionPage = 0, conversionTotal = 0) }
+                        },
+                    ) { page, total ->
+                        _bookState.update { it.copy(conversionPage = page, conversionTotal = total) }
+                    }
+                    // Opening an existing rendition is ordinary navigation, not conversion.
+                    _bookState.update { it.copy(converting = false) }
                 }
                 repository.activateRendition(bookId, destination)
                 val item = requireNotNull(repository.getBook(bookId))
@@ -440,8 +467,10 @@ class ReaderViewModel(
                 val nextLocator = stored?.takeIf { mappedPage(it) == sourcePage }
                     ?: if (destination == "read-mode") {
                         next.readingOrder.find {
-                            it.href.toString().endsWith("text/page-$sourcePage.xhtml")
-                        }?.let(next::locatorFromLink)
+                            GeneratedEpubLocations.isContent(it.href.toString())
+                        }?.let(next::locatorFromLink)?.copyWithLocations(
+                            fragments = listOf("source-page-$sourcePage"),
+                        )
                     } else {
                         val mapping = sourceMap.firstOrNull { it.page == sourcePage }
                         val link =
@@ -488,12 +517,16 @@ class ReaderViewModel(
     }
 
     private fun sourcePage(locator: Locator): Int =
-        Regex("page-(\\d+)\\.xhtml").find(locator.href.toString())?.groupValues?.get(1)
-            ?.toIntOrNull()
+        GeneratedEpubLocations.page(locator.href.toString(), locator.locations["cssSelector"] as? String,
+            locator.locations.fragments)
             ?: locator.locations.fragments.firstNotNullOfOrNull {
                 it.removePrefix("page=").toIntOrNull()
-            }
-            ?: locator.locations.position ?: 1
+            } ?: locator.locations.position ?: 1
+
+    internal fun withReadModeChapter(locator: Locator): Locator =
+        if (activeRendition.value == "read-mode" && GeneratedEpubLocations.isContent(locator.href.toString())) {
+            locator.copy(title = getChapterTitle(locator) ?: locator.title)
+        } else locator
 
     fun cancelConversion() {
         conversionJob?.cancel()
