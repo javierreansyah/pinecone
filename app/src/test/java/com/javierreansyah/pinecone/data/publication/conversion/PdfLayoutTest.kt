@@ -70,7 +70,8 @@ class PdfLayoutTest {
             rules = listOf(FigureBounds(98f, 113f, 128f, 114f)))
         val equation = output.first { it.kind == "equation" }
         assertNull(equation.headingLevel)
-        assertEquals(1, equation.sources.flatMap { it.runs }.count { it.crop != null })
+        assertEquals(1, equation.sources.flatMap { it.runs }.count { it.math != null })
+        assertTrue(equation.sources.flatMap { it.runs }.none { it.crop != null })
         assertEquals("(1)", equation.sources.single { it.equationLabel }.text)
         assertEquals(1, output.flatMap { it.sources }.count { it.anchor == "label" })
     }
@@ -87,7 +88,8 @@ class PdfLayoutTest {
         val source = output.first().sources.single()
         assertTrue(source.runs.first().text.startsWith("We compute"))
         assertTrue(source.runs.last().text.endsWith("input."))
-        assertEquals(1, source.runs.count { it.crop != null })
+        assertEquals(1, source.runs.count { it.math != null && !it.hidden })
+        assertTrue(source.runs.none { it.crop != null })
     }
     @Test fun canonicalWhitespaceAndDehyphenationMatchPreviousConversion() {
         assertEquals("A reconstructed paragraph", PdfReadModeConverter.joinLines("A recon-\nstructed\nparagraph"))
@@ -128,7 +130,7 @@ class PdfLayoutTest {
         val output = reconstruct(expression, closing, block("body", body, 50f, 200f),
             rules = listOf(FigureBounds(119f, 113f, 161f, 114f)))
         val equation = output.first { it.kind == "equation" }
-        val crop = equation.sources.flatMap { it.runs }.single { it.crop != null }.crop!!
+        val crop = equation.sources.flatMap { it.runs }.single { it.math != null }.math!!.bounds
         assertTrue(crop.left <= expression.bounds.left)
         assertTrue(crop.right >= closing.bounds.right)
         assertEquals(1, output.flatMap { it.sources }.count { it.anchor == "closing" })

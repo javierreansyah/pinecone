@@ -1,14 +1,9 @@
 package com.javierreansyah.pinecone.data.publication.conversion
 
-import android.graphics.Bitmap
-import android.graphics.Rect
 import com.artifex.mupdf.fitz.Document
 import com.javierreansyah.pinecone.reader.pdf.MuPdfDocument
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.UUID
-import kotlin.math.abs
-import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -40,7 +35,7 @@ data class SourceTextRun(val anchor: String, val start: Int, val end: Int, val i
 
 data class PdfSource(val document: MuPdfDocument, val href: String)
 
-/** Text is extracted once to page-sized disk records; bitmap memory is limited to one page. */
+/** MuPDF exports page-sized XHTML/structure records; Pinecone packages them into one EPUB spine item. */
 class PdfReadModeConverter {
     suspend fun convert(
         sources: List<PdfSource>, destination: File, identifier: String, title: String,
@@ -59,26 +54,14 @@ class PdfReadModeConverter {
         check(records.mkdir())
         val pageFiles = mutableListOf<File>()
         try {
-            val profile = PdfDocumentProfile()
-            val extractor = PdfLayoutExtractor()
+            val profile = MuPdfReflowProfile()
             pages.forEachIndexed { index, (source, page) ->
                 context.ensureActive()
-                val raw = extractor.extract(source.document, page) { context.ensureActive() }
-                val previous = previousSourceMap.firstOrNull { it.page == index + 1 }?.blocks.orEmpty()
-                val assigned = mutableSetOf<String>()
-                val layout = raw.copy(blocks = raw.blocks.mapIndexed { blockIndex, block ->
-                    val matching = previous.firstOrNull { old -> old.anchor !in assigned &&
-                        abs(old.x - block.bounds.left) < .75f && abs(old.y - block.bounds.top) < .75f &&
-                        abs(old.width - block.bounds.width) < .75f && abs(old.height - block.bounds.height) < .75f }
-                    val anchor = matching?.anchor ?: if (previous.isEmpty()) GeneratedEpubLocations.blockAnchor(index + 1, blockIndex)
-                        else "page-${index + 1}-source-$blockIndex"
-                    assigned += anchor
-                    block.copy(anchor = anchor)
-                })
-                profile.observe(layout)
+                val record = MuPdfPageExporter.read(source.document, page) { context.ensureActive() }
+                profile.observe(record)
                 val file = File(records, "$index.json")
                 pageFiles += file
-                file.writeText(Json.encodeToString(layout))
+                file.writeText(Json.encodeToString(record))
                 progress(index + 1, pages.size * 2)
             }
             fun flatten(nodes: List<org.readium.r2.shared.util.pdf.PdfDocument.OutlineNode>): List<Pair<String, Int>> =
@@ -86,46 +69,32 @@ class PdfReadModeConverter {
             var offset = 0
             val outline = sources.flatMap { source -> flatten(source.document.outline).map { (name, page) -> name to page + offset }
                 .also { offset += source.document.pageCount } }
-            val reconstruction = PdfLayoutReconstructor(profile)
+            val cleaner = MuPdfReflowCleaner(profile)
             val sourcePages = mutableListOf<SourcePage>()
             EpubWriter(destination.outputStream(), identifier, title, language.ifBlank { "und" }, strings,
                 File.createTempFile("pinecone-content-", ".xhtml", destination.parentFile)).use { writer ->
                 pages.forEachIndexed { index, (source, pdfPage) ->
                     context.ensureActive()
-                    val layout = Json.decodeFromString<PdfPageLayout>(pageFiles[index].readText())
-                    val scanned = layout.blocks.sumOf { it.text.length } < 5
-                    var bitmap: Bitmap? = null
-                    val cropNames = mutableMapOf<FigureBounds, String>()
-                    suspend fun image(region: FigureBounds): String? {
-                        cropNames[region]?.let { return it }
-                        context.ensureActive()
-                        val rendered = bitmap ?: source.document.render(pdfPage, 1800).also { bitmap = it }
-                        val rect = pixelRect(region, layout.bounds, rendered)
-                        if (rect.width() <= 1 || rect.height() <= 1) return null
-                        val crop = Bitmap.createBitmap(rendered, rect.left, rect.top, rect.width(), rect.height())
-                        try {
-                            val name = "page-${index + 1}-crop-${cropNames.size}.png"
-                            writer.image(name, crop.png())
-                            cropNames[region] = name
-                            return name
-                        } finally { if (crop !== rendered) crop.recycle() }
+                    val record = Json.decodeFromString<MuPdfPageRecord>(pageFiles[index].readText())
+                    val svgNames = mutableMapOf<FigureBounds, MuPdfVisual>()
+                    val stored = mutableSetOf<String>()
+                    val result = MuPdfPageExporter.withSvgExporter(source.document, pdfPage) { exportSvg ->
+                        cleaner.clean(record, index + 1,
+                        previousSourceMap.firstOrNull { it.page == index + 1 }?.blocks.orEmpty(),
+                        outline.filter { it.second == index + 1 }.map { it.first }.toSet(),
+                        svg = { region, standalone ->
+                            val visual = svgNames.getOrPut(region) {
+                                context.ensureActive()
+                                val name = "page-${index + 1}-visual-${svgNames.size}.svg"
+                                MuPdfVisual(name, exportSvg(region))
+                            }
+                            if (standalone && stored.add(visual.name)) writer.asset(visual.name, "image/svg+xml", visual.markup.toByteArray(Charsets.UTF_8))
+                            visual
+                        }, asset = writer::asset)
                     }
-                    try {
-                        val output = if (scanned) listOf(ReflowBlock(image = image(layout.bounds))) else {
-                            reconstruction.reconstruct(layout, outline.filter { it.second == index + 1 }.map { it.first }.toSet())
-                                .map { block -> block.copy(sources = block.sources.map { part ->
-                                    part.copy(runs = part.runs.map { run ->
-                                        if (run.crop == null) run else run.copy(image = image(run.crop))
-                                    })
-                                }) }
-                        }
-                        writer.page(index + 1, output, scanned)
-                        sourcePages += SourcePage(index + 1, GeneratedEpubLocations.pageHref(index + 1),
-                            output.flatMap { it.sources }.map { part -> SourceBlock(part.anchor, part.bounds.left, part.bounds.top,
-                                part.bounds.width, part.bounds.height, part.runs.mapIndexed { runIndex, run ->
-                                    SourceTextRun("${part.anchor}-run-$runIndex", run.start, run.end, run.image != null || run.hidden || part.hidden)
-                                }) }, source.href, pdfPage + 1)
-                    } finally { bitmap?.recycle() }
+                    writer.nativePage(index + 1, result.body, result.scanned)
+                    sourcePages += SourcePage(index + 1, GeneratedEpubLocations.pageHref(index + 1),
+                        result.sources, source.href, pdfPage + 1)
                     pageFiles[index].delete()
                     progress(pages.size + index + 1, pages.size * 2)
                 }
@@ -137,17 +106,8 @@ class PdfReadModeConverter {
             records.delete()
         }
     }
-    private fun pixelRect(region: FigureBounds, page: FigureBounds, bitmap: Bitmap): Rect = Rect(
-        ((region.left - page.left) / page.width * bitmap.width).roundToInt().coerceIn(0, bitmap.width - 1),
-        ((region.top - page.top) / page.height * bitmap.height).roundToInt().coerceIn(0, bitmap.height - 1),
-        ((region.right - page.left) / page.width * bitmap.width).roundToInt().coerceIn(1, bitmap.width),
-        ((region.bottom - page.top) / page.height * bitmap.height).roundToInt().coerceIn(1, bitmap.height),
-    )
-    private fun Bitmap.png(): ByteArray = ByteArrayOutputStream().use { stream ->
-        check(compress(Bitmap.CompressFormat.PNG, 100, stream)); stream.toByteArray()
-    }
     companion object {
-        const val VERSION: Int = 5
+        const val VERSION: Int = 10
         fun joinLines(text: String): String = text.replace(Regex("(?<=\\p{L})-\\r?\\n(?=\\p{Ll})"), "")
             .replace(Regex("[\\r\\n]+"), " ").replace(Regex("[ \\t]+"), " ").trim()
     }

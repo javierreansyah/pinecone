@@ -1,0 +1,32 @@
+package com.javierreansyah.pinecone.data.publication.conversion
+
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import com.artifex.mupdf.fitz.Document
+import com.javierreansyah.pinecone.reader.pdf.MuPdfDocument
+import java.io.File
+import org.junit.Assume.assumeTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+
+@RunWith(AndroidJUnit4::class)
+class MuPdfExportTest {
+    @Test fun optionalNativeExportAudit() {
+        val path = InstrumentationRegistry.getArguments().getString("pdfPath")
+        assumeTrue(path != null)
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val pdf = MuPdfDocument(Document.openDocument(requireNotNull(path)))
+        try {
+            listOf(0, 2, 3, 4, 5, 6, 8, 9, 10, 12, 13, 14).filter { it < pdf.pageCount }.forEach { index ->
+                listOf("xhtml", "stext.xml").forEach { format ->
+                    File(context.cacheDir, "native-base-${index + 1}.$format").writeText(
+                        MuPdfPageExporter.export(pdf, index, format, MuPdfPageExporter.TEXT_OPTIONS.replace("table-hunt=yes", "table-hunt=no")))
+                }
+                listOf("xhtml", "stext.xml", "svg").forEach { format ->
+                    File(context.cacheDir, "native-${index + 1}.$format")
+                        .writeText(MuPdfPageExporter.export(pdf, index, format))
+                }
+            }
+        } finally { pdf.close() }
+    }
+}
