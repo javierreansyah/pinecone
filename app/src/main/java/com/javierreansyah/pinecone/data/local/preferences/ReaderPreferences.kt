@@ -24,7 +24,6 @@ import org.readium.r2.navigator.preferences.ReadingProgression
 import org.readium.r2.navigator.preferences.TextAlign
 import org.readium.r2.navigator.preferences.Theme
 import org.readium.r2.shared.ExperimentalReadiumApi
-import org.readium.r2.shared.util.Language
 import kotlin.math.roundToInt
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "reader_settings")
@@ -89,6 +88,7 @@ data class ReaderSettings(
     val installedDictionaries: List<InstalledDictionary> = emptyList(),
     val jumpHistoryMode: String = "explicit",
     val showAllSpaces: Boolean = true,
+    val formatPreferences: FormatPreferences = FormatPreferences(),
 ) {
 
     @OptIn(ExperimentalReadiumApi::class)
@@ -174,7 +174,15 @@ data class ReaderSettings(
                 else -> null
             },
             textNormalization = textNormalization,
-            language = if (locale != "System") Language(locale) else null,
+            ligatures = formatPreferences.epubLigatures,
+            verticalText = formatPreferences.epubVerticalText,
+            spread = when (formatPreferences.epubSpread) {
+                "always" -> org.readium.r2.navigator.preferences.Spread.ALWAYS
+                "never" -> org.readium.r2.navigator.preferences.Spread.NEVER
+                else -> null
+            },
+            // UI locale is not the language of the publication.
+            language = null,
         )
     }
 }
@@ -189,8 +197,10 @@ class ReaderPreferences(private val context: Context) {
         val BRIGHTNESS: Preferences.Key<Float> = floatPreferencesKey("brightness")
         val AUTO_BRIGHTNESS: Preferences.Key<Boolean> = booleanPreferencesKey("auto_brightness")
         val FORCE_ORIENTATION: Preferences.Key<String> = stringPreferencesKey("force_orientation")
-        val PREVENT_SCREEN_TIMEOUT: Preferences.Key<Boolean> = booleanPreferencesKey("prevent_screen_timeout")
-        val ALWAYS_SHOW_STATUS_BAR: Preferences.Key<Boolean> = booleanPreferencesKey("always_show_status_bar")
+        val PREVENT_SCREEN_TIMEOUT: Preferences.Key<Boolean> =
+            booleanPreferencesKey("prevent_screen_timeout")
+        val ALWAYS_SHOW_STATUS_BAR: Preferences.Key<Boolean> =
+            booleanPreferencesKey("always_show_status_bar")
 
         val PUBLISHER_STYLES: Preferences.Key<Boolean> = booleanPreferencesKey("publisher_styles")
         val FONT_SIZE: Preferences.Key<Double> = doublePreferencesKey("font_size")
@@ -209,24 +219,32 @@ class ReaderPreferences(private val context: Context) {
         val IMAGE_FILTER: Preferences.Key<String> = stringPreferencesKey("image_filter")
         val TYPE_SCALE: Preferences.Key<Double> = doublePreferencesKey("type_scale")
         val VERTICAL_MARGIN: Preferences.Key<Double> = doublePreferencesKey("vertical_margin")
-        val READING_PROGRESSION: Preferences.Key<String> = stringPreferencesKey("reading_progression")
-        val TEXT_NORMALIZATION: Preferences.Key<Boolean> = booleanPreferencesKey("text_normalization")
+        val READING_PROGRESSION: Preferences.Key<String> =
+            stringPreferencesKey("reading_progression")
+        val TEXT_NORMALIZATION: Preferences.Key<Boolean> =
+            booleanPreferencesKey("text_normalization")
 
-        val READER_THEME_PRESET: Preferences.Key<String> = stringPreferencesKey("reader_theme_preset")
-        val CUSTOM_BACKGROUND_COLOR: Preferences.Key<String> = stringPreferencesKey("custom_background_color")
+        val READER_THEME_PRESET: Preferences.Key<String> =
+            stringPreferencesKey("reader_theme_preset")
+        val CUSTOM_BACKGROUND_COLOR: Preferences.Key<String> =
+            stringPreferencesKey("custom_background_color")
         val CUSTOM_TEXT_COLOR: Preferences.Key<String> = stringPreferencesKey("custom_text_color")
         val CUSTOM_THEMES: Preferences.Key<Set<String>> = stringSetPreferencesKey("custom_themes")
 
-        val AUTO_BACKUP_FREQUENCY: Preferences.Key<String> = stringPreferencesKey("auto_backup_frequency")
+        val AUTO_BACKUP_FREQUENCY: Preferences.Key<String> =
+            stringPreferencesKey("auto_backup_frequency")
         val LAST_BACKUP_TIME: Preferences.Key<Long> = longPreferencesKey("last_backup_time")
         val LAST_BACKUP_REVISION: Preferences.Key<Long> = longPreferencesKey("last_backup_revision")
         val BACKUP_FOLDER_URI: Preferences.Key<String> = stringPreferencesKey("backup_folder_uri")
 
-        val ACTIVE_DICTIONARY_ID: Preferences.Key<String> = stringPreferencesKey("active_dictionary_id")
-        val INSTALLED_DICTIONARIES: Preferences.Key<Set<String>> = stringSetPreferencesKey("installed_dictionaries")
+        val ACTIVE_DICTIONARY_ID: Preferences.Key<String> =
+            stringPreferencesKey("active_dictionary_id")
+        val INSTALLED_DICTIONARIES: Preferences.Key<Set<String>> =
+            stringSetPreferencesKey("installed_dictionaries")
 
         val JUMP_HISTORY_MODE: Preferences.Key<String> = stringPreferencesKey("jump_history_mode")
         val SHOW_ALL_SPACES: Preferences.Key<Boolean> = booleanPreferencesKey("show_all_spaces")
+        val FORMAT_PREFERENCES: Preferences.Key<String> = stringPreferencesKey("format_preferences")
     }
 
     val readerSettings: Flow<ReaderSettings> = context.dataStore.data.map { preferences ->
@@ -300,6 +318,11 @@ class ReaderPreferences(private val context: Context) {
             } ?: emptyList(),
             jumpHistoryMode = preferences[JUMP_HISTORY_MODE] ?: "explicit",
             showAllSpaces = preferences[SHOW_ALL_SPACES] ?: true,
+            formatPreferences = preferences[FORMAT_PREFERENCES]?.let {
+                kotlinx.serialization.json.Json.decodeFromString<FormatPreferences>(
+                    it
+                )
+            } ?: FormatPreferences(),
         )
     }
 
@@ -344,9 +367,10 @@ class ReaderPreferences(private val context: Context) {
             preferences[READER_THEME_PRESET] = settings.pineconeThemePreset
             preferences[CUSTOM_BACKGROUND_COLOR] = settings.customBackgroundColor
             preferences[CUSTOM_TEXT_COLOR] = settings.customTextColor
-            preferences[CUSTOM_THEMES] = settings.customThemes.map { (itName, itBackgroundColor, itTextColor, itUiTheme) ->
-                "${itName}|${itBackgroundColor}|${itTextColor}|${itUiTheme}"
-            }.toSet()
+            preferences[CUSTOM_THEMES] =
+                settings.customThemes.map { (itName, itBackgroundColor, itTextColor, itUiTheme) ->
+                    "${itName}|${itBackgroundColor}|${itTextColor}|${itUiTheme}"
+                }.toSet()
 
             preferences[AUTO_BACKUP_FREQUENCY] = settings.autoBackupFrequency
             preferences[LAST_BACKUP_TIME] = settings.lastBackupTime
@@ -354,15 +378,25 @@ class ReaderPreferences(private val context: Context) {
             preferences[BACKUP_FOLDER_URI] = settings.backupFolderUri
 
             preferences[ACTIVE_DICTIONARY_ID] = settings.activeDictionaryId
-            preferences[INSTALLED_DICTIONARIES] = settings.installedDictionaries.map { (itId2, itName2, itWordCount) ->
-                "${itId2}|${itName2}|${itWordCount}"
-            }.toSet()
+            preferences[INSTALLED_DICTIONARIES] =
+                settings.installedDictionaries.map { (itId2, itName2, itWordCount) ->
+                    "${itId2}|${itName2}|${itWordCount}"
+                }.toSet()
             preferences[JUMP_HISTORY_MODE] = settings.jumpHistoryMode
             preferences[SHOW_ALL_SPACES] = settings.showAllSpaces
+            preferences[FORMAT_PREFERENCES] =
+                kotlinx.serialization.json.Json.encodeToString(settings.formatPreferences)
         }
     }
 
     suspend fun updateAllSettings(settings: ReaderSettings) {
         updateSettings(settings)
+    }
+
+    suspend fun markBackup(timestamp: Long, revision: Long) {
+        context.dataStore.edit {
+            it[LAST_BACKUP_TIME] = timestamp
+            it[LAST_BACKUP_REVISION] = revision
+        }
     }
 }

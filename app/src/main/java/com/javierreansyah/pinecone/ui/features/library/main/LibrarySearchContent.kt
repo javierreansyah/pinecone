@@ -81,8 +81,9 @@ internal fun ExpandedSearchContent(
             icons = emptyList(),
             selected = categoryLabels[searchCategory] ?: searchCategory.name,
             onSelected = { selectedLabel ->
-                val category = categoryLabels.entries.find { (_, itValue) -> itValue == selectedLabel }?.key
-                    ?: SearchCategory.All
+                val category =
+                    categoryLabels.entries.find { (_, itValue) -> itValue == selectedLabel }?.key
+                        ?: SearchCategory.All
                 onSearchCategoryChange(category)
             },
             modifier = Modifier
@@ -130,7 +131,8 @@ private fun SearchResultsContent(
         val maxTags = if (isPreview) 4 else Int.MAX_VALUE
 
         val booksToShow = if (isPreview) {
-            results.books.sortedByDescending { (_, _, _, _, _, itLastOpened) -> itLastOpened ?: 0L }.take(maxBooks)
+            results.books.sortedByDescending { (_, _, _, _, _, itLastOpened) -> itLastOpened ?: 0L }
+                .take(maxBooks)
         } else if (isAll) {
             results.books.take(maxBooks)
         } else {

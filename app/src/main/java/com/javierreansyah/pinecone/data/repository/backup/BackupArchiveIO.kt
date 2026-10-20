@@ -33,7 +33,7 @@ internal object BackupArchiveIO {
     fun safeArchivePath(path: String): Boolean {
         val normalized = path.replace('\\', '/')
         return normalized.isNotBlank() && !normalized.startsWith('/') &&
-            normalized.split('/').none { it.isBlank() || (it == ".") || (it == "..") }
+                normalized.split('/').none { it.isBlank() || (it == ".") || (it == "..") }
     }
 
     private fun ByteArray.toHex() = joinToString("") { "%02x".format(it) }

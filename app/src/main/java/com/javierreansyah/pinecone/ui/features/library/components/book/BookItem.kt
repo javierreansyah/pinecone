@@ -197,22 +197,22 @@ fun BookCoverWithSelection(
             book = book,
             modifier = Modifier.fillMaxSize(),
         ) {
-                Box(modifier = Modifier.matchParentSize()) {
-                    AnimatedVisibility(
-                        visible = isSelected && !isList,
-                        enter = fadeIn(),
-                        exit = fadeOut(),
-                        modifier = Modifier.fillMaxSize(),
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(MaterialTheme.shapes.small)
-                                .background(Color.Black.copy(alpha = 0.4f)),
-                        )
-                    }
+            Box(modifier = Modifier.matchParentSize()) {
+                AnimatedVisibility(
+                    visible = isSelected && !isList,
+                    enter = fadeIn(),
+                    exit = fadeOut(),
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(MaterialTheme.shapes.small)
+                            .background(Color.Black.copy(alpha = 0.4f)),
+                    )
                 }
             }
+        }
         if (!isList && isInMultiSelectMode) {
             Checkbox(
                 checked = isSelected,

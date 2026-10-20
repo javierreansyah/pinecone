@@ -44,7 +44,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -60,6 +59,7 @@ import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SecondaryScrollableTabRow
+import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.SplitButtonDefaults
 import androidx.compose.material3.SplitButtonLayout
 import androidx.compose.material3.SuggestionChip
@@ -541,6 +541,7 @@ private fun AboutTabContent(
         }
 
         BookMetadata(book = book)
+        RichMetadataDetails(book)
     }
 }
 
@@ -634,7 +635,8 @@ private fun BookmarksTabContent(
     maxTabHeight: Dp,
     modifier: Modifier = Modifier,
 ) {
-    val hasBookmarks = bookmarks.isNotEmpty() || (currentLocator != null) || (furthestLocator != null)
+    val hasBookmarks =
+        bookmarks.isNotEmpty() || (currentLocator != null) || (furthestLocator != null)
     if (!hasBookmarks) {
         Box(
             modifier = modifier
@@ -1603,7 +1605,9 @@ private fun parseBookFormat(mediaType: String?, defaultUnknown: String): String 
 @Composable
 private fun getPositionLabel(locator: Locator, positions: List<Locator>): String {
     val posIndex = locator.locations.totalProgression?.let { target ->
-        positions.indexOfLast { (_, _, _, itLocations) -> (itLocations.totalProgression ?: -1.0) <= target }
+        positions.indexOfLast { (_, _, _, itLocations) ->
+            (itLocations.totalProgression ?: -1.0) <= target
+        }
     }?.takeIf { it != -1 } ?: positions.indexOfLast { (posHref, _, _, posLocations) ->
         (posHref == locator.href) && ((posLocations.progression
             ?: 0.0) <= (locator.locations.progression ?: 0.0))

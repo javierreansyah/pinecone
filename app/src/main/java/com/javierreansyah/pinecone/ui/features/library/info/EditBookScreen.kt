@@ -30,7 +30,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
@@ -45,6 +44,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.OutlinedTextFieldDefaults.FocusedBorderThickness
 import androidx.compose.material3.OutlinedTextFieldDefaults.UnfocusedBorderThickness
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -122,7 +122,7 @@ fun EditBookScreen(
             ) {
                 CircularProgressIndicator()
             }
-        } else if ((uiState.error != null) && !uiState.isSaving) {
+        } else if (!uiState.loaded && (uiState.error != null)) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -147,6 +147,17 @@ fun EditBookScreen(
                 onAddTag = { viewModel.addTag(it) },
                 onRemoveTag = { viewModel.removeTag(it) },
                 innerPadding = innerPadding,
+                content = {
+                    RichMetadataEditor(
+                        uiState,
+                        bookId,
+                        viewModel::updateRichMetadata,
+                        viewModel::updateCredit,
+                        viewModel::updateLanguages,
+                        viewModel::updateIdentifiers,
+                        viewModel::updateCollections
+                    )
+                },
             )
         }
     }
@@ -210,6 +221,7 @@ private fun EditBookContent(
     onRemoveTag: (String) -> Unit,
     innerPadding: PaddingValues,
     modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
 ) {
     Column(
         modifier = modifier
@@ -222,6 +234,13 @@ private fun EditBookContent(
         verticalArrangement = Arrangement.spacedBy(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        uiState.error?.let {
+            Text(
+                it,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyLarge
+            )
+        }
         BookCoverPicker(
             coverUri = uiState.coverUri,
             existingCoverPath = uiState.existingCoverPath,
@@ -262,6 +281,7 @@ private fun EditBookContent(
                 .fillMaxWidth()
                 .defaultMinSize(minHeight = 160.dp),
         )
+        content()
     }
 }
 

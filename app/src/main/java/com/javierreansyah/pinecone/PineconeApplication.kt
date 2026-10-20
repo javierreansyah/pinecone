@@ -8,6 +8,7 @@ import com.javierreansyah.pinecone.data.repository.backup.BackupRepository
 import com.javierreansyah.pinecone.data.repository.dictionary.DictionaryImportManager
 import com.javierreansyah.pinecone.data.repository.dictionary.DictionaryRepository
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
+import com.javierreansyah.pinecone.reader.audio.AudioReadingSession
 import com.javierreansyah.pinecone.worker.WorkerUtils
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -17,6 +18,7 @@ import org.readium.r2.streamer.PublicationOpener
 import org.readium.r2.streamer.parser.DefaultPublicationParser
 
 class PineconeApplication : Application() {
+    val audioSession: AudioReadingSession by lazy { AudioReadingSession(this) }
 
     lateinit var database: AppDatabase
         private set
@@ -43,7 +45,7 @@ class PineconeApplication : Application() {
         database = Room.databaseBuilder(
             applicationContext,
             AppDatabase::class.java,
-            "reader_database",
+            "publication_library",
         )
             .addCallback(AppDatabase.BACKUP_REVISION_CALLBACK)
             .fallbackToDestructiveMigration(dropAllTables = false)
@@ -61,7 +63,7 @@ class PineconeApplication : Application() {
                 context = this,
                 httpClient = httpClient,
                 assetRetriever = assetRetriever,
-                pdfFactory = null,
+                pdfFactory = com.javierreansyah.pinecone.reader.pdf.MuPdfDocumentFactory(),
             ),
         )
 

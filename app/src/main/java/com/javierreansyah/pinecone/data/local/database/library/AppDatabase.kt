@@ -10,6 +10,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ShelfBookCrossRefEntity::class, NoteEntity::class, AuthorEntity::class,
         BookAuthorCrossRef::class, TagEntity::class, BookTagCrossRef::class,
         SpaceEntity::class, BookSpaceCrossRef::class, BackupStateEntity::class,
+        PublicationRenditionEntity::class, PublicationCreditEntity::class, PublicationCollectionEntity::class,
     ],
     version = 1,
     exportSchema = true,
@@ -21,6 +22,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun noteDao(): NoteDao
     abstract fun spaceDao(): SpaceDao
     abstract fun backupStateDao(): BackupStateDao
+    abstract fun publicationDao(): PublicationDao
 
     companion object {
         val BACKUP_REVISION_CALLBACK: Callback = object : Callback() {
@@ -30,18 +32,19 @@ abstract class AppDatabase : RoomDatabase() {
             private fun installRevisionTracking(db: SupportSQLiteDatabase) {
                 db.execSQL(
                     "INSERT OR IGNORE INTO backup_state " +
-                        "(id, revision, pendingSettingsJson) VALUES (1, 0, NULL)",
+                            "(id, revision, pendingSettingsJson) VALUES (1, 0, NULL)",
                 )
                 val tables = listOf(
                     "books", "bookmarks", "shelves", "shelf_book_cross_ref", "notes",
                     "authors", "book_author_cross_ref", "tags", "book_tag_cross_ref",
                     "spaces", "book_space_cross_ref",
+                    "publication_renditions", "publication_credits", "publication_collections",
                 )
                 for (table in tables) for (operation in listOf("INSERT", "UPDATE", "DELETE")) {
                     val trigger = "backup_revision_${table}_${operation.lowercase()}"
                     db.execSQL(
                         "CREATE TRIGGER IF NOT EXISTS `$trigger` AFTER $operation ON `$table` " +
-                            "BEGIN UPDATE backup_state SET revision = revision + 1 WHERE id = 1; END",
+                                "BEGIN UPDATE backup_state SET revision = revision + 1 WHERE id = 1; END",
                     )
                 }
             }

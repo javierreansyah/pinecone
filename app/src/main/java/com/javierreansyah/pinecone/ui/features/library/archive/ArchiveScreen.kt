@@ -262,31 +262,31 @@ private fun ArchiveTopBar(
             )
         },
     ) {
-            LibraryTopAppBar(
-                title = { Text(stringResource(R.string.library_archives_title)) },
-                onBack = onNavigateBack,
-                isEmpty = isEmpty,
-                scrollBehavior = scrollBehavior,
-                actions = {
-                    IconButton(
-                        shapes = IconButtonDefaults.shapes(),
-                        onClick = onEnterMultiSelect,
-                    ) {
-                        Icon(
-                            MaterialSymbols.Outlined.Select,
-                            contentDescription = stringResource(R.string.action_select_multiple),
-                        )
-                    }
-                    IconButton(
-                        shapes = IconButtonDefaults.shapes(),
-                        onClick = onOpenFilter,
-                    ) {
-                        Icon(
-                            MaterialSymbols.Outlined.Tune,
-                            contentDescription = stringResource(R.string.action_filter),
-                        )
-                    }
-                },
-            )
-        }
+        LibraryTopAppBar(
+            title = { Text(stringResource(R.string.library_archives_title)) },
+            onBack = onNavigateBack,
+            isEmpty = isEmpty,
+            scrollBehavior = scrollBehavior,
+            actions = {
+                IconButton(
+                    shapes = IconButtonDefaults.shapes(),
+                    onClick = onEnterMultiSelect,
+                ) {
+                    Icon(
+                        MaterialSymbols.Outlined.Select,
+                        contentDescription = stringResource(R.string.action_select_multiple),
+                    )
+                }
+                IconButton(
+                    shapes = IconButtonDefaults.shapes(),
+                    onClick = onOpenFilter,
+                ) {
+                    Icon(
+                        MaterialSymbols.Outlined.Tune,
+                        contentDescription = stringResource(R.string.action_filter),
+                    )
+                }
+            },
+        )
+    }
 }

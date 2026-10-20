@@ -31,6 +31,10 @@ data class BookWithDetails(
             value = BookSpaceCrossRef::class, parentColumn = "bookId", entityColumn = "spaceId",
         ),
     ) val spaces: List<SpaceEntity>,
+    @Relation(parentColumn = "id", entityColumn = "bookId")
+    val credits: List<PublicationCreditEntity> = emptyList(),
+    @Relation(parentColumn = "id", entityColumn = "bookId")
+    val collections: List<PublicationCollectionEntity> = emptyList(),
 ) {
     val sortedAuthors: List<AuthorEntity>
         get() {

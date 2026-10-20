@@ -74,11 +74,11 @@ fun SelectSpaceForShelfDialog(
                                 )
                             },
                         ) {
-                                Text(
-                                    text = spaceName,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                )
-                            }
+                            Text(
+                                text = spaceName,
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                        }
                     }
                 }
             }

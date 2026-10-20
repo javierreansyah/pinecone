@@ -21,20 +21,25 @@ class LibraryCommonTest {
 
     @Test
     fun `all spaces and unset selection keep only books assigned to at least one space`() {
-        assertEquals(listOf("work-only", "both"), books.inSpace(ALL_SPACES_ID).map { (itId2) -> itId2 })
+        assertEquals(
+            listOf("work-only", "both"),
+            books.inSpace(ALL_SPACES_ID).map { (itId2) -> itId2 })
         assertEquals(listOf("work-only", "both"), books.inSpace(null).map { (itId3) -> itId3 })
     }
 
     @Test
     fun `unsorted books are correctly identified when book has no spaces`() {
-        val hasUnsorted = books.any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itSpaces) -> itSpaces.isEmpty() }
+        val hasUnsorted =
+            books.any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itSpaces) -> itSpaces.isEmpty() }
         assertEquals(true, hasUnsorted)
 
         val allSortedBooks = listOf(
             book(id = "work-only", spaces = listOf(work)),
             book(id = "both", spaces = listOf(work, leisure)),
         )
-        assertEquals(false, allSortedBooks.any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itSpaces2) -> itSpaces2.isEmpty() })
+        assertEquals(
+            false,
+            allSortedBooks.any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itSpaces2) -> itSpaces2.isEmpty() })
     }
 
     private fun book(id: String, spaces: List<SpaceEntity> = emptyList()) = Book(

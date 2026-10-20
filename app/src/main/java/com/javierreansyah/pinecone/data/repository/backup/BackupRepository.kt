@@ -16,6 +16,7 @@ import com.javierreansyah.pinecone.data.model.BookObjectReference
 import com.javierreansyah.pinecone.data.model.DictionaryObjectReference
 import com.javierreansyah.pinecone.data.model.LibraryBackupPayload
 import com.javierreansyah.pinecone.data.model.PortableBackupManifest
+import com.javierreansyah.pinecone.data.model.RenditionObjectReference
 import com.javierreansyah.pinecone.data.model.VaultFormat
 import com.javierreansyah.pinecone.data.model.VaultObject
 import com.javierreansyah.pinecone.data.model.VaultObjectKind
@@ -141,7 +142,8 @@ class BackupRepository(private val context: Context) {
             phases["snapshot"] = System.currentTimeMillis() - phaseStarted
             val portableSettings = portableSettings(settings)
             val fingerprint = stateFingerprint(revision, payload, settings)
-            val previous = readSnapshots(dirs).maxByOrNull { (_, itSecond) -> itSecond.createdAt }?.second
+            val previous =
+                readSnapshots(dirs).maxByOrNull { (_, itSecond) -> itSecond.createdAt }?.second
             if (!manual && (previous?.stateFingerprint == fingerprint)) return BackupResult.Skipped
 
             val priorBooks = previous?.books?.associateBy { (itBookId) -> itBookId }.orEmpty()
@@ -158,7 +160,12 @@ class BackupRepository(private val context: Context) {
                 val coverObject = bookCoverPath?.let { path ->
                     val cover = File(path)
                     require(cover.isFile) { "Missing cover $bookId2" }
-                    reuseOrWriteRaw(cover, VaultObjectKind.COVER, dirs.covers, old?.cover).also { (_, itInfo2, itReused2) ->
+                    reuseOrWriteRaw(
+                        cover,
+                        VaultObjectKind.COVER,
+                        dirs.covers,
+                        old?.cover
+                    ).also { (_, itInfo2, itReused2) ->
                         if (itReused2) bytesReused += itInfo2.storedSize else bytesWritten += itInfo2.storedSize
                     }.info
                 }
@@ -167,6 +174,15 @@ class BackupRepository(private val context: Context) {
 
             val priorDictionaries = previous?.dictionaries
                 ?.associateBy { (itDictionary) -> itDictionary.id }.orEmpty()
+            val priorRenditions = previous?.renditions.orEmpty().associateBy { it.bookId to it.key }
+            val renditionRefs = payload.renditions.map { rendition ->
+                val source = File(rendition.filePath)
+                require(source.isFile) { "Missing rendition ${rendition.bookId}/${rendition.key}" }
+                val old = priorRenditions[rendition.bookId to rendition.key]?.objectInfo
+                val result = reuseOrWriteRaw(source, VaultObjectKind.BOOK, dirs.books, old)
+                if (result.reused) bytesReused += result.info.storedSize else bytesWritten += result.info.storedSize
+                RenditionObjectReference(rendition.bookId, rendition.key, result.info)
+            }
             val dictionaryRefs =
                 settings.installedDictionaries.sortedBy { (itId) -> itId }.map { dictionary ->
                     val source = context.getDatabasePath("dict_${dictionary.id}.db")
@@ -187,12 +203,13 @@ class BackupRepository(private val context: Context) {
             phases["objects"] = System.currentTimeMillis() - phaseStarted
 
             val finalFingerprint = fingerprintFromReferences(
-                revision, payload, portableSettings, bookRefs, dictionaryRefs,
+                revision, payload, portableSettings, bookRefs, dictionaryRefs, renditionRefs,
             )
             val currentSettings = preferences.readerSettings.first()
-            if ((app.database.backupStateDao().revision() != revision) ||
-                (stateFingerprint(revision, payload, currentSettings) != finalFingerprint)
-            ) {
+            // The DB payload is an atomic point-in-time snapshot. Reading-position/annotation
+            // writes during audio playback need not invalidate it; immutable file identities and
+            // settings still must match the objects that were copied.
+            if (stateFingerprint(revision, payload, currentSettings) != finalFingerprint) {
                 return BackupResult.Failure(BackupFailure.CONCURRENT_CHANGE)
             }
             val createdAt = System.currentTimeMillis()
@@ -211,6 +228,7 @@ class BackupRepository(private val context: Context) {
                 books = bookRefs,
                 dictionaries = dictionaryRefs,
                 activeDictionaryId = settings.activeDictionaryId,
+                renditions = renditionRefs,
             )
             validateSnapshot(snapshot)
             phaseStarted = System.currentTimeMillis()
@@ -221,11 +239,7 @@ class BackupRepository(private val context: Context) {
             if (!enforceRetention(dirs)) warnings += BackupFailure.IO_ERROR
             if (!pruneObjects(dirs)) warnings += BackupFailure.IO_ERROR
             phases["maintenance"] = System.currentTimeMillis() - phaseStarted
-            preferences.updateAllSettings(
-                settings.copy(
-                    lastBackupTime = createdAt, lastBackupRevision = revision,
-                ),
-            )
+            preferences.markBackup(createdAt, revision)
             val duration = System.currentTimeMillis() - started
             BackupResult.Success(id, bytesWritten, bytesReused, duration, phases, warnings)
         } catch (e: SecurityException) {
@@ -265,6 +279,9 @@ class BackupRepository(private val context: Context) {
                 spaces = db.spaceDao().getAllSpacesSync().map { it.toBackupRecord() },
                 bookSpaceCrossRefs = db.spaceDao().getAllBookSpaceCrossRefsSync()
                     .map { it.toBackupRecord() },
+                renditions = db.publicationDao().allRenditions(),
+                credits = db.publicationDao().allCredits(),
+                collections = db.publicationDao().allCollections(),
             )
         }
 
@@ -428,7 +445,7 @@ class BackupRepository(private val context: Context) {
 
     private fun sameSource(file: File, info: VaultObject) =
         (file.absolutePath == info.sourcePath) && (file.length() == info.sourceSize) &&
-            (file.lastModified() == info.sourceLastModified)
+                (file.lastModified() == info.sourceLastModified)
 
     private fun writeSnapshot(folder: DocumentFile, snapshot: VaultSnapshot): DocumentFile {
         val finalName =
@@ -478,16 +495,45 @@ class BackupRepository(private val context: Context) {
         require((snapshot.backupKind == MANUAL) || (snapshot.backupKind == AUTOMATIC))
         require(snapshot.recordCounts == recordCounts(snapshot.library))
         require(validRelationships(snapshot.library))
+        require(snapshot.library.version == FORMAT_VERSION)
+        require(snapshot.renditions.map { it.bookId to it.key }
+            .toSet() == snapshot.library.renditions.map { it.bookId to it.key }.toSet())
+        require(snapshot.renditions.size == snapshot.library.renditions.size)
+        require(snapshot.renditions.all { it.objectInfo.kind == VaultObjectKind.BOOK })
+        val renditionObjects = snapshot.renditions.associateBy { it.bookId to it.key }
+        require(snapshot.library.renditions.all { renditionObjects[it.bookId to it.key]?.objectInfo?.sha256 == it.sha256 })
+        require(snapshot.books.all { renditionObjects[it.bookId to "original"]?.objectInfo?.sha256 == it.book.sha256 })
+        snapshot.library.books.forEach {
+            com.javierreansyah.pinecone.data.publication.PublicationMetadata.decode(it.metadataJson)
+            com.javierreansyah.pinecone.data.publication.PublicationMetadata.decode(it.sourceMetadataJson)
+        }
+        snapshot.library.renditions.forEach {
+            require(it.progression.isFinite() && it.progression in 0.0..1.0 && it.furthestProgression.isFinite() && it.furthestProgression in 0.0..1.0)
+            require(it.profile in com.javierreansyah.pinecone.data.publication.ReaderProfile.entries.map { profile -> profile.name })
+            if (it.preferencesJson != "{}") json.decodeFromString<ReaderSettings>(it.preferencesJson)
+            it.sourceMapJson?.let { mapping ->
+                json.decodeFromString<List<com.javierreansyah.pinecone.data.publication.conversion.SourcePage>>(
+                    mapping
+                )
+            }
+        }
         require(
-            snapshot.books.map { (itBookId2) -> itBookId2 }.toSet() == snapshot.library.books.map { (itId2) -> itId2 }
+            snapshot.books.map { (itBookId2) -> itBookId2 }
+                .toSet() == snapshot.library.books.map { (itId2) -> itId2 }
                 .toSet(),
         )
-        val all = snapshot.books.flatMap { (_, itBook, itCover) -> listOfNotNull(itBook, itCover) } +
-            snapshot.dictionaries.map { (_, itObjectInfo) -> itObjectInfo }
+        val all =
+            snapshot.renditions.map { it.objectInfo } + snapshot.books.flatMap { (_, itBook, itCover) ->
+                listOfNotNull(
+                    itBook,
+                    itCover
+                )
+            } +
+                    snapshot.dictionaries.map { (_, itObjectInfo) -> itObjectInfo }
         require(
             all.all { (_, itSha256, itSize, _, itStoredSize, _, itFileName) ->
                 itSha256.matches(SHA_PATTERN) && (itSize >= 0) &&
-                    (itStoredSize >= 0) && itFileName.matches(FILE_PATTERN)
+                        (itStoredSize >= 0) && itFileName.matches(FILE_PATTERN)
             },
         )
         require(
@@ -497,34 +543,41 @@ class BackupRepository(private val context: Context) {
         require(
             snapshot.books.all { (_, itBook2, itCover2) ->
                 (itBook2.kind == VaultObjectKind.BOOK) &&
-                    ((itCover2 == null) || (itCover2.kind == VaultObjectKind.COVER))
+                        ((itCover2 == null) || (itCover2.kind == VaultObjectKind.COVER))
             },
         )
         require(snapshot.dictionaries.all { (_, itObjectInfo2) -> itObjectInfo2.kind == VaultObjectKind.DICTIONARY })
         require(
             snapshot.settings.installedDictionaries.sortedBy { (itId3) -> itId3 } ==
-                snapshot.dictionaries.map { (itDictionary3) -> itDictionary3 }.sortedBy { (itId4) -> itId4 },
+                    snapshot.dictionaries.map { (itDictionary3) -> itDictionary3 }
+                        .sortedBy { (itId4) -> itId4 },
         )
         require(
             snapshot.activeDictionaryId.isBlank() ||
-                snapshot.dictionaries.any { (itDictionary4) -> itDictionary4.id == snapshot.activeDictionaryId },
+                    snapshot.dictionaries.any { (itDictionary4) -> itDictionary4.id == snapshot.activeDictionaryId },
         )
     }
 
     private fun enforceRetention(dirs: VaultDirs): Boolean = runCatching {
         readSnapshots(dirs).groupBy { (_, itSecond2) -> itSecond2.backupKind }.values.forEach { group ->
-            group.sortedByDescending { (_, itSecond3) -> itSecond3.createdAt }.drop(RETENTION).forEach { (itFirst) ->
-                check(itFirst.delete())
-            }
+            group.sortedByDescending { (_, itSecond3) -> itSecond3.createdAt }.drop(RETENTION)
+                .forEach { (itFirst) ->
+                    check(itFirst.delete())
+                }
         }
     }.isSuccess
 
     private fun pruneObjects(dirs: VaultDirs): Boolean = runCatching {
         val retained = readSnapshots(dirs).map { (_, itSecond4) -> itSecond4 }
-        val keepBooks = retained.flatMap { (_, _, _, _, _, _, _, _, _, _, _, itBooks) -> itBooks }.map { (_, itBook3) -> itBook3.fileName }.toSet()
-        val keepCovers = retained.flatMap { (_, _, _, _, _, _, _, _, _, _, _, itBooks2) -> itBooks2 }.mapNotNull { (_, _, itCover3) -> itCover3?.fileName }.toSet()
-        val keepDictionaries = retained.flatMap { (_, _, _, _, _, _, _, _, _, _, _, _, itDictionaries) -> itDictionaries }
-            .map { (_, itObjectInfo3) -> itObjectInfo3.fileName }.toSet()
+        val keepBooks = (retained.flatMap { it.books }
+            .map { it.book.fileName } + retained.flatMap { it.renditions }
+            .map { it.objectInfo.fileName }).toSet()
+        val keepCovers =
+            retained.flatMap { (_, _, _, _, _, _, _, _, _, _, _, itBooks2) -> itBooks2 }
+                .mapNotNull { (_, _, itCover3) -> itCover3?.fileName }.toSet()
+        val keepDictionaries =
+            retained.flatMap { (_, _, _, _, _, _, _, _, _, _, _, _, itDictionaries) -> itDictionaries }
+                .map { (_, itObjectInfo3) -> itObjectInfo3.fileName }.toSet()
         pruneFolder(dirs.books, keepBooks)
         pruneFolder(dirs.covers, keepCovers)
         pruneFolder(dirs.dictionaries, keepDictionaries)
@@ -538,6 +591,10 @@ class BackupRepository(private val context: Context) {
     }
 
     private suspend fun restoreLocked(snapshot: VaultSnapshot, dirs: VaultDirs): BackupResult {
+        return app.libraryRepository.withAssetTransaction { restoreStaged(snapshot, dirs) }
+    }
+
+    private suspend fun restoreStaged(snapshot: VaultSnapshot, dirs: VaultDirs): BackupResult {
         val started = System.currentTimeMillis()
         val stagedBooks = mutableListOf<File>()
         val dictionaryStages = mutableListOf<DictionaryStage>()
@@ -546,8 +603,8 @@ class BackupRepository(private val context: Context) {
             validateSnapshot(snapshot)
             val refs = snapshot.books.associateBy { (itBookId3) -> itBookId3 }
             val token = UUID.randomUUID().toString().replace("-", "")
-            val booksDir = File(context.filesDir, "books").apply { mkdirs() }
-            val coversDir = File(context.filesDir, "covers").apply { mkdirs() }
+            val booksDir = File(context.filesDir, "publication-assets").apply { mkdirs() }
+            val coversDir = File(context.filesDir, "publication-covers").apply { mkdirs() }
             val rebased = snapshot.library.books.map { book ->
                 val (_, refBook, refCover) = refs[book.id] ?: error("Missing book object")
                 val bookTarget =
@@ -574,17 +631,40 @@ class BackupRepository(private val context: Context) {
                 dictionaryStages += DictionaryStage(referenceDictionary, staged)
             }
             val oldBooks = app.database.bookDao().getAllBooksSync()
+            withContext(Dispatchers.Main.immediate) { app.audioSession.releasePlayer() }
+            val oldRenditions = app.database.publicationDao().allRenditions()
+            val renditionRefs = snapshot.renditions.associateBy { it.bookId to it.key }
+            val restoredRenditions = snapshot.library.renditions.map { rendition ->
+                val ref = renditionRefs.getValue(rendition.bookId to rendition.key).objectInfo
+                val target = if (rendition.key == "original") {
+                    File(rebased.first { it.id == rendition.bookId }.filePath)
+                } else File(
+                    booksDir,
+                    "${ref.sha256}_$token.${ref.fileName.substringAfterLast('.')}"
+                ).also {
+                    copyRawObject(dirs.books, ref, it); stagedBooks += it
+                }
+                require(
+                    target.inputStream()
+                        .use { BackupArchiveIO.copyAndDigest(it).sha256 } == rendition.sha256)
+                rendition.copy(filePath = target.absolutePath)
+            }
             val dictionaryRollback = swapDictionaries(
                 dictionaryStages,
                 snapshot.settings.installedDictionaries.map { (itId5) -> itId5 }.toSet(),
             )
             try {
                 val pending = json.encodeToString(snapshot.settings)
-                app.database.withTransaction {
-                    replaceLibrary(rebased, snapshot.library)
-                    app.database.backupStateDao().setPendingSettingsJson(pending)
+                withContext(kotlinx.coroutines.NonCancellable) {
+                    app.database.withTransaction {
+                        replaceLibrary(
+                            rebased,
+                            snapshot.library.copy(renditions = restoredRenditions)
+                        )
+                        app.database.backupStateDao().setPendingSettingsJson(pending)
+                    }
+                    committed = true
                 }
-                committed = true
                 applyRestoredSettings(
                     snapshot.settings.copy(
                         installedDictionaries = snapshot.dictionaries.map { (itDictionary5) -> itDictionary5 },
@@ -596,6 +676,7 @@ class BackupRepository(private val context: Context) {
                 oldBooks.forEach { (_, _, oldCoverPath, oldFilePath) ->
                     deleteOwnedFile(oldFilePath); oldCoverPath?.let(::deleteOwnedFile)
                 }
+                oldRenditions.forEach { deleteOwnedFile(it.filePath) }
                 BackupResult.Success(
                     snapshot.id,
                     durationMillis = System.currentTimeMillis() - started,
@@ -649,7 +730,8 @@ class BackupRepository(private val context: Context) {
         wantedIds: Set<String>,
     ): DictionaryRollback {
         val currentIds =
-            preferences.readerSettings.first().installedDictionaries.map { (itId6) -> itId6 }.toSet()
+            preferences.readerSettings.first().installedDictionaries.map { (itId6) -> itId6 }
+                .toSet()
         val allIds = currentIds + wantedIds
         allIds.forEach(DictionaryDatabase::closeDatabase)
         val entries = allIds.map { id ->
@@ -698,19 +780,20 @@ class BackupRepository(private val context: Context) {
     }
 
     private fun finishJournal(journal: RestoreJournal, commit: Boolean) {
-        journal.entries.asReversed().forEach { (entryTargetPath2, entryRollbackPath2, entryStagedPath2, entryHadOriginal2) ->
-            val target = File(entryTargetPath2)
-            val rollback = File(entryRollbackPath2)
-            val staged = entryStagedPath2?.let(::File)
-            if (commit) {
-                rollback.delete()
-            } else if (rollback.exists()) {
-                target.delete(); check(rollback.renameTo(target))
-            } else if (!entryHadOriginal2) {
-                target.delete()
+        journal.entries.asReversed()
+            .forEach { (entryTargetPath2, entryRollbackPath2, entryStagedPath2, entryHadOriginal2) ->
+                val target = File(entryTargetPath2)
+                val rollback = File(entryRollbackPath2)
+                val staged = entryStagedPath2?.let(::File)
+                if (commit) {
+                    rollback.delete()
+                } else if (rollback.exists()) {
+                    target.delete(); check(rollback.renameTo(target))
+                } else if (!entryHadOriginal2) {
+                    target.delete()
+                }
+                staged?.delete()
             }
-            staged?.delete()
-        }
     }
 
     private fun writeRestoreJournal(journal: RestoreJournal) {
@@ -733,6 +816,9 @@ class BackupRepository(private val context: Context) {
         db.shelfDao().deleteAllShelves(); db.spaceDao().deleteAllSpaces()
         db.bookDao().deleteAllAuthors(); db.bookDao().deleteAllTags()
         db.bookDao().insertAll(books)
+        db.publicationDao().putRenditions(payload.renditions)
+        db.publicationDao().putCredits(payload.credits)
+        db.publicationDao().putCollections(payload.collections)
         db.spaceDao().insertAllSpaces(payload.spaces.map { it.toEntity() })
         db.shelfDao().insertAllShelves(payload.shelves.map { it.toEntity() })
         db.bookDao().insertAllAuthors(payload.authors.map { it.toEntity() })
@@ -747,9 +833,10 @@ class BackupRepository(private val context: Context) {
 
     private fun copyRawObject(folder: DocumentFile, info: VaultObject, target: File) {
         val source = folder.findFile(info.fileName) ?: error("Missing object")
-        val (digestSize, digestSha256, digestCrc32) = resolver.openInputStream(source.uri)?.use { input ->
-            FileOutputStream(target).use { BackupArchiveIO.copyAndDigest(input, it) }
-        } ?: error("Cannot read object")
+        val (digestSize, digestSha256, digestCrc32) = resolver.openInputStream(source.uri)
+            ?.use { input ->
+                FileOutputStream(target).use { BackupArchiveIO.copyAndDigest(input, it) }
+            } ?: error("Cannot read object")
         require((digestSize == info.size) && (digestSha256 == info.sha256) && (digestCrc32 == info.crc32))
     }
 
@@ -758,7 +845,9 @@ class BackupRepository(private val context: Context) {
         ZipInputStream(input.buffered()).use { zip ->
             val entry = zip.nextEntry ?: error("Empty dictionary")
             require((entry.name == "dictionary.db") && !entry.isDirectory)
-            val (digestSize2, digestSha2562, digestCrc322) = if (output == null) BackupArchiveIO.copyAndDigest(zip)
+            val (digestSize2, digestSha2562, digestCrc322) = if (output == null) BackupArchiveIO.copyAndDigest(
+                zip
+            )
             else FileOutputStream(output).use { BackupArchiveIO.copyAndDigest(zip, it) }
             require((digestSize2 == info.size) && (digestSha2562 == info.sha256) && (digestCrc322 == info.crc32))
             require(zip.nextEntry == null)
@@ -843,13 +932,16 @@ class BackupRepository(private val context: Context) {
                 require(portableFormat == PORTABLE_FORMAT)
                 if (portableFormatVersion != FORMAT_VERSION) throw UnsupportedBackupException()
                 snapshot = portableSnapshot.also(::validateSnapshot)
-                val expected = allObjects(snapshot).associateBy { (itKind, _, _, _, _, _, itFileName2) ->
-                    "objects/${kindFolder(itKind)}/${itFileName2}"
-                }.toMutableMap()
+                val expected =
+                    allObjects(snapshot).associateBy { (itKind, _, _, _, _, _, itFileName2) ->
+                        "objects/${kindFolder(itKind)}/${itFileName2}"
+                    }.toMutableMap()
                 while (true) {
                     val entry = zip.nextEntry ?: break
                     require(BackupArchiveIO.safeArchivePath(entry.name) && !entry.isDirectory)
-                    val (infoKind2, _, _, _, infoStoredSize2, infoStoredCrc322, infoFileName2) = expected.remove(entry.name) ?: error("Unexpected archive entry")
+                    val (infoKind2, _, _, _, infoStoredSize2, infoStoredCrc322, infoFileName2) = expected.remove(
+                        entry.name
+                    ) ?: error("Unexpected archive entry")
                     val folder = objectFolder(dirs, infoKind2)
                     if (folder.findFile(infoFileName2) != null) {
                         BackupArchiveIO.copyAndDigest(zip)
@@ -857,7 +949,10 @@ class BackupRepository(private val context: Context) {
                         val partialName = ".${UUID.randomUUID()}.partial"
                         val partial = folder.createFile("application/octet-stream", partialName)
                             ?: error("Cannot create imported object")
-                        val (storedSize2, _, storedCrc322) = resolver.openOutputStream(partial.uri, "wt")?.use {
+                        val (storedSize2, _, storedCrc322) = resolver.openOutputStream(
+                            partial.uri,
+                            "wt"
+                        )?.use {
                             BackupArchiveIO.copyAndDigest(zip, it)
                         } ?: error("Cannot write imported object")
                         require((storedSize2 == infoStoredSize2) && (storedCrc322 == infoStoredCrc322))
@@ -904,12 +999,14 @@ class BackupRepository(private val context: Context) {
             )
             require(portableFormat2 == PORTABLE_FORMAT)
             if (portableFormatVersion2 != FORMAT_VERSION) throw UnsupportedBackupException()
-            val expected = allObjects(portableSnapshot2).associateBy { (itKind2, _, _, _, _, _, itFileName3) ->
-                "objects/${kindFolder(itKind2)}/${itFileName3}"
-            }.toMutableMap()
+            val expected =
+                allObjects(portableSnapshot2).associateBy { (itKind2, _, _, _, _, _, itFileName3) ->
+                    "objects/${kindFolder(itKind2)}/${itFileName3}"
+                }.toMutableMap()
             while (true) {
                 val entry = zip.nextEntry ?: break
-                val (_, _, _, _, infoStoredSize3, infoStoredCrc323) = expected.remove(entry.name) ?: error("Unexpected export entry")
+                val (_, _, _, _, infoStoredSize3, infoStoredCrc323) = expected.remove(entry.name)
+                    ?: error("Unexpected export entry")
                 val (storedSize3, _, storedCrc323) = BackupArchiveIO.copyAndDigest(zip)
                 require((storedSize3 == infoStoredSize3) && (storedCrc323 == infoStoredCrc323))
             }
@@ -918,6 +1015,7 @@ class BackupRepository(private val context: Context) {
     }
 
     private fun validateAllObjects(snapshot: VaultSnapshot, dirs: VaultDirs) {
+        snapshot.renditions.forEach { verifyRaw(dirs.books, it.objectInfo) }
         snapshot.books.forEach { (_, refBook2, refCover2) ->
             verifyRaw(dirs.books, refBook2); refCover2?.let { verifyRaw(dirs.covers, it) }
         }
@@ -931,14 +1029,20 @@ class BackupRepository(private val context: Context) {
 
     private fun verifyRaw(folder: DocumentFile, info: VaultObject) {
         val file = folder.findFile(info.fileName) ?: error("Missing object")
-        val (digestSize3, digestSha2563, digestCrc323) = resolver.openInputStream(file.uri)?.use(BackupArchiveIO::copyAndDigest)
+        val (digestSize3, digestSha2563, digestCrc323) = resolver.openInputStream(file.uri)
+            ?.use(BackupArchiveIO::copyAndDigest)
             ?: error("Cannot verify object")
         require((digestSize3 == info.size) && (digestSha2563 == info.sha256) && (digestCrc323 == info.crc32))
     }
 
     private fun allObjects(snapshot: VaultSnapshot): List<VaultObject> =
-        (snapshot.books.flatMap { (_, itBook4, itCover4) -> listOfNotNull(itBook4, itCover4) } +
-            snapshot.dictionaries.map { (_, itObjectInfo4) -> itObjectInfo4 }).distinctBy { (itKind3, _, _, _, _, _, itFileName4) -> itKind3 to itFileName4 }
+        (snapshot.renditions.map { it.objectInfo } + snapshot.books.flatMap { (_, itBook4, itCover4) ->
+            listOfNotNull(
+                itBook4,
+                itCover4
+            )
+        } +
+                snapshot.dictionaries.map { (_, itObjectInfo4) -> itObjectInfo4 }).distinctBy { (itKind3, _, _, _, _, _, itFileName4) -> itKind3 to itFileName4 }
 
     private fun objectFolder(dirs: VaultDirs, kind: VaultObjectKind) = when (kind) {
         VaultObjectKind.BOOK -> dirs.books
@@ -971,20 +1075,27 @@ class BackupRepository(private val context: Context) {
         payload: LibraryBackupPayload,
         settings: ReaderSettings,
     ): String {
-        val books = payload.books.sortedBy { (itId8) -> itId8 }.joinToString("|") { (_, _, bookCoverPath2, bookFilePath2) ->
-            listOfNotNull(bookFilePath2, bookCoverPath2).joinToString(",") { path ->
-                val file = File(path); "$path:${file.length()}:${file.lastModified()}"
+        val books = payload.books.sortedBy { (itId8) -> itId8 }
+            .joinToString("|") { (_, _, bookCoverPath2, bookFilePath2) ->
+                listOfNotNull(bookFilePath2, bookCoverPath2).joinToString(",") { path ->
+                    val file = File(path); "$path:${file.length()}:${file.lastModified()}"
+                }
             }
-        }
+        val renditions =
+            payload.renditions.sortedWith(compareBy({ it.bookId }, { it.key })).joinToString("|") {
+                val file =
+                    File(it.filePath); "${file.absolutePath}:${file.length()}:${file.lastModified()}"
+            }
         val dictionaries =
-            settings.installedDictionaries.sortedBy { (itId9) -> itId9 }.joinToString("|") { (dictionaryId, dictionaryName, dictionaryWordCount) ->
-                val file = context.getDatabasePath("dict_${dictionaryId}.db")
-                "${dictionaryId}:${dictionaryName}:${dictionaryWordCount}:${file.length()}:${file.lastModified()}"
-            }
+            settings.installedDictionaries.sortedBy { (itId9) -> itId9 }
+                .joinToString("|") { (dictionaryId, dictionaryName, dictionaryWordCount) ->
+                    val file = context.getDatabasePath("dict_${dictionaryId}.db")
+                    "${dictionaryId}:${dictionaryName}:${dictionaryWordCount}:${file.length()}:${file.lastModified()}"
+                }
         val settingsHash = BackupArchiveIO.sha256(
             json.encodeToString(portableSettings(settings)).toByteArray(),
         )
-        return BackupArchiveIO.sha256("$revision:$settingsHash:$books:$dictionaries".toByteArray())
+        return BackupArchiveIO.sha256("$revision:$settingsHash:$books:$dictionaries:$renditions".toByteArray())
     }
 
     private fun fingerprintFromReferences(
@@ -993,22 +1104,33 @@ class BackupRepository(private val context: Context) {
         settings: ReaderSettings,
         books: List<BookObjectReference>,
         dictionaries: List<DictionaryObjectReference>,
+        renditions: List<RenditionObjectReference>,
     ): String {
         val byId = books.associateBy { (itBookId4) -> itBookId4 }
-        val bookState = payload.books.sortedBy { (itId10) -> itId10 }.joinToString("|") { (bookId3) ->
-            val (_, refBook3, refCover3) = byId.getValue(bookId3)
-            listOfNotNull(refBook3, refCover3).joinToString(",") { (_, _, _, _, _, _, _, itSourcePath, itSourceSize, itSourceLastModified) ->
-                "${itSourcePath}:${itSourceSize}:${itSourceLastModified}"
+        val bookState =
+            payload.books.sortedBy { (itId10) -> itId10 }.joinToString("|") { (bookId3) ->
+                val (_, refBook3, refCover3) = byId.getValue(bookId3)
+                listOfNotNull(
+                    refBook3,
+                    refCover3
+                ).joinToString(",") { (_, _, _, _, _, _, _, itSourcePath, itSourceSize, itSourceLastModified) ->
+                    "${itSourcePath}:${itSourceSize}:${itSourceLastModified}"
+                }
             }
-        }
-        val dictionaryState = dictionaries.sortedBy { (itDictionary7) -> itDictionary7.id }.joinToString("|") { (itDictionary8, itObjectInfo5) ->
-            val (_, _, _, _, _, _, _, _, sourceSourceSize, sourceSourceLastModified) = itObjectInfo5
-            "${itDictionary8.id}:${itDictionary8.name}:${itDictionary8.wordCount}:" +
-                "${sourceSourceSize}:${sourceSourceLastModified}"
-        }
+        val dictionaryState = dictionaries.sortedBy { (itDictionary7) -> itDictionary7.id }
+            .joinToString("|") { (itDictionary8, itObjectInfo5) ->
+                val (_, _, _, _, _, _, _, _, sourceSourceSize, sourceSourceLastModified) = itObjectInfo5
+                "${itDictionary8.id}:${itDictionary8.name}:${itDictionary8.wordCount}:" +
+                        "${sourceSourceSize}:${sourceSourceLastModified}"
+            }
         val settingsHash = BackupArchiveIO.sha256(json.encodeToString(settings).toByteArray())
+        val renditionState =
+            renditions.sortedWith(compareBy({ it.bookId }, { it.key })).joinToString("|") {
+                val ref =
+                    it.objectInfo; "${ref.sourcePath}:${ref.sourceSize}:${ref.sourceLastModified}"
+            }
         return BackupArchiveIO.sha256(
-            "$revision:$settingsHash:$bookState:$dictionaryState".toByteArray(),
+            "$revision:$settingsHash:$bookState:$dictionaryState:$renditionState".toByteArray(),
         )
     }
 
@@ -1024,12 +1146,20 @@ class BackupRepository(private val context: Context) {
     }
 
     private fun recordCounts(payload: LibraryBackupPayload) = mapOf(
-        "books" to payload.books.size, "bookmarks" to payload.bookmarks.size,
-        "shelves" to payload.shelves.size, "shelfBookCrossRefs" to payload.shelfBookCrossRefs.size,
-        "notes" to payload.notes.size, "authors" to payload.authors.size,
-        "tags" to payload.tags.size, "bookAuthorCrossRefs" to payload.bookAuthorCrossRefs.size,
-        "bookTagCrossRefs" to payload.bookTagCrossRefs.size, "spaces" to payload.spaces.size,
+        "books" to payload.books.size,
+        "bookmarks" to payload.bookmarks.size,
+        "shelves" to payload.shelves.size,
+        "shelfBookCrossRefs" to payload.shelfBookCrossRefs.size,
+        "notes" to payload.notes.size,
+        "authors" to payload.authors.size,
+        "tags" to payload.tags.size,
+        "bookAuthorCrossRefs" to payload.bookAuthorCrossRefs.size,
+        "bookTagCrossRefs" to payload.bookTagCrossRefs.size,
+        "spaces" to payload.spaces.size,
         "bookSpaceCrossRefs" to payload.bookSpaceCrossRefs.size,
+        "renditions" to payload.renditions.size,
+        "credits" to payload.credits.size,
+        "collections" to payload.collections.size,
     )
 
     private fun validRelationships(payload: LibraryBackupPayload): Boolean {
@@ -1038,15 +1168,30 @@ class BackupRepository(private val context: Context) {
         val spaces = payload.spaces.map { (itId13) -> itId13 }.toSet()
         val authors = payload.authors.map { (itId14) -> itId14 }.toSet()
         val tags = payload.tags.map { (itId15) -> itId15 }.toSet()
+        val renditions = payload.renditions.map { it.bookId to it.key }.toSet()
         return (books.size == payload.books.size) && (shelves.size == payload.shelves.size) &&
-            (spaces.size == payload.spaces.size) && (authors.size == payload.authors.size) &&
-            (tags.size == payload.tags.size) &&
-            payload.bookmarks.all { (_, itBookId5) -> itBookId5 in books } && payload.notes.all { (_, itBookId6) -> itBookId6 in books } &&
-            payload.shelves.all { (_, itSpaceId) -> itSpaceId in spaces } &&
-            payload.shelfBookCrossRefs.all { (itShelfId, itBookId7) -> (itBookId7 in books) && (itShelfId in shelves) } &&
-            payload.bookSpaceCrossRefs.all { (itBookId8, itSpaceId2) -> (itBookId8 in books) && (itSpaceId2 in spaces) } &&
-            payload.bookAuthorCrossRefs.all { (itBookId9, itAuthorId) -> (itBookId9 in books) && (itAuthorId in authors) } &&
-            payload.bookTagCrossRefs.all { (itBookId10, itTagId) -> (itBookId10 in books) && (itTagId in tags) }
+                payload.credits.map { Triple(it.bookId, it.role, it.position) }
+                    .toSet().size == payload.credits.size &&
+                payload.collections.map { Triple(it.bookId, it.kind, it.position) }
+                    .toSet().size == payload.collections.size &&
+                (renditions.size == payload.renditions.size) &&
+                payload.renditions.all {
+                    it.bookId in books && it.key in setOf(
+                        "original",
+                        "read-mode"
+                    )
+                } &&
+                payload.books.all { (it.id to it.activeRendition) in renditions && (it.id to "original") in renditions } &&
+                payload.credits.all { it.bookId in books } && payload.collections.all { it.bookId in books } &&
+                payload.bookmarks.all { (it.bookId to it.renditionKey) in renditions } && payload.notes.all { (it.bookId to it.renditionKey) in renditions } &&
+                (spaces.size == payload.spaces.size) && (authors.size == payload.authors.size) &&
+                (tags.size == payload.tags.size) &&
+                payload.bookmarks.all { (_, itBookId5) -> itBookId5 in books } && payload.notes.all { (_, itBookId6) -> itBookId6 in books } &&
+                payload.shelves.all { (_, itSpaceId) -> itSpaceId in spaces } &&
+                payload.shelfBookCrossRefs.all { (itShelfId, itBookId7) -> (itBookId7 in books) && (itShelfId in shelves) } &&
+                payload.bookSpaceCrossRefs.all { (itBookId8, itSpaceId2) -> (itBookId8 in books) && (itSpaceId2 in spaces) } &&
+                payload.bookAuthorCrossRefs.all { (itBookId9, itAuthorId) -> (itBookId9 in books) && (itAuthorId in authors) } &&
+                payload.bookTagCrossRefs.all { (itBookId10, itTagId) -> (itBookId10 in books) && (itTagId in tags) }
     }
 
     private fun deleteOwnedFile(path: String) {
@@ -1070,7 +1215,7 @@ class BackupRepository(private val context: Context) {
         private const val VAULT_FORMAT = "pinecone-backup-vault"
         private const val SNAPSHOT_FORMAT = "pinecone-vault-snapshot"
         private const val PORTABLE_FORMAT = "pinecone-portable-backup"
-        private const val FORMAT_VERSION = 1
+        private const val FORMAT_VERSION = 2
         private const val RETENTION = 3
         private const val AUTOMATIC = "automatic"
         private const val MANUAL = "manual"

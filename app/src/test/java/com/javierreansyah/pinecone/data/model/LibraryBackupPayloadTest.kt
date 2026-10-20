@@ -9,7 +9,7 @@ class LibraryBackupPayloadTest {
     private val json = Json { encodeDefaults = true }
 
     @Test
-    fun vaultSnapshotV1RoundTripsWithoutLegacyDefaults() {
+    fun vaultSnapshotV2RoundTripsWithoutLegacyDefaults() {
         val payload = LibraryBackupPayload(
             books = listOf(
                 BookBackupRecord(

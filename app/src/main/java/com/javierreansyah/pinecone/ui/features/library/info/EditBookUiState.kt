@@ -13,4 +13,11 @@ data class EditBookUiState(
     val isSaving: Boolean = false,
     val saveSuccess: Boolean = false,
     val error: String? = null,
+    val metadata: com.javierreansyah.pinecone.data.publication.PublicationMetadata = com.javierreansyah.pinecone.data.publication.PublicationMetadata(),
+    val credits: List<com.javierreansyah.pinecone.data.local.database.library.PublicationCreditEntity> = emptyList(),
+    val collections: List<com.javierreansyah.pinecone.data.local.database.library.PublicationCollectionEntity> = emptyList(),
+    val creditDrafts: Map<String, String> = emptyMap(),
+    val languageDraft: String = "",
+    val identifierDraft: String = "",
+    val loaded: Boolean = false,
 )

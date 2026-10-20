@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
@@ -30,6 +29,7 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -314,9 +314,9 @@ private fun FilterResultContent(
         onNavigateToOrganize = onNavigateToOrganize,
         onDeleteBook = onDeleteBook,
     ) { bookId ->
-            selectedBooks = setOf(bookId)
-            isInMultiSelectMode = true
-        }
+        selectedBooks = setOf(bookId)
+        isInMultiSelectMode = true
+    }
 
     if (showMergeWarningDialog) {
         AlertDialog(
@@ -375,7 +375,8 @@ private fun FilterResultTopBar(
     modifier: Modifier = Modifier,
 ) {
     val showMarkAsRead = remember(allBooks, selectedBooks) {
-        allBooks.filter { (itId2) -> itId2 in selectedBooks }.any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itIsRead) -> !itIsRead }
+        allBooks.filter { (itId2) -> itId2 in selectedBooks }
+            .any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itIsRead) -> !itIsRead }
     }
 
     MultiSelectTopBarTransition(
@@ -395,26 +396,26 @@ private fun FilterResultTopBar(
             )
         },
     ) {
-            FilterResultDefaultTopAppBar(
-                filterValue = filterValue,
-                showMenu = showMenu,
-                isRenaming = isRenaming,
-                renameName = renameName,
-                suggestions = suggestions,
-                onRenameNameChange = onRenameNameChange,
-                onCancelRename = onCancelRename,
-                onSaveRename = onSaveRename,
-                onNavigateBack = onNavigateBack,
-                onFilterClick = onFilterClick,
-                onMenuToggle = onMenuToggle,
-                onMenuDismiss = onMenuDismiss,
-                onRenameClick = onRenameClick,
-                onDeleteClick = onDeleteClick,
-                onEnterMultiSelect = onEnterMultiSelect,
-                scrollBehavior = scrollBehavior,
-                modifier = modifier,
-            )
-        }
+        FilterResultDefaultTopAppBar(
+            filterValue = filterValue,
+            showMenu = showMenu,
+            isRenaming = isRenaming,
+            renameName = renameName,
+            suggestions = suggestions,
+            onRenameNameChange = onRenameNameChange,
+            onCancelRename = onCancelRename,
+            onSaveRename = onSaveRename,
+            onNavigateBack = onNavigateBack,
+            onFilterClick = onFilterClick,
+            onMenuToggle = onMenuToggle,
+            onMenuDismiss = onMenuDismiss,
+            onRenameClick = onRenameClick,
+            onDeleteClick = onDeleteClick,
+            onEnterMultiSelect = onEnterMultiSelect,
+            scrollBehavior = scrollBehavior,
+            modifier = modifier,
+        )
+    }
 }
 
 @Composable
@@ -512,7 +513,7 @@ private fun FilterResultDefaultTopAppBar(
                             targetState = isRenaming,
                             transitionSpec = {
                                 fadeIn(animationSpec = navEffectsSpec) togetherWith
-                                    fadeOut(animationSpec = navEffectsSpec)
+                                        fadeOut(animationSpec = navEffectsSpec)
                             },
                             label = "navigationIconContent",
                         ) { targetIsRenaming ->
@@ -542,16 +543,16 @@ private fun FilterResultDefaultTopAppBar(
                     transitionSpec = {
                         if (targetState) {
                             fadeIn(animationSpec = actionsEffectsSpec) togetherWith
-                                (fadeOut(animationSpec = actionsEffectsSpec) + slideOutHorizontally(
-                                targetOffsetX = { slideOffsetPx },
-                                animationSpec = actionsSpatialSpec,
-                            ))
+                                    (fadeOut(animationSpec = actionsEffectsSpec) + slideOutHorizontally(
+                                        targetOffsetX = { slideOffsetPx },
+                                        animationSpec = actionsSpatialSpec,
+                                    ))
                         } else {
                             (fadeIn(animationSpec = actionsEffectsSpec) + slideInHorizontally(
                                 initialOffsetX = { slideOffsetPx },
                                 animationSpec = actionsSpatialSpec,
                             )) togetherWith
-                                fadeOut(animationSpec = actionsEffectsSpec)
+                                    fadeOut(animationSpec = actionsEffectsSpec)
                         }
                     },
                     label = "actionsContent",

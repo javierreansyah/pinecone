@@ -35,37 +35,45 @@ class FilterCategoryViewModel(application: Application) : AndroidViewModel(appli
             books.inSpace(spaceId)
         }
 
-    val allAuthors: StateFlow<List<AuthorEntity>> = combine(bookRepository.getAllAuthors(), booksFlow) { authors, books ->
-        val namesInSpace = books.flatMapTo(mutableSetOf()) { (_, _, itAuthors) -> itAuthors }
-        authors.filter { (_, itName) -> itName in namesInSpace }
-    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
-    val allTags: StateFlow<List<TagEntity>> = combine(bookRepository.getAllTags(), booksFlow) { tags, books ->
-        val namesInSpace = books.flatMapTo(mutableSetOf()) { (_, _, _, _, _, _, _, _, _, _, _, _, itTags) -> itTags }
-        tags.filter { (_, itName2) -> itName2 in namesInSpace }
-    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val allAuthors: StateFlow<List<AuthorEntity>> =
+        combine(bookRepository.getAllAuthors(), booksFlow) { authors, books ->
+            val namesInSpace = books.flatMapTo(mutableSetOf()) { (_, _, itAuthors) -> itAuthors }
+            authors.filter { (_, itName) -> itName in namesInSpace }
+        }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val allTags: StateFlow<List<TagEntity>> =
+        combine(bookRepository.getAllTags(), booksFlow) { tags, books ->
+            val namesInSpace =
+                books.flatMapTo(mutableSetOf()) { (_, _, _, _, _, _, _, _, _, _, _, _, itTags) -> itTags }
+            tags.filter { (_, itName2) -> itName2 in namesInSpace }
+        }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val allSpaces: StateFlow<List<SpaceEntity>> =
         bookRepository.getAllSpaces().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    val authorsWithCounts: StateFlow<List<Pair<String, Int>>> = combine(allAuthors, booksFlow) { authors, books ->
-        authors.map { (_, authorName) ->
-            val count = books.count { (_, _, itAuthors2) -> itAuthors2.contains(authorName) }
-            Pair(authorName, count)
-        }
-    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val authorsWithCounts: StateFlow<List<Pair<String, Int>>> =
+        combine(allAuthors, booksFlow) { authors, books ->
+            authors.map { (_, authorName) ->
+                val count = books.count { (_, _, itAuthors2) -> itAuthors2.contains(authorName) }
+                Pair(authorName, count)
+            }
+        }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    val tagsWithCounts: StateFlow<List<Pair<String, Int>>> = combine(allTags, booksFlow) { tags, books ->
-        tags.map { (_, tagName) ->
-            val count = books.count { (_, _, _, _, _, _, _, _, _, _, _, _, itTags2) -> itTags2.contains(tagName) }
-            Pair(tagName, count)
-        }
-    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val tagsWithCounts: StateFlow<List<Pair<String, Int>>> =
+        combine(allTags, booksFlow) { tags, books ->
+            tags.map { (_, tagName) ->
+                val count = books.count { (_, _, _, _, _, _, _, _, _, _, _, _, itTags2) ->
+                    itTags2.contains(tagName)
+                }
+                Pair(tagName, count)
+            }
+        }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    val spacesWithCounts: StateFlow<List<Pair<String, Int>>> = combine(allSpaces, unfilteredBooks) { spaces, books ->
-        spaces.map { (spaceId2, spaceName) ->
-            val count = books.count { book -> book.spaceIds.contains(spaceId2) }
-            Pair(spaceName, count)
-        }
-    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val spacesWithCounts: StateFlow<List<Pair<String, Int>>> =
+        combine(allSpaces, unfilteredBooks) { spaces, books ->
+            spaces.map { (spaceId2, spaceName) ->
+                val count = books.count { book -> book.spaceIds.contains(spaceId2) }
+                Pair(spaceName, count)
+            }
+        }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     fun deleteFilterItem(type: String, name: String, onSuccess: () -> Unit) {
         onSuccess()

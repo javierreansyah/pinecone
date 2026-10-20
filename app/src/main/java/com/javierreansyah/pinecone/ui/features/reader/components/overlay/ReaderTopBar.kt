@@ -20,9 +20,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -30,8 +32,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.PlainTooltip
-import androidx.compose.material3.SplitButtonLayout
+import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.SplitButtonDefaults
+import androidx.compose.material3.SplitButtonLayout
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
@@ -88,6 +91,11 @@ fun ReaderTopBar(
     onGoBackToOriginClick: () -> Unit,
     onClearJumpOriginClick: () -> Unit,
     modifier: Modifier = Modifier,
+    canSearch: Boolean = true,
+    typographySettings: Boolean = true,
+    showReadMode: Boolean = false,
+    readMode: Boolean = false,
+    onToggleReadMode: () -> Unit = {},
 ) {
     Box(
         modifier = modifier
@@ -136,6 +144,16 @@ fun ReaderTopBar(
                 }
             },
             actions = {
+                if (showReadMode) {
+                    androidx.compose.material3.FilledIconToggleButton(
+                        checked = readMode,
+                        onCheckedChange = { onToggleReadMode() }) {
+                        Icon(
+                            Icons.AutoMirrored.Rounded.MenuBook,
+                            contentDescription = stringResource(if (readMode) R.string.reader_original_pdf else R.string.reader_read_mode)
+                        )
+                    }
+                }
                 val topBarState = when {
                     isInSearchMode -> TopBarState.SEARCH
                     jumpOrigin != null -> TopBarState.JUMP
@@ -153,17 +171,17 @@ fun ReaderTopBar(
                         if ((targetState != TopBarState.NORMAL) && (initialState == TopBarState.NORMAL)) {
 
                             fadeIn(animationSpec = actionsEffectsSpec) togetherWith
-                                (fadeOut(animationSpec = actionsEffectsSpec) + slideOutHorizontally(
-                                targetOffsetX = { slideOffsetPx },
-                                animationSpec = actionsSpatialSpec,
-                            ))
+                                    (fadeOut(animationSpec = actionsEffectsSpec) + slideOutHorizontally(
+                                        targetOffsetX = { slideOffsetPx },
+                                        animationSpec = actionsSpatialSpec,
+                                    ))
                         } else if ((targetState == TopBarState.NORMAL) && (initialState != TopBarState.NORMAL)) {
 
                             (fadeIn(animationSpec = actionsEffectsSpec) + slideInHorizontally(
                                 initialOffsetX = { slideOffsetPx },
                                 animationSpec = actionsSpatialSpec,
                             )) togetherWith
-                                fadeOut(animationSpec = actionsEffectsSpec)
+                                    fadeOut(animationSpec = actionsEffectsSpec)
                         } else {
 
                             fadeIn(animationSpec = actionsEffectsSpec) togetherWith fadeOut(
@@ -214,8 +232,8 @@ fun ReaderTopBar(
 
                                 IconButton(onClick = onSettingsClick) {
                                     Icon(
-                                        MaterialSymbols.Outlined.Match_case,
-                                        contentDescription = stringResource(R.string.reader_settings_typography),
+                                        if (typographySettings) MaterialSymbols.Outlined.Match_case else Icons.Rounded.Tune,
+                                        contentDescription = stringResource(if (typographySettings) R.string.reader_settings_typography else R.string.reader_format_settings),
                                         modifier = Modifier.size(28.dp),
                                         tint = readerTextColor,
                                     )
@@ -241,13 +259,13 @@ fun ReaderTopBar(
                                         shapes = MenuDefaults.groupShape(0, 1),
                                         interactionSource = groupInteractionSource,
                                     ) {
-                                        val items = remember(state) {
+                                        val items = remember(state, canSearch) {
                                             buildList {
                                                 if (state == TopBarState.JUMP) {
                                                     add("content")
                                                     add("settings")
                                                 }
-                                                add("search")
+                                                if (canSearch) add("search")
                                                 add("info")
                                             }
                                         }

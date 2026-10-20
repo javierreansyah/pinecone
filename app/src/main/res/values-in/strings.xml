@@ -123,7 +123,7 @@
     <string name="book_show_less_tags">Tampilkan lebih sedikit tag</string>
     <string name="book_not_available">N/A</string>
     <string name="book_unknown">Tidak Diketahui</string>
-    <item type="string" name="book_label_authors">@string/library_authors_title</item>
+    <item name="book_label_authors" type="string">@string/library_authors_title</item>
     <string name="book_label_tags">@string/library_tags_title</string>
     <string name="book_create_new">Buat baru: \"%s\"</string>
     <string name="book_delete_title">Hapus Buku</string>
@@ -186,7 +186,7 @@
     <string name="reader_settings_brightness">Kecerahan</string>
     <string name="reader_settings_auto_brightness">Kecerahan Otomatis</string>
     <string name="reader_settings_theme">Tema</string>
-    <item type="string" name="reader_settings_theme_setting">@string/settings_title</item>
+    <item name="reader_settings_theme_setting" type="string">@string/settings_title</item>
     <string name="reader_settings_theme_auto">Otomatis</string>
     <string name="reader_settings_theme_light">Terang</string>
     <string name="reader_settings_theme_dark">Gelap</string>
@@ -272,7 +272,7 @@
     <string name="settings_restore_defaults">Pulihkan Setelan Awal</string>
     <string name="settings_restore_backup_warning">Apakah Anda yakin ingin memulihkan? Ini akan menimpa perpustakaan dan pengaturan Anda saat ini.</string>
     <string name="settings_restore_backup_sheet_title">Pilih Cadangan untuk Dipulihkan</string>
-    <item type="string" name="settings_backup_auto_label">@string/reader_settings_theme_auto</item>
+    <item name="settings_backup_auto_label" type="string">@string/reader_settings_theme_auto</item>
     <string name="settings_backup_manual_label">Manual</string>
     <string name="settings_no_backups_found">Tidak ada cadangan yang ditemukan di folder yang dipilih.</string>
     <string name="settings_restore_defaults_warning">Apakah Anda yakin ingin memulihkan pengaturan ke nilai default? Tindakan ini akan mereset tema, palet warna, bahasa, dan pengaturan cadangan otomatis Anda.\n\nPengaturan pembaca (seperti ukuran font, kecerahan, dll.) tidak akan diubah.</string>

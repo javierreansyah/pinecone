@@ -75,14 +75,17 @@ class FilterResultViewModel(
         sortShelfBooks(shelvesList, crossRefs, spaceId)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val allAuthors: StateFlow<List<AuthorEntity>> = combine(bookRepository.getAllAuthors(), allBooks) { authors, books ->
-        val namesInSpace = books.flatMapTo(mutableSetOf()) { (_, _, itAuthors) -> itAuthors }
-        authors.filter { (_, itName) -> itName in namesInSpace }
-    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
-    val allTags: StateFlow<List<TagEntity>> = combine(bookRepository.getAllTags(), allBooks) { tags, books ->
-        val namesInSpace = books.flatMapTo(mutableSetOf()) { (_, _, _, _, _, _, _, _, _, _, _, _, itTags) -> itTags }
-        tags.filter { (_, itName2) -> itName2 in namesInSpace }
-    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val allAuthors: StateFlow<List<AuthorEntity>> =
+        combine(bookRepository.getAllAuthors(), allBooks) { authors, books ->
+            val namesInSpace = books.flatMapTo(mutableSetOf()) { (_, _, itAuthors) -> itAuthors }
+            authors.filter { (_, itName) -> itName in namesInSpace }
+        }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val allTags: StateFlow<List<TagEntity>> =
+        combine(bookRepository.getAllTags(), allBooks) { tags, books ->
+            val namesInSpace =
+                books.flatMapTo(mutableSetOf()) { (_, _, _, _, _, _, _, _, _, _, _, _, itTags) -> itTags }
+            tags.filter { (_, itName2) -> itName2 in namesInSpace }
+        }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val allSpaces: StateFlow<List<SpaceEntity>> =
         bookRepository.getAllSpaces().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 

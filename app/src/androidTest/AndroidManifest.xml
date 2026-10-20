@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <activity
+            android:name="com.javierreansyah.pinecone.TestBackupGrantActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.NoDisplay" />
+        <provider
+            android:name="com.javierreansyah.pinecone.TestBackupDocumentsProvider"
+            android:authorities="com.javierreansyah.pinecone.test.backupdocs"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:permission="android.permission.MANAGE_DOCUMENTS">
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+            </intent-filter>
+        </provider>
+    </application>
+</manifest>

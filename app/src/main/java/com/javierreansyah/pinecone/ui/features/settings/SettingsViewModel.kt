@@ -66,12 +66,13 @@ class SettingsViewModel(
     fun loadBackups() {
         viewModelScope.launch {
             val formatter = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
-            _availableBackups.value = backupRepository.listSnapshots().map { (itUri, itId, itTimestamp, itIsManual) ->
-                BackupFile(
-                    itUri, itId, itTimestamp, itIsManual,
-                    formatter.format(Date(itTimestamp)),
-                )
-            }
+            _availableBackups.value =
+                backupRepository.listSnapshots().map { (itUri, itId, itTimestamp, itIsManual) ->
+                    BackupFile(
+                        itUri, itId, itTimestamp, itIsManual,
+                        formatter.format(Date(itTimestamp)),
+                    )
+                }
         }
     }
 

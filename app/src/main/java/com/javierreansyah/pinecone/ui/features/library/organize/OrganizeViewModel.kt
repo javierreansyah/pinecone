@@ -34,7 +34,8 @@ class OrganizeViewModel(
     bookIdsStr: String,
 ) : AndroidViewModel(application) {
     private val repository = (application as PineconeApplication).libraryRepository
-    private val targetBookIds = bookIdsStr.splitToSequence(',').map { it.trim() }.filter { it.isNotEmpty() }.toList()
+    private val targetBookIds =
+        bookIdsStr.splitToSequence(',').map { it.trim() }.filter { it.isNotEmpty() }.toList()
 
     val uiState: StateFlow<OrganizeUiState> = combine(
         repository.getAllShelvesWithBooks(),
@@ -45,7 +46,9 @@ class OrganizeViewModel(
 
         val spaceItems = spaces.asSequence().filter { (itId) -> itId != "_all_" }.map { space ->
             val spaceId = space.id
-            val booksInSpace = spaceCrossRefs.asSequence().filter { (_, itSpaceId) -> itSpaceId == spaceId }.map { (itBookId) -> itBookId }.toSet()
+            val booksInSpace =
+                spaceCrossRefs.asSequence().filter { (_, itSpaceId) -> itSpaceId == spaceId }
+                    .map { (itBookId) -> itBookId }.toSet()
             val countInSpace = targetBookIds.count { it in booksInSpace }
 
             val spaceState = when (countInSpace) {

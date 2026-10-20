@@ -129,13 +129,13 @@ fun SettingsScreen(
             }
         },
     ) { uri ->
-            uri?.let {
-                val takeFlags: Int =
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                context.contentResolver.takePersistableUriPermission(it, takeFlags)
-                viewModel.updateSettings(settings.copy(backupFolderUri = it.toString()))
-            }
+        uri?.let {
+            val takeFlags: Int =
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            context.contentResolver.takePersistableUriPermission(it, takeFlags)
+            viewModel.updateSettings(settings.copy(backupFolderUri = it.toString()))
         }
+    }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/octet-stream"),
@@ -148,8 +148,8 @@ fun SettingsScreen(
                     Toast.makeText(context, navBackupSuccessMsg, Toast.LENGTH_SHORT).show()
                 },
             ) {
-                    Toast.makeText(context, navBackupFailedMsg, Toast.LENGTH_SHORT).show()
-                }
+                Toast.makeText(context, navBackupFailedMsg, Toast.LENGTH_SHORT).show()
+            }
         }
         selectedBackupToExport = null
     }
@@ -164,13 +164,13 @@ fun SettingsScreen(
                     Toast.makeText(context, navBackupSuccessMsg, Toast.LENGTH_SHORT).show()
                 },
             ) {
-                    Toast.makeText(context, navBackupFailedMsg, Toast.LENGTH_SHORT).show()
-                }
+                Toast.makeText(context, navBackupFailedMsg, Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
     val hasPermission = settings.backupFolderUri.isNotEmpty() &&
-        context.contentResolver.persistedUriPermissions.any { it.uri.toString() == settings.backupFolderUri }
+            context.contentResolver.persistedUriPermissions.any { it.uri.toString() == settings.backupFolderUri }
 
     val launchFolderPicker = {
         val pineconeDir = File(
@@ -236,8 +236,8 @@ fun SettingsScreen(
                         Toast.makeText(context, navBackupSuccessMsg, Toast.LENGTH_SHORT).show()
                     },
                 ) {
-                        Toast.makeText(context, navBackupFailedMsg, Toast.LENGTH_SHORT).show()
-                    }
+                    Toast.makeText(context, navBackupFailedMsg, Toast.LENGTH_SHORT).show()
+                }
             }
         },
         onRestoreClick = {
@@ -269,13 +269,13 @@ fun SettingsScreen(
             currentColor = currentPaletteColor,
             setShowDialog = { showColorPicker = it },
         ) { color ->
-                val newPalette = if (color == Color.White) {
-                    "Dynamic"
-                } else {
-                    String.format("#%06X", 0xFFFFFF and color.toArgb())
-                }
-                viewModel.updateSettings(settings.copy(colorPalette = newPalette))
+            val newPalette = if (color == Color.White) {
+                "Dynamic"
+            } else {
+                String.format("#%06X", 0xFFFFFF and color.toArgb())
             }
+            viewModel.updateSettings(settings.copy(colorPalette = newPalette))
+        }
     }
 
     if (showRestoreWarning) {
@@ -285,56 +285,56 @@ fun SettingsScreen(
                 selectedBackupToRestore = null
             },
         ) {
-                showRestoreWarning = false
-                selectedBackupToRestore?.uri?.let { uri ->
-                    viewModel.restoreFullBackup(
-                        uri = uri,
-                        onStart = {
-                            Toast.makeText(context, navRestoringBackupMsg, Toast.LENGTH_SHORT)
-                                .show()
-                        },
-                        onSuccess = {
-                            Toast.makeText(context, navRestoreSuccessMsg, Toast.LENGTH_SHORT).show()
-                        },
-                        onWarning = {
-                            Toast.makeText(context, restorePartialMsg, Toast.LENGTH_LONG).show()
-                        },
-                    ) {
-                            Toast.makeText(context, navRestoreFailedMsg, Toast.LENGTH_SHORT).show()
-                        }
+            showRestoreWarning = false
+            selectedBackupToRestore?.uri?.let { uri ->
+                viewModel.restoreFullBackup(
+                    uri = uri,
+                    onStart = {
+                        Toast.makeText(context, navRestoringBackupMsg, Toast.LENGTH_SHORT)
+                            .show()
+                    },
+                    onSuccess = {
+                        Toast.makeText(context, navRestoreSuccessMsg, Toast.LENGTH_SHORT).show()
+                    },
+                    onWarning = {
+                        Toast.makeText(context, restorePartialMsg, Toast.LENGTH_LONG).show()
+                    },
+                ) {
+                    Toast.makeText(context, navRestoreFailedMsg, Toast.LENGTH_SHORT).show()
                 }
-                selectedBackupToRestore = null
             }
+            selectedBackupToRestore = null
+        }
     }
 
     if (showRestoreDefaultWarning) {
         RestoreDefaultWarningDialog(
             onDismiss = { showRestoreDefaultWarning = false },
         ) {
-                showRestoreDefaultWarning = false
-                val defaultSettings = settings.copy(
-                    themeMode = "System",
-                    colorPalette = "Dynamic",
-                    themeContrast = "Standard",
-                    locale = "System",
-                    autoBackupFrequency = "12h",
-                    backupFolderUri = "",
-                    showAllSpaces = true,
-                )
-                viewModel.updateSettings(defaultSettings)
+            showRestoreDefaultWarning = false
+            val defaultSettings = settings.copy(
+                themeMode = "System",
+                colorPalette = "Dynamic",
+                themeContrast = "Standard",
+                locale = "System",
+                autoBackupFrequency = "12h",
+                backupFolderUri = "",
+                showAllSpaces = true,
+            )
+            viewModel.updateSettings(defaultSettings)
 
-                AppCompatDelegate.setApplicationLocales(
-                    LocaleListCompat.getEmptyLocaleList(),
-                )
+            AppCompatDelegate.setApplicationLocales(
+                LocaleListCompat.getEmptyLocaleList(),
+            )
 
-                WorkerUtils.scheduleBackupWork(context, "12h")
+            WorkerUtils.scheduleBackupWork(context, "12h")
 
-                Toast.makeText(
-                    context,
-                    restoreSuccessMsg,
-                    Toast.LENGTH_SHORT,
-                ).show()
-            }
+            Toast.makeText(
+                context,
+                restoreSuccessMsg,
+                Toast.LENGTH_SHORT,
+            ).show()
+        }
     }
 
     if (showRestoreBottomSheet) {
@@ -347,9 +347,9 @@ fun SettingsScreen(
                 showRestoreWarning = true
             },
         ) { backup ->
-                selectedBackupToExport = backup
-                exportLauncher.launch("pinecone_${backup.name}.pine")
-            }
+            selectedBackupToExport = backup
+            exportLauncher.launch("pinecone_${backup.name}.pine")
+        }
     }
 }
 
@@ -551,7 +551,9 @@ private fun GeneralSettingsSection(
                     value = themeOptionsMap[settings.themeMode] ?: settings.themeMode,
                     options = themeOptionsMap.values.toList(),
                     onSelected = { label ->
-                        val key = themeOptionsMap.entries.find { (_, itValue2) -> itValue2 == label }?.key ?: label
+                        val key =
+                            themeOptionsMap.entries.find { (_, itValue2) -> itValue2 == label }?.key
+                                ?: label
                         onThemeModeSelected(key)
                     },
                     leadingIcon = {
@@ -642,7 +644,8 @@ private fun GeneralSettingsSection(
                     options = themeContrastMap.values.toList(),
                     onSelected = { label ->
                         val key =
-                            themeContrastMap.entries.find { (_, itValue3) -> itValue3 == label }?.key ?: label
+                            themeContrastMap.entries.find { (_, itValue3) -> itValue3 == label }?.key
+                                ?: label
                         onThemeContrastSelected(key)
                     },
                     leadingIcon = {
@@ -735,7 +738,8 @@ private fun BackupSettingsSection(
                     options = frequencyOptionsMap.values.toList(),
                     onSelected = { label ->
                         val key =
-                            frequencyOptionsMap.entries.find { (_, itValue4) -> itValue4 == label }?.key ?: label
+                            frequencyOptionsMap.entries.find { (_, itValue4) -> itValue4 == label }?.key
+                                ?: label
                         onAutoBackupFrequencySelected(key)
                     },
                     enabled = hasPermission,
@@ -995,7 +999,8 @@ private fun RestoreBottomSheet(
                     modifier = Modifier.padding(vertical = 16.dp),
                 )
             } else {
-                val groupedBackups = availableBackups.groupBy { (_, _, _, itIsManual) -> itIsManual }
+                val groupedBackups =
+                    availableBackups.groupBy { (_, _, _, itIsManual) -> itIsManual }
                 val groups = groupedBackups.entries.sortedByDescending { (_, entryValue) ->
                     entryValue.maxOfOrNull { (_, _, itTimestamp) -> itTimestamp } ?: 0L
                 }
@@ -1013,45 +1018,46 @@ private fun RestoreBottomSheet(
                                 color = MaterialTheme.colorScheme.primary,
                             )
                             SegmentedColumn {
-                                backups.sortedByDescending { (_, _, itTimestamp2) -> itTimestamp2 }.forEach { backup ->
-                                    item(
-                                        onClick = {
-                                            onSelectBackup(backup)
-                                            scope.launch { bottomSheetState.hide() }
-                                                .invokeOnCompletion {
-                                                    if (!bottomSheetState.isVisible) {
-                                                        onDismiss()
+                                backups.sortedByDescending { (_, _, itTimestamp2) -> itTimestamp2 }
+                                    .forEach { backup ->
+                                        item(
+                                            onClick = {
+                                                onSelectBackup(backup)
+                                                scope.launch { bottomSheetState.hide() }
+                                                    .invokeOnCompletion {
+                                                        if (!bottomSheetState.isVisible) {
+                                                            onDismiss()
+                                                        }
                                                     }
-                                                }
-                                        },
-                                        leadingContent = {
-                                            Icon(
-                                                imageVector = MaterialSymbols.Outlined.History,
-                                                contentDescription = null,
-                                            )
-                                        },
-                                        content = {
-                                            Text(
-                                                text = backup.formattedDate,
-                                                style = MaterialTheme.typography.bodyLarge,
-                                            )
-                                        },
-                                        trailingContent = {
-                                            Row {
-                                                IconButton(onClick = { onExportBackup(backup) }) {
-                                                    Icon(
-                                                        imageVector = MaterialSymbols.Outlined.Save,
-                                                        contentDescription = stringResource(R.string.settings_export_backup),
-                                                    )
-                                                }
+                                            },
+                                            leadingContent = {
                                                 Icon(
-                                                    imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
+                                                    imageVector = MaterialSymbols.Outlined.History,
                                                     contentDescription = null,
                                                 )
-                                            }
-                                        },
-                                    )
-                                }
+                                            },
+                                            content = {
+                                                Text(
+                                                    text = backup.formattedDate,
+                                                    style = MaterialTheme.typography.bodyLarge,
+                                                )
+                                            },
+                                            trailingContent = {
+                                                Row {
+                                                    IconButton(onClick = { onExportBackup(backup) }) {
+                                                        Icon(
+                                                            imageVector = MaterialSymbols.Outlined.Save,
+                                                            contentDescription = stringResource(R.string.settings_export_backup),
+                                                        )
+                                                    }
+                                                    Icon(
+                                                        imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
+                                                        contentDescription = null,
+                                                    )
+                                                }
+                                            },
+                                        )
+                                    }
                             }
                         }
                     }

@@ -34,7 +34,8 @@ class DictionaryRepository(
     suspend fun deleteDictionary(dictionaryId: String) {
 
         val currentSettings = preferences.readerSettings.first()
-        val newInstalled = currentSettings.installedDictionaries.filter { (itId) -> itId != dictionaryId }
+        val newInstalled =
+            currentSettings.installedDictionaries.filter { (itId) -> itId != dictionaryId }
         val newActiveId = if (currentSettings.activeDictionaryId == dictionaryId) {
             newInstalled.firstOrNull()?.id ?: ""
         } else {

@@ -117,6 +117,14 @@ fun ReaderOverlay(
     val currentLocator by viewModel.currentLocator.collectAsStateWithLifecycle()
     val jumpOrigin by viewModel.jumpOrigin.collectAsStateWithLifecycle()
     val positions by viewModel.positions.collectAsStateWithLifecycle()
+    val profile by viewModel.profile.collectAsStateWithLifecycle()
+    val activeRendition by viewModel.activeRendition.collectAsStateWithLifecycle()
+    val publication by viewModel.publication.collectAsStateWithLifecycle()
+    val audioState by viewModel.audioSession.state.collectAsStateWithLifecycle()
+    val useBookSettings by viewModel.useBookSettings.collectAsStateWithLifecycle()
+    val fixedEpub = publication?.metadata?.layout == org.readium.r2.shared.publication.Layout.FIXED
+
+    LaunchedEffect(activeRendition) { notesViewModel.setRendition(activeRendition) }
 
     LaunchedEffect(viewModel.tableOfContents) {
         notesViewModel.updateTableOfContents(viewModel.tableOfContents)
@@ -160,6 +168,18 @@ fun ReaderOverlay(
     val uiDarkTheme = themeColors.value.isDarkTheme
     PineconeThemedContent(uiDarkTheme = uiDarkTheme, settings = settings) {
         Box(modifier = Modifier.fillMaxSize()) {
+            if (profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO) {
+                com.javierreansyah.pinecone.ui.features.reader.components.AudioReaderContent(
+                    state = audioState,
+                    coverPath = bookState.value.coverPath,
+                    background = readerBgColor,
+                    onToggleControls = viewModel::toggleControls,
+                    onPlayPause = viewModel.audioSession::togglePlayback,
+                    onSkip = viewModel.audioSession::skip,
+                    onTrack = viewModel.audioSession::track,
+                    onSeek = viewModel.audioSession::seek,
+                )
+            }
 
             if (bookState.value.isLoading) {
                 Box(
@@ -213,11 +233,16 @@ fun ReaderOverlay(
                     }
                 },
                 onInfoClick = { router.navigateToBookInfo(bookId) },
+                canSearch = profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.EPUB || profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF,
+                typographySettings = profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.EPUB && !fixedEpub,
+                showReadMode = bookState.value.sourceIsPdf,
+                readMode = bookState.value.readMode,
+                onToggleReadMode = viewModel::togglePdfReadMode,
             )
 
             ReaderBottomBarSection(
                 modifier = Modifier.align(Alignment.BottomCenter),
-                showControls = controlsState.value.showControls,
+                showControls = controlsState.value.showControls && profile != com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO,
                 showSearch = controlsState.value.showSearch,
                 isInSearchNavigationMode = searchState.value.isInNavMode,
                 activeSearchIndex = searchState.value.activeIndex,
@@ -286,7 +311,11 @@ fun ReaderOverlay(
                 },
                 onColorSelected = { colorInt ->
                     selectionState.value.selectionLocator?.let { loc ->
-                        notesViewModel.addHighlight(loc, colorInt, loc.title ?: bookState.value.chapter)
+                        notesViewModel.addHighlight(
+                            loc,
+                            colorInt,
+                            loc.title ?: bookState.value.chapter
+                        )
                         notesViewModel.hideSelectionMenu()
                         notesViewModel.hideViewHighlight()
                     } ?: selectionState.value.viewingHighlight?.let { note ->
@@ -372,7 +401,57 @@ fun ReaderOverlay(
                     } catch (_: Exception) {
                     }
                 },
-            ) { viewModel.hideExternalLinkMenu() }
+                profile = profile,
+                fixedEpub = fixedEpub,
+                useBookSettings = useBookSettings,
+                onUseBookSettings = viewModel::setUseBookSettings,
+                onHideExternalLinkMenu = viewModel::hideExternalLinkMenu,
+                publication = publication,
+            )
+
+            if (bookState.value.converting) {
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = viewModel::cancelConversion,
+                    title = { Text(stringResource(R.string.reader_preparing_read_mode)) },
+                    text = {
+                        Column(
+                            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(
+                                16.dp
+                            )
+                        ) {
+                            androidx.compose.material3.LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                            Text(
+                                stringResource(
+                                    R.string.reader_conversion_progress,
+                                    bookState.value.conversionPage,
+                                    bookState.value.conversionTotal
+                                )
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        androidx.compose.material3.TextButton(onClick = viewModel::cancelConversion) {
+                            Text(
+                                stringResource(R.string.action_cancel)
+                            )
+                        }
+                    },
+                )
+            }
+            bookState.value.conversionError?.let { message ->
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = viewModel::dismissConversionError,
+                    title = { Text(stringResource(R.string.reader_read_mode_failed)) },
+                    text = { Text(message) },
+                    confirmButton = {
+                        androidx.compose.material3.TextButton(onClick = viewModel::dismissConversionError) {
+                            Text(
+                                stringResource(R.string.action_close)
+                            )
+                        }
+                    },
+                )
+            }
         }
     }
 }
@@ -398,6 +477,11 @@ fun ReaderTopBarSection(
     onToggleBookmark: () -> Unit,
     onInfoClick: () -> Unit,
     modifier: Modifier = Modifier,
+    canSearch: Boolean = true,
+    typographySettings: Boolean = true,
+    showReadMode: Boolean = false,
+    readMode: Boolean = false,
+    onToggleReadMode: () -> Unit = {},
 ) {
     val actionsSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
     val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
@@ -437,6 +521,11 @@ fun ReaderTopBarSection(
             jumpOrigin = jumpOrigin,
             onGoBackToOriginClick = onGoBackToOriginClick,
             onClearJumpOriginClick = onClearJumpOriginClick,
+            canSearch = canSearch,
+            typographySettings = typographySettings,
+            showReadMode = showReadMode,
+            readMode = readMode,
+            onToggleReadMode = onToggleReadMode,
         )
     }
 }
@@ -512,10 +601,10 @@ fun ReaderBottomBarSection(
                     (slideInVertically(
                         initialOffsetY = { offset }, animationSpec = actionsSpatialSpec,
                     ) + fadeIn(animationSpec = actionsEffectsSpec)) togetherWith (
-                        slideOutVertically(
-                            targetOffsetY = { offset }, animationSpec = actionsSpatialSpec,
-                        ) + fadeOut(animationSpec = actionsEffectsSpec)
-                        )
+                            slideOutVertically(
+                                targetOffsetY = { offset }, animationSpec = actionsSpatialSpec,
+                            ) + fadeOut(animationSpec = actionsEffectsSpec)
+                            )
                 },
             ) { mode ->
                 when (mode) {
@@ -619,6 +708,11 @@ fun ReaderSheetsLayer(
     onCopyExternalLink: (String) -> Unit,
     onOpenExternalLink: (String) -> Unit,
     onHideExternalLinkMenu: () -> Unit,
+    profile: com.javierreansyah.pinecone.data.publication.ReaderProfile = com.javierreansyah.pinecone.data.publication.ReaderProfile.EPUB,
+    fixedEpub: Boolean = false,
+    useBookSettings: Boolean = false,
+    onUseBookSettings: (Boolean) -> Unit = {},
+    publication: org.readium.r2.shared.publication.Publication? = null,
 ) {
     val settingsSheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
@@ -667,9 +761,17 @@ fun ReaderSheetsLayer(
             onDismissRequest = onHideSettings,
             sheetState = settingsSheetState,
         ) {
+            com.javierreansyah.pinecone.ui.features.reader.components.settings.PreferenceSwitch(
+                stringResource(R.string.reader_settings_this_publication),
+                useBookSettings,
+                onUseBookSettings,
+            )
             ReaderSettingsContent(
                 settings = settings,
                 onSettingsChange = onUpdateSettings,
+                profile = profile,
+                fixedEpub = fixedEpub,
+                publication = publication,
             )
         }
     }

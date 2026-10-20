@@ -336,7 +336,7 @@ fun SearchResultCard(
         Column {
 
             Text(
-                text = item.chapterTitle ?: "Unknown Chapter",
+                text = item.chapterTitle ?: stringResource(R.string.reader_unknown_chapter),
                 style = MaterialTheme.typography.titleMedium,
                 color = primary,
             )

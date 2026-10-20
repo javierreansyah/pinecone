@@ -51,7 +51,9 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
-        super.onCreate(savedInstanceState)
+        // Readium factories need a live Publication before fragment restoration. Recreate the
+        // presentation from durable locators instead of restoring stale native/WebView fragments.
+        super.onCreate(null)
         setContentView(R.layout.activity_reader)
 
         navigatorContainer = findViewById(R.id.navigator_container)
@@ -65,14 +67,16 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
         )
 
         // Ensure the navigator container doesn't shift when bars toggle or keyboard appears
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(navigatorContainer
-            ?: return) { _, insets ->
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(
+            navigatorContainer
+                ?: return
+        ) { _, insets ->
             insets
         }
 
         viewModel.systemDarkThemeFlow.value = isNightMode(resources.configuration)
 
-        if (savedInstanceState == null) {
+        if (viewModel.publication.value == null) {
             viewModel.openBook()
         }
 
@@ -112,8 +116,8 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
                         locator?.let(navigatorController::go)
                     },
                 ) { locator ->
-                        navigatorController.go(locator)
-                    }
+                    navigatorController.go(locator)
+                }
             }
         }
     }
@@ -144,11 +148,18 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
     private fun observeNavigatorMargins() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.settingsFlow.collect { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, settingsScroll, _, _, _, _, settingsVerticalMargin) ->
+                combine(
+                    viewModel.settingsFlow,
+                    viewModel.profile
+                ) { settings, profile -> settings to profile }.collect { (settings, profile) ->
+                    val settingsScroll = settings.scroll
+                    val settingsVerticalMargin = settings.verticalMargin
                     val density = resources.displayMetrics.density
+                    val isEpub =
+                        profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.EPUB
                     val newTop =
-                        if (settingsScroll) 0 else (settingsVerticalMargin * density).toInt()
-                    val newBottom = if (settingsScroll) 0 else (maxOf(
+                        if (settingsScroll || !isEpub) 0 else (settingsVerticalMargin * density).toInt()
+                    val newBottom = if (settingsScroll || !isEpub) 0 else (maxOf(
                         0.0,
                         settingsVerticalMargin - 4,
                     ) * density).toInt()

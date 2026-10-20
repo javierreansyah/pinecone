@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -43,12 +44,18 @@ class BookInfoViewModel(
             initialValue = BookInfoUiState(),
         )
 
-    val bookmarks: StateFlow<List<BookmarkEntity>> = repository.getBookmarks(bookId)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val bookmarks: StateFlow<List<BookmarkEntity>> =
+        combine(repository.getBookmarks(bookId), repository.getBookFlow(bookId)) { items, item ->
+            items.filter { it.renditionKey == item?.book?.activeRendition }
+        }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val notes: StateFlow<List<NoteEntity>> = repository.getNotes(bookId)
-        .map { list -> list.filter { (_, _, _, _, itNoteText) -> itNoteText.isNotBlank() } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val notes: StateFlow<List<NoteEntity>> =
+        combine(repository.getNotes(bookId), repository.getBookFlow(bookId)) { items, item ->
+            items.filter { it.renditionKey == item?.book?.activeRendition }
+        }
+            .map { list -> list.filter { (_, _, _, _, itNoteText) -> itNoteText.isNotBlank() } }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _tableOfContents = MutableStateFlow<List<Link>>(emptyList())
     val tableOfContents: StateFlow<List<Link>> = _tableOfContents.asStateFlow()
@@ -118,7 +125,11 @@ class BookInfoViewModel(
 
     fun saveReadingPosition(locator: Locator, onSaved: () -> Unit) {
         viewModelScope.launch {
-            repository.saveReadingPosition(bookId, locator)
+            repository.saveReadingPosition(
+                bookId,
+                locator,
+                repository.getBook(bookId)?.book?.activeRendition ?: "original"
+            )
             onSaved()
         }
     }
