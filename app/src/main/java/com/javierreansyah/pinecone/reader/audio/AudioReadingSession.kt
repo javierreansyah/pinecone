@@ -70,6 +70,7 @@ class AudioReadingSession(private val app: PineconeApplication) {
             val settings =
                 (override ?: app.readerPreferences.readerSettings.first()).formatPreferences
             val factory = AudioNavigatorFactory(pub, ExoPlayerEngineProvider(app))
+                ?: error("Publication is not supported by the audio navigator")
             val initial =
                 originalRendition?.lastLocatorJson?.let { Locator.fromJSON(JSONObject(it)) }
             val nav = factory.createNavigator(
