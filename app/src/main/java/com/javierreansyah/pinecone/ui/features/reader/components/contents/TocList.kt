@@ -43,11 +43,9 @@ fun TocList(
         val currentChapterIndex = remember(tableOfContents, currentLocator) {
             if (currentLocator == null) return@remember 0
             val currentHref = currentLocator.href.toString().substringBefore("#")
-            GeneratedEpubLocations.page(currentLocator.href.toString(),
-                currentLocator.locations["cssSelector"] as? String, currentLocator.locations.fragments)?.let { page ->
-                return@remember tableOfContents.indexOfLast { link ->
-                    GeneratedEpubLocations.page(link.href.toString())?.let { it <= page } == true
-                }.coerceAtLeast(0)
+            GeneratedEpubLocations.chapterIndex(tableOfContents.map { it.href.toString() }, currentLocator.href.toString(),
+                currentLocator.locations["cssSelector"] as? String, currentLocator.locations.fragments)?.let { index ->
+                return@remember index
             }
             val index = tableOfContents.indexOfFirst { (itHref) ->
                 itHref.toString().substringBefore("#") == currentHref

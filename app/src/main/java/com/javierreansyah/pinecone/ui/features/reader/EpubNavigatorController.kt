@@ -86,7 +86,8 @@ class EpubNavigatorController(
         }
 
         val navigatorFactory = EpubNavigatorFactory(publication = publication)
-        val initialLocator = viewModel.currentLocator.value ?: viewModel.initialLocator
+        val initialLocator = (viewModel.currentLocator.value ?: viewModel.initialLocator)
+            ?.let(publication::resolveGeneratedLocator)
         val initialPreferences = viewModel.epubPreferences.value
 
         val configuration = EpubNavigatorFragment.Configuration {
@@ -232,15 +233,27 @@ class EpubNavigatorController(
                 _navigatorFlow.collectLatest { nav ->
                     nav?.currentLocator?.collect { position ->
                         // Readium's position stream is progression-based. Resolve the visible
-                        // block so chapter/page identity remains exact within the single HTML.
+                        // block so chapter/page identity remains exact inside each resource.
                         val visible = if (renditionKey == "read-mode" &&
                             GeneratedEpubLocations.isContent(position.href.toString())) {
-                            nav.firstVisibleElementLocator()
+                            nav.firstVisibleElementLocator()?.takeIf {
+                                GeneratedEpubLocations.sameContentResource(it.href.toString(), position.href.toString())
+                            }
                         } else null
-                        val locator = viewModel.withReadModeChapter(if (visible != null) {
+                        val sourcePage = if (renditionKey == "read-mode" &&
+                            GeneratedEpubLocations.isContent(position.href.toString())) {
+                            visible?.let { GeneratedEpubLocations.page(it.href.toString(),
+                                it.locations["cssSelector"] as? String, it.locations.fragments) }
+                                ?: nav.evaluateJavascript(ReadModePageResolver.script(visible?.locations?.get("cssSelector") as? String))
+                                    ?.let { runCatching { org.json.JSONObject(it) }.getOrNull() }
+                                    ?.takeIf { GeneratedEpubLocations.sameContentResource(it.optString("href"), position.href.toString()) }
+                                    ?.optInt("page")?.takeIf { it > 0 }
+                        } else null
+                        val locator = viewModel.withReadModeChapter(if (visible != null || sourcePage != null) {
                             position.copy(locations = position.locations.copy(
-                                otherLocations = position.locations.otherLocations + visible.locations.otherLocations,
-                            ), text = visible.text)
+                                fragments = sourcePage?.let { listOf("source-page-$it") } ?: position.locations.fragments,
+                                otherLocations = position.locations.otherLocations + visible?.locations?.otherLocations.orEmpty(),
+                            ), text = visible?.text ?: position.text)
                         } else position)
                         if (viewModel.activeRendition.value == renditionKey) viewModel.onLocatorChanged(
                             locator
@@ -283,7 +296,7 @@ class EpubNavigatorController(
                                     }
                                     Decoration(
                                         id = "note_${noteId2}",
-                                        locator = locator,
+                                    locator = viewModel.publication.value?.resolveGeneratedLocator(locator) ?: locator,
                                         style = Decoration.Style.Highlight(
                                             tint = tintColor, isActive = false,
                                         ),
@@ -336,7 +349,7 @@ class EpubNavigatorController(
 
     fun go(locator: Locator) {
         lifecycleScope.launch {
-            navigator?.go(locator)
+            navigator?.go(viewModel.publication.value?.resolveGeneratedLocator(locator) ?: locator)
         }
     }
 

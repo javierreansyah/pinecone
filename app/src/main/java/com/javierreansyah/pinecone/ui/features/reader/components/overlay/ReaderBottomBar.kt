@@ -62,6 +62,7 @@ import com.composables.icons.materialsymbols.outlined.Search
 import com.javierreansyah.pinecone.R
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
 
 enum class BottomBarMode {
     PROGRESS, SEARCH_NAV, TEXT_SELECTION
@@ -99,13 +100,16 @@ fun ReaderProgressTracker(
     var pendingSeek by remember { mutableStateOf<Double?>(null) }
     var seekBarWidthPx by remember { mutableFloatStateOf(1f) }
 
-    LaunchedEffect(progression) {
+    LaunchedEffect(progression, isSeeking, pendingSeek) {
         val target = pendingSeek
         if (!isSeeking) {
-            if ((target == null) || (abs(progression - target) < 0.02)) {
-                pendingSeek = null
-                sliderPosition = progression.toFloat().coerceIn(0f, 1f)
+            if (target != null && abs(progression - target) >= 0.02) {
+                // A seek can settle away from its requested estimate. Never leave
+                // the thumb permanently detached from subsequent page turns.
+                delay(1500)
             }
+            pendingSeek = null
+            sliderPosition = progression.toFloat().coerceIn(0f, 1f)
         }
     }
 
@@ -236,9 +240,9 @@ fun ReaderProgressTracker(
                 "${(sliderPosition * 100).toInt()}%"
             }
         } else {
-            if ((currentPage != null) && (totalPages != null)) {
+            if (totalPages != null) {
                 androidx.compose.ui.res.pluralStringResource(
-                    R.plurals.reader_page_of, totalPages, currentPage, totalPages,
+                    R.plurals.reader_page_of, totalPages, (currentPage ?: 1).coerceIn(1, totalPages), totalPages,
                 )
             } else {
                 "${(progression * 100).toInt()}%"

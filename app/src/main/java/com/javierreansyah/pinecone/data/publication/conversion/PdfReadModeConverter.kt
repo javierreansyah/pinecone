@@ -28,6 +28,7 @@ data class SourceBlock(
     val width: Float,
     val height: Float,
     val textRuns: List<SourceTextRun> = emptyList(),
+    val href: String = "",
 )
 
 @Serializable
@@ -35,7 +36,7 @@ data class SourceTextRun(val anchor: String, val start: Int, val end: Int, val i
 
 data class PdfSource(val document: MuPdfDocument, val href: String)
 
-/** MuPDF exports page-sized XHTML/structure records; Pinecone packages them into one EPUB spine item. */
+/** MuPDF exports page-sized records; Pinecone streams them into 25-source-page EPUB resources. */
 class PdfReadModeConverter {
     suspend fun convert(
         sources: List<PdfSource>, destination: File, identifier: String, title: String,
@@ -99,6 +100,15 @@ class PdfReadModeConverter {
                     progress(pages.size + index + 1, pages.size * 2)
                 }
                 writer.finish(outline)
+                sourcePages.indices.forEach { index ->
+                    val page = sourcePages[index]
+                    sourcePages[index] = page.copy(
+                        href = writer.hrefForAnchor("source-page-${page.page}"),
+                        blocks = page.blocks.map { block -> block.copy(
+                            href = writer.resourceForAnchor(block.anchor),
+                        ) },
+                    )
+                }
             }
             Json.encodeToString(sourcePages)
         } finally {
@@ -107,7 +117,7 @@ class PdfReadModeConverter {
         }
     }
     companion object {
-        const val VERSION: Int = 10
+        const val VERSION: Int = 14
         fun joinLines(text: String): String = text.replace(Regex("(?<=\\p{L})-\\r?\\n(?=\\p{Ll})"), "")
             .replace(Regex("[\\r\\n]+"), " ").replace(Regex("[ \\t]+"), " ").trim()
     }

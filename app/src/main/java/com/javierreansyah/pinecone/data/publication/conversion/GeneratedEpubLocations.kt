@@ -10,16 +10,34 @@ import kotlinx.serialization.json.contentOrNull
 object GeneratedEpubLocations {
     const val CONTENT_HREF = "text/content.xhtml"
     private val legacyPage = Regex("(?:^|/)page-(\\d+)\\.xhtml(?:#.*)?$")
-    private val anchorPage = Regex("(?:source-page-|page-)(\\d+)(?:-(?:block|source)-\\d+)?(?:-run-\\d+)?(?:$|[^0-9-])")
+    // Reparsed blocks can have suffixes such as "-new", and SVG descendants use
+    // IDs such as page-83-visual-1-clip_1. All retain the same source-page prefix.
+    private val anchorPage = Regex("(?:source-page-|page-)(\\d+)(?=$|[^0-9])")
     fun pageHref(page: Int) = "$CONTENT_HREF#source-page-$page"
     fun blockAnchor(page: Int, block: Int) = "page-$page-block-$block"
-    fun isContent(href: String) = href.substringBefore('#').endsWith(CONTENT_HREF)
+    fun contentResource(href: String): String? = Regex("(?:^|/)(text/content(?:-\\d+)?\\.xhtml)$")
+        .find(href.substringBefore('#'))?.groupValues?.get(1)
+    fun isContent(href: String) = contentResource(href) != null
+    fun sameContentResource(left: String, right: String): Boolean =
+        contentResource(left)?.let { it == contentResource(right) } == true
 
     fun page(href: String, cssSelector: String? = null, fragments: List<String> = emptyList()): Int? {
         if (!isContent(href) && !legacyPage.containsMatchIn(href)) return null
         return sequenceOf(cssSelector, *fragments.toTypedArray(), href.substringAfter('#', ""))
             .filterNotNull().mapNotNull { anchorPage.find(it)?.groupValues?.get(1)?.toIntOrNull() }
             .firstOrNull() ?: legacyPage.find(href)?.groupValues?.get(1)?.toIntOrNull()
+    }
+
+    /** Exact heading anchors distinguish chapters sharing a PDF page or HTML file. */
+    fun chapterIndex(chapters: List<String>, href: String, cssSelector: String? = null, fragments: List<String> = emptyList()): Int? {
+        val currentPage = page(href, cssSelector, fragments) ?: return null
+        fun block(value: String?): Int? = value?.let { Regex("page-\\d+-(?:block|source|native)-(\\d+)").find(it)?.groupValues?.get(1)?.toIntOrNull() }
+        val currentBlock = sequenceOf(cssSelector, *fragments.toTypedArray(), href.substringAfter('#', ""))
+            .mapNotNull(::block).firstOrNull()
+        return chapters.indexOfLast { target ->
+            val targetPage = page(target) ?: return@indexOfLast false
+            targetPage < currentPage || (targetPage == currentPage && (currentBlock == null || (block(target) ?: -1) <= currentBlock))
+        }.coerceAtLeast(0)
     }
 
     /** Rebase legacy per-page locators; preserve text quotes, range offsets and custom metadata. */
@@ -103,10 +121,43 @@ object GeneratedEpubLocations {
             is JsonArray -> JsonArray(value.map { rewrite(it, end) })
             else -> value
         }
-        val locations = root["locations"] as? JsonObject ?: return normalized
+        val originalLocations = root["locations"] as? JsonObject ?: JsonObject(emptyMap())
+        val rangeStart = ((originalLocations["domRange"] as? JsonObject)?.get("start") as? JsonObject)?.get("cssSelector")
+        val hrefAnchor = href.substringAfter('#', "").takeIf { Regex("[A-Za-z0-9_-]+").matches(it) }
+        val locations = if (originalLocations["cssSelector"] == null && (rangeStart != null || hrefAnchor != null))
+            JsonObject(originalLocations + ("cssSelector" to (rangeStart ?: JsonPrimitive("#$hrefAnchor"))))
+        else originalLocations
         val rebuilt = (rewrite(locations) as JsonObject).toMutableMap()
         rebuilt.remove("partialCfi")
+        // A source PDF page can span several HTML resources. Resolve the block/run,
+        // rather than assuming every anchor on the page lives in its first file.
+        val newRunBlocks = updated.flatMap { page -> page.blocks.flatMap { block ->
+            block.textRuns.map { it.anchor to block }
+        } }.toMap()
+        fun resource(selector: String?): String? {
+            val anchor = selector?.let { Regex("^#([A-Za-z0-9_-]+)$").matchEntire(it)?.groupValues?.get(1) } ?: return null
+            val block = newBlocks[anchor] ?: newRunBlocks[anchor]
+            return block?.href?.takeIf(String::isNotBlank)?.substringBefore('#')
+                ?: updated.firstOrNull { "source-page-${it.page}" == anchor || "page-${it.page}" == anchor }
+                    ?.href?.substringBefore('#')
+        }
+        val selector = (rebuilt["cssSelector"] as? JsonPrimitive)?.contentOrNull
+        val range = rebuilt["domRange"] as? JsonObject
+        fun rangeResource(key: String) = ((range?.get(key) as? JsonObject)?.get("cssSelector") as? JsonPrimitive)
+            ?.contentOrNull?.let(::resource)
+        val startResource = rangeResource("start")
+        val endResource = rangeResource("end")
+        if (startResource != null && endResource != null && startResource != endResource) cannotSelectText = true
+        val sourcePage = page(href, selector, ((rebuilt["fragments"] as? JsonArray).orEmpty())
+            .mapNotNull { (it as? JsonPrimitive)?.contentOrNull })
+        val destination = resource(selector) ?: startResource ?: updated.firstOrNull { it.page == sourcePage }?.href?.substringBefore('#')
+        if (destination != null && destination != href.substringBefore('#')) {
+            rebuilt.remove("position"); rebuilt.remove("progression")
+            val anchor = selector?.takeIf { Regex("^#[A-Za-z0-9_-]+$").matches(it) }?.drop(1)
+                ?: sourcePage?.let { "source-page-$it" }
+            if (anchor != null) rebuilt["fragments"] = JsonArray(listOf(JsonPrimitive(anchor)))
+        }
         if (cannotSelectText) rebuilt.remove("domRange") // Image equations retain their note and navigation anchor.
-        return JsonObject(root + ("locations" to JsonObject(rebuilt))).toString()
+        return JsonObject(root + mapOf("href" to JsonPrimitive(destination ?: href), "locations" to JsonObject(rebuilt))).toString()
     }
 }

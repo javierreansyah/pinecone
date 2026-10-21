@@ -126,8 +126,80 @@ class MuPdfReflowCleanerTest {
 
     @Test fun bibliographyStateEndsAtAFigureCaption() {
         val result = clean(page(text("References", 50f, 80f, "H"),
-            text("[1] An example reference.", 50f, 120f), text("Figure 1: A diagram.", 50f, 200f)))
+            text("[1] An example reference.", 50f, 120f), text("Figure 1: A diagram.", 50f, 200f, "Caption")))
         assertEquals(1, result.body.descendants("p").count { it.getAttribute("class") == "reference" })
         assertEquals("Figure 1: A diagram.", result.body.descendants("p").single { it.getAttribute("class") == "caption" }.textContent)
+    }
+
+    @Test fun inlineFigureReferencesAndBodySizedNativeHeadingsStayInTheirParagraph() {
+        val result = clean(page(text("The illustration is shown in", 50f, 100f),
+            text("Gambar 5.1 and the explanation continues.", 50f, 118f, "H"),
+            text("Table 2 summarizes these findings in the next section.", 50f, 170f, "H")))
+        assertTrue(result.body.descendants().none { it.getAttribute("class") == "caption" || it.localTag.matches(Regex("h[1-6]")) })
+        assertEquals("The illustration is shown in Gambar 5.1 and the explanation continues.", result.body.children()[0].textContent)
+        assertEquals(2, result.body.children().size)
+    }
+
+    @Test fun ruledTextTablesSurviveWithoutBaseParagraphsAndHaveValidHeaderMarkup() {
+        val description = "A long description containing prose instead of numeric data. ".repeat(5)
+        val table = MuPdfTable(FigureBounds(40f, 100f, 500f, 250f),
+            "<table xmlns=\"http://www.w3.org/1999/xhtml\"><tr><td><th><p><div><p>Attribute</p></div></p></th></td><td><p>Description</p></td></tr>" +
+                "<tr><td><p>Name</p></td><td><p>$description</p></td></tr></table>", ruled = true)
+        val result = clean(page(text("Before the table.", 50f, 70f), text("After the table.", 50f, 300f), tables = listOf(table)))
+        assertEquals(listOf("p", "div", "p"), result.body.children().map { it.localTag })
+        val output = result.body.descendants("table").single()
+        assertEquals("th", output.descendants("tr")[0].children()[0].localTag)
+        assertEquals(description, output.descendants("tr")[1].children()[1].textContent)
+        assertTrue(output.descendants("p").all { it.children().none { it.localTag in setOf("p", "div", "th") } })
+    }
+
+    @Test fun taggedTableShellsCannotShiftTheGeometryOfLaterTables() {
+        val xml = "<document><page width=\"600\" height=\"800\">" +
+            "<struct std=\"Table\" bbox=\"40 100 400 200\">" +
+            "<struct std=\"TR\"><struct std=\"TH\"><line bbox=\"50 110 80 120\" text=\"First\"/></struct></struct></struct>" +
+            "<struct std=\"Table\" bbox=\"40 100 400 200\">" +
+            listOf(100, 200).joinToString("") { y -> listOf(40, 160, 280).joinToString("") { x -> "<vector bbox=\"$x $y ${x + 120} ${y + 1}\"/>" } } +
+            "<vector bbox=\"40 100 41 200\"/><vector bbox=\"399 100 400 200\"/>" +
+            "<struct std=\"TBody\"><struct std=\"TR\"/></struct></struct>" +
+            "<struct std=\"Table\" bbox=\"40 300 400 400\"><struct std=\"TR\"><struct std=\"TD\"><line bbox=\"50 310 80 320\" text=\"Second\"/></struct></struct></struct>" +
+            "</page></document>"
+        val html = "<html><body><table><tr><th>First</th></tr></table><table><tr><td>Second</td></tr></table></body></html>"
+        val record = MuPdfStructure.read("<html><body/></html>", xml, html, xml)
+        assertEquals(2, record.tables.size)
+        assertEquals(300f, record.tables[1].bounds.top)
+        assertEquals("First", record.tables[0].rows.single().single().lines.single().text)
+        assertTrue("Cell-sized ruling segments form a ruled table", record.tables[0].ruled)
+    }
+
+    @Test fun fontChangesInsideALineDoNotDetachFigureAndTableCitations() {
+        val result = clean(page(text("The result in", 50f, 100f), text("Gambar 5.1", 120f, 100f),
+            text("and", 175f, 100f), text("Table 2.3", 195f, 100f),
+            text("confirms the conclusion.", 245f, 100f)))
+        assertEquals(1, result.body.children().size)
+        assertEquals("The result in Gambar 5.1 and Table 2.3 confirms the conclusion.", result.body.textContent)
+    }
+
+    @Test fun aReferenceNearATableIsNotACaptionWhenItContinuesTheSameLine() {
+        val table = MuPdfTable(FigureBounds(40f, 100f, 450f, 180f),
+            "<table xmlns=\"http://www.w3.org/1999/xhtml\"><tr><td>Name</td><td>Description</td></tr>" +
+                "<tr><td>Alpha</td><td>Example</td></tr></table>", ruled = true)
+        val result = clean(page(text("The result in", 50f, 200f), text("Table 2.3", 120f, 200f),
+            text("confirms it.", 170f, 200f), tables = listOf(table)))
+        val paragraph = result.body.children().last()
+        assertEquals("The result in Table 2.3 confirms it.", paragraph.textContent)
+        assertEquals("", paragraph.getAttribute("class"))
+    }
+
+    @Test fun wrappedCellBandsRejoinOnlyWhereThePdfHasNoRowSeparator() {
+        fun cell(text: String, border: String) = "<td style=\"border-style:$border;\"><p>$text</p></td>"
+        val table = MuPdfTable(FigureBounds(40f, 100f, 450f, 230f),
+            "<table xmlns=\"http://www.w3.org/1999/xhtml\"><tr>" + cell("Name", "solid solid solid solid") + cell("Description", "solid solid solid solid") +
+                "</tr><tr>" + cell("Alpha", "solid solid none solid") + cell("The first part", "solid solid none solid") +
+                "</tr><tr>" + cell("", "none solid solid solid") + cell("continues here.", "none solid solid solid") +
+                "</tr><tr>" + cell("Beta", "solid solid solid solid") + cell("A different row.", "solid solid solid solid") + "</tr></table>", ruled = true)
+        val rows = clean(page(text("Before the table.", 50f, 70f), tables = listOf(table))).body.descendants("tr")
+        assertEquals(3, rows.size)
+        assertEquals("The first part continues here.", rows[1].children()[1].textContent)
+        assertEquals("A different row.", rows[2].children()[1].textContent)
     }
 }
