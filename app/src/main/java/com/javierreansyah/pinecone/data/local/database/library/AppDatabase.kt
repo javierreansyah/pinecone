@@ -30,6 +30,8 @@ abstract class AppDatabase : RoomDatabase() {
             override fun onOpen(db: SupportSQLiteDatabase) = installRevisionTracking(db)
 
             private fun installRevisionTracking(db: SupportSQLiteDatabase) {
+                db.execSQL("INSERT OR IGNORE INTO spaces (id, name, createdAt) VALUES ('_all_', 'All', 0)")
+                db.execSQL("INSERT OR IGNORE INTO book_space_cross_ref (bookId, spaceId) SELECT id, '_all_' FROM books")
                 db.execSQL(
                     "INSERT OR IGNORE INTO backup_state " +
                             "(id, revision, pendingSettingsJson) VALUES (1, 0, NULL)",

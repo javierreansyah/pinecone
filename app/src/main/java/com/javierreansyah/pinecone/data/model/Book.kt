@@ -29,6 +29,8 @@ data class Book(
     val credits: List<com.javierreansyah.pinecone.data.local.database.library.PublicationCreditEntity> = emptyList(),
     val collections: List<com.javierreansyah.pinecone.data.local.database.library.PublicationCollectionEntity> = emptyList(),
     val activeRendition: String = "original",
+    val isUnsorted: Boolean = false,
+    val originalFilename: String = "",
 ) {
     val spaceIds: List<String> get() = spaces.map { (itId) -> itId }
 
@@ -61,6 +63,8 @@ data class Book(
             credits = entity.credits.sortedWith(compareBy({ it.role }, { it.position })),
             collections = entity.collections.sortedWith(compareBy({ it.kind }, { it.position })),
             activeRendition = entity.book.activeRendition,
+            isUnsorted = entity.book.isUnsorted,
+            originalFilename = entity.book.originalFilename,
         )
     }
 

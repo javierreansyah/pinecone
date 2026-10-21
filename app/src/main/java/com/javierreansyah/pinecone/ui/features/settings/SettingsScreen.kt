@@ -202,9 +202,8 @@ fun SettingsScreen(
         onThemeContrastSelected = { themeContrast ->
             viewModel.updateSettings(settings.copy(themeContrast = themeContrast))
         },
-        onShowAllSpacesChanged = { enabled ->
-            viewModel.updateSettings(settings.copy(showAllSpaces = enabled))
-        },
+        onSpacesEnabledChanged = { enabled -> viewModel.updateSettings(settings.copy(spacesEnabled = enabled)) },
+        onUnsortedEnabledChanged = { enabled -> viewModel.updateSettings(settings.copy(unsortedEnabled = enabled)) },
         onLanguageSelected = { localeKey ->
             scope.launch {
                 viewModel.updateSettingsSuspended(settings.copy(locale = localeKey))
@@ -320,6 +319,8 @@ fun SettingsScreen(
                 autoBackupFrequency = "12h",
                 backupFolderUri = "",
                 showAllSpaces = true,
+                spacesEnabled = true,
+                unsortedEnabled = true,
             )
             viewModel.updateSettings(defaultSettings)
 
@@ -365,7 +366,8 @@ private fun SettingsContent(
     onThemeModeSelected: (String) -> Unit,
     onColorPaletteClick: () -> Unit,
     onThemeContrastSelected: (String) -> Unit,
-    onShowAllSpacesChanged: (Boolean) -> Unit,
+    onSpacesEnabledChanged: (Boolean) -> Unit,
+    onUnsortedEnabledChanged: (Boolean) -> Unit,
     onLanguageSelected: (String) -> Unit,
     onAutoBackupFrequencySelected: (String) -> Unit,
     onBackupLocationClick: () -> Unit,
@@ -399,7 +401,8 @@ private fun SettingsContent(
                 onThemeModeSelected = onThemeModeSelected,
                 onColorPaletteClick = onColorPaletteClick,
                 onThemeContrastSelected = onThemeContrastSelected,
-                onShowAllSpacesChanged = onShowAllSpacesChanged,
+                onSpacesEnabledChanged = onSpacesEnabledChanged,
+                onUnsortedEnabledChanged = onUnsortedEnabledChanged,
                 onLanguageSelected = onLanguageSelected,
             )
 
@@ -454,7 +457,8 @@ private fun GeneralSettingsSection(
     onThemeModeSelected: (String) -> Unit,
     onColorPaletteClick: () -> Unit,
     onThemeContrastSelected: (String) -> Unit,
-    onShowAllSpacesChanged: (Boolean) -> Unit,
+    onSpacesEnabledChanged: (Boolean) -> Unit,
+    onUnsortedEnabledChanged: (Boolean) -> Unit,
     onLanguageSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -501,31 +505,17 @@ private fun GeneralSettingsSection(
                 )
 
                 item(
-                    onClick = { onShowAllSpacesChanged(!settings.showAllSpaces) },
-                    leadingContent = {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.Forest,
-                            contentDescription = null,
-                        )
-                    },
-                    content = {
-                        Text(
-                            stringResource(R.string.settings_show_all_spaces),
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                    },
-                    supportingContent = {
-                        Text(
-                            stringResource(R.string.settings_show_all_spaces_summary),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    },
-                    trailingContent = {
-                        Switch(
-                            checked = settings.showAllSpaces,
-                            onCheckedChange = null,
-                        )
-                    },
+                    onClick = { onSpacesEnabledChanged(!settings.spacesEnabled) },
+                    leadingContent = { Icon(MaterialSymbols.Outlined.Forest, contentDescription = null) },
+                    content = { Text(stringResource(R.string.settings_spaces_enabled), style = MaterialTheme.typography.titleMedium) },
+                    supportingContent = { Text(stringResource(R.string.settings_spaces_enabled_summary)) },
+                    trailingContent = { Switch(checked = settings.spacesEnabled, onCheckedChange = null) },
+                )
+                item(
+                    onClick = { onUnsortedEnabledChanged(!settings.unsortedEnabled) },
+                    content = { Text(stringResource(R.string.settings_unsorted_enabled), style = MaterialTheme.typography.titleMedium) },
+                    supportingContent = { Text(stringResource(R.string.settings_unsorted_enabled_summary)) },
+                    trailingContent = { Switch(checked = settings.unsortedEnabled, onCheckedChange = null) },
                 )
             }
         }

@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library
 
+import com.javierreansyah.pinecone.data.local.database.library.BookEntity
 import com.javierreansyah.pinecone.data.local.database.library.BookWithDetails
 import com.javierreansyah.pinecone.data.local.database.library.ShelfBookCrossRefEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfEntity
@@ -9,13 +10,33 @@ import com.javierreansyah.pinecone.data.model.Book
 const val ALL_SPACES_ID: String = "_all_"
 
 fun List<Book>.inSpace(spaceId: String?): List<Book> =
-    if ((spaceId == null) || (spaceId == ALL_SPACES_ID)) filter { it.spaceIds.isNotEmpty() }
-    else filter { spaceId in it.spaceIds }
+    filter { !it.isUnsorted && ((spaceId == null) || (spaceId == ALL_SPACES_ID) || spaceId in it.spaceIds) }
+
+fun Book.fileFormat(): FileFilter = publicationFileFormat(mediaType, originalFilename, filePath)
+
+fun BookEntity.fileFormat(): FileFilter = publicationFileFormat(mediaType, originalFilename, filePath)
+
+private fun publicationFileFormat(mediaType: String?, originalFilename: String, filePath: String): FileFilter {
+    val mime = mediaType.orEmpty().lowercase()
+    val extension = originalFilename.ifBlank { filePath }.substringAfterLast('.', "").lowercase()
+    return when {
+        mime == "application/epub+zip" || extension == "epub" -> FileFilter.EPUB
+        mime == "application/pdf" || extension == "pdf" -> FileFilter.PDF
+        "comicbook" in mime || "cbz" in mime || extension in setOf("cbz", "divina") || "divina" in mime -> FileFilter.Comics
+        mime.startsWith("audio/") || "audiobook" in mime || extension in setOf("audiobook", "zab", "mp3", "m4a", "m4b", "aac", "ogg", "oga", "opus", "flac", "wav", "mp4", "aif", "aiff", "webm") -> FileFilter.Audio
+        mime.startsWith("image/") || extension in setOf("jpg", "jpeg", "png", "webp", "gif", "bmp", "avif", "tif", "tiff", "jxl") -> FileFilter.Images
+        "webpub" in mime || extension == "webpub" -> FileFilter.WebPublication
+        mime == "application/zip" || extension == "zip" -> FileFilter.Comics
+        else -> FileFilter.Other
+    }
+}
 
 fun List<Book>.filterAndSort(
     prefs: FilterSortPreferences,
 ): List<Book> {
-    return this.filter { (_, _, _, _, bookProgress, _, _, _, _, _, _, _, _, _, _, _, bookIsRead) ->
+    return this.filter { book ->
+        val bookProgress = book.progress
+        val bookIsRead = book.isRead
         val status = when {
             bookIsRead -> StatusFilter.Finished
             bookProgress <= 0.0 -> StatusFilter.NotStarted
@@ -23,7 +44,7 @@ fun List<Book>.filterAndSort(
         }
         val statusMatch = prefs.selectedStatus.contains(status)
 
-        statusMatch
+        statusMatch && book.fileFormat() in prefs.selectedFormats
 
     }.let { filtered ->
         val baseComparator = when (prefs.sortType) {
@@ -77,8 +98,8 @@ fun sortShelfBooks(
             ShelfBookCrossRefEntity::bookId,
             ShelfBookCrossRefEntity::orderIndex,
         )
-        val filteredBooks = shelfWithCovers.books.filter { (_, _, _, _, itSpaces) ->
-            (globalSpaceId == null) || (globalSpaceId == ALL_SPACES_ID) || itSpaces.any { (spaceId2) -> spaceId2 == globalSpaceId }
+        val filteredBooks = shelfWithCovers.books.filter { details ->
+            !details.book.isUnsorted && ((globalSpaceId == null) || (globalSpaceId == ALL_SPACES_ID) || details.spaces.any { it.id == globalSpaceId })
         }
         val sortedBooks = filteredBooks.sortedBy { (bookBook) ->
             orderMap[bookBook.id] ?: 0
@@ -95,7 +116,10 @@ fun mapAndSortShelves(
     unshelvedLabel: String,
     globalSpaceId: String? = null,
 ): List<ShelfWithCovers> {
-    val mappedShelves = sortShelfBooks(shelvesList, crossRefs, globalSpaceId)
+    val formatsFiltered = prefs.selectedFormats != FileFilter.entries.toSet()
+    val mappedShelves = sortShelfBooks(shelvesList, crossRefs, globalSpaceId).map { shelf ->
+        shelf.copy(books = shelf.books.filter { it.book.fileFormat() in prefs.selectedFormats })
+    }.filter { !formatsFiltered || it.books.isNotEmpty() }
 
     val sortedShelves = mappedShelves.let { processedShelves ->
         val baseComparator = when (prefs.sortType) {
@@ -137,13 +161,16 @@ fun mapAndSortShelves(
         crossRefs.asSequence().filter { (itShelfId2) -> itShelfId2 in currentSpaceShelfIds }
             .map { (_, itBookId2) -> itBookId2 }.toSet()
 
-    val unshelvedBooks = allBooksEntities.filter { (itBook3, _, _, _, itSpaces2) ->
+    val unshelvedBooks = allBooksEntities.filter { details ->
+        val itBook3 = details.book
+        val itSpaces2 = details.spaces
         val inSpace = if (isSpaceSelected) {
             itSpaces2.any { (spaceId3) -> spaceId3 == globalSpaceId }
         } else {
             itSpaces2.isNotEmpty()
         }
-        inSpace && (itBook3.id !in shelvedBookIdsInCurrentSpace)
+        inSpace && !itBook3.isUnsorted && (itBook3.id !in shelvedBookIdsInCurrentSpace)
+            && details.book.fileFormat() in prefs.selectedFormats
     }
 
     val showShelves = prefs.selectedShelfFilter.contains(ShelfFilter.Shelves)

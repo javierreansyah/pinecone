@@ -56,6 +56,7 @@ fun AppDrawer(
     onSpaceSelected: (String?) -> Unit = {},
     hasUnsortedBooks: Boolean = false,
     showAllSpaces: Boolean = true,
+    spacesEnabled: Boolean = true,
     onNavigateToUnsorted: () -> Unit = {},
     onNavigateToAllSpaces: () -> Unit,
     onNavigateToArchives: () -> Unit,
@@ -181,21 +182,23 @@ fun AppDrawer(
                 )
             }
 
-            WideNavigationRailItem(
-                railExpanded = true,
-                icon = {
-                    Icon(
-                        imageVector = MaterialSymbols.Outlined.Forest,
-                        contentDescription = null,
-                    )
-                },
-                label = { Text(stringResource(R.string.library_spaces_title)) },
-                selected = false,
-                onClick = {
-                    onNavigateToAllSpaces()
-                    scope.launch { drawerState.collapse() }
-                },
-            )
+            if (spacesEnabled) {
+                WideNavigationRailItem(
+                    railExpanded = true,
+                    icon = {
+                        Icon(
+                            imageVector = MaterialSymbols.Outlined.Forest,
+                            contentDescription = null,
+                        )
+                    },
+                    label = { Text(stringResource(R.string.library_spaces_title)) },
+                    selected = false,
+                    onClick = {
+                        onNavigateToAllSpaces()
+                        scope.launch { drawerState.collapse() }
+                    },
+                )
+            }
 
             WideNavigationRailItem(
                 railExpanded = true,
@@ -245,48 +248,50 @@ fun AppDrawer(
                 },
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = stringResource(R.string.library_spaces_title),
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            if (showAllSpaces) {
-                WideNavigationRailItem(
-                    railExpanded = true,
-                    icon = {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.Forest,
-                            contentDescription = null,
-                        )
-                    },
-                    label = { Text(stringResource(R.string.action_all)) },
-                    selected = (selectedSpaceId == null) || (selectedSpaceId == "_all_"),
-                    onClick = {
-                        onSpaceSelected("_all_")
-                        scope.launch { drawerState.collapse() }
-                    },
+            if (spacesEnabled) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = stringResource(R.string.library_spaces_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            }
 
-            allSpaces.forEach { (spaceId, spaceName) ->
-                WideNavigationRailItem(
-                    railExpanded = true,
-                    icon = {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.Forest,
-                            contentDescription = null,
-                        )
-                    },
-                    label = { Text(spaceName) },
-                    selected = selectedSpaceId == spaceId,
-                    onClick = {
-                        onSpaceSelected(spaceId)
-                        scope.launch { drawerState.collapse() }
-                    },
-                )
+                if (showAllSpaces) {
+                    WideNavigationRailItem(
+                        railExpanded = true,
+                        icon = {
+                            Icon(
+                                imageVector = MaterialSymbols.Outlined.Forest,
+                                contentDescription = null,
+                            )
+                        },
+                        label = { Text(stringResource(R.string.action_all)) },
+                        selected = (selectedSpaceId == null) || (selectedSpaceId == "_all_"),
+                        onClick = {
+                            onSpaceSelected("_all_")
+                            scope.launch { drawerState.collapse() }
+                        },
+                    )
+                }
+
+                allSpaces.filter { it.id != "_all_" }.forEach { (spaceId, spaceName) ->
+                    WideNavigationRailItem(
+                        railExpanded = true,
+                        icon = {
+                            Icon(
+                                imageVector = MaterialSymbols.Outlined.Forest,
+                                contentDescription = null,
+                            )
+                        },
+                        label = { Text(spaceName) },
+                        selected = selectedSpaceId == spaceId,
+                        onClick = {
+                            onSpaceSelected(spaceId)
+                            scope.launch { drawerState.collapse() }
+                        },
+                    )
+                }
             }
         }
     }

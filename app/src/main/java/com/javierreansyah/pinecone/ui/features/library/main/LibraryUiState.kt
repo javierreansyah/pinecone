@@ -46,4 +46,5 @@ data class LibraryScreenUiState(
     val globalSpaceId: String? = null,
     val hasUnsortedBooks: Boolean = false,
     val showAllSpaces: Boolean = true,
+    val spacesEnabled: Boolean = true,
 )

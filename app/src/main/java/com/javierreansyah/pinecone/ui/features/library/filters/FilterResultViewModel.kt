@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library.filters
 
+import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -53,11 +54,21 @@ class FilterResultViewModel(
         initialValue = emptyList(),
     )
 
-    private val globalSpaceId: StateFlow<String?> = prefsManager.getGlobalSpaceFlow().stateIn(
+    private val globalSpaceId: StateFlow<String?> = prefsManager.getEffectiveSpaceFlow().stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = null,
     )
+
+    init {
+        viewModelScope.launch {
+            globalSpaceId.collect { spaceId ->
+                _uiState.update { state ->
+                    state.copy(bookPreferences = prefsManager.getPreferences(spaceId, screenKey))
+                }
+            }
+        }
+    }
 
     val allBooks: StateFlow<List<Book>> = combine(booksFlow, globalSpaceId) { books, spaceId ->
         books.inSpace(spaceId)
@@ -101,7 +112,7 @@ class FilterResultViewModel(
         combine(allBooksAcrossSpaces, allSpaces) { books, spaces ->
             val space = spaces.find { (_, itName3) -> itName3 == spaceName }
             if (space != null) {
-                books.filter { book -> book.spaceIds.contains(space.id) }
+                books.inSpace(space.id)
             } else {
                 emptyList()
             }
@@ -116,7 +127,7 @@ class FilterResultViewModel(
     fun onLayoutModeChange(mode: LayoutMode) {
         _uiState.update { state ->
             val prefs = state.bookPreferences.copy(layoutMode = mode)
-            prefsManager.savePreferences(screenKey, prefs)
+            prefsManager.savePreferences(globalSpaceId.value, screenKey, prefs)
             state.copy(bookPreferences = prefs)
         }
     }
@@ -130,8 +141,17 @@ class FilterResultViewModel(
                 val initialAscending = sortType != SortType.LastRead
                 currentPrefs.copy(sortType = sortType, isAscending = initialAscending)
             }
-            prefsManager.savePreferences(screenKey, newPrefs)
+            prefsManager.savePreferences(globalSpaceId.value, screenKey, newPrefs)
             state.copy(bookPreferences = newPrefs)
+        }
+    }
+
+    fun toggleFileFilter(format: FileFilter) {
+        _uiState.update { state ->
+            val current = state.bookPreferences
+            val prefs = current.copy(selectedFormats = current.selectedFormats.let { if (format in it) it - format else it + format })
+            prefsManager.savePreferences(globalSpaceId.value, screenKey, prefs)
+            state.copy(bookPreferences = prefs)
         }
     }
 
@@ -142,7 +162,7 @@ class FilterResultViewModel(
                 if (contains(status)) remove(status) else add(status)
             }
             val newPrefs = currentPrefs.copy(selectedStatus = updatedStatus)
-            prefsManager.savePreferences(screenKey, newPrefs)
+            prefsManager.savePreferences(globalSpaceId.value, screenKey, newPrefs)
             state.copy(bookPreferences = newPrefs)
         }
     }

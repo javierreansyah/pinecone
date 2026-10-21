@@ -28,4 +28,5 @@ data class BookEntity(
     val metadataJson: String = "{}",
     val sourceMetadataJson: String = "{}",
     val originalFilename: String = "",
+    val isUnsorted: Boolean = false,
 )

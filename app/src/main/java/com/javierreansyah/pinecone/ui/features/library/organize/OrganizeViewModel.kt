@@ -27,6 +27,8 @@ data class SpaceWithShelvesItemState(
 data class OrganizeUiState(
     val spaces: List<SpaceWithShelvesItemState> = emptyList(),
     val isLoading: Boolean = true,
+    val spacesEnabled: Boolean = true,
+    val defaultShelfSpaceId: String? = null,
 )
 
 class OrganizeViewModel(
@@ -41,15 +43,21 @@ class OrganizeViewModel(
         repository.getAllShelvesWithBooks(),
         repository.getAllSpaces(),
         repository.getAllBookSpaceCrossRefs(),
-    ) { shelvesWithBooks, spaces, spaceCrossRefs ->
+        combine(
+            (application as PineconeApplication).readerPreferences.readerSettings,
+            com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager(application).getEffectiveSpaceFlow(),
+        ) { settings, spaceId -> settings to spaceId },
+        repository.getAllBooks(),
+    ) { shelvesWithBooks, spaces, spaceCrossRefs, context, books ->
+        val (settings, currentSpaceId) = context
         val validShelves = shelvesWithBooks.filter { (itShelf) -> itShelf.id != "unshelved" }
 
-        val spaceItems = spaces.asSequence().filter { (itId) -> itId != "_all_" }.map { space ->
+        val spaceItems = spaces.asSequence().filter { settings.spacesEnabled || it.id == "_all_" }.map { space ->
             val spaceId = space.id
             val booksInSpace =
                 spaceCrossRefs.asSequence().filter { (_, itSpaceId) -> itSpaceId == spaceId }
                     .map { (itBookId) -> itBookId }.toSet()
-            val countInSpace = targetBookIds.count { it in booksInSpace }
+            val countInSpace = targetBookIds.count { id -> id in booksInSpace && (spaceId != "_all_" || books.any { it.book.id == id && !it.book.isUnsorted }) }
 
             val spaceState = when (countInSpace) {
                 0 -> ToggleableState.Off
@@ -58,7 +66,7 @@ class OrganizeViewModel(
             }
 
             val spaceShelves = validShelves.asSequence()
-                .filter { (itShelf2) -> itShelf2.spaceId == spaceId }
+                .filter { (itShelf2) -> !settings.spacesEnabled || itShelf2.spaceId == spaceId }
                 .map { (shelfWithBooksShelf, shelfWithBooksBooks) ->
                     val booksInShelf = shelfWithBooksBooks.map { (itBook) -> itBook.id }
                     val countInShelf = targetBookIds.count { it in booksInShelf }
@@ -80,6 +88,8 @@ class OrganizeViewModel(
         OrganizeUiState(
             spaces = spaceItems,
             isLoading = false,
+            spacesEnabled = settings.spacesEnabled,
+            defaultShelfSpaceId = if (!settings.spacesEnabled || currentSpaceId == null || currentSpaceId == "_all_") "_all_" else null,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), OrganizeUiState())
 

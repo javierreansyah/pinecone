@@ -964,6 +964,8 @@ private fun BookInfoHeader(
     onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val librarySettings by (androidx.compose.ui.platform.LocalContext.current.applicationContext as com.javierreansyah.pinecone.PineconeApplication)
+        .readerPreferences.readerSettings.collectAsState(initial = com.javierreansyah.pinecone.data.local.preferences.ReaderSettings())
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -979,7 +981,7 @@ private fun BookInfoHeader(
         BookHeaderDetails(
             title = book.title,
             authors = book.authors,
-            spaces = book.spaces.map { (_, itName) -> itName },
+            spaces = if (librarySettings.spacesEnabled) book.spaces.filter { it.id != "_all_" }.map { it.name } else emptyList(),
             tags = book.tags,
             onNavigateToTag = onNavigateToTag,
         )

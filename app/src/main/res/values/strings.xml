@@ -348,4 +348,23 @@
     <string name="about_unknown_license">Unknown License</string>
     <string name="settings_about_section">About</string>
     <string name="settings_about_app">About this App</string>
+    <string name="settings_spaces_enabled">Use spaces</string>
+    <string name="settings_spaces_enabled_summary">Organize your library into spaces. Turn off to browse books and shelves together.</string>
+    <string name="settings_unsorted_enabled">Use Unsorted inbox</string>
+    <string name="settings_unsorted_enabled_summary">Keep new imports in Unsorted until you organize them. Turning off adds waiting items to All.</string>
+    <string name="library_label_show">Show</string>
+    <string name="library_label_layout">Layout</string>
+    <string name="library_label_formats">File formats</string>
+    <string name="library_show_both">Both</string>
+    <string name="library_show_books">Books only</string>
+    <string name="library_show_shelves">Shelves only</string>
+    <string name="library_format_comics">Comics</string>
+    <string name="library_format_audio">Audio</string>
+    <string name="library_format_images">Images</string>
+    <string name="library_format_other">Other</string>
+    <string name="library_move_shelves">Move to space</string>
+    <string name="library_copy_shelves">Copy to space</string>
+    <string name="action_move">Move</string>
+    <string name="library_add_to_library">Add to library</string>
+    <string name="library_transfer_destination">Choose a destination space. Missing books will be added automatically.</string>
 </resources>

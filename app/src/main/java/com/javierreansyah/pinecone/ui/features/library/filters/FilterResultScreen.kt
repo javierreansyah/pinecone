@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library.filters
 
+import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
@@ -129,6 +130,7 @@ fun FilterResultScreen(
         onLayoutModeChange = viewModel::onLayoutModeChange,
         onSortTypeChange = viewModel::onSortTypeChange,
         onStatusToggle = viewModel::toggleStatusFilter,
+        onFileFilterToggle = viewModel::toggleFileFilter,
         onDeleteFilterItem = {
             viewModel.deleteFilterItem(filterType, filterValue) {
                 onNavigateBack()
@@ -163,6 +165,7 @@ private fun FilterResultContent(
     onLayoutModeChange: (LayoutMode) -> Unit,
     onSortTypeChange: (SortType) -> Unit,
     onStatusToggle: (StatusFilter) -> Unit,
+    onFileFilterToggle: (FileFilter) -> Unit,
     onDeleteFilterItem: () -> Unit,
     onRenameFilterItem: (String) -> Unit,
     onToggleArchive: (String) -> Unit,
@@ -302,6 +305,7 @@ private fun FilterResultContent(
         onLayoutModeChange = onLayoutModeChange,
         onSortTypeChange = onSortTypeChange,
         onStatusToggle = onStatusToggle,
+        onFileFilterToggle = onFileFilterToggle,
         onDeleteDismiss = { showDeleteConfirm = false },
         onDeleteConfirm = {
             showDeleteConfirm = false
@@ -754,6 +758,7 @@ private fun FilterResultDialogsAndSheets(
     onLayoutModeChange: (LayoutMode) -> Unit,
     onSortTypeChange: (SortType) -> Unit,
     onStatusToggle: (StatusFilter) -> Unit,
+    onFileFilterToggle: (FileFilter) -> Unit,
     onDeleteDismiss: () -> Unit,
     onDeleteConfirm: () -> Unit,
     onBookMenuDismiss: () -> Unit,
@@ -770,6 +775,7 @@ private fun FilterResultDialogsAndSheets(
             onLayoutModeChange = onLayoutModeChange,
             onSortTypeChange = onSortTypeChange,
             onStatusToggle = onStatusToggle,
+            onFileFilterToggle = onFileFilterToggle,
             onDismiss = onFilterDismiss,
         )
     }

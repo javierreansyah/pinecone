@@ -55,6 +55,7 @@ fun ShelvesPage(
     isInMultiSelectMode: Boolean = false,
     selectedShelves: Set<String> = emptySet(),
     onShelfLongClick: ((String) -> Unit)? = null,
+    spaceNames: Map<String, String> = emptyMap(),
     onShelfToggleSelect: ((String) -> Unit)? = null,
 ) {
 
@@ -97,6 +98,7 @@ fun ShelvesPage(
                             if (targetLayoutMode == LayoutMode.List) {
                                 ShelfListItem(
                                     shelfWithCovers = shelfWithCovers,
+                                    spaceName = if (isUnshelved) null else spaceNames[shelfWithCovers.shelf.spaceId],
                                     onClick = {
                                         onShelfClick(
                                             shelfWithCovers.shelf.id,
@@ -116,6 +118,7 @@ fun ShelvesPage(
                             } else {
                                 ShelfRowItem(
                                     shelfWithCovers = shelfWithCovers,
+                                    spaceName = if (isUnshelved) null else spaceNames[shelfWithCovers.shelf.spaceId],
                                     booksCount = booksCount,
                                     visibleBooks = visibleBooks,
                                     onShelfClick = onShelfClick,
@@ -151,6 +154,7 @@ fun ShelvesPage(
 private fun ShelfRowItem(
     shelfWithCovers: ShelfWithCovers,
     booksCount: Int,
+    spaceName: String? = null,
     visibleBooks: List<com.javierreansyah.pinecone.data.local.database.library.BookWithDetails>,
     onShelfClick: (String, String, Int) -> Unit,
     onBookClick: (String) -> Unit,
@@ -183,6 +187,7 @@ private fun ShelfRowItem(
     ) {
         ShelfRowHeader(
             shelfName = shelfWithCovers.shelf.name,
+            spaceName = spaceName,
             booksCount = booksCount,
             isInMultiSelectMode = isInMultiSelectMode,
             isSelected = isSelected,
@@ -200,6 +205,7 @@ private fun ShelfRowItem(
 @Composable
 private fun ShelfRowHeader(
     shelfName: String,
+    spaceName: String? = null,
     booksCount: Int,
     isInMultiSelectMode: Boolean = false,
     isSelected: Boolean = false,
@@ -224,7 +230,7 @@ private fun ShelfRowHeader(
                 R.plurals.library_shelf_count, booksCount, booksCount,
             )
             Text(
-                text = countText,
+                text = listOfNotNull(spaceName, countText).joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
             )
