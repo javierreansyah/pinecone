@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -20,7 +21,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -51,6 +51,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -66,6 +69,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
@@ -74,13 +79,20 @@ import org.readium.r2.navigator.pdf.PdfDocumentFragment
 import org.readium.r2.navigator.pdf.PdfDocumentFragmentInput
 import org.readium.r2.shared.util.data.ReadError
 
-class MuPdfDocumentFragment(private val input: PdfDocumentFragmentInput<MuPdfSettings>) :
+class MuPdfDocumentFragment(
+    private val input: PdfDocumentFragmentInput<MuPdfSettings>,
+    private val searchHighlights: StateFlow<PdfSearchHighlights> = MutableStateFlow(PdfSearchHighlights()),
+) :
     PdfDocumentFragment<MuPdfSettings>() {
+    private data class PageRequest(val index: Int, val sequence: Long = 0)
+    private data class LoadedPdf(val document: MuPdfDocument, val aspectRatios: List<Float>)
+
     private val currentPage = MutableStateFlow(input.pageIndex)
     override val pageIndex: StateFlow<Int> = currentPage
     private val settings = MutableStateFlow(input.settings)
     private var document: MuPdfDocument? = null
-    private val requestedPage = MutableStateFlow(input.pageIndex)
+    private val requestedPage = MutableStateFlow(PageRequest(input.pageIndex))
+    private var navigationPending = true
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -92,7 +104,7 @@ class MuPdfDocumentFragment(private val input: PdfDocumentFragmentInput<MuPdfSet
             setContent {
                 PineconeTheme(readerBackgroundColor = Color(0xFFE8E8E8)) {
                     val prefs by settings.collectAsState()
-                    val pdf by produceState<MuPdfDocument?>(null) {
+                    val pdf by produceState<LoadedPdf?>(null) {
                         val resource = input.publication.get(input.href) ?: return@produceState
                         val opened = MuPdfDocumentFactory().open(resource, null)
                         val loaded = opened.getOrNull()
@@ -104,8 +116,25 @@ class MuPdfDocumentFragment(private val input: PdfDocumentFragmentInput<MuPdfSet
                         }
                         if (loaded != null) {
                             try {
+                                // Reserve each page's actual size before lazy layout/navigation.
+                                // Small loading placeholders otherwise clamp distant jumps to an
+                                // earlier page and keep that page anchored as bitmaps arrive.
+                                val ratios = withContext(Dispatchers.Default) {
+                                    val context = currentCoroutineContext()
+                                    loaded.access { native ->
+                                        List(loaded.pageCount) { index ->
+                                            context.ensureActive()
+                                            val page = native.loadPage(index)
+                                            try {
+                                                val bounds = page.bounds
+                                                ((bounds.x1 - bounds.x0) / (bounds.y1 - bounds.y0))
+                                                    .takeIf { it.isFinite() && it > 0f } ?: 1f
+                                            } finally { page.destroy() }
+                                        }
+                                    }
+                                }
                                 document = loaded
-                                value = loaded
+                                value = LoadedPdf(loaded, ratios)
                                 awaitCancellation()
                             } finally {
                                 if (document === loaded) document = null
@@ -115,7 +144,7 @@ class MuPdfDocumentFragment(private val input: PdfDocumentFragmentInput<MuPdfSet
                             }
                         }
                     }
-                    pdf?.let { Pages(it, prefs.preferences) }
+                    pdf?.let { Pages(it.document, prefs.preferences, it.aspectRatios) }
                         ?: Box(
                             Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
@@ -125,18 +154,26 @@ class MuPdfDocumentFragment(private val input: PdfDocumentFragmentInput<MuPdfSet
         }
 
     @Composable
-    private fun Pages(pdf: MuPdfDocument, preferences: MuPdfPreferences) {
+    private fun Pages(pdf: MuPdfDocument, preferences: MuPdfPreferences, aspectRatios: List<Float>) {
         val request by requestedPage.collectAsState()
+        val highlights by searchHighlights.collectAsState()
+        val matchesByPage = remember(highlights.matches) {
+            highlights.matches.filter { it.href == input.href.toString() }.groupBy { it.pageIndex }
+        }
         val initial =
             currentPage.collectAsState().value.coerceIn(0, (pdf.pageCount - 1).coerceAtLeast(0))
         val pager = rememberPagerState(initialPage = initial) { pdf.pageCount }
         val list = rememberLazyListState(initialFirstVisibleItemIndex = initial)
-        LaunchedEffect(request, preferences.scroll, preferences.horizontal) {
-            if (preferences.scroll) list.scrollToItem(request) else pager.scrollToPage(request)
+        LaunchedEffect(request, preferences.scroll, preferences.horizontal, preferences.rightToLeft) {
+            if (preferences.scroll) list.scrollToItem(request.index) else pager.scrollToPage(request.index)
+            if (requestedPage.value == request) {
+                currentPage.value = request.index
+                navigationPending = false
+            }
         }
         LaunchedEffect(preferences.scroll, preferences.horizontal) {
             snapshotFlow { if (preferences.scroll) list.firstVisibleItemIndex else pager.currentPage }
-                .collect { currentPage.value = it }
+                .collect { if (!navigationPending) currentPage.value = it }
         }
         val background = if (preferences.invert == true) Color(0xFF171717) else Color(0xFFE8E8E8)
         val modifier = Modifier
@@ -156,7 +193,9 @@ class MuPdfDocumentFragment(private val input: PdfDocumentFragmentInput<MuPdfSet
                         pdf,
                         index,
                         preferences,
-                        Modifier.width((LocalWindowInfo.current.containerSize.width / resources.displayMetrics.density).dp)
+                        Modifier.width((LocalWindowInfo.current.containerSize.width / resources.displayMetrics.density).dp),
+                        aspectRatios[index],
+                        matchesByPage[index].orEmpty(), highlights.focusedIndex,
                     )
                 }
             }
@@ -172,7 +211,9 @@ class MuPdfDocumentFragment(private val input: PdfDocumentFragmentInput<MuPdfSet
                         pdf,
                         index,
                         preferences,
-                        Modifier.fillMaxWidth()
+                        Modifier.fillMaxWidth(),
+                        aspectRatios[index],
+                        matchesByPage[index].orEmpty(), highlights.focusedIndex,
                     )
                 }
             }
@@ -183,11 +224,13 @@ class MuPdfDocumentFragment(private val input: PdfDocumentFragmentInput<MuPdfSet
                 reverseLayout = reverse,
                 pageSpacing = spacing
             ) { index ->
-                PageImage(pdf, index, preferences, Modifier.fillMaxSize())
+                PageImage(pdf, index, preferences, Modifier.fillMaxSize(), aspectRatios[index],
+                    matchesByPage[index].orEmpty(), highlights.focusedIndex)
             }
         } else {
             VerticalPager(pager, modifier, pageSpacing = spacing) { index ->
-                PageImage(pdf, index, preferences, Modifier.fillMaxSize())
+                PageImage(pdf, index, preferences, Modifier.fillMaxSize(), aspectRatios[index],
+                    matchesByPage[index].orEmpty(), highlights.focusedIndex)
             }
         }
     }
@@ -197,7 +240,10 @@ class MuPdfDocumentFragment(private val input: PdfDocumentFragmentInput<MuPdfSet
         pdf: MuPdfDocument,
         index: Int,
         preferences: MuPdfPreferences,
-        modifier: Modifier
+        modifier: Modifier,
+        aspectRatio: Float,
+        matches: List<PdfSearchMatch>,
+        focusedIndex: Int?,
     ) {
         var error by remember(index) { mutableStateOf<String?>(null) }
         val bitmap by produceState<android.graphics.Bitmap?>(null, pdf, index) {
@@ -213,8 +259,7 @@ class MuPdfDocumentFragment(private val input: PdfDocumentFragmentInput<MuPdfSet
         var zoom by remember(index) { mutableFloatStateOf(1f) }
         var offset by remember(index) { mutableStateOf(Offset.Zero) }
         val imageModifier = if (preferences.scroll && !preferences.horizontal) {
-            bitmap?.let { modifier.aspectRatio(it.width.toFloat() / it.height) }
-                ?: modifier.heightIn(min = 200.dp)
+            modifier.aspectRatio(aspectRatio)
         } else modifier
         Box(imageModifier
             .clipToBounds()
@@ -281,16 +326,44 @@ class MuPdfDocumentFragment(private val input: PdfDocumentFragmentInput<MuPdfSet
                     val image = if (scrollPage) Modifier
                         .fillMaxWidth()
                         .aspectRatio(it.width.toFloat() / it.height) else Modifier.fillMaxSize()
-                    Image(
-                        it.asImageBitmap(),
-                        stringResource(R.string.reader_page_label, index + 1),
-                        image.graphicsLayer {
+                    // The bitmap and search overlay share sizing, scrolling, zoom and pan.
+                    // Keep yellow outside the bitmap's inversion filter for dark PDF mode.
+                    Box(image.graphicsLayer {
                             scaleX = zoom; scaleY = zoom; translationX = offset.x; translationY =
                             offset.y
-                        },
-                        contentScale = ContentScale.Fit,
-                        colorFilter = filter
-                    )
+                        }) {
+                        Image(
+                            it.asImageBitmap(),
+                            stringResource(R.string.reader_page_label, index + 1),
+                            Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit,
+                            colorFilter = filter,
+                        )
+                        if (matches.isNotEmpty()) Canvas(Modifier.matchParentSize()) {
+                            val viewport = pdfImageViewport(size.width, size.height, it.width, it.height)
+                            fun Path.point(point: PdfSearchPoint, first: Boolean = false) {
+                                val x = viewport.left + point.x * viewport.width
+                                val y = viewport.top + point.y * viewport.height
+                                if (first) moveTo(x, y) else lineTo(x, y)
+                            }
+                            // Focus draws last so overlapping hits keep the stronger marker.
+                            fun drawMatch(match: PdfSearchMatch, focused: Boolean) {
+                                val path = Path().apply {
+                                    match.quads.forEach { quad ->
+                                        point(quad.topLeft, first = true)
+                                        point(quad.topRight); point(quad.bottomRight); point(quad.bottomLeft)
+                                        close()
+                                    }
+                                }
+                                drawPath(path, Color.Yellow.copy(alpha = if (focused) .55f else .20f),
+                                    blendMode = if (preferences.invert == true) BlendMode.Screen else BlendMode.Multiply)
+                            }
+                            clipRect(viewport.left, viewport.top, viewport.left + viewport.width, viewport.top + viewport.height) {
+                                matches.forEach { match -> if (match.resultIndex != focusedIndex) drawMatch(match, false) }
+                                matches.firstOrNull { match -> match.resultIndex == focusedIndex }?.let { match -> drawMatch(match, true) }
+                            }
+                        }
+                    }
                 }
             } ?: if (error != null) Text(
                 error.orEmpty(),
@@ -304,13 +377,24 @@ class MuPdfDocumentFragment(private val input: PdfDocumentFragmentInput<MuPdfSet
     override fun goToPageIndex(index: Int, animated: Boolean): Boolean {
         val count = document?.pageCount ?: return false
         if (index !in 0 until count) return false
+        requestPage(index)
         currentPage.value = index
-        requestedPage.value = index
         return true
     }
 
+    private fun requestPage(index: Int) {
+        navigationPending = true
+        // A repeated target is still a command: the user may have swiped since the last jump.
+        requestedPage.value = PageRequest(index, requestedPage.value.sequence + 1)
+    }
+
     override fun applySettings(settings: MuPdfSettings) {
-        requestedPage.value = currentPage.value
+        // A late settings emission must not replace an outstanding search/page jump.
+        val before = this.settings.value.preferences
+        val after = settings.preferences
+        val layoutChanged = before.scroll != after.scroll || before.horizontal != after.horizontal ||
+            before.rightToLeft != after.rightToLeft
+        if (!navigationPending && layoutChanged) requestPage(currentPage.value)
         this.settings.value = settings
     }
 

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.reader.pdf.PdfSearchMatch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -146,43 +147,27 @@ class ReaderSearchViewModel(
                 com.javierreansyah.pinecone.reader.pdf.MuPdfDocumentFactory().open(resource, null)
                     .getOrNull() ?: continue
             try {
+                val base = publication.locatorFromLink(link) ?: continue
                 for (index in 0 until pdf.pageCount) {
                     kotlinx.coroutines.currentCoroutineContext().ensureActive()
-                    val text =
-                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-                            pdf.access { doc ->
-                                val page = doc.loadPage(index)
-                                try {
-                                    val structured = page.toStructuredText()
-                                    try {
-                                        structured.asText()
-                                    } finally {
-                                        structured.destroy()
-                                    }
-                                } finally {
-                                    page.destroy()
-                                }
-                            }
-                        }
-                    var offset = text.indexOf(query, ignoreCase = true)
-                    while (offset >= 0 && matches.size < 10_000) {
-                        val base = publication.locatorFromLink(link) ?: break
+                    val page = pdf.search(index, query)
+                    val text = page.text
+                    for (hit in page.matches) {
+                        if (matches.size >= 10_000) break
+                        val before = text.substring(maxOf(0, hit.start - 60), hit.start)
+                        val highlight = text.substring(hit.start, hit.end)
+                        val after = text.substring(hit.end, minOf(text.length, hit.end + 100))
                         val locator = base.copyWithLocations(
                             fragments = listOf("page=${index + 1}"),
                             position = index + 1
-                        )
+                        ).copy(text = Locator.Text(before = before, highlight = highlight, after = after))
                         matches += SearchResultItem(
                             locator,
                             link.title,
                             application.getString(R.string.reader_page_label, index + 1),
-                            text.substring(maxOf(0, offset - 60), offset),
-                            text.substring(offset, offset + query.length),
-                            text.substring(
-                                offset + query.length,
-                                minOf(text.length, offset + query.length + 100)
-                            )
+                            before, highlight, after,
+                            PdfSearchMatch(matches.size, base.href.toString(), index, hit.quads),
                         )
-                        offset = text.indexOf(query, offset + query.length, ignoreCase = true)
                     }
                     _searchState.update { it.copy(results = matches.toList()) }
                     if (matches.size >= 10_000) break

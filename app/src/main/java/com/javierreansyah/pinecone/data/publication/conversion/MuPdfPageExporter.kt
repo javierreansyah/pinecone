@@ -14,20 +14,31 @@ internal object MuPdfPageExporter {
         "table-hunt=yes,dehyphenate=yes,collect-styles=yes,vectors=yes,accurate-bboxes=yes," +
         "lazy-vectors=yes,vertically-collapse-bordered-cells=no"
 
-    fun read(pdf: MuPdfDocument, index: Int, checkCancelled: () -> Unit): MuPdfPageRecord = pdf.access { document ->
-        val page = document.loadPage(index)
-        try {
-            val display = page.toDisplayList(false)
+    fun read(pdf: MuPdfDocument, index: Int, checkCancelled: () -> Unit): MuPdfPageRecord {
+        checkCancelled()
+        // Only page loading touches the shared document. Each worker owns its display list;
+        // MuPDF can replay independent lists concurrently using the JNI thread-local contexts.
+        val (display, bounds) = pdf.access { document ->
+            checkCancelled()
+            val page = document.loadPage(index)
             try {
-                fun text(format: String, tables: Boolean): String {
-                    checkCancelled()
-                    return export(display, page.bounds, format,
-                        if (tables) TEXT_OPTIONS else TEXT_OPTIONS.replace("table-hunt=yes", "table-hunt=no"))
-                }
-                MuPdfStructure.read(text("xhtml", false), text("stext.xml", false),
-                    text("xhtml", true), text("stext.xml", true))
-            } finally { display.destroy() }
-        } finally { page.destroy() }
+                val bounds = page.bounds
+                page.toDisplayList(false) to bounds
+            } finally { page.destroy() }
+        }
+        try {
+            fun text(format: String, tables: Boolean): String {
+                checkCancelled()
+                return export(display, bounds, format,
+                    if (tables) TEXT_OPTIONS else TEXT_OPTIONS.replace("table-hunt=yes", "table-hunt=no"))
+            }
+            val xhtml = text("xhtml", false)
+            val xml = text("stext.xml", false)
+            val tableXhtml = text("xhtml", true)
+            val tableXml = text("stext.xml", true)
+            checkCancelled()
+            return MuPdfStructure.read(xhtml, xml, tableXhtml, tableXml)
+        } finally { display.destroy() }
     }
 
     /** Original paths, glyph outlines, images, masks and clipping stay in one native SVG. */

@@ -455,15 +455,19 @@ class PdfReadModeConverterTest {
         val pdf = MuPdfDocument(Document.openDocument(vectorPdf(), "application/pdf"))
         val file = File.createTempFile("cancelled-layout-", ".epub", context.cacheDir)
         try {
-            var cancelled = false
-            try {
-                PdfReadModeConverter().convert(listOf(PdfSource(pdf, "original.pdf")), file, "test:cancel", "Cancel", "en",
-                    GeneratedPublicationStrings("Contents", "Scanned", "Original") { "Page $it" }) { _, _ ->
-                    throw kotlinx.coroutines.CancellationException("Test cancellation after extraction")
-                }
-            } catch (_: kotlinx.coroutines.CancellationException) { cancelled = true }
-            assertTrue(cancelled)
-            assertEquals(before, context.cacheDir.listFiles().orEmpty().filter { it.name.startsWith("layout-") }.map { it.name }.toSet())
+            // Cancel both passes while another worker may still be exporting/decoding a page.
+            val sources = List(8) { PdfSource(pdf, "original-$it.pdf") }
+            listOf(1, sources.size + 1).forEach { cancelAt ->
+                var cancelled = false
+                try {
+                    PdfReadModeConverter().convert(sources, file, "test:cancel", "Cancel", "en",
+                        GeneratedPublicationStrings("Contents", "Scanned", "Original") { "Page $it" }) { done, _ ->
+                        if (done == cancelAt) throw kotlinx.coroutines.CancellationException("Test cancellation at $done")
+                    }
+                } catch (_: kotlinx.coroutines.CancellationException) { cancelled = true }
+                assertTrue(cancelled)
+                assertEquals(before, context.cacheDir.listFiles().orEmpty().filter { it.name.startsWith("layout-") }.map { it.name }.toSet())
+            }
         } finally { pdf.close(); file.delete() }
     }
 

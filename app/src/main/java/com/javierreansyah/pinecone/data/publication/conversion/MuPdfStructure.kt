@@ -38,14 +38,21 @@ internal data class MuPdfText(val bounds: FigureBounds, val glyphs: List<MuPdfGl
     @kotlinx.serialization.Transient
     val text: String = glyphs.joinToString("") { it.text }
     @kotlinx.serialization.Transient
-    val size: Float = glyphs.groupBy { (it.size * 4).toInt() }
-        .maxByOrNull { it.value.size }?.key?.div(4f) ?: 12f
+    val size: Float = glyphs.groupingBy { (it.size * 4).toInt() }.eachCount()
+        .maxByOrNull { it.value }?.key?.div(4f) ?: 12f
     @kotlinx.serialization.Transient
     val bold: Boolean = glyphs.count { it.bold } > glyphs.size / 2
 }
 
 /** MuPDF owns segmentation, tagged structure, glyph extraction and table geometry. */
 internal object MuPdfStructure {
+    private val whitespace = Regex("\\s+")
+    private val boldFont = Regex("bold|black|heavy", RegexOption.IGNORE_CASE)
+    private val italicFont = Regex("italic|oblique", RegexOption.IGNORE_CASE)
+    private val mathFont = Regex("math|symbol|cmsy|cmex|cmmi|msam|msbm|stix", RegexOption.IGNORE_CASE)
+    private val doctype = Regex("<!DOCTYPE[^>]*>", RegexOption.IGNORE_CASE)
+    private val characterReference = Regex("&#(?:x([0-9a-fA-F]+)|([0-9]+));")
+
     fun read(xhtml: String, xml: String, tableXhtml: String, tableXml: String): MuPdfPageRecord {
         val root = parse(xml)
         val page = root.descendants("page").single()
@@ -63,19 +70,23 @@ internal object MuPdfStructure {
                 }
                 "block" -> {
                     val glyphs = mutableListOf<MuPdfGlyph>()
-                    element.children().filter { it.localTag == "line" }.forEachIndexed { lineIndex, line ->
+                    val lines = element.children().filter { it.localTag == "line" }
+                    lines.forEachIndexed { lineIndex, line ->
                         line.children().filter { it.localTag == "font" }.forEach { font ->
                             val name = font.getAttribute("name")
                             val size = font.getAttribute("size").toFloatOrNull() ?: 12f
-                            val bold = Regex("bold|black|heavy", RegexOption.IGNORE_CASE).containsMatchIn(name)
-                            val italic = Regex("italic|oblique", RegexOption.IGNORE_CASE).containsMatchIn(name)
-                            val math = Regex("math|symbol|cmsy|cmex|cmmi|msam|msbm|stix", RegexOption.IGNORE_CASE).containsMatchIn(name)
+                            val bold = boldFont.containsMatchIn(name)
+                            val italic = italicFont.containsMatchIn(name)
+                            val math = mathFont.containsMatchIn(name)
                             font.children().filter { it.localTag == "char" }.forEach { char ->
                                 val quad = char.getAttribute("quad").numbers()
                                 if (quad.size == 8) {
-                                    val xs = quad.filterIndexed { index, _ -> index % 2 == 0 }
-                                    val ys = quad.filterIndexed { index, _ -> index % 2 == 1 }
-                                    val box = FigureBounds(xs.min(), ys.min(), xs.max(), ys.max())
+                                    val box = FigureBounds(
+                                        minOf(quad[0], quad[2], quad[4], quad[6]),
+                                        minOf(quad[1], quad[3], quad[5], quad[7]),
+                                        maxOf(quad[0], quad[2], quad[4], quad[6]),
+                                        maxOf(quad[1], quad[3], quad[5], quad[7]),
+                                    )
                                     val text = char.getAttribute("c")
                                     val flags = char.getAttribute("flags").toIntOrNull() ?: 0
                                     glyphs += MuPdfGlyph(text, box, char.getAttribute("y").toFloatOrNull() ?: box.bottom,
@@ -83,7 +94,7 @@ internal object MuPdfStructure {
                                 }
                             }
                         }
-                        if (lineIndex < element.children().count { it.localTag == "line" } - 1 && glyphs.isNotEmpty())
+                        if (lineIndex < lines.lastIndex && glyphs.isNotEmpty())
                             glyphs += glyphs.last().copy(text = " ")
                     }
                     element.box()?.let { blocks += MuPdfText(it, glyphs, structure) }
@@ -144,8 +155,8 @@ internal object MuPdfStructure {
         }
         // Android's Harmony parser does not implement the Xerces external-entity feature
         // switches. Remove MuPDF's fixed doctype and reject all entity declarations instead.
-        val input = xml.replace(Regex("<!DOCTYPE[^>]*>", RegexOption.IGNORE_CASE), "")
-            .replace(Regex("&#(?:x([0-9a-fA-F]+)|([0-9]+));")) { match ->
+        val input = xml.replace(doctype, "")
+            .replace(characterReference) { match ->
                 val cp = if (match.groupValues[1].isNotEmpty()) match.groupValues[1].toLongOrNull(16)
                     else match.groupValues[2].toLongOrNull()
                 if (cp != null && (cp == 9L || cp == 10L || cp == 13L || cp in 0x20L..0xD7FFL ||
@@ -156,7 +167,7 @@ internal object MuPdfStructure {
             .parse(InputSource(StringReader(input))).documentElement
     }
 
-    private fun String.numbers() = trim().split(Regex("\\s+")).mapNotNull(String::toFloatOrNull)
+    private fun String.numbers() = trim().split(whitespace).mapNotNull(String::toFloatOrNull)
     private fun Element.box(): FigureBounds? = getAttribute("bbox").numbers().takeIf {
         it.size == 4 && it.all(Float::isFinite) && it[2] >= it[0] && it[3] >= it[1]
     }
@@ -164,7 +175,13 @@ internal object MuPdfStructure {
 }
 
 internal val Element.localTag: String get() = localName ?: tagName
-internal fun Element.children(): List<Element> = (0 until childNodes.length).mapNotNull { childNodes.item(it) as? Element }
+internal fun Element.children(): List<Element> = buildList {
+    var child = firstChild
+    while (child != null) {
+        if (child is Element) add(child)
+        child = child.nextSibling
+    }
+}
 internal fun Element.descendants(tag: String? = null): List<Element> = buildList {
     fun visit(element: Element) {
         if (tag == null || element.localTag == tag) add(element)

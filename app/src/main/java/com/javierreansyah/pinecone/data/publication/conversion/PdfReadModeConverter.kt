@@ -53,16 +53,22 @@ class PdfReadModeConverter {
         val context = currentCoroutineContext()
         val records = File(destination.parentFile, "layout-${UUID.randomUUID()}")
         check(records.mkdir())
-        val pageFiles = mutableListOf<File>()
+        val pageFiles = pages.indices.map { File(records, "$it.json") }
         try {
             val profile = MuPdfReflowProfile()
-            pages.forEachIndexed { index, (source, page) ->
-                context.ensureActive()
-                val record = MuPdfPageExporter.read(source.document, page) { context.ensureActive() }
+            // Keep native working sets bounded even on devices with many cores. Profile updates
+            // remain ordered because its capped margin vocabulary depends on source-page order.
+            val workers = Runtime.getRuntime().availableProcessors().coerceIn(1, 2)
+            forEachPreparedPage(pages.size, workers, prepare = { index ->
+                val workerContext = currentCoroutineContext()
+                val (source, page) = pages[index]
+                val record = MuPdfPageExporter.read(source.document, page) { workerContext.ensureActive() }
+                workerContext.ensureActive()
+                val json = Json.encodeToString(record)
+                withContext(Dispatchers.IO) { pageFiles[index].writeText(json) }
+                record
+            }) { index, record ->
                 profile.observe(record)
-                val file = File(records, "$index.json")
-                pageFiles += file
-                file.writeText(Json.encodeToString(record))
                 progress(index + 1, pages.size * 2)
             }
             fun flatten(nodes: List<org.readium.r2.shared.util.pdf.PdfDocument.OutlineNode>): List<Pair<String, Int>> =
@@ -71,18 +77,25 @@ class PdfReadModeConverter {
             val outline = sources.flatMap { source -> flatten(source.document.outline).map { (name, page) -> name to page + offset }
                 .also { offset += source.document.pageCount } }
             val cleaner = MuPdfReflowCleaner(profile)
+            val previousByPage = previousSourceMap.groupBy { it.page }
+            val outlineByPage = outline.groupBy({ it.second }, { it.first }).mapValues { it.value.toSet() }
             val sourcePages = mutableListOf<SourcePage>()
             EpubWriter(destination.outputStream(), identifier, title, language.ifBlank { "und" }, strings,
                 File.createTempFile("pinecone-content-", ".xhtml", destination.parentFile)).use { writer ->
-                pages.forEachIndexed { index, (source, pdfPage) ->
+                // Decode ahead while the single ordered cleaner/writer handles the current page.
+                // Bibliography continuations, asset numbering and anchors retain their order.
+                forEachPreparedPage(pages.size, workers, prepare = { index ->
+                    val json = withContext(Dispatchers.IO) { pageFiles[index].readText() }
+                    Json.decodeFromString<MuPdfPageRecord>(json)
+                }) { index, record ->
                     context.ensureActive()
-                    val record = Json.decodeFromString<MuPdfPageRecord>(pageFiles[index].readText())
+                    val (source, pdfPage) = pages[index]
                     val svgNames = mutableMapOf<FigureBounds, MuPdfVisual>()
                     val stored = mutableSetOf<String>()
                     val result = MuPdfPageExporter.withSvgExporter(source.document, pdfPage) { exportSvg ->
                         cleaner.clean(record, index + 1,
-                        previousSourceMap.firstOrNull { it.page == index + 1 }?.blocks.orEmpty(),
-                        outline.filter { it.second == index + 1 }.map { it.first }.toSet(),
+                        previousByPage[index + 1]?.firstOrNull()?.blocks.orEmpty(),
+                        outlineByPage[index + 1].orEmpty(),
                         svg = { region, standalone ->
                             val visual = svgNames.getOrPut(region) {
                                 context.ensureActive()
