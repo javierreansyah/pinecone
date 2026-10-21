@@ -17,7 +17,9 @@ class MuPdfExportTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val pdf = MuPdfDocument(Document.openDocument(requireNotNull(path)))
         try {
-            listOf(0, 2, 3, 4, 5, 6, 8, 9, 10, 12, 13, 14).filter { it < pdf.pageCount }.forEach { index ->
+            val pages = InstrumentationRegistry.getArguments().getString("pages")?.split(',')
+                ?.map { it.trim().toInt() - 1 } ?: listOf(0, 2, 3, 4, 5, 6, 8, 9, 10, 12, 13, 14)
+            pages.filter { it in 0 until pdf.pageCount }.forEach { index ->
                 listOf("xhtml", "stext.xml").forEach { format ->
                     File(context.cacheDir, "native-base-${index + 1}.$format").writeText(
                         MuPdfPageExporter.export(pdf, index, format, MuPdfPageExporter.TEXT_OPTIONS.replace("table-hunt=yes", "table-hunt=no")))

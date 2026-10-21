@@ -18,7 +18,8 @@ internal data class MuPdfPageRecord(
 internal data class MuPdfRegion(val kind: String, val bounds: FigureBounds)
 
 @Serializable
-internal data class MuPdfTable(val bounds: FigureBounds, val xhtml: String, val rows: List<List<MuPdfCell>> = emptyList())
+internal data class MuPdfTable(val bounds: FigureBounds, val xhtml: String, val rows: List<List<MuPdfCell>> = emptyList(),
+    val ruled: Boolean = false)
 
 @Serializable
 internal data class MuPdfCell(val lines: List<MuPdfCellLine>)
@@ -93,17 +94,44 @@ internal object MuPdfStructure {
             }
         }
         visit(page)
-        val tableGeometry = parse(tableXml).descendants("struct").filter { it.getAttribute("std") == "Table" }
+        // Table hunting can move text out of the original tagged Table, leaving an
+        // empty structural shell. Never zip those shells with the emitted HTML.
+        val tableRoot = parse(tableXml)
+        val tableRules = tableRoot.descendants("vector").mapNotNull { it.box() }
+        val tableGeometry = tableRoot.descendants("struct").filter {
+            it.getAttribute("std") == "Table" && it.descendants("line").isNotEmpty()
+        }.toMutableList()
         val tableElements = parse(tableXhtml).descendants("table")
-        val tables = tableGeometry.zip(tableElements).mapNotNull { (geometry, element) ->
-            val rows = geometry.children().filter { it.getAttribute("std") == "TR" }.map { row ->
-                row.children().filter { it.getAttribute("std") == "TD" }.map { cell ->
+        fun compact(text: String) = text.filterNot { it.isWhitespace() || it in "-\u00ad" }
+        val tables = tableElements.mapNotNull { element ->
+            val text = compact(element.textContent)
+            val geometry = tableGeometry.firstOrNull { candidate ->
+                compact(candidate.descendants("line").joinToString("") { it.getAttribute("text") }) == text
+            } ?: return@mapNotNull null
+            tableGeometry.remove(geometry)
+            val rows = geometry.descendants("struct").filter { it.getAttribute("std") == "TR" }.map { row ->
+                row.children().filter { it.getAttribute("std") in setOf("TD", "TH") }.map { cell ->
                     MuPdfCell(cell.descendants("line").map { line ->
                         MuPdfCellLine(line.getAttribute("text"), line.box()?.top ?: 0f)
                     })
                 }
             }
-            geometry.box()?.let { MuPdfTable(it, EpubWriter.serialize(element), rows) }
+            val bounds = geometry.box() ?: return@mapNotNull null
+            // Hunting can leave ruling paths in the original empty tagged shell
+            // while moving the text to a new Table. Collect rules spatially too.
+            val rules = tableRules.filter {
+                (it.left + it.right) / 2 in bounds.left - 2f..bounds.right + 2f &&
+                    (it.top + it.bottom) / 2 in bounds.top - 2f..bounds.bottom + 2f
+            }
+            // Grid coordinates also exist for inferred prose tables. Require actual
+            // PDF ruling paths before relaxing the prose/empty-cell safeguards.
+            val horizontalBands = rules.filter { it.height <= 2f && it.width > 2f }
+                .groupBy { (it.top / 2f).toInt() }.values
+            val ruled = horizontalBands.count { band ->
+                band.maxOf { it.right } - band.minOf { it.left } >= bounds.width * .75f
+            } >= 2 &&
+                rules.count { it.width <= 2f && it.height >= 10f } >= 2
+            MuPdfTable(bounds, EpubWriter.serialize(element), rows, ruled)
         }
         return MuPdfPageRecord(xhtml, pageBounds, blocks, images, vectors, groups, tables)
     }
@@ -129,7 +157,9 @@ internal object MuPdfStructure {
     }
 
     private fun String.numbers() = trim().split(Regex("\\s+")).mapNotNull(String::toFloatOrNull)
-    private fun Element.box(): FigureBounds? = getAttribute("bbox").numbers().takeIf { it.size == 4 }
+    private fun Element.box(): FigureBounds? = getAttribute("bbox").numbers().takeIf {
+        it.size == 4 && it.all(Float::isFinite) && it[2] >= it[0] && it[3] >= it[1]
+    }
         ?.let { FigureBounds(it[0], it[1], it[2], it[3]) }
 }
 

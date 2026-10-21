@@ -92,17 +92,25 @@ internal class MuPdfReflowCleaner(private val profile: MuPdfReflowProfile) {
             val tables = page.tables.filter { validTable(it, page) }
             val charts = chartRegions(page, tables)
             charts.forEach { region -> replaceVisual(units, region, "figure", svg) }
-            tables.filter { table -> charts.none { it.intersects(table.bounds) } }.forEach { table ->
-                val selected = units.filter { table.bounds.containsCenter(it.bounds) }
-                if (selected.isNotEmpty()) {
+            tables.filter { table -> charts.none { it.intersects(table.bounds) } }.sortedBy { it.bounds.top }.forEach { table ->
+                val selected = units.filter { it.texts.isNotEmpty() && table.bounds.containsCenter(it.bounds) }
+                run {
                     val element = document.importNode(MuPdfStructure.parse(table.xhtml), true) as Element
-                    expandNativeTableRows(element, table)
+                    if (!table.ruled) expandNativeTableRows(element, table)
+                    normalizeTableMarkup(element)
+                    if (table.ruled) joinRuledCellFragments(element)
                     val wrapper = document.createElementNS(XHTML, "div").apply {
                         setAttribute("class", "table-scroll"); appendChild(element)
                     }
-                    val index = units.indexOf(selected.first())
+                    // Tagged tables may be absent from the base XHTML altogether.
+                    val following = units.filter { it.bounds.top >= table.bounds.bottom &&
+                        !profile.margin(it.bounds, page.bounds) && it.bounds.height < page.bounds.height * .9f &&
+                        min(it.bounds.right, table.bounds.right) > max(it.bounds.left, table.bounds.left) }
+                        .minByOrNull { it.bounds.top }
+                    val index = selected.firstOrNull()?.let(units::indexOf)
+                        ?: following?.let(units::indexOf) ?: units.size
                     units.removeAll(selected.toSet())
-                    units.add(index, UnitBlock(wrapper, selected.flatMap { it.texts }, table.bounds, "table"))
+                    units.add(index, UnitBlock(wrapper, page.blocks.filter { table.bounds.containsCenter(it.bounds) }, table.bounds, "table"))
                 }
             }
             displayEquations(page, charts, tables).forEach { replaceVisual(units, it, "equation", svg) }
@@ -135,6 +143,7 @@ internal class MuPdfReflowCleaner(private val profile: MuPdfReflowProfile) {
             (profile.repeated(unit.text) || Regex("^(?:[0-9]+|[ivxlcdm]+|(?:Page|Halaman)\\s+\\d+(?:\\s+(?:of|/)\\s+\\d+)?)$",
                 RegexOption.IGNORE_CASE).matches(unit.text)) }
         units.removeAll { it.kind == "paragraph" && it.text.length > 10 && it.bounds.height > it.bounds.width * 3 }
+        normalizeCaptions(units)
         normalizeHeadings(units, outline)
         joinDetachedListMarkers(units)
         joinParagraphFragments(units)
@@ -237,20 +246,94 @@ internal class MuPdfReflowCleaner(private val profile: MuPdfReflowProfile) {
     private fun validTable(table: MuPdfTable, page: MuPdfPageRecord): Boolean {
         val element = MuPdfStructure.parse(table.xhtml)
         val rows = element.descendants("tr")
-        val cells = element.descendants().filter { it.localTag in setOf("td", "th") }
+        val cells = rows.flatMap { row -> row.children().filter { it.localTag in setOf("td", "th") } }
         val columnCounts = rows.map { row -> row.children().count { it.localTag in setOf("td", "th") } }
         if (rows.size < 2 || columnCounts.maxOrNull()?.let { it < 2 } != false) return false
         if (columnCounts.count { it >= 2 } < 2 && (columnCounts.maxOrNull() ?: 0) < 3) return false
+        if (page.images.any { table.bounds.containsCenter(it) && it.height > bodySize * 3 }) return false
+        // Actual native ruling paths are stronger evidence than cell length, empty
+        // cells or numeric content (e.g. long descriptions and code listings).
+        if (table.ruled) return true
         if (cells.any { Regex("^\\s*\\[\\d+]\\s*$").matches(it.textContent) } ||
             (cells.any { it.textContent.length > 200 } && (columnCounts.maxOrNull() ?: 0) < 3) ||
             cells.count { it.textContent.isBlank() } > cells.size * .55f) return false
-        if (page.images.any { table.bounds.containsCenter(it) && it.height > bodySize * 3 }) return false
         val texts = page.blocks.filter { table.bounds.containsCenter(it.bounds) }
         if (texts.any { number -> Regex("^\\d+(?:\\.\\d+)*$").matches(number.text.trim()) && texts.any { title ->
                 title.structure.startsWith("H") && abs(title.bounds.top - number.bounds.top) < bodySize * .5f &&
                     title.bounds.left > number.bounds.right && title.bounds.left - number.bounds.right < bodySize * 2
             } }) return false
         return rows.size >= 3 || cells.sumOf { Regex("\\d+(?:\\.\\d+)?").findAll(it.textContent).count() } >= 2
+    }
+
+    /** Native tagged exports can contain td > th and p > div > p. Flatten those
+     * wrappers before WebView's HTML parser repairs them outside the table. */
+    private fun normalizeTableMarkup(table: Element) {
+        table.descendants("tr").forEach { row -> row.children().filter { it.localTag in setOf("td", "th") }.forEach { cell ->
+            val nestedHeader = cell.descendants("th").any { it !== cell }
+            val paragraphs = cell.descendants().filter { it.localTag in TEXT_TAGS &&
+                it.children().none { child -> child.descendants().any { it.localTag in TEXT_TAGS } } }
+            val replacement = cell.ownerDocument.createElementNS(XHTML, if (nestedHeader) "th" else cell.localTag)
+            listOf("colspan", "rowspan", "style").filter(cell::hasAttribute).forEach { replacement.setAttribute(it, cell.getAttribute(it)) }
+            if (paragraphs.isEmpty()) replacement.textContent = cell.textContent.trim()
+            else paragraphs.forEach { paragraph ->
+                val p = cell.ownerDocument.createElementNS(XHTML, "p")
+                while (paragraph.hasChildNodes()) p.appendChild(paragraph.firstChild)
+                replacement.appendChild(p)
+            }
+            cell.parentNode.replaceChild(replacement, cell)
+        } }
+    }
+
+    /** Table hunting can invent row bands at wrapped text lines. Join only bands
+     * whose shared edge explicitly has no native rule; real ruled rows stay apart. */
+    private fun joinRuledCellFragments(table: Element) {
+        fun borders(cell: Element): List<String> = Regex("border-style:([^;]+)").find(cell.getAttribute("style"))
+            ?.groupValues?.get(1)?.trim()?.split(Regex("\\s+")).orEmpty()
+        var previous: Element? = null
+        table.descendants("tr").forEach { row ->
+            val before = previous?.children().orEmpty()
+            val cells = row.children()
+            val merge = before.size == cells.size && cells.size >= 2 &&
+                cells.count { it.textContent.isNotBlank() } in 1 until cells.size &&
+                before.zip(cells).all { (a, b) ->
+                    val upper = borders(a); val lower = borders(b)
+                    upper.size == 4 && lower.size == 4 && upper[2] == "none" && lower[0] == "none" &&
+                        a.getAttribute("colspan") == b.getAttribute("colspan") &&
+                        (a.getAttribute("rowspan").toIntOrNull() ?: 1) == 1 && (b.getAttribute("rowspan").toIntOrNull() ?: 1) == 1
+                }
+            if (merge) {
+                before.zip(cells).forEach { (target, source) ->
+                    if (source.textContent.isNotBlank()) {
+                        val paragraph = target.children().lastOrNull() ?: target.ownerDocument.createElementNS(XHTML, "p").also(target::appendChild)
+                        source.children().forEach { fragment ->
+                            if (paragraph.textContent.isNotEmpty()) paragraph.appendChild(target.ownerDocument.createTextNode(" "))
+                            while (fragment.hasChildNodes()) paragraph.appendChild(fragment.firstChild)
+                        }
+                    }
+                    val upper = borders(target); val lower = borders(source)
+                    target.setAttribute("style", "border-style:${upper[0]} ${upper[1]} ${lower[2]} ${upper[3]};")
+                }
+                row.parentNode.removeChild(row)
+            } else previous = row
+        }
+    }
+
+    private fun normalizeCaptions(units: MutableList<UnitBlock>) {
+        units.filter { it.kind == "paragraph" && CAPTION.containsMatchIn(it.text) }.forEach { unit ->
+            if (units.any { it !== unit && it.kind == "paragraph" && inlineContinuation(it, unit) }) return@forEach
+            val tagged = unit.texts.any { it.structure.equals("Caption", true) }
+            val adjacent = units.any { visual -> visual.kind in setOf("figure", "table") &&
+                min(unit.bounds.right, visual.bounds.right) > max(unit.bounds.left, visual.bounds.left) &&
+                (unit.bounds.top - visual.bounds.bottom in -1f..bodySize * 2.5f ||
+                    visual.bounds.top - unit.bounds.bottom in -1f..bodySize * 2.5f) &&
+                units.none { other -> other !== unit && other !== visual && other.text.isNotBlank() &&
+                    other.bounds.top >= min(unit.bounds.bottom, visual.bounds.bottom) &&
+                    other.bounds.bottom <= max(unit.bounds.top, visual.bounds.top) &&
+                    min(other.bounds.right, unit.bounds.right) > max(other.bounds.left, unit.bounds.left) } }
+            if (tagged || adjacent) {
+                unit.kind = "caption"; unit.element.setAttribute("class", "caption")
+            }
+        }
     }
 
     /** MuPDF sometimes exports an entire unruled column as a super-cell. Split only
@@ -326,12 +409,15 @@ internal class MuPdfReflowCleaner(private val profile: MuPdfReflowProfile) {
         val area = page.bounds.width * page.bounds.height
         val vectors = page.vectors.filter { it.width * it.height < area * .85f &&
             ((it.height > 8 && it.width > 8) || it.height > 30) }
-        val seeds = (page.images + vectors).filter { seed -> tables.none { it.bounds.containsCenter(seed) } }
+        // Native ruling paths can extend fractionally beyond the table rectangle.
+        // Do not let those border strokes seed a chart around the whole page group.
+        val seeds = (page.images + vectors).filter { seed -> tables.none { it.bounds.padded(2f).containsCenter(seed) } }
         fun caption(text: String) = CAPTION.containsMatchIn(text.trim())
         val prose = page.blocks.filter { !caption(it.text) && (longProse(it.text) ||
             (it.text.trim().endsWith('.') && Regex("\\p{L}{4,}").findAll(it.text).count() >= 3)) }.map { it.bounds }
         val eligibleGroups = page.groups.filter { group -> group.kind == "Div" &&
-            group.bounds.width * group.bounds.height < area * .82f && prose.none { group.bounds.containsCenter(it) } }
+            group.bounds.width * group.bounds.height < area * .82f && prose.none { group.bounds.containsCenter(it) } &&
+            tables.none { group.bounds.containsCenter(it.bounds) } }
         val groupCrops = mutableMapOf<MuPdfRegion, FigureBounds>()
         val regions = seeds.map { seed ->
             val tagged = page.groups.filter { it.kind.equals("Figure", true) && it.bounds.containsCenter(seed) }
@@ -409,14 +495,16 @@ internal class MuPdfReflowCleaner(private val profile: MuPdfReflowProfile) {
     }
 
     private fun replaceVisual(units: MutableList<UnitBlock>, box: FigureBounds, kind: String, svg: (FigureBounds, Boolean) -> MuPdfVisual) {
-        val selected = units.filter { box.containsCenter(it.bounds) }
+        val selected = units.filter { (it.texts.isNotEmpty() || it.kind != "paragraph") && box.containsCenter(it.bounds) }
         val first = selected.firstOrNull() ?: units.firstOrNull() ?: return
         val transcript = selected.joinToString(" ") { it.text }
         val element = first.element.ownerDocument.createElementNS(XHTML, if (kind == "figure") "figure" else "div")
         visual(element, box, transcript, svg, false, kind == "figure")
         element.setAttribute("class", kind)
+        val following = units.filter { it.bounds.top >= box.bottom &&
+            min(it.bounds.right, box.right) > max(it.bounds.left, box.left) }.minByOrNull { it.bounds.top }
         val index = if (selected.isNotEmpty()) units.indexOf(first)
-            else units.indexOfFirst { it.bounds.top >= box.bottom }.takeIf { it >= 0 } ?: units.size
+            else following?.let(units::indexOf) ?: units.size
         units.removeAll(selected.toSet())
         units.add(index, UnitBlock(element, selected.flatMap { it.texts }, box, kind))
     }
@@ -534,9 +622,10 @@ internal class MuPdfReflowCleaner(private val profile: MuPdfReflowProfile) {
             if (unit.kind == "paragraph") {
                 val text = unit.text
                 val numbered = Regex("^(\\d+(?:\\.\\d+)*)\\.?\\s+\\p{L}.*$").matchEntire(text)
-                val heading = unit.texts.any { it.structure.startsWith("H") } || text in outline ||
+                val heading = text in outline ||
                     (text.length < 120 && unit.texts.any { it.size > bodySize * 1.2f || (it.bold && numbered != null) })
-                if (heading && text.length < 200 && !text.startsWith("Figure ") && !text.startsWith("Table ") &&
+                    || (unit.texts.any { it.structure.startsWith("H") && it.bold } && text.length < 120)
+                if (heading && text.length < 200 && !CAPTION.containsMatchIn(text) &&
                     (numbered != null || text in outline || (!text.endsWith('.') && text.firstOrNull()?.isLowerCase() != true))) {
                     val level = numbered?.groupValues?.get(1)?.count { it == '.' }?.plus(2)?.coerceAtMost(6) ?: 2
                     unit.kind = "heading"; unit.element = rename(unit.element, "h$level")
@@ -552,9 +641,12 @@ internal class MuPdfReflowCleaner(private val profile: MuPdfReflowProfile) {
             val previous = units[index - 1]; val current = units[index]
             val gap = current.bounds.top - previous.bounds.bottom
             val sameSource = previous.texts.any { it in current.texts }
+            // Font changes and linked figure references may become separate blocks
+            // halfway through a line. Rejoin by adjacent glyphs, not label words.
+            val sameLine = inlineContinuation(previous, current)
             if (previous.kind == "paragraph" && current.kind == "paragraph" &&
                 !isMarker(current.text) && !REFERENCE.containsMatchIn(current.text) &&
-                (sameSource || (gap in -bodySize..bodySize * .45f &&
+                (sameSource || sameLine || (gap in -bodySize..bodySize * .9f &&
                     min(previous.bounds.right, current.bounds.right) - max(previous.bounds.left, current.bounds.left) >
                         min(previous.bounds.width, current.bounds.width) * .6f &&
                     (abs(previous.bounds.left - current.bounds.left) < bodySize * 1.5f ||
@@ -563,6 +655,13 @@ internal class MuPdfReflowCleaner(private val profile: MuPdfReflowProfile) {
                 append(previous, current); units.removeAt(index)
             } else index++
         }
+    }
+
+    private fun inlineContinuation(previous: UnitBlock, current: UnitBlock): Boolean {
+        val end = previous.texts.lastOrNull()?.glyphs?.lastOrNull { it.text.isNotBlank() } ?: return false
+        val start = current.texts.firstOrNull()?.glyphs?.firstOrNull { it.text.isNotBlank() } ?: return false
+        return abs(end.baseline - start.baseline) < bodySize * .35f &&
+            start.bounds.left - end.bounds.right in -bodySize * .3f..bodySize * 2
     }
 
     private fun joinDetachedListMarkers(units: MutableList<UnitBlock>) {
@@ -590,9 +689,8 @@ internal class MuPdfReflowCleaner(private val profile: MuPdfReflowProfile) {
                 reference = null; item = null; index++; continue
             }
             if (unit.kind == "figure") bibliography = false
-            if (unit.kind == "paragraph" && CAPTION.containsMatchIn(unit.text)) {
+            if (unit.kind == "caption") {
                 bibliography = false; reference = null; item = null
-                unit.kind = "caption"; unit.element.setAttribute("class", "caption")
                 index++; continue
             }
             if (unit.kind != "paragraph") { reference = null; item = null; index++; continue }

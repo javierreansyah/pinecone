@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.artifex.mupdf.fitz.Document
 import com.javierreansyah.pinecone.reader.pdf.MuPdfDocument
+import com.javierreansyah.pinecone.ui.features.reader.resolveGeneratedLocator
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.Locale
@@ -113,17 +114,35 @@ class PdfReadModeConverterTest {
             ZipInputStream(destination.inputStream()).use { zip ->
                 while (true) { val entry = zip.nextEntry ?: break; entries[entry.name] = zip.readBytes() }
             }
-            val bytes = entries.getValue("EPUB/text/content.xhtml")
-            val xml = javax.xml.parsers.DocumentBuilderFactory.newInstance().apply { isNamespaceAware = true }
-                .newDocumentBuilder().parse(bytes.inputStream())
+            auditResources(entries, sourceMap)
+            val xml = combinedContent(entries)
             assertEquals(native.pageCount, xml.getElementsByTagNameNS("*", "section").length)
             val all = xml.getElementsByTagName("*")
             val ids = (0 until all.length).mapNotNull { all.item(it).attributes.getNamedItem("id")?.nodeValue }.toSet()
             (1..native.pageCount).forEach { assertTrue("Missing original page $it", "source-page-$it" in ids) }
             assertTrue("Supplementary math letters must survive serialization", xml.documentElement.textContent.contains("\uD835\uDC5D"))
-            assertEquals(1, entries.keys.count { it.startsWith("EPUB/text/") })
-            verifyWebViewReachesLastPage(bytes.toString(Charsets.UTF_8), native.pageCount)
-            println("THESIS_RECONSTRUCTION: pages=${native.pageCount}, htmlBytes=${bytes.size}, elapsedMs=${(System.nanoTime() - started) / 1_000_000}")
+            assertEquals("The thesis uses seven approximately 25-source-page files", 7, entries.keys.count { it.startsWith("EPUB/text/") })
+            val toc = MuPdfStructure.parse(entries.getValue("EPUB/nav.xhtml").toString(Charsets.UTF_8)).descendants("nav").first()
+            assertEquals("Without an original PDF outline, retain page navigation instead of inferred chapters", native.pageCount, toc.descendants("a").size)
+            val root = xml.documentElement
+            val tablePage = root.descendants("section").single { it.getAttribute("data-source-page") == "54" }
+            assertEquals("All three tagged/ruled tables must survive", 3, tablePage.descendants("table").size)
+            assertEquals("Wrapped descriptions must not become artificial table rows", 6,
+                tablePage.descendants("table").first().descendants("tr").size)
+            val ordered = tablePage.children().map { it.getAttribute("class") to it.textContent }
+            val jobCaption = ordered.indexOfFirst { it.second.startsWith("Tabel 4.5") }
+            val jobTable = ordered.indexOfFirst { it.first == "table-scroll" && it.second.contains("Job ID") }
+            assertTrue("A table belongs after its own caption", jobTable > jobCaption && jobCaption >= 0)
+            val mixedPage = root.descendants("section").single { it.getAttribute("data-source-page") == "132" }
+            assertTrue("A chart/table must not move ahead of its section heading",
+                mixedPage.children().first { it.localTag != "span" }.localTag.startsWith("h"))
+            val discussion = mixedPage.children().single { it.localTag == "p" && it.textContent.startsWith("Parameter critical") }
+            assertTrue("Font changes must not detach inline table/figure references",
+                discussion.textContent.replace(Regex("\\s+"), " ").contains("Tabel 6.5 dan Gambar 6.6"))
+            assertTrue("Inline references must remain body prose", discussion.getAttribute("class") != "caption")
+            val lastResource = sourceMap.last().href.substringBefore('#')
+            verifyWebViewReachesLastPage(entries.getValue("EPUB/$lastResource").toString(Charsets.UTF_8), native.pageCount)
+            println("THESIS_RECONSTRUCTION: pages=${native.pageCount}, tables=${root.descendants("table").size}, elapsedMs=${(System.nanoTime() - started) / 1_000_000}")
         } finally { native.close() }
     }
 
@@ -138,8 +157,7 @@ class PdfReadModeConverterTest {
                 settings.blockNetworkLoads = true
                 webViewClient = object : android.webkit.WebViewClient() {
                     override fun onPageFinished(webView: android.webkit.WebView, url: String) {
-                        webView.evaluateJavascript("[document.querySelectorAll('section[data-source-page]').length," +
-                            "!!document.getElementById('source-page-$pages')]") { value -> result.set(value); ready.countDown() }
+                        webView.evaluateJavascript("!!document.getElementById('source-page-$pages')") { value -> result.set(value); ready.countDown() }
                     }
                 }
                 loadDataWithBaseURL("https://localhost/thesis.xhtml", html, "application/xhtml+xml", "UTF-8", null)
@@ -147,7 +165,7 @@ class PdfReadModeConverterTest {
         }
         try {
             assertTrue("WebView did not finish parsing the converted thesis", ready.await(30, java.util.concurrent.TimeUnit.SECONDS))
-            assertEquals("The reader DOM must reach the final source page", "[$pages,true]", result.get())
+            assertEquals("The reader DOM must reach the final source page", "true", result.get())
         } finally { instrumentation.runOnMainSync { view?.destroy() } }
     }
 
@@ -251,6 +269,12 @@ class PdfReadModeConverterTest {
             val publication = requireNotNull(repository.openPublication(requireNotNull(repository.getBook(id))))
             try {
                 assertEquals(1, publication.readingOrder.size)
+                val migrated = requireNotNull(org.readium.r2.shared.publication.Locator.fromJSON(org.json.JSONObject(expected)))
+                val resolved = publication.resolveGeneratedLocator(migrated)
+                assertEquals(publication.locatorFromLink(publication.readingOrder.first())?.href, resolved.href)
+                assertEquals(migrated.locations, resolved.locations)
+                assertEquals(migrated.text, resolved.text)
+                assertEquals(resolved, publication.resolveGeneratedLocator(resolved))
                 assertEquals("source-page-1", publication.locatorFromLink(publication.tableOfContents.single())?.locations?.fragments?.single())
             } finally {
                 publication.close()
@@ -288,8 +312,9 @@ class PdfReadModeConverterTest {
             ZipInputStream(output.inputStream()).use { zip ->
                 while (true) { val entry = zip.nextEntry ?: break; entries[entry.name] = zip.readBytes() }
             }
-            val xml = javax.xml.parsers.DocumentBuilderFactory.newInstance().apply { isNamespaceAware = true }.newDocumentBuilder()
-                .parse(entries.getValue("EPUB/text/content.xhtml").inputStream())
+            val sourceMap = kotlinx.serialization.json.Json.decodeFromString<List<SourcePage>>(map)
+            auditResources(entries, sourceMap)
+            val xml = combinedContent(entries)
             val headings = (1..6).flatMap { level ->
                 val nodes = xml.getElementsByTagNameNS("*", "h$level")
                 (0 until nodes.length).map { "h$level" to nodes.item(it).textContent.trim().replace(Regex("\\s+"), " ") }
@@ -344,13 +369,56 @@ class PdfReadModeConverterTest {
             val all = xml.getElementsByTagName("*")
             val ids = (0 until all.length).mapNotNull { all.item(it).attributes.getNamedItem("id")?.nodeValue }
             assertEquals("Source and run anchors must remain unique inside tables", ids.size, ids.toSet().size)
-            val sourceMap = kotlinx.serialization.json.Json.decodeFromString<List<SourcePage>>(map)
             sourceMap.flatMap { it.blocks }.forEach { block ->
                 assertTrue("Missing source anchor ${block.anchor}", block.anchor in ids)
                 block.textRuns.forEach { assertTrue("Missing text run ${it.anchor}", it.anchor in ids) }
             }
             println("PDF_RECONSTRUCTION: pages=${native.pageCount}, elapsedMs=${(System.nanoTime() - started) / 1_000_000}, outputBytes=${output.length()}")
         } finally { native.close() }
+    }
+
+    /** Collect source sections for the content reconstruction regression audit. */
+    private fun combinedContent(entries: Map<String, ByteArray>): org.w3c.dom.Document {
+        val root = MuPdfStructure.parse("<html xmlns=\"http://www.w3.org/1999/xhtml\"><head/><body/></html>")
+        val body = root.children().last()
+        val sections = mutableMapOf<String, org.w3c.dom.Element>()
+        entries.filterKeys { it.startsWith("EPUB/text/") }.values.forEach { bytes ->
+            MuPdfStructure.parse(bytes.toString(Charsets.UTF_8)).descendants("body").single().children().forEach { section ->
+                val page = section.getAttribute("data-source-page")
+                val existing = sections[page]
+                if (existing == null) {
+                    val copy = root.ownerDocument.importNode(section, true) as org.w3c.dom.Element
+                    body.appendChild(copy); sections[page] = copy
+                } else section.children().forEach { existing.appendChild(root.ownerDocument.importNode(it, true)) }
+            }
+        }
+        return root.ownerDocument
+    }
+
+    private fun auditResources(entries: Map<String, ByteArray>, sourceMap: List<SourcePage>) {
+        val documents = entries.filterKeys { it.startsWith("EPUB/text/") }
+            .mapValues { MuPdfStructure.parse(it.value.toString(Charsets.UTF_8)) }
+        val ids = documents.mapValues { (_, root) -> root.descendants().map { it.getAttribute("id") }.filter(String::isNotBlank).toSet() }
+        sourceMap.forEach { page ->
+            assertTrue("Page link must resolve: ${page.href}", page.href.substringAfter('#') in ids.getValue("EPUB/${page.href.substringBefore('#')}"))
+            page.blocks.forEach { block ->
+                val resource = ids.getValue("EPUB/${block.href}")
+                assertTrue("Block must live in its mapped resource: ${block.anchor}", block.anchor in resource)
+                block.textRuns.forEach { assertTrue("Text run must stay beside its block", it.anchor in resource) }
+            }
+        }
+        val navigation = MuPdfStructure.parse(entries.getValue("EPUB/nav.xhtml").toString(Charsets.UTF_8))
+        navigation.descendants("a").forEach { link ->
+            val href = link.getAttribute("href")
+            assertTrue("Chapter/page link must resolve: $href", href.substringAfter('#') in ids.getValue("EPUB/${href.substringBefore('#')}"))
+        }
+        if (sourceMap.size <= EpubPageChunks.PAGES_PER_FILE) {
+            assertEquals("Short PDFs stay in one HTML resource", listOf("EPUB/text/content.xhtml"), documents.keys.toList())
+        } else {
+            assertTrue("Long PDFs must be split", documents.size > 1)
+        }
+        val ranges = documents.values.map { root -> root.descendants("section").map { it.getAttribute("data-source-page").toInt() }.let { "${it.first()}-${it.last()}" } }
+        println("EPUB_CONTENT: files=${documents.size}, pages=$ranges, maxBytes=${entries.filterKeys { it in documents }.values.maxOf { it.size }}")
     }
 
 

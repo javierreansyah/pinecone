@@ -28,7 +28,7 @@ data class ReflowBlock(
     val listMarker: ReflowListMarker? = null,
 )
 
-/** Streaming EPUB 3 writer. Buffers one section to join reference entries over page breaks. */
+/** Streaming EPUB 3 writer with 25-source-page files and stable navigation anchors. */
 class EpubWriter(
     output: OutputStream,
     private val identifier: String,
@@ -40,16 +40,19 @@ class EpubWriter(
     private val zip = ZipOutputStream(output.buffered())
     private val pages = mutableListOf<Pair<String, String>>()
     private val images = mutableMapOf<String, String>()
+    private val outlineAnchors = mutableMapOf<Pair<Int, String>, String>()
     private var finished = false
     private var pendingSection: Element? = null
-    private var hasSvg = false
-    private val content = contentFile.bufferedWriter(Charsets.UTF_8)
+    private val content = EpubPageChunks(contentFile,
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+            "<html xmlns=\"$XHTML\" xmlns:epub=\"$EPUB\" xml:lang=\"${escapeXml(language)}\">" +
+            "<head><title>${escapeXml(title)}</title>" +
+            "<link rel=\"stylesheet\" href=\"../styles/book.css\" type=\"text/css\"/></head><body>")
+
+    internal fun resourceForAnchor(anchor: String): String = content.resourceForAnchor(anchor)
+    internal fun hrefForAnchor(anchor: String): String = content.hrefForAnchor(anchor)
 
     init {
-        content.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
-        content.write("<html xmlns=\"$XHTML\" xmlns:epub=\"$EPUB\" xml:lang=\"${escapeXml(language)}\">")
-        content.write("<head><title>${escapeXml(title)}</title>" +
-            "<link rel=\"stylesheet\" href=\"../styles/book.css\" type=\"text/css\"/></head><body>")
         val mimetype = "application/epub+zip".toByteArray(Charsets.US_ASCII)
         zip.putNextEntry(ZipEntry("mimetype").apply {
             method = ZipEntry.STORED; size = mimetype.size.toLong(); compressedSize = size
@@ -107,8 +110,10 @@ class EpubWriter(
     /** Import cleaned MuPDF XHTML directly; no intermediate custom paragraph/table model. */
     internal fun nativePage(number: Int, body: Element, scanned: Boolean) {
         require(number == pages.size + 1)
+        body.descendants().filter { it.localTag.matches(Regex("h[1-6]")) && it.hasAttribute("id") }.forEach {
+            outlineAnchors.putIfAbsent(number to outlineKey(it.textContent), it.getAttribute("id"))
+        }
         val label = strings.pageLabel(number)
-        if (body.getElementsByTagNameNS(SVG, "svg").length > 0) hasSvg = true
         pages += GeneratedEpubLocations.pageHref(number) to label
         val section = element("section", XHTML) { section ->
             section.setAttribute("xmlns:epub", EPUB)
@@ -130,8 +135,12 @@ class EpubWriter(
             target.appendChild(target.ownerDocument.importNode(section.firstChild, true))
             section.removeChild(section.firstChild)
             target.appendChild(target.ownerDocument.createTextNode(" "))
+            val holder = target.ownerDocument.createElementNS(XHTML, "span").apply {
+                if (continuation.hasAttribute("id")) setAttribute("id", continuation.getAttribute("id"))
+            }
+            target.appendChild(holder)
             continuation.childNodes.let { nodes -> (0 until nodes.length).map { nodes.item(it) } }
-                .forEach { target.appendChild(target.ownerDocument.importNode(it, true)) }
+                .forEach { holder.appendChild(target.ownerDocument.importNode(it, true)) }
             section.removeChild(continuation)
         }
         flushPending()
@@ -252,7 +261,7 @@ class EpubWriter(
     }
 
     private fun flushPending() {
-        pendingSection?.let { content.write(serialize(it).substringAfter("?>")) }
+        pendingSection?.let(content::append)
         pendingSection = null
     }
 
@@ -286,7 +295,6 @@ class EpubWriter(
     }
 
     private fun Element.appendMath(math: ReflowMath, transcript: String) {
-        hasSvg = true
         val box = math.bounds
         val svg = ownerDocument.createElementNS(SVG, "svg")
         appendChild(svg)
@@ -379,11 +387,10 @@ class EpubWriter(
     fun finish(outline: List<Pair<String, Int>> = emptyList()) {
         check(!finished && pages.isNotEmpty())
         flushPending()
-        content.write("</body></html>")
-        content.close()
-        zip.putNextEntry(ZipEntry("EPUB/${GeneratedEpubLocations.CONTENT_HREF}"))
-        contentFile.inputStream().use { it.copyTo(zip) }
-        zip.closeEntry()
+        content.finish { href, bytes -> write("EPUB/$href", bytes) }
+        pages.indices.forEach { index ->
+            pages[index] = content.hrefForAnchor("source-page-${index + 1}") to pages[index].second
+        }
         write("EPUB/nav.xhtml", xml("html", XHTML) { html ->
             html.setAttribute("xmlns:epub", EPUB)
             html.setAttribute("xml:lang", language)
@@ -395,7 +402,9 @@ class EpubWriter(
                     child("ol").apply {
                         val entries = outline.filter { it.second in 1..pages.size }
                         (entries.ifEmpty { pages.mapIndexed { index, page -> page.second to index + 1 } }).forEach { (name, page) ->
-                            child("li").child("a", name).setAttribute("href", pages[page - 1].first)
+                            val anchor = outlineAnchors[page to outlineKey(name)]
+                            child("li").child("a", name).setAttribute("href",
+                                anchor?.let(content::hrefForAnchor) ?: pages[page - 1].first)
                         }
                     }
                 }
@@ -439,8 +448,10 @@ class EpubWriter(
                 }
                 item("nav", "nav.xhtml", "application/xhtml+xml").setAttribute("properties", "nav")
                 item("css", "styles/book.css", "text/css")
-                item("content", GeneratedEpubLocations.CONTENT_HREF, "application/xhtml+xml").apply {
-                    if (hasSvg) setAttribute("properties", "svg")
+                content.resources.forEachIndexed { index, resource ->
+                    item(if (index == 0) "content" else "content-${index + 1}", resource.href, "application/xhtml+xml").apply {
+                        if (resource.hasSvg) setAttribute("properties", "svg")
+                    }
                 }
                 images.entries.forEachIndexed { index, (name, mediaType) ->
                     item(
@@ -451,7 +462,9 @@ class EpubWriter(
                 }
             }
             root.child("spine").apply {
-                child("itemref").setAttribute("idref", "content")
+                content.resources.indices.forEach { index ->
+                    child("itemref").setAttribute("idref", if (index == 0) "content" else "content-${index + 1}")
+                }
             }
         }.toByteArray())
         zip.finish()
@@ -467,7 +480,7 @@ class EpubWriter(
         try {
             content.close()
         } finally {
-            try { zip.close() } finally { contentFile.delete() }
+            zip.close()
         }
     }
 
@@ -477,6 +490,8 @@ class EpubWriter(
         private const val EPUB = "http://www.idpf.org/2007/ops"
         private const val OPF = "http://www.idpf.org/2007/opf"
         private const val DC = "http://purl.org/dc/elements/1.1/"
+        private fun outlineKey(text: String) = text.trim().lowercase().replace(Regex("^\\d+(?:\\.\\d+)*[.)]?\\s+"), "")
+            .replace(Regex("\\s+"), " ")
 
         internal fun Element.child(name: String, text: String? = null): Element =
             ownerDocument.createElementNS(namespaceURI, name).also {

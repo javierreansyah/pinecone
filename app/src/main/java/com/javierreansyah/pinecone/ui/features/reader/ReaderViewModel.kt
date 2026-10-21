@@ -39,6 +39,7 @@ import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Locator.Companion.fromJSON
 import org.readium.r2.shared.publication.Publication
+import org.readium.r2.shared.publication.epub.pageList
 import org.readium.r2.shared.publication.services.positions
 
 data class PineconeThemeColors(
@@ -311,11 +312,9 @@ class ReaderViewModel(
 
     private fun getChapterTitle(locator: Locator): String? {
         val href = locator.href.toString().substringBefore("#")
-        GeneratedEpubLocations.page(locator.href.toString(), locator.locations["cssSelector"] as? String,
-            locator.locations.fragments)?.let { page ->
-            return tableOfContents.lastOrNull { link ->
-                GeneratedEpubLocations.page(link.href.toString())?.let { it <= page } == true
-            }?.title
+        GeneratedEpubLocations.chapterIndex(tableOfContents.map { it.href.toString() }, locator.href.toString(),
+            locator.locations["cssSelector"] as? String, locator.locations.fragments)?.let { index ->
+            return tableOfContents.getOrNull(index)?.title
         }
         return findTitleInLinks(href, tableOfContents)
     }
@@ -362,13 +361,20 @@ class ReaderViewModel(
 
         val allPositions = _positions.value
         val pageIndex = allPositions.findIndexForLocator(locator)
+        val displayedPage: Int? = if (activeRendition.value == "read-mode") readModePage(locator)
+            else (if (pageIndex != -1) pageIndex + 1 else null)
+        val displayedTotal: Int? = if (activeRendition.value == "read-mode") {
+            _publication.value?.pageList?.size?.takeIf { count -> count > 0 }
+        } else allPositions.size.takeIf { count -> count > 0 }
 
         _bookState.update {
             it.copy(
                 chapter = locator.title ?: getChapterTitle(locator),
                 progression = locator.locations.totalProgression ?: 0.0,
-                currentPage = if (pageIndex != -1) pageIndex + 1 else null,
-                totalPages = if (allPositions.isNotEmpty()) allPositions.size else null,
+                currentPage = if (activeRendition.value == "read-mode") {
+                    (displayedPage ?: it.currentPage ?: 1).coerceIn(1, displayedTotal ?: Int.MAX_VALUE)
+                } else displayedPage,
+                totalPages = displayedTotal,
             )
         }
     }
@@ -378,7 +384,8 @@ class ReaderViewModel(
     }
 
     fun getPositionLabel(locator: Locator): String {
-        val posIndex = _positions.value.findIndexForLocator(locator)
+        val posIndex = if (activeRendition.value == "read-mode") readModePage(locator)?.minus(1) ?: -1
+            else _positions.value.findIndexForLocator(locator)
 
         return when {
             posIndex != -1 -> application.resources.getQuantityString(
@@ -392,6 +399,16 @@ class ReaderViewModel(
 
             else -> ""
         }
+    }
+
+    // Readium positions are byte-size estimates, not rendered screens. Inline
+    // SVG glyph paths can make a single screen span many such positions.
+    private fun readModePage(locator: Locator): Int? {
+        if (activeRendition.value != "read-mode") return null
+        val pageCount = _publication.value?.pageList?.size?.takeIf { it > 0 }
+        return GeneratedEpubLocations.page(
+            locator.href.toString(), locator.locations["cssSelector"] as? String, locator.locations.fragments,
+        )?.takeIf { page -> page >= 1 && (pageCount == null || page <= pageCount) }
     }
 
     fun getChapterPageLabel(link: Link): String {
@@ -466,8 +483,10 @@ class ReaderViewModel(
                 val stored = target.lastLocatorJson?.let { fromJSON(JSONObject(it)) }
                 val nextLocator = stored?.takeIf { mappedPage(it) == sourcePage }
                     ?: if (destination == "read-mode") {
+                        val resource = sourceMap.firstOrNull { it.page == sourcePage }?.href?.substringBefore('#')
                         next.readingOrder.find {
-                            GeneratedEpubLocations.isContent(it.href.toString())
+                            if (resource != null) GeneratedEpubLocations.sameContentResource(it.href.toString(), resource)
+                            else GeneratedEpubLocations.isContent(it.href.toString())
                         }?.let(next::locatorFromLink)?.copyWithLocations(
                             fragments = listOf("source-page-$sourcePage"),
                         )

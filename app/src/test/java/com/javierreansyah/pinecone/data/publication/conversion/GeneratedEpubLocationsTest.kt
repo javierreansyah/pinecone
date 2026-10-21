@@ -7,6 +7,91 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class GeneratedEpubLocationsTest {
+    @Test fun reparsedBlockSuffixesStillIdentifyTheOriginalPdfPage() {
+        val href = "EPUB/text/content.xhtml"
+        assertEquals(6, GeneratedEpubLocations.page(href, "#page-6-native-27-new"))
+        assertEquals(6, GeneratedEpubLocations.page(href, "#page-6-native-27-new-run-0"))
+        assertEquals(6, GeneratedEpubLocations.page(href, "#page-6-native-27-new-new > span:nth-child(2)"))
+    }
+    @Test fun nativeSvgDescendantsKeepTheSourcePageInsteadOfUsingTheirGlyphOrPositionNumbers() {
+        val href = "EPUB/text/content-0004.xhtml"
+        listOf("#page-83-visual-1-clip_1", "#page-83-visual-1-font_2_621",
+            "#page-83-visual-1-font_2_621 use:nth-child(154)", "#page-83-native-154-run-0",
+            "#page-83 .math-layout > svg > g > path").forEach { selector ->
+            assertEquals(selector, 83, GeneratedEpubLocations.page(href, selector))
+        }
+        assertEquals(83, GeneratedEpubLocations.page(href, fragments = listOf("page-83-visual-1-clip_1")))
+        assertEquals(83, GeneratedEpubLocations.page("$href#page-83-visual-1-font_2_621"))
+        assertNull(GeneratedEpubLocations.page(href, "#glyph621"))
+    }
+    @Test fun packageAndContainerPathsIdentifyTheSameGeneratedResource() {
+        assertTrue(GeneratedEpubLocations.sameContentResource("text/content.xhtml", "EPUB/text/content.xhtml"))
+        assertTrue(GeneratedEpubLocations.sameContentResource("text/content.xhtml#source-page-54", "/EPUB/text/content.xhtml"))
+        assertTrue(GeneratedEpubLocations.sameContentResource("text/content-0002.xhtml", "EPUB/text/content-0002.xhtml"))
+        assertFalse(GeneratedEpubLocations.sameContentResource("text/content.xhtml", "EPUB/text/content-0002.xhtml"))
+        assertFalse(GeneratedEpubLocations.sameContentResource("chapter.xhtml", "EPUB/chapter.xhtml"))
+    }
+    @Test fun locationsFromSplitRenditionsReturnToTheSingleFileWithoutLosingTheirTextRange() {
+        val anchor = "page-54-block-3"
+        val block = SourceBlock(anchor, 0f, 0f, 100f, 20f, listOf(SourceTextRun("$anchor-run-0", 0, 20)),
+            href = "text/content-0007.xhtml")
+        val old = listOf(SourcePage(54, "text/content-0006.xhtml#source-page-54", listOf(block)))
+        val fresh = listOf(SourcePage(54, "text/content.xhtml#source-page-54", listOf(block.copy(href = "text/content.xhtml"))))
+        val saved = """{"href":"text/content-0007.xhtml","text":{"highlight":"selected words"},"locations":{
+            "position":150,"progression":0.7,"cssSelector":"#$anchor-run-0","domRange":{
+            "start":{"cssSelector":"#$anchor-run-0","charOffset":2},"end":{"cssSelector":"#$anchor-run-0","charOffset":8}}}}"""
+        val migrated = Json.parseToJsonElement(GeneratedEpubLocations.remap(saved, old, fresh)!!).jsonObject
+        assertEquals("text/content.xhtml", migrated.getValue("href").jsonPrimitive.content)
+        assertEquals("selected words", migrated.getValue("text").jsonObject.getValue("highlight").jsonPrimitive.content)
+        val locations = migrated.getValue("locations").jsonObject
+        assertTrue(locations.containsKey("domRange"))
+        assertFalse(locations.containsKey("position")); assertFalse(locations.containsKey("progression"))
+    }
+    @Test fun chaptersOnTheSamePdfPageFollowTheVisibleBlockAcrossResources() {
+        val chapters = listOf("text/content.xhtml#page-2-block-0", "text/content-0002.xhtml#page-2-block-12",
+            "text/content-0002.xhtml#page-2-block-20")
+        assertEquals(0, GeneratedEpubLocations.chapterIndex(chapters, "text/content.xhtml", "#page-2-block-5-run-0"))
+        assertEquals(1, GeneratedEpubLocations.chapterIndex(chapters, "text/content-0002.xhtml", "#page-2-block-14-run-1"))
+        assertEquals(2, GeneratedEpubLocations.chapterIndex(chapters, "text/content-0003.xhtml", "#page-3-block-0"))
+    }
+    @Test fun savedLocationsFollowBlocksWhenOnePdfPageSpansSeveralResources() {
+        val block = SourceBlock("page-3-block-4", 0f, 0f, 100f, 20f,
+            listOf(SourceTextRun("page-3-block-4-run-0", 0, 20)))
+        val old = listOf(SourcePage(3, "text/content.xhtml#source-page-3", listOf(block)))
+        val fresh = listOf(SourcePage(3, "text/content-0002.xhtml#source-page-3",
+            listOf(block.copy(href = "text/content-0003.xhtml"))))
+        val saved = """{"href":"text/content.xhtml","text":{"highlight":"selected"},"locations":{
+            "position":90,"progression":0.6,"totalProgression":0.4,"fragments":["source-page-3"],
+            "cssSelector":"#page-3-block-4-run-0","domRange":{"start":{"cssSelector":"#page-3-block-4-run-0","charOffset":2},
+            "end":{"cssSelector":"#page-3-block-4-run-0","charOffset":8}}}}"""
+        val migrated = Json.parseToJsonElement(GeneratedEpubLocations.remap(saved, old, fresh)!!).jsonObject
+        assertEquals("text/content-0003.xhtml", migrated.getValue("href").jsonPrimitive.content)
+        val locations = migrated.getValue("locations").jsonObject
+        assertFalse(locations.containsKey("position")); assertFalse(locations.containsKey("progression"))
+        assertTrue(locations.containsKey("domRange"))
+        assertEquals(3, GeneratedEpubLocations.page("text/content-0003.xhtml", "#page-3-block-4-run-0"))
+        assertEquals(GeneratedEpubLocations.remap(saved, old, fresh), GeneratedEpubLocations.remap(
+            GeneratedEpubLocations.remap(saved, old, fresh), fresh, fresh))
+    }
+
+    @Test fun aHighlightCrossingANewFileBoundaryKeepsItsQuoteAndStartAnchor() {
+        val a = SourceBlock("page-1-block-0", 0f, 0f, 100f, 20f, listOf(SourceTextRun("page-1-block-0-run-0", 0, 10)))
+        val b = SourceBlock("page-1-block-1", 0f, 30f, 100f, 20f, listOf(SourceTextRun("page-1-block-1-run-0", 0, 10)))
+        val old = listOf(SourcePage(1, "text/content.xhtml", listOf(a, b)))
+        val fresh = listOf(SourcePage(1, "text/content.xhtml", listOf(a.copy(href = "text/content.xhtml"), b.copy(href = "text/content-0002.xhtml"))))
+        val saved = """{"href":"text/content.xhtml","text":{"highlight":"selected quote"},"locations":{"cssSelector":"#page-1-block-0",
+            "domRange":{"start":{"cssSelector":"#page-1-block-0","charOffset":1},"end":{"cssSelector":"#page-1-block-1","charOffset":5}}}}"""
+        val migrated = Json.parseToJsonElement(GeneratedEpubLocations.remap(saved, old, fresh)!!).jsonObject
+        assertEquals("selected quote", migrated.getValue("text").jsonObject.getValue("highlight").jsonPrimitive.content)
+        assertFalse(migrated.getValue("locations").jsonObject.containsKey("domRange"))
+        assertEquals("text/content.xhtml", migrated.getValue("href").jsonPrimitive.content)
+    }
+    @Test fun reparsedNativeBlocksStillIdentifyTheOriginalPdfPage() {
+        assertEquals(54, GeneratedEpubLocations.page(GeneratedEpubLocations.CONTENT_HREF,
+            "#page-54-native-3-run-2"))
+        assertEquals(54, GeneratedEpubLocations.page(GeneratedEpubLocations.CONTENT_HREF,
+            fragments = listOf("source-page-54")))
+    }
     @Test
     fun rebasesBookmarkAndHighlightSelectorsWhilePreservingQuotesAndRangeOffsets() {
         val original = """{"href":"text/page-12.xhtml","type":"application/xhtml+xml","title":"Methods",
