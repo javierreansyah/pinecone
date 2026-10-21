@@ -54,16 +54,17 @@ internal class MuPdfReflowCleaner(private val profile: MuPdfReflowProfile) {
         val document = root.ownerDocument
         val body = document.createElementNS(XHTML, "div")
         val used = mutableSetOf<MuPdfText>()
+        val foldedBlocks = page.blocks.map { it to folded(it.text) }
         fun match(element: Element, scope: FigureBounds = page.bounds): MuPdfText? {
             val text = folded(element.textContent)
             if (text.isEmpty()) return null
-            val candidates = page.blocks.filter { scope.containsCenter(it.bounds) }
-            val exact = candidates.filter { folded(it.text) == text }
+            val candidates = foldedBlocks.filter { scope.containsCenter(it.first.bounds) }
+            val exact = candidates.filter { it.second == text }
             val choices = exact.ifEmpty { candidates.filter {
-                val native = folded(it.text)
+                val native = it.second
                 native.contains(text) || (native.length > 3 && text.contains(native))
             } }
-            return (choices.firstOrNull { it !in used } ?: choices.firstOrNull())?.also { used += it }
+            return (choices.firstOrNull { it.first !in used } ?: choices.firstOrNull())?.first?.also { used += it }
         }
         var imageIndex = 0
         val units = mutableListOf<UnitBlock>()

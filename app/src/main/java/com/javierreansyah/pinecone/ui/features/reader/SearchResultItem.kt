@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.reader
 
+import com.javierreansyah.pinecone.reader.pdf.PdfSearchMatch
 import org.readium.r2.shared.publication.Locator
 
 data class SearchResultItem(
@@ -15,4 +16,5 @@ data class SearchResultItem(
     val highlight: String?,
 
     val textAfter: String?,
+    val pdfMatch: PdfSearchMatch? = null,
 )

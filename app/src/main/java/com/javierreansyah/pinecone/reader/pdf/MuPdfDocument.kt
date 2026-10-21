@@ -44,6 +44,47 @@ class MuPdfDocument(private val native: Document) : PdfDocument {
         convert(doc.loadOutline())
     }
 
+    internal suspend fun search(index: Int, query: String): PdfSearchPage = withContext(Dispatchers.Default) {
+        access { doc ->
+            val page = doc.loadPage(index)
+            try {
+                val bounds = page.bounds
+                val width = bounds.x1 - bounds.x0
+                val height = bounds.y1 - bounds.y0
+                // StructuredText.search() in MuPDF 1.28.5 aborts in its JNI toArray call.
+                // Glyph walking is already used by our layout extractor; disable the separate
+                // unsafe vector callback and keep ordinary coordinates after native cleanup.
+                val structured = page.toStructuredText("vectors=no")
+                try {
+                    fun point(x: Float, y: Float) = PdfSearchPoint((x - bounds.x0) / width, (y - bounds.y0) / height)
+                    val text = StringBuilder()
+                    val glyphs = mutableListOf<PdfSearchGlyph>()
+                    var lineIndex = 0
+                    if (width > 0f && height > 0f) structured.blocks.forEach { block ->
+                        block.lines.forEach { line ->
+                            line.chars.forEach { char ->
+                                if (Character.isWhitespace(char.c)) {
+                                    if (text.isNotEmpty() && text.last() != ' ') text.append(' ')
+                                } else {
+                                    val start = text.length
+                                    text.appendCodePoint(char.c.takeIf(Character::isValidCodePoint) ?: 0xFFFD)
+                                    val quad = char.quad
+                                    glyphs += PdfSearchGlyph(start, text.length, lineIndex,
+                                        PdfSearchQuad(point(quad.ul_x, quad.ul_y), point(quad.ur_x, quad.ur_y),
+                                            point(quad.lr_x, quad.lr_y), point(quad.ll_x, quad.ll_y)))
+                                }
+                            }
+                            if (text.isNotEmpty() && text.last() != ' ') text.append(' ')
+                            lineIndex++
+                        }
+                    }
+                    val content = text.toString()
+                    PdfSearchPage(content, pdfSearchHits(content, query, glyphs))
+                } finally { structured.destroy() }
+            } finally { page.destroy() }
+        }
+    }
+
     suspend fun render(index: Int, width: Int = 1400): Bitmap = withContext(Dispatchers.Default) {
         access { doc ->
             val page = doc.loadPage(index)

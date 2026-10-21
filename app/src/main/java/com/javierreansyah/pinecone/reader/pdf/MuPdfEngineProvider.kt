@@ -5,6 +5,8 @@
 
 package com.javierreansyah.pinecone.reader.pdf
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import org.readium.r2.navigator.OverflowableNavigator
 import org.readium.r2.navigator.SimpleOverflow
 import org.readium.r2.navigator.pdf.PdfDocumentFragmentInput
@@ -16,10 +18,12 @@ import org.readium.r2.navigator.util.createFragmentFactory
 import org.readium.r2.shared.publication.Metadata
 import org.readium.r2.shared.publication.Publication
 
-class MuPdfEngineProvider :
+class MuPdfEngineProvider(
+    private val searchHighlights: StateFlow<PdfSearchHighlights> = MutableStateFlow(PdfSearchHighlights()),
+) :
     PdfEngineProvider<MuPdfSettings, MuPdfPreferences, MuPdfPreferencesEditor> {
     override fun createDocumentFragmentFactory(input: PdfDocumentFragmentInput<MuPdfSettings>): SingleFragmentFactory<MuPdfDocumentFragment> =
-        createFragmentFactory { MuPdfDocumentFragment(input) }
+        createFragmentFactory { MuPdfDocumentFragment(input, searchHighlights) }
 
     override fun computeSettings(metadata: Metadata, preferences: MuPdfPreferences): MuPdfSettings =
         MuPdfSettings(preferences)

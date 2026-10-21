@@ -5,15 +5,21 @@ package com.javierreansyah.pinecone.ui.features.reader
 import android.os.Bundle
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.publication.PublicationFormats
 import com.javierreansyah.pinecone.data.publication.ReaderProfile
 import com.javierreansyah.pinecone.reader.pdf.MuPdfEngineProvider
 import com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences
 import com.javierreansyah.pinecone.reader.pdf.MuPdfSettings
+import com.javierreansyah.pinecone.reader.pdf.PdfSearchHighlights
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.readium.r2.navigator.Navigator
 import org.readium.r2.navigator.OverflowableNavigator
@@ -41,6 +47,13 @@ class NavigatorController(
     private var publication: Publication? = null
     private var locationJob: Job? = null
     private var preferencesJob: Job? = null
+    private var searchNavigationJob: Job? = null
+    private val pdfSearchHighlights = searchViewModel.searchState.map { state ->
+        PdfSearchHighlights(
+            matches = if (state.searchPerformed) state.results.mapNotNull { it.pdfMatch } else emptyList(),
+            focusedIndex = state.activeIndex.takeIf { state.isInNavMode },
+        )
+    }.stateIn(lifecycleOwner.lifecycleScope, SharingStarted.WhileSubscribed(5_000), PdfSearchHighlights())
 
     init {
         lifecycleOwner.lifecycle.addObserver(this)
@@ -48,7 +61,8 @@ class NavigatorController(
 
     fun setupNavigator(publication: Publication) {
         if (this.publication === publication) return
-        locationJob?.cancel(); preferencesJob?.cancel(); epub?.close(); epub = null
+        locationJob?.cancel(); preferencesJob?.cancel(); searchNavigationJob?.cancel()
+        epub?.close(); epub = null
         navigator = null
         fragmentManager.fragments.filter { it.id == R.id.navigator_container }.forEach {
             fragmentManager.beginTransaction().remove(it).commitNow()
@@ -88,7 +102,7 @@ class NavigatorController(
             }
 
             ReaderProfile.PDF -> {
-                val factory = PdfNavigatorFactory(publication, MuPdfEngineProvider())
+                val factory = PdfNavigatorFactory(publication, MuPdfEngineProvider(pdfSearchHighlights))
                 fragmentManager.fragmentFactory = factory.createFragmentFactory(
                     viewModel.currentLocator.value ?: viewModel.initialLocator,
                     viewModel.pdfPreferences.value
@@ -131,6 +145,13 @@ class NavigatorController(
                 viewModel.savePosition(it, rendition)
             }
         }
+        searchNavigationJob = lifecycleOwner.lifecycleScope.launch {
+            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                searchViewModel.navigateToLocator.collect { locator ->
+                    nav.go(locator, animated = true)
+                }
+            }
+        }
     }
 
     fun go(locator: Locator) {
@@ -148,7 +169,7 @@ class NavigatorController(
     }
 
     override fun onDestroy(owner: LifecycleOwner) {
-        locationJob?.cancel(); preferencesJob?.cancel(); epub?.close()
+        locationJob?.cancel(); preferencesJob?.cancel(); searchNavigationJob?.cancel(); epub?.close()
         owner.lifecycle.removeObserver(this)
     }
 }
