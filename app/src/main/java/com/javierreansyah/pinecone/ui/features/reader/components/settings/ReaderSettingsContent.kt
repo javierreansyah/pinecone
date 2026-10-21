@@ -182,19 +182,6 @@ fun ReaderSettingsContent(
                                         )
                                     )
                                 }
-                                if (preferences.verticalText.isEffective) PreferenceSwitch(
-                                    stringResource(R.string.reader_vertical_text),
-                                    preferences.verticalText.value
-                                        ?: preferences.verticalText.effectiveValue,
-                                ) {
-                                    onSettingsChange(
-                                        settings.copy(
-                                            formatPreferences = settings.formatPreferences.copy(
-                                                epubVerticalText = it
-                                            )
-                                        )
-                                    )
-                                }
                             }
                         }
 
@@ -211,10 +198,27 @@ fun ReaderSettingsContent(
                         }
 
                         2 -> {
-                            PreferenceSwitch(stringResource(R.string.reader_settings_this_publication), useBookSettings, onUseBookSettings)
                             AdvancedTabContent(
                                 settings = settings,
                                 onSettingsChange = onSettingsChange,
+                                leadingContent = {
+                                    PreferenceSwitch(stringResource(R.string.reader_settings_this_publication), useBookSettings, onUseBookSettings)
+                                    editor?.let { preferences ->
+                                        if (preferences.verticalText.isEffective) PreferenceSwitch(
+                                            stringResource(R.string.reader_vertical_text),
+                                            preferences.verticalText.value
+                                                ?: preferences.verticalText.effectiveValue,
+                                        ) {
+                                            onSettingsChange(
+                                                settings.copy(
+                                                    formatPreferences = settings.formatPreferences.copy(
+                                                        epubVerticalText = it
+                                                    )
+                                                )
+                                            )
+                                        }
+                                    }
+                                },
                             ) { showRestoreDefaultWarning = true }
                         }
                     }
@@ -317,7 +321,8 @@ fun ReaderSettingsContent(
                             formatPreferences = settings.formatPreferences.copy(
                                 epubSpread = "auto",
                                 epubLigatures = null,
-                                epubVerticalText = null
+                                epubVerticalText = null,
+                                epubImageFilterFollowTheme = true
                             ),
                         )
                         onSettingsChange(defaultReaderSettings)
@@ -765,6 +770,28 @@ private fun LightingTabContent(
             },
         )
     }
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(horizontal = 16.dp),
+    ) {
+        Text(stringResource(R.string.reader_image_filter_activation), style = MaterialTheme.typography.titleMedium)
+        val modes = linkedMapOf(
+            true to stringResource(R.string.reader_follow_theme),
+            false to stringResource(R.string.reader_always),
+        )
+        SegmentedButtonGroup(
+            options = modes.values.toList(),
+            icons = emptyList(),
+            selected = modes.getValue(settings.formatPreferences.epubImageFilterFollowTheme),
+            onSelected = { label ->
+                onSettingsChange(settings.copy(formatPreferences = settings.formatPreferences.copy(
+                    epubImageFilterFollowTheme = modes.entries.first { it.value == label }.key,
+                )))
+            },
+        )
+    }
+
 }
 
 @Composable
@@ -830,12 +857,15 @@ internal fun AdvancedTabContent(
     settings: ReaderSettings,
     onSettingsChange: (ReaderSettings) -> Unit,
     includeTextPreferences: Boolean = true,
+    leadingContent: @Composable () -> Unit = {},
     onRestoreDefaultsClick: () -> Unit,
 ) {
     var showDictionaryDialog by remember { mutableStateOf(value = false) }
     var showOrientationDialog by remember { mutableStateOf(value = false) }
 
     Column {
+        leadingContent()
+
 
         if (includeTextPreferences) {
             Row(

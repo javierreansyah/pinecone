@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library.filters
 
+import com.javierreansyah.pinecone.ui.features.library.fileFormat
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -114,6 +115,7 @@ fun FilterResultScreen(
             else -> viewModel.getBooksByTag(filterValue)
         }
     }
+    val unfilteredBooks by baseBooksFlow.collectAsState(initial = emptyList())
     val books by viewModel.getFilteredAndSortedBooks(baseBooksFlow)
         .collectAsState(initial = emptyList())
 
@@ -122,6 +124,7 @@ fun FilterResultScreen(
         filterValue = filterValue,
         uiState = uiState,
         allBooks = allBooks,
+        availableFormats = unfilteredBooks.mapTo(mutableSetOf()) { it.fileFormat() },
         books = books,
         suggestionList = suggestionList,
         onNavigateBack = onNavigateBack,
@@ -157,6 +160,7 @@ private fun FilterResultContent(
     filterValue: String,
     uiState: FilterResultUiState,
     allBooks: List<Book>,
+    availableFormats: Set<FileFilter>,
     books: List<Book>,
     suggestionList: List<String>,
     onNavigateBack: () -> Unit,
@@ -298,6 +302,7 @@ private fun FilterResultContent(
         filterValue = filterValue,
         uiState = uiState,
         allBooks = allBooks,
+        availableFormats = availableFormats,
         selectedBookContext = selectedBookContext,
         showFilterSheet = showFilterSheet,
         showDeleteConfirm = showDeleteConfirm,
@@ -751,6 +756,7 @@ private fun FilterResultDialogsAndSheets(
     filterValue: String,
     uiState: FilterResultUiState,
     allBooks: List<Book>,
+    availableFormats: Set<FileFilter>,
     selectedBookContext: Pair<String, String?>?,
     showFilterSheet: Boolean,
     showDeleteConfirm: Boolean,
@@ -772,6 +778,7 @@ private fun FilterResultDialogsAndSheets(
     if (showFilterSheet) {
         FilterResultBottomSheet(
             preferences = uiState.bookPreferences,
+            availableFormats = availableFormats,
             onLayoutModeChange = onLayoutModeChange,
             onSortTypeChange = onSortTypeChange,
             onStatusToggle = onStatusToggle,

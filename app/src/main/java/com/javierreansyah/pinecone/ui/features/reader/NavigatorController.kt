@@ -91,7 +91,7 @@ class NavigatorController(
                 val factory = PdfNavigatorFactory(publication, MuPdfEngineProvider())
                 fragmentManager.fragmentFactory = factory.createFragmentFactory(
                     viewModel.currentLocator.value ?: viewModel.initialLocator,
-                    viewModel.formatSettings.value.pdf
+                    viewModel.pdfPreferences.value
                 )
                 val fragment = fragmentManager.fragmentFactory.instantiate(
                     javaClass.classLoader ?: return,
@@ -103,7 +103,7 @@ class NavigatorController(
                 val pdf = fragment as PdfNavigatorFragment<MuPdfSettings, MuPdfPreferences>
                 navigator = pdf
                 preferencesJob = lifecycleOwner.lifecycleScope.launch {
-                    viewModel.formatSettings.collect { pdf.submitPreferences(it.pdf) }
+                    viewModel.pdfPreferences.collect { pdf.submitPreferences(it) }
                 }
             }
 

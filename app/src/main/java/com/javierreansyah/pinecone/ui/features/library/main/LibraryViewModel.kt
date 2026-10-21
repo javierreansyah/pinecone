@@ -343,7 +343,7 @@ class LibraryViewModel(
             allShelves = shelvesEntities,
             globalSpaceId = spaceId,
             hasUnsortedBooks = hasUnsorted && settings.unsortedEnabled,
-            showAllSpaces = true,
+            showAllSpaces = settings.showAllSpaces,
             spacesEnabled = settings.spacesEnabled,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LibraryScreenUiState())

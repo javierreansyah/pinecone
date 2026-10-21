@@ -11,13 +11,15 @@ data class MuPdfPreferences(
     val rightToLeft: Boolean = false,
     val fitWidth: Boolean = false,
     val pageSpacing: Double = 12.0,
-    val invert: Boolean = false,
+    val invert: Boolean? = null,
 ) : Configurable.Preferences<MuPdfPreferences> {
     init {
         require(pageSpacing.isFinite() && pageSpacing in 0.0..64.0)
     }
 
     override fun plus(other: MuPdfPreferences): MuPdfPreferences = other
+
+    fun resolveTheme(isDark: Boolean): MuPdfPreferences = copy(invert = invert ?: isDark)
 }
 
 data class MuPdfSettings(val preferences: MuPdfPreferences) : Configurable.Settings

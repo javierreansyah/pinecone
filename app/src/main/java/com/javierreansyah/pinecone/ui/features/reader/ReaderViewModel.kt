@@ -12,6 +12,8 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.FormatPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
+import com.javierreansyah.pinecone.data.local.preferences.epubImageFilterCss
+import com.javierreansyah.pinecone.data.local.preferences.readingThemeIsDark
 import com.javierreansyah.pinecone.data.local.preferences.withReadingPreferencesFrom
 import com.javierreansyah.pinecone.data.publication.PublicationFormats
 import com.javierreansyah.pinecone.data.publication.ReaderProfile
@@ -71,6 +73,7 @@ data class ControlsState(
     val showToc: Boolean = false,
     val showSettings: Boolean = false,
     val showSearch: Boolean = false,
+    val contentsInitialTab: Int = 0,
 )
 
 data class ExternalLinkState(
@@ -146,6 +149,15 @@ class ReaderViewModel(
             .stateIn(viewModelScope, SharingStarted.Eagerly, -1.0f)
 
     val systemDarkThemeFlow: MutableStateFlow<Boolean> = MutableStateFlow(initialSystemDark)
+
+    val pdfPreferences = combine(settingsFlow, systemDarkThemeFlow) { settings, systemDark ->
+        settings.formatPreferences.pdf.resolveTheme(settings.readingThemeIsDark(systemDark))
+    }.stateIn(viewModelScope, SharingStarted.Eagerly,
+        FormatPreferences().pdf.resolveTheme(initialSystemDark))
+
+    val imageFilterCss = combine(settingsFlow, systemDarkThemeFlow) { settings, systemDark ->
+        settings.epubImageFilterCss(systemDark)
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, "")
 
     val themeColors: StateFlow<PineconeThemeColors> = combine(
         settingsFlow, systemDarkThemeFlow,
@@ -612,7 +624,11 @@ class ReaderViewModel(
     }
 
     fun showToc() {
-        _controlsState.update { it.copy(showToc = true) }
+        _controlsState.update { it.copy(showToc = true, showSettings = false, contentsInitialTab = 0) }
+    }
+
+    fun showBookmarks() {
+        _controlsState.update { it.copy(showToc = true, showSettings = false, contentsInitialTab = 1) }
     }
 
     fun hideToc() {
@@ -620,7 +636,7 @@ class ReaderViewModel(
     }
 
     fun showSettings() {
-        _controlsState.update { it.copy(showSettings = true) }
+        _controlsState.update { it.copy(showSettings = true, showToc = false) }
     }
 
     fun hideSettings() {

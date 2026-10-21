@@ -81,6 +81,7 @@ fun ReaderBottomSheet(
     getPositionLabel: (Locator) -> String,
     getChapterPageLabel: (Link) -> String,
     modifier: Modifier = Modifier,
+    initialTab: Int = 0,
 ) {
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current
@@ -92,7 +93,7 @@ fun ReaderBottomSheet(
         initialValue = SheetValue.Hidden,
         enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
     )
-    val pagerState = rememberPagerState { 3 }
+    val pagerState = rememberPagerState(initialPage = initialTab.coerceIn(0, 2)) { 3 }
     val coroutineScope = rememberCoroutineScope()
 
     var showAddNoteDialog by remember { mutableStateOf(value = false) }

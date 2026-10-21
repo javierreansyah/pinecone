@@ -195,6 +195,7 @@ fun <T> MultiToggleGroupSection(
     options: List<T>,
     selectedOptions: Set<T>,
     onOptionToggled: (T) -> Unit,
+    singleSelection: Boolean = false,
     optionContent: @Composable (T) -> Unit,
 ) {
     OptionsBottomSheetSection(title = title) {
@@ -206,6 +207,7 @@ fun <T> MultiToggleGroupSection(
             options.forEachIndexed { index, option ->
                 val isSelected = selectedOptions.contains(option)
                 ToggleButton(
+                    modifier = if (singleSelection) Modifier.semantics { role = Role.RadioButton } else Modifier,
                     checked = isSelected,
                     onCheckedChange = { onOptionToggled(option) },
                     shapes = when (index) {
@@ -227,6 +229,7 @@ fun <T> MultiToggleGroupSection(
 fun LibraryFilterBottomSheet(
     isShelvesTab: Boolean,
     preferences: FilterSortPreferences,
+    availableFormats: Set<FileFilter>,
     onLayoutModeChange: (LayoutMode) -> Unit,
     onSortTypeChange: (SortType) -> Unit,
     onStatusToggle: (StatusFilter) -> Unit,
@@ -237,19 +240,6 @@ fun LibraryFilterBottomSheet(
     onDismiss: () -> Unit,
 ) {
     OptionsBottomSheet(onDismissRequest = onDismiss) {
-        SingleToggleGroupSection(
-            title = stringResource(R.string.library_label_show),
-            options = LibraryView.entries,
-            selectedOption = libraryView,
-            onOptionSelected = onLibraryViewChange,
-        ) { view -> Text(stringResource(when (view) {
-            LibraryView.Both -> R.string.library_show_both
-            LibraryView.Books -> R.string.library_show_books
-            LibraryView.Shelves -> R.string.library_show_shelves
-        })) }
-
-        FileFilterSection(preferences, onFileFilterToggle)
-
         val layoutModes = if (isShelvesTab) listOf(LayoutMode.List, LayoutMode.BigList)
         else listOf(LayoutMode.Grid, LayoutMode.BigGrid, LayoutMode.List)
 
@@ -301,6 +291,20 @@ fun LibraryFilterBottomSheet(
                 )
             }
         }
+
+        MultiToggleGroupSection(
+            title = stringResource(R.string.library_label_show),
+            options = LibraryView.entries,
+            selectedOptions = setOf(libraryView),
+            onOptionToggled = onLibraryViewChange,
+            singleSelection = true,
+        ) { view -> Text(stringResource(when (view) {
+            LibraryView.Both -> R.string.library_show_both
+            LibraryView.Books -> R.string.library_show_books
+            LibraryView.Shelves -> R.string.library_show_shelves
+        })) }
+
+        FileFilterSection(preferences, availableFormats, onFileFilterToggle)
     }
 }
 
@@ -308,6 +312,7 @@ fun LibraryFilterBottomSheet(
 fun ShelfDetailFilterBottomSheet(
     shelfId: String,
     preferences: FilterSortPreferences,
+    availableFormats: Set<FileFilter>,
     onLayoutModeChange: (LayoutMode) -> Unit,
     onSortTypeChange: (SortType) -> Unit,
     onStatusToggle: (StatusFilter) -> Unit,
@@ -315,8 +320,6 @@ fun ShelfDetailFilterBottomSheet(
     onDismiss: () -> Unit,
 ) {
     OptionsBottomSheet(onDismissRequest = onDismiss) {
-        FileFilterSection(preferences, onFileFilterToggle)
-
         val layoutModes = listOf(LayoutMode.Grid, LayoutMode.BigGrid, LayoutMode.List)
         SingleToggleGroupSection(
             title = stringResource(R.string.library_label_layout),
@@ -346,12 +349,15 @@ fun ShelfDetailFilterBottomSheet(
                 stringResource(statusLabelRes(status)),
             )
         }
+
+        FileFilterSection(preferences, availableFormats, onFileFilterToggle)
     }
 }
 
 @Composable
 fun FilterResultBottomSheet(
     preferences: FilterSortPreferences,
+    availableFormats: Set<FileFilter>,
     onLayoutModeChange: (LayoutMode) -> Unit,
     onSortTypeChange: (SortType) -> Unit,
     onStatusToggle: (StatusFilter) -> Unit,
@@ -359,8 +365,6 @@ fun FilterResultBottomSheet(
     onDismiss: () -> Unit,
 ) {
     OptionsBottomSheet(onDismissRequest = onDismiss) {
-        FileFilterSection(preferences, onFileFilterToggle)
-
         val layoutModes = listOf(LayoutMode.Grid, LayoutMode.BigGrid, LayoutMode.List)
         SingleToggleGroupSection(
             title = stringResource(R.string.library_label_layout),
@@ -391,6 +395,8 @@ fun FilterResultBottomSheet(
                 stringResource(statusLabelRes(status)),
             )
         }
+
+        FileFilterSection(preferences, availableFormats, onFileFilterToggle)
     }
 }
 
@@ -440,10 +446,16 @@ private fun statusLabelRes(status: StatusFilter): Int = when (status) {
 }
 
 @Composable
-private fun FileFilterSection(preferences: FilterSortPreferences, onToggle: (FileFilter) -> Unit) {
+private fun FileFilterSection(
+    preferences: FilterSortPreferences,
+    availableFormats: Set<FileFilter>,
+    onToggle: (FileFilter) -> Unit,
+) {
+    val formats = FileFilter.entries.filter { it in availableFormats }
+    if (formats.isEmpty()) return
     MultiToggleGroupSection(
         title = stringResource(R.string.library_label_formats),
-        options = FileFilter.entries,
+        options = formats,
         selectedOptions = preferences.selectedFormats,
         onOptionToggled = onToggle,
     ) { format ->

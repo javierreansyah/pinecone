@@ -67,6 +67,7 @@ class EpubNavigatorController(
     }
 
     private var lastSelectionCssColor: String? = null
+    private var lastImageFilterCss: String = ""
 
     private var observersStarted = false
 
@@ -139,6 +140,16 @@ class EpubNavigatorController(
             initialLocator = initialLocator,
             initialPreferences = initialPreferences,
             listener = listener,
+            paginationListener = object : EpubNavigatorFragment.PaginationListener {
+                override fun onPageChanged(pageIndex: Int, totalPages: Int, locator: Locator) {
+                    applyImageFilterCss()
+                }
+
+                override fun onPageLoaded() {
+                    reapplySelectionCss()
+                    applyImageFilterCss()
+                }
+            },
             configuration = configuration,
         )
 
@@ -212,6 +223,15 @@ class EpubNavigatorController(
     private fun setupObservers() {
         lifecycleScope.launch {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                combine(_navigatorFlow.filterNotNull(), viewModel.imageFilterCss) { _, css -> css }
+                    .collect { css ->
+                        lastImageFilterCss = css
+                        applyImageFilterCss()
+                    }
+            }
+        }
+        lifecycleScope.launch {
+            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.themeColors.collect { (_, _, colorsBackgroundColorInt) ->
                     injectSelectionCss(colorsBackgroundColorInt)
                 }
@@ -262,6 +282,7 @@ class EpubNavigatorController(
                         lifecycleScope.launch {
                             delay(300.milliseconds)
                             reapplySelectionCss()
+                            applyImageFilterCss()
                         }
                     }
                 }
@@ -356,6 +377,34 @@ class EpubNavigatorController(
     fun go(link: Link) {
         lifecycleScope.launch {
             navigator?.go(link)
+        }
+    }
+
+    private fun applyImageFilterCss() {
+        val nav = navigator ?: return
+        val css = org.json.JSONObject.quote(lastImageFilterCss)
+        val js = """
+            (function() {
+                var id = '__pinecone_image_filter';
+                var style = document.getElementById(id);
+                var css = $css;
+                if (!css) { if (style) style.remove(); return; }
+                if (!style) {
+                    style = document.createElement('style');
+                    style.id = id;
+                    document.head.appendChild(style);
+                }
+                style.textContent = css;
+            })();
+        """.trimIndent()
+        lifecycleScope.launch {
+            try {
+                nav.evaluateJavascript(js)
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                // Reapplied when the next resource finishes loading.
+            }
         }
     }
 

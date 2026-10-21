@@ -63,6 +63,8 @@ import com.composables.icons.materialsymbols.outlined.Contrast
 import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Forest
 import com.composables.icons.materialsymbols.outlined.History
+import com.composables.icons.materialsymbols.outlined.Inbox
+import com.composables.icons.materialsymbols.outlined.Visibility_off
 import com.composables.icons.materialsymbols.outlined.Info
 import com.composables.icons.materialsymbols.outlined.Keyboard_arrow_right
 import com.composables.icons.materialsymbols.outlined.Palette
@@ -203,6 +205,7 @@ fun SettingsScreen(
             viewModel.updateSettings(settings.copy(themeContrast = themeContrast))
         },
         onSpacesEnabledChanged = { enabled -> viewModel.updateSettings(settings.copy(spacesEnabled = enabled)) },
+        onShowAllSpacesChanged = { show -> viewModel.updateSettings(settings.copy(showAllSpaces = show)) },
         onUnsortedEnabledChanged = { enabled -> viewModel.updateSettings(settings.copy(unsortedEnabled = enabled)) },
         onLanguageSelected = { localeKey ->
             scope.launch {
@@ -367,6 +370,7 @@ private fun SettingsContent(
     onColorPaletteClick: () -> Unit,
     onThemeContrastSelected: (String) -> Unit,
     onSpacesEnabledChanged: (Boolean) -> Unit,
+    onShowAllSpacesChanged: (Boolean) -> Unit,
     onUnsortedEnabledChanged: (Boolean) -> Unit,
     onLanguageSelected: (String) -> Unit,
     onAutoBackupFrequencySelected: (String) -> Unit,
@@ -402,6 +406,7 @@ private fun SettingsContent(
                 onColorPaletteClick = onColorPaletteClick,
                 onThemeContrastSelected = onThemeContrastSelected,
                 onSpacesEnabledChanged = onSpacesEnabledChanged,
+                onShowAllSpacesChanged = onShowAllSpacesChanged,
                 onUnsortedEnabledChanged = onUnsortedEnabledChanged,
                 onLanguageSelected = onLanguageSelected,
             )
@@ -458,6 +463,7 @@ private fun GeneralSettingsSection(
     onColorPaletteClick: () -> Unit,
     onThemeContrastSelected: (String) -> Unit,
     onSpacesEnabledChanged: (Boolean) -> Unit,
+    onShowAllSpacesChanged: (Boolean) -> Unit,
     onUnsortedEnabledChanged: (Boolean) -> Unit,
     onLanguageSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -512,7 +518,16 @@ private fun GeneralSettingsSection(
                     trailingContent = { Switch(checked = settings.spacesEnabled, onCheckedChange = null) },
                 )
                 item(
+                    enabled = settings.spacesEnabled,
+                    onClick = { onShowAllSpacesChanged(!settings.showAllSpaces) },
+                    leadingContent = { Icon(MaterialSymbols.Outlined.Visibility_off, contentDescription = null) },
+                    content = { Text(stringResource(R.string.settings_hide_all_space), style = MaterialTheme.typography.titleMedium) },
+                    supportingContent = { Text(stringResource(R.string.settings_hide_all_space_summary)) },
+                    trailingContent = { Switch(checked = !settings.showAllSpaces, enabled = settings.spacesEnabled, onCheckedChange = null) },
+                )
+                item(
                     onClick = { onUnsortedEnabledChanged(!settings.unsortedEnabled) },
+                    leadingContent = { Icon(MaterialSymbols.Outlined.Inbox, contentDescription = null) },
                     content = { Text(stringResource(R.string.settings_unsorted_enabled), style = MaterialTheme.typography.titleMedium) },
                     supportingContent = { Text(stringResource(R.string.settings_unsorted_enabled_summary)) },
                     trailingContent = { Switch(checked = settings.unsortedEnabled, onCheckedChange = null) },
