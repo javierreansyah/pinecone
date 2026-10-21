@@ -40,7 +40,7 @@ class LibraryBackupPayloadTest {
             stateFingerprint = "b".repeat(64),
             recordCounts = mapOf("books" to 1),
             library = payload,
-            settings = ReaderSettings(),
+            settings = ReaderSettings(spacesEnabled = false, unsortedEnabled = false),
             books = listOf(BookObjectReference("book-1", objectInfo)),
             dictionaries = emptyList(),
             activeDictionaryId = "",
@@ -52,9 +52,11 @@ class LibraryBackupPayloadTest {
     @Test
     fun backupRecordConvertsToCurrentEntity() {
         val record = BookBackupRecord(
-            id = "id", title = "Title", filePath = "/new/book.epub", addedDate = 10,
+            id = "id", title = "Title", filePath = "/new/book.epub", addedDate = 10, isUnsorted = true,
         )
         assertEquals(record.filePath, record.toEntity().filePath)
+        assertEquals(record, record.toEntity().toBackupRecord())
+        assertEquals(true, record.toEntity().isUnsorted)
 
         val shelfRecord = ShelfBackupRecord(
             id = "shelf-1", spaceId = "space-1", name = "Favorites", createdAt = 100L,

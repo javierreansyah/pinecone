@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library.unsorted
 
+import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -76,6 +77,15 @@ class UnsortedViewModel(application: Application) : AndroidViewModel(application
             }
             prefsManager.savePreferences(screenKey, newPrefs)
             state.copy(bookPreferences = newPrefs)
+        }
+    }
+
+    fun toggleFileFilter(format: FileFilter) {
+        _uiState.update { state ->
+            val current = state.bookPreferences
+            val prefs = current.copy(selectedFormats = current.selectedFormats.let { if (format in it) it - format else it + format })
+            prefsManager.savePreferences(screenKey, prefs)
+            state.copy(bookPreferences = prefs)
         }
     }
 

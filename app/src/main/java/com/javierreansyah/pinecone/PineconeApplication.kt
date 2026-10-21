@@ -100,6 +100,9 @@ class PineconeApplication : Application() {
             libraryRepository.cleanupOrphanedFiles()
             val initialFrequency = readerPreferences.readerSettings.first().autoBackupFrequency
             WorkerUtils.scheduleBackupWork(applicationContext, initialFrequency)
+            readerPreferences.readerSettings.collect { settings ->
+                if (!settings.unsortedEnabled) libraryRepository.releaseUnsortedBooks()
+            }
         }
     }
 }

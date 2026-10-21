@@ -1,5 +1,7 @@
 package com.javierreansyah.pinecone.ui.features.library.main
 
+import com.javierreansyah.pinecone.ui.features.library.LibraryView
+import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
@@ -90,7 +92,7 @@ class LibraryViewModel(
     private val booksFlow: Flow<List<Book>> =
         bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }
 
-    private val globalSpaceId: StateFlow<String?> = prefsManager.getGlobalSpaceFlow().stateIn(
+    private val globalSpaceId: StateFlow<String?> = prefsManager.getEffectiveSpaceFlow().stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = null,
@@ -279,12 +281,10 @@ class LibraryViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SearchResults())
 
     private val hasUnsortedBooks: Flow<Boolean> = booksFlow.map { books ->
-        books.any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itSpaces) -> itSpaces.isEmpty() }
+        books.any { it.isUnsorted }
     }
 
-    private val showAllSpacesFlow: Flow<Boolean> =
-        readerPreferences.readerSettings.map { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itShowAllSpaces) -> itShowAllSpaces }
-            .distinctUntilChanged()
+    private val librarySettings = readerPreferences.readerSettings
 
     val uiState: StateFlow<LibraryScreenUiState> = combine(
         _uiState,
@@ -298,7 +298,7 @@ class LibraryViewModel(
         allShelvesEntities,
         globalSpaceId,
         hasUnsortedBooks,
-        showAllSpacesFlow,
+        librarySettings,
     ) { array ->
         @Suppress("UNCHECKED_CAST")
         val (baseStateSearchQuery, baseStateSearchCategory, baseStateIsImporting, baseStateBookPreferences, baseStateShelvesPreferences) = array[0] as LibraryUiState
@@ -325,7 +325,7 @@ class LibraryViewModel(
 
         val spaceId = array[9] as String?
         val hasUnsorted = array[10] as Boolean
-        val showAllSpaces = array[11] as Boolean
+        val settings = array[11] as com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 
         LibraryScreenUiState(
             searchQuery = baseStateSearchQuery,
@@ -342,8 +342,9 @@ class LibraryViewModel(
             allSpaces = spaces,
             allShelves = shelvesEntities,
             globalSpaceId = spaceId,
-            hasUnsortedBooks = hasUnsorted,
-            showAllSpaces = showAllSpaces,
+            hasUnsortedBooks = hasUnsorted && settings.unsortedEnabled,
+            showAllSpaces = true,
+            spacesEnabled = settings.spacesEnabled,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LibraryScreenUiState())
 
@@ -478,6 +479,28 @@ class LibraryViewModel(
                 bookPreferences = newPrefs,
             )
         }
+    }
+
+    fun toggleFileFilter(format: FileFilter, isShelvesTab: Boolean = false) {
+        _uiState.update { state ->
+            val current = if (isShelvesTab) state.shelvesPreferences else state.bookPreferences
+            val formats = current.selectedFormats.let { if (format in it) it - format else it + format }
+            val prefs = current.copy(selectedFormats = formats)
+            prefsManager.savePreferences(globalSpaceId.value, if (isShelvesTab) "library_shelves" else screenKey, prefs)
+            if (isShelvesTab) state.copy(shelvesPreferences = prefs) else state.copy(bookPreferences = prefs)
+        }
+    }
+
+    fun onLibraryViewChange(view: LibraryView) {
+        _uiState.update { state ->
+            val prefs = state.bookPreferences.copy(libraryView = view)
+            prefsManager.savePreferences(globalSpaceId.value, screenKey, prefs)
+            state.copy(bookPreferences = prefs)
+        }
+    }
+
+    fun transferShelves(ids: Collection<String>, destinationId: String, copy: Boolean) {
+        viewModelScope.launch { bookRepository.transferShelves(ids, destinationId, copy) }
     }
 
     fun setGlobalSpace(spaceId: String?) {

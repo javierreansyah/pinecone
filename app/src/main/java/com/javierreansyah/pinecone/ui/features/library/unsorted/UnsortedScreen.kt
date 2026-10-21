@@ -125,6 +125,7 @@ fun UnsortedScreen(
             onLayoutModeChange = viewModel::onLayoutModeChange,
             onSortTypeChange = viewModel::onSortTypeChange,
             onStatusToggle = viewModel::toggleStatusFilter,
+            onFileFilterToggle = viewModel::toggleFileFilter,
         ) { showFilterSheet = false }
     }
 }

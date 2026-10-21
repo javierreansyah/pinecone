@@ -67,6 +67,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Drive_file_move
+import com.composables.icons.materialsymbols.outlined.Content_copy
+import com.javierreansyah.pinecone.ui.features.library.organize.SelectSpaceForShelfDialog
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Book
 import com.composables.icons.materialsymbols.outlined.Check
@@ -107,6 +110,9 @@ fun ShelfDetailScreen(
     viewModel: ShelfDetailViewModel = viewModel(),
 ) {
     val uiState = viewModel.uiState.collectAsState()
+    val spaces by viewModel.allSpaces.collectAsState()
+    val spacesEnabled by viewModel.spacesEnabled.collectAsState()
+    var transferCopy by remember { mutableStateOf<Boolean?>(null) }
     var showFilterSheet by remember { mutableStateOf(value = false) }
     var isReordering by remember { mutableStateOf(value = false) }
     var showDeleteDialog by remember { mutableStateOf(value = false) }
@@ -144,6 +150,7 @@ fun ShelfDetailScreen(
         shelfId = shelfId,
         displayTitle = displayTitle,
         displayCount = displayCount,
+        spaceName = if (spacesEnabled && shelfId != "unshelved") spaces.find { it.id == shelfWithCovers?.shelf?.spaceId }?.name else null,
         shelfWithCovers = shelfWithCovers,
         books = books,
         allBooks = allBooks,
@@ -216,6 +223,7 @@ fun ShelfDetailScreen(
         onReorderBooksChange = { reorderBooks = it },
         onShowFilterSheet = { showFilterSheet = true },
         onShowDeleteDialog = { showDeleteDialog = true },
+        onTransferShelf = if (spacesEnabled && shelfId != "unshelved") ({ copy -> transferCopy = copy }) else null,
         onBookClick = onNavigateToReader,
         onBookLongClick = { selectedBookForMenu = it },
         scrollKey = Triple(
@@ -225,6 +233,20 @@ fun ShelfDetailScreen(
         ),
     )
 
+    transferCopy?.let { copy ->
+        SelectSpaceForShelfDialog(
+            shelfName = displayTitle,
+            spaces = if (copy) spaces else spaces.filter { it.id != shelfWithCovers?.shelf?.spaceId },
+            titleRes = if (copy) R.string.library_copy_shelves else R.string.library_move_shelves,
+            confirmRes = if (copy) R.string.action_copy else R.string.action_move,
+            singleSelect = true,
+            onDismiss = { transferCopy = null },
+        ) { destinations ->
+            viewModel.transferShelf(shelfId, destinations.single(), copy)
+            transferCopy = null
+        }
+    }
+
     if (showFilterSheet) {
         ShelfDetailFilterBottomSheet(
             shelfId = shelfId,
@@ -232,6 +254,7 @@ fun ShelfDetailScreen(
             onLayoutModeChange = viewModel::onLayoutModeChange,
             onSortTypeChange = viewModel::onSortTypeChange,
             onStatusToggle = viewModel::toggleStatusFilter,
+            onFileFilterToggle = viewModel::toggleFileFilter,
         ) { showFilterSheet = false }
     }
 
@@ -269,6 +292,7 @@ private fun ShelfDetailContent(
     shelfId: String,
     displayTitle: String,
     displayCount: Int,
+    spaceName: String?,
     shelfWithCovers: ShelfWithCovers?,
     books: List<Book>,
     allBooks: List<Book>,
@@ -299,6 +323,7 @@ private fun ShelfDetailContent(
     onReorderBooksChange: (List<Book>) -> Unit,
     onShowFilterSheet: () -> Unit,
     onShowDeleteDialog: () -> Unit,
+    onTransferShelf: ((Boolean) -> Unit)?,
     onBookClick: (String) -> Unit,
     onBookLongClick: (String) -> Unit,
     scrollKey: Any? = null,
@@ -312,6 +337,7 @@ private fun ShelfDetailContent(
                 shelfId = shelfId,
                 displayTitle = displayTitle,
                 displayCount = displayCount,
+                spaceName = spaceName,
                 books = books,
                 allBooks = allBooks,
                 selectedBooks = selectedBooks,
@@ -338,6 +364,7 @@ private fun ShelfDetailContent(
                 onSaveReorder = onSaveReorder,
                 onShowFilterSheet = onShowFilterSheet,
                 onShowDeleteDialog = onShowDeleteDialog,
+                onTransferShelf = onTransferShelf,
             )
         },
     ) { innerPadding ->
@@ -369,6 +396,7 @@ private fun ShelfDetailTopBar(
     shelfId: String,
     displayTitle: String,
     displayCount: Int,
+    spaceName: String?,
     books: List<Book>,
     allBooks: List<Book>,
     selectedBooks: Set<String>,
@@ -395,6 +423,7 @@ private fun ShelfDetailTopBar(
     onSaveReorder: () -> Unit,
     onShowFilterSheet: () -> Unit,
     onShowDeleteDialog: () -> Unit,
+    onTransferShelf: ((Boolean) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val showMarkAsRead = remember(allBooks, selectedBooks) {
@@ -423,6 +452,7 @@ private fun ShelfDetailTopBar(
             shelfId = shelfId,
             displayTitle = displayTitle,
             displayCount = displayCount,
+            spaceName = spaceName,
             isReordering = isReordering,
             isRenaming = isRenaming,
             renameName = renameName,
@@ -437,6 +467,7 @@ private fun ShelfDetailTopBar(
             onShowFilterSheet = onShowFilterSheet,
             onRenameClick = onStartRename,
             onDeleteClick = onShowDeleteDialog,
+            onTransferShelf = onTransferShelf,
             onEnterMultiSelect = onEnterMultiSelect,
             modifier = modifier,
         )
@@ -448,6 +479,7 @@ private fun ShelfDetailDefaultTopAppBar(
     shelfId: String,
     displayTitle: String,
     displayCount: Int,
+    spaceName: String?,
     isReordering: Boolean,
     isRenaming: Boolean,
     renameName: TextFieldValue,
@@ -462,6 +494,7 @@ private fun ShelfDetailDefaultTopAppBar(
     onShowFilterSheet: () -> Unit,
     onRenameClick: () -> Unit,
     onDeleteClick: () -> Unit,
+    onTransferShelf: ((Boolean) -> Unit)?,
     onEnterMultiSelect: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -501,11 +534,10 @@ private fun ShelfDetailDefaultTopAppBar(
         },
         subtitle = {
             Text(
-                pluralStringResource(
-                    R.plurals.library_shelf_count,
-                    displayCount,
-                    displayCount,
-                ),
+                listOfNotNull(
+                    spaceName,
+                    pluralStringResource(R.plurals.library_shelf_count, displayCount, displayCount),
+                ).joinToString(" · "),
             )
         },
         navigationIcon = {
@@ -633,7 +665,7 @@ private fun ShelfDetailDefaultTopAppBar(
                                     contentDescription = stringResource(R.string.action_more),
                                 )
                             }
-                            val totalItems = if (shelfId == "unshelved") 1 else 3
+                            val totalItems = if (shelfId == "unshelved") 1 else if (onTransferShelf != null) 5 else 3
                             DropdownMenuPopup(
                                 expanded = showMoreMenu,
                                 onDismissRequest = { showMoreMenu = false },
@@ -677,6 +709,17 @@ private fun ShelfDetailDefaultTopAppBar(
                                                 showMoreMenu = false
                                             },
                                         )
+                                        if (onTransferShelf != null) {
+                                            listOf(false, true).forEachIndexed { index, copy ->
+                                                SelectableDropdownMenuItem(
+                                                    selected = false,
+                                                    text = { Text(stringResource(if (copy) R.string.library_copy_shelves else R.string.library_move_shelves)) },
+                                                    shapes = MenuDefaults.itemShape(index + 2, totalItems),
+                                                    leadingIcon = { Icon(if (copy) MaterialSymbols.Outlined.Content_copy else MaterialSymbols.Outlined.Drive_file_move, contentDescription = null) },
+                                                    onClick = { showMoreMenu = false; onTransferShelf(copy) },
+                                                )
+                                            }
+                                        }
                                         SelectableDropdownMenuItem(
                                             selected = false,
                                             text = {
@@ -685,7 +728,7 @@ private fun ShelfDetailDefaultTopAppBar(
                                                     color = MaterialTheme.colorScheme.error,
                                                 )
                                             },
-                                            shapes = MenuDefaults.itemShape(2, totalItems),
+                                            shapes = MenuDefaults.itemShape(totalItems - 1, totalItems),
                                             leadingIcon = {
                                                 Icon(
                                                     MaterialSymbols.Outlined.Delete,

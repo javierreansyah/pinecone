@@ -89,6 +89,8 @@ data class ReaderSettings(
     val jumpHistoryMode: String = "explicit",
     val showAllSpaces: Boolean = true,
     val formatPreferences: FormatPreferences = FormatPreferences(),
+    val spacesEnabled: Boolean = true,
+    val unsortedEnabled: Boolean = true,
 ) {
 
     @OptIn(ExperimentalReadiumApi::class)
@@ -244,6 +246,8 @@ class ReaderPreferences(private val context: Context) {
 
         val JUMP_HISTORY_MODE: Preferences.Key<String> = stringPreferencesKey("jump_history_mode")
         val SHOW_ALL_SPACES: Preferences.Key<Boolean> = booleanPreferencesKey("show_all_spaces")
+        val SPACES_ENABLED = booleanPreferencesKey("spaces_enabled")
+        val UNSORTED_ENABLED = booleanPreferencesKey("unsorted_enabled")
         val FORMAT_PREFERENCES: Preferences.Key<String> = stringPreferencesKey("format_preferences")
     }
 
@@ -318,6 +322,8 @@ class ReaderPreferences(private val context: Context) {
             } ?: emptyList(),
             jumpHistoryMode = preferences[JUMP_HISTORY_MODE] ?: "explicit",
             showAllSpaces = preferences[SHOW_ALL_SPACES] ?: true,
+            spacesEnabled = preferences[SPACES_ENABLED] ?: true,
+            unsortedEnabled = preferences[UNSORTED_ENABLED] ?: true,
             formatPreferences = preferences[FORMAT_PREFERENCES]?.let {
                 kotlinx.serialization.json.Json.decodeFromString<FormatPreferences>(
                     it
@@ -384,6 +390,8 @@ class ReaderPreferences(private val context: Context) {
                 }.toSet()
             preferences[JUMP_HISTORY_MODE] = settings.jumpHistoryMode
             preferences[SHOW_ALL_SPACES] = settings.showAllSpaces
+            preferences[SPACES_ENABLED] = settings.spacesEnabled
+            preferences[UNSORTED_ENABLED] = settings.unsortedEnabled
             preferences[FORMAT_PREFERENCES] =
                 kotlinx.serialization.json.Json.encodeToString(settings.formatPreferences)
         }

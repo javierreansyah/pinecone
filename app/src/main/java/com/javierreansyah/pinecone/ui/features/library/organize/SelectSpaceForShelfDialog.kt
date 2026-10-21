@@ -29,6 +29,9 @@ fun SelectSpaceForShelfDialog(
     shelfName: String,
     spaces: List<SpaceEntity>,
     onDismiss: () -> Unit,
+    titleRes: Int = R.string.library_create_shelf_title,
+    confirmRes: Int = R.string.action_create,
+    singleSelect: Boolean = false,
     onConfirm: (spaceIds: List<String>) -> Unit,
 ) {
     var selectedSpaceIds by remember { mutableStateOf(setOf<String>()) }
@@ -36,7 +39,7 @@ fun SelectSpaceForShelfDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(stringResource(R.string.library_create_shelf_title))
+            Text(stringResource(titleRes))
         },
         text = {
             Column(
@@ -45,7 +48,7 @@ fun SelectSpaceForShelfDialog(
                     .verticalScroll(rememberScrollState()),
             ) {
                 Text(
-                    text = stringResource(R.string.library_select_space_prompt, shelfName),
+                    text = if (singleSelect) stringResource(R.string.library_transfer_destination) else stringResource(R.string.library_select_space_prompt, shelfName),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 12.dp),
@@ -60,7 +63,9 @@ fun SelectSpaceForShelfDialog(
                             key = spaceId,
                             selected = isSelected,
                             onClick = {
-                                selectedSpaceIds = if (isSelected) {
+                                selectedSpaceIds = if (singleSelect) {
+                                    setOf(spaceId)
+                                } else if (isSelected) {
                                     selectedSpaceIds - spaceId
                                 } else {
                                     selectedSpaceIds + spaceId
@@ -92,7 +97,7 @@ fun SelectSpaceForShelfDialog(
                 },
                 enabled = selectedSpaceIds.isNotEmpty(),
             ) {
-                Text(stringResource(R.string.action_create))
+                Text(stringResource(confirmRes))
             }
         },
         dismissButton = {

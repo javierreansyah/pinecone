@@ -11,6 +11,12 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface BookDao {
+    @Query("UPDATE books SET isUnsorted = 0 WHERE id = :bookId")
+    suspend fun markOrganized(bookId: String)
+
+    @Query("UPDATE books SET isUnsorted = 0 WHERE isUnsorted = 1")
+    suspend fun releaseUnsortedBooks()
+
     @Transaction
     @Query("SELECT * FROM books WHERE isArchived = 0 ORDER BY lastReadDate DESC, addedDate DESC")
     fun getAllBooks(): Flow<List<BookWithDetails>>

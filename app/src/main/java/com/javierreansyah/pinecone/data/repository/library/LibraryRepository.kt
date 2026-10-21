@@ -36,6 +36,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
+import com.javierreansyah.pinecone.data.local.database.library.BookSpaceCrossRef
+import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
+import com.javierreansyah.pinecone.ui.features.library.ALL_SPACES_ID
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -125,7 +129,17 @@ class LibraryRepository(
 
     fun getUnsortedBooks(): Flow<List<BookWithDetails>> =
         bookDao.getAllBooks()
-            .map { list -> list.filter { (_, _, _, _, itSpaces) -> itSpaces.isEmpty() } }
+            .map { list -> list.filter { it.book.isUnsorted } }
+
+    suspend fun releaseUnsortedBooks() = database.withTransaction {
+        bookDao.releaseUnsortedBooks()
+    }
+
+    private suspend fun ensureAllSpace() {
+        if (spaceDao.getAllSpacesSync().none { it.id == ALL_SPACES_ID }) {
+            spaceDao.insertSpace(SpaceEntity(ALL_SPACES_ID, context.getString(com.javierreansyah.pinecone.R.string.action_all), 0L))
+        }
+    }
 
     fun searchShelves(query: String): Flow<List<ShelfEntity>> = shelfDao.searchShelves(query)
 
@@ -200,7 +214,9 @@ class LibraryRepository(
             kotlinx.coroutines.currentCoroutineContext().ensureActive()
             withContext(kotlinx.coroutines.NonCancellable) {
                 database.withTransaction {
-                    bookDao.insert(entity)
+                    ensureAllSpace()
+                    bookDao.insert(entity.copy(isUnsorted = ReaderPreferences(context).readerSettings.first().unsortedEnabled))
+                    spaceDao.insertBookSpaceCrossRef(BookSpaceCrossRef(bookId, ALL_SPACES_ID))
                     publicationDao.putRenditions(
                         listOf(
                             PublicationRenditionEntity(
@@ -592,8 +608,6 @@ class LibraryRepository(
 
                 bookDao.deleteOrphanAuthors()
                 bookDao.deleteOrphanTags()
-                shelfDao.deleteEmptyShelves()
-                spaceDao.deleteEmptySpaces()
             }
             val remainingBooks = bookDao.getAllBooksSync()
             val referenced = (publicationDao.allRenditions().map { it.filePath } +
@@ -701,7 +715,7 @@ class LibraryRepository(
             bookDao.deleteTagByName(name)
         } else if (type == "space") {
             val space = spaceDao.getSpaceByName(name)
-            if (space != null) {
+            if (space != null && space.id != ALL_SPACES_ID) {
                 database.withTransaction {
                     spaceDao.deleteSpace(space)
                 }
@@ -735,6 +749,7 @@ class LibraryRepository(
             } else if (type == "space") {
                 val existingDest = spaceDao.getSpaceByName(trimmedNewName)
                 val source = spaceDao.getSpaceByName(oldName)
+                if (source?.id == ALL_SPACES_ID || existingDest?.id == ALL_SPACES_ID) return@withContext
                 if ((existingDest != null) && (source != null)) {
                     database.withTransaction {
                         spaceDao.mergeBookSpaceCrossRef(source.id, existingDest.id)
@@ -765,8 +780,32 @@ class LibraryRepository(
 
     suspend fun createShelf(spaceId: String, name: String): String {
         val id = UUID.randomUUID().toString()
-        shelfDao.insertShelf(ShelfEntity(id = id, spaceId = spaceId, name = name))
+        database.withTransaction {
+            ensureAllSpace()
+            shelfDao.insertShelf(ShelfEntity(id = id, spaceId = spaceId, name = name))
+        }
         return id
+    }
+
+    suspend fun transferShelves(shelfIds: Collection<String>, destinationId: String, copy: Boolean) {
+        database.withTransaction {
+            ensureAllSpace()
+            require(spaceDao.getAllSpacesSync().any { it.id == destinationId })
+            val refsByShelf = shelfDao.getAllShelfBookCrossRefsSync().groupBy { it.shelfId }
+            shelfIds.distinct().forEach { id ->
+                val shelf = shelfDao.getShelfById(id) ?: return@forEach
+                if (!copy && shelf.spaceId == destinationId) return@forEach
+                val target = if (copy) shelf.copy(id = UUID.randomUUID().toString(), spaceId = destinationId)
+                    else shelf.copy(spaceId = destinationId)
+                if (copy) shelfDao.insertShelf(target) else shelfDao.updateShelf(target)
+                refsByShelf[id].orEmpty().forEach { ref ->
+                    if (copy) shelfDao.insertShelfBookCrossRef(ref.copy(shelfId = target.id))
+                    spaceDao.insertBookSpaceCrossRef(BookSpaceCrossRef(ref.bookId, destinationId))
+                    spaceDao.insertBookSpaceCrossRef(BookSpaceCrossRef(ref.bookId, ALL_SPACES_ID))
+                    bookDao.markOrganized(ref.bookId)
+                }
+            }
+        }
     }
 
     suspend fun deleteShelf(shelfId: String) {
@@ -782,6 +821,9 @@ class LibraryRepository(
     suspend fun addBookToShelf(shelfId: String, bookId: String) {
         database.withTransaction {
             val (_, shelfSpaceId) = shelfDao.getShelfById(shelfId) ?: return@withTransaction
+            ensureAllSpace()
+            bookDao.markOrganized(bookId)
+            spaceDao.insertBookSpaceCrossRef(BookSpaceCrossRef(bookId, ALL_SPACES_ID))
             shelfDao.insertShelfBookCrossRef(
                 ShelfBookCrossRefEntity(
                     shelfId = shelfId, bookId = bookId,
@@ -799,13 +841,6 @@ class LibraryRepository(
     suspend fun removeBookFromShelf(shelfId: String, bookId: String) {
         database.withTransaction {
             shelfDao.deleteShelfBookCrossRef(shelfId = shelfId, bookId = bookId)
-            val remainingInShelf = shelfDao.getBookCountForShelf(shelfId)
-            if (remainingInShelf == 0) {
-                val shelf = shelfDao.getShelfById(shelfId)
-                if (shelf != null) {
-                    shelfDao.deleteShelf(shelf)
-                }
-            }
         }
     }
 
@@ -829,6 +864,9 @@ class LibraryRepository(
 
     suspend fun addBookToSpace(spaceId: String, bookId: String) {
         database.withTransaction {
+            ensureAllSpace()
+            bookDao.markOrganized(bookId)
+            spaceDao.insertBookSpaceCrossRef(BookSpaceCrossRef(bookId, ALL_SPACES_ID))
             spaceDao.insertBookSpaceCrossRef(
                 com.javierreansyah.pinecone.data.local.database.library.BookSpaceCrossRef(
                     bookId = bookId,
@@ -839,22 +877,12 @@ class LibraryRepository(
     }
 
     suspend fun removeBookFromSpace(spaceId: String, bookId: String) {
+        if (spaceId == ALL_SPACES_ID) return
         database.withTransaction {
             spaceDao.deleteBookSpaceCrossRef(spaceId = spaceId, bookId = bookId)
             val spaceShelves = shelfDao.getShelvesBySpaceSync(spaceId)
             spaceShelves.forEach { shelf ->
                 shelfDao.deleteShelfBookCrossRef(shelfId = shelf.id, bookId = bookId)
-                val remainingInShelf = shelfDao.getBookCountForShelf(shelf.id)
-                if (remainingInShelf == 0) {
-                    shelfDao.deleteShelf(shelf)
-                }
-            }
-            val remainingInSpace = spaceDao.getBookCountForSpace(spaceId)
-            if (remainingInSpace == 0) {
-                val space = spaceDao.getAllSpacesSync().find { (itId2) -> itId2 == spaceId }
-                if (space != null) {
-                    spaceDao.deleteSpace(space)
-                }
             }
         }
     }

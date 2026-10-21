@@ -30,6 +30,7 @@ import com.javierreansyah.pinecone.ui.features.library.components.book.CoverImag
 fun ShelfListItem(
     shelfWithCovers: ShelfWithCovers,
     onClick: () -> Unit,
+    spaceName: String? = null,
     modifier: Modifier = Modifier,
     isInMultiSelectMode: Boolean = false,
     isSelected: Boolean = false,
@@ -98,7 +99,7 @@ fun ShelfListItem(
                 R.plurals.library_shelf_count, booksCount, booksCount,
             )
             Text(
-                text = countText,
+                text = listOfNotNull(spaceName, countText).joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

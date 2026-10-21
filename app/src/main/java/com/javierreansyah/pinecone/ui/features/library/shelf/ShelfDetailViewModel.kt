@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library.shelf
 
+import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -44,7 +45,7 @@ class ShelfDetailViewModel(
     private val booksFlow: Flow<List<Book>> =
         bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }
 
-    private val globalSpaceId: StateFlow<String?> = prefsManager.getGlobalSpaceFlow().stateIn(
+    private val globalSpaceId: StateFlow<String?> = prefsManager.getEffectiveSpaceFlow().stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = null,
@@ -67,17 +68,19 @@ class ShelfDetailViewModel(
         }
     }
 
-    val allBooks: StateFlow<List<Book>> = combine(booksFlow, globalSpaceId) { books, spaceId ->
-        if ((spaceId == null) || (spaceId == "_all_")) books.filter { it.spaceIds.isNotEmpty() } else books.filter { book ->
-            book.spaceIds.contains(
-                spaceId,
-            )
-        }
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList(),
+    val allBooks: StateFlow<List<Book>> = booksFlow.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList(),
     )
+
+    val allSpaces = bookRepository.getAllSpaces().stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList(),
+    )
+    val spacesEnabled = (application as PineconeApplication).readerPreferences.readerSettings
+        .map { it.spacesEnabled }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    fun transferShelf(id: String, destinationId: String, copy: Boolean) {
+        viewModelScope.launch { bookRepository.transferShelves(listOf(id), destinationId, copy) }
+    }
 
     val shelves: StateFlow<List<ShelfWithCovers>> = combine(
         bookRepository.getAllShelvesWithBooks(),
@@ -85,7 +88,7 @@ class ShelfDetailViewModel(
         bookRepository.getAllBooks(),
         globalSpaceId,
     ) { shelvesList, crossRefs, allBooksEntities, spaceId ->
-        val sortedShelves = sortShelfBooks(shelvesList, crossRefs, spaceId)
+        val sortedShelves = sortShelfBooks(shelvesList, crossRefs)
         val isSpaceSelected = (spaceId != null) && (spaceId != "_all_")
         val currentSpaceShelves = if (isSpaceSelected) {
             shelvesList.filter { (itShelf) -> itShelf.spaceId == spaceId }
@@ -103,7 +106,7 @@ class ShelfDetailViewModel(
             } else {
                 itSpaces.isNotEmpty()
             }
-            inSpace && (itBook.id !in shelvedBookIds)
+            inSpace && !itBook.isUnsorted && (itBook.id !in shelvedBookIds)
         }
 
         val unshelvedShelf = ShelfWithCovers(
@@ -144,6 +147,15 @@ class ShelfDetailViewModel(
             }
             prefsManager.savePreferences(globalSpaceId.value, screenKey, newPrefs)
             state.copy(bookPreferences = newPrefs)
+        }
+    }
+
+    fun toggleFileFilter(format: FileFilter) {
+        _uiState.update { state ->
+            val current = state.bookPreferences
+            val prefs = current.copy(selectedFormats = current.selectedFormats.let { if (format in it) it - format else it + format })
+            prefsManager.savePreferences(globalSpaceId.value, screenKey, prefs)
+            state.copy(bookPreferences = prefs)
         }
     }
 

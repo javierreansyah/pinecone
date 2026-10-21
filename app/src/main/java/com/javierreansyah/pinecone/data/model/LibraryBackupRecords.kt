@@ -38,20 +38,21 @@ data class BookBackupRecord(
     val metadataJson: String = "{}",
     val sourceMetadataJson: String = "{}",
     val originalFilename: String = "",
+    val isUnsorted: Boolean = false,
 )
 
 fun BookEntity.toBackupRecord(): BookBackupRecord = BookBackupRecord(
     id, title, coverPath, filePath, mediaType, identifier, language, progression,
     lastLocatorJson, addedDate, lastReadDate, isArchived, description, publisher,
     published, isRead, furthestProgression, furthestLocatorJson, jumpOriginLocatorJson,
-    activeRendition, metadataJson, sourceMetadataJson, originalFilename,
+    activeRendition, metadataJson, sourceMetadataJson, originalFilename, isUnsorted,
 )
 
 fun BookBackupRecord.toEntity(): BookEntity = BookEntity(
     id, title, coverPath, filePath, mediaType, identifier, language, progression,
     lastLocatorJson, addedDate, lastReadDate, isArchived, description, publisher,
     published, isRead, furthestProgression, furthestLocatorJson, jumpOriginLocatorJson,
-    activeRendition, metadataJson, sourceMetadataJson, originalFilename,
+    activeRendition, metadataJson, sourceMetadataJson, originalFilename, isUnsorted,
 )
 
 @Serializable

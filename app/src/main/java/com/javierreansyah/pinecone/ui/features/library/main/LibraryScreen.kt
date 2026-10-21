@@ -22,6 +22,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.WideNavigationRailValue
 import androidx.compose.material3.rememberWideNavigationRailState
+import androidx.compose.runtime.LaunchedEffect
+import com.javierreansyah.pinecone.ui.features.library.FileFilter
+import com.javierreansyah.pinecone.ui.features.library.LibraryView
+import com.javierreansyah.pinecone.ui.features.library.organize.SelectSpaceForShelfDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -92,6 +96,9 @@ fun LibraryRoute(
         onSortTypeChange = viewModel::onSortTypeChange,
         toggleStatusFilter = viewModel::toggleStatusFilter,
         toggleShelfFilter = viewModel::toggleShelfFilter,
+        toggleFileFilter = viewModel::toggleFileFilter,
+        onLibraryViewChange = viewModel::onLibraryViewChange,
+        transferShelves = viewModel::transferShelves,
         toggleArchive = viewModel::toggleArchive,
         toggleReadStatus = viewModel::toggleReadStatus,
         setGlobalSpace = viewModel::setGlobalSpace,
@@ -128,6 +135,9 @@ fun LibraryScreen(
     onSortTypeChange: (SortType, Boolean) -> Unit,
     toggleStatusFilter: (StatusFilter, Boolean) -> Unit,
     toggleShelfFilter: (ShelfFilter, Boolean) -> Unit,
+    toggleFileFilter: (FileFilter, Boolean) -> Unit,
+    onLibraryViewChange: (LibraryView) -> Unit,
+    transferShelves: (Collection<String>, String, Boolean) -> Unit,
     toggleArchive: (String) -> Unit,
     toggleReadStatus: (String) -> Unit,
     setGlobalSpace: (String?) -> Unit,
@@ -169,15 +179,20 @@ fun LibraryScreen(
     var selectedShelves by remember { mutableStateOf(emptySet<String>()) }
     var isInMultiSelectMode by remember { mutableStateOf(value = false) }
 
-    val pagerState = rememberPagerState { 2 }
+    var transferCopy by remember { mutableStateOf<Boolean?>(null) }
+    val libraryView = uiState.bookPreferences.libraryView
+    val pagerState = rememberPagerState { if (libraryView == LibraryView.Both) 2 else 1 }
+    LaunchedEffect(libraryView, uiState.globalSpaceId) {
+        selectedBooks = emptySet()
+        selectedShelves = emptySet()
+        isInMultiSelectMode = false
+    }
 
     val showEmptyState by remember(uiState.filteredBooks, uiState.isBooksLoading) {
         derivedStateOf { uiState.filteredBooks.isEmpty() && !uiState.isBooksLoading }
     }
 
-    val isShelvesTab by remember(pagerState.currentPage) {
-        derivedStateOf { pagerState.currentPage == 1 }
-    }
+    val isShelvesTab = libraryView == LibraryView.Shelves || (libraryView == LibraryView.Both && pagerState.currentPage == 1)
 
     val isMultiSelect = isInMultiSelectMode && !isShelvesTab
     val isShelvesMultiSelect = isInMultiSelectMode && isShelvesTab
@@ -208,6 +223,7 @@ fun LibraryScreen(
                 onSpaceSelected = { setGlobalSpace(it) },
                 hasUnsortedBooks = uiState.hasUnsortedBooks,
                 showAllSpaces = uiState.showAllSpaces,
+                spacesEnabled = uiState.spacesEnabled,
                 onNavigateToUnsorted = onNavigateToUnsorted,
                 onNavigateToAllSpaces = onNavigateToAllSpaces,
                 onNavigateToArchives = onNavigateToArchives,
@@ -258,6 +274,7 @@ fun LibraryScreen(
                                 shelfId?.let { renameShelf(it, newName) }
                                 exitMultiSelect()
                             },
+                            onTransferShelves = if (uiState.spacesEnabled) ({ copy -> transferCopy = copy }) else null,
                             onDeleteShelves = {
                                 deleteShelves(selectedShelves)
                                 exitMultiSelect()
@@ -285,7 +302,7 @@ fun LibraryScreen(
                         }
                     },
                     bottomBar = {
-                        LibraryShortBottomNavigation(
+                        if (libraryView == LibraryView.Both) LibraryShortBottomNavigation(
                             currentPage = pagerState.currentPage,
                         ) { page ->
                             scope.launch {
@@ -301,7 +318,7 @@ fun LibraryScreen(
                             .padding(innerPadding)
                             .fillMaxSize(),
                     ) { page ->
-                        when (page) {
+                        when (if (libraryView == LibraryView.Shelves) 1 else page) {
                             0 -> {
                                 LibraryBooksTabContent(
                                     showEmptyState = showEmptyState,
@@ -335,6 +352,7 @@ fun LibraryScreen(
                                 } else {
                                     ShelvesPage(
                                         shelves = uiState.shelves,
+                                        spaceNames = if (uiState.spacesEnabled && (uiState.globalSpaceId == null || uiState.globalSpaceId == "_all_")) uiState.allSpaces.associate { it.id to it.name } else emptyMap(),
                                         onShelfClick = onNavigateToShelf,
                                         onBookClick = onNavigateToReader,
                                         onBookLongClick = { bookId, shelfId ->
@@ -371,6 +389,9 @@ fun LibraryScreen(
                             onSortTypeChange = { onSortTypeChange(it, isShelvesTab) },
                             onStatusToggle = { toggleStatusFilter(it, isShelvesTab) },
                             onShelfFilterToggle = { toggleShelfFilter(it, isShelvesTab) },
+                            onFileFilterToggle = { toggleFileFilter(it, isShelvesTab) },
+                            libraryView = libraryView,
+                            onLibraryViewChange = onLibraryViewChange,
                         ) { showFilterSheet.value = false }
                     }
                 }
@@ -395,6 +416,21 @@ fun LibraryScreen(
             }
         }
     }
+    transferCopy?.let { copy ->
+        SelectSpaceForShelfDialog(
+            shelfName = selectedShelves.size.toString(),
+            spaces = uiState.allSpaces.filter { destination -> copy || uiState.allShelves.any { it.id in selectedShelves && it.spaceId != destination.id } },
+            titleRes = if (copy) R.string.library_copy_shelves else R.string.library_move_shelves,
+            confirmRes = if (copy) R.string.action_copy else R.string.action_move,
+            singleSelect = true,
+            onDismiss = { transferCopy = null },
+        ) { destinations ->
+            transferShelves(selectedShelves, destinations.single(), copy)
+            transferCopy = null
+            exitMultiSelect()
+        }
+    }
+
 }
 
 @Composable
@@ -425,6 +461,7 @@ private fun LibraryTopBar(
     onSelectAllShelves: () -> Unit,
     onRenameShelf: (String) -> Unit,
     onDeleteShelves: () -> Unit,
+    onTransferShelves: ((Boolean) -> Unit)?,
     onClearBooksSelection: () -> Unit,
     onSelectAllBooks: () -> Unit,
     onMarkBooksReadStatus: (Boolean) -> Unit,
@@ -450,6 +487,7 @@ private fun LibraryTopBar(
                     onSelectAll = onSelectAllShelves,
                     onRename = onRenameShelf,
                     onDelete = onDeleteShelves,
+                    onTransfer = onTransferShelves,
                 )
             } else {
                 val showMarkAsRead = allBooks

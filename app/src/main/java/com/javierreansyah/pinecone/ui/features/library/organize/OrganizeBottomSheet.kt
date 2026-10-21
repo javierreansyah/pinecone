@@ -122,6 +122,7 @@ fun OrganizeBottomSheet(
             if (!uiState.value.isLoading) {
                 OrganizeContent(
                     searchQuery = searchQuery,
+                    spacesEnabled = uiState.value.spacesEnabled,
                     spaces = filteredSpaces,
                     allSpaces = uiState.value.spaces,
                     onCreateSpaceWithQuery = { name ->
@@ -130,7 +131,12 @@ fun OrganizeBottomSheet(
                         keyboardController?.hide()
                     },
                     onRequestCreateShelf = { name ->
-                        shelfNameToCreate = name
+                        if (uiState.value.defaultShelfSpaceId == null) shelfNameToCreate = name
+                        else {
+                            viewModel.createShelf(uiState.value.defaultShelfSpaceId ?: "_all_", name)
+                            textFieldState.edit { replace(0, length, "") }
+                            keyboardController?.hide()
+                        }
                     },
                     onToggleSpace = viewModel::toggleSpace,
                     onToggleShelf = viewModel::toggleShelf,
@@ -220,6 +226,7 @@ private fun OrganizeSearchInputField(
 @Composable
 private fun OrganizeContent(
     searchQuery: String,
+    spacesEnabled: Boolean,
     spaces: List<SpaceWithShelvesItemState>,
     allSpaces: List<SpaceWithShelvesItemState>,
     onCreateSpaceWithQuery: (String) -> Unit,
@@ -227,7 +234,7 @@ private fun OrganizeContent(
     onToggleSpace: (String, ToggleableState) -> Unit,
     onToggleShelf: (String, ToggleableState) -> Unit,
 ) {
-    val showCreateSpace = searchQuery.isNotBlank() && !allSpaces.any { (itSpace2) ->
+    val showCreateSpace = spacesEnabled && searchQuery.isNotBlank() && !allSpaces.any { (itSpace2) ->
         itSpace2.name.equals(searchQuery, ignoreCase = true)
     }
     val showCreateShelf = searchQuery.isNotBlank() && allSpaces.isNotEmpty()
@@ -321,23 +328,24 @@ private fun OrganizeContent(
                         item(
                             key = "space_${spaceId2}",
                             selected = isSpaceSelected,
-                            onClick = { onToggleSpace(spaceId2, spaceItemState) },
+                            onClick = if (spaceId2 == "_all_" && isSpaceSelected) null else ({ onToggleSpace(spaceId2, spaceItemState) }),
                             leadingContent = {
                                 Icon(
-                                    MaterialSymbols.Outlined.Forest,
+                                    if (spacesEnabled) MaterialSymbols.Outlined.Forest else MaterialSymbols.Outlined.Folder,
                                     contentDescription = null,
                                     tint = if (isSpaceSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.primary,
                                 )
                             },
                             content = {
                                 Text(
-                                    text = spaceName,
+                                    text = if (spacesEnabled) spaceName else stringResource(R.string.library_add_to_library),
                                     style = MaterialTheme.typography.titleMedium,
                                 )
                             },
                             trailingContent = {
                                 TriStateCheckbox(
                                     state = spaceItemState,
+                                    enabled = spaceId2 != "_all_" || !isSpaceSelected,
                                     onClick = null,
                                 )
                             },

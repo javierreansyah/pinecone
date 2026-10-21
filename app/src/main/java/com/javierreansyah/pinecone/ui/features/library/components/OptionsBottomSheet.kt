@@ -1,5 +1,9 @@
 package com.javierreansyah.pinecone.ui.features.library.components
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.javierreansyah.pinecone.ui.features.library.FileFilter
+import com.javierreansyah.pinecone.ui.features.library.LibraryView
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -60,6 +64,7 @@ fun OptionsBottomSheet(
         Column(
             modifier = modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 32.dp)
                 .navigationBarsPadding(),
@@ -226,14 +231,30 @@ fun LibraryFilterBottomSheet(
     onSortTypeChange: (SortType) -> Unit,
     onStatusToggle: (StatusFilter) -> Unit,
     onShelfFilterToggle: (ShelfFilter) -> Unit = {},
+    onFileFilterToggle: (FileFilter) -> Unit = {},
+    libraryView: LibraryView = LibraryView.Both,
+    onLibraryViewChange: (LibraryView) -> Unit = {},
     onDismiss: () -> Unit,
 ) {
     OptionsBottomSheet(onDismissRequest = onDismiss) {
+        SingleToggleGroupSection(
+            title = stringResource(R.string.library_label_show),
+            options = LibraryView.entries,
+            selectedOption = libraryView,
+            onOptionSelected = onLibraryViewChange,
+        ) { view -> Text(stringResource(when (view) {
+            LibraryView.Both -> R.string.library_show_both
+            LibraryView.Books -> R.string.library_show_books
+            LibraryView.Shelves -> R.string.library_show_shelves
+        })) }
+
+        FileFilterSection(preferences, onFileFilterToggle)
+
         val layoutModes = if (isShelvesTab) listOf(LayoutMode.List, LayoutMode.BigList)
         else listOf(LayoutMode.Grid, LayoutMode.BigGrid, LayoutMode.List)
 
         SingleToggleGroupSection(
-            title = stringResource(R.string.library_label_view),
+            title = stringResource(R.string.library_label_layout),
             options = layoutModes,
             selectedOption = preferences.layoutMode,
             onOptionSelected = onLayoutModeChange,
@@ -290,12 +311,15 @@ fun ShelfDetailFilterBottomSheet(
     onLayoutModeChange: (LayoutMode) -> Unit,
     onSortTypeChange: (SortType) -> Unit,
     onStatusToggle: (StatusFilter) -> Unit,
+    onFileFilterToggle: (FileFilter) -> Unit = {},
     onDismiss: () -> Unit,
 ) {
     OptionsBottomSheet(onDismissRequest = onDismiss) {
+        FileFilterSection(preferences, onFileFilterToggle)
+
         val layoutModes = listOf(LayoutMode.Grid, LayoutMode.BigGrid, LayoutMode.List)
         SingleToggleGroupSection(
-            title = stringResource(R.string.library_label_view),
+            title = stringResource(R.string.library_label_layout),
             options = layoutModes,
             selectedOption = preferences.layoutMode,
             onOptionSelected = onLayoutModeChange,
@@ -331,12 +355,15 @@ fun FilterResultBottomSheet(
     onLayoutModeChange: (LayoutMode) -> Unit,
     onSortTypeChange: (SortType) -> Unit,
     onStatusToggle: (StatusFilter) -> Unit,
+    onFileFilterToggle: (FileFilter) -> Unit = {},
     onDismiss: () -> Unit,
 ) {
     OptionsBottomSheet(onDismissRequest = onDismiss) {
+        FileFilterSection(preferences, onFileFilterToggle)
+
         val layoutModes = listOf(LayoutMode.Grid, LayoutMode.BigGrid, LayoutMode.List)
         SingleToggleGroupSection(
-            title = stringResource(R.string.library_label_view),
+            title = stringResource(R.string.library_label_layout),
             options = layoutModes,
             selectedOption = preferences.layoutMode,
             onOptionSelected = onLayoutModeChange,
@@ -410,4 +437,24 @@ private fun statusLabelRes(status: StatusFilter): Int = when (status) {
     StatusFilter.NotStarted -> R.string.library_status_not_started
     StatusFilter.Reading -> R.string.library_status_reading
     StatusFilter.Finished -> R.string.library_status_finished
+}
+
+@Composable
+private fun FileFilterSection(preferences: FilterSortPreferences, onToggle: (FileFilter) -> Unit) {
+    MultiToggleGroupSection(
+        title = stringResource(R.string.library_label_formats),
+        options = FileFilter.entries,
+        selectedOptions = preferences.selectedFormats,
+        onOptionToggled = onToggle,
+    ) { format ->
+        Text(when (format) {
+            FileFilter.EPUB -> "EPUB"
+            FileFilter.PDF -> "PDF"
+            FileFilter.Comics -> stringResource(R.string.library_format_comics)
+            FileFilter.Audio -> stringResource(R.string.library_format_audio)
+            FileFilter.Images -> stringResource(R.string.library_format_images)
+            FileFilter.WebPublication -> "WebPub"
+            FileFilter.Other -> stringResource(R.string.library_format_other)
+        })
+    }
 }

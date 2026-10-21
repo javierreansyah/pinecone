@@ -26,7 +26,7 @@ class FilterCategoryViewModel(application: Application) : AndroidViewModel(appli
     private val unfilteredBooks: Flow<List<Book>> =
         bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }
 
-    private val globalSpaceId = prefsManager.getGlobalSpaceFlow().stateIn(
+    private val globalSpaceId = prefsManager.getEffectiveSpaceFlow().stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), null,
     )
 
@@ -69,8 +69,8 @@ class FilterCategoryViewModel(application: Application) : AndroidViewModel(appli
 
     val spacesWithCounts: StateFlow<List<Pair<String, Int>>> =
         combine(allSpaces, unfilteredBooks) { spaces, books ->
-            spaces.map { (spaceId2, spaceName) ->
-                val count = books.count { book -> book.spaceIds.contains(spaceId2) }
+            spaces.filter { it.id != "_all_" }.map { (spaceId2, spaceName) ->
+                val count = books.count { book -> !book.isUnsorted && book.spaceIds.contains(spaceId2) }
                 Pair(spaceName, count)
             }
         }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
