@@ -139,7 +139,9 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.themeColors.collect { (_, _, colorsBackgroundColorInt) ->
-                    window.decorView.setBackgroundColor(colorsBackgroundColorInt)
+                    if (viewModel.profile.value != com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO) {
+                        window.decorView.setBackgroundColor(colorsBackgroundColorInt)
+                    }
                 }
             }
         }

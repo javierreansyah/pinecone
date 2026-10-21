@@ -110,9 +110,6 @@ fun ReaderTopBar(
     ) {
         TopAppBar(
             title = {
-                if (audioPlayer && !isInSearchMode) {
-                    Text(stringResource(R.string.reader_now_playing), color = readerTextColor, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
                 val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
                 AnimatedVisibility(
                     visible = isInSearchMode,
@@ -215,14 +212,24 @@ fun ReaderTopBar(
                                 }
                             }
 
-                            IconButton(onClick = onToggleBookmark) {
-                                Icon(
-                                    imageVector = if (isBookmarked) MaterialSymbols.Outlined.Bookmark_check else MaterialSymbols.Outlined.Bookmark,
-                                    contentDescription = if (isBookmarked) stringResource(R.string.reader_remove_bookmark) else stringResource(
-                                        R.string.reader_add_bookmark,
-                                    ),
-                                    tint = readerTextColor,
-                                )
+                            if (!audioPlayer) {
+                                IconButton(onClick = onToggleBookmark) {
+                                    Icon(
+                                        imageVector = if (isBookmarked) MaterialSymbols.Outlined.Bookmark_check else MaterialSymbols.Outlined.Bookmark,
+                                        contentDescription = if (isBookmarked) stringResource(R.string.reader_remove_bookmark) else stringResource(
+                                            R.string.reader_add_bookmark,
+                                        ),
+                                        tint = readerTextColor,
+                                    )
+                                }
+                            } else {
+                                IconButton(onClick = onInfoClick) {
+                                    Icon(
+                                        MaterialSymbols.Outlined.Info,
+                                        contentDescription = stringResource(R.string.reader_menu_info),
+                                        tint = readerTextColor,
+                                    )
+                                }
                             }
 
                             if (state == TopBarState.NORMAL && !audioPlayer) {
@@ -245,34 +252,36 @@ fun ReaderTopBar(
                                 }
                             }
 
-                            var showMoreMenu by remember { mutableStateOf(value = false) }
-                            Box {
-                                IconButton(onClick = { showMoreMenu = true }) {
-                                    Icon(
-                                        MaterialSymbols.Outlined.More_vert,
-                                        contentDescription = stringResource(R.string.action_more),
-                                        tint = readerTextColor,
-                                    )
+                            val items = remember(state, canSearch, showReadMode, audioPlayer) {
+                                buildList {
+                                    if ((state == TopBarState.JUMP || showReadMode) && !audioPlayer) add("content")
+                                    if (state == TopBarState.JUMP && !audioPlayer) add("settings")
+                                    if (canSearch) add("search")
+                                    if (!audioPlayer) add("info")
                                 }
-                                DropdownMenuPopup(
-                                    expanded = showMoreMenu,
-                                    onDismissRequest = { showMoreMenu = false },
-                                ) {
-                                    val groupInteractionSource =
-                                        remember { MutableInteractionSource() }
-                                    DropdownMenuGroup(
-                                        shapes = MenuDefaults.groupShape(0, 1),
-                                        interactionSource = groupInteractionSource,
+                            }
+
+                            if (items.isNotEmpty()) {
+                                var showMoreMenu by remember { mutableStateOf(value = false) }
+                                Box {
+                                    IconButton(onClick = { showMoreMenu = true }) {
+                                        Icon(
+                                            MaterialSymbols.Outlined.More_vert,
+                                            contentDescription = stringResource(R.string.action_more),
+                                            tint = readerTextColor,
+                                        )
+                                    }
+                                    DropdownMenuPopup(
+                                        expanded = showMoreMenu,
+                                        onDismissRequest = { showMoreMenu = false },
                                     ) {
-                                        val items = remember(state, canSearch, showReadMode, audioPlayer) {
-                                            buildList {
-                                                if ((state == TopBarState.JUMP || showReadMode) && !audioPlayer) add("content")
-                                                if (state == TopBarState.JUMP && !audioPlayer) add("settings")
-                                                if (canSearch) add("search")
-                                                add("info")
-                                            }
-                                        }
-                                        items.forEachIndexed { index, item ->
+                                        val groupInteractionSource =
+                                            remember { MutableInteractionSource() }
+                                        DropdownMenuGroup(
+                                            shapes = MenuDefaults.groupShape(0, 1),
+                                            interactionSource = groupInteractionSource,
+                                        ) {
+                                            items.forEachIndexed { index, item ->
                                             when (item) {
                                                 "content" -> {
                                                     SelectableDropdownMenuItem(
@@ -383,6 +392,7 @@ fun ReaderTopBar(
                                 }
                             }
                         }
+                    }
                     }
                 }
             },
