@@ -53,13 +53,19 @@ fun FormatReaderSettings(
     onReparsePdf: (() -> Unit)? = null,
 ) {
     val isPdf = profile == ReaderProfile.PDF
-    val titles = listOf(
-        if (profile == ReaderProfile.AUDIO) stringResource(R.string.reader_playback) else stringResource(
-            R.string.reader_pages
-        ),
-        stringResource(R.string.reader_settings_tab_lighting),
-        stringResource(R.string.reader_settings_tab_advanced)
-    )
+    val isAudio = profile == ReaderProfile.AUDIO
+    val titles = if (isAudio) {
+        listOf(
+            stringResource(R.string.reader_playback),
+            stringResource(R.string.reader_settings_tab_advanced),
+        )
+    } else {
+        listOf(
+            stringResource(R.string.reader_pages),
+            stringResource(R.string.reader_settings_tab_lighting),
+            stringResource(R.string.reader_settings_tab_advanced),
+        )
+    }
     val pagerState = rememberPagerState { titles.size }
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
@@ -80,8 +86,9 @@ fun FormatReaderSettings(
                     Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    when (page) {
-                        0 -> when {
+                    val advancedPage = if (isAudio) 1 else 2
+                    when {
+                        page == 0 -> when {
                             profile == ReaderProfile.PDF -> {
                                 val pdf = settings.formatPreferences.pdf
                                 fun update(value: com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences) =
@@ -189,7 +196,7 @@ fun FormatReaderSettings(
                             )
                         }
 
-                        1 -> {
+                        !isAudio && page == 1 -> {
                             FormatLighting(settings, onChange, showChromeHint = !isPdf)
                             if (isPdf) {
                                 Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -214,7 +221,7 @@ fun FormatReaderSettings(
                             }
                         }
 
-                        2 -> {
+                        page == advancedPage -> {
                             AdvancedTabContent(
                                 settings, onChange, includeTextPreferences = false,
                                 leadingContent = {

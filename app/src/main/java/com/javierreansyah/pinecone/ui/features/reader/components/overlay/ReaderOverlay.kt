@@ -167,13 +167,26 @@ fun ReaderOverlay(
 
     val uiDarkTheme = themeColors.value.isDarkTheme
     PineconeThemedContent(uiDarkTheme = uiDarkTheme, settings = settings) {
+        val isAudio = profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO
+        val effectiveBgColor = if (isAudio) MaterialTheme.colorScheme.background else readerBgColor
+        val effectiveTextColor = if (isAudio) MaterialTheme.colorScheme.onBackground else readerTextColor
+
         Box(modifier = Modifier.fillMaxSize()) {
-            if (profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO) {
+            if (isAudio) {
                 com.javierreansyah.pinecone.ui.features.reader.components.AudioReaderContent(
                     state = audioState,
                     coverPath = bookState.value.coverPath,
-                    background = readerBgColor,
-                    foreground = readerTextColor,
+                    background = effectiveBgColor,
+                    foreground = effectiveTextColor,
+                    isBookmarked = isBookmarked,
+                    onToggleBookmark = {
+                        currentLocator?.let { locator ->
+                            notesViewModel.toggleBookmark(
+                                locator,
+                                locator.title ?: bookState.value.chapter,
+                            )
+                        }
+                    },
                     onOpenBookmarks = viewModel::showBookmarks,
                     onOpenSettings = viewModel::showSettings,
                     onPlayPause = viewModel.audioSession::togglePlayback,
@@ -210,8 +223,8 @@ fun ReaderOverlay(
                 isInSearchNavigationMode = searchState.value.isInNavMode,
                 searchQuery = searchState.value.query,
                 isBookmarked = isBookmarked,
-                readerBgColor = readerBgColor,
-                readerTextColor = readerTextColor,
+                readerBgColor = effectiveBgColor,
+                readerTextColor = effectiveTextColor,
                 jumpOrigin = jumpOrigin,
                 onGoBackToOriginClick = {
                     jumpOrigin?.let { origin ->
@@ -255,8 +268,8 @@ fun ReaderOverlay(
                 progression = bookState.value.progression,
                 currentPage = bookState.value.currentPage,
                 totalPages = bookState.value.totalPages,
-                readerBgColor = readerBgColor,
-                readerTextColor = readerTextColor,
+                readerBgColor = effectiveBgColor,
+                readerTextColor = effectiveTextColor,
                 onSeekToProgression = { progression ->
                     viewModel.recordJumpOrigin()
                     onSeekToProgression(progression)
