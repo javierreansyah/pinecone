@@ -231,26 +231,26 @@
 
     <string name="settings_title">Pengaturan</string>
     <string name="settings_general">Umum</string>
-    <string name="settings_theme_mode">Mode Tema</string>
-    <string name="settings_color_palette">Palet Warna</string>
-    <string name="settings_theme_contrast">Kontras Tema</string>
+    <string name="settings_theme_mode">Mode tema</string>
+    <string name="settings_color_palette">Palet warna</string>
+    <string name="settings_theme_contrast">Kontras tema</string>
     <string name="settings_language">@string/book_language</string>
-    <string name="settings_show_all_spaces">Tampilkan Semua Ruang</string>
+    <string name="settings_show_all_spaces">Tampilkan semua ruang</string>
     <string name="settings_show_all_spaces_summary">Tampilkan \"Semua\" di daftar ruang</string>
 
-    <string name="settings_backup_preferences">Cadangan Lokal</string>
-    <string name="settings_backup_now">Cadangkan Sekarang</string>
+    <string name="settings_backup_preferences">Cadangan lokal</string>
+    <string name="settings_backup_now">Cadangkan sekarang</string>
     <string name="settings_backup_now_summary">Cadangkan perpustakaan dan kamus (%s)</string>
     <string name="settings_restore">Pulihkan</string>
     <string name="settings_export_backup">Ekspor cadangan</string>
-    <string name="settings_import_backup">Impor Cadangan</string>
+    <string name="settings_import_backup">Impor cadangan</string>
     <string name="settings_import_backup_summary">Tambahkan cadangan portabel Pinecone ke brankas ini</string>
     <string name="settings_restore_summary">Pulihkan perpustakaan dan kamus</string>
     <string name="settings_restore_partial">Pemulihan tersimpan, tetapi pembersihan akhir belum selesai. Mulai ulang Pinecone untuk menyelesaikan pemulihan.</string>
     <string name="settings_last_backup_format">Terakhir: %s</string>
     <string name="settings_error_set_backup_location">Harap pilih lokasi cadangan terlebih dahulu</string>
-    <string name="settings_auto_backup_freq">Frekuensi Cadangan Otomatis</string>
-    <string name="settings_backup_location">Lokasi Cadangan</string>
+    <string name="settings_auto_backup_freq">Frekuensi cadangan otomatis</string>
+    <string name="settings_backup_location">Lokasi cadangan</string>
     <string name="settings_option_system">Sistem</string>
     <string name="settings_option_light">@string/reader_settings_theme_light</string>
     <string name="settings_option_dark">@string/reader_settings_theme_dark</string>
@@ -260,7 +260,7 @@
     <string name="settings_option_never">Jangan Pernah</string>
     <string name="settings_option_dynamic">Dinamis</string>
 
-    <string name="chooseColorScheme">Pilih Skema Warna</string>
+    <string name="chooseColorScheme">Pilih skema warna</string>
     <string name="ok">OK</string>
     <string name="settings_option_selected">Dipilih</string>
     <string name="settings_option_not_selected">Belum dipilih (Cadangan otomatis dinonaktifkan)</string>
@@ -269,9 +269,9 @@
     <string name="settings_backup_freq_1d">1 hari</string>
     <string name="settings_backup_freq_3d">3 hari</string>
     <string name="settings_backup_freq_1w">1 minggu</string>
-    <string name="settings_restore_defaults">Pulihkan Setelan Awal</string>
+    <string name="settings_restore_defaults">Pulihkan setelan awal</string>
     <string name="settings_restore_backup_warning">Apakah Anda yakin ingin memulihkan? Ini akan menimpa perpustakaan dan pengaturan Anda saat ini.</string>
-    <string name="settings_restore_backup_sheet_title">Pilih Cadangan untuk Dipulihkan</string>
+    <string name="settings_restore_backup_sheet_title">Pilih cadangan untuk dipulihkan</string>
     <item name="settings_backup_auto_label" type="string">@string/reader_settings_theme_auto</item>
     <string name="settings_backup_manual_label">Manual</string>
     <string name="settings_no_backups_found">Tidak ada cadangan yang ditemukan di folder yang dipilih.</string>
@@ -308,7 +308,7 @@
     <string name="nav_starting_backup">Memulai pencadangan…</string>
     <string name="nav_backup_success">Cadangan berhasil</string>
     <string name="nav_backup_failed">Cadangan gagal</string>
-    <string name="nav_restore_backup">Pulihkan Cadangan</string>
+    <string name="nav_restore_backup">Pulihkan cadangan</string>
     <string name="nav_restoring_backup">Memulihkan cadangan…</string>
     <string name="nav_restore_success">Cadangan berhasil dipulihkan!</string>
     <string name="nav_restore_failed">Gagal memulihkan cadangan</string>
@@ -329,11 +329,21 @@
 
     <string name="about_title">Pinecone</string>
     <string name="about_copyright">Hak Cipta © 2026 Javier Aahmes Reansyah</string>
-    <string name="about_view_full_license">Lihat Lisensi Penuh</string>
-    <string name="about_source_code">Kode Sumber (GitHub)</string>
-    <string name="about_open_source_licenses">Lisensi Sumber Terbuka</string>
+    <string name="about_view_full_license">Lihat lisensi penuh</string>
+    <string name="about_source_code">Kode sumber (GitHub)</string>
+    <string name="about_open_source_licenses">Lisensi sumber terbuka</string>
     <string name="about_no_libraries">Tidak ada perpustakaan sumber terbuka yang ditemukan.</string>
     <string name="about_unknown_license">Lisensi Tidak Diketahui</string>
     <string name="settings_about_section">Tentang</string>
-    <string name="settings_about_app">Tentang Aplikasi Ini</string>
+    <string name="settings_about_app">Tentang aplikasi ini</string>
+    <string name="settings_hide_all_space">Sembunyikan ruang Semua</string>
+    <string name="settings_hide_all_space_summary">Sembunyikan Semua dari navigasi.</string>
+    <string name="settings_spaces_enabled">Gunakan ruang</string>
+    <string name="settings_spaces_enabled_summary">Atur buku dan rak berdasarkan ruang.</string>
+    <string name="settings_unsorted_enabled">Gunakan kotak masuk Belum disortir</string>
+    <string name="settings_unsorted_enabled_summary">Pisahkan impor baru sampai diatur.</string>
+    <string name="reader_follow_theme">Ikuti tema</string>
+    <string name="reader_always">Selalu</string>
+    <string name="reader_never">Jangan pernah</string>
+    <string name="reader_image_filter_activation">Terapkan filter gambar</string>
 </resources>

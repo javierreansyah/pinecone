@@ -8,6 +8,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -39,103 +40,126 @@ fun IncrementDecrementControl(
     onIncrement: () -> Unit,
     onDecrement: () -> Unit,
     enabled: Boolean = true,
+    inline: Boolean = false,
 ) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.Start,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(
-                alpha = 0.38f,
-            ),
-        )
-
+    if (inline) {
         Row(
+            modifier = modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            IconButton(
-                onClick = onDecrement,
-                enabled = enabled,
-                colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-                shapes = IconButtonDefaults.shapes(),
-                modifier = Modifier.size(36.dp),
-            ) {
-                Icon(
-                    imageVector = MaterialSymbols.Outlined.Remove,
-                    contentDescription = stringResource(R.string.action_decrease),
-                    modifier = Modifier.size(18.dp),
-                )
-            }
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f),
+            )
+            IncrementDecrementButtons(value, onIncrement, onDecrement, enabled)
+        }
+    } else {
+        Column(
+            modifier = modifier,
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+            )
+            IncrementDecrementButtons(value, onIncrement, onDecrement, enabled)
+        }
+    }
+}
 
-            val actionsSpatialSpec = motionScheme.fastSpatialSpec<IntOffset>()
-            val actionsEffectsSpec = motionScheme.fastEffectsSpec<Float>()
+@Composable
+private fun IncrementDecrementButtons(
+    value: String,
+    onIncrement: () -> Unit,
+    onDecrement: () -> Unit,
+    enabled: Boolean,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Start,
+    ) {
+        IconButton(
+            onClick = onDecrement,
+            enabled = enabled,
+            colors = IconButtonDefaults.iconButtonColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
+            shapes = IconButtonDefaults.shapes(),
+            modifier = Modifier.size(36.dp),
+        ) {
+            Icon(
+                imageVector = MaterialSymbols.Outlined.Remove,
+                contentDescription = stringResource(R.string.action_decrease),
+                modifier = Modifier.size(18.dp),
+            )
+        }
 
-            val density = LocalDensity.current
-            val offsetPx = with(density) { 40.dp.roundToPx() }
+        val actionsSpatialSpec = motionScheme.fastSpatialSpec<IntOffset>()
+        val actionsEffectsSpec = motionScheme.fastEffectsSpec<Float>()
 
-            AnimatedContent(
-                targetState = value,
-                transitionSpec = {
-                    val targetNum = targetState.replace(Regex("[^\\d.-]"), "").toFloatOrNull() ?: 0f
-                    val initialNum =
-                        initialState.replace(Regex("[^\\d.-]"), "").toFloatOrNull() ?: 0f
-                    val isIncrement = targetNum > initialNum
+        val density = LocalDensity.current
+        val offsetPx = with(density) { 40.dp.roundToPx() }
 
-                    if (isIncrement) {
-                        (slideInVertically(
+        AnimatedContent(
+            targetState = value,
+            transitionSpec = {
+                val targetNum = targetState.replace(Regex("[^\\d.-]"), "").toFloatOrNull() ?: 0f
+                val initialNum =
+                    initialState.replace(Regex("[^\\d.-]"), "").toFloatOrNull() ?: 0f
+                val isIncrement = targetNum > initialNum
+
+                if (isIncrement) {
+                    (slideInVertically(
+                        animationSpec = actionsSpatialSpec,
+                    ) { offsetPx } + fadeIn(animationSpec = actionsEffectsSpec)).togetherWith(
+                        slideOutVertically(
                             animationSpec = actionsSpatialSpec,
-                        ) { offsetPx } + fadeIn(animationSpec = actionsEffectsSpec)).togetherWith(
-                            slideOutVertically(
-                                animationSpec = actionsSpatialSpec,
-                            ) { -offsetPx } + fadeOut(animationSpec = actionsEffectsSpec),
-                        )
-                    } else {
-                        (slideInVertically(
+                        ) { -offsetPx } + fadeOut(animationSpec = actionsEffectsSpec),
+                    )
+                } else {
+                    (slideInVertically(
+                        animationSpec = actionsSpatialSpec,
+                    ) { -offsetPx } + fadeIn(animationSpec = actionsEffectsSpec)).togetherWith(
+                        slideOutVertically(
                             animationSpec = actionsSpatialSpec,
-                        ) { -offsetPx } + fadeIn(animationSpec = actionsEffectsSpec)).togetherWith(
-                            slideOutVertically(
-                                animationSpec = actionsSpatialSpec,
-                            ) { offsetPx } + fadeOut(animationSpec = actionsEffectsSpec),
-                        )
-                    }
-                },
-                label = "ValueAnimation",
-            ) { targetValue ->
-                Text(
-                    text = targetValue,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center,
-                    color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(
-                        alpha = 0.38f,
-                    ),
-                    modifier = Modifier.widthIn(min = 60.dp),
-                )
-            }
-
-            IconButton(
-                onClick = onIncrement,
-                enabled = enabled,
-                colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        ) { offsetPx } + fadeOut(animationSpec = actionsEffectsSpec),
+                    )
+                }
+            },
+            label = "ValueAnimation",
+        ) { targetValue ->
+            Text(
+                text = targetValue,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(
+                    alpha = 0.38f,
                 ),
-                shapes = IconButtonDefaults.shapes(),
-                modifier = Modifier.size(36.dp),
-            ) {
-                Icon(
-                    imageVector = MaterialSymbols.Outlined.Add,
-                    contentDescription = stringResource(R.string.action_increase),
-                    modifier = Modifier.size(18.dp),
-                )
-            }
+                modifier = Modifier.widthIn(min = 60.dp),
+            )
+        }
+
+        IconButton(
+            onClick = onIncrement,
+            enabled = enabled,
+            colors = IconButtonDefaults.iconButtonColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
+            shapes = IconButtonDefaults.shapes(),
+            modifier = Modifier.size(36.dp),
+        ) {
+            Icon(
+                imageVector = MaterialSymbols.Outlined.Add,
+                contentDescription = stringResource(R.string.action_increase),
+                modifier = Modifier.size(18.dp),
+            )
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library.archive
 
+import com.javierreansyah.pinecone.ui.features.library.fileFormat
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -122,6 +123,7 @@ fun ArchiveScreen(
     if (showFilterSheet) {
         FilterResultBottomSheet(
             preferences = uiState.bookPreferences,
+            availableFormats = allBooks.mapTo(mutableSetOf()) { it.fileFormat() },
             onLayoutModeChange = viewModel::onLayoutModeChange,
             onSortTypeChange = viewModel::onSortTypeChange,
             onStatusToggle = viewModel::toggleStatusFilter,

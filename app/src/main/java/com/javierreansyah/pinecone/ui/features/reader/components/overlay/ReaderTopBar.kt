@@ -94,6 +94,7 @@ fun ReaderTopBar(
     modifier: Modifier = Modifier,
     canSearch: Boolean = true,
     typographySettings: Boolean = true,
+    audioPlayer: Boolean = false,
     showReadMode: Boolean = false,
     readMode: Boolean = false,
     onToggleReadMode: () -> Unit = {},
@@ -109,6 +110,9 @@ fun ReaderTopBar(
     ) {
         TopAppBar(
             title = {
+                if (audioPlayer && !isInSearchMode) {
+                    Text(stringResource(R.string.reader_now_playing), color = readerTextColor, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
                 val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
                 AnimatedVisibility(
                     visible = isInSearchMode,
@@ -221,7 +225,7 @@ fun ReaderTopBar(
                                 )
                             }
 
-                            if (state == TopBarState.NORMAL) {
+                            if (state == TopBarState.NORMAL && !audioPlayer) {
                                 if (!showReadMode) IconButton(onClick = onTocClick) {
                                     Icon(
                                         MaterialSymbols.Outlined.List,
@@ -260,10 +264,10 @@ fun ReaderTopBar(
                                         shapes = MenuDefaults.groupShape(0, 1),
                                         interactionSource = groupInteractionSource,
                                     ) {
-                                        val items = remember(state, canSearch, showReadMode) {
+                                        val items = remember(state, canSearch, showReadMode, audioPlayer) {
                                             buildList {
-                                                if (state == TopBarState.JUMP || showReadMode) add("content")
-                                                if (state == TopBarState.JUMP) add("settings")
+                                                if ((state == TopBarState.JUMP || showReadMode) && !audioPlayer) add("content")
+                                                if (state == TopBarState.JUMP && !audioPlayer) add("settings")
                                                 if (canSearch) add("search")
                                                 add("info")
                                             }

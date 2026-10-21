@@ -173,7 +173,9 @@ fun ReaderOverlay(
                     state = audioState,
                     coverPath = bookState.value.coverPath,
                     background = readerBgColor,
-                    onToggleControls = viewModel::toggleControls,
+                    foreground = readerTextColor,
+                    onOpenBookmarks = viewModel::showBookmarks,
+                    onOpenSettings = viewModel::showSettings,
                     onPlayPause = viewModel.audioSession::togglePlayback,
                     onSkip = viewModel.audioSession::skip,
                     onTrack = viewModel.audioSession::track,
@@ -203,7 +205,7 @@ fun ReaderOverlay(
 
             ReaderTopBarSection(
                 modifier = Modifier.align(Alignment.TopCenter),
-                showControls = controlsState.value.showControls,
+                showControls = controlsState.value.showControls || profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO,
                 showSearch = controlsState.value.showSearch,
                 isInSearchNavigationMode = searchState.value.isInNavMode,
                 searchQuery = searchState.value.query,
@@ -235,6 +237,7 @@ fun ReaderOverlay(
                 onInfoClick = { router.navigateToBookInfo(bookId) },
                 canSearch = profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.EPUB || profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF,
                 typographySettings = profile != com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO,
+                audioPlayer = profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO,
                 showReadMode = bookState.value.sourceIsPdf,
                 readMode = bookState.value.readMode,
                 onToggleReadMode = viewModel::togglePdfReadMode,
@@ -327,6 +330,7 @@ fun ReaderOverlay(
 
             ReaderSheetsLayer(
                 showToc = controlsState.value.showToc,
+                contentsInitialTab = controlsState.value.contentsInitialTab,
                 showSettings = controlsState.value.showSettings,
                 showSearch = controlsState.value.showSearch,
                 showDefinition = definitionState.value.showDefinition,
@@ -480,6 +484,7 @@ fun ReaderTopBarSection(
     modifier: Modifier = Modifier,
     canSearch: Boolean = true,
     typographySettings: Boolean = true,
+    audioPlayer: Boolean = false,
     showReadMode: Boolean = false,
     readMode: Boolean = false,
     onToggleReadMode: () -> Unit = {},
@@ -524,6 +529,7 @@ fun ReaderTopBarSection(
             onClearJumpOriginClick = onClearJumpOriginClick,
             canSearch = canSearch,
             typographySettings = typographySettings,
+            audioPlayer = audioPlayer,
             showReadMode = showReadMode,
             readMode = readMode,
             onToggleReadMode = onToggleReadMode,
@@ -665,6 +671,7 @@ fun ReaderBottomBarSection(
 @Composable
 fun ReaderSheetsLayer(
     showToc: Boolean,
+    contentsInitialTab: Int,
     showSettings: Boolean,
     showSearch: Boolean,
     showDefinition: Boolean,
@@ -725,6 +732,7 @@ fun ReaderSheetsLayer(
 
     if (showToc) {
         ReaderBottomSheet(
+            initialTab = contentsInitialTab,
             tableOfContents = tableOfContents,
             sortedBookmarks = sortedBookmarks,
             sortedNotes = sortedNotes,

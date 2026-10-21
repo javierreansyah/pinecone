@@ -138,7 +138,7 @@ class MuPdfDocumentFragment(private val input: PdfDocumentFragmentInput<MuPdfSet
             snapshotFlow { if (preferences.scroll) list.firstVisibleItemIndex else pager.currentPage }
                 .collect { currentPage.value = it }
         }
-        val background = if (preferences.invert) Color(0xFF171717) else Color(0xFFE8E8E8)
+        val background = if (preferences.invert == true) Color(0xFF171717) else Color(0xFFE8E8E8)
         val modifier = Modifier
             .fillMaxSize()
             .background(background)
@@ -246,7 +246,7 @@ class MuPdfDocumentFragment(private val input: PdfDocumentFragmentInput<MuPdfSet
                 }
             }, contentAlignment = Alignment.Center) {
             bitmap?.let {
-                val filter = if (preferences.invert) ColorFilter.colorMatrix(
+                val filter = if (preferences.invert == true) ColorFilter.colorMatrix(
                     ColorMatrix(
                         floatArrayOf(
                             -1f,

@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library.main
 
+import com.javierreansyah.pinecone.ui.features.library.fileFormat
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -385,6 +386,7 @@ fun LibraryScreen(
                         LibraryFilterBottomSheet(
                             isShelvesTab = isShelvesTab,
                             preferences = prefs,
+                            availableFormats = uiState.allBooks.mapTo(mutableSetOf()) { it.fileFormat() },
                             onLayoutModeChange = { onLayoutModeChange(it, isShelvesTab) },
                             onSortTypeChange = { onSortTypeChange(it, isShelvesTab) },
                             onStatusToggle = { toggleStatusFilter(it, isShelvesTab) },

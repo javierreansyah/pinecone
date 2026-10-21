@@ -239,26 +239,26 @@
 
     <string name="settings_title">Settings</string>
     <string name="settings_general">General</string>
-    <string name="settings_theme_mode">Theme Mode</string>
-    <string name="settings_color_palette">Color Palette</string>
-    <string name="settings_theme_contrast">Theme Contrast</string>
+    <string name="settings_theme_mode">Theme mode</string>
+    <string name="settings_color_palette">Color palette</string>
+    <string name="settings_theme_contrast">Theme contrast</string>
     <string name="settings_language">@string/book_language</string>
-    <string name="settings_show_all_spaces">Show All Spaces</string>
+    <string name="settings_show_all_spaces">Show All spaces</string>
     <string name="settings_show_all_spaces_summary">Show \"All\" in the spaces list</string>
 
-    <string name="settings_backup_preferences">Local Backup</string>
-    <string name="settings_backup_now">Backup Now</string>
+    <string name="settings_backup_preferences">Local backup</string>
+    <string name="settings_backup_now">Backup now</string>
     <string name="settings_backup_now_summary">Backup library and dictionaries (%s)</string>
     <string name="settings_restore">Restore</string>
     <string name="settings_export_backup">Export backup</string>
-    <string name="settings_import_backup">Import Backup</string>
+    <string name="settings_import_backup">Import backup</string>
     <string name="settings_import_backup_summary">Add a portable Pinecone backup to this vault</string>
     <string name="settings_restore_summary">Restore library and dictionaries</string>
     <string name="settings_restore_partial">Restore committed, but final cleanup could not finish. Restart Pinecone to complete recovery.</string>
     <string name="settings_last_backup_format">Last: %s</string>
     <string name="settings_error_set_backup_location">Please select a backup location first</string>
-    <string name="settings_auto_backup_freq">Auto Backup Frequency</string>
-    <string name="settings_backup_location">Backup Location</string>
+    <string name="settings_auto_backup_freq">Auto backup frequency</string>
+    <string name="settings_backup_location">Backup location</string>
     <string name="settings_option_system">System</string>
     <string name="settings_option_light">@string/reader_settings_theme_light</string>
     <string name="settings_option_dark">@string/reader_settings_theme_dark</string>
@@ -268,7 +268,7 @@
     <string name="settings_option_never">Never</string>
     <string name="settings_option_dynamic">Dynamic</string>
 
-    <string name="chooseColorScheme">Choose Color Scheme</string>
+    <string name="chooseColorScheme">Choose color scheme</string>
     <string name="ok">@string/action_ok</string>
     <string name="settings_option_selected">Selected</string>
     <string name="settings_option_not_selected">Not selected (Auto-backup disabled)</string>
@@ -277,9 +277,9 @@
     <string name="settings_backup_freq_1d">1 day</string>
     <string name="settings_backup_freq_3d">3 days</string>
     <string name="settings_backup_freq_1w">1 week</string>
-    <string name="settings_restore_defaults">Restore Defaults</string>
+    <string name="settings_restore_defaults">Restore defaults</string>
     <string name="settings_restore_backup_warning">Are you sure you want to restore? This will overwrite your current library and settings.</string>
-    <string name="settings_restore_backup_sheet_title">Select Backup to Restore</string>
+    <string name="settings_restore_backup_sheet_title">Select backup to restore</string>
     <item name="settings_backup_auto_label" type="string">@string/reader_settings_theme_auto</item>
     <string name="settings_backup_manual_label">Manual</string>
     <string name="settings_no_backups_found">No backups found in the selected folder.</string>
@@ -320,7 +320,7 @@
     <string name="nav_starting_backup">Starting backup…</string>
     <string name="nav_backup_success">Backup successful</string>
     <string name="nav_backup_failed">Backup failed</string>
-    <string name="nav_restore_backup">Restore Backup</string>
+    <string name="nav_restore_backup">Restore backup</string>
     <string name="nav_restoring_backup">Restoring backup…</string>
     <string name="nav_restore_success">Backup restored successfully!</string>
     <string name="nav_restore_failed">Failed to restore backup</string>
@@ -341,17 +341,17 @@
 
     <string name="about_title">Pinecone</string>
     <string name="about_copyright">Copyright © 2026 Javier Aahmes Reansyah</string>
-    <string name="about_view_full_license">View Full License</string>
-    <string name="about_source_code">Source Code (GitHub)</string>
-    <string name="about_open_source_licenses">Open Source Licenses</string>
+    <string name="about_view_full_license">View full license</string>
+    <string name="about_source_code">Source code (GitHub)</string>
+    <string name="about_open_source_licenses">Open source licenses</string>
     <string name="about_no_libraries">No open source libraries found.</string>
     <string name="about_unknown_license">Unknown License</string>
     <string name="settings_about_section">About</string>
-    <string name="settings_about_app">About this App</string>
+    <string name="settings_about_app">About this app</string>
     <string name="settings_spaces_enabled">Use spaces</string>
-    <string name="settings_spaces_enabled_summary">Organize your library into spaces. Turn off to browse books and shelves together.</string>
+    <string name="settings_spaces_enabled_summary">Organize books and shelves by space.</string>
     <string name="settings_unsorted_enabled">Use Unsorted inbox</string>
-    <string name="settings_unsorted_enabled_summary">Keep new imports in Unsorted until you organize them. Turning off adds waiting items to All.</string>
+    <string name="settings_unsorted_enabled_summary">Keep new imports separate until organized.</string>
     <string name="library_label_show">Show</string>
     <string name="library_label_layout">Layout</string>
     <string name="library_label_formats">File formats</string>
@@ -367,4 +367,10 @@
     <string name="action_move">Move</string>
     <string name="library_add_to_library">Add to library</string>
     <string name="library_transfer_destination">Choose a destination space. Missing books will be added automatically.</string>
+    <string name="settings_hide_all_space">Hide All space</string>
+    <string name="settings_hide_all_space_summary">Hide All from the navigation rail.</string>
+    <string name="reader_follow_theme">Follow theme</string>
+    <string name="reader_always">Always</string>
+    <string name="reader_never">Never</string>
+    <string name="reader_image_filter_activation">Apply image filter</string>
 </resources>

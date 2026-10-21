@@ -39,6 +39,7 @@ data class AudioPlaybackState(
     val elapsedSeconds: Long = 0,
     val durationSeconds: Long? = null,
     val error: String? = null,
+    val author: String = "",
 )
 
 /** Application-scoped state; the MediaSessionService owns/relinquishes the native player. */
@@ -82,7 +83,7 @@ class AudioReadingSession(private val app: PineconeApplication) {
             ).getOrNull()
                 ?: error("Audio engine could not open this publication")
             navigator.value = nav
-            _state.value = AudioPlaybackState(bookId = bookId, title = book.book.title)
+            _state.value = AudioPlaybackState(bookId = bookId, title = book.book.title, author = book.sortedAuthors.joinToString(", ") { it.name })
             jobs = listOf(
                 scope.launch {
                     nav.playback.collect { playback ->

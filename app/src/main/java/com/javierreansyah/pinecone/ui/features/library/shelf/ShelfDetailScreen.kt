@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library.shelf
 
+import com.javierreansyah.pinecone.ui.features.library.fileFormat
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateDpAsState
@@ -251,6 +252,7 @@ fun ShelfDetailScreen(
         ShelfDetailFilterBottomSheet(
             shelfId = shelfId,
             preferences = uiState.value.bookPreferences,
+            availableFormats = shelfWithCovers?.books.orEmpty().mapTo(mutableSetOf()) { it.book.fileFormat() },
             onLayoutModeChange = viewModel::onLayoutModeChange,
             onSortTypeChange = viewModel::onSortTypeChange,
             onStatusToggle = viewModel::toggleStatusFilter,

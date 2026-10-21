@@ -57,7 +57,7 @@ fun FormatReaderSettings(
         if (profile == ReaderProfile.AUDIO) stringResource(R.string.reader_playback) else stringResource(
             R.string.reader_pages
         ),
-        *if (isPdf) emptyArray() else arrayOf(stringResource(R.string.reader_settings_tab_lighting)),
+        stringResource(R.string.reader_settings_tab_lighting),
         stringResource(R.string.reader_settings_tab_advanced)
     )
     val pagerState = rememberPagerState { titles.size }
@@ -80,8 +80,7 @@ fun FormatReaderSettings(
                     Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    val selected = if (isPdf && page == 1) 2 else page
-                    when (selected) {
+                    when (page) {
                         0 -> when {
                             profile == ReaderProfile.PDF -> {
                                 val pdf = settings.formatPreferences.pdf
@@ -91,7 +90,7 @@ fun FormatReaderSettings(
                                             formatPreferences = settings.formatPreferences.copy(pdf = value)
                                         )
                                     )
-                                SettingsGroup {
+                                SettingsGroup(verticalArrangement = Arrangement.Top) {
                                     PreferenceSwitch(
                                         stringResource(R.string.reader_continuous_scroll),
                                         pdf.scroll
@@ -108,23 +107,16 @@ fun FormatReaderSettings(
                                         stringResource(R.string.reader_fit_width),
                                         pdf.fitWidth
                                     ) { update(pdf.copy(fitWidth = it)) }
-                                    PreferenceSwitch(
-                                        stringResource(R.string.reader_invert_pages),
-                                        pdf.invert
-                                    ) { update(pdf.copy(invert = it)) }
                                     IncrementDecrementControl(
                                         label = stringResource(R.string.reader_page_spacing),
+                                        inline = true,
                                         value = pdf.pageSpacing.roundToInt().toString(),
                                         onIncrement = { update(pdf.copy(pageSpacing = (pdf.pageSpacing + 1).coerceAtMost(64.0))) },
                                         onDecrement = { update(pdf.copy(pageSpacing = (pdf.pageSpacing - 1).coerceAtLeast(0.0))) },
-                                        modifier = Modifier.padding(horizontal = 16.dp),
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                                     )
                                 }
-                                Text(
-                                    stringResource(R.string.reader_pdf_zoom_hint),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    modifier = Modifier.padding(horizontal = 16.dp),
-                                )
+
                             }
 
                             profile == ReaderProfile.AUDIO -> SettingsGroup {
@@ -197,29 +189,55 @@ fun FormatReaderSettings(
                             )
                         }
 
-                        1 -> FormatLighting(settings, onChange)
-
-                        2 -> SettingsGroup {
-                            PreferenceSwitch(stringResource(R.string.reader_settings_this_publication), useBookSettings, onUseBookSettings)
-                            if (isPdf && onReparsePdf != null) {
-                                Row(
-                                    Modifier.fillMaxWidth().clickable(onClick = onReparsePdf)
-                                        .padding(horizontal = 16.dp, vertical = 16.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                ) {
-                                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                        Text(stringResource(R.string.reader_reparse_pdf), style = MaterialTheme.typography.titleMedium)
-                                        Text(stringResource(R.string.reader_reparse_pdf_description),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                    Icon(MaterialSymbols.Outlined.Restart_alt, contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        1 -> {
+                            FormatLighting(settings, onChange, showChromeHint = !isPdf)
+                            if (isPdf) {
+                                Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text(stringResource(R.string.reader_invert_pages), style = MaterialTheme.typography.titleMedium)
+                                    val options = linkedMapOf(
+                                        null to stringResource(R.string.reader_follow_theme),
+                                        true to stringResource(R.string.reader_always),
+                                        false to stringResource(R.string.reader_never),
+                                    )
+                                    SegmentedButtonGroup(
+                                        options = options.values.toList(),
+                                        icons = emptyList(),
+                                        selected = options.getValue(settings.formatPreferences.pdf.invert),
+                                        onSelected = { label ->
+                                            val invert = options.entries.first { it.value == label }.key
+                                            onChange(settings.copy(formatPreferences = settings.formatPreferences.copy(
+                                                pdf = settings.formatPreferences.pdf.copy(invert = invert),
+                                            )))
+                                        },
+                                    )
                                 }
                             }
-                            if (isPdf) FormatLighting(settings, onChange)
-                            AdvancedTabContent(settings, onChange, includeTextPreferences = false) {
+                        }
+
+                        2 -> {
+                            AdvancedTabContent(
+                                settings, onChange, includeTextPreferences = false,
+                                leadingContent = {
+                                    PreferenceSwitch(stringResource(R.string.reader_settings_this_publication), useBookSettings, onUseBookSettings)
+                                    if (isPdf && onReparsePdf != null) {
+                                        Row(
+                                            Modifier.fillMaxWidth().clickable(onClick = onReparsePdf)
+                                                .padding(horizontal = 16.dp, vertical = 16.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                        ) {
+                                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                Text(stringResource(R.string.reader_reparse_pdf), style = MaterialTheme.typography.titleMedium)
+                                                Text(stringResource(R.string.reader_reparse_pdf_description),
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                            Icon(MaterialSymbols.Outlined.Restart_alt, contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                },
+                            ) {
                                 val format = when {
                                     profile == ReaderProfile.PDF -> settings.formatPreferences.copy(pdf = com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences())
                                     profile == ReaderProfile.AUDIO -> settings.formatPreferences.copy(
@@ -251,9 +269,13 @@ fun FormatReaderSettings(
 }
 
 @Composable
-private fun FormatLighting(settings: ReaderSettings, onChange: (ReaderSettings) -> Unit) {
+private fun FormatLighting(
+    settings: ReaderSettings,
+    onChange: (ReaderSettings) -> Unit,
+    showChromeHint: Boolean,
+) {
     ReaderBrightnessControl(settings, onChange)
-    Text(
+    if (showChromeHint) Text(
         stringResource(R.string.reader_chrome_theme_hint),
         Modifier.padding(horizontal = 16.dp),
         style = MaterialTheme.typography.bodySmall
@@ -272,6 +294,7 @@ private fun FormatLighting(settings: ReaderSettings, onChange: (ReaderSettings) 
                     isSelected = settings.pineconeThemePreset == theme,
                     onClick = { onChange(settings.copy(pineconeThemePreset = theme)) },
                     isAuto = theme == "Auto", color = color, label = stringResource(label),
+                    modifier = if (theme == "Auto") Modifier.padding(start = 0.dp, end = 4.dp) else Modifier,
                 )
             }
         }
@@ -280,8 +303,11 @@ private fun FormatLighting(settings: ReaderSettings, onChange: (ReaderSettings) 
 }
 
 @Composable
-internal fun SettingsGroup(content: @Composable () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) { content() }
+internal fun SettingsGroup(
+    verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(16.dp),
+    content: @Composable () -> Unit,
+) {
+    Column(verticalArrangement = verticalArrangement) { content() }
 }
 
 @Composable

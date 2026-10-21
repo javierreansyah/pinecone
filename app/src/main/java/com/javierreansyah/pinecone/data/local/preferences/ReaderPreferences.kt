@@ -19,7 +19,6 @@ import org.readium.r2.navigator.epub.EpubPreferences
 import org.readium.r2.navigator.preferences.Color
 import org.readium.r2.navigator.preferences.ColumnCount
 import org.readium.r2.navigator.preferences.FontFamily
-import org.readium.r2.navigator.preferences.ImageFilter
 import org.readium.r2.navigator.preferences.ReadingProgression
 import org.readium.r2.navigator.preferences.TextAlign
 import org.readium.r2.navigator.preferences.Theme
@@ -164,11 +163,8 @@ data class ReaderSettings(
                 else -> ColumnCount.AUTO
             },
             pageMargins = pageMargins,
-            imageFilter = when (imageFilter) {
-                "Darken" -> ImageFilter.DARKEN
-                "Invert" -> ImageFilter.INVERT
-                else -> null
-            },
+            // The controller applies this independently of Readium's dark-theme-only filtering.
+            imageFilter = null,
             typeScale = typeScale,
             readingProgression = when (readingProgression) {
                 "LTR" -> ReadingProgression.LTR
