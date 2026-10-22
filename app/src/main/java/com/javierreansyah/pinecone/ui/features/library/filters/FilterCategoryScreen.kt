@@ -48,6 +48,7 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.components.SegmentedLazyColumn
+import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import com.javierreansyah.pinecone.ui.features.library.components.FilterItemSortBottomSheet
 import com.javierreansyah.pinecone.ui.features.library.components.FilterItemSortType
 import com.javierreansyah.pinecone.ui.features.library.components.FilterMultiSelectAppBar
@@ -365,7 +366,7 @@ private fun AllFilterItemsList(
             .padding(innerPadding)
             .fillMaxSize()
             .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(bottom = 16.dp),
+        contentPadding = PaddingValues(bottom = 16.dp + LocalAudioPlayerBottomPadding.current),
     ) {
         sortedItems.forEach { (itemFirst, itemSecond) ->
             val isSelected = selectedItems.contains(itemFirst)

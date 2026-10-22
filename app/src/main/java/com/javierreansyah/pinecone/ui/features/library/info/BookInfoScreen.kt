@@ -3,7 +3,6 @@
 package com.javierreansyah.pinecone.ui.features.library.info
 
 import android.app.Application
-import android.content.Intent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ScrollState
@@ -40,6 +39,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -132,7 +132,6 @@ import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import com.javierreansyah.pinecone.ui.components.SegmentedColumn
-import com.javierreansyah.pinecone.ui.features.reader.ReaderActivity
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.readium.r2.shared.publication.Link
@@ -147,6 +146,7 @@ import java.util.Locale
 @Composable
 fun BookInfoScreen(
     bookId: String,
+    onNavigateToReader: (String, Locator?) -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToEdit: (String) -> Unit,
     onNavigateToTag: (String) -> Unit,
@@ -194,6 +194,7 @@ fun BookInfoScreen(
                 BookInfoContent(
                     book = book,
                     bookId = bookId,
+                    onNavigateToReader = onNavigateToReader,
                     viewModel = viewModel,
                     onNavigateBack = onNavigateBack,
                     onNavigateToEdit = onNavigateToEdit,
@@ -251,6 +252,7 @@ fun BookInfoScreen(
 private fun BookInfoContent(
     book: Book,
     bookId: String,
+    onNavigateToReader: (String, Locator?) -> Unit,
     viewModel: BookInfoViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToEdit: (String) -> Unit,
@@ -259,7 +261,6 @@ private fun BookInfoContent(
     showDeleteConfirm: () -> Unit,
 ) {
     val scrollState = rememberScrollState()
-    val context = LocalContext.current
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current
     val maxTabHeight = remember(windowInfo.containerSize, density) {
@@ -293,19 +294,13 @@ private fun BookInfoContent(
 
     val navigateToLocator: (Locator) -> Unit = { locator ->
         viewModel.saveReadingPosition(locator) {
-            val intent = Intent(context, ReaderActivity::class.java).apply {
-                putExtra(ReaderActivity.EXTRA_BOOK_ID, book.id)
-            }
-            context.startActivity(intent)
+            onNavigateToReader(book.id, locator)
         }
     }
 
     val jumpToLocator: (Locator) -> Unit = { locator ->
         viewModel.saveJumpReadingPosition(locator) {
-            val intent = Intent(context, ReaderActivity::class.java).apply {
-                putExtra(ReaderActivity.EXTRA_BOOK_ID, book.id)
-            }
-            context.startActivity(intent)
+            onNavigateToReader(book.id, locator)
         }
     }
 
@@ -344,17 +339,15 @@ private fun BookInfoContent(
             modifier = Modifier
                 .fillMaxSize()
                 .nestedScroll(nestedScrollConnection)
-                .verticalScroll(scrollState),
+                .verticalScroll(scrollState)
+                .padding(bottom = LocalAudioPlayerBottomPadding.current),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             BookInfoHeader(
                 book = book,
                 onNavigateToTag = onNavigateToTag,
                 onReadClick = {
-                    val intent = Intent(context, ReaderActivity::class.java).apply {
-                        putExtra(ReaderActivity.EXTRA_BOOK_ID, book.id)
-                    }
-                    context.startActivity(intent)
+                    onNavigateToReader(book.id, null)
                 },
                 onReadFurthestClick = {
                     furthestLocator?.let { jumpToLocator(it) }

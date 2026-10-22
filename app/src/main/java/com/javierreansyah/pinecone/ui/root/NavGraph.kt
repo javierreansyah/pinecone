@@ -21,6 +21,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
@@ -29,8 +30,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.ui.features.dictionary.DictionariesScreen
@@ -44,6 +47,9 @@ import com.javierreansyah.pinecone.ui.features.library.main.LibraryRoute
 import com.javierreansyah.pinecone.ui.features.library.shelf.ShelfDetailScreen
 import com.javierreansyah.pinecone.ui.features.library.unsorted.UnsortedScreen
 import com.javierreansyah.pinecone.ui.features.reader.ReaderActivity
+import com.javierreansyah.pinecone.data.publication.ReaderProfile
+import kotlinx.coroutines.launch
+import org.readium.r2.shared.publication.Locator
 import com.javierreansyah.pinecone.ui.features.settings.AboutScreen
 import com.javierreansyah.pinecone.ui.features.settings.OpenSourceLicensesScreen
 import com.javierreansyah.pinecone.ui.features.settings.SettingsScreen
@@ -111,6 +117,19 @@ fun NavGraph(
     val context = LocalContext.current
     val app = context.applicationContext as PineconeApplication
     val readerPreferences = app.readerPreferences
+    val scope = rememberCoroutineScope()
+    val openBook: (String, Locator?) -> Unit = { bookId, locator ->
+        scope.launch {
+            if (app.libraryRepository.rendition(bookId, "original")?.profile == ReaderProfile.AUDIO.name) {
+                backStack.openAudioPlayer(bookId, locator?.toJSON()?.toString())
+            } else {
+                context.startActivity(Intent(context, ReaderActivity::class.java).apply {
+                    putExtra(ReaderActivity.EXTRA_BOOK_ID, bookId)
+                })
+            }
+        }
+    }
+    val navigateToReader: (String) -> Unit = { openBook(it, null) }
     val density = LocalDensity.current
     var organizeBookIds by remember { mutableStateOf<String?>(null) }
 
@@ -143,7 +162,11 @@ fun NavGraph(
     val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
 
     NavDisplay(
-        backStack = backStack,
+        backStack = backStack.filterNot { it is Screen.AudioPlayer },
+        entryDecorators = listOf(
+            rememberSaveableStateHolderNavEntryDecorator(),
+            rememberViewModelStoreNavEntryDecorator(),
+        ),
         modifier = modifier
             .background(MaterialTheme.colorScheme.background)
             .systemGestureExclusion {
@@ -193,12 +216,7 @@ fun NavGraph(
         entryProvider = entryProvider {
             entry<Screen.Library> {
                 LibraryRoute(
-                    onNavigateToReader = { bookId ->
-                        val intent = Intent(context, ReaderActivity::class.java).apply {
-                            putExtra(ReaderActivity.EXTRA_BOOK_ID, bookId)
-                        }
-                        context.startActivity(intent)
-                    },
+                    onNavigateToReader = navigateToReader,
                     onNavigateToShelf = { shelfId, name, count ->
                         backStack.add(Screen.ShelfDetail(shelfId, name, count))
                     },
@@ -273,12 +291,7 @@ fun NavGraph(
             entry<Screen.Unsorted> {
                 UnsortedScreen(
                     onNavigateBack = navigateBack,
-                    onNavigateToReader = { bookId ->
-                        val intent = Intent(context, ReaderActivity::class.java).apply {
-                            putExtra(ReaderActivity.EXTRA_BOOK_ID, bookId)
-                        }
-                        context.startActivity(intent)
-                    },
+                    onNavigateToReader = navigateToReader,
                     onNavigateToBookInfo = { bookId ->
                         backStack.add(Screen.BookInfo(bookId))
                     },
@@ -290,12 +303,7 @@ fun NavGraph(
             entry<Screen.Archives> {
                 ArchiveScreen(
                     onNavigateBack = navigateBack,
-                    onNavigateToReader = { bookId ->
-                        val intent = Intent(context, ReaderActivity::class.java).apply {
-                            putExtra(ReaderActivity.EXTRA_BOOK_ID, bookId)
-                        }
-                        context.startActivity(intent)
-                    },
+                    onNavigateToReader = navigateToReader,
                     onNavigateToBookInfo = { bookId ->
                         backStack.add(Screen.BookInfo(bookId))
                     },
@@ -310,12 +318,7 @@ fun NavGraph(
                     initialShelfName = argsName,
                     initialBookCount = argsCount,
                     onNavigateBack = navigateBack,
-                    onNavigateToReader = { bookId ->
-                        val intent = Intent(context, ReaderActivity::class.java).apply {
-                            putExtra(ReaderActivity.EXTRA_BOOK_ID, bookId)
-                        }
-                        context.startActivity(intent)
-                    },
+                    onNavigateToReader = navigateToReader,
                     onNavigateToBookInfo = { bookId ->
                         backStack.add(Screen.BookInfo(bookId))
                     },
@@ -329,12 +332,7 @@ fun NavGraph(
                     filterType = "author",
                     filterValue = argsAuthorName,
                     onNavigateBack = navigateBack,
-                    onNavigateToReader = { bookId ->
-                        val intent = Intent(context, ReaderActivity::class.java).apply {
-                            putExtra(ReaderActivity.EXTRA_BOOK_ID, bookId)
-                        }
-                        context.startActivity(intent)
-                    },
+                    onNavigateToReader = navigateToReader,
                     onNavigateToMerged = { newName ->
                         backStack.removeLastOrNull()
                         backStack.add(Screen.AuthorDetail(newName))
@@ -352,12 +350,7 @@ fun NavGraph(
                     filterType = "tag",
                     filterValue = argsTagName,
                     onNavigateBack = navigateBack,
-                    onNavigateToReader = { bookId ->
-                        val intent = Intent(context, ReaderActivity::class.java).apply {
-                            putExtra(ReaderActivity.EXTRA_BOOK_ID, bookId)
-                        }
-                        context.startActivity(intent)
-                    },
+                    onNavigateToReader = navigateToReader,
                     onNavigateToMerged = { newName ->
                         backStack.removeLastOrNull()
                         backStack.add(Screen.TagDetail(newName))
@@ -375,12 +368,7 @@ fun NavGraph(
                     filterType = "space",
                     filterValue = argsSpaceName,
                     onNavigateBack = navigateBack,
-                    onNavigateToReader = { bookId ->
-                        val intent = Intent(context, ReaderActivity::class.java).apply {
-                            putExtra(ReaderActivity.EXTRA_BOOK_ID, bookId)
-                        }
-                        context.startActivity(intent)
-                    },
+                    onNavigateToReader = navigateToReader,
                     onNavigateToMerged = { newName ->
                         backStack.removeLastOrNull()
                         backStack.add(Screen.SpaceDetail(newName))
@@ -432,6 +420,7 @@ fun NavGraph(
             entry<Screen.BookInfo> { (argsBookId) ->
                 BookInfoScreen(
                     bookId = argsBookId,
+                    onNavigateToReader = openBook,
                     onNavigateBack = navigateBack,
                     onNavigateToEdit = { id ->
                         backStack.add(Screen.EditBook(id))

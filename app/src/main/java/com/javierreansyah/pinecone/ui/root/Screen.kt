@@ -9,6 +9,9 @@ sealed interface Screen : NavKey {
     data object Library : Screen
 
     @Serializable
+    data class AudioPlayer(val bookId: String, val initialLocatorJson: String? = null) : Screen
+
+    @Serializable
     data object Unsorted : Screen
 
     @Serializable

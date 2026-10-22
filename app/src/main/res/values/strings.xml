@@ -1,4 +1,7 @@
 <resources>
+    <string name="reader_open_audio_player">Open audiobook player</string>
+    <string name="reader_collapse_audio_player">Collapse audiobook player</string>
+    <string name="reader_dismiss_audio_player">Dismiss audiobook player and stop playback</string>
 
     <string name="action_back">Back</string>
     <string name="action_cancel">Cancel</string>

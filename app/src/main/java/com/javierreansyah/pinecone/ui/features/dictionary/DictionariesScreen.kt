@@ -6,6 +6,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -37,6 +38,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Add
 import com.composables.icons.materialsymbols.outlined.Book
@@ -156,6 +158,7 @@ private fun DictionariesContent(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onImportClick,
+                modifier = Modifier.padding(bottom = LocalAudioPlayerBottomPadding.current),
             ) {
                 Icon(
                     MaterialSymbols.Outlined.Add,
@@ -252,6 +255,7 @@ private fun DictionariesList(
 ) {
     SegmentedLazyColumn(
         modifier = modifier.padding(horizontal = 16.dp),
+        contentPadding = PaddingValues(bottom = LocalAudioPlayerBottomPadding.current),
     ) {
         uiState.installedDictionaries.forEach { dict ->
             item(

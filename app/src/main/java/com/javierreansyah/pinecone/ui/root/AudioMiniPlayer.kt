@@ -1,0 +1,208 @@
+@file:OptIn(org.readium.r2.shared.ExperimentalReadiumApi::class)
+
+package com.javierreansyah.pinecone.ui.root
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Forward10
+import androidx.compose.material.icons.rounded.Headphones
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Replay10
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
+import com.javierreansyah.pinecone.PineconeApplication
+import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.reader.audio.AudioPlaybackState
+import kotlinx.coroutines.flow.flowOf
+import java.io.File
+
+/** Extra scroll space, not viewport padding: content can draw behind the floating card. */
+val LocalAudioPlayerBottomPadding = staticCompositionLocalOf { 0.dp }
+
+/** Floats the mini-player over every screen, keeping the surrounding area transparent. */
+@Composable
+fun AudioMiniPlayerHost(enabled: Boolean = true, content: @Composable () -> Unit) {
+    val context = LocalContext.current
+    val app = context.applicationContext as PineconeApplication
+    val session = app.audioSession
+    val state by session.state.collectAsStateWithLifecycle()
+    val navigator by session.navigator.collectAsStateWithLifecycle()
+    val visible = enabled && state.bookId != null && navigator != null
+    val density = LocalDensity.current
+    var handleHeight by remember { mutableIntStateOf(0) }
+    val navigationBarHeight = WindowInsets.navigationBars.getBottom(density)
+    val bottomPadding = with(density) {
+        if (visible) (handleHeight - navigationBarHeight).coerceAtLeast(0).toDp() else 0.dp
+    }
+
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        CompositionLocalProvider(LocalAudioPlayerBottomPadding provides bottomPadding) {
+            content()
+        }
+        if (enabled) {
+            Box(Modifier.align(Alignment.BottomCenter).onSizeChanged { handleHeight = it.height }) {
+                AudioMiniPlayerBar()
+            }
+        }
+    }
+}
+
+/** Reserves the sheet's collapsed bounds outside the screen's navigation bar. */
+@Composable
+fun AudioMiniPlayerBar(includeNavigationBarPadding: Boolean = true) {
+    val context = LocalContext.current
+    val app = context.applicationContext as PineconeApplication
+    val session = app.audioSession
+    val state by session.state.collectAsStateWithLifecycle()
+    val navigator by session.navigator.collectAsStateWithLifecycle()
+    if (state.bookId == null || navigator == null) return
+
+    val bookFlow = remember(state.bookId) {
+        state.bookId?.let(app.libraryRepository::getBookFlow) ?: flowOf(null)
+    }
+    val book by bookFlow.collectAsStateWithLifecycle(initialValue = null)
+    val reportHandle = LocalAudioPlayerHandle.current
+    Box(
+        Modifier
+            .onGloballyPositioned { reportHandle(AudioPlayerHandle(it.boundsInRoot(), includeNavigationBarPadding)) }
+            .graphicsLayer { alpha = 0f }
+            .clearAndSetSemantics {},
+    ) {
+        AudioMiniPlayer(
+            state = state,
+            coverPath = book?.book?.coverPath,
+            onOpenPlayer = {},
+            onPlayPause = {},
+            onSkip = {},
+            modifier = Modifier
+                .then(if (includeNavigationBarPadding) Modifier.navigationBarsPadding() else Modifier)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+        )
+    }
+}
+
+@Composable
+internal fun AudioMiniPlayer(
+    state: AudioPlaybackState,
+    coverPath: String?,
+    onOpenPlayer: () -> Unit,
+    onPlayPause: () -> Unit,
+    onSkip: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val openLabel = stringResource(R.string.reader_open_audio_player)
+    Surface(
+        onClick = onOpenPlayer,
+        modifier = modifier.fillMaxWidth().semantics { onClick(label = openLabel, action = null) },
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 2.dp,
+    ) {
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 10.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Surface(
+                    modifier = Modifier.size(44.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                ) {
+                    if (coverPath != null) {
+                        AsyncImage(
+                            model = File(coverPath),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    } else {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(Icons.Rounded.Headphones, contentDescription = null)
+                        }
+                    }
+                }
+                Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
+                    Text(
+                        text = state.title,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    val subtitle = state.error ?: state.chapter.ifBlank { state.author }
+                    if (subtitle.isNotBlank()) {
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (state.error != null) MaterialTheme.colorScheme.error
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                IconButton(onClick = { onSkip(-10) }) {
+                    Icon(Icons.Rounded.Replay10, stringResource(R.string.reader_rewind))
+                }
+                FilledIconButton(onClick = onPlayPause) {
+                    Icon(
+                        imageVector = if (state.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                        contentDescription = stringResource(if (state.playing) R.string.reader_pause else R.string.reader_play),
+                    )
+                }
+                IconButton(onClick = { onSkip(10) }) {
+                    Icon(Icons.Rounded.Forward10, stringResource(R.string.reader_forward))
+                }
+            }
+            if (state.loading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            } else {
+                val duration = state.durationSeconds?.takeIf { it > 0 }
+                LinearProgressIndicator(
+                    progress = { duration?.let { (state.elapsedSeconds.toFloat() / it).coerceIn(0f, 1f) } ?: 0f },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+    }
+}

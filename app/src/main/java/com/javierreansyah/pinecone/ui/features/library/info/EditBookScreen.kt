@@ -28,6 +28,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
@@ -230,6 +231,7 @@ private fun EditBookContent(
             .consumeWindowInsets(innerPadding)
             .imePadding()
             .verticalScroll(rememberScrollState())
+            .padding(bottom = LocalAudioPlayerBottomPadding.current)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

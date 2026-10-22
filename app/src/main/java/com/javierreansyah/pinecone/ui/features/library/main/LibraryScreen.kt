@@ -32,6 +32,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -39,8 +40,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Book
@@ -312,73 +316,84 @@ fun LibraryScreen(
                         }
                     },
                 ) { innerPadding ->
-                    HorizontalPager(
-                        state = pagerState,
-                        userScrollEnabled = !isInMultiSelectMode,
-                        modifier = Modifier
-                            .padding(innerPadding)
-                            .fillMaxSize(),
-                    ) { page ->
-                        when (if (libraryView == LibraryView.Shelves) 1 else page) {
-                            0 -> {
-                                LibraryBooksTabContent(
-                                    showEmptyState = showEmptyState,
-                                    books = uiState.filteredBooks,
-                                    layoutMode = uiState.bookPreferences.layoutMode,
-                                    isImporting = uiState.isImporting,
-                                    selectedBooks = selectedBooks,
-                                    onBookClick = { bookId ->
-                                        if (isInMultiSelectMode) {
-                                            selectedBooks = if (selectedBooks.contains(bookId)) {
-                                                selectedBooks - bookId
+                    var miniPlayerHeight by remember { mutableIntStateOf(0) }
+                    val miniPlayerPadding = with(LocalDensity.current) { miniPlayerHeight.toDp() }
+                    Box(Modifier.padding(innerPadding).fillMaxSize()) {
+                        HorizontalPager(
+                            state = pagerState,
+                            userScrollEnabled = !isInMultiSelectMode,
+                            modifier = Modifier
+                                .fillMaxSize(),
+                        ) { page ->
+                            when (if (libraryView == LibraryView.Shelves) 1 else page) {
+                                0 -> {
+                                    LibraryBooksTabContent(
+                                        showEmptyState = showEmptyState,
+                                        books = uiState.filteredBooks,
+                                        bottomContentPadding = miniPlayerPadding,
+                                        layoutMode = uiState.bookPreferences.layoutMode,
+                                        isImporting = uiState.isImporting,
+                                        selectedBooks = selectedBooks,
+                                        onBookClick = { bookId ->
+                                            if (isInMultiSelectMode) {
+                                                selectedBooks = if (selectedBooks.contains(bookId)) {
+                                                    selectedBooks - bookId
+                                                } else {
+                                                    selectedBooks + bookId
+                                                }
                                             } else {
-                                                selectedBooks + bookId
+                                                onNavigateToReader(bookId)
                                             }
-                                        } else {
-                                            onNavigateToReader(bookId)
-                                        }
-                                    },
-                                    onBookLongClick = { selectedBookContext = Pair(it, null) },
-                                    isInMultiSelectMode = isInMultiSelectMode && !isShelvesTab,
-                                    scrollKey = Pair(
-                                        uiState.bookPreferences.sortType,
-                                        uiState.bookPreferences.isAscending,
-                                    ),
-                                )
-                            }
-
-                            1 -> {
-                                if (uiState.shelves.isEmpty() && uiState.isShelvesLoading) {
-                                    // Loading state handled in ShelvesPage if needed
-                                } else {
-                                    ShelvesPage(
-                                        shelves = uiState.shelves,
-                                        spaceNames = if (uiState.spacesEnabled && (uiState.globalSpaceId == null || uiState.globalSpaceId == "_all_")) uiState.allSpaces.associate { it.id to it.name } else emptyMap(),
-                                        onShelfClick = onNavigateToShelf,
-                                        onBookClick = onNavigateToReader,
-                                        onBookLongClick = { bookId, shelfId ->
-                                            selectedBookContext = Pair(bookId, shelfId)
                                         },
-                                        layoutMode = uiState.shelvesPreferences.layoutMode,
+                                        onBookLongClick = { selectedBookContext = Pair(it, null) },
+                                        isInMultiSelectMode = isInMultiSelectMode && !isShelvesTab,
                                         scrollKey = Pair(
-                                            uiState.shelvesPreferences.sortType,
-                                            uiState.shelvesPreferences.isAscending,
+                                            uiState.bookPreferences.sortType,
+                                            uiState.bookPreferences.isAscending,
                                         ),
-                                        isInMultiSelectMode = isInMultiSelectMode,
-                                        selectedShelves = selectedShelves,
-                                        onShelfLongClick = { id ->
-                                            selectedShelves = setOf(id)
-                                            isInMultiSelectMode = true
-                                        },
-                                    ) { id ->
-                                        selectedShelves = if (selectedShelves.contains(id)) {
-                                            selectedShelves - id
-                                        } else {
-                                            selectedShelves + id
+                                    )
+                                }
+
+                                1 -> {
+                                    if (uiState.shelves.isEmpty() && uiState.isShelvesLoading) {
+                                        // Loading state handled in ShelvesPage if needed
+                                    } else {
+                                        ShelvesPage(
+                                            bottomContentPadding = miniPlayerPadding,
+                                            shelves = uiState.shelves,
+                                            spaceNames = if (uiState.spacesEnabled && (uiState.globalSpaceId == null || uiState.globalSpaceId == "_all_")) uiState.allSpaces.associate { it.id to it.name } else emptyMap(),
+                                            onShelfClick = onNavigateToShelf,
+                                            onBookClick = onNavigateToReader,
+                                            onBookLongClick = { bookId, shelfId ->
+                                                selectedBookContext = Pair(bookId, shelfId)
+                                            },
+                                            layoutMode = uiState.shelvesPreferences.layoutMode,
+                                            scrollKey = Pair(
+                                                uiState.shelvesPreferences.sortType,
+                                                uiState.shelvesPreferences.isAscending,
+                                            ),
+                                            isInMultiSelectMode = isInMultiSelectMode,
+                                            selectedShelves = selectedShelves,
+                                            onShelfLongClick = { id ->
+                                                selectedShelves = setOf(id)
+                                                isInMultiSelectMode = true
+                                            },
+                                        ) { id ->
+                                            selectedShelves = if (selectedShelves.contains(id)) {
+                                                selectedShelves - id
+                                            } else {
+                                                selectedShelves + id
+                                            }
                                         }
                                     }
                                 }
                             }
+                        }
+
+                        Box(Modifier.align(Alignment.BottomCenter).onSizeChanged { miniPlayerHeight = it.height }) {
+                            com.javierreansyah.pinecone.ui.root.AudioMiniPlayerBar(
+                                includeNavigationBarPadding = false,
+                            )
                         }
                     }
 
@@ -571,6 +586,7 @@ private fun LibraryBooksTabContent(
     onBookClick: (String) -> Unit,
     onBookLongClick: (String) -> Unit,
     scrollKey: Any? = null,
+    bottomContentPadding: Dp = 0.dp,
 ) {
     Box(
         modifier = Modifier
@@ -595,6 +611,7 @@ private fun LibraryBooksTabContent(
                 selectedBooks = selectedBooks,
                 isInMultiSelectMode = isInMultiSelectMode,
                 scrollKey = scrollKey,
+                bottomContentPadding = bottomContentPadding,
             )
         }
 

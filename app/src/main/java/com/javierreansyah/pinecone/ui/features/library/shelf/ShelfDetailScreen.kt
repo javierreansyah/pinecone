@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.PaddingValues
+import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
@@ -832,6 +834,7 @@ private fun ShelfDetailBookListContent(
                     LazyColumn(
                         state = lazyListState,
                         modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = LocalAudioPlayerBottomPadding.current),
                     ) {
                         items(reorderBooks, { (itId4) -> itId4 }) { item ->
                             ReorderableItem(reorderState, key = item.id) { isDragging ->

@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
+import com.composables.icons.materialsymbols.outlined.Keyboard_arrow_down
 import com.composables.icons.materialsymbols.outlined.Bookmark
 import com.composables.icons.materialsymbols.outlined.Bookmark_check
 import com.composables.icons.materialsymbols.outlined.Close
@@ -139,8 +140,8 @@ fun ReaderTopBar(
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(
-                        MaterialSymbols.Outlined.Arrow_back,
-                        contentDescription = stringResource(R.string.action_back),
+                        if (audioPlayer) MaterialSymbols.Outlined.Keyboard_arrow_down else MaterialSymbols.Outlined.Arrow_back,
+                        contentDescription = stringResource(if (audioPlayer) R.string.reader_collapse_audio_player else R.string.action_back),
                         tint = readerTextColor,
                     )
                 }
