@@ -9,6 +9,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -18,8 +19,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
+import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 
 @Composable
 fun BookCollection(
@@ -30,6 +33,7 @@ fun BookCollection(
     selectedBooks: Set<String> = emptySet(),
     isInMultiSelectMode: Boolean = false,
     scrollKey: Any? = null,
+    bottomContentPadding: Dp = LocalAudioPlayerBottomPadding.current,
 ) {
     key(scrollKey) {
         AnimatedContent(
@@ -56,6 +60,7 @@ fun BookCollection(
                     onBookLongClick = onBookLongClick,
                     selectedBooks = selectedBooks,
                     isInMultiSelectMode = isInMultiSelectMode,
+                    bottomContentPadding = bottomContentPadding,
                 )
             } else {
                 BookList(
@@ -64,6 +69,7 @@ fun BookCollection(
                     onBookLongClick = onBookLongClick,
                     selectedBooks = selectedBooks,
                     isInMultiSelectMode = isInMultiSelectMode,
+                    bottomContentPadding = bottomContentPadding,
                 )
             }
         }
@@ -78,6 +84,7 @@ private fun BookGrid(
     onBookLongClick: ((String) -> Unit)? = null,
     selectedBooks: Set<String> = emptySet(),
     isInMultiSelectMode: Boolean = false,
+    bottomContentPadding: Dp = 0.dp,
 ) {
     val density = LocalDensity.current
     val containerSize = LocalWindowInfo.current.containerSize
@@ -97,6 +104,7 @@ private fun BookGrid(
 
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = itemWidth),
+        contentPadding = PaddingValues(bottom = bottomContentPadding),
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = horizontalPadding),
@@ -126,6 +134,7 @@ private fun BookList(
     onBookLongClick: ((String) -> Unit)? = null,
     selectedBooks: Set<String> = emptySet(),
     isInMultiSelectMode: Boolean = false,
+    bottomContentPadding: Dp = 0.dp,
 ) {
     val density = LocalDensity.current
     val containerSize = LocalWindowInfo.current.containerSize
@@ -135,6 +144,7 @@ private fun BookList(
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(columns),
+        contentPadding = PaddingValues(bottom = bottomContentPadding),
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = horizontalPadding),

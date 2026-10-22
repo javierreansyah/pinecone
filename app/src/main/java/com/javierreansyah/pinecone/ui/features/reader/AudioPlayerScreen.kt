@@ -1,0 +1,83 @@
+package com.javierreansyah.pinecone.ui.features.reader
+
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.javierreansyah.pinecone.PineconeApplication
+import com.javierreansyah.pinecone.data.publication.ReaderProfile
+import com.javierreansyah.pinecone.ui.features.reader.components.overlay.ReaderOverlay
+import kotlinx.coroutines.flow.first
+import org.json.JSONObject
+import org.readium.r2.shared.publication.Locator
+
+/** The audio presentation is entry-scoped; the service, not this screen, owns playback. */
+@Composable
+fun AudioPlayerScreen(
+    bookId: String,
+    initialLocatorJson: String?,
+    onBack: () -> Unit,
+    onBookInfo: (String) -> Unit,
+    artworkAlpha: Float = 1f,
+    topBarAlpha: Float = 1f,
+) {
+    val app = LocalContext.current.applicationContext as PineconeApplication
+    val darkTheme = isSystemInDarkTheme()
+    val reader: ReaderViewModel = viewModel(factory = ReaderViewModel.Factory(app, bookId, darkTheme))
+    val search: ReaderSearchViewModel = viewModel(factory = ReaderSearchViewModel.Factory(app))
+    val notes: ReaderNotesViewModel = viewModel(factory = ReaderNotesViewModel.Factory(app, bookId))
+    val dictionary: ReaderDictionaryViewModel = viewModel(factory = ReaderDictionaryViewModel.Factory(app))
+    val publication by reader.publication.collectAsStateWithLifecycle()
+    var pendingLocatorJson by rememberSaveable { mutableStateOf(initialLocatorJson) }
+
+    LaunchedEffect(reader) {
+        if (reader.publication.value == null) reader.openBook()
+    }
+    LaunchedEffect(darkTheme) { reader.systemDarkThemeFlow.value = darkTheme }
+    LaunchedEffect(publication) {
+        if (publication != null && reader.profile.value == ReaderProfile.AUDIO) {
+            reader.startAudio()
+            val initial = pendingLocatorJson?.let { Locator.fromJSON(JSONObject(it)) }
+            if (initial != null) {
+                app.audioSession.state.first { it.bookId == bookId && !it.loading }
+                reader.audioGo(initial)
+                pendingLocatorJson = null
+            }
+        }
+    }
+
+    val router = remember(onBack, onBookInfo) {
+        object : ReaderNavigationRouter {
+            override fun navigateBack() = onBack()
+            override fun navigateToBookInfo(bookId: String) = onBookInfo(bookId)
+        }
+    }
+    Box(Modifier.fillMaxSize()) {
+        ReaderOverlay(
+            viewModel = reader,
+            searchViewModel = search,
+            notesViewModel = notes,
+            dictionaryViewModel = dictionary,
+            router = router,
+            bookId = bookId,
+            onNavigateToChapter = reader::audioGo,
+            onSeekToProgression = { progression ->
+                reader.locatorForProgression(progression)?.let(reader::audioGo)
+            },
+            onNavigateToLocator = reader::audioGo,
+            transparentAudioBackground = true,
+            audioArtworkAlpha = artworkAlpha,
+            audioTopBarAlpha = topBarAlpha,
+        )
+    }
+}

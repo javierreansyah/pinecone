@@ -177,4 +177,10 @@ class AudioReadingSession(private val app: PineconeApplication) {
         publication?.close(); publication = null; locator.value = null
         _state.value = _state.value.copy(playing = false, loading = false)
     }
+
+    /** Serialized with open so a dismissed, still-loading book cannot resurrect playback. */
+    suspend fun stop(): Unit = mutex.withLock {
+        releasePlayer()
+        _state.value = AudioPlaybackState()
+    }
 }

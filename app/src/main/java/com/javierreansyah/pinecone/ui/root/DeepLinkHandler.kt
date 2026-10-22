@@ -14,7 +14,9 @@ import androidx.navigation3.runtime.NavKey
 fun getInitialBackStackFromIntent(intent: Intent): List<NavKey> {
     val uri = intent.data
     if ((intent.action == Intent.ACTION_VIEW) && (uri != null)) {
-        if ((uri.scheme == "pinecone") && (uri.host == "book_info")) {
+        if ((uri.scheme == "pinecone") && (uri.host == "audio_player")) {
+            uri.lastPathSegment?.let { return listOf(Screen.Library, Screen.AudioPlayer(it)) }
+        } else if ((uri.scheme == "pinecone") && (uri.host == "book_info")) {
             val bookId = uri.lastPathSegment
             if (bookId != null) {
                 return if (intent.getBooleanExtra("from_reader", false)) {
@@ -50,7 +52,9 @@ fun HandleDeepLinks(
         val intentToProcess = currentIntent ?: return@LaunchedEffect
         val uri = intentToProcess.data
         if ((intentToProcess.action == Intent.ACTION_VIEW) && (uri != null)) {
-            if ((uri.scheme == "pinecone") && (uri.host == "book_info")) {
+            if ((uri.scheme == "pinecone") && (uri.host == "audio_player")) {
+                uri.lastPathSegment?.let { backStack.openAudioPlayer(it) }
+            } else if ((uri.scheme == "pinecone") && (uri.host == "book_info")) {
                 val bookId = uri.lastPathSegment
                 bookId?.let { backStack.add(Screen.BookInfo(it)) }
             } else if ((uri.scheme == "file") || (uri.scheme == "content")) {

@@ -83,7 +83,19 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.publication.filterNotNull().collect { publication ->
-                    navigatorController.setupNavigator(publication)
+                    if (com.javierreansyah.pinecone.data.publication.PublicationFormats.profile(publication) ==
+                        com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO
+                    ) {
+                        startActivity(
+                            com.javierreansyah.pinecone.ui.root.audioPlayerIntent(
+                                this@ReaderActivity,
+                                intent.getStringExtra(EXTRA_BOOK_ID) ?: return@collect,
+                            ),
+                        )
+                        finish()
+                    } else {
+                        navigatorController.setupNavigator(publication)
+                    }
                 }
             }
         }

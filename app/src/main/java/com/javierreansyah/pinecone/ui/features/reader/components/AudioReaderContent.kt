@@ -1,10 +1,8 @@
 package com.javierreansyah.pinecone.ui.features.reader.components
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -32,6 +30,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -85,7 +84,6 @@ import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
@@ -106,6 +104,7 @@ fun AudioReaderContent(
     background: Color,
     foreground: Color,
     isBookmarked: Boolean = false,
+    artworkAlpha: Float = 1f,
     onToggleBookmark: () -> Unit = {},
     onPlayPause: () -> Unit,
     onSkip: (Int) -> Unit,
@@ -149,7 +148,8 @@ fun AudioReaderContent(
                         coverPath = coverPath,
                         modifier = Modifier
                             .weight(0.42f)
-                            .aspectRatio(1f),
+                            .aspectRatio(1f)
+                            .graphicsLayer { alpha = artworkAlpha },
                     )
                     Column(
                         modifier = Modifier
@@ -171,7 +171,9 @@ fun AudioReaderContent(
                 ) {
                     AudioArtwork(
                         coverPath = coverPath,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .graphicsLayer { alpha = artworkAlpha },
                     )
                     panel()
                 }
@@ -242,42 +244,14 @@ private fun AudioPlaybackPanel(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            val trackLabel = when {
-                state.chapter.isNotBlank() && state.chapter != state.title -> state.chapter
-                state.index >= 0 -> stringResource(R.string.reader_track_label, state.index + 1)
-                else -> null
-            }
-            val hasAuthor = state.author.isNotBlank()
-            if (hasAuthor || trackLabel != null) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (hasAuthor) {
-                        Text(
-                            text = state.author,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false),
-                        )
-                    } else {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                    if (trackLabel != null) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = trackLabel,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            textAlign = TextAlign.End,
-                        )
-                    }
-                }
+            if (state.author.isNotBlank()) {
+                Text(
+                    text = state.author,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
 
@@ -323,7 +297,7 @@ private fun AudioTransportButtons(
         overflowIndicator = { ButtonGroupDefaults.OverflowIndicator(menuState = it) },
         modifier = Modifier.fillMaxWidth(),
         expandedRatio = 0.32f,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = ButtonGroupDefaults.HorizontalArrangement,
     ) {
         labels.forEachIndexed { index, label ->
             val action = {
@@ -468,16 +442,6 @@ private fun AudioSeekBar(
     val strokeWidthPx = remember(density) { with(density) { 4.dp.toPx() } }
     val indicatorStroke = remember(strokeWidthPx) { Stroke(width = strokeWidthPx, cap = StrokeCap.Round) }
 
-    val waveAmplitude by animateFloatAsState(
-        targetValue = if (state.playing) 0.4f else 0f,
-        animationSpec = if (state.playing) {
-            tween(durationMillis = 350, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f))
-        } else {
-            tween(durationMillis = 300, easing = CubicBezierEasing(0.3f, 0f, 0.8f, 0.15f))
-        },
-        label = "audioWaveAmplitude",
-    )
-
     val handleHeight by animateDpAsState(
         targetValue = if (isDragging) 22.dp else 16.dp,
         animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
@@ -553,7 +517,7 @@ private fun AudioSeekBar(
                 trackStroke = indicatorStroke,
                 gapSize = 6.dp,
                 stopSize = 3.dp,
-                amplitude = { waveAmplitude },
+                amplitude = { if (state.playing) 0.4f else 0f },
                 wavelength = 20.dp,
                 waveSpeed = 20.dp,
             )
@@ -580,12 +544,11 @@ private fun AudioSeekBar(
             }
         }
 
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
+            contentAlignment = Alignment.Center,
         ) {
             val shownSeconds = if (duration != null && (previewFraction != null || pendingFraction != null)) {
                 (progress * duration).roundToLong()
@@ -597,12 +560,39 @@ private fun AudioSeekBar(
                 text = formatAudioTime(shownSeconds),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.align(Alignment.CenterStart),
             )
+
+            val trackLabel = when {
+                state.chapter.isNotBlank() && state.chapter != state.title -> state.chapter
+                state.index >= 0 -> stringResource(R.string.reader_track_label, state.index + 1)
+                else -> null
+            }
+            if (trackLabel != null) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(horizontal = 56.dp),
+                ) {
+                    Text(
+                        text = trackLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                    )
+                }
+            }
 
             Text(
                 text = duration?.let(::formatAudioTime) ?: "--:--",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.align(Alignment.CenterEnd),
             )
         }
     }

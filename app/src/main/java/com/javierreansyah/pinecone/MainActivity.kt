@@ -95,10 +95,14 @@ class MainActivity : AppCompatActivity() {
                     addOnNewIntentListener = { addOnNewIntentListener(it) },
                 ) { removeOnNewIntentListener(it) }
 
-                NavGraph(
+                com.javierreansyah.pinecone.ui.root.AudioPlayerSheetHost(
                     backStack = backStack,
-                    mainViewModel = viewModel,
-                )
+                ) {
+                    NavGraph(
+                        backStack = backStack,
+                        mainViewModel = viewModel,
+                    )
+                }
             }
         }
     }

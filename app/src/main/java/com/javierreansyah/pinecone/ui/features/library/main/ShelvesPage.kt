@@ -32,6 +32,7 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Book
 import com.composables.icons.materialsymbols.outlined.Folder
@@ -56,6 +57,7 @@ fun ShelvesPage(
     selectedShelves: Set<String> = emptySet(),
     onShelfLongClick: ((String) -> Unit)? = null,
     spaceNames: Map<String, String> = emptyMap(),
+    bottomContentPadding: Dp = 0.dp,
     onShelfToggleSelect: ((String) -> Unit)? = null,
 ) {
 
@@ -85,7 +87,7 @@ fun ShelvesPage(
                                 if (targetLayoutMode != LayoutMode.List) Modifier.padding(vertical = 4.dp)
                                 else Modifier,
                             ),
-                        contentPadding = PaddingValues(top = 8.dp),
+                        contentPadding = PaddingValues(top = 8.dp, bottom = bottomContentPadding),
                     ) {
                         items(shelves, key = { (itShelf) -> itShelf.id }) { shelfWithCovers ->
                             val visibleBooks = shelfWithCovers.books

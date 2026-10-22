@@ -39,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -94,6 +95,9 @@ fun ReaderOverlay(
     bookId: String,
     onNavigateToChapter: (Link) -> Unit,
     onSeekToProgression: (Double) -> Unit,
+    transparentAudioBackground: Boolean = false,
+    audioArtworkAlpha: Float = 1f,
+    audioTopBarAlpha: Float = 1f,
     onNavigateToLocator: (Locator) -> Unit,
 ) {
     val bookState = viewModel.bookState.collectAsStateWithLifecycle()
@@ -168,7 +172,11 @@ fun ReaderOverlay(
     val uiDarkTheme = themeColors.value.isDarkTheme
     PineconeThemedContent(uiDarkTheme = uiDarkTheme, settings = settings) {
         val isAudio = profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO
-        val effectiveBgColor = if (isAudio) MaterialTheme.colorScheme.background else readerBgColor
+        val effectiveBgColor = when {
+            isAudio && transparentAudioBackground -> Color.Transparent
+            isAudio -> MaterialTheme.colorScheme.background
+            else -> readerBgColor
+        }
         val effectiveTextColor = if (isAudio) MaterialTheme.colorScheme.onBackground else readerTextColor
 
         Box(modifier = Modifier.fillMaxSize()) {
@@ -178,6 +186,7 @@ fun ReaderOverlay(
                     coverPath = bookState.value.coverPath,
                     background = effectiveBgColor,
                     foreground = effectiveTextColor,
+                    artworkAlpha = audioArtworkAlpha,
                     isBookmarked = isBookmarked,
                     onToggleBookmark = {
                         currentLocator?.let { locator ->
@@ -217,7 +226,9 @@ fun ReaderOverlay(
             }
 
             ReaderTopBarSection(
-                modifier = Modifier.align(Alignment.TopCenter),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .graphicsLayer { alpha = if (isAudio) audioTopBarAlpha else 1f },
                 showControls = controlsState.value.showControls || profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO,
                 showSearch = controlsState.value.showSearch,
                 isInSearchNavigationMode = searchState.value.isInNavMode,
