@@ -16,6 +16,9 @@ import com.javierreansyah.pinecone.reader.pdf.MuPdfEngineProvider
 import com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences
 import com.javierreansyah.pinecone.reader.pdf.MuPdfSettings
 import com.javierreansyah.pinecone.reader.pdf.PdfSearchHighlights
+import com.javierreansyah.pinecone.reader.pdf.PdfSelectionController
+import com.javierreansyah.pinecone.reader.pdf.PdfAnnotation
+import org.json.JSONObject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
@@ -48,6 +51,8 @@ class NavigatorController(
     private var locationJob: Job? = null
     private var preferencesJob: Job? = null
     private var searchNavigationJob: Job? = null
+    private var pdfAnnotationsJob: Job? = null
+    private var pdfClearSelectionJob: Job? = null
     private val pdfSearchHighlights = searchViewModel.searchState.map { state ->
         PdfSearchHighlights(
             matches = if (state.searchPerformed) state.results.mapNotNull { it.pdfMatch } else emptyList(),
@@ -62,6 +67,7 @@ class NavigatorController(
     fun setupNavigator(publication: Publication) {
         if (this.publication === publication) return
         locationJob?.cancel(); preferencesJob?.cancel(); searchNavigationJob?.cancel()
+        pdfAnnotationsJob?.cancel(); pdfClearSelectionJob?.cancel()
         epub?.close(); epub = null
         navigator = null
         fragmentManager.fragments.filter { it.id == R.id.navigator_container }.forEach {
@@ -102,7 +108,18 @@ class NavigatorController(
             }
 
             ReaderProfile.PDF -> {
-                val factory = PdfNavigatorFactory(publication, MuPdfEngineProvider(pdfSearchHighlights))
+                val selection = PdfSelectionController(
+                    onSelectionChanged = { locator ->
+                        notesViewModel.hideViewHighlight()
+                        if (locator != null) notesViewModel.showSelectionMenu(locator)
+                        else notesViewModel.dismissSelectionBar()
+                    },
+                    onAnnotationActivated = { id ->
+                        notesViewModel.allNotesAndHighlights.value.firstOrNull { it.id == id }
+                            ?.let(notesViewModel::viewHighlight)
+                    },
+                )
+                val factory = PdfNavigatorFactory(publication, MuPdfEngineProvider(pdfSearchHighlights, selection))
                 fragmentManager.fragmentFactory = factory.createFragmentFactory(
                     viewModel.currentLocator.value ?: viewModel.initialLocator,
                     viewModel.pdfPreferences.value
@@ -118,6 +135,21 @@ class NavigatorController(
                 navigator = pdf
                 preferencesJob = lifecycleOwner.lifecycleScope.launch {
                     viewModel.pdfPreferences.collect { pdf.submitPreferences(it) }
+                }
+                pdfAnnotationsJob = lifecycleOwner.lifecycleScope.launch {
+                    lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                        notesViewModel.allNotesAndHighlights.collect { notes ->
+                            selection.applyAnnotations(notes.mapNotNull { note ->
+                                val locator = runCatching { Locator.fromJSON(JSONObject(note.locatorJson)) }.getOrNull()
+                                locator?.let { PdfAnnotation(note.id, it, note.color) }
+                            })
+                        }
+                    }
+                }
+                pdfClearSelectionJob = lifecycleOwner.lifecycleScope.launch {
+                    lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                        notesViewModel.clearSelectionEvent.collect { selection.clearSelection() }
+                    }
                 }
             }
 
@@ -170,6 +202,7 @@ class NavigatorController(
 
     override fun onDestroy(owner: LifecycleOwner) {
         locationJob?.cancel(); preferencesJob?.cancel(); searchNavigationJob?.cancel(); epub?.close()
+        pdfAnnotationsJob?.cancel(); pdfClearSelectionJob?.cancel()
         owner.lifecycle.removeObserver(this)
     }
 }

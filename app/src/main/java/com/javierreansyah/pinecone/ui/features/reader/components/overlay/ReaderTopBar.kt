@@ -27,8 +27,10 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.PlainTooltip
@@ -138,12 +140,27 @@ fun ReaderTopBar(
                 }
             },
             navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        if (audioPlayer) MaterialSymbols.Outlined.Keyboard_arrow_down else MaterialSymbols.Outlined.Arrow_back,
-                        contentDescription = stringResource(if (audioPlayer) R.string.reader_collapse_audio_player else R.string.action_back),
-                        tint = readerTextColor,
-                    )
+                if (audioPlayer) {
+                    FilledTonalIconButton(
+                        onClick = onBack,
+                        shapes = IconButtonDefaults.shapes(),
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        ),
+                    ) {
+                        Icon(
+                            MaterialSymbols.Outlined.Keyboard_arrow_down,
+                            contentDescription = stringResource(R.string.reader_collapse_audio_player),
+                        )
+                    }
+                } else {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            MaterialSymbols.Outlined.Arrow_back,
+                            contentDescription = stringResource(R.string.action_back),
+                            tint = readerTextColor,
+                        )
+                    }
                 }
             },
             actions = {

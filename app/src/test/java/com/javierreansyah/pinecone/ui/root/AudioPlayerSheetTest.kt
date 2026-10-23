@@ -63,6 +63,19 @@ class AudioPlayerSheetTest {
     }
 
     @Test
+    fun `direct audiobook opening does not flash the mini-player`() {
+        listOf(0f, 0.025f, 0.05f, 0.5f, 1f).forEach { expansion ->
+            assertEquals(0f, audioSheetOpacity(expansion, suppressMiniPlayer = true).miniPlayer, 0f)
+            assertEquals(
+                audioSheetOpacity(expansion).playerContent,
+                audioSheetOpacity(expansion, suppressMiniPlayer = true).playerContent,
+                0f,
+            )
+        }
+        assertEquals(1f, audioSheetOpacity(0f, suppressMiniPlayer = false).miniPlayer, 0f)
+    }
+
+    @Test
     fun `player content is fully visible by one quarter of expansion`() {
         assertEquals(0f, audioSheetOpacity(0f).playerContent, 0f)
         assertEquals(0.5f, audioSheetOpacity(0.125f).playerContent, 0f)

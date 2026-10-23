@@ -7,6 +7,10 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Rect
 import android.net.Uri
+import android.os.SystemClock
+import android.view.InputDevice
+import android.view.MotionEvent
+import android.view.ViewConfiguration
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
@@ -19,11 +23,17 @@ import com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences
 import com.javierreansyah.pinecone.reader.pdf.MuPdfSettings
 import com.javierreansyah.pinecone.reader.pdf.PdfSearchMatch
 import com.javierreansyah.pinecone.reader.pdf.pdfImageViewport
+import com.javierreansyah.pinecone.reader.pdf.MuPdfDocument
+import com.javierreansyah.pinecone.reader.pdf.pdfSelectionAnchor
+import com.artifex.mupdf.fitz.Document
+import org.json.JSONObject
+import org.readium.r2.shared.publication.Locator
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.Locale
 import java.util.UUID
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
@@ -35,6 +45,114 @@ import org.readium.r2.navigator.pdf.PdfNavigatorFragment
 
 @RunWith(AndroidJUnit4::class)
 class PdfSearchNavigationTest {
+    @Test fun longPressSelectsTextAndSavedHighlightCanBeReopenedAfterRecreation() = runBlocking {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val app = instrumentation.targetContext.applicationContext as PineconeApplication
+        val source = File.createTempFile("pdf-selection-", ".pdf", app.cacheDir)
+        source.writeBytes(searchablePdf())
+        val book = requireNotNull(app.libraryRepository.importBook(Uri.fromFile(source)))
+        try {
+            val native = MuPdfDocument(Document.openDocument(source.absolutePath))
+            val glyphs = try { native.textPage(0).glyphs } finally { native.close() }
+            val glyph = glyphs.first().quad
+            ActivityScenario.launch<ReaderActivity>(Intent(app, ReaderActivity::class.java)
+                .putExtra(ReaderActivity.EXTRA_BOOK_ID, book.book.id)).use { scenario ->
+                awaitPage(scenario, 1)
+                scenario.onActivity { navigator(it).submitPreferences(MuPdfPreferences(invert = false)) }
+                await(scenario) { navigator(it).settings.value.preferences == MuPdfPreferences(invert = false) }
+                fun containsText(node: AccessibilityNodeInfo?): Boolean = node != null &&
+                    (node.text?.contains("Other content") == true ||
+                        (0 until node.childCount).any { containsText(node.getChild(it)) })
+                suspend fun awaitTextLayer() {
+                    withTimeout(20_000) {
+                        while (!containsText(instrumentation.uiAutomation.rootInActiveWindow)) delay(25)
+                    }
+                }
+                fun pointOnWord(quad: com.javierreansyah.pinecone.reader.pdf.PdfSearchQuad = glyph): Pair<Float, Float> {
+                    var result = 0f to 0f
+                    scenario.onActivity { activity ->
+                        val fragment = navigator(activity).childFragmentManager.fragments
+                            .filterIsInstance<MuPdfDocumentFragment>().first()
+                        val view = fragment.requireView()
+                        val origin = IntArray(2).also { view.getLocationOnScreen(it) }
+                        val viewport = pdfImageViewport(view.width.toFloat(), view.height.toFloat(), 600, 800)
+                        result = (origin[0] + viewport.left + (quad.topLeft.x + quad.bottomRight.x) / 2 * viewport.width) to
+                            (origin[1] + viewport.top + (quad.topLeft.y + quad.bottomRight.y) / 2 * viewport.height)
+                    }
+                    return result
+                }
+                fun touch(action: Int, down: Long, point: Pair<Float, Float>) {
+                    val event = MotionEvent.obtain(down, SystemClock.uptimeMillis(), action, point.first, point.second, 0)
+                    event.source = InputDevice.SOURCE_TOUCHSCREEN
+                    try { assertTrue(instrumentation.uiAutomation.injectInputEvent(event, true)) } finally { event.recycle() }
+                }
+                awaitTextLayer()
+                println("PDF_SELECTION: text layer ready")
+                val point = pointOnWord()
+                val down = SystemClock.uptimeMillis()
+                touch(MotionEvent.ACTION_DOWN, down, point)
+                delay(ViewConfiguration.getLongPressTimeout().toLong() + 150)
+                touch(MotionEvent.ACTION_UP, down, point)
+                println("PDF_SELECTION: long press sent at $point")
+                await(scenario) { ViewModelProvider(it)[ReaderNotesViewModel::class.java]
+                    .selectionState.value.selectionLocator?.text?.highlight == "Other" }
+                println("PDF_SELECTION: word selected")
+                val handleLabel = app.getString(R.string.pdf_selection_end)
+                fun findHandle(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
+                    if (node == null) return null
+                    if (node.contentDescription?.toString() == handleLabel && node.isVisibleToUser) return node
+                    return (0 until node.childCount).firstNotNullOfOrNull { findHandle(node.getChild(it)) }
+                }
+                withTimeout(10_000) {
+                    while (findHandle(instrumentation.uiAutomation.rootInActiveWindow) == null) delay(25)
+                }
+                val handleBounds = Rect().also {
+                    requireNotNull(findHandle(instrumentation.uiAutomation.rootInActiveWindow)).getBoundsInScreen(it)
+                }
+                val handleStart = handleBounds.exactCenterX() to handleBounds.exactCenterY()
+                val handleEnd = pointOnWord(glyphs.first { it.start == 12 }.quad)
+                val dragDown = SystemClock.uptimeMillis()
+                touch(MotionEvent.ACTION_DOWN, dragDown, handleStart)
+                repeat(12) { step ->
+                    delay(25)
+                    val fraction = (step + 1) / 12f
+                    touch(MotionEvent.ACTION_MOVE, dragDown,
+                        (handleStart.first + (handleEnd.first - handleStart.first) * fraction) to
+                            (handleStart.second + (handleEnd.second - handleStart.second) * fraction))
+                }
+                touch(MotionEvent.ACTION_UP, dragDown, handleEnd)
+                await(scenario) { ViewModelProvider(it)[ReaderNotesViewModel::class.java]
+                    .selectionState.value.selectionLocator?.text?.highlight == "Other content" }
+                println("PDF_SELECTION: handle extended the range")
+                scenario.onActivity { activity ->
+                    val notes = ViewModelProvider(activity)[ReaderNotesViewModel::class.java]
+                    val locator = requireNotNull(notes.selectionState.value.selectionLocator)
+                    assertEquals(0, requireNotNull(pdfSelectionAnchor(locator)).pageIndex)
+                    notes.addHighlight(locator, 0x40FAC02E, "Page 1")
+                    notes.hideSelectionMenu()
+                }
+                val note = withTimeout(10_000) { app.libraryRepository.getNotes(book.book.id).first { it.isNotEmpty() }.single() }
+                val saved = requireNotNull(Locator.fromJSON(JSONObject(note.locatorJson)))
+                println("PDF_SELECTION: highlight saved")
+                assertEquals("Other content", saved.text.highlight)
+                assertTrue(requireNotNull(pdfSelectionAnchor(saved)).quads.isNotEmpty())
+                scenario.recreate()
+                awaitPage(scenario, 1)
+                awaitTextLayer()
+                await(scenario) { ViewModelProvider(it)[ReaderNotesViewModel::class.java].allNotesAndHighlights.value.size == 1 }
+                val reopenedPoint = pointOnWord()
+                val tapDown = SystemClock.uptimeMillis()
+                touch(MotionEvent.ACTION_DOWN, tapDown, reopenedPoint)
+                touch(MotionEvent.ACTION_UP, tapDown, reopenedPoint)
+                await(scenario) { ViewModelProvider(it)[ReaderNotesViewModel::class.java]
+                    .selectionState.value.viewingHighlight?.id == note.id }
+            }
+        } finally {
+            app.libraryRepository.deleteBook(book.book.id)
+            source.delete()
+        }
+    }
+
     @Test fun focusedMatchIsStrongerYellowAndFocusMovesBetweenMatchesOnTheSamePage() = runBlocking {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val app = instrumentation.targetContext.applicationContext as PineconeApplication

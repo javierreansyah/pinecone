@@ -28,7 +28,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -71,6 +71,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Bookmark
 import com.composables.icons.materialsymbols.outlined.Bookmark_check
+import com.composables.icons.materialsymbols.outlined.Edit_note
 import com.composables.icons.materialsymbols.outlined.List
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -106,6 +107,8 @@ fun AudioReaderContent(
     isBookmarked: Boolean = false,
     artworkAlpha: Float = 1f,
     onToggleBookmark: () -> Unit = {},
+    onAddNote: () -> Unit = {},
+    canAddNote: Boolean = false,
     onPlayPause: () -> Unit,
     onSkip: (Int) -> Unit,
     onTrack: (Int) -> Unit,
@@ -128,6 +131,8 @@ fun AudioReaderContent(
                     state = state,
                     isBookmarked = isBookmarked,
                     onToggleBookmark = onToggleBookmark,
+                    onAddNote = onAddNote,
+                    canAddNote = canAddNote,
                     onPlayPause = onPlayPause,
                     onSkip = onSkip,
                     onTrack = onTrack,
@@ -222,6 +227,8 @@ private fun AudioPlaybackPanel(
     state: AudioPlaybackState,
     isBookmarked: Boolean,
     onToggleBookmark: () -> Unit,
+    onAddNote: () -> Unit,
+    canAddNote: Boolean,
     onPlayPause: () -> Unit,
     onSkip: (Int) -> Unit,
     onTrack: (Int) -> Unit,
@@ -274,6 +281,8 @@ private fun AudioPlaybackPanel(
             onSkip = onSkip,
             isBookmarked = isBookmarked,
             onToggleBookmark = onToggleBookmark,
+            onAddNote = onAddNote,
+            canAddNote = canAddNote,
             onOpenBookmarks = onOpenBookmarks,
             onOpenSettings = onOpenSettings,
         )
@@ -411,7 +420,8 @@ private fun AudioSeekBar(
     val current = duration?.let { (state.elapsedSeconds.toDouble() / it).toFloat().coerceIn(0f, 1f) } ?: 0f
     var previewFraction by remember(state.bookId, state.index) { mutableStateOf<Float?>(null) }
     var pendingFraction by remember(state.bookId, state.index) { mutableStateOf<Float?>(null) }
-    var isDragging by remember { mutableStateOf(false) }
+    var isDragging by remember(state.bookId, state.index, duration) { mutableStateOf(false) }
+    var isPressed by remember(state.bookId, state.index, duration) { mutableStateOf(false) }
 
     val seekCallback by rememberUpdatedState(onSeek)
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
@@ -442,16 +452,17 @@ private fun AudioSeekBar(
     val strokeWidthPx = remember(density) { with(density) { 4.dp.toPx() } }
     val indicatorStroke = remember(strokeWidthPx) { Stroke(width = strokeWidthPx, cap = StrokeCap.Round) }
 
-    val handleHeight by animateDpAsState(
-        targetValue = if (isDragging) 22.dp else 16.dp,
+    val handleActive = isPressed || isDragging
+    val handleScale by animateFloatAsState(
+        targetValue = if (handleActive) 1f else 0f,
         animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
-        label = "audioHandleHeight",
+        label = "audioHandleVerticalScale",
     )
 
-    val handleWidth by animateDpAsState(
-        targetValue = if (isDragging) 4.5.dp else 3.5.dp,
-        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
-        label = "audioHandleWidth",
+    val handleOpacity by animateFloatAsState(
+        targetValue = if (handleActive) 1f else 0f,
+        animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
+        label = "audioHandleOpacity",
     )
 
     val seekLabel = stringResource(R.string.reader_audio_seek)
@@ -475,9 +486,19 @@ private fun AudioSeekBar(
                 }
                 .pointerInput(duration, state.bookId, state.index, rtl) {
                     if (duration != null) {
-                        detectTapGestures { offset ->
-                            commitSeek(audioSeekFraction(offset.x, size.width.toFloat(), rtl))
-                        }
+                        detectTapGestures(
+                            onPress = {
+                                isPressed = true
+                                try {
+                                    tryAwaitRelease()
+                                } finally {
+                                    isPressed = false
+                                }
+                            },
+                            onTap = { offset ->
+                                commitSeek(audioSeekFraction(offset.x, size.width.toFloat(), rtl))
+                            },
+                        )
                     }
                 }
                 .pointerInput(duration, state.bookId, state.index, rtl) {
@@ -525,20 +546,26 @@ private fun AudioSeekBar(
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(36.dp),
+                    .height(36.dp)
+                    .graphicsLayer {
+                        scaleY = handleScale.coerceAtLeast(0f)
+                        alpha = handleOpacity.coerceIn(0f, 1f)
+                    },
             ) {
-                val halfWidth = handleWidth.toPx() / 2f
+                // Draw only the final handle; animate its layer vertically, never its width/shape.
+                val handleWidth = 4.5.dp.toPx()
+                val halfWidth = handleWidth / 2f
                 val rawX = size.width * if (rtl) (1f - progress) else progress
                 val shiftedX = rawX + 2.dp.toPx()
                 val clampedX = shiftedX.coerceIn(halfWidth, (size.width - halfWidth).coerceAtLeast(halfWidth))
                 val centerY = size.height / 2f
-                val halfHeight = handleHeight.toPx() / 2f
+                val halfHeight = 22.dp.toPx() / 2f
 
                 drawLine(
                     color = primaryColor,
                     start = Offset(clampedX, centerY - halfHeight),
                     end = Offset(clampedX, centerY + halfHeight),
-                    strokeWidth = handleWidth.toPx(),
+                    strokeWidth = handleWidth,
                     cap = StrokeCap.Round,
                 )
             }
@@ -603,6 +630,8 @@ private fun AudioActionsStrip(
     onSkip: (Int) -> Unit,
     isBookmarked: Boolean,
     onToggleBookmark: () -> Unit,
+    onAddNote: () -> Unit,
+    canAddNote: Boolean,
     onOpenBookmarks: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
@@ -614,11 +643,15 @@ private fun AudioActionsStrip(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
+            modifier = Modifier
+                .widthIn(max = 56.dp * 6 + ButtonGroupDefaults.ConnectedSpaceBetween * 5)
+                .fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             ExpressiveConnectedActionButton(
                 onClick = { onSkip(-10) },
+                modifier = Modifier.weight(1f),
                 icon = Icons.Rounded.Replay10,
                 contentDescription = stringResource(R.string.reader_rewind),
                 shape = ButtonGroupDefaults.connectedLeadingButtonShape,
@@ -626,6 +659,7 @@ private fun AudioActionsStrip(
             )
             ExpressiveConnectedActionButton(
                 onClick = onToggleBookmark,
+                modifier = Modifier.weight(1f),
                 icon = if (isBookmarked) MaterialSymbols.Outlined.Bookmark_check else MaterialSymbols.Outlined.Bookmark,
                 contentDescription = stringResource(
                     if (isBookmarked) R.string.reader_remove_bookmark else R.string.reader_add_bookmark
@@ -635,7 +669,17 @@ private fun AudioActionsStrip(
                 tint = if (isBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             )
             ExpressiveConnectedActionButton(
+                onClick = onAddNote,
+                modifier = Modifier.weight(1f),
+                enabled = canAddNote,
+                icon = MaterialSymbols.Outlined.Edit_note,
+                contentDescription = stringResource(R.string.reader_add_note),
+                shape = RoundedCornerShape(4.dp),
+                pressedShape = ButtonGroupDefaults.connectedMiddleButtonPressShape,
+            )
+            ExpressiveConnectedActionButton(
                 onClick = onOpenBookmarks,
+                modifier = Modifier.weight(1f),
                 icon = MaterialSymbols.Outlined.List,
                 contentDescription = stringResource(R.string.reader_bookmarks_title),
                 shape = RoundedCornerShape(4.dp),
@@ -643,6 +687,7 @@ private fun AudioActionsStrip(
             )
             ExpressiveConnectedActionButton(
                 onClick = onOpenSettings,
+                modifier = Modifier.weight(1f),
                 icon = Icons.Rounded.Tune,
                 contentDescription = stringResource(R.string.settings_title),
                 shape = RoundedCornerShape(4.dp),
@@ -650,6 +695,7 @@ private fun AudioActionsStrip(
             )
             ExpressiveConnectedActionButton(
                 onClick = { onSkip(10) },
+                modifier = Modifier.weight(1f),
                 icon = Icons.Rounded.Forward10,
                 contentDescription = stringResource(R.string.reader_forward),
                 shape = ButtonGroupDefaults.connectedTrailingButtonShape,
@@ -668,8 +714,10 @@ private fun ExpressiveConnectedActionButton(
     pressedShape: Shape,
     modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    enabled: Boolean = true,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
+    val actionTint = if (enabled) tint else tint.copy(alpha = 0.38f)
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.88f else 1f,
@@ -679,12 +727,12 @@ private fun ExpressiveConnectedActionButton(
 
     Surface(
         onClick = onClick,
+        enabled = enabled,
         shape = if (isPressed) pressedShape else shape,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        contentColor = tint,
+        contentColor = actionTint,
         interactionSource = interactionSource,
         modifier = modifier
-            .width(56.dp)
             .height(48.dp)
             .graphicsLayer {
                 scaleX = scale
@@ -699,7 +747,7 @@ private fun ExpressiveConnectedActionButton(
                 imageVector = icon,
                 contentDescription = contentDescription,
                 modifier = Modifier.size(24.dp),
-                tint = tint,
+                tint = actionTint,
             )
         }
     }

@@ -345,6 +345,7 @@ class LibraryViewModel(
             hasUnsortedBooks = hasUnsorted && settings.unsortedEnabled,
             showAllSpaces = settings.showAllSpaces,
             spacesEnabled = settings.spacesEnabled,
+            showLibraryBottomNavigation = settings.showLibraryBottomNavigation,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LibraryScreenUiState())
 
