@@ -44,7 +44,7 @@ class MuPdfDocument(private val native: Document) : PdfDocument {
         convert(doc.loadOutline())
     }
 
-    internal suspend fun search(index: Int, query: String): PdfSearchPage = withContext(Dispatchers.Default) {
+    internal suspend fun textPage(index: Int): PdfTextPage = withContext(Dispatchers.Default) {
         access { doc ->
             val page = doc.loadPage(index)
             try {
@@ -79,10 +79,15 @@ class MuPdfDocument(private val native: Document) : PdfDocument {
                         }
                     }
                     val content = text.toString()
-                    PdfSearchPage(content, pdfSearchHits(content, query, glyphs))
+                    PdfTextPage(content, glyphs)
                 } finally { structured.destroy() }
             } finally { page.destroy() }
         }
+    }
+
+    internal suspend fun search(index: Int, query: String): PdfSearchPage {
+        val page = textPage(index)
+        return PdfSearchPage(page.text, pdfSearchHits(page.text, query, page.glyphs))
     }
 
     suspend fun render(index: Int, width: Int = 1400): Bitmap = withContext(Dispatchers.Default) {

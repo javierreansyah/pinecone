@@ -307,7 +307,7 @@ fun LibraryScreen(
                         }
                     },
                     bottomBar = {
-                        if (libraryView == LibraryView.Both) LibraryShortBottomNavigation(
+                        if (libraryView == LibraryView.Both && uiState.showLibraryBottomNavigation) LibraryShortBottomNavigation(
                             currentPage = pagerState.currentPage,
                         ) { page ->
                             scope.launch {
@@ -393,6 +393,7 @@ fun LibraryScreen(
                         Box(Modifier.align(Alignment.BottomCenter).onSizeChanged { miniPlayerHeight = it.height }) {
                             com.javierreansyah.pinecone.ui.root.AudioMiniPlayerBar(
                                 includeNavigationBarPadding = false,
+                                bottomInset = innerPadding.calculateBottomPadding(),
                             )
                         }
                     }

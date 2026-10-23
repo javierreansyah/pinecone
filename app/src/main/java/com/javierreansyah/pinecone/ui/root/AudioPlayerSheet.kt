@@ -14,6 +14,8 @@ import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.gestures.animateTo
 import androidx.compose.foundation.gestures.snapTo
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -79,7 +81,7 @@ import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 import kotlin.math.abs
 
-internal data class AudioPlayerHandle(val bounds: Rect, val navigationBarsPadding: Boolean)
+internal data class AudioPlayerHandle(val height: Int, val bottomInset: Int, val navigationBarsPadding: Boolean)
 
 internal val LocalAudioPlayerHandle = staticCompositionLocalOf<(AudioPlayerHandle) -> Unit> {
     error("The mini-player must be hosted by AudioPlayerSheetHost")
@@ -95,25 +97,40 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
     val playback by app.audioSession.state.collectAsStateWithLifecycle()
     val navigator by app.audioSession.navigator.collectAsStateWithLifecycle()
     val request = backStack.lastOrNull() as? Screen.AudioPlayer
+    val underlyingScreen = backStack.lastOrNull { it !is Screen.AudioPlayer }
     val playerStack = rememberNavBackStack()
     val sheet = remember { AnchoredDraggableState(AudioSheetValue.Collapsed) }
     val swipeDismiss = remember { AnchoredDraggableState(AudioDismissValue.Center) }
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     var rootSize by remember { mutableStateOf(IntSize.Zero) }
-    var handle by remember { mutableStateOf<AudioPlayerHandle?>(null) }
+    var rootHandle by remember { mutableStateOf<AudioPlayerHandle?>(null) }
+    var libraryHandle by remember { mutableStateOf<AudioPlayerHandle?>(null) }
     var dismissedBookId by remember { mutableStateOf<String?>(null) }
     var predictiveBackInProgress by remember { mutableStateOf(false) }
-    val reportHandle = remember { { value: AudioPlayerHandle -> handle = value } }
-    val fallbackHeight = with(density) { 84.dp.toPx() }
-    val bounds = handle?.bounds ?: Rect(
-        0f, (rootSize.height - fallbackHeight).coerceAtLeast(1f),
-        rootSize.width.toFloat(), rootSize.height.toFloat(),
+    var openingNewPlayer by remember { mutableStateOf(false) }
+    val reportHandle = remember {
+        { value: AudioPlayerHandle ->
+            // Outgoing and incoming pages may coexist; never let their measurements compete.
+            if (value.navigationBarsPadding) rootHandle = value else libraryHandle = value
+        }
+    }
+    val usesRootHandle = underlyingScreen != Screen.Library
+    val navigationBarHeight = WindowInsets.navigationBars.getBottom(density)
+    val handle = (if (usesRootHandle) rootHandle else libraryHandle) ?: AudioPlayerHandle(
+        height = with(density) { MiniPlayerHeight.roundToPx() } + if (usesRootHandle) navigationBarHeight else 0,
+        bottomInset = if (usesRootHandle) 0 else navigationBarHeight,
+        navigationBarsPadding = usesRootHandle,
     )
+    // Use untransformed sizes/insets in root coordinates, not the animated NavDisplay bounds.
+    val bounds = audioMiniPlayerBounds(rootSize, handle)
     val collapsedOffset = bounds.top.coerceIn(1f, rootSize.height.toFloat().coerceAtLeast(1f))
     val offset = sheet.offset.takeIf { it.isFinite() }?.coerceIn(0f, collapsedOffset) ?: collapsedOffset
     val fraction = audioSheetExpansion(offset, collapsedOffset)
-    val opacity = audioSheetOpacity(fraction)
+    val suppressOpeningMiniPlayer = request != null && (
+        openingNewPlayer || navigator == null || playback.bookId != request.bookId
+    )
+    val opacity = audioSheetOpacity(fraction, suppressMiniPlayer = suppressOpeningMiniPlayer)
     val horizontalOffset = swipeDismiss.offset.takeIf { it.isFinite() } ?: 0f
     val dismissFraction = audioSwipeDismissProgress(horizontalOffset, rootSize.width.toFloat())
     val collapse: () -> Unit = {
@@ -166,12 +183,15 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
     )
     LaunchedEffect(request) {
         if (request != null) {
+            openingNewPlayer = navigator == null || playback.bookId != request.bookId
             dismissedBookId = null
             swipeDismiss.snapTo(AudioDismissValue.Center)
             if (playerStack.lastOrNull() != request) {
                 playerStack.clear()
                 playerStack.add(request)
             }
+        } else {
+            openingNewPlayer = false
         }
     }
     LaunchedEffect(playback.bookId, navigator) {
@@ -206,6 +226,7 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
     }
     LaunchedEffect(sheet) {
         snapshotFlow { sheet.settledValue }.drop(1).collect { value ->
+            if (value == AudioSheetValue.Expanded) openingNewPlayer = false
             // Predictive Back commits navigation only after the gesture is released.
             if (!predictiveBackInProgress) {
                 if (value == AudioSheetValue.Collapsed) backStack.collapseAudioPlayer()
@@ -252,7 +273,6 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
     }
     val book by bookFlow.collectAsStateWithLifecycle(initialValue = null)
     val visible = request != null || (playback.bookId != null && navigator != null && playback.bookId != dismissedBookId)
-    val underlyingScreen = backStack.lastOrNull { it !is Screen.AudioPlayer }
     val collapseLabel = stringResource(R.string.reader_collapse_audio_player)
     val expandLabel = stringResource(R.string.reader_open_audio_player)
     val dismissLabel = stringResource(R.string.reader_dismiss_audio_player)
@@ -345,8 +365,8 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
                             onPlayPause = app.audioSession::togglePlayback,
                             onSkip = app.audioSession::skip,
                             modifier = Modifier
-                                .then(if (handle?.navigationBarsPadding == true) Modifier.navigationBarsPadding() else Modifier)
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                                .then(if (handle.navigationBarsPadding) Modifier.navigationBarsPadding() else Modifier)
+                                .padding(horizontal = 12.dp, vertical = MiniPlayerOuterVerticalPadding),
                         )
                     }
                 }
@@ -358,6 +378,12 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
 internal fun audioSheetExpansion(offset: Float, collapsedOffset: Float): Float {
     if (!offset.isFinite() || !collapsedOffset.isFinite() || collapsedOffset <= 0f) return 0f
     return (1f - offset / collapsedOffset).coerceIn(0f, 1f)
+}
+
+internal fun audioMiniPlayerBounds(rootSize: IntSize, handle: AudioPlayerHandle): Rect {
+    val height = handle.height.coerceIn(0, rootSize.height.coerceAtLeast(0))
+    val bottom = (rootSize.height - handle.bottomInset.coerceAtLeast(0)).coerceAtLeast(height)
+    return Rect(0f, (bottom - height).toFloat(), rootSize.width.coerceAtLeast(0).toFloat(), bottom.toFloat())
 }
 
 internal fun audioPredictiveBackOffset(start: Float, collapsed: Float, progress: Float): Float {
@@ -373,11 +399,11 @@ internal data class AudioSheetOpacity(
     val topBar: Float,
 )
 
-internal fun audioSheetOpacity(expansion: Float): AudioSheetOpacity {
+internal fun audioSheetOpacity(expansion: Float, suppressMiniPlayer: Boolean = false): AudioSheetOpacity {
     val progress = expansion.takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: 0f
     val remaining = 1f - progress
     return AudioSheetOpacity(
-        miniPlayer = (1f - progress / 0.10f).coerceIn(0f, 1f),
+        miniPlayer = if (suppressMiniPlayer) 0f else (1f - progress / 0.10f).coerceIn(0f, 1f),
         playerContent = (progress / 0.25f).coerceIn(0f, 1f),
         // Cubic ease-out: darken quickly, then approach the opaque endpoint softly.
         background = 1f - remaining * remaining * remaining,

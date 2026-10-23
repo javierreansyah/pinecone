@@ -1,8 +1,12 @@
 package com.javierreansyah.pinecone.reader.pdf
 
+import kotlinx.serialization.Serializable
+
 /** Normalized page coordinates, independent of bitmap resolution, zoom and PDF crop-box origin. */
+@Serializable
 data class PdfSearchPoint(val x: Float, val y: Float)
 
+@Serializable
 data class PdfSearchQuad(
     val topLeft: PdfSearchPoint,
     val topRight: PdfSearchPoint,
@@ -48,7 +52,7 @@ internal fun pdfSearchHits(text: String, query: String, glyphs: List<PdfSearchGl
 }
 
 /** An oriented bound keeps RTL and rotated runs correct without retaining a quad per character. */
-private fun mergePdfSearchQuads(quads: List<PdfSearchQuad>): PdfSearchQuad {
+internal fun mergePdfSearchQuads(quads: List<PdfSearchQuad>): PdfSearchQuad {
     val first = quads.first()
     val dx = first.topRight.x - first.topLeft.x
     val dy = first.topRight.y - first.topLeft.y

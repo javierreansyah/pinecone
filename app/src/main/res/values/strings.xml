@@ -1,4 +1,8 @@
 <resources>
+    <string name="pdf_selection_start">Selection start</string>
+    <string name="pdf_selection_end">Selection end</string>
+    <string name="settings_library_bottom_navigation">Show library bottom navigation</string>
+    <string name="settings_library_bottom_navigation_summary">Show the Books and Shelves switcher. When hidden, swipe between pages.</string>
     <string name="reader_open_audio_player">Open audiobook player</string>
     <string name="reader_collapse_audio_player">Collapse audiobook player</string>
     <string name="reader_dismiss_audio_player">Dismiss audiobook player and stop playback</string>

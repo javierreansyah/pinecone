@@ -94,7 +94,24 @@ fun ReaderProgressTracker(
     totalPages: Int?,
     readerTextColor: Color,
     onSeekToProgression: (Double) -> Unit,
+    showProgressBar: Boolean = true,
 ) {
+    if (!showProgressBar) {
+        val pageText = if (totalPages != null && totalPages > 0) {
+            androidx.compose.ui.res.pluralStringResource(
+                R.plurals.reader_page_of, totalPages, (currentPage ?: 1).coerceIn(1, totalPages), totalPages,
+            )
+        } else {
+            androidx.compose.ui.res.stringResource(R.string.reader_page_label, currentPage ?: 1)
+        }
+        Text(
+            text = pageText,
+            style = MaterialTheme.typography.labelMedium,
+            color = readerTextColor,
+            modifier = modifier.navigationBarsPadding().padding(vertical = 12.dp),
+        )
+        return
+    }
     var isSeeking by remember { mutableStateOf(value = false) }
     var sliderPosition by remember { mutableFloatStateOf(progression.toFloat()) }
     var pendingSeek by remember { mutableStateOf<Double?>(null) }

@@ -40,6 +40,7 @@ data class AudioPlaybackState(
     val durationSeconds: Long? = null,
     val error: String? = null,
     val author: String = "",
+    val metadataLoaded: Boolean = false,
 )
 
 /** Application-scoped state; the MediaSessionService owns/relinquishes the native player. */
@@ -60,6 +61,11 @@ class AudioReadingSession(private val app: PineconeApplication) {
         _state.value = AudioPlaybackState(bookId = bookId, loading = true)
         try {
             val book = requireNotNull(app.libraryRepository.getBook(bookId))
+            _state.value = _state.value.copy(
+                title = book.book.title,
+                author = book.sortedAuthors.joinToString(", ") { it.name },
+                metadataLoaded = true,
+            )
             val pub = requireNotNull(app.libraryRepository.openPublication(book))
             publication = pub
             val originalRendition = app.libraryRepository.rendition(bookId, "original")
@@ -83,7 +89,7 @@ class AudioReadingSession(private val app: PineconeApplication) {
             ).getOrNull()
                 ?: error("Audio engine could not open this publication")
             navigator.value = nav
-            _state.value = AudioPlaybackState(bookId = bookId, title = book.book.title, author = book.sortedAuthors.joinToString(", ") { it.name })
+            _state.value = _state.value.copy(loading = false)
             jobs = listOf(
                 scope.launch {
                     nav.playback.collect { playback ->
@@ -133,8 +139,8 @@ class AudioReadingSession(private val app: PineconeApplication) {
         } catch (error: Exception) {
             releasePlayer()
             timber.log.Timber.e(error, "Could not open audiobook")
-            _state.value = AudioPlaybackState(
-                bookId = bookId,
+            _state.value = _state.value.copy(
+                loading = false,
                 error = app.getString(R.string.reader_audio_open_failed)
             )
         }

@@ -168,6 +168,11 @@ fun ReaderOverlay(
     BackHandler(enabled = searchState.value.isInNavMode) {
         searchViewModel.exitSearchNavigation()
     }
+    BackHandler(enabled = profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF &&
+        (selectionState.value.selectionLocator != null || selectionState.value.viewingHighlight != null)) {
+        notesViewModel.hideSelectionMenu()
+        notesViewModel.hideViewHighlight()
+    }
 
     val uiDarkTheme = themeColors.value.isDarkTheme
     PineconeThemedContent(uiDarkTheme = uiDarkTheme, settings = settings) {
@@ -198,6 +203,17 @@ fun ReaderOverlay(
                     },
                     onOpenBookmarks = viewModel::showBookmarks,
                     onOpenSettings = viewModel::showSettings,
+                    canAddNote = currentLocator != null && audioState.bookId == bookId && !bookState.value.isLoading,
+                    onAddNote = {
+                        if (viewModel.audioSession.state.value.bookId == bookId) {
+                            viewModel.audioSession.locator.value?.let { locator ->
+                                notesViewModel.addNoteAndEdit(
+                                    locator,
+                                    locator.title ?: audioState.chapter.ifBlank { bookState.value.chapter },
+                                )
+                            }
+                        }
+                    },
                     onPlayPause = viewModel.audioSession::togglePlayback,
                     onSkip = viewModel.audioSession::skip,
                     onTrack = viewModel.audioSession::track,
@@ -279,6 +295,7 @@ fun ReaderOverlay(
                 progression = bookState.value.progression,
                 currentPage = bookState.value.currentPage,
                 totalPages = bookState.value.totalPages,
+                showProgressBar = profile != com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF,
                 readerBgColor = effectiveBgColor,
                 readerTextColor = effectiveTextColor,
                 onSeekToProgression = { progression ->
@@ -585,6 +602,7 @@ fun ReaderBottomBarSection(
     onDelete: () -> Unit,
     onColorSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    showProgressBar: Boolean = true,
 ) {
     val isSelectionActive = (selectionLocator != null) || (viewingHighlight != null)
     val showBottomBar = (showControls && !showSearch) || isSelectionActive
@@ -646,6 +664,7 @@ fun ReaderBottomBarSection(
                             totalPages = totalPages,
                             readerTextColor = readerTextColor,
                             onSeekToProgression = onSeekToProgression,
+                            showProgressBar = showProgressBar,
                         )
                     }
 

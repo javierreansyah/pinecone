@@ -65,6 +65,7 @@ import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Forest
 import com.composables.icons.materialsymbols.outlined.History
 import com.composables.icons.materialsymbols.outlined.Inbox
+import com.composables.icons.materialsymbols.outlined.Swap_horiz
 import com.composables.icons.materialsymbols.outlined.Visibility_off
 import com.composables.icons.materialsymbols.outlined.Info
 import com.composables.icons.materialsymbols.outlined.Keyboard_arrow_right
@@ -208,6 +209,9 @@ fun SettingsScreen(
         onSpacesEnabledChanged = { enabled -> viewModel.updateSettings(settings.copy(spacesEnabled = enabled)) },
         onShowAllSpacesChanged = { show -> viewModel.updateSettings(settings.copy(showAllSpaces = show)) },
         onUnsortedEnabledChanged = { enabled -> viewModel.updateSettings(settings.copy(unsortedEnabled = enabled)) },
+        onLibraryBottomNavigationChanged = { enabled ->
+            viewModel.updateSettings(settings.copy(showLibraryBottomNavigation = enabled))
+        },
         onLanguageSelected = { localeKey ->
             scope.launch {
                 viewModel.updateSettingsSuspended(settings.copy(locale = localeKey))
@@ -325,6 +329,7 @@ fun SettingsScreen(
                 showAllSpaces = true,
                 spacesEnabled = true,
                 unsortedEnabled = true,
+                showLibraryBottomNavigation = true,
             )
             viewModel.updateSettings(defaultSettings)
 
@@ -373,6 +378,7 @@ private fun SettingsContent(
     onSpacesEnabledChanged: (Boolean) -> Unit,
     onShowAllSpacesChanged: (Boolean) -> Unit,
     onUnsortedEnabledChanged: (Boolean) -> Unit,
+    onLibraryBottomNavigationChanged: (Boolean) -> Unit,
     onLanguageSelected: (String) -> Unit,
     onAutoBackupFrequencySelected: (String) -> Unit,
     onBackupLocationClick: () -> Unit,
@@ -410,6 +416,7 @@ private fun SettingsContent(
                 onSpacesEnabledChanged = onSpacesEnabledChanged,
                 onShowAllSpacesChanged = onShowAllSpacesChanged,
                 onUnsortedEnabledChanged = onUnsortedEnabledChanged,
+                onLibraryBottomNavigationChanged = onLibraryBottomNavigationChanged,
                 onLanguageSelected = onLanguageSelected,
             )
 
@@ -467,6 +474,7 @@ private fun GeneralSettingsSection(
     onSpacesEnabledChanged: (Boolean) -> Unit,
     onShowAllSpacesChanged: (Boolean) -> Unit,
     onUnsortedEnabledChanged: (Boolean) -> Unit,
+    onLibraryBottomNavigationChanged: (Boolean) -> Unit,
     onLanguageSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -518,6 +526,13 @@ private fun GeneralSettingsSection(
                     content = { Text(stringResource(R.string.settings_spaces_enabled), style = MaterialTheme.typography.titleMedium) },
                     supportingContent = { Text(stringResource(R.string.settings_spaces_enabled_summary)) },
                     trailingContent = { Switch(checked = settings.spacesEnabled, onCheckedChange = null) },
+                )
+                item(
+                    onClick = { onLibraryBottomNavigationChanged(!settings.showLibraryBottomNavigation) },
+                    leadingContent = { Icon(MaterialSymbols.Outlined.Swap_horiz, contentDescription = null) },
+                    content = { Text(stringResource(R.string.settings_library_bottom_navigation), style = MaterialTheme.typography.titleMedium) },
+                    supportingContent = { Text(stringResource(R.string.settings_library_bottom_navigation_summary)) },
+                    trailingContent = { Switch(checked = settings.showLibraryBottomNavigation, onCheckedChange = null) },
                 )
                 item(
                     enabled = settings.spacesEnabled,

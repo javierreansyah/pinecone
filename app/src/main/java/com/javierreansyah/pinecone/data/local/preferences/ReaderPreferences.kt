@@ -90,6 +90,7 @@ data class ReaderSettings(
     val formatPreferences: FormatPreferences = FormatPreferences(),
     val spacesEnabled: Boolean = true,
     val unsortedEnabled: Boolean = true,
+    val showLibraryBottomNavigation: Boolean = true,
 ) {
 
     @OptIn(ExperimentalReadiumApi::class)
@@ -244,6 +245,7 @@ class ReaderPreferences(private val context: Context) {
         val SHOW_ALL_SPACES: Preferences.Key<Boolean> = booleanPreferencesKey("show_all_spaces")
         val SPACES_ENABLED = booleanPreferencesKey("spaces_enabled")
         val UNSORTED_ENABLED = booleanPreferencesKey("unsorted_enabled")
+        val SHOW_LIBRARY_BOTTOM_NAVIGATION = booleanPreferencesKey("show_library_bottom_navigation")
         val FORMAT_PREFERENCES: Preferences.Key<String> = stringPreferencesKey("format_preferences")
     }
 
@@ -320,6 +322,7 @@ class ReaderPreferences(private val context: Context) {
             showAllSpaces = preferences[SHOW_ALL_SPACES] ?: true,
             spacesEnabled = preferences[SPACES_ENABLED] ?: true,
             unsortedEnabled = preferences[UNSORTED_ENABLED] ?: true,
+            showLibraryBottomNavigation = preferences[SHOW_LIBRARY_BOTTOM_NAVIGATION] ?: true,
             formatPreferences = preferences[FORMAT_PREFERENCES]?.let {
                 kotlinx.serialization.json.Json.decodeFromString<FormatPreferences>(
                     it
@@ -388,6 +391,7 @@ class ReaderPreferences(private val context: Context) {
             preferences[SHOW_ALL_SPACES] = settings.showAllSpaces
             preferences[SPACES_ENABLED] = settings.spacesEnabled
             preferences[UNSORTED_ENABLED] = settings.unsortedEnabled
+            preferences[SHOW_LIBRARY_BOTTOM_NAVIGATION] = settings.showLibraryBottomNavigation
             preferences[FORMAT_PREFERENCES] =
                 kotlinx.serialization.json.Json.encodeToString(settings.formatPreferences)
         }

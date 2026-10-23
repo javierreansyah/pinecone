@@ -3,6 +3,7 @@ package com.javierreansyah.pinecone.ui.features.reader
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -11,11 +12,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.data.publication.ReaderProfile
+import com.javierreansyah.pinecone.reader.audio.AudioPlaybackState
 import com.javierreansyah.pinecone.ui.features.reader.components.overlay.ReaderOverlay
 import kotlinx.coroutines.flow.first
 import org.json.JSONObject
@@ -38,6 +41,8 @@ fun AudioPlayerScreen(
     val notes: ReaderNotesViewModel = viewModel(factory = ReaderNotesViewModel.Factory(app, bookId))
     val dictionary: ReaderDictionaryViewModel = viewModel(factory = ReaderDictionaryViewModel.Factory(app))
     val publication by reader.publication.collectAsStateWithLifecycle()
+    val bookState by reader.bookState.collectAsStateWithLifecycle()
+    val audioState by app.audioSession.state.collectAsStateWithLifecycle()
     var pendingLocatorJson by rememberSaveable { mutableStateOf(initialLocatorJson) }
 
     LaunchedEffect(reader) {
@@ -63,21 +68,29 @@ fun AudioPlayerScreen(
         }
     }
     Box(Modifier.fillMaxSize()) {
-        ReaderOverlay(
-            viewModel = reader,
-            searchViewModel = search,
-            notesViewModel = notes,
-            dictionaryViewModel = dictionary,
-            router = router,
-            bookId = bookId,
-            onNavigateToChapter = reader::audioGo,
-            onSeekToProgression = { progression ->
-                reader.locatorForProgression(progression)?.let(reader::audioGo)
-            },
-            onNavigateToLocator = reader::audioGo,
-            transparentAudioBackground = true,
-            audioArtworkAlpha = artworkAlpha,
-            audioTopBarAlpha = topBarAlpha,
-        )
+        // Wait for real metadata instead of reserving extra title/author lines.
+        if (!bookState.isLoading && (bookState.error != null || audioPlayerMetadataReady(bookId, audioState))) {
+            ReaderOverlay(
+                viewModel = reader,
+                searchViewModel = search,
+                notesViewModel = notes,
+                dictionaryViewModel = dictionary,
+                router = router,
+                bookId = bookId,
+                onNavigateToChapter = reader::audioGo,
+                onSeekToProgression = { progression ->
+                    reader.locatorForProgression(progression)?.let(reader::audioGo)
+                },
+                onNavigateToLocator = reader::audioGo,
+                transparentAudioBackground = true,
+                audioArtworkAlpha = artworkAlpha,
+                audioTopBarAlpha = topBarAlpha,
+            )
+        } else {
+            CircularProgressIndicator(Modifier.align(Alignment.Center))
+        }
     }
 }
+
+internal fun audioPlayerMetadataReady(bookId: String, state: AudioPlaybackState): Boolean =
+    state.bookId == bookId && (state.metadataLoaded || state.error != null)

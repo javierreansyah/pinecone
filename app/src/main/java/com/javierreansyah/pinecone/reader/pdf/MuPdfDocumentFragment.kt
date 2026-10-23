@@ -82,6 +82,7 @@ import org.readium.r2.shared.util.data.ReadError
 class MuPdfDocumentFragment(
     private val input: PdfDocumentFragmentInput<MuPdfSettings>,
     private val searchHighlights: StateFlow<PdfSearchHighlights> = MutableStateFlow(PdfSearchHighlights()),
+    private val selectionController: PdfSelectionController = PdfSelectionController(),
 ) :
     PdfDocumentFragment<MuPdfSettings>() {
     private data class PageRequest(val index: Int, val sequence: Long = 0)
@@ -173,7 +174,12 @@ class MuPdfDocumentFragment(
         }
         LaunchedEffect(preferences.scroll, preferences.horizontal) {
             snapshotFlow { if (preferences.scroll) list.firstVisibleItemIndex else pager.currentPage }
-                .collect { if (!navigationPending) currentPage.value = it }
+                .collect {
+                    if (!navigationPending && currentPage.value != it) {
+                        selectionController.clearSelection()
+                        currentPage.value = it
+                    }
+                }
         }
         val background = if (preferences.invert == true) Color(0xFF171717) else Color(0xFFE8E8E8)
         val modifier = Modifier
@@ -274,7 +280,9 @@ class MuPdfDocumentFragment(
                     awaitFirstDown(requireUnconsumed = false)
                     do {
                         val event = awaitPointerEvent()
-                        if (event.changes.count { it.pressed } > 1 || zoom > 1f) {
+                        val multiTouch = event.changes.count { it.pressed } > 1
+                        if (multiTouch || (zoom > 1f && selectionController.selection.value == null)) {
+                            if (multiTouch) selectionController.clearSelection()
                             val pan = event.calculatePan()
                             zoom = (zoom * event.calculateZoom()).coerceIn(1f, 4f)
                             offset = if (zoom > 1f) {
@@ -339,6 +347,18 @@ class MuPdfDocumentFragment(
                             contentScale = ContentScale.Fit,
                             colorFilter = filter,
                         )
+                        PdfTextOverlay(
+                            pdf = pdf,
+                            publication = input.publication,
+                            href = input.href.toString(),
+                            pageIndex = index,
+                            imageWidth = it.width,
+                            imageHeight = it.height,
+                            inverted = preferences.invert == true,
+                            controller = selectionController,
+                            onTap = { point -> input.inputListener?.onTap(TapEvent(PointF(point.x, point.y))) },
+                            onDoubleTap = { zoom = if (zoom > 1f) 1f else 2f; offset = Offset.Zero },
+                        )
                         if (matches.isNotEmpty()) Canvas(Modifier.matchParentSize()) {
                             val viewport = pdfImageViewport(size.width, size.height, it.width, it.height)
                             fun Path.point(point: PdfSearchPoint, first: Boolean = false) {
@@ -377,6 +397,7 @@ class MuPdfDocumentFragment(
     override fun goToPageIndex(index: Int, animated: Boolean): Boolean {
         val count = document?.pageCount ?: return false
         if (index !in 0 until count) return false
+        selectionController.clearSelection()
         requestPage(index)
         currentPage.value = index
         return true
@@ -399,6 +420,7 @@ class MuPdfDocumentFragment(
     }
 
     override fun onDestroyView() {
+        selectionController.clearSelection()
         document = null
         super.onDestroyView()
     }
