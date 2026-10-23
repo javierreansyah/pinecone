@@ -34,5 +34,6 @@ fun ReaderSettings.epubImageFilterCss(isSystemDark: Boolean): String {
         "Invert" -> "invert(1)"
         else -> return ""
     }
-    return "img, svg { filter: $filter !important; }"
+    // Generated formula SVGs already follow the text color through currentColor.
+    return "img, svg:not(.math-layout):not(.math-layout *) { filter: $filter !important; }"
 }

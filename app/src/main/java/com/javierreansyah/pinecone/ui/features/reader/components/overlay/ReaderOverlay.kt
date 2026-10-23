@@ -628,9 +628,10 @@ fun ReaderBottomBarSection(
         ),
         modifier = modifier,
     ) {
-        ReaderBottomBarContainer(
+        ReaderDockedToolbar(
             modifier = Modifier,
             readerBgColor = readerBgColor,
+            readerTextColor = readerTextColor,
         ) {
             val currentMode = when {
                 isSelectionActive -> BottomBarMode.TEXT_SELECTION
@@ -645,6 +646,8 @@ fun ReaderBottomBarSection(
 
             AnimatedContent(
                 targetState = modeArray[0],
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.BottomCenter,
                 label = "BottomBarMode",
                 transitionSpec = {
                     (slideInVertically(

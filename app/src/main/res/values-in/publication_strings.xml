@@ -18,17 +18,12 @@
     <string name="reader_original_page_notice">Halaman asli: grafis yang kompleks dipertahankan di bawah ini.</string>
     <string name="publication_reading_direction">Arah baca</string>
     <string name="publication_left_to_right">Kiri ke kanan</string>
-    <string name="publication_collection">Koleksi</string>
-    <string name="publication_collection_type">Jenis koleksi</string>
-    <string name="publication_collection_name">Nama</string>
-    <string name="publication_add_collection">Tambah seri atau koleksi</string>
     <string name="publication_language_label">@string/settings_language</string>
     <string name="publication_duration">Durasi</string>
     <plurals name="publication_duration_minutes">
         <item quantity="other">%1$d menit</item>
     </plurals>
     <string name="publication_title_required">Judul wajib diisi.</string>
-    <string name="publication_collection_required">Setiap seri atau koleksi harus memiliki nama dan jenis.</string>
     <string name="publication_identifier_format_error">Gunakan skema=nilai untuk setiap pengenal.</string>
     <string name="publication_identifier_empty_error">Skema dan nilai pengenal tidak boleh kosong.</string>
     <string name="publication_save_failed">Detail publikasi tidak dapat disimpan. Silakan coba lagi.</string>
@@ -79,10 +74,7 @@
     <string name="reader_preparing_read_mode">Menyiapkan mode baca</string>
     <string name="reader_conversion_progress">Memproses halaman %1$d dari %2$d. Semua pemrosesan dilakukan di perangkat ini.</string>
     <string name="reader_read_mode_failed">Mode baca tidak dapat disiapkan</string>
-    <string name="publication_metadata">Metadata publikasi</string>
     <string name="publication_credits">Kontributor</string>
-    <string name="publication_series">Seri</string>
-    <string name="publication_series_number">Urutan seri</string>
     <string name="publication_volume">Volume</string>
     <string name="publication_issue">Nomor terbitan</string>
     <string name="publication_subtitle">Subjudul</string>

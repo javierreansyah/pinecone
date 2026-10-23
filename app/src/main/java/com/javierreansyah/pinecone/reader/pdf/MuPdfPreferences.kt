@@ -6,7 +6,7 @@ import org.readium.r2.navigator.preferences.PreferencesEditor
 
 @Serializable
 data class MuPdfPreferences(
-    val scroll: Boolean = false,
+    val scroll: Boolean = true,
     val horizontal: Boolean = false,
     val rightToLeft: Boolean = false,
     val fitWidth: Boolean = false,

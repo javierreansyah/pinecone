@@ -63,27 +63,6 @@ data class PublicationCreditEntity(
     val metadataJson: String = "{}",
 )
 
-@Serializable
-@Entity(
-    tableName = "publication_collections",
-    primaryKeys = ["bookId", "kind", "position"],
-    foreignKeys = [ForeignKey(
-        entity = BookEntity::class,
-        parentColumns = ["id"],
-        childColumns = ["bookId"],
-        onDelete = ForeignKey.CASCADE
-    )],
-    indices = [Index("bookId"), Index("name")],
-)
-data class PublicationCollectionEntity(
-    val bookId: String,
-    val kind: String,
-    val position: Int,
-    val name: String,
-    val number: String? = null,
-    val metadataJson: String = "{}",
-)
-
 @Dao
 interface PublicationDao {
     @Query("SELECT * FROM publication_renditions WHERE bookId = :bookId AND `key` = :key")
@@ -104,23 +83,14 @@ interface PublicationDao {
     @Query("SELECT * FROM publication_credits ORDER BY role, position")
     suspend fun allCredits(): List<PublicationCreditEntity>
 
-    @Query("SELECT * FROM publication_collections ORDER BY kind, position")
-    suspend fun allCollections(): List<PublicationCollectionEntity>
-
     @Query("SELECT DISTINCT name FROM publication_credits WHERE role = :role ORDER BY name")
     fun contributorNames(role: String): Flow<List<String>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun putCredits(items: List<PublicationCreditEntity>)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun putCollections(items: List<PublicationCollectionEntity>)
-
     @Query("DELETE FROM publication_credits WHERE bookId = :bookId")
     suspend fun deleteCredits(bookId: String)
-
-    @Query("DELETE FROM publication_collections WHERE bookId = :bookId")
-    suspend fun deleteCollections(bookId: String)
 
     @Query("UPDATE publication_credits SET name = :newName WHERE name = :oldName AND role IN ('author', 'writer')")
     suspend fun renamePrimaryCredit(oldName: String, newName: String)

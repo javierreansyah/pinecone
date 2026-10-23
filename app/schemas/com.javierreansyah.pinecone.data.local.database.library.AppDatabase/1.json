@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "95b7ba58fe5a2e9463d7571c65fee905",
+    "identityHash": "7a2ae4105238ef58b7dc3491919e302f",
     "entities": [
       {
         "tableName": "books",
@@ -1038,93 +1038,11 @@
             ]
           }
         ]
-      },
-      {
-        "tableName": "publication_collections",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`bookId` TEXT NOT NULL, `kind` TEXT NOT NULL, `position` INTEGER NOT NULL, `name` TEXT NOT NULL, `number` TEXT, `metadataJson` TEXT NOT NULL, PRIMARY KEY(`bookId`, `kind`, `position`), FOREIGN KEY(`bookId`) REFERENCES `books`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
-        "fields": [
-          {
-            "fieldPath": "bookId",
-            "columnName": "bookId",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "kind",
-            "columnName": "kind",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "position",
-            "columnName": "position",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "name",
-            "columnName": "name",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "number",
-            "columnName": "number",
-            "affinity": "TEXT"
-          },
-          {
-            "fieldPath": "metadataJson",
-            "columnName": "metadataJson",
-            "affinity": "TEXT",
-            "notNull": true
-          }
-        ],
-        "primaryKey": {
-          "autoGenerate": false,
-          "columnNames": [
-            "bookId",
-            "kind",
-            "position"
-          ]
-        },
-        "indices": [
-          {
-            "name": "index_publication_collections_bookId",
-            "unique": false,
-            "columnNames": [
-              "bookId"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_publication_collections_bookId` ON `${TABLE_NAME}` (`bookId`)"
-          },
-          {
-            "name": "index_publication_collections_name",
-            "unique": false,
-            "columnNames": [
-              "name"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_publication_collections_name` ON `${TABLE_NAME}` (`name`)"
-          }
-        ],
-        "foreignKeys": [
-          {
-            "table": "books",
-            "onDelete": "CASCADE",
-            "onUpdate": "NO ACTION",
-            "columns": [
-              "bookId"
-            ],
-            "referencedColumns": [
-              "id"
-            ]
-          }
-        ]
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '95b7ba58fe5a2e9463d7571c65fee905')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7a2ae4105238ef58b7dc3491919e302f')"
     ]
   }
 }

@@ -1,16 +1,17 @@
 package com.javierreansyah.pinecone.data.publication
 
-import com.javierreansyah.pinecone.data.local.database.library.PublicationCollectionEntity
 import com.javierreansyah.pinecone.data.local.database.library.PublicationCreditEntity
 import com.javierreansyah.pinecone.data.local.database.library.PublicationRenditionEntity
 import com.javierreansyah.pinecone.data.local.preferences.FormatPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.data.local.preferences.withReadingPreferencesFrom
 import com.javierreansyah.pinecone.data.model.LibraryBackupPayload
+import com.javierreansyah.pinecone.data.model.ShelfBackupRecord
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class PublicationMetadataTest {
@@ -27,11 +28,11 @@ class PublicationMetadataTest {
     }
 
     @Test
-    fun backupPreservesRenditionsContributorsCollectionsAndSourceMaps() {
+    fun backupPreservesShelvesRenditionsContributorsAndSourceMapsWithoutSeriesMetadata() {
         val payload = LibraryBackupPayload(
             books = emptyList(),
             bookmarks = emptyList(),
-            shelves = emptyList(),
+            shelves = listOf(ShelfBackupRecord("favorites", "_all_", "Favorites", 123L)),
             shelfBookCrossRefs = emptyList(),
             notes = emptyList(),
             renditions = listOf(
@@ -60,13 +61,15 @@ class PublicationMetadataTest {
                 PublicationCreditEntity("comic", "writer", 0, "Same name"),
                 PublicationCreditEntity("comic", "artist", 0, "Same name")
             ),
-            collections = listOf(PublicationCollectionEntity("comic", "series", 0, "Series", "½"))
         )
         assertEquals(
             payload,
             Json.decodeFromString<LibraryBackupPayload>(Json.encodeToString(payload))
         )
         assertEquals(2, payload.version)
+        val json = Json { encodeDefaults = true }
+        val encoded = json.parseToJsonElement(json.encodeToString(payload)) as JsonObject
+        assertFalse("collections" in encoded)
     }
 
     @Test(expected = IllegalArgumentException::class)

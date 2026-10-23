@@ -18,10 +18,6 @@
     <string name="reader_original_page_notice">Original page: complex graphics are preserved below.</string>
     <string name="publication_reading_direction">Reading direction</string>
     <string name="publication_left_to_right">Left to right</string>
-    <string name="publication_collection">Collection</string>
-    <string name="publication_collection_type">Collection type</string>
-    <string name="publication_collection_name">Name</string>
-    <string name="publication_add_collection">Add series or collection</string>
     <string name="publication_language_label">Languages</string>
     <string name="publication_duration">Duration</string>
     <plurals name="publication_duration_minutes">
@@ -29,7 +25,6 @@
         <item quantity="other">%1$d minutes</item>
     </plurals>
     <string name="publication_title_required">A title is required.</string>
-    <string name="publication_collection_required">Each series or collection needs a name and type.</string>
     <string name="publication_identifier_format_error">Use scheme=value for each identifier.</string>
     <string name="publication_identifier_empty_error">Identifier scheme and value cannot be empty.</string>
     <string name="publication_save_failed">Could not save the publication details. Please try again.</string>
@@ -80,10 +75,7 @@
     <string name="reader_preparing_read_mode">Preparing read mode</string>
     <string name="reader_conversion_progress">Processing page %1$d of %2$d. Everything stays on this device.</string>
     <string name="reader_read_mode_failed">Could not prepare read mode</string>
-    <string name="publication_metadata">Publication metadata</string>
     <string name="publication_credits">Contributors</string>
-    <string name="publication_series">Series</string>
-    <string name="publication_series_number">Series position</string>
     <string name="publication_volume">Volume</string>
     <string name="publication_issue">Issue</string>
     <string name="publication_subtitle">Subtitle</string>

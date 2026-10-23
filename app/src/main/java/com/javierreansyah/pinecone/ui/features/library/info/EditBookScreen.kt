@@ -35,6 +35,7 @@ import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
@@ -76,6 +77,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
+import com.composables.icons.materialsymbols.outlined.Add
 import com.composables.icons.materialsymbols.outlined.Check
 import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Edit
@@ -151,12 +153,10 @@ fun EditBookScreen(
                 content = {
                     RichMetadataEditor(
                         uiState,
-                        bookId,
                         viewModel::updateRichMetadata,
                         viewModel::updateCredit,
                         viewModel::updateLanguages,
                         viewModel::updateIdentifiers,
-                        viewModel::updateCollections
                     )
                 },
             )
@@ -462,7 +462,23 @@ private fun AutocompleteChipTextField(
                 visualTransformation = VisualTransformation.None,
                 interactionSource = interactionSource,
                 label = { Text(label) },
-                trailingIcon = null,
+                trailingIcon = {
+                    IconButton(
+                        enabled = text.isNotBlank(),
+                        onClick = {
+                            if (text.isNotBlank()) {
+                                onAdd(text)
+                                text = ""
+                                expanded = false
+                            }
+                        },
+                    ) {
+                        Icon(
+                            MaterialSymbols.Outlined.Add,
+                            contentDescription = stringResource(R.string.action_add),
+                        )
+                    }
+                },
                 colors = OutlinedTextFieldDefaults.colors(),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
                 container = {

@@ -281,7 +281,6 @@ class BackupRepository(private val context: Context) {
                     .map { it.toBackupRecord() },
                 renditions = db.publicationDao().allRenditions(),
                 credits = db.publicationDao().allCredits(),
-                collections = db.publicationDao().allCollections(),
             )
         }
 
@@ -818,7 +817,6 @@ class BackupRepository(private val context: Context) {
         db.bookDao().insertAll(books)
         db.publicationDao().putRenditions(payload.renditions)
         db.publicationDao().putCredits(payload.credits)
-        db.publicationDao().putCollections(payload.collections)
         db.spaceDao().insertAllSpaces(payload.spaces.map { it.toEntity() })
         if (payload.spaces.none { it.id == "_all_" }) {
             db.spaceDao().insertSpace(com.javierreansyah.pinecone.data.local.database.library.SpaceEntity("_all_", context.getString(com.javierreansyah.pinecone.R.string.action_all), 0L))
@@ -1166,7 +1164,6 @@ class BackupRepository(private val context: Context) {
         "bookSpaceCrossRefs" to payload.bookSpaceCrossRefs.size,
         "renditions" to payload.renditions.size,
         "credits" to payload.credits.size,
-        "collections" to payload.collections.size,
     )
 
     private fun validRelationships(payload: LibraryBackupPayload): Boolean {
@@ -1179,8 +1176,6 @@ class BackupRepository(private val context: Context) {
         return (books.size == payload.books.size) && (shelves.size == payload.shelves.size) &&
                 payload.credits.map { Triple(it.bookId, it.role, it.position) }
                     .toSet().size == payload.credits.size &&
-                payload.collections.map { Triple(it.bookId, it.kind, it.position) }
-                    .toSet().size == payload.collections.size &&
                 (renditions.size == payload.renditions.size) &&
                 payload.renditions.all {
                     it.bookId in books && it.key in setOf(
@@ -1189,7 +1184,7 @@ class BackupRepository(private val context: Context) {
                     )
                 } &&
                 payload.books.all { (it.id to it.activeRendition) in renditions && (it.id to "original") in renditions } &&
-                payload.credits.all { it.bookId in books } && payload.collections.all { it.bookId in books } &&
+                payload.credits.all { it.bookId in books } &&
                 payload.bookmarks.all { (it.bookId to it.renditionKey) in renditions } && payload.notes.all { (it.bookId to it.renditionKey) in renditions } &&
                 (spaces.size == payload.spaces.size) && (authors.size == payload.authors.size) &&
                 (tags.size == payload.tags.size) &&

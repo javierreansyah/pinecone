@@ -15,7 +15,6 @@ import com.javierreansyah.pinecone.data.local.database.library.BookmarkDao
 import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.data.local.database.library.NoteDao
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
-import com.javierreansyah.pinecone.data.local.database.library.PublicationCollectionEntity
 import com.javierreansyah.pinecone.data.local.database.library.PublicationCreditEntity
 import com.javierreansyah.pinecone.data.local.database.library.PublicationRenditionEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfBookCrossRefEntity
@@ -230,7 +229,6 @@ class LibraryRepository(
                         )
                     )
                     publicationDao.putCredits(metadata.credits)
-                    publicationDao.putCollections(metadata.collections)
 
                     val authors =
                         metadata.credits.filter { it.role == "author" || it.role == "writer" }
@@ -632,7 +630,6 @@ class LibraryRepository(
         tags: List<String>,
         metadata: PublicationMetadata? = null,
         credits: List<PublicationCreditEntity>? = null,
-        collections: List<PublicationCollectionEntity>? = null,
     ): Unit = withContext(Dispatchers.IO) {
         val (bookDetailsBook) = bookDao.getById(bookId) ?: return@withContext
 
@@ -673,10 +670,6 @@ class LibraryRepository(
             if (credits != null) {
                 publicationDao.deleteCredits(bookId)
                 publicationDao.putCredits(credits)
-            }
-            if (collections != null) {
-                publicationDao.deleteCollections(bookId)
-                publicationDao.putCollections(collections)
             }
 
             bookDao.deleteBookAuthorCrossRefs(bookId)
