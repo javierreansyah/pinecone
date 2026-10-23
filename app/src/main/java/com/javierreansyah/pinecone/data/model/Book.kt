@@ -27,7 +27,6 @@ data class Book(
     val spaces: List<SpaceEntity> = emptyList(),
     val metadata: com.javierreansyah.pinecone.data.publication.PublicationMetadata = com.javierreansyah.pinecone.data.publication.PublicationMetadata(),
     val credits: List<com.javierreansyah.pinecone.data.local.database.library.PublicationCreditEntity> = emptyList(),
-    val collections: List<com.javierreansyah.pinecone.data.local.database.library.PublicationCollectionEntity> = emptyList(),
     val activeRendition: String = "original",
     val isUnsorted: Boolean = false,
     val originalFilename: String = "",
@@ -61,7 +60,6 @@ data class Book(
                 entity.book.metadataJson
             ),
             credits = entity.credits.sortedWith(compareBy({ it.role }, { it.position })),
-            collections = entity.collections.sortedWith(compareBy({ it.kind }, { it.position })),
             activeRendition = entity.book.activeRendition,
             isUnsorted = entity.book.isUnsorted,
             originalFilename = entity.book.originalFilename,
@@ -71,7 +69,6 @@ data class Book(
     fun matchesLibraryQuery(query: String): Boolean =
         sequenceOf(title, metadata.subtitle, metadata.sortTitle, metadata.issue, metadata.volume)
             .plus(authors.asSequence()).plus(credits.asSequence().map { it.name })
-            .plus(collections.asSequence().map { it.name })
             .plus(metadata.identifiers.values.asSequence())
             .any { it.contains(query, ignoreCase = true) }
 }

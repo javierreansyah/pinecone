@@ -10,7 +10,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ShelfBookCrossRefEntity::class, NoteEntity::class, AuthorEntity::class,
         BookAuthorCrossRef::class, TagEntity::class, BookTagCrossRef::class,
         SpaceEntity::class, BookSpaceCrossRef::class, BackupStateEntity::class,
-        PublicationRenditionEntity::class, PublicationCreditEntity::class, PublicationCollectionEntity::class,
+        PublicationRenditionEntity::class, PublicationCreditEntity::class,
     ],
     version = 1,
     exportSchema = true,
@@ -40,7 +40,7 @@ abstract class AppDatabase : RoomDatabase() {
                     "books", "bookmarks", "shelves", "shelf_book_cross_ref", "notes",
                     "authors", "book_author_cross_ref", "tags", "book_tag_cross_ref",
                     "spaces", "book_space_cross_ref",
-                    "publication_renditions", "publication_credits", "publication_collections",
+                    "publication_renditions", "publication_credits",
                 )
                 for (table in tables) for (operation in listOf("INSERT", "UPDATE", "DELETE")) {
                     val trigger = "backup_revision_${table}_${operation.lowercase()}"

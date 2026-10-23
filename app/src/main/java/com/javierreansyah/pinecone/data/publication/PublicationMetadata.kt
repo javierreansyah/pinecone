@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.data.publication
 
-import com.javierreansyah.pinecone.data.local.database.library.PublicationCollectionEntity
 import com.javierreansyah.pinecone.data.local.database.library.PublicationCreditEntity
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -41,7 +40,6 @@ data class PublicationMetadata(
 data class ImportedMetadata(
     val metadata: PublicationMetadata,
     val credits: List<PublicationCreditEntity>,
-    val collections: List<PublicationCollectionEntity>,
     val title: String? = null,
     val description: String? = null,
     val subjects: List<String> = emptyList(),
@@ -77,18 +75,6 @@ object PublicationMetadataImporter {
         }
             .groupBy { it.role }
             .flatMap { (_, people) -> people.mapIndexed { index, person -> person.copy(position = index) } }
-        val collections = metadata.belongsTo.flatMap { (kind, values) ->
-            values.mapIndexed { index, value ->
-                PublicationCollectionEntity(
-                    bookId,
-                    kind,
-                    index,
-                    value.name,
-                    value.position?.toString(),
-                    value.toJSON().toString()
-                )
-            }
-        }
         val details = PublicationMetadata(
             subtitle = metadata.localizedSubtitle?.string.orEmpty(),
             sortTitle = metadata.sortAs.orEmpty(),
@@ -103,7 +89,6 @@ object PublicationMetadataImporter {
         val base = ImportedMetadata(
             details,
             credits,
-            collections,
             subjects = metadata.subjects.map { it.name })
         return if (file.extension.equals("cbz", true) || file.extension.equals("zip", true)) {
             comicInfo(bookId, file, base)
@@ -181,16 +166,6 @@ object PublicationMetadataImporter {
                         PublicationCreditEntity(bookId, role, index, name)
                     }
             }
-            val series = text("Series").takeIf(String::isNotBlank)?.let {
-                listOf(
-                    PublicationCollectionEntity(
-                        bookId,
-                        "series",
-                        0,
-                        it,
-                        text("Number").ifBlank { null })
-                )
-            }.orEmpty()
             val allFields = fields.mapValues { kotlinx.serialization.json.JsonPrimitive(it.value) }
             val rawXml =
                 bytes.toString(java.nio.charset.Charset.forName(parser.inputEncoding ?: "UTF-8"))
@@ -220,7 +195,6 @@ object PublicationMetadataImporter {
                     ),
                 ),
                 credits = base.credits.filterNot { it.role in roleTags } + comicCredits,
-                collections = base.collections.filterNot { it.kind == "series" } + series,
                 title = text("Title").ifBlank { null },
                 description = text("Summary").ifBlank { null },
                 subjects = (base.subjects + text("Genre").split(',').map(String::trim)

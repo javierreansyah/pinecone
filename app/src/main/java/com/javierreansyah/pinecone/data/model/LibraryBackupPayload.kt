@@ -20,7 +20,6 @@ data class LibraryBackupPayload(
     val bookSpaceCrossRefs: List<BookSpaceBackupRecord> = emptyList(),
     val renditions: List<com.javierreansyah.pinecone.data.local.database.library.PublicationRenditionEntity> = emptyList(),
     val credits: List<com.javierreansyah.pinecone.data.local.database.library.PublicationCreditEntity> = emptyList(),
-    val collections: List<com.javierreansyah.pinecone.data.local.database.library.PublicationCollectionEntity> = emptyList(),
 )
 
 @Serializable

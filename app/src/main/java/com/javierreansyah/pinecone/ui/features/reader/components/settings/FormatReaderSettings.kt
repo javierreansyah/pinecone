@@ -59,6 +59,11 @@ fun FormatReaderSettings(
             stringResource(R.string.reader_playback),
             stringResource(R.string.reader_settings_tab_advanced),
         )
+    } else if (isPdf) {
+        listOf(
+            stringResource(R.string.reader_pages),
+            stringResource(R.string.reader_settings_tab_advanced),
+        )
     } else {
         listOf(
             stringResource(R.string.reader_pages),
@@ -86,7 +91,7 @@ fun FormatReaderSettings(
                     Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    val advancedPage = if (isAudio) 1 else 2
+                    val advancedPage = if (isAudio || isPdf) 1 else 2
                     when {
                         page == 0 -> when {
                             profile == ReaderProfile.PDF -> {
@@ -124,6 +129,8 @@ fun FormatReaderSettings(
                                     )
                                 }
 
+                                FormatLighting(settings, onChange, showChromeHint = false)
+                                PdfInversionControl(settings, onChange)
                             }
 
                             profile == ReaderProfile.AUDIO -> SettingsGroup {
@@ -196,29 +203,8 @@ fun FormatReaderSettings(
                             )
                         }
 
-                        !isAudio && page == 1 -> {
-                            FormatLighting(settings, onChange, showChromeHint = !isPdf)
-                            if (isPdf) {
-                                Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Text(stringResource(R.string.reader_invert_pages), style = MaterialTheme.typography.titleMedium)
-                                    val options = linkedMapOf(
-                                        null to stringResource(R.string.reader_follow_theme),
-                                        true to stringResource(R.string.reader_always),
-                                        false to stringResource(R.string.reader_never),
-                                    )
-                                    SegmentedButtonGroup(
-                                        options = options.values.toList(),
-                                        icons = emptyList(),
-                                        selected = options.getValue(settings.formatPreferences.pdf.invert),
-                                        onSelected = { label ->
-                                            val invert = options.entries.first { it.value == label }.key
-                                            onChange(settings.copy(formatPreferences = settings.formatPreferences.copy(
-                                                pdf = settings.formatPreferences.pdf.copy(invert = invert),
-                                            )))
-                                        },
-                                    )
-                                }
-                            }
+                        !isAudio && !isPdf && page == 1 -> {
+                            FormatLighting(settings, onChange, showChromeHint = true)
                         }
 
                         page == advancedPage -> {
@@ -272,6 +258,29 @@ fun FormatReaderSettings(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun PdfInversionControl(settings: ReaderSettings, onChange: (ReaderSettings) -> Unit) {
+    Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(stringResource(R.string.reader_invert_pages), style = MaterialTheme.typography.titleMedium)
+        val options = linkedMapOf(
+            null to stringResource(R.string.reader_follow_theme),
+            true to stringResource(R.string.reader_always),
+            false to stringResource(R.string.reader_never),
+        )
+        SegmentedButtonGroup(
+            options = options.values.toList(),
+            icons = emptyList(),
+            selected = options.getValue(settings.formatPreferences.pdf.invert),
+            onSelected = { label ->
+                val invert = options.entries.first { it.value == label }.key
+                onChange(settings.copy(formatPreferences = settings.formatPreferences.copy(
+                    pdf = settings.formatPreferences.pdf.copy(invert = invert),
+                )))
+            },
+        )
     }
 }
 

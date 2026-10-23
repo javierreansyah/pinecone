@@ -1,83 +1,65 @@
 package com.javierreansyah.pinecone.ui.features.library.info
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.javierreansyah.pinecone.R
-import com.javierreansyah.pinecone.data.local.database.library.PublicationCollectionEntity
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.publication.PublicationMetadata
 
 @Composable
 fun RichMetadataEditor(
     state: EditBookUiState,
-    bookId: String,
     onMetadata: (PublicationMetadata) -> Unit,
     onCredit: (String, String) -> Unit,
     onLanguages: (String) -> Unit,
     onIdentifiers: (String) -> Unit,
-    onCollections: (List<PublicationCollectionEntity>) -> Unit,
 ) {
     val metadata = state.metadata
-    Card(shape = RoundedCornerShape(28.dp), modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                stringResource(R.string.publication_metadata),
-                style = MaterialTheme.typography.titleLarge
-            )
-            MetadataField(
-                stringResource(R.string.publication_subtitle),
-                metadata.subtitle
-            ) { onMetadata(metadata.copy(subtitle = it)) }
-            MetadataField(
-                stringResource(R.string.publication_sort_title),
-                metadata.sortTitle
-            ) { onMetadata(metadata.copy(sortTitle = it)) }
-            MetadataField(
-                stringResource(R.string.publication_languages),
-                state.languageDraft,
-                onLanguages
-            )
-            MetadataField(
-                stringResource(R.string.publication_identifiers),
-                state.identifierDraft,
-                onIdentifiers
-            )
-            MetadataField(
-                stringResource(R.string.publication_volume),
-                metadata.volume
-            ) { onMetadata(metadata.copy(volume = it)) }
-            MetadataField(stringResource(R.string.publication_issue), metadata.issue) {
-                onMetadata(
-                    metadata.copy(issue = it)
-                )
-            }
-            MetadataField(
-                stringResource(R.string.publication_age_rating),
-                metadata.ageRating
-            ) { onMetadata(metadata.copy(ageRating = it)) }
-            MetadataField(
-                stringResource(R.string.publication_published),
-                metadata.published
-            ) { onMetadata(metadata.copy(published = it)) }
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        MetadataField(
+            stringResource(R.string.publication_subtitle),
+            metadata.subtitle
+        ) { onMetadata(metadata.copy(subtitle = it)) }
+        MetadataField(
+            stringResource(R.string.publication_sort_title),
+            metadata.sortTitle
+        ) { onMetadata(metadata.copy(sortTitle = it)) }
+        MetadataField(
+            stringResource(R.string.publication_languages),
+            state.languageDraft,
+            change = onLanguages
+        )
+        MetadataField(
+            stringResource(R.string.publication_identifiers),
+            state.identifierDraft,
+            change = onIdentifiers
+        )
+        MetadataField(
+            stringResource(R.string.publication_volume),
+            metadata.volume
+        ) { onMetadata(metadata.copy(volume = it)) }
+        MetadataField(stringResource(R.string.publication_issue), metadata.issue) {
+            onMetadata(metadata.copy(issue = it))
+        }
+        MetadataField(
+            stringResource(R.string.publication_age_rating),
+            metadata.ageRating
+        ) { onMetadata(metadata.copy(ageRating = it)) }
+        MetadataField(
+            stringResource(R.string.publication_published),
+            metadata.published
+        ) { onMetadata(metadata.copy(published = it)) }
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
                 stringResource(R.string.publication_reading_direction),
                 style = MaterialTheme.typography.titleSmall
@@ -93,83 +75,28 @@ fun RichMetadataEditor(
                     ?: directions.keys.first(),
                 onSelected = { onMetadata(metadata.copy(readingDirection = directions.getValue(it))) })
         }
-    }
-    Card(shape = RoundedCornerShape(28.dp), modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            var expanded by remember { mutableStateOf(false) }
-            TextButton(onClick = {
-                expanded = !expanded
-            }) {
-                Text(
-                    stringResource(R.string.publication_credits),
-                    style = MaterialTheme.typography.titleLarge
-                )
-            }
-            AnimatedVisibility(expanded) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        stringResource(R.string.publication_credit_hint),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    (PublicationMetadata.creditRoles + state.creditDrafts.keys).distinct()
-                        .filterNot { it == "author" }.forEach { role ->
-                        MetadataField(
-                            roleLabel(role),
-                            state.creditDrafts[role].orEmpty()
-                        ) { onCredit(role, it) }
-                    }
-                }
-            }
-        }
-    }
-    Card(shape = RoundedCornerShape(28.dp), modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                stringResource(R.string.publication_series),
-                style = MaterialTheme.typography.titleLarge
-            )
-            state.collections.forEachIndexed { index, collection ->
-                fun change(value: PublicationCollectionEntity) =
-                    onCollections(state.collections.toMutableList().apply { set(index, value) })
-                MetadataField(
-                    stringResource(R.string.publication_collection_type),
-                    collection.kind
-                ) { change(collection.copy(kind = it)) }
-                MetadataField(
-                    stringResource(R.string.publication_collection_name),
-                    collection.name
-                ) { change(collection.copy(name = it)) }
-                MetadataField(
-                    stringResource(R.string.publication_series_number),
-                    collection.number.orEmpty()
-                ) { change(collection.copy(number = it.ifBlank { null })) }
-                TextButton(onClick = { onCollections(state.collections.filterIndexed { position, _ -> position != index }) }) {
-                    Text(
-                        stringResource(R.string.action_remove)
-                    )
-                }
-            }
-            TextButton(onClick = {
-                onCollections(
-                    state.collections + PublicationCollectionEntity(
-                        bookId,
-                        "series",
-                        state.collections.size,
-                        ""
-                    )
-                )
-            }) { Text(stringResource(R.string.publication_add_collection)) }
+        (PublicationMetadata.creditRoles + state.creditDrafts.keys).distinct()
+            .filterNot { it == "author" }.forEach { role ->
+            MetadataField(
+                roleLabel(role),
+                state.creditDrafts[role].orEmpty()
+            ) { onCredit(role, it) }
         }
     }
 }
 
 @Composable
-private fun MetadataField(label: String, value: String, change: (String) -> Unit) {
+private fun MetadataField(
+    label: String,
+    value: String,
+    change: (String) -> Unit,
+) {
     OutlinedTextField(
         value = value,
         onValueChange = change,
         label = { Text(label) },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
     )
 }
 
@@ -196,14 +123,6 @@ internal fun richMetadataFields(book: Book): List<Pair<String, String>> {
         metadata.identifiers.forEach { (scheme, value) ->
             if (value.isNotBlank() && value != book.identifier) add(scheme to value)
         }
-        book.collections.forEach {
-            add(
-                roleLabel(it.kind) to listOfNotNull(
-                    it.name,
-                    it.number
-                ).joinToString(" · ")
-            )
-        }
         book.credits.groupBy { it.role }.forEach { (role, credits) ->
             add(roleLabel(role) to credits.sortedBy { it.position }.joinToString(", ") { it.name })
         }
@@ -227,7 +146,5 @@ private fun roleLabel(role: String): String = when (role) {
     "publisher" -> stringResource(R.string.book_publisher)
     "imprint" -> stringResource(R.string.publication_role_imprint)
     "contributor" -> stringResource(R.string.publication_role_contributor)
-    "series" -> stringResource(R.string.publication_series)
-    "collection" -> stringResource(R.string.publication_collection)
-    else -> role // Preserve unknown, publisher-provided role/collection identifiers verbatim.
+    else -> role // Preserve unknown, publisher-provided role identifiers verbatim.
 }

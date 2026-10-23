@@ -3,12 +3,10 @@ package com.javierreansyah.pinecone.ui.theme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.core.graphics.toColorInt
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
@@ -21,7 +19,9 @@ fun AppTheme(
     themeContrast: String = "Standard",
     content: @Composable () -> Unit,
 ) {
-    val context = LocalContext.current
+    // Use only the device accent as input; MaterialKolor defines every scheme role.
+    // A fixed accent tone also keeps the seed consistent between light and dark mode.
+    val systemSeedColor = colorResource(android.R.color.system_accent1_500)
 
     val seedColor = remember(colorPalette) {
         if (colorPalette == "Dynamic") {
@@ -33,10 +33,6 @@ fun AppTheme(
                 Color.White
             }
         }
-    }
-
-    val systemColorScheme = remember(darkTheme) {
-        if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
     }
 
     val contrastLevel = remember(themeContrast) {
@@ -52,14 +48,11 @@ fun AppTheme(
         style = PaletteStyle.TonalSpot,
         specVersion = ColorSpec.SpecVersion.SPEC_2025,
         contrastLevel = contrastLevel,
-        seedColor = if (seedColor == Color.White) systemColorScheme.primary else seedColor,
+        seedColor = if (seedColor == Color.White) systemSeedColor else seedColor,
     )
 
-    val resolvedColorScheme =
-        if (seedColor == Color.White) systemColorScheme else dynamicColorScheme
-
     MaterialTheme(
-        colorScheme = resolvedColorScheme,
+        colorScheme = dynamicColorScheme,
         motionScheme = MotionScheme.expressive(),
         content = content,
     )

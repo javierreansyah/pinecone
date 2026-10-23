@@ -59,7 +59,6 @@ class EditBookViewModel(
                             bookDetails.book.metadataJson
                         ),
                         credits = bookDetails.credits,
-                        collections = bookDetails.collections,
                         creditDrafts = bookDetails.credits.groupBy { it.role }
                             .mapValues { (_, values) ->
                                 values.sortedBy { it.position }.joinToString("\n") { it.name }
@@ -124,10 +123,6 @@ class EditBookViewModel(
                 val (_, stateTitle, stateDescription, stateCoverUri, _, stateTags, stateAuthors) = _uiState.value
                 val state = _uiState.value
                 validate(stateTitle.isNotBlank(), R.string.publication_title_required)
-                validate(
-                    state.collections.all { it.name.isNotBlank() && it.kind.isNotBlank() },
-                    R.string.publication_collection_required
-                )
                 val drafts = state.creditDrafts + ("author" to stateAuthors.joinToString("\n"))
                 val credits = drafts.flatMap { (role, text) ->
                     text.lines().map(String::trim).filter(String::isNotBlank)
@@ -166,11 +161,6 @@ class EditBookViewModel(
                             .filter(String::isNotBlank), identifiers = identifiers
                     ),
                     credits = credits,
-                    collections = state.collections.groupBy { it.kind }.flatMap { (_, values) ->
-                        values.mapIndexed { index, collection ->
-                            collection.copy(position = index)
-                        }
-                    },
                 )
                 _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
@@ -213,10 +203,6 @@ class EditBookViewModel(
 
     fun updateIdentifiers(text: String) {
         _uiState.update { it.copy(identifierDraft = text) }
-    }
-
-    fun updateCollections(items: List<com.javierreansyah.pinecone.data.local.database.library.PublicationCollectionEntity>) {
-        _uiState.update { it.copy(collections = items) }
     }
 
     class Factory(

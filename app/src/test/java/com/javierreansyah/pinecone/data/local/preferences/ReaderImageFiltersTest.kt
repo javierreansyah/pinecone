@@ -9,6 +9,26 @@ import org.junit.Test
 
 class ReaderImageFiltersTest {
     @Test
+    fun `PDF defaults to continuous scrolling without overriding saved paged viewing`() {
+        assertTrue(MuPdfPreferences().scroll)
+        assertTrue(Json.decodeFromString<MuPdfPreferences>("{}").scroll)
+        val paged = Json.decodeFromString<MuPdfPreferences>("""{"scroll":false}""")
+        assertFalse(paged.scroll)
+        assertEquals(paged, Json.decodeFromString<MuPdfPreferences>(Json.encodeToString(paged)))
+    }
+
+    @Test
+    fun `EPUB image filters exclude theme colored formula SVGs and their descendants`() {
+        listOf("Invert" to "invert(1)", "Darken" to "brightness(0.7)").forEach { (mode, filter) ->
+            val settings = ReaderSettings(pineconeThemePreset = "Dark", imageFilter = mode)
+            assertEquals(
+                "img, svg:not(.math-layout):not(.math-layout *) { filter: $filter !important; }",
+                settings.epubImageFilterCss(false),
+            )
+        }
+    }
+
+    @Test
     fun `PDF follow theme responds to theme changes while explicit choices stay fixed`() {
         val follow = MuPdfPreferences()
         assertEquals(false, follow.resolveTheme(false).invert)

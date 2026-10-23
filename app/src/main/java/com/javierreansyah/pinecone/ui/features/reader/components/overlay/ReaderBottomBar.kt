@@ -9,20 +9,16 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.BottomAppBarDefaults
+import androidx.compose.material3.FlexibleBottomAppBar
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.Icon
@@ -41,7 +37,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.pointer.pointerInput
@@ -69,20 +64,22 @@ enum class BottomBarMode {
 }
 
 @Composable
-fun ReaderBottomBarContainer(
-    modifier: Modifier = Modifier, readerBgColor: Color, content: @Composable () -> Unit,
+fun ReaderDockedToolbar(
+    modifier: Modifier = Modifier,
+    readerBgColor: Color,
+    readerTextColor: Color,
+    content: @Composable () -> Unit,
 ) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(Color.Transparent, readerBgColor), startY = 0f,
-                ),
-            ),
-        contentAlignment = Alignment.Center,
+    // Compose's expressive bottom app bar uses the Material docked-toolbar tokens:
+    // 64dp content height, 16dp side padding, and system-bar insets handled once here.
+    FlexibleBottomAppBar(
+        modifier = modifier.fillMaxWidth(),
+        containerColor = readerBgColor,
+        contentColor = readerTextColor,
     ) {
-        content()
+        Box(Modifier.weight(1f), contentAlignment = Alignment.BottomCenter) {
+            content()
+        }
     }
 }
 
@@ -104,12 +101,16 @@ fun ReaderProgressTracker(
         } else {
             androidx.compose.ui.res.stringResource(R.string.reader_page_label, currentPage ?: 1)
         }
-        Text(
-            text = pageText,
-            style = MaterialTheme.typography.labelMedium,
-            color = readerTextColor,
-            modifier = modifier.navigationBarsPadding().padding(vertical = 12.dp),
-        )
+        Box(
+            modifier = modifier.fillMaxWidth().height(48.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = pageText,
+                style = MaterialTheme.typography.labelMedium,
+                color = readerTextColor,
+            )
+        }
         return
     }
     var isSeeking by remember { mutableStateOf(value = false) }
@@ -135,14 +136,6 @@ fun ReaderProgressTracker(
         verticalArrangement = Arrangement.Center,
         modifier = modifier
             .fillMaxWidth()
-            .navigationBarsPadding()
-            .padding(horizontal = 8.dp)
-            .padding(
-                top = 8.dp,
-                bottom = if (WindowInsets.navigationBars.asPaddingValues()
-                        .calculateBottomPadding() > 0.dp
-                ) 2.dp else 12.dp,
-            )
             .height(48.dp),
     ) {
 
@@ -283,10 +276,9 @@ fun ReaderSearchNavigator(
 ) {
     val currentNum = if (activeIndex != null) activeIndex + 1 else 0
 
-    BottomAppBar(
-        containerColor = Color.Transparent,
-        contentPadding = BottomAppBarDefaults.ContentPadding,
-        modifier = modifier.fillMaxWidth(),
+    Row(
+        modifier = modifier.fillMaxWidth().height(48.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = if (totalResults == 0) stringResource(R.string.reader_no_matches) else stringResource(
@@ -338,10 +330,9 @@ fun ReaderTextSelectionControl(
 ) {
     var expanded by remember { mutableStateOf(value = false) }
 
-    BottomAppBar(
-        containerColor = Color.Transparent,
-        contentPadding = BottomAppBarDefaults.ContentPadding,
-        modifier = modifier.fillMaxWidth(),
+    Row(
+        modifier = modifier.fillMaxWidth().height(48.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
 
         IconButton(onClick = onCopy) {
