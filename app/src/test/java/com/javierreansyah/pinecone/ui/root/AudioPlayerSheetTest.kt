@@ -72,7 +72,7 @@ class AudioPlayerSheetTest {
                 0f,
             )
         }
-        assertEquals(1f, audioSheetOpacity(0f, suppressMiniPlayer = false).miniPlayer, 0f)
+        assertEquals(1f, audioSheetOpacity(0f).miniPlayer, 0f)
     }
 
     @Test

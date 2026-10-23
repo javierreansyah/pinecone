@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.library.shelf
 
-import com.javierreansyah.pinecone.ui.features.library.fileFormat
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateDpAsState
@@ -15,6 +14,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,8 +22,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.layout.PaddingValues
-import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
@@ -61,7 +59,6 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
@@ -70,15 +67,14 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Drive_file_move
-import com.composables.icons.materialsymbols.outlined.Content_copy
-import com.javierreansyah.pinecone.ui.features.library.organize.SelectSpaceForShelfDialog
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Book
 import com.composables.icons.materialsymbols.outlined.Check
 import com.composables.icons.materialsymbols.outlined.Close
+import com.composables.icons.materialsymbols.outlined.Content_copy
 import com.composables.icons.materialsymbols.outlined.Delete
 import com.composables.icons.materialsymbols.outlined.Drag_handle
+import com.composables.icons.materialsymbols.outlined.Drive_file_move
 import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Format_list_numbered
 import com.composables.icons.materialsymbols.outlined.More_vert
@@ -90,6 +86,7 @@ import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
+import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.SortType
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectAppBar
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectTopBarTransition
@@ -97,6 +94,11 @@ import com.javierreansyah.pinecone.ui.features.library.components.ShelfDetailFil
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookCollection
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookContextMenu
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookItem
+import com.javierreansyah.pinecone.ui.features.library.fileFormat
+import com.javierreansyah.pinecone.ui.features.library.organize.SelectSpaceForShelfDialog
+import com.javierreansyah.pinecone.ui.features.library.publicationCountLabel
+import com.javierreansyah.pinecone.ui.features.library.publicationWording
+import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import kotlinx.coroutines.flow.flowOf
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -152,7 +154,10 @@ fun ShelfDetailScreen(
     ShelfDetailContent(
         shelfId = shelfId,
         displayTitle = displayTitle,
-        displayCount = displayCount,
+        displayCount = publicationCountLabel(
+            displayCount,
+            publicationWording(shelfWithCovers?.books.orEmpty().map { it.book.fileFormat() })
+        ),
         spaceName = if (spacesEnabled && shelfId != "unshelved") spaces.find { it.id == shelfWithCovers?.shelf?.spaceId }?.name else null,
         shelfWithCovers = shelfWithCovers,
         books = books,
@@ -226,7 +231,9 @@ fun ShelfDetailScreen(
         onReorderBooksChange = { reorderBooks = it },
         onShowFilterSheet = { showFilterSheet = true },
         onShowDeleteDialog = { showDeleteDialog = true },
-        onTransferShelf = if (spacesEnabled && shelfId != "unshelved") ({ copy -> transferCopy = copy }) else null,
+        onTransferShelf = if (spacesEnabled && shelfId != "unshelved") ({ copy ->
+            transferCopy = copy
+        }) else null,
         onBookClick = onNavigateToReader,
         onBookLongClick = { selectedBookForMenu = it },
         scrollKey = Triple(
@@ -254,7 +261,8 @@ fun ShelfDetailScreen(
         ShelfDetailFilterBottomSheet(
             shelfId = shelfId,
             preferences = uiState.value.bookPreferences,
-            availableFormats = shelfWithCovers?.books.orEmpty().mapTo(mutableSetOf()) { it.book.fileFormat() },
+            availableFormats = shelfWithCovers?.books.orEmpty()
+                .mapTo(mutableSetOf()) { it.book.fileFormat() },
             onLayoutModeChange = viewModel::onLayoutModeChange,
             onSortTypeChange = viewModel::onSortTypeChange,
             onStatusToggle = viewModel::toggleStatusFilter,
@@ -265,6 +273,7 @@ fun ShelfDetailScreen(
     if (showDeleteDialog && (shelfWithCovers != null)) {
         DeleteShelfDialog(
             shelfName = shelfWithCovers.shelf.name,
+            wording = publicationWording(shelfWithCovers.books.map { it.book.fileFormat() }),
             onConfirm = {
                 viewModel.deleteShelf(shelfId)
                 showDeleteDialog = false
@@ -295,7 +304,7 @@ private fun ShelfDetailContent(
     modifier: Modifier = Modifier,
     shelfId: String,
     displayTitle: String,
-    displayCount: Int,
+    displayCount: String,
     spaceName: String?,
     shelfWithCovers: ShelfWithCovers?,
     books: List<Book>,
@@ -399,7 +408,7 @@ private fun ShelfDetailContent(
 private fun ShelfDetailTopBar(
     shelfId: String,
     displayTitle: String,
-    displayCount: Int,
+    displayCount: String,
     spaceName: String?,
     books: List<Book>,
     allBooks: List<Book>,
@@ -439,6 +448,7 @@ private fun ShelfDetailTopBar(
         isMultiSelect = isInMultiSelectMode,
         multiSelectBar = {
             MultiSelectAppBar(
+                wording = allBooks.filter { it.id in selectedBooks }.publicationWording(),
                 selectedCount = selectedBooks.size,
                 isAllSelected = books.isNotEmpty() && (selectedBooks.size == books.size),
                 showMarkAsRead = showMarkAsRead,
@@ -482,7 +492,7 @@ private fun ShelfDetailTopBar(
 private fun ShelfDetailDefaultTopAppBar(
     shelfId: String,
     displayTitle: String,
-    displayCount: Int,
+    displayCount: String,
     spaceName: String?,
     isReordering: Boolean,
     isRenaming: Boolean,
@@ -540,7 +550,7 @@ private fun ShelfDetailDefaultTopAppBar(
             Text(
                 listOfNotNull(
                     spaceName,
-                    pluralStringResource(R.plurals.library_shelf_count, displayCount, displayCount),
+                    displayCount,
                 ).joinToString(" · "),
             )
         },
@@ -669,7 +679,8 @@ private fun ShelfDetailDefaultTopAppBar(
                                     contentDescription = stringResource(R.string.action_more),
                                 )
                             }
-                            val totalItems = if (shelfId == "unshelved") 1 else if (onTransferShelf != null) 5 else 3
+                            val totalItems =
+                                if (shelfId == "unshelved") 1 else if (onTransferShelf != null) 5 else 3
                             DropdownMenuPopup(
                                 expanded = showMoreMenu,
                                 onDismissRequest = { showMoreMenu = false },
@@ -718,9 +729,19 @@ private fun ShelfDetailDefaultTopAppBar(
                                                 SelectableDropdownMenuItem(
                                                     selected = false,
                                                     text = { Text(stringResource(if (copy) R.string.library_copy_shelves else R.string.library_move_shelves)) },
-                                                    shapes = MenuDefaults.itemShape(index + 2, totalItems),
-                                                    leadingIcon = { Icon(if (copy) MaterialSymbols.Outlined.Content_copy else MaterialSymbols.Outlined.Drive_file_move, contentDescription = null) },
-                                                    onClick = { showMoreMenu = false; onTransferShelf(copy) },
+                                                    shapes = MenuDefaults.itemShape(
+                                                        index + 2,
+                                                        totalItems
+                                                    ),
+                                                    leadingIcon = {
+                                                        Icon(
+                                                            if (copy) MaterialSymbols.Outlined.Content_copy else MaterialSymbols.Outlined.Drive_file_move,
+                                                            contentDescription = null
+                                                        )
+                                                    },
+                                                    onClick = {
+                                                        showMoreMenu = false; onTransferShelf(copy)
+                                                    },
                                                 )
                                             }
                                         }
@@ -732,7 +753,10 @@ private fun ShelfDetailDefaultTopAppBar(
                                                     color = MaterialTheme.colorScheme.error,
                                                 )
                                             },
-                                            shapes = MenuDefaults.itemShape(totalItems - 1, totalItems),
+                                            shapes = MenuDefaults.itemShape(
+                                                totalItems - 1,
+                                                totalItems
+                                            ),
                                             leadingIcon = {
                                                 Icon(
                                                     MaterialSymbols.Outlined.Delete,
@@ -888,6 +912,7 @@ private fun ShelfDetailBookListContent(
 @Composable
 private fun DeleteShelfDialog(
     shelfName: String,
+    wording: PublicationWording,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -897,7 +922,7 @@ private fun DeleteShelfDialog(
         text = {
             Text(
                 stringResource(
-                    R.string.library_delete_shelf_message,
+                    wording.deleteShelfMessage,
                     shelfName,
                 ),
             )

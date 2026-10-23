@@ -28,11 +28,21 @@ data class PdfSearchHighlights(
 
 internal data class PdfSearchHit(val start: Int, val end: Int, val quads: List<PdfSearchQuad>)
 internal data class PdfSearchPage(val text: String, val matches: List<PdfSearchHit>)
-internal data class PdfSearchGlyph(val start: Int, val end: Int, val line: Int, val quad: PdfSearchQuad)
+internal data class PdfSearchGlyph(
+    val start: Int,
+    val end: Int,
+    val line: Int,
+    val quad: PdfSearchQuad
+)
+
 private val searchWhitespace = Regex("\\s+")
 
 /** Preserve one shared match order for snippets, navigation and painted glyphs. */
-internal fun pdfSearchHits(text: String, query: String, glyphs: List<PdfSearchGlyph>): List<PdfSearchHit> {
+internal fun pdfSearchHits(
+    text: String,
+    query: String,
+    glyphs: List<PdfSearchGlyph>
+): List<PdfSearchHit> {
     val needle = query.trim().replace(searchWhitespace, " ")
     if (needle.isEmpty()) return emptyList()
     return buildList {
@@ -63,16 +73,33 @@ internal fun mergePdfSearchQuads(quads: List<PdfSearchQuad>): PdfSearchQuad {
     val along = points.map { it.x * ux + it.y * uy }
     val across = points.map { -it.x * uy + it.y * ux }
     fun point(u: Float, v: Float) = PdfSearchPoint(u * ux - v * uy, u * uy + v * ux)
-    return PdfSearchQuad(point(along.min(), across.min()), point(along.max(), across.min()),
-        point(along.max(), across.max()), point(along.min(), across.max()))
+    return PdfSearchQuad(
+        point(along.min(), across.min()), point(along.max(), across.min()),
+        point(along.max(), across.max()), point(along.min(), across.max())
+    )
 }
 
-internal data class PdfImageViewport(val left: Float, val top: Float, val width: Float, val height: Float)
+internal data class PdfImageViewport(
+    val left: Float,
+    val top: Float,
+    val width: Float,
+    val height: Float
+)
 
 /** Same centered ContentScale.Fit transform as the PDF Image. */
-internal fun pdfImageViewport(width: Float, height: Float, imageWidth: Int, imageHeight: Int): PdfImageViewport {
+internal fun pdfImageViewport(
+    width: Float,
+    height: Float,
+    imageWidth: Int,
+    imageHeight: Int
+): PdfImageViewport {
     val scale = minOf(width / imageWidth, height / imageHeight)
     val fittedWidth = imageWidth * scale
     val fittedHeight = imageHeight * scale
-    return PdfImageViewport((width - fittedWidth) / 2, (height - fittedHeight) / 2, fittedWidth, fittedHeight)
+    return PdfImageViewport(
+        (width - fittedWidth) / 2,
+        (height - fittedHeight) / 2,
+        fittedWidth,
+        fittedHeight
+    )
 }

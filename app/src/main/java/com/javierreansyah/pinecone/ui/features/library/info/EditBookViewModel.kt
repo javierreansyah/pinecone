@@ -11,6 +11,8 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.AuthorEntity
 import com.javierreansyah.pinecone.data.local.database.library.TagEntity
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
+import com.javierreansyah.pinecone.ui.features.library.fileFormat
+import com.javierreansyah.pinecone.ui.features.library.publicationWording
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -49,6 +51,7 @@ class EditBookViewModel(
                     it.copy(
                         isLoading = false,
                         loaded = true,
+                        wording = publicationWording(listOf(bookDetails.book.fileFormat())),
                         title = bookTitle,
                         description = bookDescription ?: "",
                         existingCoverPath = bookCoverPath,
@@ -209,8 +212,7 @@ class EditBookViewModel(
         private val application: Application, private val bookId: String,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return EditBookViewModel(application, bookId) as T
-        }
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            EditBookViewModel(application, bookId) as T
     }
 }

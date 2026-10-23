@@ -21,17 +21,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.ui.features.library.components.book.CoverImage
+import com.javierreansyah.pinecone.ui.features.library.fileFormat
+import com.javierreansyah.pinecone.ui.features.library.publicationCountLabel
+import com.javierreansyah.pinecone.ui.features.library.publicationWording
 
 @Composable
 fun ShelfListItem(
+    modifier: Modifier = Modifier,
     shelfWithCovers: ShelfWithCovers,
     onClick: () -> Unit,
     spaceName: String? = null,
-    modifier: Modifier = Modifier,
     isInMultiSelectMode: Boolean = false,
     isSelected: Boolean = false,
     onLongClick: (() -> Unit)? = null,
@@ -95,8 +97,9 @@ fun ShelfListItem(
                 maxLines = 2,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             )
-            val countText = androidx.compose.ui.res.pluralStringResource(
-                R.plurals.library_shelf_count, booksCount, booksCount,
+            val countText = publicationCountLabel(
+                booksCount,
+                publicationWording(visibleBooks.map { it.book.fileFormat() })
             )
             Text(
                 text = listOfNotNull(spaceName, countText).joinToString(" · "),

@@ -1,9 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.library.components
 
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import com.javierreansyah.pinecone.ui.features.library.FileFilter
-import com.javierreansyah.pinecone.ui.features.library.LibraryView
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -12,6 +8,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,11 +37,15 @@ import com.composables.icons.materialsymbols.outlined.View_carousel
 import com.composables.icons.materialsymbols.outlined.View_list
 import com.composables.icons.materialsymbols.outlined.Window
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.FilterSortPreferences
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
+import com.javierreansyah.pinecone.ui.features.library.LibraryView
+import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.ShelfFilter
 import com.javierreansyah.pinecone.ui.features.library.SortType
 import com.javierreansyah.pinecone.ui.features.library.StatusFilter
+import com.javierreansyah.pinecone.ui.features.library.publicationWording
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -207,7 +209,9 @@ fun <T> MultiToggleGroupSection(
             options.forEachIndexed { index, option ->
                 val isSelected = selectedOptions.contains(option)
                 ToggleButton(
-                    modifier = if (singleSelection) Modifier.semantics { role = Role.RadioButton } else Modifier,
+                    modifier = if (singleSelection) Modifier.semantics {
+                        role = Role.RadioButton
+                    } else Modifier,
                     checked = isSelected,
                     onCheckedChange = { onOptionToggled(option) },
                     shapes = when (index) {
@@ -298,11 +302,20 @@ fun LibraryFilterBottomSheet(
             selectedOptions = setOf(libraryView),
             onOptionToggled = onLibraryViewChange,
             singleSelection = true,
-        ) { view -> Text(stringResource(when (view) {
-            LibraryView.Both -> R.string.library_show_both
-            LibraryView.Books -> R.string.library_show_books
-            LibraryView.Shelves -> R.string.library_show_shelves
-        })) }
+        ) { view ->
+            Text(
+                stringResource(
+                    when (view) {
+                        LibraryView.Both -> R.string.library_show_both
+                        LibraryView.Books -> if (publicationWording(availableFormats) == PublicationWording.Books) {
+                            R.string.content_books_only
+                        } else R.string.library_show_books
+
+                        LibraryView.Shelves -> R.string.library_show_shelves
+                    }
+                )
+            )
+        }
 
         FileFilterSection(preferences, availableFormats, onFileFilterToggle)
     }
@@ -459,14 +472,16 @@ private fun FileFilterSection(
         selectedOptions = preferences.selectedFormats,
         onOptionToggled = onToggle,
     ) { format ->
-        Text(when (format) {
-            FileFilter.EPUB -> "EPUB"
-            FileFilter.PDF -> "PDF"
-            FileFilter.Comics -> stringResource(R.string.library_format_comics)
-            FileFilter.Audio -> stringResource(R.string.library_format_audio)
-            FileFilter.Images -> stringResource(R.string.library_format_images)
-            FileFilter.WebPublication -> "WebPub"
-            FileFilter.Other -> stringResource(R.string.library_format_other)
-        })
+        Text(
+            when (format) {
+                FileFilter.EPUB -> "EPUB"
+                FileFilter.PDF -> "PDF"
+                FileFilter.Comics -> stringResource(R.string.library_format_comics)
+                FileFilter.Audio -> stringResource(R.string.library_format_audio)
+                FileFilter.Images -> stringResource(R.string.library_format_images)
+                FileFilter.WebPublication -> "WebPub"
+                FileFilter.Other -> stringResource(R.string.library_format_other)
+            }
+        )
     }
 }

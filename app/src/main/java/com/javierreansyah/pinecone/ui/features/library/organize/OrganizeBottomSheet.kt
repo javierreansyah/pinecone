@@ -133,7 +133,10 @@ fun OrganizeBottomSheet(
                     onRequestCreateShelf = { name ->
                         if (uiState.value.defaultShelfSpaceId == null) shelfNameToCreate = name
                         else {
-                            viewModel.createShelf(uiState.value.defaultShelfSpaceId ?: "_all_", name)
+                            viewModel.createShelf(
+                                uiState.value.defaultShelfSpaceId ?: "_all_",
+                                name
+                            )
                             textFieldState.edit { replace(0, length, "") }
                             keyboardController?.hide()
                         }
@@ -234,9 +237,10 @@ private fun OrganizeContent(
     onToggleSpace: (String, ToggleableState) -> Unit,
     onToggleShelf: (String, ToggleableState) -> Unit,
 ) {
-    val showCreateSpace = spacesEnabled && searchQuery.isNotBlank() && !allSpaces.any { (itSpace2) ->
-        itSpace2.name.equals(searchQuery, ignoreCase = true)
-    }
+    val showCreateSpace =
+        spacesEnabled && searchQuery.isNotBlank() && !allSpaces.any { (itSpace2) ->
+            itSpace2.name.equals(searchQuery, ignoreCase = true)
+        }
     val showCreateShelf = searchQuery.isNotBlank() && allSpaces.isNotEmpty()
 
     val isSearchEmpty =
@@ -328,7 +332,12 @@ private fun OrganizeContent(
                         item(
                             key = "space_${spaceId2}",
                             selected = isSpaceSelected,
-                            onClick = if (spaceId2 == "_all_" && isSpaceSelected) null else ({ onToggleSpace(spaceId2, spaceItemState) }),
+                            onClick = if (spaceId2 == "_all_" && isSpaceSelected) null else ({
+                                onToggleSpace(
+                                    spaceId2,
+                                    spaceItemState
+                                )
+                            }),
                             leadingContent = {
                                 Icon(
                                     if (spacesEnabled) MaterialSymbols.Outlined.Forest else MaterialSymbols.Outlined.Folder,

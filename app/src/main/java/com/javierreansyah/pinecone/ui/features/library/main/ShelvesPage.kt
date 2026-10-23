@@ -29,10 +29,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Book
 import com.composables.icons.materialsymbols.outlined.Folder
@@ -40,9 +39,14 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.ui.components.EmptyState
+import com.javierreansyah.pinecone.ui.features.library.ALL_SPACES_ID
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
+import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.components.ShelfListItem
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookItem
+import com.javierreansyah.pinecone.ui.features.library.fileFormat
+import com.javierreansyah.pinecone.ui.features.library.publicationCountLabel
+import com.javierreansyah.pinecone.ui.features.library.publicationWording
 
 @Composable
 fun ShelvesPage(
@@ -94,13 +98,17 @@ fun ShelvesPage(
                             val booksCount = visibleBooks.size
 
                             val isUnshelved = shelfWithCovers.shelf.id == "unshelved"
+                            val spaceName =
+                                if (isUnshelved || shelfWithCovers.shelf.spaceId == ALL_SPACES_ID) {
+                                    null
+                                } else spaceNames[shelfWithCovers.shelf.spaceId]
                             val isItemSelectable = !isUnshelved
                             val itemInMultiSelectMode = isInMultiSelectMode && isItemSelectable
 
                             if (targetLayoutMode == LayoutMode.List) {
                                 ShelfListItem(
                                     shelfWithCovers = shelfWithCovers,
-                                    spaceName = if (isUnshelved) null else spaceNames[shelfWithCovers.shelf.spaceId],
+                                    spaceName = spaceName,
                                     onClick = {
                                         onShelfClick(
                                             shelfWithCovers.shelf.id,
@@ -120,7 +128,7 @@ fun ShelvesPage(
                             } else {
                                 ShelfRowItem(
                                     shelfWithCovers = shelfWithCovers,
-                                    spaceName = if (isUnshelved) null else spaceNames[shelfWithCovers.shelf.spaceId],
+                                    spaceName = spaceName,
                                     booksCount = booksCount,
                                     visibleBooks = visibleBooks,
                                     onShelfClick = onShelfClick,
@@ -191,6 +199,7 @@ private fun ShelfRowItem(
             shelfName = shelfWithCovers.shelf.name,
             spaceName = spaceName,
             booksCount = booksCount,
+            wording = publicationWording(visibleBooks.map { it.book.fileFormat() }),
             isInMultiSelectMode = isInMultiSelectMode,
             isSelected = isSelected,
             onToggleSelect = onToggleSelect,
@@ -209,6 +218,7 @@ private fun ShelfRowHeader(
     shelfName: String,
     spaceName: String? = null,
     booksCount: Int,
+    wording: PublicationWording,
     isInMultiSelectMode: Boolean = false,
     isSelected: Boolean = false,
     onToggleSelect: (() -> Unit)? = null,
@@ -228,9 +238,7 @@ private fun ShelfRowHeader(
                 text = shelfName,
                 style = MaterialTheme.typography.titleMediumEmphasized,
             )
-            val countText = pluralStringResource(
-                R.plurals.library_shelf_count, booksCount, booksCount,
-            )
+            val countText = publicationCountLabel(booksCount, wording)
             Text(
                 text = listOfNotNull(spaceName, countText).joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,

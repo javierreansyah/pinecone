@@ -19,12 +19,20 @@ import org.readium.r2.shared.publication.Metadata
 import org.readium.r2.shared.publication.Publication
 
 class MuPdfEngineProvider(
-    private val searchHighlights: StateFlow<PdfSearchHighlights> = MutableStateFlow(PdfSearchHighlights()),
+    private val searchHighlights: StateFlow<PdfSearchHighlights> = MutableStateFlow(
+        PdfSearchHighlights()
+    ),
     private val selectionController: PdfSelectionController = PdfSelectionController(),
 ) :
     PdfEngineProvider<MuPdfSettings, MuPdfPreferences, MuPdfPreferencesEditor> {
     override fun createDocumentFragmentFactory(input: PdfDocumentFragmentInput<MuPdfSettings>): SingleFragmentFactory<MuPdfDocumentFragment> =
-        createFragmentFactory { MuPdfDocumentFragment(input, searchHighlights, selectionController) }
+        createFragmentFactory {
+            MuPdfDocumentFragment(
+                input,
+                searchHighlights,
+                selectionController
+            )
+        }
 
     override fun computeSettings(metadata: Metadata, preferences: MuPdfPreferences): MuPdfSettings =
         MuPdfSettings(preferences)

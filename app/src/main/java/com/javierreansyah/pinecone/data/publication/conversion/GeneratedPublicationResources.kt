@@ -7,6 +7,5 @@ fun generatedPublicationStrings(resources: Resources): GeneratedPublicationStrin
     GeneratedPublicationStrings(
         contents = resources.getString(R.string.reader_toc_title),
         scannedPageNotice = resources.getString(R.string.reader_scanned_page_notice),
-        originalPageNotice = resources.getString(R.string.reader_original_page_notice),
         pageLabel = { number -> resources.getString(R.string.reader_page_label, number) },
     )

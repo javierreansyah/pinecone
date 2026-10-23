@@ -19,6 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Archive
@@ -31,6 +32,7 @@ import com.composables.icons.materialsymbols.outlined.Deselect
 import com.composables.icons.materialsymbols.outlined.Select_all
 import com.composables.icons.materialsymbols.outlined.Unarchive
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 
 @Composable
 fun MultiSelectAppBar(
@@ -46,6 +48,7 @@ fun MultiSelectAppBar(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
     isUnarchive: Boolean = false,
+    wording: PublicationWording = PublicationWording.Items,
 ) {
     var showDeleteConfirmation by remember { mutableStateOf(value = false) }
 
@@ -131,13 +134,17 @@ fun MultiSelectAppBar(
             onDismissRequest = { showDeleteConfirmation = false },
             title = {
                 Text(
-                    stringResource(R.string.book_delete_title),
+                    pluralStringResource(wording.deleteSelectionTitle, selectedCount),
                     style = MaterialTheme.typography.titleLarge,
                 )
             },
             text = {
                 Text(
-                    stringResource(R.string.book_delete_message),
+                    pluralStringResource(
+                        wording.deleteSelectionMessage,
+                        selectedCount,
+                        selectedCount
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             },

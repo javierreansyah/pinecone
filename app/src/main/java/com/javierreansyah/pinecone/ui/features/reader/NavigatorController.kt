@@ -15,15 +15,15 @@ import com.javierreansyah.pinecone.data.publication.ReaderProfile
 import com.javierreansyah.pinecone.reader.pdf.MuPdfEngineProvider
 import com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences
 import com.javierreansyah.pinecone.reader.pdf.MuPdfSettings
+import com.javierreansyah.pinecone.reader.pdf.PdfAnnotation
 import com.javierreansyah.pinecone.reader.pdf.PdfSearchHighlights
 import com.javierreansyah.pinecone.reader.pdf.PdfSelectionController
-import com.javierreansyah.pinecone.reader.pdf.PdfAnnotation
-import org.json.JSONObject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import org.readium.r2.navigator.Navigator
 import org.readium.r2.navigator.OverflowableNavigator
 import org.readium.r2.navigator.VisualNavigator
@@ -58,7 +58,11 @@ class NavigatorController(
             matches = if (state.searchPerformed) state.results.mapNotNull { it.pdfMatch } else emptyList(),
             focusedIndex = state.activeIndex.takeIf { state.isInNavMode },
         )
-    }.stateIn(lifecycleOwner.lifecycleScope, SharingStarted.WhileSubscribed(5_000), PdfSearchHighlights())
+    }.stateIn(
+        lifecycleOwner.lifecycleScope,
+        SharingStarted.WhileSubscribed(5_000),
+        PdfSearchHighlights()
+    )
 
     init {
         lifecycleOwner.lifecycle.addObserver(this)
@@ -119,7 +123,10 @@ class NavigatorController(
                             ?.let(notesViewModel::viewHighlight)
                     },
                 )
-                val factory = PdfNavigatorFactory(publication, MuPdfEngineProvider(pdfSearchHighlights, selection))
+                val factory = PdfNavigatorFactory(
+                    publication,
+                    MuPdfEngineProvider(pdfSearchHighlights, selection)
+                )
                 fragmentManager.fragmentFactory = factory.createFragmentFactory(
                     viewModel.currentLocator.value ?: viewModel.initialLocator,
                     viewModel.pdfPreferences.value
@@ -140,7 +147,8 @@ class NavigatorController(
                     lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                         notesViewModel.allNotesAndHighlights.collect { notes ->
                             selection.applyAnnotations(notes.mapNotNull { note ->
-                                val locator = runCatching { Locator.fromJSON(JSONObject(note.locatorJson)) }.getOrNull()
+                                val locator =
+                                    runCatching { Locator.fromJSON(JSONObject(note.locatorJson)) }.getOrNull()
                                 locator?.let { PdfAnnotation(note.id, it, note.color) }
                             })
                         }

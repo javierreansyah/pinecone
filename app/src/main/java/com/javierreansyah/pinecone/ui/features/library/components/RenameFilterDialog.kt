@@ -27,6 +27,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.features.library.PublicationWording
+import com.javierreansyah.pinecone.ui.features.library.combinedWording
 
 @Composable
 fun RenameFilterDialog(
@@ -35,6 +37,7 @@ fun RenameFilterDialog(
     title: String = stringResource(R.string.action_rename),
     label: String = stringResource(R.string.action_rename),
     isMergingMultiple: Boolean = false,
+    wordingByName: Map<String, PublicationWording> = emptyMap(),
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
@@ -102,7 +105,12 @@ fun RenameFilterDialog(
                 } else if (text.isNotBlank() && suggestions.contains(text) && (text != initialName)) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = stringResource(R.string.library_warning_merge),
+                        text = stringResource(
+                            listOf(
+                                wordingByName[initialName] ?: PublicationWording.Items,
+                                wordingByName[text] ?: PublicationWording.Items,
+                            ).combinedWording().mergeWarning
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                     )

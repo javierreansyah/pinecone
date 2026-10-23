@@ -589,9 +589,8 @@ class BackupRepository(private val context: Context) {
         }
     }
 
-    private suspend fun restoreLocked(snapshot: VaultSnapshot, dirs: VaultDirs): BackupResult {
-        return app.libraryRepository.withAssetTransaction { restoreStaged(snapshot, dirs) }
-    }
+    private suspend fun restoreLocked(snapshot: VaultSnapshot, dirs: VaultDirs): BackupResult =
+        app.libraryRepository.withAssetTransaction { restoreStaged(snapshot, dirs) }
 
     private suspend fun restoreStaged(snapshot: VaultSnapshot, dirs: VaultDirs): BackupResult {
         val started = System.currentTimeMillis()
@@ -819,7 +818,13 @@ class BackupRepository(private val context: Context) {
         db.publicationDao().putCredits(payload.credits)
         db.spaceDao().insertAllSpaces(payload.spaces.map { it.toEntity() })
         if (payload.spaces.none { it.id == "_all_" }) {
-            db.spaceDao().insertSpace(com.javierreansyah.pinecone.data.local.database.library.SpaceEntity("_all_", context.getString(com.javierreansyah.pinecone.R.string.action_all), 0L))
+            db.spaceDao().insertSpace(
+                com.javierreansyah.pinecone.data.local.database.library.SpaceEntity(
+                    "_all_",
+                    context.getString(com.javierreansyah.pinecone.R.string.action_all),
+                    0L
+                )
+            )
         }
         db.shelfDao().insertAllShelves(payload.shelves.map { it.toEntity() })
         db.bookDao().insertAllAuthors(payload.authors.map { it.toEntity() })
@@ -829,7 +834,10 @@ class BackupRepository(private val context: Context) {
         db.shelfDao().insertAllShelfBookCrossRefs(payload.shelfBookCrossRefs.map { it.toEntity() })
         db.spaceDao().insertAllBookSpaceCrossRefs(payload.bookSpaceCrossRefs.map { it.toEntity() })
         db.spaceDao().insertAllBookSpaceCrossRefs(books.map {
-            com.javierreansyah.pinecone.data.local.database.library.BookSpaceCrossRef(it.id, "_all_")
+            com.javierreansyah.pinecone.data.local.database.library.BookSpaceCrossRef(
+                it.id,
+                "_all_"
+            )
         })
         db.bookDao().insertAllBookAuthorCrossRefs(payload.bookAuthorCrossRefs.map { it.toEntity() })
         db.bookDao().insertAllBookTagCrossRefs(payload.bookTagCrossRefs.map { it.toEntity() })

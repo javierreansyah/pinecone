@@ -94,7 +94,15 @@ fun ReaderSettingsContent(
     onReparsePdf: (() -> Unit)? = null,
 ) {
     if (profile != com.javierreansyah.pinecone.data.publication.ReaderProfile.EPUB || fixedEpub) {
-        FormatReaderSettings(settings, onSettingsChange, profile, fixedEpub, useBookSettings, onUseBookSettings, onReparsePdf)
+        FormatReaderSettings(
+            settings,
+            onSettingsChange,
+            profile,
+            fixedEpub,
+            useBookSettings,
+            onUseBookSettings,
+            onReparsePdf
+        )
         return
     }
     val context = LocalContext.current
@@ -140,7 +148,13 @@ fun ReaderSettingsContent(
                     onClick = {
                         scope.launch { pagerState.animateScrollToPage(index) }
                     },
-                    text = { Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f)) },
+                    text = {
+                        Text(
+                            title,
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                    },
                 )
             }
         }
@@ -201,8 +215,13 @@ fun ReaderSettingsContent(
                             AdvancedTabContent(
                                 settings = settings,
                                 onSettingsChange = onSettingsChange,
-                                leadingContent = {
-                                    PreferenceSwitch(stringResource(R.string.reader_settings_this_publication), useBookSettings, onUseBookSettings)
+                                onRestoreDefaultsClick = { showRestoreDefaultWarning = true },
+                                content = {
+                                    PreferenceSwitch(
+                                        stringResource(R.string.reader_settings_this_publication),
+                                        useBookSettings,
+                                        onUseBookSettings
+                                    )
                                     editor?.let { preferences ->
                                         if (preferences.verticalText.isEffective) PreferenceSwitch(
                                             stringResource(R.string.reader_vertical_text),
@@ -219,7 +238,7 @@ fun ReaderSettingsContent(
                                         }
                                     }
                                 },
-                            ) { showRestoreDefaultWarning = true }
+                            )
                         }
                     }
                 }
@@ -775,7 +794,10 @@ private fun LightingTabContent(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.padding(horizontal = 16.dp),
     ) {
-        Text(stringResource(R.string.reader_image_filter_activation), style = MaterialTheme.typography.titleMedium)
+        Text(
+            stringResource(R.string.reader_image_filter_activation),
+            style = MaterialTheme.typography.titleMedium
+        )
         val modes = linkedMapOf(
             true to stringResource(R.string.reader_follow_theme),
             false to stringResource(R.string.reader_always),
@@ -785,9 +807,13 @@ private fun LightingTabContent(
             icons = emptyList(),
             selected = modes.getValue(settings.formatPreferences.epubImageFilterFollowTheme),
             onSelected = { label ->
-                onSettingsChange(settings.copy(formatPreferences = settings.formatPreferences.copy(
-                    epubImageFilterFollowTheme = modes.entries.first { it.value == label }.key,
-                )))
+                onSettingsChange(
+                    settings.copy(
+                        formatPreferences = settings.formatPreferences.copy(
+                            epubImageFilterFollowTheme = modes.entries.first { it.value == label }.key,
+                        )
+                    )
+                )
             },
         )
     }
@@ -795,7 +821,10 @@ private fun LightingTabContent(
 }
 
 @Composable
-internal fun ReaderBrightnessControl(settings: ReaderSettings, onSettingsChange: (ReaderSettings) -> Unit) {
+internal fun ReaderBrightnessControl(
+    settings: ReaderSettings,
+    onSettingsChange: (ReaderSettings) -> Unit
+) {
     val interactionSource = remember { MutableInteractionSource() }
 
     Column(
@@ -857,14 +886,14 @@ internal fun AdvancedTabContent(
     settings: ReaderSettings,
     onSettingsChange: (ReaderSettings) -> Unit,
     includeTextPreferences: Boolean = true,
-    leadingContent: @Composable () -> Unit = {},
     onRestoreDefaultsClick: () -> Unit,
+    content: @Composable () -> Unit = {},
 ) {
     var showDictionaryDialog by remember { mutableStateOf(value = false) }
     var showOrientationDialog by remember { mutableStateOf(value = false) }
 
     Column {
-        leadingContent()
+        content()
 
 
         if (includeTextPreferences) {

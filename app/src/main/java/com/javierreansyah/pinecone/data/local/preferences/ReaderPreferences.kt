@@ -243,9 +243,9 @@ class ReaderPreferences(private val context: Context) {
 
         val JUMP_HISTORY_MODE: Preferences.Key<String> = stringPreferencesKey("jump_history_mode")
         val SHOW_ALL_SPACES: Preferences.Key<Boolean> = booleanPreferencesKey("show_all_spaces")
-        val SPACES_ENABLED = booleanPreferencesKey("spaces_enabled")
-        val UNSORTED_ENABLED = booleanPreferencesKey("unsorted_enabled")
-        val SHOW_LIBRARY_BOTTOM_NAVIGATION = booleanPreferencesKey("show_library_bottom_navigation")
+        val SPACES_ENABLED: Preferences.Key<Boolean> = booleanPreferencesKey("spaces_enabled")
+        val UNSORTED_ENABLED: Preferences.Key<Boolean> = booleanPreferencesKey("unsorted_enabled")
+        val SHOW_LIBRARY_BOTTOM_NAVIGATION: Preferences.Key<Boolean> = booleanPreferencesKey("show_library_bottom_navigation")
         val FORMAT_PREFERENCES: Preferences.Key<String> = stringPreferencesKey("format_preferences")
     }
 

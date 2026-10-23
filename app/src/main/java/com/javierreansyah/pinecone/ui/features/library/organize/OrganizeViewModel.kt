@@ -45,45 +45,48 @@ class OrganizeViewModel(
         repository.getAllBookSpaceCrossRefs(),
         combine(
             (application as PineconeApplication).readerPreferences.readerSettings,
-            com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager(application).getEffectiveSpaceFlow(),
+            com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager(application)
+                .getEffectiveSpaceFlow(),
         ) { settings, spaceId -> settings to spaceId },
         repository.getAllBooks(),
     ) { shelvesWithBooks, spaces, spaceCrossRefs, context, books ->
         val (settings, currentSpaceId) = context
         val validShelves = shelvesWithBooks.filter { (itShelf) -> itShelf.id != "unshelved" }
 
-        val spaceItems = spaces.asSequence().filter { settings.spacesEnabled || it.id == "_all_" }.map { space ->
-            val spaceId = space.id
-            val booksInSpace =
-                spaceCrossRefs.asSequence().filter { (_, itSpaceId) -> itSpaceId == spaceId }
-                    .map { (itBookId) -> itBookId }.toSet()
-            val countInSpace = targetBookIds.count { id -> id in booksInSpace && (spaceId != "_all_" || books.any { it.book.id == id && !it.book.isUnsorted }) }
+        val spaceItems =
+            spaces.asSequence().filter { settings.spacesEnabled || it.id == "_all_" }.map { space ->
+                val spaceId = space.id
+                val booksInSpace =
+                    spaceCrossRefs.asSequence().filter { (_, itSpaceId) -> itSpaceId == spaceId }
+                        .map { (itBookId) -> itBookId }.toSet()
+                val countInSpace =
+                    targetBookIds.count { id -> id in booksInSpace && (spaceId != "_all_" || books.any { it.book.id == id && !it.book.isUnsorted }) }
 
-            val spaceState = when (countInSpace) {
-                0 -> ToggleableState.Off
-                targetBookIds.size -> ToggleableState.On
-                else -> ToggleableState.Indeterminate
-            }
+                val spaceState = when (countInSpace) {
+                    0 -> ToggleableState.Off
+                    targetBookIds.size -> ToggleableState.On
+                    else -> ToggleableState.Indeterminate
+                }
 
-            val spaceShelves = validShelves.asSequence()
-                .filter { (itShelf2) -> !settings.spacesEnabled || itShelf2.spaceId == spaceId }
-                .map { (shelfWithBooksShelf, shelfWithBooksBooks) ->
-                    val booksInShelf = shelfWithBooksBooks.map { (itBook) -> itBook.id }
-                    val countInShelf = targetBookIds.count { it in booksInShelf }
-                    val shelfState = when (countInShelf) {
-                        0 -> ToggleableState.Off
-                        targetBookIds.size -> ToggleableState.On
-                        else -> ToggleableState.Indeterminate
-                    }
-                    ShelfItemState(shelfWithBooksShelf, shelfState)
-                }.sortedBy { (itShelf3) -> itShelf3.name.lowercase() }.toList()
+                val spaceShelves = validShelves.asSequence()
+                    .filter { (itShelf2) -> !settings.spacesEnabled || itShelf2.spaceId == spaceId }
+                    .map { (shelfWithBooksShelf, shelfWithBooksBooks) ->
+                        val booksInShelf = shelfWithBooksBooks.map { (itBook) -> itBook.id }
+                        val countInShelf = targetBookIds.count { it in booksInShelf }
+                        val shelfState = when (countInShelf) {
+                            0 -> ToggleableState.Off
+                            targetBookIds.size -> ToggleableState.On
+                            else -> ToggleableState.Indeterminate
+                        }
+                        ShelfItemState(shelfWithBooksShelf, shelfState)
+                    }.sortedBy { (itShelf3) -> itShelf3.name.lowercase() }.toList()
 
-            SpaceWithShelvesItemState(
-                space = space,
-                state = spaceState,
-                shelves = spaceShelves,
-            )
-        }.sortedBy { (itSpace) -> itSpace.name.lowercase() }.toList()
+                SpaceWithShelvesItemState(
+                    space = space,
+                    state = spaceState,
+                    shelves = spaceShelves,
+                )
+            }.sortedBy { (itSpace) -> itSpace.name.lowercase() }.toList()
 
         OrganizeUiState(
             spaces = spaceItems,

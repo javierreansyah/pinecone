@@ -1,7 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.library.filters
 
-import com.javierreansyah.pinecone.ui.features.library.fileFormat
-import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
@@ -71,6 +69,7 @@ import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
+import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.SortType
 import com.javierreansyah.pinecone.ui.features.library.StatusFilter
@@ -79,6 +78,10 @@ import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectApp
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectTopBarTransition
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookCollection
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookContextMenu
+import com.javierreansyah.pinecone.ui.features.library.deleteCollectionTitle
+import com.javierreansyah.pinecone.ui.features.library.fileFormat
+import com.javierreansyah.pinecone.ui.features.library.inNamedCollection
+import com.javierreansyah.pinecone.ui.features.library.publicationWording
 
 @Composable
 fun FilterResultScreen(
@@ -94,6 +97,7 @@ fun FilterResultScreen(
     val uiState by viewModel.uiState.collectAsState()
     val spaceScopedBooks by viewModel.allBooks.collectAsState()
     val allBooksAcrossSpaces by viewModel.allBooksAcrossSpaces.collectAsState()
+    val actionBooks by viewModel.actionBooks.collectAsState()
     val allBooks = if (filterType == "space") allBooksAcrossSpaces else spaceScopedBooks
 
     val allAuthors by viewModel.allAuthors.collectAsState()
@@ -124,6 +128,7 @@ fun FilterResultScreen(
         filterValue = filterValue,
         uiState = uiState,
         allBooks = allBooks,
+        globalBooks = actionBooks,
         availableFormats = unfilteredBooks.mapTo(mutableSetOf()) { it.fileFormat() },
         books = books,
         suggestionList = suggestionList,
@@ -160,6 +165,7 @@ private fun FilterResultContent(
     filterValue: String,
     uiState: FilterResultUiState,
     allBooks: List<Book>,
+    globalBooks: List<Book>,
     availableFormats: Set<FileFilter>,
     books: List<Book>,
     suggestionList: List<String>,
@@ -298,6 +304,7 @@ private fun FilterResultContent(
     }
 
     FilterResultDialogsAndSheets(
+        actionWording = globalBooks.inNamedCollection(filterType, filterValue).publicationWording(),
         filterType = filterType,
         filterValue = filterValue,
         uiState = uiState,
@@ -331,7 +338,16 @@ private fun FilterResultContent(
         AlertDialog(
             onDismissRequest = { showMergeWarningDialog = false },
             title = { Text(stringResource(R.string.action_rename)) },
-            text = { Text(stringResource(R.string.library_warning_merge)) },
+            text = {
+                Text(
+                    stringResource(
+                        (
+                                globalBooks.inNamedCollection(filterType, filterValue) +
+                                        globalBooks.inNamedCollection(filterType, pendingRenameName)
+                                ).publicationWording().mergeWarning
+                    )
+                )
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -392,6 +408,7 @@ private fun FilterResultTopBar(
         isMultiSelect = isInMultiSelectMode,
         multiSelectBar = {
             MultiSelectAppBar(
+                wording = allBooks.filter { it.id in selectedBooks }.publicationWording(),
                 selectedCount = selectedBooks.size,
                 isAllSelected = books.isNotEmpty() && (selectedBooks.size == books.size),
                 showMarkAsRead = showMarkAsRead,
@@ -752,6 +769,7 @@ private fun FilterResultBookContent(
 
 @Composable
 private fun FilterResultDialogsAndSheets(
+    actionWording: com.javierreansyah.pinecone.ui.features.library.PublicationWording,
     filterType: String,
     filterValue: String,
     uiState: FilterResultUiState,
@@ -803,15 +821,10 @@ private fun FilterResultDialogsAndSheets(
     }
 
     if (showDeleteConfirm) {
-        val titleType = when (filterType) {
-            "author" -> stringResource(R.string.library_sort_author)
-            "space" -> stringResource(R.string.library_spaces_title)
-            else -> stringResource(R.string.library_sort_label)
-        }
         AlertDialog(
             onDismissRequest = onDeleteDismiss,
-            title = { Text(stringResource(R.string.library_delete_item_title, titleType)) },
-            text = { Text(stringResource(R.string.library_delete_item_message, filterValue)) },
+            title = { Text(stringResource(deleteCollectionTitle(filterType))) },
+            text = { Text(stringResource(actionWording.deleteLabelMessage, filterValue)) },
             confirmButton = {
                 TextButton(onClick = onDeleteConfirm) {
                     Text(

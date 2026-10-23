@@ -14,17 +14,55 @@ fun List<Book>.inSpace(spaceId: String?): List<Book> =
 
 fun Book.fileFormat(): FileFilter = publicationFileFormat(mediaType, originalFilename, filePath)
 
-fun BookEntity.fileFormat(): FileFilter = publicationFileFormat(mediaType, originalFilename, filePath)
+fun BookEntity.fileFormat(): FileFilter =
+    publicationFileFormat(mediaType, originalFilename, filePath)
 
-private fun publicationFileFormat(mediaType: String?, originalFilename: String, filePath: String): FileFilter {
+private fun publicationFileFormat(
+    mediaType: String?,
+    originalFilename: String,
+    filePath: String
+): FileFilter {
     val mime = mediaType.orEmpty().lowercase()
     val extension = originalFilename.ifBlank { filePath }.substringAfterLast('.', "").lowercase()
     return when {
         mime == "application/epub+zip" || extension == "epub" -> FileFilter.EPUB
         mime == "application/pdf" || extension == "pdf" -> FileFilter.PDF
-        "comicbook" in mime || "cbz" in mime || extension in setOf("cbz", "divina") || "divina" in mime -> FileFilter.Comics
-        mime.startsWith("audio/") || "audiobook" in mime || extension in setOf("audiobook", "zab", "mp3", "m4a", "m4b", "aac", "ogg", "oga", "opus", "flac", "wav", "mp4", "aif", "aiff", "webm") -> FileFilter.Audio
-        mime.startsWith("image/") || extension in setOf("jpg", "jpeg", "png", "webp", "gif", "bmp", "avif", "tif", "tiff", "jxl") -> FileFilter.Images
+        "comicbook" in mime || "cbz" in mime || extension in setOf(
+            "cbz",
+            "divina"
+        ) || "divina" in mime -> FileFilter.Comics
+
+        mime.startsWith("audio/") || "audiobook" in mime || extension in setOf(
+            "audiobook",
+            "zab",
+            "mp3",
+            "m4a",
+            "m4b",
+            "aac",
+            "ogg",
+            "oga",
+            "opus",
+            "flac",
+            "wav",
+            "mp4",
+            "aif",
+            "aiff",
+            "webm"
+        ) -> FileFilter.Audio
+
+        mime.startsWith("image/") || extension in setOf(
+            "jpg",
+            "jpeg",
+            "png",
+            "webp",
+            "gif",
+            "bmp",
+            "avif",
+            "tif",
+            "tiff",
+            "jxl"
+        ) -> FileFilter.Images
+
         "webpub" in mime || extension == "webpub" -> FileFilter.WebPublication
         mime == "application/zip" || extension == "zip" -> FileFilter.Comics
         else -> FileFilter.Other
@@ -170,7 +208,7 @@ fun mapAndSortShelves(
             itSpaces2.isNotEmpty()
         }
         inSpace && !itBook3.isUnsorted && (itBook3.id !in shelvedBookIdsInCurrentSpace)
-            && details.book.fileFormat() in prefs.selectedFormats
+                && details.book.fileFormat() in prefs.selectedFormats
     }
 
     val showShelves = prefs.selectedShelfFilter.contains(ShelfFilter.Shelves)

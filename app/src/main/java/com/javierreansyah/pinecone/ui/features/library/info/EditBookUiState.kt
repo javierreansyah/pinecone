@@ -1,6 +1,7 @@
 package com.javierreansyah.pinecone.ui.features.library.info
 
 import android.net.Uri
+import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 
 data class EditBookUiState(
     val isLoading: Boolean = true,
@@ -19,4 +20,5 @@ data class EditBookUiState(
     val languageDraft: String = "",
     val identifierDraft: String = "",
     val loaded: Boolean = false,
+    val wording: PublicationWording = PublicationWording.Items,
 )

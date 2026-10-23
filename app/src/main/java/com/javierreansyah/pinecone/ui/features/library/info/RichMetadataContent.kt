@@ -77,11 +77,11 @@ fun RichMetadataEditor(
         }
         (PublicationMetadata.creditRoles + state.creditDrafts.keys).distinct()
             .filterNot { it == "author" }.forEach { role ->
-            MetadataField(
-                roleLabel(role),
-                state.creditDrafts[role].orEmpty()
-            ) { onCredit(role, it) }
-        }
+                MetadataField(
+                    roleLabel(role),
+                    state.creditDrafts[role].orEmpty()
+                ) { onCredit(role, it) }
+            }
     }
 }
 

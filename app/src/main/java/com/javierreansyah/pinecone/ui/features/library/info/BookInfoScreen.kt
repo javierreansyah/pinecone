@@ -39,7 +39,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -129,9 +128,12 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.data.model.Book
-import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
+import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.SegmentedColumn
+import com.javierreansyah.pinecone.ui.features.library.PublicationWording
+import com.javierreansyah.pinecone.ui.features.library.publicationWording
+import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.readium.r2.shared.publication.Link
@@ -210,13 +212,17 @@ fun BookInfoScreen(
             onDismissRequest = { showDeleteConfirm = false },
             title = {
                 Text(
-                    stringResource(R.string.book_delete_title),
+                    stringResource(
+                        (book?.publicationWording ?: PublicationWording.Items).deleteTitle
+                    ),
                     style = MaterialTheme.typography.titleLarge,
                 )
             },
             text = {
                 Text(
-                    stringResource(R.string.book_delete_message),
+                    stringResource(
+                        (book?.publicationWording ?: PublicationWording.Items).deleteMessage
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             },
@@ -372,7 +378,7 @@ private fun BookInfoContent(
             val pagerState = rememberPagerState { 4 }
             val coroutineScope = rememberCoroutineScope()
             val tabs = listOf(
-                stringResource(R.string.book_info_title),
+                stringResource(book.publicationWording.infoTitle),
                 stringResource(R.string.reader_chapters_title),
                 stringResource(R.string.reader_bookmarks_title),
                 stringResource(R.string.reader_notes_title),
@@ -570,33 +576,45 @@ private fun ChaptersTabContent(
             contentPadding = PaddingValues(vertical = 8.dp),
         ) {
             val currentHref = currentLocator?.href?.toString()?.substringBefore("#")
-            val sourcePage = currentLocator?.let { GeneratedEpubLocations.page(it.href.toString(),
-                it.locations["cssSelector"] as? String, it.locations.fragments) }
-            val currentChapter = sourcePage?.let { page -> tableOfContents.lastOrNull {
-                GeneratedEpubLocations.page(it.href.toString())?.let { it <= page } == true
-            } }
+            val sourcePage = currentLocator?.let {
+                GeneratedEpubLocations.page(
+                    it.href.toString(),
+                    it.locations["cssSelector"] as? String, it.locations.fragments
+                )
+            }
+            val currentChapter = sourcePage?.let { page ->
+                tableOfContents.lastOrNull {
+                    GeneratedEpubLocations.page(it.href.toString())?.let { it <= page } == true
+                }
+            }
             items(tableOfContents) { link ->
                 val linkHref = link.href.toString().substringBefore("#")
-                val isCurrentChapter = if (sourcePage != null) link == currentChapter else currentHref == linkHref
+                val isCurrentChapter =
+                    if (sourcePage != null) link == currentChapter else currentHref == linkHref
                 val pageLabel = getChapterPageLabel(link, positions)
                 ListItem(
                     modifier = Modifier.clickable {
-                        val targetLocator = if (GeneratedEpubLocations.page(link.href.toString()) != null) {
-                            Locator(
-                                href = positions.firstOrNull()?.href ?: link.url(),
-                                mediaType = link.mediaType ?: MediaType.XHTML,
+                        val targetLocator =
+                            if (GeneratedEpubLocations.page(link.href.toString()) != null) {
+                                Locator(
+                                    href = positions.firstOrNull()?.href ?: link.url(),
+                                    mediaType = link.mediaType ?: MediaType.XHTML,
+                                    title = link.title,
+                                    locations = Locator.Locations(
+                                        fragments = listOf(
+                                            link.href.toString().substringAfter('#')
+                                        )
+                                    ),
+                                )
+                            } else positions.firstOrNull { (itHref) ->
+                                itHref.toString().substringBefore("#") == link.href.toString()
+                                    .substringBefore("#")
+                            } ?: Locator(
+                                href = link.url(),
+                                mediaType = link.mediaType ?: positions.firstOrNull()?.mediaType
+                                ?: MediaType.XHTML,
                                 title = link.title,
-                                locations = Locator.Locations(fragments = listOf(link.href.toString().substringAfter('#'))),
                             )
-                        } else positions.firstOrNull { (itHref) ->
-                            itHref.toString().substringBefore("#") == link.href.toString()
-                                .substringBefore("#")
-                        } ?: Locator(
-                            href = link.url(),
-                            mediaType = link.mediaType ?: positions.firstOrNull()?.mediaType
-                            ?: MediaType.XHTML,
-                            title = link.title,
-                        )
                         onChapterClick(targetLocator)
                     },
                     leadingContent = null,
@@ -957,7 +975,7 @@ private fun BookInfoHeader(
     onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val librarySettings by (androidx.compose.ui.platform.LocalContext.current.applicationContext as com.javierreansyah.pinecone.PineconeApplication)
+    val librarySettings by (LocalContext.current.applicationContext as com.javierreansyah.pinecone.PineconeApplication)
         .readerPreferences.readerSettings.collectAsState(initial = com.javierreansyah.pinecone.data.local.preferences.ReaderSettings())
     Column(
         modifier = modifier
@@ -974,7 +992,8 @@ private fun BookInfoHeader(
         BookHeaderDetails(
             title = book.title,
             authors = book.authors,
-            spaces = if (librarySettings.spacesEnabled) book.spaces.filter { it.id != "_all_" }.map { it.name } else emptyList(),
+            spaces = if (librarySettings.spacesEnabled) book.spaces.filter { it.id != "_all_" }
+                .map { it.name } else emptyList(),
             tags = book.tags,
             onNavigateToTag = onNavigateToTag,
         )
@@ -1183,7 +1202,7 @@ private fun BookCoverImage(
         val coverModel = remember(coverPath) { File(coverPath) }
         AsyncImage(
             model = coverModel,
-            contentDescription = stringResource(R.string.book_info_title),
+            contentDescription = stringResource(R.string.book_cover_description, title),
             modifier = modifier
                 .height(300.dp)
                 .shadow(8.dp, RoundedCornerShape(12.dp))
@@ -1470,7 +1489,8 @@ private fun BookMetadata(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        text = book.metadata.languages.takeIf { it.isNotEmpty() }?.joinToString(", ")
+                        text = book.metadata.languages.takeIf { it.isNotEmpty() }
+                            ?.joinToString(", ")
                             ?: book.language ?: notAvailable,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -1510,10 +1530,14 @@ private fun BookMetadata(
             extraFields.forEach { (label, value) ->
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(label, style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(value, style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface)
+                        Text(
+                            label, style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            value, style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 }
             }

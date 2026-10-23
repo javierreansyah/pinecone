@@ -28,7 +28,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
@@ -76,13 +75,14 @@ import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Add
+import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Check
 import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Image
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import java.io.File
 
 @Composable
@@ -111,6 +111,7 @@ fun EditBookScreen(
         topBar = {
             EditBookTopAppBar(
                 isSaving = uiState.isSaving,
+                title = stringResource(uiState.wording.editTitle),
                 onNavigateBack = onNavigateBack,
                 onSave = { viewModel.saveChanges() },
             )
@@ -167,12 +168,13 @@ fun EditBookScreen(
 @Composable
 private fun EditBookTopAppBar(
     isSaving: Boolean,
+    title: String,
     onNavigateBack: () -> Unit,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     TopAppBar(
-        title = { Text(stringResource(R.string.book_edit_title)) },
+        title = { Text(title) },
         navigationIcon = {
             FilledTonalIconButton(
                 shapes = IconButtonDefaults.shapes(),
@@ -244,6 +246,7 @@ private fun EditBookContent(
             )
         }
         BookCoverPicker(
+            title = uiState.title,
             coverUri = uiState.coverUri,
             existingCoverPath = uiState.existingCoverPath,
             onCoverUriChange = onCoverUriChange,
@@ -289,6 +292,7 @@ private fun EditBookContent(
 
 @Composable
 private fun BookCoverPicker(
+    title: String,
     coverUri: Uri?,
     existingCoverPath: String?,
     onCoverUriChange: (Uri?) -> Unit,
@@ -319,7 +323,7 @@ private fun BookCoverPicker(
         if (coverUri != null) {
             AsyncImage(
                 model = coverUri,
-                contentDescription = stringResource(R.string.book_info_title),
+                contentDescription = stringResource(R.string.book_cover_description, title),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
             )
@@ -327,7 +331,7 @@ private fun BookCoverPicker(
             val coverModel = remember(existingCoverPath) { File(existingCoverPath) }
             AsyncImage(
                 model = coverModel,
-                contentDescription = stringResource(R.string.book_info_title),
+                contentDescription = stringResource(R.string.book_cover_description, title),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
             )
@@ -347,7 +351,7 @@ private fun BookCoverPicker(
             ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Image,
-                    contentDescription = stringResource(R.string.book_info_title),
+                    contentDescription = stringResource(R.string.book_cover_description, title),
                     modifier = Modifier.size(48.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 )

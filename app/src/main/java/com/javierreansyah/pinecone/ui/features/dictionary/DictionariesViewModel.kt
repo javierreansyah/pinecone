@@ -55,8 +55,7 @@ class DictionariesViewModel(
         private val preferences: ReaderPreferences,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return DictionariesViewModel(repository, importManager, preferences) as T
-        }
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            DictionariesViewModel(repository, importManager, preferences) as T
     }
 }

@@ -21,18 +21,28 @@ internal class PdfListReconstructor(private val size: Float) {
             val left = first.bounds.left
             val native = original.firstOrNull { it.anchor == first.anchor }
             val contentLeft = native?.lines?.getOrNull(1)?.runs?.firstOrNull()?.bounds?.left
-                ?: left + (match.value.length * size * .5f).coerceAtLeast(size)
+                ?: (left + (match.value.length * size * .5f).coerceAtLeast(size))
             while (index < input.size) {
                 val next = input[index]
                 val source = next.sources.firstOrNull() ?: break
                 val previous = block.sources.last()
-                if (next.headingLevel != null || next.kind !in setOf("paragraph", "list") || marker.containsMatchIn(source.text)) break
+                if (next.headingLevel != null || next.kind !in setOf(
+                        "paragraph",
+                        "list"
+                    ) || marker.containsMatchIn(source.text)
+                ) break
                 val sameLine = abs(source.bounds.top - previous.bounds.top) < size * .4f &&
-                    source.bounds.left - previous.bounds.right in -size * .3f..size * 3
-                val continuedLine = source.bounds.top - previous.bounds.bottom in -size * .2f..size * 1.3f &&
-                    abs(source.bounds.left - contentLeft) <= size * 1.2f
+                        source.bounds.left - previous.bounds.right in -size * .3f..size * 3
+                val continuedLine =
+                    source.bounds.top - previous.bounds.bottom in -size * .2f..size * 1.3f &&
+                            abs(source.bounds.left - contentLeft) <= size * 1.2f
                 if (!sameLine && !continuedLine) break
-                block = block.copy(sources = PdfBibliographyReconstructor.join(block.sources, next.sources))
+                block = block.copy(
+                    sources = PdfBibliographyReconstructor.join(
+                        block.sources,
+                        next.sources
+                    )
+                )
                 index++
             }
             while (indents.isNotEmpty() && left < indents.last() - size) indents.removeAt(indents.lastIndex)
@@ -42,13 +52,26 @@ internal class PdfListReconstructor(private val size: Float) {
                     if (run.start >= match.value.length) listOf(run) else {
                         val cut = minOf(run.end, match.value.length)
                         val count = cut - run.start
-                        listOfNotNull(run.copy(text = run.text.take(count), end = cut, hidden = true),
-                            run.takeIf { run.end > cut }?.copy(text = run.text.drop(count), start = cut))
+                        listOfNotNull(
+                            run.copy(
+                                text = run.text.take(count),
+                                end = cut,
+                                hidden = true
+                            ),
+                            run.takeIf { run.end > cut }
+                                ?.copy(text = run.text.drop(count), start = cut)
+                        )
                     }
                 })
             }
-            output += block.copy(kind = "list", headingLevel = null, sources = sources,
-                listMarker = ReflowListMarker(bullet, bullet.takeWhile(Char::isDigit).toIntOrNull(), (indents.size - 1).coerceAtMost(4)))
+            output += block.copy(
+                kind = "list", headingLevel = null, sources = sources,
+                listMarker = ReflowListMarker(
+                    bullet,
+                    bullet.takeWhile(Char::isDigit).toIntOrNull(),
+                    (indents.size - 1).coerceAtMost(4)
+                )
+            )
         }
         return output
     }

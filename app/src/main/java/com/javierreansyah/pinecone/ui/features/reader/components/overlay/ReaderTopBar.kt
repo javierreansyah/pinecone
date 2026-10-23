@@ -60,12 +60,12 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
-import com.composables.icons.materialsymbols.outlined.Keyboard_arrow_down
 import com.composables.icons.materialsymbols.outlined.Bookmark
 import com.composables.icons.materialsymbols.outlined.Bookmark_check
 import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Description
 import com.composables.icons.materialsymbols.outlined.Info
+import com.composables.icons.materialsymbols.outlined.Keyboard_arrow_down
 import com.composables.icons.materialsymbols.outlined.List
 import com.composables.icons.materialsymbols.outlined.Match_case
 import com.composables.icons.materialsymbols.outlined.More_vert
@@ -272,7 +272,9 @@ fun ReaderTopBar(
 
                             val items = remember(state, canSearch, showReadMode, audioPlayer) {
                                 buildList {
-                                    if ((state == TopBarState.JUMP || showReadMode) && !audioPlayer) add("content")
+                                    if ((state == TopBarState.JUMP || showReadMode) && !audioPlayer) add(
+                                        "content"
+                                    )
                                     if (state == TopBarState.JUMP && !audioPlayer) add("settings")
                                     if (canSearch) add("search")
                                     if (!audioPlayer) add("info")
@@ -300,109 +302,110 @@ fun ReaderTopBar(
                                             interactionSource = groupInteractionSource,
                                         ) {
                                             items.forEachIndexed { index, item ->
-                                            when (item) {
-                                                "content" -> {
-                                                    SelectableDropdownMenuItem(
-                                                        selected = false,
-                                                        text = {
-                                                            Text(stringResource(R.string.reader_menu_content))
-                                                        },
-                                                        onClick = {
-                                                            onTocClick()
-                                                            showMoreMenu = false
-                                                        },
-                                                        leadingIcon = {
-                                                            Icon(
-                                                                MaterialSymbols.Outlined.List,
-                                                                contentDescription = null,
-                                                                modifier = Modifier.size(
-                                                                    MenuDefaults.LeadingIconSize,
-                                                                ),
-                                                            )
-                                                        },
-                                                        shapes = MenuDefaults.itemShape(
-                                                            index,
-                                                            items.size,
-                                                        ),
-                                                    )
-                                                }
+                                                when (item) {
+                                                    "content" -> {
+                                                        SelectableDropdownMenuItem(
+                                                            selected = false,
+                                                            text = {
+                                                                Text(stringResource(R.string.reader_menu_content))
+                                                            },
+                                                            onClick = {
+                                                                onTocClick()
+                                                                showMoreMenu = false
+                                                            },
+                                                            leadingIcon = {
+                                                                Icon(
+                                                                    MaterialSymbols.Outlined.List,
+                                                                    contentDescription = null,
+                                                                    modifier = Modifier.size(
+                                                                        MenuDefaults.LeadingIconSize,
+                                                                    ),
+                                                                )
+                                                            },
+                                                            shapes = MenuDefaults.itemShape(
+                                                                index,
+                                                                items.size,
+                                                            ),
+                                                        )
+                                                    }
 
-                                                "settings" -> {
-                                                    SelectableDropdownMenuItem(
-                                                        selected = false,
-                                                        text = {
-                                                            Text(stringResource(R.string.reader_menu_settings))
-                                                        },
-                                                        onClick = {
-                                                            onSettingsClick()
-                                                            showMoreMenu = false
-                                                        },
-                                                        leadingIcon = {
-                                                            Icon(
-                                                                MaterialSymbols.Outlined.Match_case,
-                                                                contentDescription = null,
-                                                                modifier = Modifier.size(
-                                                                    MenuDefaults.LeadingIconSize,
-                                                                ),
-                                                            )
-                                                        },
-                                                        shapes = MenuDefaults.itemShape(
-                                                            index,
-                                                            items.size,
-                                                        ),
-                                                    )
-                                                }
+                                                    "settings" -> {
+                                                        SelectableDropdownMenuItem(
+                                                            selected = false,
+                                                            text = {
+                                                                Text(stringResource(R.string.reader_menu_settings))
+                                                            },
+                                                            onClick = {
+                                                                onSettingsClick()
+                                                                showMoreMenu = false
+                                                            },
+                                                            leadingIcon = {
+                                                                Icon(
+                                                                    MaterialSymbols.Outlined.Match_case,
+                                                                    contentDescription = null,
+                                                                    modifier = Modifier.size(
+                                                                        MenuDefaults.LeadingIconSize,
+                                                                    ),
+                                                                )
+                                                            },
+                                                            shapes = MenuDefaults.itemShape(
+                                                                index,
+                                                                items.size,
+                                                            ),
+                                                        )
+                                                    }
 
-                                                "search" -> {
-                                                    SelectableDropdownMenuItem(
-                                                        selected = false,
-                                                        text = {
-                                                            Text(stringResource(R.string.action_search))
-                                                        },
-                                                        onClick = {
-                                                            onSearchClick()
-                                                            showMoreMenu = false
-                                                        },
-                                                        leadingIcon = {
-                                                            Icon(
-                                                                MaterialSymbols.Outlined.Search,
-                                                                contentDescription = null,
-                                                                modifier = Modifier.size(
-                                                                    MenuDefaults.LeadingIconSize,
-                                                                ),
-                                                            )
-                                                        },
-                                                        shapes = MenuDefaults.itemShape(
-                                                            index,
-                                                            items.size,
-                                                        ),
-                                                    )
-                                                }
+                                                    "search" -> {
+                                                        SelectableDropdownMenuItem(
+                                                            selected = false,
+                                                            text = {
+                                                                Text(stringResource(R.string.action_search))
+                                                            },
+                                                            onClick = {
+                                                                onSearchClick()
+                                                                showMoreMenu = false
+                                                            },
+                                                            leadingIcon = {
+                                                                Icon(
+                                                                    MaterialSymbols.Outlined.Search,
+                                                                    contentDescription = null,
+                                                                    modifier = Modifier.size(
+                                                                        MenuDefaults.LeadingIconSize,
+                                                                    ),
+                                                                )
+                                                            },
+                                                            shapes = MenuDefaults.itemShape(
+                                                                index,
+                                                                items.size,
+                                                            ),
+                                                        )
+                                                    }
 
-                                                "info" -> {
-                                                    SelectableDropdownMenuItem(
-                                                        selected = false,
-                                                        text = {
-                                                            Text(stringResource(R.string.reader_menu_info))
-                                                        },
-                                                        onClick = {
-                                                            onInfoClick()
-                                                            showMoreMenu = false
-                                                        },
-                                                        leadingIcon = {
-                                                            Icon(
-                                                                MaterialSymbols.Outlined.Info,
-                                                                contentDescription = null,
-                                                                modifier = Modifier.size(
-                                                                    MenuDefaults.LeadingIconSize,
-                                                                ),
-                                                            )
-                                                        },
-                                                        shapes = MenuDefaults.itemShape(
-                                                            index,
-                                                            items.size,
-                                                        ),
-                                                    )
+                                                    "info" -> {
+                                                        SelectableDropdownMenuItem(
+                                                            selected = false,
+                                                            text = {
+                                                                Text(stringResource(R.string.reader_menu_info))
+                                                            },
+                                                            onClick = {
+                                                                onInfoClick()
+                                                                showMoreMenu = false
+                                                            },
+                                                            leadingIcon = {
+                                                                Icon(
+                                                                    MaterialSymbols.Outlined.Info,
+                                                                    contentDescription = null,
+                                                                    modifier = Modifier.size(
+                                                                        MenuDefaults.LeadingIconSize,
+                                                                    ),
+                                                                )
+                                                            },
+                                                            shapes = MenuDefaults.itemShape(
+                                                                index,
+                                                                items.size,
+                                                            ),
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }
@@ -410,7 +413,6 @@ fun ReaderTopBar(
                                 }
                             }
                         }
-                    }
                     }
                 }
             },

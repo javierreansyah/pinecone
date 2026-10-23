@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.library.main
 
-import com.javierreansyah.pinecone.ui.features.library.fileFormat
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,28 +22,25 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.WideNavigationRailValue
 import androidx.compose.material3.rememberWideNavigationRailState
-import androidx.compose.runtime.LaunchedEffect
-import com.javierreansyah.pinecone.ui.features.library.FileFilter
-import com.javierreansyah.pinecone.ui.features.library.LibraryView
-import com.javierreansyah.pinecone.ui.features.library.organize.SelectSpaceForShelfDialog
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Book
@@ -53,7 +49,10 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.ui.components.EmptyState
+import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
+import com.javierreansyah.pinecone.ui.features.library.LibraryView
+import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.SearchCategory
 import com.javierreansyah.pinecone.ui.features.library.ShelfFilter
 import com.javierreansyah.pinecone.ui.features.library.SortType
@@ -64,6 +63,9 @@ import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectTop
 import com.javierreansyah.pinecone.ui.features.library.components.ShelvesMultiSelectAppBar
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookCollection
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookContextMenu
+import com.javierreansyah.pinecone.ui.features.library.fileFormat
+import com.javierreansyah.pinecone.ui.features.library.organize.SelectSpaceForShelfDialog
+import com.javierreansyah.pinecone.ui.features.library.publicationWording
 import com.javierreansyah.pinecone.ui.root.AppDrawer
 import kotlinx.coroutines.launch
 
@@ -197,7 +199,8 @@ fun LibraryScreen(
         derivedStateOf { uiState.filteredBooks.isEmpty() && !uiState.isBooksLoading }
     }
 
-    val isShelvesTab = libraryView == LibraryView.Shelves || (libraryView == LibraryView.Both && pagerState.currentPage == 1)
+    val isShelvesTab =
+        libraryView == LibraryView.Shelves || (libraryView == LibraryView.Both && pagerState.currentPage == 1)
 
     val isMultiSelect = isInMultiSelectMode && !isShelvesTab
     val isShelvesMultiSelect = isInMultiSelectMode && isShelvesTab
@@ -279,7 +282,9 @@ fun LibraryScreen(
                                 shelfId?.let { renameShelf(it, newName) }
                                 exitMultiSelect()
                             },
-                            onTransferShelves = if (uiState.spacesEnabled) ({ copy -> transferCopy = copy }) else null,
+                            onTransferShelves = if (uiState.spacesEnabled) ({ copy ->
+                                transferCopy = copy
+                            }) else null,
                             onDeleteShelves = {
                                 deleteShelves(selectedShelves)
                                 exitMultiSelect()
@@ -309,6 +314,7 @@ fun LibraryScreen(
                     bottomBar = {
                         if (libraryView == LibraryView.Both && uiState.showLibraryBottomNavigation) LibraryShortBottomNavigation(
                             currentPage = pagerState.currentPage,
+                            wording = uiState.allBooks.publicationWording(),
                         ) { page ->
                             scope.launch {
                                 pagerState.animateScrollToPage(page)
@@ -318,7 +324,9 @@ fun LibraryScreen(
                 ) { innerPadding ->
                     var miniPlayerHeight by remember { mutableIntStateOf(0) }
                     val miniPlayerPadding = with(LocalDensity.current) { miniPlayerHeight.toDp() }
-                    Box(Modifier.padding(innerPadding).fillMaxSize()) {
+                    Box(Modifier
+                        .padding(innerPadding)
+                        .fillMaxSize()) {
                         HorizontalPager(
                             state = pagerState,
                             userScrollEnabled = !isInMultiSelectMode,
@@ -336,11 +344,12 @@ fun LibraryScreen(
                                         selectedBooks = selectedBooks,
                                         onBookClick = { bookId ->
                                             if (isInMultiSelectMode) {
-                                                selectedBooks = if (selectedBooks.contains(bookId)) {
-                                                    selectedBooks - bookId
-                                                } else {
-                                                    selectedBooks + bookId
-                                                }
+                                                selectedBooks =
+                                                    if (selectedBooks.contains(bookId)) {
+                                                        selectedBooks - bookId
+                                                    } else {
+                                                        selectedBooks + bookId
+                                                    }
                                             } else {
                                                 onNavigateToReader(bookId)
                                             }
@@ -390,7 +399,10 @@ fun LibraryScreen(
                             }
                         }
 
-                        Box(Modifier.align(Alignment.BottomCenter).onSizeChanged { miniPlayerHeight = it.height }) {
+                        Box(
+                            Modifier
+                                .align(Alignment.BottomCenter)
+                                .onSizeChanged { miniPlayerHeight = it.height }) {
                             com.javierreansyah.pinecone.ui.root.AudioMiniPlayerBar(
                                 includeNavigationBarPadding = false,
                                 bottomInset = innerPadding.calculateBottomPadding(),
@@ -497,6 +509,8 @@ private fun LibraryTopBar(
                 val selectableShelvesCount =
                     shelves.count { (itShelf4) -> itShelf4.id != "unshelved" }
                 ShelvesMultiSelectAppBar(
+                    wording = publicationWording(shelves.filter { it.shelf.id in selectedShelves }
+                        .flatMap { it.books }.map { it.book.fileFormat() }),
                     selectedCount = selectedShelves.size,
                     isAllSelected = selectedShelves.isNotEmpty() && (selectedShelves.size == selectableShelvesCount),
                     selectedShelfName = selectedShelfName,
@@ -512,6 +526,7 @@ private fun LibraryTopBar(
                     .filter { (itId2) -> itId2 in selectedBooks }
                     .any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itIsRead) -> !itIsRead }
                 MultiSelectAppBar(
+                    wording = allBooks.filter { it.id in selectedBooks }.publicationWording(),
                     selectedCount = selectedBooks.size,
                     isAllSelected = filteredBooks.isNotEmpty() && (selectedBooks.size == filteredBooks.size),
                     showMarkAsRead = showMarkAsRead,
@@ -548,6 +563,7 @@ private fun LibraryTopBar(
 @Composable
 private fun LibraryShortBottomNavigation(
     currentPage: Int,
+    wording: PublicationWording,
     onTabSelected: (Int) -> Unit,
 ) {
     ShortNavigationBar {
@@ -557,10 +573,10 @@ private fun LibraryShortBottomNavigation(
             icon = {
                 Icon(
                     MaterialSymbols.Outlined.Book,
-                    contentDescription = stringResource(R.string.library_tab_books),
+                    contentDescription = stringResource(wording.libraryTab),
                 )
             },
-            label = { Text(stringResource(R.string.library_tab_books)) },
+            label = { Text(stringResource(wording.libraryTab)) },
         )
         ShortNavigationBarItem(
             selected = currentPage == 1,

@@ -67,9 +67,7 @@ object DictionaryFormatter {
         }
     }
 
-    private fun isHtml(content: String): Boolean {
-        return HTML_TAG_REGEX.containsMatchIn(content)
-    }
+    private fun isHtml(content: String): Boolean = HTML_TAG_REGEX.containsMatchIn(content)
 
     private fun cleanHtml(html: String): String {
         var cleaned = html

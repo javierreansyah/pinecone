@@ -29,6 +29,7 @@ interface NoteDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(notes: List<NoteEntity>)
+
     @Query("SELECT * FROM notes WHERE bookId = :bookId AND renditionKey = :renditionKey")
     suspend fun getByRendition(bookId: String, renditionKey: String): List<NoteEntity>
 

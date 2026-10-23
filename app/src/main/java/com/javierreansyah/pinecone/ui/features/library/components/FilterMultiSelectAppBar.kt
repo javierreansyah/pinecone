@@ -24,6 +24,7 @@ import com.composables.icons.materialsymbols.outlined.Deselect
 import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Select_all
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 
 @Composable
 fun FilterMultiSelectAppBar(
@@ -35,6 +36,7 @@ fun FilterMultiSelectAppBar(
     onRenameClick: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
+    wording: PublicationWording = PublicationWording.Items,
 ) {
     var showDeleteConfirmation by remember { mutableStateOf(value = false) }
 
@@ -110,7 +112,7 @@ fun FilterMultiSelectAppBar(
             text = {
                 Text(
                     pluralStringResource(
-                        R.plurals.library_delete_items_message,
+                        wording.deleteLabelsMessage,
                         selectedCount,
                         selectedCount,
                     ),

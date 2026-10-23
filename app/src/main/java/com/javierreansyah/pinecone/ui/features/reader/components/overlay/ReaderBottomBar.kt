@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.reader.components.overlay
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -9,8 +10,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,11 +19,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.FlexibleBottomAppBar
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
+import androidx.compose.material3.FlexibleBottomAppBar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.SelectableDropdownMenuItem
@@ -33,16 +35,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.setProgress
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import com.composables.icons.materialsymbols.MaterialSymbols
@@ -55,9 +66,10 @@ import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Ink_highlighter
 import com.composables.icons.materialsymbols.outlined.Search
 import com.javierreansyah.pinecone.R
+import kotlinx.coroutines.delay
 import kotlin.math.abs
 import kotlin.math.roundToInt
-import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 enum class BottomBarMode {
     PROGRESS, SEARCH_NAV, TEXT_SELECTION
@@ -73,8 +85,14 @@ fun ReaderDockedToolbar(
     // Compose's expressive bottom app bar uses the Material docked-toolbar tokens:
     // 64dp content height, 16dp side padding, and system-bar insets handled once here.
     FlexibleBottomAppBar(
-        modifier = modifier.fillMaxWidth(),
-        containerColor = readerBgColor,
+        modifier = modifier
+            .fillMaxWidth()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(readerBgColor.copy(alpha = 0f), readerBgColor),
+                ),
+            ),
+        containerColor = Color.Transparent,
         contentColor = readerTextColor,
     ) {
         Box(Modifier.weight(1f), contentAlignment = Alignment.BottomCenter) {
@@ -96,13 +114,19 @@ fun ReaderProgressTracker(
     if (!showProgressBar) {
         val pageText = if (totalPages != null && totalPages > 0) {
             androidx.compose.ui.res.pluralStringResource(
-                R.plurals.reader_page_of, totalPages, (currentPage ?: 1).coerceIn(1, totalPages), totalPages,
+                R.plurals.reader_page_of,
+                totalPages,
+                (currentPage ?: 1).coerceIn(1, totalPages),
+                totalPages,
             )
         } else {
-            androidx.compose.ui.res.stringResource(R.string.reader_page_label, currentPage ?: 1)
+            stringResource(R.string.reader_page_label, currentPage ?: 1)
         }
         Box(
-            modifier = modifier.fillMaxWidth().height(48.dp),
+            modifier = modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .padding(top = 8.dp),
             contentAlignment = Alignment.Center,
         ) {
             Text(
@@ -114,9 +138,29 @@ fun ReaderProgressTracker(
         return
     }
     var isSeeking by remember { mutableStateOf(value = false) }
-    var sliderPosition by remember { mutableFloatStateOf(progression.toFloat()) }
+    var isPressed by remember { mutableStateOf(false) }
+    var sliderPosition by remember { mutableFloatStateOf(progression.toFloat().coerceIn(0f, 1f)) }
     var pendingSeek by remember { mutableStateOf<Double?>(null) }
-    var seekBarWidthPx by remember { mutableFloatStateOf(1f) }
+    val onSeek by rememberUpdatedState(onSeekToProgression)
+    val commitSeek by rememberUpdatedState {
+        pendingSeek = sliderPosition.toDouble()
+        onSeek(sliderPosition.toDouble())
+    }
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val handleActive = isPressed || isSeeking
+    val handleScale by animateFloatAsState(
+        targetValue = if (handleActive) 1f else 0f,
+        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+        label = "readerHandleVerticalScale",
+    )
+    val handleOpacity by animateFloatAsState(
+        targetValue = if (handleActive) 1f else 0f,
+        animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
+        label = "readerHandleOpacity",
+    )
+    // Soften against the reading background in both light and dark themes.
+    val progressColor = readerTextColor.copy(alpha = readerTextColor.alpha * 0.65f)
+    val seekLabel = stringResource(R.string.book_reading_progress)
 
     LaunchedEffect(progression, isSeeking, pendingSeek) {
         val target = pendingSeek
@@ -124,7 +168,7 @@ fun ReaderProgressTracker(
             if (target != null && abs(progression - target) >= 0.02) {
                 // A seek can settle away from its requested estimate. Never leave
                 // the thumb permanently detached from subsequent page turns.
-                delay(1500)
+                delay(1500.milliseconds)
             }
             pendingSeek = null
             sliderPosition = progression.toFloat().coerceIn(0f, 1f)
@@ -139,104 +183,95 @@ fun ReaderProgressTracker(
             .height(48.dp),
     ) {
 
-        val density = LocalDensity.current
-        val trackStrokeWidthPx = with(density) { 2.dp.toPx() }
-        val thumbWidthPx = with(density) { 2.dp.toPx() }
-        val thumbHeightPx = with(density) { 14.dp.toPx() }
-        val thumbGapPx = with(density) { 4.dp.toPx() }
-
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp)
-                .height(20.dp)
-                .onSizeChanged { seekBarWidthPx = it.width.toFloat().coerceAtLeast(1f) }
-                .pointerInput(Unit) {
-                    detectTapGestures { offset ->
-                        val p = (offset.x / seekBarWidthPx).coerceIn(0f, 1f)
-                        sliderPosition = p
-                        pendingSeek = sliderPosition.toDouble()
-                        onSeekToProgression(sliderPosition.toDouble())
+                .height(32.dp)
+                .semantics(mergeDescendants = true) {
+                    contentDescription = seekLabel
+                    progressBarRangeInfo = ProgressBarRangeInfo(sliderPosition, 0f..1f)
+                    setProgress { fraction ->
+                        sliderPosition = fraction.coerceIn(0f, 1f)
+                        commitSeek()
+                        true
                     }
                 }
-                .pointerInput(Unit) {
+                .pointerInput(rtl) {
+                    detectTapGestures(
+                        onPress = {
+                            isPressed = true
+                            try {
+                                tryAwaitRelease()
+                            } finally {
+                                isPressed = false
+                            }
+                        },
+                        onTap = { offset ->
+                            sliderPosition = readerSeekFraction(offset.x, size.width.toFloat(), rtl)
+                            commitSeek()
+                        },
+                    )
+                }
+                .pointerInput(rtl) {
                     detectDragGestures(
                         onDragStart = { offset ->
                             isSeeking = true
-                            val p = (offset.x / seekBarWidthPx).coerceIn(0f, 1f)
-                            sliderPosition = p
+                            sliderPosition = readerSeekFraction(offset.x, size.width.toFloat(), rtl)
                         },
                         onDrag = { change, _ ->
                             change.consume()
-                            val p = (change.position.x / seekBarWidthPx).coerceIn(0f, 1f)
-                            sliderPosition = p
+                            sliderPosition =
+                                readerSeekFraction(change.position.x, size.width.toFloat(), rtl)
                         },
                         onDragEnd = {
                             isSeeking = false
-                            pendingSeek = sliderPosition.toDouble()
-                            onSeekToProgression(sliderPosition.toDouble())
+                            commitSeek()
                         },
                         onDragCancel = {
                             isSeeking = false
                         },
                     )
                 },
-            contentAlignment = Alignment.CenterStart,
+            contentAlignment = Alignment.Center,
         ) {
+            LinearProgressIndicator(
+                progress = { sliderPosition },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(3.dp)
+                    .clearAndSetSemantics {},
+                color = progressColor,
+                trackColor = readerTextColor.copy(alpha = 0.18f),
+                strokeCap = StrokeCap.Round,
+                gapSize = 6.dp,
+            )
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(20.dp),
+                    .height(32.dp)
+                    .graphicsLayer {
+                        scaleY = handleScale.coerceAtLeast(0f)
+                        alpha = handleOpacity.coerceIn(0f, 1f)
+                    },
             ) {
-                val trackY = size.height / 2f
-                val thumbX = size.width * sliderPosition
-                val gapLeft = (thumbX - thumbGapPx).coerceAtLeast(0f)
-                val gapRight = (thumbX + thumbGapPx).coerceAtMost(size.width)
-
-                if (isSeeking) {
-                    if (gapLeft > 0f) {
-                        drawLine(
-                            color = readerTextColor.copy(alpha = 0.70f),
-                            start = Offset(0f, trackY),
-                            end = Offset(gapLeft, trackY),
-                            strokeWidth = trackStrokeWidthPx,
-                            cap = StrokeCap.Round,
-                        )
-                    }
-                    if (gapRight < size.width) {
-                        drawLine(
-                            color = readerTextColor.copy(alpha = 0.24f),
-                            start = Offset(gapRight, trackY),
-                            end = Offset(size.width, trackY),
-                            strokeWidth = trackStrokeWidthPx,
-                            cap = StrokeCap.Round,
-                        )
-                    }
-
-                    val halfThumb = thumbHeightPx / 2f
-                    drawLine(
-                        color = readerTextColor.copy(alpha = 0.70f),
-                        start = Offset(thumbX, trackY - halfThumb),
-                        end = Offset(thumbX, trackY + halfThumb),
-                        strokeWidth = thumbWidthPx,
-                        cap = StrokeCap.Round,
-                    )
-                } else {
-                    drawLine(
-                        color = readerTextColor.copy(alpha = 0.70f),
-                        start = Offset(0f, trackY),
-                        end = Offset(thumbX, trackY),
-                        strokeWidth = trackStrokeWidthPx,
-                        cap = StrokeCap.Round,
-                    )
-                    drawLine(
-                        color = readerTextColor.copy(alpha = 0.24f),
-                        start = Offset(thumbX, trackY),
-                        end = Offset(size.width, trackY),
-                        strokeWidth = trackStrokeWidthPx,
-                        cap = StrokeCap.Round,
-                    )
-                }
+                // Match the audiobook's rounded handle and vertical-only spring animation,
+                // with a slimmer profile for the compact reading toolbar.
+                val handleWidth = 3.dp.toPx()
+                val halfWidth = handleWidth / 2f
+                val rawX = size.width * if (rtl) (1f - sliderPosition) else sliderPosition
+                val shiftedX = rawX + 2.dp.toPx()
+                val handleX =
+                    shiftedX.coerceIn(halfWidth, (size.width - halfWidth).coerceAtLeast(halfWidth))
+                val centerY = size.height / 2f
+                val halfHeight = 18.dp.toPx() / 2f
+                drawLine(
+                    color = progressColor,
+                    start = Offset(handleX, centerY - halfHeight),
+                    end = Offset(handleX, centerY + halfHeight),
+                    strokeWidth = handleWidth,
+                    cap = StrokeCap.Round,
+                )
             }
         }
 
@@ -252,7 +287,10 @@ fun ReaderProgressTracker(
         } else {
             if (totalPages != null) {
                 androidx.compose.ui.res.pluralStringResource(
-                    R.plurals.reader_page_of, totalPages, (currentPage ?: 1).coerceIn(1, totalPages), totalPages,
+                    R.plurals.reader_page_of,
+                    totalPages,
+                    (currentPage ?: 1).coerceIn(1, totalPages),
+                    totalPages,
                 )
             } else {
                 "${(progression * 100).toInt()}%"
@@ -263,6 +301,11 @@ fun ReaderProgressTracker(
             text = pageText, style = MaterialTheme.typography.labelMedium, color = readerTextColor,
         )
     }
+}
+
+internal fun readerSeekFraction(x: Float, width: Float, rtl: Boolean): Float {
+    val fraction = (x / width.coerceAtLeast(1f)).coerceIn(0f, 1f)
+    return if (rtl) 1f - fraction else fraction
 }
 
 @Composable
@@ -277,7 +320,9 @@ fun ReaderSearchNavigator(
     val currentNum = if (activeIndex != null) activeIndex + 1 else 0
 
     Row(
-        modifier = modifier.fillMaxWidth().height(48.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(48.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -331,7 +376,9 @@ fun ReaderTextSelectionControl(
     var expanded by remember { mutableStateOf(value = false) }
 
     Row(
-        modifier = modifier.fillMaxWidth().height(48.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(48.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
 

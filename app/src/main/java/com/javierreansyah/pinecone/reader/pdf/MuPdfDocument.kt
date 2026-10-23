@@ -56,7 +56,9 @@ class MuPdfDocument(private val native: Document) : PdfDocument {
                 // unsafe vector callback and keep ordinary coordinates after native cleanup.
                 val structured = page.toStructuredText("vectors=no")
                 try {
-                    fun point(x: Float, y: Float) = PdfSearchPoint((x - bounds.x0) / width, (y - bounds.y0) / height)
+                    fun point(x: Float, y: Float) =
+                        PdfSearchPoint((x - bounds.x0) / width, (y - bounds.y0) / height)
+
                     val text = StringBuilder()
                     val glyphs = mutableListOf<PdfSearchGlyph>()
                     var lineIndex = 0
@@ -67,11 +69,19 @@ class MuPdfDocument(private val native: Document) : PdfDocument {
                                     if (text.isNotEmpty() && text.last() != ' ') text.append(' ')
                                 } else {
                                     val start = text.length
-                                    text.appendCodePoint(char.c.takeIf(Character::isValidCodePoint) ?: 0xFFFD)
+                                    text.appendCodePoint(
+                                        char.c.takeIf(Character::isValidCodePoint) ?: 0xFFFD
+                                    )
                                     val quad = char.quad
-                                    glyphs += PdfSearchGlyph(start, text.length, lineIndex,
-                                        PdfSearchQuad(point(quad.ul_x, quad.ul_y), point(quad.ur_x, quad.ur_y),
-                                            point(quad.lr_x, quad.lr_y), point(quad.ll_x, quad.ll_y)))
+                                    glyphs += PdfSearchGlyph(
+                                        start, text.length, lineIndex,
+                                        PdfSearchQuad(
+                                            point(quad.ul_x, quad.ul_y),
+                                            point(quad.ur_x, quad.ur_y),
+                                            point(quad.lr_x, quad.lr_y),
+                                            point(quad.ll_x, quad.ll_y)
+                                        )
+                                    )
                                 }
                             }
                             if (text.isNotEmpty() && text.last() != ' ') text.append(' ')
@@ -80,8 +90,12 @@ class MuPdfDocument(private val native: Document) : PdfDocument {
                     }
                     val content = text.toString()
                     PdfTextPage(content, glyphs)
-                } finally { structured.destroy() }
-            } finally { page.destroy() }
+                } finally {
+                    structured.destroy()
+                }
+            } finally {
+                page.destroy()
+            }
         }
     }
 

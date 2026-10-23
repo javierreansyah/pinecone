@@ -4,6 +4,5 @@ package com.javierreansyah.pinecone.data.publication.conversion
 class GeneratedPublicationStrings(
     val contents: String,
     val scannedPageNotice: String,
-    val originalPageNotice: String,
     val pageLabel: (Int) -> String,
 )

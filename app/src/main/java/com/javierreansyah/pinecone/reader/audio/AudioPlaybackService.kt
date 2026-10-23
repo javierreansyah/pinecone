@@ -10,12 +10,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancel as cancelScope
 import kotlinx.coroutines.launch
 
 class AudioPlaybackService : MediaSessionService() {
     companion object {
-        const val ACTION_STOP = "com.javierreansyah.pinecone.audio.STOP"
+        const val ACTION_STOP: String = "com.javierreansyah.pinecone.audio.STOP"
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -66,7 +66,7 @@ class AudioPlaybackService : MediaSessionService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
 
     override fun onDestroy() {
-        scope.cancel()
+        scope.cancelScope()
         session?.release(); session = null
         readingSession.releasePlayer()
         super.onDestroy()

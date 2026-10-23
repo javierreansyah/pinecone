@@ -36,6 +36,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.javierreansyah.pinecone.PineconeApplication
+import com.javierreansyah.pinecone.data.publication.ReaderProfile
 import com.javierreansyah.pinecone.ui.features.dictionary.DictionariesScreen
 import com.javierreansyah.pinecone.ui.features.dictionary.DictionariesViewModel
 import com.javierreansyah.pinecone.ui.features.library.archive.ArchiveScreen
@@ -47,12 +48,11 @@ import com.javierreansyah.pinecone.ui.features.library.main.LibraryRoute
 import com.javierreansyah.pinecone.ui.features.library.shelf.ShelfDetailScreen
 import com.javierreansyah.pinecone.ui.features.library.unsorted.UnsortedScreen
 import com.javierreansyah.pinecone.ui.features.reader.ReaderActivity
-import com.javierreansyah.pinecone.data.publication.ReaderProfile
-import kotlinx.coroutines.launch
-import org.readium.r2.shared.publication.Locator
 import com.javierreansyah.pinecone.ui.features.settings.AboutScreen
 import com.javierreansyah.pinecone.ui.features.settings.OpenSourceLicensesScreen
 import com.javierreansyah.pinecone.ui.features.settings.SettingsScreen
+import kotlinx.coroutines.launch
+import org.readium.r2.shared.publication.Locator
 
 @Composable
 fun NavGraph(
@@ -120,7 +120,11 @@ fun NavGraph(
     val scope = rememberCoroutineScope()
     val openBook: (String, Locator?) -> Unit = { bookId, locator ->
         scope.launch {
-            if (app.libraryRepository.rendition(bookId, "original")?.profile == ReaderProfile.AUDIO.name) {
+            if (app.libraryRepository.rendition(
+                    bookId,
+                    "original"
+                )?.profile == ReaderProfile.AUDIO.name
+            ) {
                 backStack.openAudioPlayer(bookId, locator?.toJSON()?.toString())
             } else {
                 context.startActivity(Intent(context, ReaderActivity::class.java).apply {

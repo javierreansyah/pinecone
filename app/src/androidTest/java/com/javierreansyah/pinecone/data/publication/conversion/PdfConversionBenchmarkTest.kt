@@ -1,22 +1,29 @@
 package com.javierreansyah.pinecone.data.publication.conversion
 
+import timber.log.Timber
+import com.javierreansyah.pinecone.testing.InstrumentationLoggingRule
+import org.junit.Rule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.artifex.mupdf.fitz.Document
 import com.javierreansyah.pinecone.reader.pdf.MuPdfDocument
-import java.io.File
-import java.security.MessageDigest
-import java.util.zip.ZipFile
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
+import java.security.MessageDigest
+import java.util.zip.ZipFile
 
 /** Opt-in device benchmark. Compare entry/source-map digests between builds as well as timings. */
 @RunWith(AndroidJUnit4::class)
 class PdfConversionBenchmarkTest {
-    @Test fun optionalConversionBenchmark() = runBlocking {
+    @get:Rule
+    val logging: InstrumentationLoggingRule = InstrumentationLoggingRule()
+
+    @Test
+    fun optionalConversionBenchmark(): Unit = runBlocking {
         val arguments = InstrumentationRegistry.getArguments()
         val path = arguments.getString("benchmarkPath")
         assumeTrue("Pass benchmarkPath to measure a local PDF", path != null)
@@ -34,12 +41,17 @@ class PdfConversionBenchmarkTest {
                     val started = System.nanoTime()
                     var extractionMs = 0L
                     var completed = 0
-                    val map = PdfReadModeConverter().convert(listOf(PdfSource(pdf, "original.pdf")), output,
+                    val map = PdfReadModeConverter().convert(
+                        listOf(PdfSource(pdf, "original.pdf")), output,
                         "test:benchmark", "Conversion benchmark", "en",
-                        GeneratedPublicationStrings("Contents", "Scanned", "Original") { "Page $it" }) { done, total ->
+                        GeneratedPublicationStrings(
+                            "Contents",
+                            "Scanned"
+                        ) { "Page $it" }) { done, total ->
                         assertEquals(++completed, done)
                         assertEquals(pdf.pageCount * 2, total)
-                        if (done == pdf.pageCount) extractionMs = (System.nanoTime() - started) / 1_000_000
+                        if (done == pdf.pageCount) extractionMs =
+                            (System.nanoTime() - started) / 1_000_000
                     }
                     val totalMs = (System.nanoTime() - started) / 1_000_000
                     assertEquals(pdf.pageCount * 2, completed)
@@ -47,20 +59,38 @@ class PdfConversionBenchmarkTest {
                         zip.entries().asSequence().associate { entry ->
                             val bytes = zip.getInputStream(entry).use { it.readBytes() }
                             // EPUB's required modification time is the only variable metadata.
-                            val stable = if (entry.name == "EPUB/package.opf") bytes.toString(Charsets.UTF_8)
-                                .replace(Regex("<meta property=\"dcterms:modified\">[^<]*</meta>"), "")
-                                .toByteArray(Charsets.UTF_8) else bytes
+                            val stable =
+                                if (entry.name == "EPUB/package.opf") bytes.toString(Charsets.UTF_8)
+                                    .replace(
+                                        Regex("<meta property=\"dcterms:modified\">[^<]*</meta>"),
+                                        ""
+                                    )
+                                    .toByteArray(Charsets.UTF_8) else bytes
                             entry.name to digest(stable)
                         } + ("source-map" to digest(map.toByteArray(Charsets.UTF_8)))
                     }
-                    expected?.let { assertEquals("Repeated conversions must preserve every entry and source anchor", it, digests) }
+                    expected?.let {
+                        assertEquals(
+                            "Repeated conversions must preserve every entry and source anchor",
+                            it,
+                            digests
+                        )
+                    }
                     expected = digests
-                    println("PDF_BENCHMARK: label=$label, file=${File(path).name}, pass=$pass, pages=${pdf.pageCount}, " +
-                        "extractionMs=$extractionMs, totalMs=$totalMs, bytes=${output.length()}, " +
-                        "contentDigest=${digest(digests.toSortedMap().toString().toByteArray(Charsets.UTF_8))}")
-                } finally { pdf.close() }
+                    Timber.tag("PdfConversionBenchmark").i(
+                        "PDF_BENCHMARK: label=%s, file=%s, pass=%d, pages=%d, " +
+                            "extractionMs=%d, totalMs=%d, bytes=%d, contentDigest=%s",
+                        label, File(path).name, pass, pdf.pageCount,
+                        extractionMs, totalMs, output.length(),
+                        digest(digests.toSortedMap().toString().toByteArray(Charsets.UTF_8)),
+                    )
+                } finally {
+                    pdf.close()
+                }
             }
-        } finally { output.delete() }
+        } finally {
+            output.delete()
+        }
     }
 
     private fun digest(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256")

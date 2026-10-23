@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.library.archive
 
-import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,6 +7,7 @@ import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.SortType
 import com.javierreansyah.pinecone.ui.features.library.StatusFilter
@@ -83,7 +83,8 @@ class ArchiveViewModel(application: Application) : AndroidViewModel(application)
     fun toggleFileFilter(format: FileFilter) {
         _uiState.update { state ->
             val current = state.bookPreferences
-            val prefs = current.copy(selectedFormats = current.selectedFormats.let { if (format in it) it - format else it + format })
+            val prefs =
+                current.copy(selectedFormats = current.selectedFormats.let { if (format in it) it - format else it + format })
             prefsManager.savePreferences(screenKey, prefs)
             state.copy(bookPreferences = prefs)
         }

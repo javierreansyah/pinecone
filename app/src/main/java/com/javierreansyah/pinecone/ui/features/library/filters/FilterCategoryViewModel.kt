@@ -9,7 +9,10 @@ import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.data.local.database.library.TagEntity
 import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.ui.features.library.PublicationWording
+import com.javierreansyah.pinecone.ui.features.library.inNamedCollection
 import com.javierreansyah.pinecone.ui.features.library.inSpace
+import com.javierreansyah.pinecone.ui.features.library.publicationWording
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -19,12 +22,24 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+data class FilterCollectionSummary(
+    val name: String,
+    val count: Int,
+    val wording: PublicationWording,
+    val actionWording: PublicationWording = wording,
+)
+
 class FilterCategoryViewModel(application: Application) : AndroidViewModel(application) {
     private val bookRepository = (application as PineconeApplication).libraryRepository
     private val prefsManager = LibraryPreferencesManager(application)
 
     private val unfilteredBooks: Flow<List<Book>> =
         bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }
+
+    // Label edits affect archived items too, even though visible counts exclude them.
+    private val actionBooks: Flow<List<Book>> = combine(
+        unfilteredBooks, bookRepository.getArchivedBooks(),
+    ) { books, archived -> books + archived.map { Book.fromEntity(it) } }
 
     private val globalSpaceId = prefsManager.getEffectiveSpaceFlow().stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), null,
@@ -49,29 +64,36 @@ class FilterCategoryViewModel(application: Application) : AndroidViewModel(appli
     val allSpaces: StateFlow<List<SpaceEntity>> =
         bookRepository.getAllSpaces().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    val authorsWithCounts: StateFlow<List<Pair<String, Int>>> =
-        combine(allAuthors, booksFlow) { authors, books ->
+    val authorsWithCounts: StateFlow<List<FilterCollectionSummary>> =
+        combine(allAuthors, booksFlow, actionBooks) { authors, books, allBooks ->
             authors.map { (_, authorName) ->
-                val count = books.count { (_, _, itAuthors2) -> itAuthors2.contains(authorName) }
-                Pair(authorName, count)
+                val members = books.filter { authorName in it.authors }
+                FilterCollectionSummary(
+                    authorName, members.size, members.publicationWording(),
+                    allBooks.inNamedCollection("author", authorName).publicationWording()
+                )
             }
         }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    val tagsWithCounts: StateFlow<List<Pair<String, Int>>> =
-        combine(allTags, booksFlow) { tags, books ->
+    val tagsWithCounts: StateFlow<List<FilterCollectionSummary>> =
+        combine(allTags, booksFlow, actionBooks) { tags, books, allBooks ->
             tags.map { (_, tagName) ->
-                val count = books.count { (_, _, _, _, _, _, _, _, _, _, _, _, itTags2) ->
-                    itTags2.contains(tagName)
-                }
-                Pair(tagName, count)
+                val members = books.filter { tagName in it.tags }
+                FilterCollectionSummary(
+                    tagName, members.size, members.publicationWording(),
+                    allBooks.inNamedCollection("tag", tagName).publicationWording()
+                )
             }
         }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    val spacesWithCounts: StateFlow<List<Pair<String, Int>>> =
-        combine(allSpaces, unfilteredBooks) { spaces, books ->
+    val spacesWithCounts: StateFlow<List<FilterCollectionSummary>> =
+        combine(allSpaces, unfilteredBooks, actionBooks) { spaces, books, allBooks ->
             spaces.filter { it.id != "_all_" }.map { (spaceId2, spaceName) ->
-                val count = books.count { book -> !book.isUnsorted && book.spaceIds.contains(spaceId2) }
-                Pair(spaceName, count)
+                val members = books.filter { !it.isUnsorted && spaceId2 in it.spaceIds }
+                FilterCollectionSummary(
+                    spaceName, members.size, members.publicationWording(),
+                    allBooks.inNamedCollection("space", spaceName).publicationWording()
+                )
             }
         }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 

@@ -145,8 +145,7 @@ class BookInfoViewModel(
         private val application: Application, private val bookId: String,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return BookInfoViewModel(application, bookId) as T
-        }
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            BookInfoViewModel(application, bookId) as T
     }
 }

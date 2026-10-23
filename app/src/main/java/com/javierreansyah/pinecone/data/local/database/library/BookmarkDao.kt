@@ -25,6 +25,7 @@ interface BookmarkDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(bookmarks: List<BookmarkEntity>)
+
     @Query("SELECT * FROM bookmarks WHERE bookId = :bookId AND renditionKey = :renditionKey")
     suspend fun getByRendition(bookId: String, renditionKey: String): List<BookmarkEntity>
 

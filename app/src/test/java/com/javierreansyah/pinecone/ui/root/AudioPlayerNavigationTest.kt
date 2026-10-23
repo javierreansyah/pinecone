@@ -14,9 +14,16 @@ class AudioPlayerNavigationTest {
 
     @Test
     fun `media controls expand the player without changing the underlying screen`() {
-        val stack = mutableListOf<NavKey>(Screen.Library, Screen.AudioPlayer("audio"), Screen.BookInfo("audio"))
+        val stack = mutableListOf<NavKey>(
+            Screen.Library,
+            Screen.AudioPlayer("audio"),
+            Screen.BookInfo("audio")
+        )
         stack.openAudioPlayer("audio")
-        assertEquals(listOf(Screen.Library, Screen.BookInfo("audio"), Screen.AudioPlayer("audio")), stack)
+        assertEquals(
+            listOf(Screen.Library, Screen.BookInfo("audio"), Screen.AudioPlayer("audio")),
+            stack
+        )
         stack.openAudioPlayer("audio")
         assertEquals(3, stack.size)
     }
@@ -31,14 +38,25 @@ class AudioPlayerNavigationTest {
 
     @Test
     fun `a bookmark jump updates the player destination without a duplicate`() {
-        val stack = mutableListOf<NavKey>(Screen.Library, Screen.AudioPlayer("audio"), Screen.BookInfo("audio"))
+        val stack = mutableListOf<NavKey>(
+            Screen.Library,
+            Screen.AudioPlayer("audio"),
+            Screen.BookInfo("audio")
+        )
         stack.openAudioPlayer("audio", "locator-json")
-        assertEquals(listOf(Screen.Library, Screen.BookInfo("audio"), Screen.AudioPlayer("audio", "locator-json")), stack)
+        assertEquals(
+            listOf(
+                Screen.Library,
+                Screen.BookInfo("audio"),
+                Screen.AudioPlayer("audio", "locator-json")
+            ), stack
+        )
     }
 
     @Test
     fun `collapsing removes only the sheet request`() {
-        val stack = mutableListOf<NavKey>(Screen.Library, Screen.Archives, Screen.AudioPlayer("audio"))
+        val stack =
+            mutableListOf<NavKey>(Screen.Library, Screen.Archives, Screen.AudioPlayer("audio"))
         stack.collapseAudioPlayer()
         assertEquals(listOf(Screen.Library, Screen.Archives), stack)
     }
