@@ -6,6 +6,7 @@ import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.ui.features.library.FilterSortPreferences
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
+import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.SearchCategory
 import com.javierreansyah.pinecone.ui.features.library.SortType
 
@@ -25,6 +26,7 @@ data class SearchResults(
     val shelves: List<ShelfEntity> = emptyList(),
     val authors: List<String> = emptyList(),
     val tags: List<String> = emptyList(),
+    val contentWording: PublicationWording = PublicationWording.Items,
 )
 
 data class LibraryScreenUiState(

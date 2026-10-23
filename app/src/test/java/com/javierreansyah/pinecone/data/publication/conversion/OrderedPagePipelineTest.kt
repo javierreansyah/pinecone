@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.data.publication.conversion
 
-import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
@@ -9,10 +8,13 @@ import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.fail
 import org.junit.Test
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.milliseconds
 
 class OrderedPagePipelineTest {
-    @Test fun preparationOverlapsButConsumptionStaysInSourceOrder() = runBlocking {
-        withTimeout(5_000) {
+    @Test
+    fun preparationOverlapsButConsumptionStaysInSourceOrder(): Unit = runBlocking {
+        withTimeout(5_000.milliseconds) {
             val secondReady = CompletableDeferred<Unit>()
             val active = AtomicInteger()
             val peak = AtomicInteger()
@@ -24,7 +26,9 @@ class OrderedPagePipelineTest {
                     if (index == 0) secondReady.await()
                     if (index == 1) secondReady.complete(Unit)
                     index * 10
-                } finally { active.decrementAndGet() }
+                } finally {
+                    active.decrementAndGet()
+                }
             }) { index, result ->
                 assertEquals(index * 10, result)
                 consumed += index
@@ -34,8 +38,9 @@ class OrderedPagePipelineTest {
         }
     }
 
-    @Test fun cancellationJoinsPendingWorkBeforeReturningToCleanup() = runBlocking {
-        withTimeout(5_000) {
+    @Test
+    fun cancellationJoinsPendingWorkBeforeReturningToCleanup(): Unit = runBlocking {
+        withTimeout(5_000.milliseconds) {
             val secondReady = CompletableDeferred<Unit>()
             val prepared = AtomicInteger()
             val released = AtomicInteger()
@@ -45,40 +50,56 @@ class OrderedPagePipelineTest {
                     prepared.incrementAndGet()
                     try {
                         if (index == 0) secondReady.await()
-                        else { secondReady.complete(Unit); awaitCancellation() }
-                        index
-                    } finally { released.incrementAndGet() }
+                        else {
+                            secondReady.complete(Unit); awaitCancellation()
+                        }
+                    } finally {
+                        released.incrementAndGet()
+                    }
                 }) { _, _ -> throw cancellation }
                 fail("Conversion should be cancelled")
-            } catch (actual: CancellationException) { assertEquals(cancellation.message, actual.message) }
+            } catch (actual: CancellationException) {
+                assertEquals(cancellation.message, actual.message)
+            }
             assertEquals(2, prepared.get())
             assertEquals(2, released.get())
         }
     }
 
-    @Test fun workerFailureCancelsOtherWorkAndReachesCaller() = runBlocking {
-        withTimeout(5_000) {
+    @Test
+    fun workerFailureCancelsOtherWorkAndReachesCaller(): Unit = runBlocking {
+        withTimeout(5_000.milliseconds) {
             val firstReady = CompletableDeferred<Unit>()
             val released = AtomicInteger()
             val failure = IllegalStateException("Cannot export page")
             try {
                 forEachPreparedPage(20, 2, prepare = { index ->
                     try {
-                        if (index == 0) { firstReady.complete(Unit); awaitCancellation() }
+                        if (index == 0) {
+                            firstReady.complete(Unit); awaitCancellation()
+                        }
                         firstReady.await()
                         throw failure
-                    } finally { released.incrementAndGet() }
+                    } finally {
+                        released.incrementAndGet()
+                    }
                 }) { _, _ -> fail("No page should be consumed") }
                 fail("Export should fail")
-            } catch (actual: IllegalStateException) { assertEquals(failure.message, actual.message) }
+            } catch (actual: IllegalStateException) {
+                assertEquals(failure.message, actual.message)
+            }
             assertEquals(2, released.get())
         }
     }
 
-    @Test fun singleWorkerAndEmptyInputDoNotNeedAdditionalTasks() = runBlocking {
+    @Test
+    fun singleWorkerAndEmptyInputDoNotNeedAdditionalTasks(): Unit = runBlocking {
         val consumed = mutableListOf<Int>()
         forEachPreparedPage(3, 1, prepare = { it }) { _, page -> consumed += page }
-        forEachPreparedPage(0, 2, prepare = { fail("No work expected") }) { _, _ -> fail("No result expected") }
+        forEachPreparedPage(
+            0,
+            2,
+            prepare = { fail("No work expected") }) { _, _ -> fail("No result expected") }
         assertEquals(listOf(0, 1, 2), consumed)
     }
 }

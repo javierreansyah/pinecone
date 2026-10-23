@@ -3,13 +3,13 @@ package com.javierreansyah.pinecone.data.local.preferences
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.FilterSortPreferences
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
+import com.javierreansyah.pinecone.ui.features.library.LibraryView
 import com.javierreansyah.pinecone.ui.features.library.ShelfFilter
 import com.javierreansyah.pinecone.ui.features.library.SortType
 import com.javierreansyah.pinecone.ui.features.library.StatusFilter
-import com.javierreansyah.pinecone.ui.features.library.FileFilter
-import com.javierreansyah.pinecone.ui.features.library.LibraryView
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -51,9 +51,18 @@ class LibraryPreferencesManager(private val context: Context) {
         ) ?: setOf()
 
         return FilterSortPreferences(
-            selectedFormats = prefs.getStringSet("${fullKey}_formats", FileFilter.entries.map { it.name }.toSet())
-                .orEmpty().mapNotNull { name -> FileFilter.entries.find { it.name == name } }.toSet(),
-            libraryView = LibraryView.entries.find { it.name == prefs.getString("${fullKey}_show", LibraryView.Both.name) } ?: LibraryView.Both,
+            selectedFormats = prefs.getStringSet(
+                "${fullKey}_formats",
+                FileFilter.entries.map { it.name }.toSet()
+            )
+                .orEmpty().mapNotNull { name -> FileFilter.entries.find { it.name == name } }
+                .toSet(),
+            libraryView = LibraryView.entries.find {
+                it.name == prefs.getString(
+                    "${fullKey}_show",
+                    LibraryView.Both.name
+                )
+            } ?: LibraryView.Both,
             layoutMode = try {
                 LayoutMode.valueOf(layoutModeStr)
             } catch (_: Exception) {
@@ -82,7 +91,7 @@ class LibraryPreferencesManager(private val context: Context) {
         )
     }
 
-    fun getGlobalSpaceFlow(): Flow<String?> = callbackFlow {
+    private fun getGlobalSpaceFlow(): Flow<String?> = callbackFlow {
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             if (key == "global_space") {
                 trySend(prefs.getString("global_space", null))

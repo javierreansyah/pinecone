@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.reader.components.contents
 
-import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Format_list_bulleted
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
@@ -43,8 +43,12 @@ fun TocList(
         val currentChapterIndex = remember(tableOfContents, currentLocator) {
             if (currentLocator == null) return@remember 0
             val currentHref = currentLocator.href.toString().substringBefore("#")
-            GeneratedEpubLocations.chapterIndex(tableOfContents.map { it.href.toString() }, currentLocator.href.toString(),
-                currentLocator.locations["cssSelector"] as? String, currentLocator.locations.fragments)?.let { index ->
+            GeneratedEpubLocations.chapterIndex(
+                tableOfContents.map { it.href.toString() },
+                currentLocator.href.toString(),
+                currentLocator.locations["cssSelector"] as? String,
+                currentLocator.locations.fragments
+            )?.let { index ->
                 return@remember index
             }
             val index = tableOfContents.indexOfFirst { (itHref) ->
@@ -66,9 +70,10 @@ fun TocList(
                 val link = tableOfContents[index]
                 val currentHref = currentLocator?.href?.toString()?.substringBefore("#")
                 val linkHref = link.href.toString().substringBefore("#")
-                val isCurrentChapter = if (currentHref != null && GeneratedEpubLocations.isContent(currentHref)) {
-                    index == currentChapterIndex
-                } else currentHref == linkHref
+                val isCurrentChapter =
+                    if (currentHref != null && GeneratedEpubLocations.isContent(currentHref)) {
+                        index == currentChapterIndex
+                    } else currentHref == linkHref
                 val pageLabel = getChapterPageLabel(link)
                 ListItem(
                     content = {

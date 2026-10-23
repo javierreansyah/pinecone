@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.library.archive
 
-import com.javierreansyah.pinecone.ui.features.library.fileFormat
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,11 +30,14 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
+import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.components.FilterResultBottomSheet
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectAppBar
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectTopBarTransition
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookCollection
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookContextMenu
+import com.javierreansyah.pinecone.ui.features.library.fileFormat
+import com.javierreansyah.pinecone.ui.features.library.publicationWording
 
 @Composable
 fun ArchiveScreen(
@@ -171,6 +173,7 @@ fun ArchiveContent(
         },
         topBar = {
             ArchiveTopBar(
+                wording = allBooks.filter { it.id in selectedBooks }.publicationWording(),
                 isInMultiSelectMode = isInMultiSelectMode,
                 isEmpty = isEmpty,
                 selectedCount = selectedBooks.size,
@@ -230,6 +233,7 @@ fun ArchiveContent(
 
 @Composable
 private fun ArchiveTopBar(
+    wording: PublicationWording,
     isInMultiSelectMode: Boolean,
     isEmpty: Boolean,
     selectedCount: Int,
@@ -251,6 +255,7 @@ private fun ArchiveTopBar(
         isMultiSelect = isInMultiSelectMode,
         multiSelectBar = {
             MultiSelectAppBar(
+                wording = wording,
                 selectedCount = selectedCount,
                 isAllSelected = isAllSelected,
                 showMarkAsRead = showMarkAsRead,

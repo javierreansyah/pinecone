@@ -25,11 +25,17 @@ internal class EpubPageChunks(private val firstFile: File, private val header: S
         val page = section.getAttribute("data-source-page").toInt()
         val blocks = section.children().filterNot { it.localTag == "span" }
         val first = blocks.firstOrNull()
-        if (page > boundary && first != null && safeBoundary(previous, first, captionNeedsFollowing)) {
+        if (page > boundary && first != null && safeBoundary(
+                previous,
+                first,
+                captionNeedsFollowing
+            )
+        ) {
             output.write("</body></html>")
             output.close()
             val file = File.createTempFile("pinecone-content-", ".xhtml", firstFile.parentFile)
-            val href = "text/content-${String.format(Locale.ROOT, "%04d", resources.size + 1)}.xhtml"
+            val href =
+                "text/content-${String.format(Locale.ROOT, "%04d", resources.size + 1)}.xhtml"
             resources += Resource(href, file)
             output = file.bufferedWriter(Charsets.UTF_8)
             output.write(header)
@@ -41,7 +47,10 @@ internal class EpubPageChunks(private val firstFile: File, private val header: S
                 check(anchors.put(id, resource.href) == null) { "Duplicate generated anchor: $id" }
             }
         }
-        resource.hasSvg = resource.hasSvg || section.getElementsByTagNameNS("http://www.w3.org/2000/svg", "svg").length > 0
+        resource.hasSvg = resource.hasSvg || section.getElementsByTagNameNS(
+            "http://www.w3.org/2000/svg",
+            "svg"
+        ).length > 0
         output.write(EpubWriter.serialize(section).substringAfter("?>"))
         blocks.forEach { block ->
             captionNeedsFollowing = block.hasClass("caption") && !isVisual(previous)
@@ -65,10 +74,13 @@ internal class EpubPageChunks(private val firstFile: File, private val header: S
                 val anchor = href.substringAfter('#', "")
                 if (anchor in anchors && !path.contains(':') && !path.startsWith("//") &&
                     (path.isEmpty() || GeneratedEpubLocations.isContent(path) ||
-                        path.matches(Regex("content(?:-\\d+)?\\.xhtml")))) {
+                            path.matches(Regex("content(?:-\\d+)?\\.xhtml")))
+                ) {
                     val target = resourceForAnchor(anchor)
-                    link.setAttribute("href", if (target == resource.href) "#$anchor"
-                        else "${target.substringAfterLast('/')}#$anchor")
+                    link.setAttribute(
+                        "href", if (target == resource.href) "#$anchor"
+                        else "${target.substringAfterLast('/')}#$anchor"
+                    )
                 }
             }
             write(resource.href, EpubWriter.serialize(root).toByteArray(Charsets.UTF_8))
@@ -76,21 +88,35 @@ internal class EpubPageChunks(private val firstFile: File, private val header: S
     }
 
     override fun close() {
-        try { output.close() } finally { resources.forEach { it.file.delete() } }
+        try {
+            output.close()
+        } finally {
+            resources.forEach { it.file.delete() }
+        }
     }
 
     companion object {
         const val PAGES_PER_FILE = 25
 
-        private fun Element.hasClass(name: String) = getAttribute("class").split(Regex("\\s+")).contains(name)
-        private fun isVisual(element: Element?) = element != null &&
-            (element.localTag in setOf("figure", "table") || element.hasClass("table-scroll"))
+        internal fun Element.hasClass(name: String) =
+            getAttribute("class").split(Regex("\\s+")).contains(name)
 
-        private fun safeBoundary(previous: Element?, first: Element?, captionNeedsFollowing: Boolean): Boolean {
+        internal fun isVisual(element: Element?) = element != null &&
+                (element.localTag in setOf("figure", "table") || element.hasClass("table-scroll"))
+
+        internal fun safeBoundary(
+            previous: Element?,
+            first: Element?,
+            captionNeedsFollowing: Boolean
+        ): Boolean {
             if (previous == null || first == null) return true
             if (previous.localTag.matches(Regex("h[1-6]")) || captionNeedsFollowing) return false
             if (first.hasClass("caption") && isVisual(previous)) return false
-            if (previous.localTag in setOf("ul", "ol") && first.localTag == previous.localTag) return false
+            if (previous.localTag in setOf(
+                    "ul",
+                    "ol"
+                ) && first.localTag == previous.localTag
+            ) return false
             if (first.hasClass("reference-continuation") && previous.hasClass("reference")) return false
             return true
         }

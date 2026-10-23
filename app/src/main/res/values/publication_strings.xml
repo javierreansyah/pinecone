@@ -5,7 +5,6 @@
     <string name="about_agpl_title">GNU AGPL v3 or later</string>
     <string name="reader_single_page">Single page</string>
     <string name="reader_two_pages">Two pages</string>
-    <string name="reader_theme_warm">Warm</string>
     <string name="reader_setting_value">%1$s · %2$s</string>
     <string name="reader_page_label">Page %1$d</string>
     <string name="reader_track_label">Track %1$d</string>
@@ -15,10 +14,8 @@
     <string name="reader_audio_playback_failed">This audio resource could not be played.</string>
     <string name="reader_conversion_failed">Could not convert this PDF. The original is still available.</string>
     <string name="reader_scanned_page_notice">This page has no extractable text. Its original appearance is preserved below; OCR is not enabled.</string>
-    <string name="reader_original_page_notice">Original page: complex graphics are preserved below.</string>
     <string name="publication_reading_direction">Reading direction</string>
     <string name="publication_left_to_right">Left to right</string>
-    <string name="publication_language_label">Languages</string>
     <string name="publication_duration">Duration</string>
     <plurals name="publication_duration_minutes">
         <item quantity="one">%1$d minute</item>
@@ -53,17 +50,11 @@
     <string name="reader_fit_width">Fit page width</string>
     <string name="reader_invert_pages">Invert page colors</string>
     <string name="reader_page_spacing">Page spacing</string>
-    <string name="reader_pdf_zoom_hint">Pinch to zoom, drag to pan, or double-tap to reset. Read mode reconstructs text and illustrations; complex layouts may differ.</string>
     <string name="reader_playback_speed">Playback speed</string>
     <string name="reader_playback_pitch">Pitch</string>
     <string name="reader_page_spread">Two-page spread</string>
     <string name="reader_image_settings_hint">This Readium image navigator supports paged viewing and image zoom. It does not expose typography or continuous-scroll preferences.</string>
-    <string name="reader_auto_brightness">Automatic brightness</string>
-    <string name="reader_brightness">@string/reader_settings_brightness</string>
     <string name="reader_chrome_theme_hint">Reader themes style the controls and background. Original PDF pages and comic artwork retain their colors.</string>
-    <string name="reader_keep_screen_on">Keep screen on</string>
-    <string name="reader_show_system_bars">Always show system bars</string>
-    <string name="reader_orientation">Orientation</string>
     <string name="reader_previous_track">Previous track</string>
     <string name="reader_next_track">Next track</string>
     <string name="reader_rewind">Rewind 10 seconds</string>
@@ -84,9 +75,7 @@
     <string name="publication_identifiers">Identifiers (one scheme=value per line)</string>
     <string name="publication_age_rating">Age rating</string>
     <string name="publication_published">Publication date</string>
-    <string name="publication_credit_hint">One contributor per line; roles are preserved separately.</string>
     <string name="reader_reparse_pdf">Reparse PDF</string>
     <string name="reader_reparse_pdf_description">Rebuild reading mode from the original PDF. Your saved reading state is kept.</string>
-    <string name="reader_now_playing">Now playing</string>
     <string name="reader_audio_seek">Playback position</string>
 </resources>

@@ -24,17 +24,19 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Drive_file_move
-import com.composables.icons.materialsymbols.outlined.Content_copy
 import com.composables.icons.materialsymbols.outlined.Close
+import com.composables.icons.materialsymbols.outlined.Content_copy
 import com.composables.icons.materialsymbols.outlined.Delete
 import com.composables.icons.materialsymbols.outlined.Deselect
+import com.composables.icons.materialsymbols.outlined.Drive_file_move
 import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Select_all
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 
 @Composable
 fun ShelvesMultiSelectAppBar(
+    modifier: Modifier = Modifier,
     selectedCount: Int,
     isAllSelected: Boolean,
     selectedShelfName: String,
@@ -44,7 +46,7 @@ fun ShelvesMultiSelectAppBar(
     onRename: (String) -> Unit,
     onDelete: () -> Unit,
     onTransfer: ((Boolean) -> Unit)? = null,
-    modifier: Modifier = Modifier,
+    wording: PublicationWording = PublicationWording.Items,
 ) {
     var showDeleteConfirmation by remember { mutableStateOf(value = false) }
     var showRenameDialog by remember { mutableStateOf(value = false) }
@@ -96,10 +98,16 @@ fun ShelvesMultiSelectAppBar(
             }
             if (onTransfer != null) {
                 IconButton(onClick = { onTransfer(false) }, enabled = selectedCount > 0) {
-                    Icon(MaterialSymbols.Outlined.Drive_file_move, contentDescription = stringResource(R.string.library_move_shelves))
+                    Icon(
+                        MaterialSymbols.Outlined.Drive_file_move,
+                        contentDescription = stringResource(R.string.library_move_shelves)
+                    )
                 }
                 IconButton(onClick = { onTransfer(true) }, enabled = selectedCount > 0) {
-                    Icon(MaterialSymbols.Outlined.Content_copy, contentDescription = stringResource(R.string.library_copy_shelves))
+                    Icon(
+                        MaterialSymbols.Outlined.Content_copy,
+                        contentDescription = stringResource(R.string.library_copy_shelves)
+                    )
                 }
             }
             IconButton(onClick = { showDeleteConfirmation = true }, enabled = selectedCount > 0) {
@@ -185,7 +193,7 @@ fun ShelvesMultiSelectAppBar(
             text = {
                 Text(
                     pluralStringResource(
-                        R.plurals.library_delete_shelves_message,
+                        wording.deleteShelvesMessage,
                         selectedCount,
                         selectedCount,
                     ),

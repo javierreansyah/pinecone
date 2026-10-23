@@ -1,0 +1,55 @@
+<resources>
+    <string name="content_view_all_authors">Lihat semua penulis</string>
+    <string name="content_view_all_tags">Lihat semua tag</string>
+    <string name="content_delete_author">Hapus penulis</string>
+    <string name="content_delete_tag">Hapus tag</string>
+    <string name="content_delete_space">Hapus ruang</string>
+    <string name="content_books">Buku</string>
+    <string name="content_books_only">Buku saja</string>
+    <string name="content_book_info">Info buku</string>
+    <string name="content_edit_book">Edit buku</string>
+    <string name="content_delete_book">Hapus buku</string>
+    <string name="content_delete_book_message">Apakah Anda yakin ingin menghapus buku ini? Tindakan ini tidak dapat dibatalkan.</string>
+    <string name="content_search_book">Cari di dalam buku…</string>
+    <string name="content_delete_book_shelf">Apakah Anda yakin ingin menghapus \'%s\'? Buku di dalamnya tidak akan dihapus.</string>
+    <string name="content_delete_book_label">Apakah Anda yakin ingin menghapus \'%s\'? Ini akan menghapusnya dari semua buku.</string>
+    <string name="content_merge_book_label">Peringatan: Label yang cocok sudah ada. Menyimpan akan menggabungkan label ini dan bukunya ke dalam label yang sudah ada.</string>
+    <plurals name="content_items_count">
+        <item quantity="other">%d item</item>
+    </plurals>
+    <plurals name="content_delete_books_title">
+        <item quantity="other">Hapus buku</item>
+    </plurals>
+    <plurals name="content_delete_items_title">
+        <item quantity="other">Hapus item</item>
+    </plurals>
+    <plurals name="content_delete_books_message">
+        <item quantity="other">Apakah Anda yakin ingin menghapus %d buku? Tindakan ini tidak dapat dibatalkan.</item>
+    </plurals>
+    <plurals name="content_delete_items_message">
+        <item quantity="other">Apakah Anda yakin ingin menghapus %d item? Tindakan ini tidak dapat dibatalkan.</item>
+    </plurals>
+    <plurals name="content_delete_book_shelves">
+        <item quantity="other">Apakah Anda yakin ingin menghapus %d rak? Buku di dalamnya tidak akan dihapus.</item>
+    </plurals>
+    <plurals name="content_delete_book_labels">
+        <item quantity="other">Apakah Anda yakin ingin menghapus %d label? Ini akan menghapusnya dari semua buku.</item>
+    </plurals>
+    <string name="settings_library_bottom_navigation">Tampilkan navigasi bawah pustaka</string>
+    <string name="settings_library_bottom_navigation_summary">Tampilkan pengalih item dan rak. Saat disembunyikan, geser untuk berpindah halaman.</string>
+    <string name="library_label_show">Tampilkan</string>
+    <string name="library_label_layout">Tata letak</string>
+    <string name="library_label_formats">Format file</string>
+    <string name="library_show_both">Keduanya</string>
+    <string name="library_show_books">Item saja</string>
+    <string name="library_show_shelves">Rak saja</string>
+    <string name="library_format_comics">Komik</string>
+    <string name="library_format_audio">Audio</string>
+    <string name="library_format_images">Gambar</string>
+    <string name="library_format_other">@string/action_more</string>
+    <string name="library_move_shelves">Pindahkan ke ruang</string>
+    <string name="library_copy_shelves">Salin ke ruang</string>
+    <string name="action_move">Pindahkan</string>
+    <string name="library_add_to_library">Tambahkan ke pustaka</string>
+    <string name="library_transfer_destination">Pilih ruang tujuan. Item yang belum ada akan ditambahkan secara otomatis.</string>
+</resources>

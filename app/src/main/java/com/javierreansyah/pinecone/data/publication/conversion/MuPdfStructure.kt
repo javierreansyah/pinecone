@@ -1,11 +1,11 @@
 package com.javierreansyah.pinecone.data.publication.conversion
 
-import java.io.StringReader
-import javax.xml.parsers.DocumentBuilderFactory
 import kotlinx.serialization.Serializable
 import org.w3c.dom.Element
 import org.w3c.dom.Node
 import org.xml.sax.InputSource
+import java.io.StringReader
+import javax.xml.parsers.DocumentBuilderFactory
 
 @Serializable
 internal data class MuPdfPageRecord(
@@ -18,8 +18,10 @@ internal data class MuPdfPageRecord(
 internal data class MuPdfRegion(val kind: String, val bounds: FigureBounds)
 
 @Serializable
-internal data class MuPdfTable(val bounds: FigureBounds, val xhtml: String, val rows: List<List<MuPdfCell>> = emptyList(),
-    val ruled: Boolean = false)
+internal data class MuPdfTable(
+    val bounds: FigureBounds, val xhtml: String, val rows: List<List<MuPdfCell>> = emptyList(),
+    val ruled: Boolean = false
+)
 
 @Serializable
 internal data class MuPdfCell(val lines: List<MuPdfCellLine>)
@@ -34,12 +36,18 @@ internal data class MuPdfGlyph(
 )
 
 @Serializable
-internal data class MuPdfText(val bounds: FigureBounds, val glyphs: List<MuPdfGlyph>, val structure: String = "") {
+internal data class MuPdfText(
+    val bounds: FigureBounds,
+    val glyphs: List<MuPdfGlyph>,
+    val structure: String = ""
+) {
     @kotlinx.serialization.Transient
     val text: String = glyphs.joinToString("") { it.text }
+
     @kotlinx.serialization.Transient
     val size: Float = glyphs.groupingBy { (it.size * 4).toInt() }.eachCount()
         .maxByOrNull { it.value }?.key?.div(4f) ?: 12f
+
     @kotlinx.serialization.Transient
     val bold: Boolean = glyphs.count { it.bold } > glyphs.size / 2
 }
@@ -49,14 +57,20 @@ internal object MuPdfStructure {
     private val whitespace = Regex("\\s+")
     private val boldFont = Regex("bold|black|heavy", RegexOption.IGNORE_CASE)
     private val italicFont = Regex("italic|oblique", RegexOption.IGNORE_CASE)
-    private val mathFont = Regex("math|symbol|cmsy|cmex|cmmi|msam|msbm|stix", RegexOption.IGNORE_CASE)
+    private val mathFont =
+        Regex("math|symbol|cmsy|cmex|cmmi|msam|msbm|stix", RegexOption.IGNORE_CASE)
     private val doctype = Regex("<!DOCTYPE[^>]*>", RegexOption.IGNORE_CASE)
     private val characterReference = Regex("&#(?:x([0-9a-fA-F]+)|([0-9]+));")
 
     fun read(xhtml: String, xml: String, tableXhtml: String, tableXml: String): MuPdfPageRecord {
         val root = parse(xml)
         val page = root.descendants("page").single()
-        val pageBounds = FigureBounds(0f, 0f, page.getAttribute("width").toFloat(), page.getAttribute("height").toFloat())
+        val pageBounds = FigureBounds(
+            0f,
+            0f,
+            page.getAttribute("width").toFloat(),
+            page.getAttribute("height").toFloat()
+        )
         val blocks = mutableListOf<MuPdfText>()
         val images = mutableListOf<FigureBounds>()
         val vectors = mutableListOf<FigureBounds>()
@@ -68,6 +82,7 @@ internal object MuPdfStructure {
                     element.box()?.let { groups += MuPdfRegion(kind, it) }
                     element.children().forEach { visit(it, if (kind == "Div") structure else kind) }
                 }
+
                 "block" -> {
                     val glyphs = mutableListOf<MuPdfGlyph>()
                     val lines = element.children().filter { it.localTag == "line" }
@@ -89,8 +104,15 @@ internal object MuPdfStructure {
                                     )
                                     val text = char.getAttribute("c")
                                     val flags = char.getAttribute("flags").toIntOrNull() ?: 0
-                                    glyphs += MuPdfGlyph(text, box, char.getAttribute("y").toFloatOrNull() ?: box.bottom,
-                                        size, bold || flags and 8 != 0, italic, math)
+                                    glyphs += MuPdfGlyph(
+                                        text,
+                                        box,
+                                        char.getAttribute("y").toFloatOrNull() ?: box.bottom,
+                                        size,
+                                        bold || flags and 8 != 0,
+                                        italic,
+                                        math
+                                    )
                                 }
                             }
                         }
@@ -99,6 +121,7 @@ internal object MuPdfStructure {
                     }
                     element.box()?.let { blocks += MuPdfText(it, glyphs, structure) }
                 }
+
                 "image" -> element.box()?.let { images += it }
                 "vector" -> element.box()?.let { vectors += it }
                 else -> element.children().forEach { visit(it, structure) }
@@ -117,22 +140,26 @@ internal object MuPdfStructure {
         val tables = tableElements.mapNotNull { element ->
             val text = compact(element.textContent)
             val geometry = tableGeometry.firstOrNull { candidate ->
-                compact(candidate.descendants("line").joinToString("") { it.getAttribute("text") }) == text
+                compact(
+                    candidate.descendants("line")
+                        .joinToString("") { it.getAttribute("text") }) == text
             } ?: return@mapNotNull null
             tableGeometry.remove(geometry)
-            val rows = geometry.descendants("struct").filter { it.getAttribute("std") == "TR" }.map { row ->
-                row.children().filter { it.getAttribute("std") in setOf("TD", "TH") }.map { cell ->
-                    MuPdfCell(cell.descendants("line").map { line ->
-                        MuPdfCellLine(line.getAttribute("text"), line.box()?.top ?: 0f)
-                    })
+            val rows = geometry.descendants("struct").filter { it.getAttribute("std") == "TR" }
+                .map { row ->
+                    row.children().filter { it.getAttribute("std") in setOf("TD", "TH") }
+                        .map { cell ->
+                            MuPdfCell(cell.descendants("line").map { line ->
+                                MuPdfCellLine(line.getAttribute("text"), line.box()?.top ?: 0f)
+                            })
+                        }
                 }
-            }
             val bounds = geometry.box() ?: return@mapNotNull null
             // Hunting can leave ruling paths in the original empty tagged shell
             // while moving the text to a new Table. Collect rules spatially too.
             val rules = tableRules.filter {
                 (it.left + it.right) / 2 in bounds.left - 2f..bounds.right + 2f &&
-                    (it.top + it.bottom) / 2 in bounds.top - 2f..bounds.bottom + 2f
+                        (it.top + it.bottom) / 2 in bounds.top - 2f..bounds.bottom + 2f
             }
             // Grid coordinates also exist for inferred prose tables. Require actual
             // PDF ruling paths before relaxing the prose/empty-cell safeguards.
@@ -141,7 +168,7 @@ internal object MuPdfStructure {
             val ruled = horizontalBands.count { band ->
                 band.maxOf { it.right } - band.minOf { it.left } >= bounds.width * .75f
             } >= 2 &&
-                rules.count { it.width <= 2f && it.height >= 10f } >= 2
+                    rules.count { it.width <= 2f && it.height >= 10f } >= 2
             MuPdfTable(bounds, EpubWriter.serialize(element), rows, ruled)
         }
         return MuPdfPageRecord(xhtml, pageBounds, blocks, images, vectors, groups, tables)
@@ -157,13 +184,16 @@ internal object MuPdfStructure {
         // switches. Remove MuPDF's fixed doctype and reject all entity declarations instead.
         val input = xml.replace(doctype, "")
             .replace(characterReference) { match ->
-                val cp = if (match.groupValues[1].isNotEmpty()) match.groupValues[1].toLongOrNull(16)
+                val cp =
+                    if (match.groupValues[1].isNotEmpty()) match.groupValues[1].toLongOrNull(16)
                     else match.groupValues[2].toLongOrNull()
                 if (cp != null && (cp == 9L || cp == 10L || cp == 13L || cp in 0x20L..0xD7FFL ||
-                        cp in 0xE000L..0xFFFDL || cp in 0x10000L..0x10FFFFL)) match.value else "\uFFFD"
+                            cp in 0xE000L..0xFFFDL || cp in 0x10000L..0x10FFFFL)
+                ) match.value else "\uFFFD"
             }
         require(!input.contains("<!DOCTYPE", true) && !input.contains("<!ENTITY", true))
-        return factory.newDocumentBuilder().apply { setEntityResolver { _, _ -> InputSource(StringReader("")) } }
+        return factory.newDocumentBuilder()
+            .apply { setEntityResolver { _, _ -> InputSource(StringReader("")) } }
             .parse(InputSource(StringReader(input))).documentElement
     }
 
@@ -182,6 +212,7 @@ internal fun Element.children(): List<Element> = buildList {
         child = child.nextSibling
     }
 }
+
 internal fun Element.descendants(tag: String? = null): List<Element> = buildList {
     fun visit(element: Element) {
         if (tag == null || element.localTag == tag) add(element)
@@ -189,6 +220,7 @@ internal fun Element.descendants(tag: String? = null): List<Element> = buildList
     }
     visit(this@descendants)
 }
+
 internal fun Node.textNodes(): List<Node> = buildList {
     fun visit(node: Node) {
         if (node is Element && node.namespaceURI == "http://www.w3.org/2000/svg") return

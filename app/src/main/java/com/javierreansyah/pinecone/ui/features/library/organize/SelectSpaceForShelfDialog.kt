@@ -48,7 +48,10 @@ fun SelectSpaceForShelfDialog(
                     .verticalScroll(rememberScrollState()),
             ) {
                 Text(
-                    text = if (singleSelect) stringResource(R.string.library_transfer_destination) else stringResource(R.string.library_select_space_prompt, shelfName),
+                    text = if (singleSelect) stringResource(R.string.library_transfer_destination) else stringResource(
+                        R.string.library_select_space_prompt,
+                        shelfName
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 12.dp),

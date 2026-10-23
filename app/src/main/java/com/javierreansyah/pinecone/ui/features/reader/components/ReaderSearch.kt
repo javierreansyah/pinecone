@@ -58,6 +58,7 @@ import com.composables.icons.materialsymbols.outlined.Search
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.PredictiveBackOverlay
 import com.javierreansyah.pinecone.ui.components.rememberVoiceSearchLauncher
+import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.reader.SearchResultItem
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -72,6 +73,7 @@ fun ReaderSearch(
     onResultClick: (Int) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    wording: PublicationWording = PublicationWording.Items,
 ) {
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -160,7 +162,7 @@ fun ReaderSearch(
                 },
                 placeholder = {
                     Text(
-                        stringResource(R.string.reader_search_in_book),
+                        stringResource(wording.searchHint),
                         style = MaterialTheme.typography.bodyLarge,
                     )
                 },

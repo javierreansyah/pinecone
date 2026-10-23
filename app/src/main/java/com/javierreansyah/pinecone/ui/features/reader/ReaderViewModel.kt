@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.reader
 
-import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import android.app.Application
 import androidx.compose.ui.graphics.Color
 import androidx.core.graphics.toColorInt
@@ -17,8 +16,10 @@ import com.javierreansyah.pinecone.data.local.preferences.readingThemeIsDark
 import com.javierreansyah.pinecone.data.local.preferences.withReadingPreferencesFrom
 import com.javierreansyah.pinecone.data.publication.PublicationFormats
 import com.javierreansyah.pinecone.data.publication.ReaderProfile
+import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.reader.audio.AudioReadingSession
+import com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -141,8 +142,6 @@ class ReaderViewModel(
         combine(readerPreferences.readerSettings, readingOverrides) { global, local ->
             if (local == null) global else global.withReadingPreferencesFrom(local)
         }
-    val formatSettings: StateFlow<FormatPreferences> = settingsFlow.map { it.formatPreferences }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, FormatPreferences())
 
     val brightness: StateFlow<Float> =
         settingsFlow.map { if (it.autoBrightness) -1.0f else it.brightness }
@@ -150,12 +149,14 @@ class ReaderViewModel(
 
     val systemDarkThemeFlow: MutableStateFlow<Boolean> = MutableStateFlow(initialSystemDark)
 
-    val pdfPreferences = combine(settingsFlow, systemDarkThemeFlow) { settings, systemDark ->
+    val pdfPreferences: StateFlow<MuPdfPreferences> = combine(settingsFlow, systemDarkThemeFlow) { settings, systemDark ->
         settings.formatPreferences.pdf.resolveTheme(settings.readingThemeIsDark(systemDark))
-    }.stateIn(viewModelScope, SharingStarted.Eagerly,
-        FormatPreferences().pdf.resolveTheme(initialSystemDark))
+    }.stateIn(
+        viewModelScope, SharingStarted.Eagerly,
+        FormatPreferences().pdf.resolveTheme(initialSystemDark)
+    )
 
-    val imageFilterCss = combine(settingsFlow, systemDarkThemeFlow) { settings, systemDark ->
+    val imageFilterCss: StateFlow<String> = combine(settingsFlow, systemDarkThemeFlow) { settings, systemDark ->
         settings.epubImageFilterCss(systemDark)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, "")
 
@@ -324,8 +325,10 @@ class ReaderViewModel(
 
     private fun getChapterTitle(locator: Locator): String? {
         val href = locator.href.toString().substringBefore("#")
-        GeneratedEpubLocations.chapterIndex(tableOfContents.map { it.href.toString() }, locator.href.toString(),
-            locator.locations["cssSelector"] as? String, locator.locations.fragments)?.let { index ->
+        GeneratedEpubLocations.chapterIndex(
+            tableOfContents.map { it.href.toString() }, locator.href.toString(),
+            locator.locations["cssSelector"] as? String, locator.locations.fragments
+        )?.let { index ->
             return tableOfContents.getOrNull(index)?.title
         }
         return findTitleInLinks(href, tableOfContents)
@@ -374,7 +377,7 @@ class ReaderViewModel(
         val allPositions = _positions.value
         val pageIndex = allPositions.findIndexForLocator(locator)
         val displayedPage: Int? = if (activeRendition.value == "read-mode") readModePage(locator)
-            else (if (pageIndex != -1) pageIndex + 1 else null)
+        else (if (pageIndex != -1) pageIndex + 1 else null)
         val displayedTotal: Int? = if (activeRendition.value == "read-mode") {
             _publication.value?.pageList?.size?.takeIf { count -> count > 0 }
         } else allPositions.size.takeIf { count -> count > 0 }
@@ -384,19 +387,21 @@ class ReaderViewModel(
                 chapter = locator.title ?: getChapterTitle(locator),
                 progression = locator.locations.totalProgression ?: 0.0,
                 currentPage = if (activeRendition.value == "read-mode") {
-                    (displayedPage ?: it.currentPage ?: 1).coerceIn(1, displayedTotal ?: Int.MAX_VALUE)
+                    (displayedPage ?: it.currentPage ?: 1).coerceIn(
+                        1,
+                        displayedTotal ?: Int.MAX_VALUE
+                    )
                 } else displayedPage,
                 totalPages = displayedTotal,
             )
         }
     }
 
-    fun locatorForProgression(targetProgression: Double): Locator? {
-        return _positions.value.findClosestByProgression(targetProgression)
-    }
+    fun locatorForProgression(targetProgression: Double): Locator? = _positions.value.findClosestByProgression(targetProgression)
 
     fun getPositionLabel(locator: Locator): String {
-        val posIndex = if (activeRendition.value == "read-mode") readModePage(locator)?.minus(1) ?: -1
+        val posIndex =
+            if (activeRendition.value == "read-mode") readModePage(locator)?.minus(1) ?: -1
             else _positions.value.findIndexForLocator(locator)
 
         return when {
@@ -419,7 +424,9 @@ class ReaderViewModel(
         if (activeRendition.value != "read-mode") return null
         val pageCount = _publication.value?.pageList?.size?.takeIf { it > 0 }
         return GeneratedEpubLocations.page(
-            locator.href.toString(), locator.locations["cssSelector"] as? String, locator.locations.fragments,
+            locator.href.toString(),
+            locator.locations["cssSelector"] as? String,
+            locator.locations.fragments,
         )?.takeIf { page -> page >= 1 && (pageCount == null || page <= pageCount) }
     }
 
@@ -444,7 +451,7 @@ class ReaderViewModel(
         }
     }
 
-    fun togglePdfReadMode() = preparePdfRendition(forceReparse = false)
+    fun togglePdfReadMode(): Unit = preparePdfRendition(forceReparse = false)
 
     fun reparsePdf() {
         hideSettings()
@@ -456,7 +463,8 @@ class ReaderViewModel(
         conversionJob = viewModelScope.launch {
             val old = _publication.value ?: return@launch
             val source = _currentLocator.value
-            val destination = if (forceReparse || activeRendition.value == "original") "read-mode" else "original"
+            val destination =
+                if (forceReparse || activeRendition.value == "original") "read-mode" else "original"
             _bookState.update { it.copy(conversionError = null) }
             var next: Publication? = null
             try {
@@ -466,10 +474,21 @@ class ReaderViewModel(
                         bookId,
                         forceReparse = forceReparse,
                         onConversionStart = {
-                            _bookState.update { it.copy(converting = true, conversionPage = 0, conversionTotal = 0) }
+                            _bookState.update {
+                                it.copy(
+                                    converting = true,
+                                    conversionPage = 0,
+                                    conversionTotal = 0
+                                )
+                            }
                         },
                     ) { page, total ->
-                        _bookState.update { it.copy(conversionPage = page, conversionTotal = total) }
+                        _bookState.update {
+                            it.copy(
+                                conversionPage = page,
+                                conversionTotal = total
+                            )
+                        }
                     }
                     // Opening an existing rendition is ordinary navigation, not conversion.
                     _bookState.update { it.copy(converting = false) }
@@ -495,9 +514,15 @@ class ReaderViewModel(
                 val stored = target.lastLocatorJson?.let { fromJSON(JSONObject(it)) }
                 val nextLocator = stored?.takeIf { mappedPage(it) == sourcePage }
                     ?: if (destination == "read-mode") {
-                        val resource = sourceMap.firstOrNull { it.page == sourcePage }?.href?.substringBefore('#')
+                        val resource =
+                            sourceMap.firstOrNull { it.page == sourcePage }?.href?.substringBefore(
+                                '#'
+                            )
                         next.readingOrder.find {
-                            if (resource != null) GeneratedEpubLocations.sameContentResource(it.href.toString(), resource)
+                            if (resource != null) GeneratedEpubLocations.sameContentResource(
+                                it.href.toString(),
+                                resource
+                            )
                             else GeneratedEpubLocations.isContent(it.href.toString())
                         }?.let(next::locatorFromLink)?.copyWithLocations(
                             fragments = listOf("source-page-$sourcePage"),
@@ -548,8 +573,10 @@ class ReaderViewModel(
     }
 
     private fun sourcePage(locator: Locator): Int =
-        GeneratedEpubLocations.page(locator.href.toString(), locator.locations["cssSelector"] as? String,
-            locator.locations.fragments)
+        GeneratedEpubLocations.page(
+            locator.href.toString(), locator.locations["cssSelector"] as? String,
+            locator.locations.fragments
+        )
             ?: locator.locations.fragments.firstNotNullOfOrNull {
                 it.removePrefix("page=").toIntOrNull()
             } ?: locator.locations.position ?: 1
@@ -624,11 +651,23 @@ class ReaderViewModel(
     }
 
     fun showToc() {
-        _controlsState.update { it.copy(showToc = true, showSettings = false, contentsInitialTab = 0) }
+        _controlsState.update {
+            it.copy(
+                showToc = true,
+                showSettings = false,
+                contentsInitialTab = 0
+            )
+        }
     }
 
     fun showBookmarks() {
-        _controlsState.update { it.copy(showToc = true, showSettings = false, contentsInitialTab = 1) }
+        _controlsState.update {
+            it.copy(
+                showToc = true,
+                showSettings = false,
+                contentsInitialTab = 1
+            )
+        }
     }
 
     fun hideToc() {

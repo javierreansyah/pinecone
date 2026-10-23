@@ -1,7 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.library.main
 
-import com.javierreansyah.pinecone.ui.features.library.LibraryView
-import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
@@ -17,7 +15,9 @@ import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
+import com.javierreansyah.pinecone.ui.features.library.LibraryView
 import com.javierreansyah.pinecone.ui.features.library.SearchCategory
 import com.javierreansyah.pinecone.ui.features.library.ShelfFilter
 import com.javierreansyah.pinecone.ui.features.library.SortType
@@ -25,6 +25,7 @@ import com.javierreansyah.pinecone.ui.features.library.StatusFilter
 import com.javierreansyah.pinecone.ui.features.library.filterAndSort
 import com.javierreansyah.pinecone.ui.features.library.inSpace
 import com.javierreansyah.pinecone.ui.features.library.mapAndSortShelves
+import com.javierreansyah.pinecone.ui.features.library.publicationWording
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -237,6 +238,7 @@ class LibraryViewModel(
                         .flatMap { (_, _, _, _, _, _, _, _, _, _, _, _, itTags) -> itTags }
                         .distinct().toList() else emptyList()
                 SearchResults(
+                    contentWording = books.publicationWording(),
                     query = query,
                     books = matchedBooks,
                     shelves = matchedShelves,
@@ -270,6 +272,7 @@ class LibraryViewModel(
                         .distinct()
                         .filter { it.contains(query, ignoreCase = true) } else emptyList()
                 SearchResults(
+                    contentWording = books.publicationWording(),
                     query = query,
                     books = matchedBooks,
                     shelves = matchedShelves,
@@ -325,7 +328,8 @@ class LibraryViewModel(
 
         val spaceId = array[9] as String?
         val hasUnsorted = array[10] as Boolean
-        val settings = array[11] as com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
+        val settings =
+            array[11] as com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 
         LibraryScreenUiState(
             searchQuery = baseStateSearchQuery,
@@ -485,9 +489,14 @@ class LibraryViewModel(
     fun toggleFileFilter(format: FileFilter, isShelvesTab: Boolean = false) {
         _uiState.update { state ->
             val current = if (isShelvesTab) state.shelvesPreferences else state.bookPreferences
-            val formats = current.selectedFormats.let { if (format in it) it - format else it + format }
+            val formats =
+                current.selectedFormats.let { if (format in it) it - format else it + format }
             val prefs = current.copy(selectedFormats = formats)
-            prefsManager.savePreferences(globalSpaceId.value, if (isShelvesTab) "library_shelves" else screenKey, prefs)
+            prefsManager.savePreferences(
+                globalSpaceId.value,
+                if (isShelvesTab) "library_shelves" else screenKey,
+                prefs
+            )
             if (isShelvesTab) state.copy(shelvesPreferences = prefs) else state.copy(bookPreferences = prefs)
         }
     }

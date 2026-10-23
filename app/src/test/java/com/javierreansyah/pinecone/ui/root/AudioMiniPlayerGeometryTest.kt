@@ -13,7 +13,7 @@ class AudioMiniPlayerGeometryTest {
         assertEquals(88.dp, MiniPlayerHeight)
         assertEquals(
             MiniPlayerArtworkSize + MiniPlayerArtworkInset * 2 +
-                MiniPlayerProgressHeight + MiniPlayerOuterVerticalPadding * 2,
+                    MiniPlayerProgressHeight + MiniPlayerOuterVerticalPadding * 2,
             MiniPlayerHeight,
         )
     }
@@ -27,13 +27,20 @@ class AudioMiniPlayerGeometryTest {
     @Test
     fun `root mini-player anchors to the window rather than a navigation scene`() {
         val handle = AudioPlayerHandle(height = 284, bottomInset = 0, navigationBarsPadding = true)
-        assertEquals(Rect(0f, 2116f, 1080f, 2400f), audioMiniPlayerBounds(IntSize(1080, 2400), handle))
+        assertEquals(
+            Rect(0f, 2116f, 1080f, 2400f),
+            audioMiniPlayerBounds(IntSize(1080, 2400), handle)
+        )
     }
 
     @Test
     fun `library mini-player remains above bottom navigation at full window width`() {
-        val handle = AudioPlayerHandle(height = 221, bottomInset = 231, navigationBarsPadding = false)
-        assertEquals(Rect(0f, 1948f, 1080f, 2169f), audioMiniPlayerBounds(IntSize(1080, 2400), handle))
+        val handle =
+            AudioPlayerHandle(height = 221, bottomInset = 231, navigationBarsPadding = false)
+        assertEquals(
+            Rect(0f, 1948f, 1080f, 2169f),
+            audioMiniPlayerBounds(IntSize(1080, 2400), handle)
+        )
     }
 
     @Test

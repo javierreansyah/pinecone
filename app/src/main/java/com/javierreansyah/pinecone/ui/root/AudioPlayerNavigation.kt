@@ -20,5 +20,7 @@ fun MutableList<NavKey>.collapseAudioPlayer() {
 fun audioPlayerIntent(context: Context, bookId: String): Intent =
     Intent(context, MainActivity::class.java)
         .setAction(Intent.ACTION_VIEW)
-        .setData(Uri.Builder().scheme("pinecone").authority("audio_player").appendPath(bookId).build())
+        .setData(
+            Uri.Builder().scheme("pinecone").authority("audio_player").appendPath(bookId).build()
+        )
         .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)

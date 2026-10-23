@@ -15,9 +15,9 @@ import androidx.compose.foundation.gestures.animateTo
 import androidx.compose.foundation.gestures.snapTo
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -53,8 +53,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.collapse
-import androidx.compose.ui.semantics.expand
 import androidx.compose.ui.semantics.dismiss
+import androidx.compose.ui.semantics.expand
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -62,11 +62,11 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
-import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.NavEntryDecorator
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
-import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
+import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.R
@@ -78,10 +78,14 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.math.roundToInt
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
-internal data class AudioPlayerHandle(val height: Int, val bottomInset: Int, val navigationBarsPadding: Boolean)
+internal data class AudioPlayerHandle(
+    val height: Int,
+    val bottomInset: Int,
+    val navigationBarsPadding: Boolean
+)
 
 internal val LocalAudioPlayerHandle = staticCompositionLocalOf<(AudioPlayerHandle) -> Unit> {
     error("The mini-player must be hosted by AudioPlayerSheetHost")
@@ -125,11 +129,12 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
     // Use untransformed sizes/insets in root coordinates, not the animated NavDisplay bounds.
     val bounds = audioMiniPlayerBounds(rootSize, handle)
     val collapsedOffset = bounds.top.coerceIn(1f, rootSize.height.toFloat().coerceAtLeast(1f))
-    val offset = sheet.offset.takeIf { it.isFinite() }?.coerceIn(0f, collapsedOffset) ?: collapsedOffset
+    val offset =
+        sheet.offset.takeIf { it.isFinite() }?.coerceIn(0f, collapsedOffset) ?: collapsedOffset
     val fraction = audioSheetExpansion(offset, collapsedOffset)
     val suppressOpeningMiniPlayer = request != null && (
-        openingNewPlayer || navigator == null || playback.bookId != request.bookId
-    )
+            openingNewPlayer || navigator == null || playback.bookId != request.bookId
+            )
     val opacity = audioSheetOpacity(fraction, suppressMiniPlayer = suppressOpeningMiniPlayer)
     val horizontalOffset = swipeDismiss.offset.takeIf { it.isFinite() } ?: 0f
     val dismissFraction = audioSwipeDismissProgress(horizontalOffset, rootSize.width.toFloat())
@@ -149,7 +154,11 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
             dismissedBookId = playback.bookId
             playerStack.clear()
             backStack.collapseAudioPlayer()
-            app.startService(Intent(app, AudioPlaybackService::class.java).setAction(AudioPlaybackService.ACTION_STOP))
+            app.startService(
+                Intent(app, AudioPlaybackService::class.java).setAction(
+                    AudioPlaybackService.ACTION_STOP
+                )
+            )
         }
     }
     val latestDismissPlayer by rememberUpdatedState(dismissPlayer)
@@ -245,7 +254,11 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
                 return Offset.Zero
             }
 
-            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: NestedScrollSource
+            ): Offset {
                 return if (source == NestedScrollSource.UserInput) {
                     Offset(0f, sheet.dispatchRawDelta(available.y))
                 } else Offset.Zero
@@ -253,7 +266,14 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
 
             override suspend fun onPreFling(available: Velocity): Velocity {
                 if (sheet.requireOffset() > 0f) {
-                    sheet.animateTo(audioSheetTarget(sheet.requireOffset(), collapsedOffset, available.y, velocityThreshold))
+                    sheet.animateTo(
+                        audioSheetTarget(
+                            sheet.requireOffset(),
+                            collapsedOffset,
+                            available.y,
+                            velocityThreshold
+                        )
+                    )
                     return available
                 }
                 return Velocity.Zero
@@ -261,7 +281,14 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
 
             override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
                 if (sheet.requireOffset() > 0f && sheet.requireOffset() < collapsedOffset) {
-                    sheet.animateTo(audioSheetTarget(sheet.requireOffset(), collapsedOffset, available.y, velocityThreshold))
+                    sheet.animateTo(
+                        audioSheetTarget(
+                            sheet.requireOffset(),
+                            collapsedOffset,
+                            available.y,
+                            velocityThreshold
+                        )
+                    )
                     return available
                 }
                 return Velocity.Zero
@@ -272,12 +299,16 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
         playback.bookId?.let(app.libraryRepository::getBookFlow) ?: flowOf(null)
     }
     val book by bookFlow.collectAsStateWithLifecycle(initialValue = null)
-    val visible = request != null || (playback.bookId != null && navigator != null && playback.bookId != dismissedBookId)
+    val visible =
+        request != null || (playback.bookId != null && navigator != null && playback.bookId != dismissedBookId)
     val collapseLabel = stringResource(R.string.reader_collapse_audio_player)
     val expandLabel = stringResource(R.string.reader_open_audio_player)
     val dismissLabel = stringResource(R.string.reader_dismiss_audio_player)
 
-    Box(Modifier.fillMaxSize().onSizeChanged { rootSize = it }.clipToBounds()) {
+    Box(Modifier
+        .fillMaxSize()
+        .onSizeChanged { rootSize = it }
+        .clipToBounds()) {
         CompositionLocalProvider(LocalAudioPlayerHandle provides reportHandle) {
             Box(if (fraction > 0.01f) Modifier.clearAndSetSemantics {} else Modifier) {
                 AudioMiniPlayerHost(enabled = underlyingScreen != Screen.Library, content = content)
@@ -291,11 +322,13 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
             try {
                 sheet.anchoredDrag(dragPriority = MutatePriority.UserInput) { anchors ->
                     events.collect { event ->
-                        dragTo(audioPredictiveBackOffset(
-                            startingOffset,
-                            anchors.positionOf(AudioSheetValue.Collapsed),
-                            event.progress,
-                        ))
+                        dragTo(
+                            audioPredictiveBackOffset(
+                                startingOffset,
+                                anchors.positionOf(AudioSheetValue.Collapsed),
+                                event.progress,
+                            )
+                        )
                     }
                 }
                 // Button/keyboard Back emits no progress, so it also uses the slide-down finish.
@@ -311,7 +344,8 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
         if (visible && rootSize.height > 0 && rootSize.width > 0) {
             if (fraction > 0f) {
                 Box(
-                    Modifier.fillMaxSize()
+                    Modifier
+                        .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background.copy(alpha = opacity.background))
                         .clickable(onClickLabel = collapseLabel, onClick = collapse),
                 )
@@ -321,12 +355,24 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
             Box(
                 Modifier
                     .offset {
-                        IntOffset((bounds.left * (1f - fraction) + horizontalOffset).roundToInt(), offset.roundToInt())
+                        IntOffset(
+                            (bounds.left * (1f - fraction) + horizontalOffset).roundToInt(),
+                            offset.roundToInt()
+                        )
                     }
                     .size(with(density) { width.toDp() }, with(density) { height.toDp() })
                     .graphicsLayer { alpha = 1f - dismissFraction }
-                    .clip(RoundedCornerShape(topStart = (24f * fraction).dp, topEnd = (24f * fraction).dp))
-                    .anchoredDraggable(sheet, Orientation.Vertical, enabled = !predictiveBackInProgress)
+                    .clip(
+                        RoundedCornerShape(
+                            topStart = (24f * fraction).dp,
+                            topEnd = (24f * fraction).dp
+                        )
+                    )
+                    .anchoredDraggable(
+                        sheet,
+                        Orientation.Vertical,
+                        enabled = !predictiveBackInProgress
+                    )
                     .anchoredDraggable(
                         swipeDismiss,
                         Orientation.Horizontal,
@@ -349,7 +395,9 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
                     Box(
                         Modifier
                             .wrapContentSize(Alignment.TopStart, unbounded = true)
-                            .requiredSize(with(density) { rootSize.width.toDp() }, with(density) { rootSize.height.toDp() })
+                            .requiredSize(
+                                with(density) { rootSize.width.toDp() },
+                                with(density) { rootSize.height.toDp() })
                             .graphicsLayer { alpha = fullAlpha }
                             .then(if (fullAlpha < 1f) Modifier.clearAndSetSemantics {} else Modifier),
                     ) {
@@ -357,7 +405,9 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
                     }
                 }
                 if (opacity.miniPlayer > 0f) {
-                    Box(Modifier.fillMaxWidth().graphicsLayer { alpha = opacity.miniPlayer }) {
+                    Box(Modifier
+                        .fillMaxWidth()
+                        .graphicsLayer { alpha = opacity.miniPlayer }) {
                         AudioMiniPlayer(
                             state = playback,
                             coverPath = book?.book?.coverPath,
@@ -366,7 +416,10 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
                             onSkip = app.audioSession::skip,
                             modifier = Modifier
                                 .then(if (handle.navigationBarsPadding) Modifier.navigationBarsPadding() else Modifier)
-                                .padding(horizontal = 12.dp, vertical = MiniPlayerOuterVerticalPadding),
+                                .padding(
+                                    horizontal = 12.dp,
+                                    vertical = MiniPlayerOuterVerticalPadding
+                                ),
                         )
                     }
                 }
@@ -383,7 +436,12 @@ internal fun audioSheetExpansion(offset: Float, collapsedOffset: Float): Float {
 internal fun audioMiniPlayerBounds(rootSize: IntSize, handle: AudioPlayerHandle): Rect {
     val height = handle.height.coerceIn(0, rootSize.height.coerceAtLeast(0))
     val bottom = (rootSize.height - handle.bottomInset.coerceAtLeast(0)).coerceAtLeast(height)
-    return Rect(0f, (bottom - height).toFloat(), rootSize.width.coerceAtLeast(0).toFloat(), bottom.toFloat())
+    return Rect(
+        0f,
+        (bottom - height).toFloat(),
+        rootSize.width.coerceAtLeast(0).toFloat(),
+        bottom.toFloat()
+    )
 }
 
 internal fun audioPredictiveBackOffset(start: Float, collapsed: Float, progress: Float): Float {
@@ -399,7 +457,10 @@ internal data class AudioSheetOpacity(
     val topBar: Float,
 )
 
-internal fun audioSheetOpacity(expansion: Float, suppressMiniPlayer: Boolean = false): AudioSheetOpacity {
+internal fun audioSheetOpacity(
+    expansion: Float,
+    suppressMiniPlayer: Boolean = false
+): AudioSheetOpacity {
     val progress = expansion.takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: 0f
     val remaining = 1f - progress
     return AudioSheetOpacity(
@@ -417,7 +478,12 @@ internal fun audioSwipeDismissProgress(offset: Float, width: Float): Float {
     return (abs(offset) / width).coerceIn(0f, 1f)
 }
 
-internal fun audioSheetTarget(offset: Float, collapsedOffset: Float, velocity: Float, threshold: Float): AudioSheetValue =
+internal fun audioSheetTarget(
+    offset: Float,
+    collapsedOffset: Float,
+    velocity: Float,
+    threshold: Float
+): AudioSheetValue =
     when {
         velocity < -threshold -> AudioSheetValue.Expanded
         velocity > threshold -> AudioSheetValue.Collapsed

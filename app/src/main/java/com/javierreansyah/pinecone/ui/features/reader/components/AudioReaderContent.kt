@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -68,11 +67,6 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Bookmark
-import com.composables.icons.materialsymbols.outlined.Bookmark_check
-import com.composables.icons.materialsymbols.outlined.Edit_note
-import com.composables.icons.materialsymbols.outlined.List
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -90,6 +84,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Bookmark
+import com.composables.icons.materialsymbols.outlined.Bookmark_check
+import com.composables.icons.materialsymbols.outlined.Edit_note
+import com.composables.icons.materialsymbols.outlined.List
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.reader.audio.AudioPlaybackState
 import kotlinx.coroutines.delay
@@ -97,6 +96,7 @@ import java.io.File
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToLong
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun AudioReaderContent(
@@ -263,7 +263,11 @@ private fun AudioPlaybackPanel(
         }
 
         state.error?.let {
-            Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                it,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
 
         AudioSeekBar(
@@ -359,7 +363,10 @@ private fun AudioTransportButtons(
                         interactionSource = interactionSource,
                         modifier = Modifier
                             .weight(if (isCenter) 1.25f else 1f)
-                            .animateWidth(interactionSource = interactionSource, compressionLimit = 36.dp)
+                            .animateWidth(
+                                interactionSource = interactionSource,
+                                compressionLimit = 36.dp
+                            )
                             .height(76.dp)
                             .graphicsLayer {
                                 scaleX = scale
@@ -375,9 +382,15 @@ private fun AudioTransportButtons(
                                     targetState = playing,
                                     transitionSpec = {
                                         (fadeIn(animationSpec = effectsSpec) +
-                                            scaleIn(initialScale = 0.75f, animationSpec = iconSpatialSpec)) togetherWith
-                                        (fadeOut(animationSpec = effectsSpec) +
-                                            scaleOut(targetScale = 0.75f, animationSpec = iconSpatialSpec))
+                                                scaleIn(
+                                                    initialScale = 0.75f,
+                                                    animationSpec = iconSpatialSpec
+                                                )) togetherWith
+                                                (fadeOut(animationSpec = effectsSpec) +
+                                                        scaleOut(
+                                                            targetScale = 0.75f,
+                                                            animationSpec = iconSpatialSpec
+                                                        ))
                                     },
                                     label = "playPauseTransition",
                                 ) { isPlaying ->
@@ -417,7 +430,8 @@ private fun AudioSeekBar(
     onSeek: (Double) -> Unit,
 ) {
     val duration = state.durationSeconds?.takeIf { it > 0 }
-    val current = duration?.let { (state.elapsedSeconds.toDouble() / it).toFloat().coerceIn(0f, 1f) } ?: 0f
+    val current =
+        duration?.let { (state.elapsedSeconds.toDouble() / it).toFloat().coerceIn(0f, 1f) } ?: 0f
     var previewFraction by remember(state.bookId, state.index) { mutableStateOf<Float?>(null) }
     var pendingFraction by remember(state.bookId, state.index) { mutableStateOf<Float?>(null) }
     var isDragging by remember(state.bookId, state.index, duration) { mutableStateOf(false) }
@@ -437,7 +451,7 @@ private fun AudioSeekBar(
 
     LaunchedEffect(pendingFraction) {
         if (pendingFraction != null) {
-            delay(1500)
+            delay(1500.milliseconds)
             pendingFraction = null
         }
     }
@@ -450,7 +464,8 @@ private fun AudioSeekBar(
 
     val density = LocalDensity.current
     val strokeWidthPx = remember(density) { with(density) { 4.dp.toPx() } }
-    val indicatorStroke = remember(strokeWidthPx) { Stroke(width = strokeWidthPx, cap = StrokeCap.Round) }
+    val indicatorStroke =
+        remember(strokeWidthPx) { Stroke(width = strokeWidthPx, cap = StrokeCap.Round) }
 
     val handleActive = isPressed || isDragging
     val handleScale by animateFloatAsState(
@@ -506,11 +521,13 @@ private fun AudioSeekBar(
                         detectDragGestures(
                             onDragStart = { offset ->
                                 isDragging = true
-                                previewFraction = audioSeekFraction(offset.x, size.width.toFloat(), rtl)
+                                previewFraction =
+                                    audioSeekFraction(offset.x, size.width.toFloat(), rtl)
                             },
                             onDrag = { change, _ ->
                                 change.consume()
-                                previewFraction = audioSeekFraction(change.position.x, size.width.toFloat(), rtl)
+                                previewFraction =
+                                    audioSeekFraction(change.position.x, size.width.toFloat(), rtl)
                             },
                             onDragEnd = {
                                 isDragging = false
@@ -557,7 +574,8 @@ private fun AudioSeekBar(
                 val halfWidth = handleWidth / 2f
                 val rawX = size.width * if (rtl) (1f - progress) else progress
                 val shiftedX = rawX + 2.dp.toPx()
-                val clampedX = shiftedX.coerceIn(halfWidth, (size.width - halfWidth).coerceAtLeast(halfWidth))
+                val clampedX =
+                    shiftedX.coerceIn(halfWidth, (size.width - halfWidth).coerceAtLeast(halfWidth))
                 val centerY = size.height / 2f
                 val halfHeight = 22.dp.toPx() / 2f
 
@@ -577,11 +595,12 @@ private fun AudioSeekBar(
                 .padding(top = 8.dp),
             contentAlignment = Alignment.Center,
         ) {
-            val shownSeconds = if (duration != null && (previewFraction != null || pendingFraction != null)) {
-                (progress * duration).roundToLong()
-            } else {
-                state.elapsedSeconds
-            }
+            val shownSeconds =
+                if (duration != null && (previewFraction != null || pendingFraction != null)) {
+                    (progress * duration).roundToLong()
+                } else {
+                    state.elapsedSeconds
+                }
 
             Text(
                 text = formatAudioTime(shownSeconds),

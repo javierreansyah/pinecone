@@ -2,11 +2,11 @@
 
 package com.javierreansyah.pinecone.ui.root
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,9 +22,9 @@ import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Replay10
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -45,12 +46,12 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.javierreansyah.pinecone.PineconeApplication
@@ -60,7 +61,7 @@ import kotlinx.coroutines.flow.flowOf
 import java.io.File
 
 /** Extra scroll space, not viewport padding: content can draw behind the floating card. */
-val LocalAudioPlayerBottomPadding = staticCompositionLocalOf { 0.dp }
+val LocalAudioPlayerBottomPadding: ProvidableCompositionLocal<Dp> = staticCompositionLocalOf { 0.dp }
 
 internal val MiniPlayerArtworkRadius = 10.dp
 internal val MiniPlayerArtworkInset = 10.dp
@@ -69,7 +70,7 @@ internal val MiniPlayerArtworkSize = 48.dp
 internal val MiniPlayerProgressHeight = 4.dp
 internal val MiniPlayerOuterVerticalPadding = 8.dp
 internal val MiniPlayerHeight = MiniPlayerArtworkSize + MiniPlayerArtworkInset * 2 +
-    MiniPlayerProgressHeight + MiniPlayerOuterVerticalPadding * 2
+        MiniPlayerProgressHeight + MiniPlayerOuterVerticalPadding * 2
 
 /** Floats the mini-player over every screen, keeping the surrounding area transparent. */
 @Composable
@@ -87,12 +88,16 @@ fun AudioMiniPlayerHost(enabled: Boolean = true, content: @Composable () -> Unit
         if (visible) (handleHeight - navigationBarHeight).coerceAtLeast(0).toDp() else 0.dp
     }
 
-    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Box(Modifier
+        .fillMaxSize()
+        .background(MaterialTheme.colorScheme.background)) {
         CompositionLocalProvider(LocalAudioPlayerBottomPadding provides bottomPadding) {
             content()
         }
         if (enabled) {
-            Box(Modifier.align(Alignment.BottomCenter).onSizeChanged { handleHeight = it.height }) {
+            Box(Modifier
+                .align(Alignment.BottomCenter)
+                .onSizeChanged { handleHeight = it.height }) {
                 AudioMiniPlayerBar()
             }
         }
@@ -118,7 +123,13 @@ fun AudioMiniPlayerBar(includeNavigationBarPadding: Boolean = true, bottomInset:
     var height by remember { mutableIntStateOf(0) }
     val bottomInsetPx = with(density) { bottomInset.roundToPx() }
     LaunchedEffect(height, bottomInsetPx, includeNavigationBarPadding) {
-        if (height > 0) reportHandle(AudioPlayerHandle(height, bottomInsetPx, includeNavigationBarPadding))
+        if (height > 0) reportHandle(
+            AudioPlayerHandle(
+                height,
+                bottomInsetPx,
+                includeNavigationBarPadding
+            )
+        )
     }
     Box(
         Modifier
@@ -151,19 +162,23 @@ internal fun AudioMiniPlayer(
     val openLabel = stringResource(R.string.reader_open_audio_player)
     Surface(
         onClick = onOpenPlayer,
-        modifier = modifier.fillMaxWidth().semantics { onClick(label = openLabel, action = null) },
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics { onClick(label = openLabel, action = null) },
         shape = RoundedCornerShape(MiniPlayerContainerRadius),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         tonalElevation = 2.dp,
     ) {
         Box {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(
-                    start = MiniPlayerArtworkInset,
-                    end = 4.dp,
-                    top = MiniPlayerArtworkInset,
-                    bottom = MiniPlayerArtworkInset + MiniPlayerProgressHeight,
-                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = MiniPlayerArtworkInset,
+                        end = 4.dp,
+                        top = MiniPlayerArtworkInset,
+                        bottom = MiniPlayerArtworkInset + MiniPlayerProgressHeight,
+                    ),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Surface(
@@ -184,7 +199,9 @@ internal fun AudioMiniPlayer(
                         }
                     }
                 }
-                Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
+                Column(Modifier
+                    .weight(1f)
+                    .padding(horizontal = 10.dp)) {
                     Text(
                         text = state.title,
                         style = MaterialTheme.typography.titleSmall,
@@ -197,7 +214,7 @@ internal fun AudioMiniPlayer(
                             text = subtitle,
                             style = MaterialTheme.typography.bodySmall,
                             color = if (state.error != null) MaterialTheme.colorScheme.error
-                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -221,13 +238,26 @@ internal fun AudioMiniPlayer(
             }
             if (state.loading) {
                 LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth().height(MiniPlayerProgressHeight).align(Alignment.BottomCenter),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(MiniPlayerProgressHeight)
+                        .align(Alignment.BottomCenter),
                 )
             } else {
                 val duration = state.durationSeconds?.takeIf { it > 0 }
                 LinearProgressIndicator(
-                    progress = { duration?.let { (state.elapsedSeconds.toFloat() / it).coerceIn(0f, 1f) } ?: 0f },
-                    modifier = Modifier.fillMaxWidth().height(MiniPlayerProgressHeight).align(Alignment.BottomCenter),
+                    progress = {
+                        duration?.let {
+                            (state.elapsedSeconds.toFloat() / it).coerceIn(
+                                0f,
+                                1f
+                            )
+                        } ?: 0f
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(MiniPlayerProgressHeight)
+                        .align(Alignment.BottomCenter),
                 )
             }
         }

@@ -38,7 +38,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Add
 import com.composables.icons.materialsymbols.outlined.Book
@@ -51,6 +50,7 @@ import com.javierreansyah.pinecone.data.repository.dictionary.DictionaryState
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.components.SegmentedLazyColumn
+import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 
 @Composable
 fun DictionariesScreen(

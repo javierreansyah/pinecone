@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.library.filters
 
-import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,6 +10,7 @@ import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.data.local.database.library.TagEntity
 import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.SortType
 import com.javierreansyah.pinecone.ui.features.library.StatusFilter
@@ -47,6 +47,11 @@ class FilterResultViewModel(
 
     private val booksFlow: Flow<List<Book>> =
         bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }
+
+    val actionBooks: StateFlow<List<Book>> = combine(
+        booksFlow, bookRepository.getArchivedBooks(),
+    ) { books, archived -> books + archived.map { Book.fromEntity(it) } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val allBooksAcrossSpaces: StateFlow<List<Book>> = booksFlow.stateIn(
         scope = viewModelScope,
@@ -149,7 +154,8 @@ class FilterResultViewModel(
     fun toggleFileFilter(format: FileFilter) {
         _uiState.update { state ->
             val current = state.bookPreferences
-            val prefs = current.copy(selectedFormats = current.selectedFormats.let { if (format in it) it - format else it + format })
+            val prefs =
+                current.copy(selectedFormats = current.selectedFormats.let { if (format in it) it - format else it + format })
             prefsManager.savePreferences(globalSpaceId.value, screenKey, prefs)
             state.copy(bookPreferences = prefs)
         }

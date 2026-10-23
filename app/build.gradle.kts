@@ -13,7 +13,7 @@ abstract class BuildTimestampVersionCode : ValueSource<Int, ValueSourceParameter
     }
 }
 
-val buildVersionCode = providers.of(BuildTimestampVersionCode::class) {}
+val buildVersionCode: Provider<Int> = providers.of(BuildTimestampVersionCode::class) {}
 val appVersionName: String = "1.0"
 
 abstract class PublicationLicenseAssetsTask : DefaultTask() {

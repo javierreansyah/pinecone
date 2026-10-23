@@ -30,7 +30,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -48,12 +47,16 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.components.SegmentedLazyColumn
-import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
+import com.javierreansyah.pinecone.ui.features.library.PublicationWording
+import com.javierreansyah.pinecone.ui.features.library.combinedWording
 import com.javierreansyah.pinecone.ui.features.library.components.FilterItemSortBottomSheet
 import com.javierreansyah.pinecone.ui.features.library.components.FilterItemSortType
 import com.javierreansyah.pinecone.ui.features.library.components.FilterMultiSelectAppBar
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectTopBarTransition
 import com.javierreansyah.pinecone.ui.features.library.components.RenameFilterDialog
+import com.javierreansyah.pinecone.ui.features.library.deleteCollectionTitle
+import com.javierreansyah.pinecone.ui.features.library.publicationCountLabel
+import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 
 @Composable
 fun AllFilterItemsScreen(
@@ -114,7 +117,7 @@ fun AllFilterItemsScreen(
 @Composable
 private fun AllFilterItemsContent(
     filterType: String,
-    items: List<Pair<String, Int>>,
+    items: List<FilterCollectionSummary>,
     suggestions: List<String>,
     onNavigateBack: () -> Unit,
     onNavigateToDetail: (String) -> Unit,
@@ -129,6 +132,7 @@ private fun AllFilterItemsContent(
     var isMultiRename by remember { mutableStateOf(value = false) }
     var selectedItems by remember { mutableStateOf(setOf<String>()) }
     var isInMultiSelectMode by remember { mutableStateOf(value = false) }
+    val wordingByName = items.associate { it.name to it.actionWording }
 
     BackHandler(enabled = isInMultiSelectMode) {
         selectedItems = emptySet()
@@ -143,16 +147,16 @@ private fun AllFilterItemsContent(
         items.sortedWith { a, b ->
             when (sortType) {
                 FilterItemSortType.Label -> {
-                    val comp = a.first.lowercase().compareTo(b.first.lowercase())
+                    val comp = a.name.lowercase().compareTo(b.name.lowercase())
                     if (sortAscending) comp else -comp
                 }
 
                 FilterItemSortType.Size -> {
-                    val comp = a.second.compareTo(b.second)
+                    val comp = a.count.compareTo(b.count)
                     if (comp != 0) {
                         if (sortAscending) comp else -comp
                     } else {
-                        a.first.lowercase().compareTo(b.first.lowercase())
+                        a.name.lowercase().compareTo(b.name.lowercase())
                     }
                 }
             }
@@ -169,6 +173,9 @@ private fun AllFilterItemsContent(
                 isMultiSelect = isInMultiSelectMode,
                 multiSelectBar = {
                     FilterMultiSelectAppBar(
+                        wording = selectedItems.map {
+                            wordingByName[it] ?: PublicationWording.Items
+                        }.combinedWording(),
                         selectedCount = selectedItems.size,
                         isAllSelected = selectedItems.size == sortedItems.size,
                         onCloseMultiSelect = {
@@ -244,6 +251,7 @@ private fun AllFilterItemsContent(
         }
 
         AllFilterItemsDialogs(
+            wordingByName = wordingByName,
             filterType = filterType,
             itemToDelete = itemToDelete,
             itemToRename = itemToRename,
@@ -347,7 +355,7 @@ private fun AllFilterItemsEmptyState(
 
 @Composable
 private fun AllFilterItemsList(
-    sortedItems: List<Pair<String, Int>>,
+    sortedItems: List<FilterCollectionSummary>,
     selectedItemForMenu: String?,
     selectedItems: Set<String>,
     isInMultiSelectMode: Boolean,
@@ -368,7 +376,7 @@ private fun AllFilterItemsList(
             .padding(horizontal = 16.dp),
         contentPadding = PaddingValues(bottom = 16.dp + LocalAudioPlayerBottomPadding.current),
     ) {
-        sortedItems.forEach { (itemFirst, itemSecond) ->
+        sortedItems.forEach { (itemFirst, itemSecond, wording) ->
             val isSelected = selectedItems.contains(itemFirst)
             item(
                 selected = isSelected,
@@ -380,9 +388,7 @@ private fun AllFilterItemsList(
                 content = { Text(itemFirst) },
                 supportingContent = {
                     Text(
-                        pluralStringResource(
-                            R.plurals.library_books_count, itemSecond, itemSecond,
-                        ),
+                        publicationCountLabel(itemSecond, wording),
                     )
                 },
                 trailingContent = {
@@ -470,6 +476,7 @@ private fun AllFilterItemsItemActions(
 
 @Composable
 private fun AllFilterItemsDialogs(
+    wordingByName: Map<String, PublicationWording>,
     filterType: String,
     itemToDelete: String?,
     itemToRename: String?,
@@ -486,14 +493,16 @@ private fun AllFilterItemsDialogs(
     onSortDismiss: () -> Unit,
 ) {
     itemToDelete?.let { name ->
-        val titleType =
-            if (filterType == "author") stringResource(R.string.library_sort_author) else stringResource(
-                R.string.library_sort_label,
-            )
         AlertDialog(
             onDismissRequest = onDeleteDismiss,
-            title = { Text(stringResource(R.string.library_delete_item_title, titleType)) },
-            text = { Text(stringResource(R.string.library_delete_item_message, name)) },
+            title = { Text(stringResource(deleteCollectionTitle(filterType))) },
+            text = {
+                Text(
+                    stringResource(
+                        (wordingByName[name] ?: PublicationWording.Items).deleteLabelMessage, name
+                    )
+                )
+            },
             confirmButton = {
                 TextButton(onClick = { onDeleteConfirm(name) }) {
                     Text(
@@ -522,6 +531,7 @@ private fun AllFilterItemsDialogs(
             else -> stringResource(R.string.library_tag_name_label)
         }
         RenameFilterDialog(
+            wordingByName = wordingByName,
             initialName = oldName,
             suggestions = suggestionList,
             title = dialogTitle,

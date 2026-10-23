@@ -1,7 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.reader
 
 import android.graphics.Color.colorToHSV
-import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import android.os.Bundle
 import android.view.ActionMode
 import android.view.Menu
@@ -13,6 +12,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -255,26 +255,51 @@ class EpubNavigatorController(
                         // Readium's position stream is progression-based. Resolve the visible
                         // block so chapter/page identity remains exact inside each resource.
                         val visible = if (renditionKey == "read-mode" &&
-                            GeneratedEpubLocations.isContent(position.href.toString())) {
+                            GeneratedEpubLocations.isContent(position.href.toString())
+                        ) {
                             nav.firstVisibleElementLocator()?.takeIf {
-                                GeneratedEpubLocations.sameContentResource(it.href.toString(), position.href.toString())
+                                GeneratedEpubLocations.sameContentResource(
+                                    it.href.toString(),
+                                    position.href.toString()
+                                )
                             }
                         } else null
                         val sourcePage = if (renditionKey == "read-mode" &&
-                            GeneratedEpubLocations.isContent(position.href.toString())) {
-                            visible?.let { GeneratedEpubLocations.page(it.href.toString(),
-                                it.locations["cssSelector"] as? String, it.locations.fragments) }
-                                ?: nav.evaluateJavascript(ReadModePageResolver.script(visible?.locations?.get("cssSelector") as? String))
+                            GeneratedEpubLocations.isContent(position.href.toString())
+                        ) {
+                            visible?.let {
+                                GeneratedEpubLocations.page(
+                                    it.href.toString(),
+                                    it.locations["cssSelector"] as? String, it.locations.fragments
+                                )
+                            }
+                                ?: nav.evaluateJavascript(
+                                    ReadModePageResolver.script(
+                                        visible?.locations?.get(
+                                            "cssSelector"
+                                        ) as? String
+                                    )
+                                )
                                     ?.let { runCatching { org.json.JSONObject(it) }.getOrNull() }
-                                    ?.takeIf { GeneratedEpubLocations.sameContentResource(it.optString("href"), position.href.toString()) }
+                                    ?.takeIf {
+                                        GeneratedEpubLocations.sameContentResource(
+                                            it.optString(
+                                                "href"
+                                            ), position.href.toString()
+                                        )
+                                    }
                                     ?.optInt("page")?.takeIf { it > 0 }
                         } else null
-                        val locator = viewModel.withReadModeChapter(if (visible != null || sourcePage != null) {
-                            position.copy(locations = position.locations.copy(
-                                fragments = sourcePage?.let { listOf("source-page-$it") } ?: position.locations.fragments,
-                                otherLocations = position.locations.otherLocations + visible?.locations?.otherLocations.orEmpty(),
-                            ), text = visible?.text ?: position.text)
-                        } else position)
+                        val locator =
+                            viewModel.withReadModeChapter(
+                                if (visible != null || sourcePage != null) {
+                                    position.copy(
+                                        locations = position.locations.copy(
+                                            fragments = sourcePage?.let { listOf("source-page-$it") }
+                                            ?: position.locations.fragments,
+                                        otherLocations = position.locations.otherLocations + visible?.locations?.otherLocations.orEmpty(),
+                                    ), text = visible?.text ?: position.text)
+                                } else position)
                         if (viewModel.activeRendition.value == renditionKey) viewModel.onLocatorChanged(
                             locator
                         )
@@ -317,7 +342,9 @@ class EpubNavigatorController(
                                     }
                                     Decoration(
                                         id = "note_${noteId2}",
-                                    locator = viewModel.publication.value?.resolveGeneratedLocator(locator) ?: locator,
+                                        locator = viewModel.publication.value?.resolveGeneratedLocator(
+                                            locator
+                                        ) ?: locator,
                                         style = Decoration.Style.Highlight(
                                             tint = tintColor, isActive = false,
                                         ),
@@ -362,7 +389,8 @@ class EpubNavigatorController(
     private fun saveCurrentPosition() {
         navigator?.currentLocator?.value?.let { locator ->
             lifecycleScope.launch {
-                val current = if (renditionKey == "read-mode") viewModel.currentLocator.value else null
+                val current =
+                    if (renditionKey == "read-mode") viewModel.currentLocator.value else null
                 viewModel.savePosition(current ?: locator, renditionKey)
             }
         }
@@ -380,7 +408,7 @@ class EpubNavigatorController(
         }
     }
 
-    private fun applyImageFilterCss() {
+    internal fun applyImageFilterCss() {
         val nav = navigator ?: return
         val css = org.json.JSONObject.quote(lastImageFilterCss)
         val js = """
@@ -419,7 +447,7 @@ class EpubNavigatorController(
         applySelectionCssToWebView(cssBgColor, cssTextColor)
     }
 
-    private fun reapplySelectionCss() {
+    internal fun reapplySelectionCss() {
         val parts = lastSelectionCssColor?.split("|") ?: return
         if (parts.size == 2) {
             applySelectionCssToWebView(parts[0], parts[1])

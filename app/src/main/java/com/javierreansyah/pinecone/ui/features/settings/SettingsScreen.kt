@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -65,15 +64,15 @@ import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Forest
 import com.composables.icons.materialsymbols.outlined.History
 import com.composables.icons.materialsymbols.outlined.Inbox
-import com.composables.icons.materialsymbols.outlined.Swap_horiz
-import com.composables.icons.materialsymbols.outlined.Visibility_off
 import com.composables.icons.materialsymbols.outlined.Info
 import com.composables.icons.materialsymbols.outlined.Keyboard_arrow_right
 import com.composables.icons.materialsymbols.outlined.Palette
 import com.composables.icons.materialsymbols.outlined.Restart_alt
 import com.composables.icons.materialsymbols.outlined.Save
+import com.composables.icons.materialsymbols.outlined.Swap_horiz
 import com.composables.icons.materialsymbols.outlined.Translate
 import com.composables.icons.materialsymbols.outlined.Tune
+import com.composables.icons.materialsymbols.outlined.Visibility_off
 import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
@@ -81,6 +80,7 @@ import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.components.SegmentedColumn
 import com.javierreansyah.pinecone.ui.features.settings.components.ColorSchemePickerDialog
 import com.javierreansyah.pinecone.ui.features.settings.components.SettingsItem
+import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import com.javierreansyah.pinecone.worker.WorkerUtils
 import kotlinx.coroutines.launch
 import java.io.File
@@ -208,7 +208,13 @@ fun SettingsScreen(
         },
         onSpacesEnabledChanged = { enabled -> viewModel.updateSettings(settings.copy(spacesEnabled = enabled)) },
         onShowAllSpacesChanged = { show -> viewModel.updateSettings(settings.copy(showAllSpaces = show)) },
-        onUnsortedEnabledChanged = { enabled -> viewModel.updateSettings(settings.copy(unsortedEnabled = enabled)) },
+        onUnsortedEnabledChanged = { enabled ->
+            viewModel.updateSettings(
+                settings.copy(
+                    unsortedEnabled = enabled
+                )
+            )
+        },
         onLibraryBottomNavigationChanged = { enabled ->
             viewModel.updateSettings(settings.copy(showLibraryBottomNavigation = enabled))
         },
@@ -522,32 +528,93 @@ private fun GeneralSettingsSection(
 
                 item(
                     onClick = { onSpacesEnabledChanged(!settings.spacesEnabled) },
-                    leadingContent = { Icon(MaterialSymbols.Outlined.Forest, contentDescription = null) },
-                    content = { Text(stringResource(R.string.settings_spaces_enabled), style = MaterialTheme.typography.titleMedium) },
+                    leadingContent = {
+                        Icon(
+                            MaterialSymbols.Outlined.Forest,
+                            contentDescription = null
+                        )
+                    },
+                    content = {
+                        Text(
+                            stringResource(R.string.settings_spaces_enabled),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    },
                     supportingContent = { Text(stringResource(R.string.settings_spaces_enabled_summary)) },
-                    trailingContent = { Switch(checked = settings.spacesEnabled, onCheckedChange = null) },
+                    trailingContent = {
+                        Switch(
+                            checked = settings.spacesEnabled,
+                            onCheckedChange = null
+                        )
+                    },
                 )
                 item(
                     onClick = { onLibraryBottomNavigationChanged(!settings.showLibraryBottomNavigation) },
-                    leadingContent = { Icon(MaterialSymbols.Outlined.Swap_horiz, contentDescription = null) },
-                    content = { Text(stringResource(R.string.settings_library_bottom_navigation), style = MaterialTheme.typography.titleMedium) },
+                    leadingContent = {
+                        Icon(
+                            MaterialSymbols.Outlined.Swap_horiz,
+                            contentDescription = null
+                        )
+                    },
+                    content = {
+                        Text(
+                            stringResource(R.string.settings_library_bottom_navigation),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    },
                     supportingContent = { Text(stringResource(R.string.settings_library_bottom_navigation_summary)) },
-                    trailingContent = { Switch(checked = settings.showLibraryBottomNavigation, onCheckedChange = null) },
+                    trailingContent = {
+                        Switch(
+                            checked = settings.showLibraryBottomNavigation,
+                            onCheckedChange = null
+                        )
+                    },
                 )
                 item(
                     enabled = settings.spacesEnabled,
                     onClick = { onShowAllSpacesChanged(!settings.showAllSpaces) },
-                    leadingContent = { Icon(MaterialSymbols.Outlined.Visibility_off, contentDescription = null) },
-                    content = { Text(stringResource(R.string.settings_hide_all_space), style = MaterialTheme.typography.titleMedium) },
+                    leadingContent = {
+                        Icon(
+                            MaterialSymbols.Outlined.Visibility_off,
+                            contentDescription = null
+                        )
+                    },
+                    content = {
+                        Text(
+                            stringResource(R.string.settings_hide_all_space),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    },
                     supportingContent = { Text(stringResource(R.string.settings_hide_all_space_summary)) },
-                    trailingContent = { Switch(checked = !settings.showAllSpaces, enabled = settings.spacesEnabled, onCheckedChange = null) },
+                    trailingContent = {
+                        Switch(
+                            checked = !settings.showAllSpaces,
+                            enabled = settings.spacesEnabled,
+                            onCheckedChange = null
+                        )
+                    },
                 )
                 item(
                     onClick = { onUnsortedEnabledChanged(!settings.unsortedEnabled) },
-                    leadingContent = { Icon(MaterialSymbols.Outlined.Inbox, contentDescription = null) },
-                    content = { Text(stringResource(R.string.settings_unsorted_enabled), style = MaterialTheme.typography.titleMedium) },
+                    leadingContent = {
+                        Icon(
+                            MaterialSymbols.Outlined.Inbox,
+                            contentDescription = null
+                        )
+                    },
+                    content = {
+                        Text(
+                            stringResource(R.string.settings_unsorted_enabled),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    },
                     supportingContent = { Text(stringResource(R.string.settings_unsorted_enabled_summary)) },
-                    trailingContent = { Switch(checked = settings.unsortedEnabled, onCheckedChange = null) },
+                    trailingContent = {
+                        Switch(
+                            checked = settings.unsortedEnabled,
+                            onCheckedChange = null
+                        )
+                    },
                 )
             }
         }

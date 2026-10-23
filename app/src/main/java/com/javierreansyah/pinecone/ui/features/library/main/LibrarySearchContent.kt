@@ -50,6 +50,7 @@ import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.ui.components.SegmentedButtonGroup
 import com.javierreansyah.pinecone.ui.features.library.SearchCategory
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookItem
+import com.javierreansyah.pinecone.ui.features.library.publicationWording
 
 @Composable
 internal fun ExpandedSearchContent(
@@ -70,7 +71,7 @@ internal fun ExpandedSearchContent(
     ) {
         val categoryLabels = mapOf(
             SearchCategory.All to stringResource(R.string.action_all),
-            SearchCategory.Books to stringResource(R.string.library_tab_books),
+            SearchCategory.Books to stringResource(searchResults.contentWording.libraryTab),
             SearchCategory.Shelves to stringResource(R.string.library_tab_shelves),
             SearchCategory.Authors to stringResource(R.string.library_authors_title),
             SearchCategory.Tags to stringResource(R.string.library_tags_title),
@@ -202,7 +203,7 @@ private fun SearchResultsContent(
                 fastEffectsSpec = fastEffectsSpec,
                 content = {
                     SectionHeader(
-                        title = stringResource(R.string.library_tab_books),
+                        title = stringResource(booksToShow.publicationWording().libraryTab),
                         onHeaderClick = null,
                         isBooksSection = true,
                         paddingValues = PaddingValues(
@@ -273,6 +274,7 @@ private fun SearchResultsContent(
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         SectionHeader(
                             title = stringResource(R.string.library_authors_title),
+                            actionDescription = stringResource(R.string.content_view_all_authors),
                             onHeaderClick = { onAuthorsHeaderClick() },
                             paddingValues = PaddingValues(
                                 start = 16.dp,
@@ -305,6 +307,7 @@ private fun SearchResultsContent(
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         SectionHeader(
                             title = stringResource(R.string.library_tags_title),
+                            actionDescription = stringResource(R.string.content_view_all_tags),
                             onHeaderClick = { onTagsHeaderClick() },
                             paddingValues = PaddingValues(
                                 start = 16.dp,
@@ -351,7 +354,7 @@ private fun BooksSection(
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         SectionHeader(
-            title = stringResource(R.string.library_tab_books),
+            title = stringResource(books.publicationWording().libraryTab),
             onHeaderClick = null,
             isBooksSection = true,
         )
@@ -383,6 +386,7 @@ private fun SectionHeader(
     onHeaderClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
     isBooksSection: Boolean = false,
+    actionDescription: String? = null,
     paddingValues: PaddingValues = PaddingValues(
         start = 16.dp,
         end = 16.dp,
@@ -406,7 +410,7 @@ private fun SectionHeader(
         if (onHeaderClick != null) {
             Icon(
                 imageVector = MaterialSymbols.Outlined.Chevron_forward,
-                contentDescription = stringResource(R.string.library_view_all, title),
+                contentDescription = actionDescription,
                 modifier = Modifier.size(20.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )

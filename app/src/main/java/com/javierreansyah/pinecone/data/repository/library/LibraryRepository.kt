@@ -9,6 +9,7 @@ import com.javierreansyah.pinecone.data.local.database.library.AuthorEntity
 import com.javierreansyah.pinecone.data.local.database.library.BookAuthorCrossRef
 import com.javierreansyah.pinecone.data.local.database.library.BookDao
 import com.javierreansyah.pinecone.data.local.database.library.BookEntity
+import com.javierreansyah.pinecone.data.local.database.library.BookSpaceCrossRef
 import com.javierreansyah.pinecone.data.local.database.library.BookTagCrossRef
 import com.javierreansyah.pinecone.data.local.database.library.BookWithDetails
 import com.javierreansyah.pinecone.data.local.database.library.BookmarkDao
@@ -24,21 +25,20 @@ import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.local.database.library.SpaceDao
 import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.data.local.database.library.TagEntity
+import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.publication.PublicationFormats
 import com.javierreansyah.pinecone.data.publication.PublicationMetadata
 import com.javierreansyah.pinecone.data.publication.PublicationMetadataImporter
 import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import com.javierreansyah.pinecone.data.publication.conversion.PdfReadModeConverter
 import com.javierreansyah.pinecone.reader.pdf.MuPdfDocumentFactory
+import com.javierreansyah.pinecone.ui.features.library.ALL_SPACES_ID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
-import com.javierreansyah.pinecone.data.local.database.library.BookSpaceCrossRef
-import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
-import com.javierreansyah.pinecone.ui.features.library.ALL_SPACES_ID
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -130,13 +130,19 @@ class LibraryRepository(
         bookDao.getAllBooks()
             .map { list -> list.filter { it.book.isUnsorted } }
 
-    suspend fun releaseUnsortedBooks() = database.withTransaction {
+    suspend fun releaseUnsortedBooks(): Unit = database.withTransaction {
         bookDao.releaseUnsortedBooks()
     }
 
     private suspend fun ensureAllSpace() {
         if (spaceDao.getAllSpacesSync().none { it.id == ALL_SPACES_ID }) {
-            spaceDao.insertSpace(SpaceEntity(ALL_SPACES_ID, context.getString(com.javierreansyah.pinecone.R.string.action_all), 0L))
+            spaceDao.insertSpace(
+                SpaceEntity(
+                    ALL_SPACES_ID,
+                    context.getString(com.javierreansyah.pinecone.R.string.action_all),
+                    0L
+                )
+            )
         }
     }
 
@@ -356,7 +362,9 @@ class LibraryRepository(
                             context.resources
                         ),
                         previousSourceMap = existing?.sourceMapJson?.let {
-                            kotlinx.serialization.json.Json.decodeFromString<List<com.javierreansyah.pinecone.data.publication.conversion.SourcePage>>(it)
+                            kotlinx.serialization.json.Json.decodeFromString<List<com.javierreansyah.pinecone.data.publication.conversion.SourcePage>>(
+                                it
+                            )
                         }.orEmpty(),
                         progress = progress,
                     )
@@ -381,12 +389,25 @@ class LibraryRepository(
                         // Migrate only read-mode locators. IDs, labels, notes and PDF locations stay intact.
                         val latest = publicationDao.rendition(bookId, "read-mode") ?: existing
                         val before = latest?.sourceMapJson?.let {
-                            kotlinx.serialization.json.Json.decodeFromString<List<com.javierreansyah.pinecone.data.publication.conversion.SourcePage>>(it)
+                            kotlinx.serialization.json.Json.decodeFromString<List<com.javierreansyah.pinecone.data.publication.conversion.SourcePage>>(
+                                it
+                            )
                         }.orEmpty()
-                        val after = kotlinx.serialization.json.Json.decodeFromString<List<com.javierreansyah.pinecone.data.publication.conversion.SourcePage>>(mapping)
-                        fun rebase(locator: String?) = GeneratedEpubLocations.remap(locator, before, after)
+                        val after =
+                            kotlinx.serialization.json.Json.decodeFromString<List<com.javierreansyah.pinecone.data.publication.conversion.SourcePage>>(
+                                mapping
+                            )
+
+                        fun rebase(locator: String?) =
+                            GeneratedEpubLocations.remap(locator, before, after)
+
                         val updated = (latest ?: PublicationRenditionEntity(
-                            bookId, "read-mode", final.absolutePath, "application/epub+zip", "EPUB", hash
+                            bookId,
+                            "read-mode",
+                            final.absolutePath,
+                            "application/epub+zip",
+                            "EPUB",
+                            hash
                         )).copy(
                             filePath = final.absolutePath,
                             sha256 = hash,
@@ -398,7 +419,10 @@ class LibraryRepository(
                         )
                         bookmarkDao.getByRendition(bookId, "read-mode").forEach { bookmark ->
                             val locator = requireNotNull(rebase(bookmark.locatorJson))
-                            if (locator != bookmark.locatorJson) bookmarkDao.updateLocator(bookmark.id, locator)
+                            if (locator != bookmark.locatorJson) bookmarkDao.updateLocator(
+                                bookmark.id,
+                                locator
+                            )
                         }
                         noteDao.getByRendition(bookId, "read-mode").forEach { note ->
                             val locator = requireNotNull(rebase(note.locatorJson))
@@ -406,11 +430,13 @@ class LibraryRepository(
                         }
                         publicationDao.putRenditions(listOf(updated))
                         val book = requireNotNull(bookDao.getById(bookId)).book
-                        if (book.activeRendition == "read-mode") bookDao.update(book.copy(
-                            lastLocatorJson = updated.lastLocatorJson,
-                            furthestLocatorJson = updated.furthestLocatorJson,
-                            jumpOriginLocatorJson = updated.jumpOriginLocatorJson,
-                        ))
+                        if (book.activeRendition == "read-mode") bookDao.update(
+                            book.copy(
+                                lastLocatorJson = updated.lastLocatorJson,
+                                furthestLocatorJson = updated.furthestLocatorJson,
+                                jumpOriginLocatorJson = updated.jumpOriginLocatorJson,
+                            )
+                        )
                         updated
                     }.also { committed = true }
                 }
@@ -780,7 +806,11 @@ class LibraryRepository(
         return id
     }
 
-    suspend fun transferShelves(shelfIds: Collection<String>, destinationId: String, copy: Boolean) {
+    suspend fun transferShelves(
+        shelfIds: Collection<String>,
+        destinationId: String,
+        copy: Boolean
+    ) {
         database.withTransaction {
             ensureAllSpace()
             require(spaceDao.getAllSpacesSync().any { it.id == destinationId })
@@ -788,7 +818,8 @@ class LibraryRepository(
             shelfIds.distinct().forEach { id ->
                 val shelf = shelfDao.getShelfById(id) ?: return@forEach
                 if (!copy && shelf.spaceId == destinationId) return@forEach
-                val target = if (copy) shelf.copy(id = UUID.randomUUID().toString(), spaceId = destinationId)
+                val target =
+                    if (copy) shelf.copy(id = UUID.randomUUID().toString(), spaceId = destinationId)
                     else shelf.copy(spaceId = destinationId)
                 if (copy) shelfDao.insertShelf(target) else shelfDao.updateShelf(target)
                 refsByShelf[id].orEmpty().forEach { ref ->
@@ -823,7 +854,7 @@ class LibraryRepository(
                 ),
             )
             spaceDao.insertBookSpaceCrossRef(
-                com.javierreansyah.pinecone.data.local.database.library.BookSpaceCrossRef(
+                BookSpaceCrossRef(
                     bookId = bookId,
                     spaceId = shelfSpaceId,
                 ),
@@ -861,7 +892,7 @@ class LibraryRepository(
             bookDao.markOrganized(bookId)
             spaceDao.insertBookSpaceCrossRef(BookSpaceCrossRef(bookId, ALL_SPACES_ID))
             spaceDao.insertBookSpaceCrossRef(
-                com.javierreansyah.pinecone.data.local.database.library.BookSpaceCrossRef(
+                BookSpaceCrossRef(
                     bookId = bookId,
                     spaceId = spaceId,
                 ),
@@ -880,7 +911,7 @@ class LibraryRepository(
         }
     }
 
-    fun getAllBookSpaceCrossRefs(): Flow<List<com.javierreansyah.pinecone.data.local.database.library.BookSpaceCrossRef>> =
+    fun getAllBookSpaceCrossRefs(): Flow<List<BookSpaceCrossRef>> =
         spaceDao.getAllBookSpaceCrossRefs()
 
     suspend fun addNote(

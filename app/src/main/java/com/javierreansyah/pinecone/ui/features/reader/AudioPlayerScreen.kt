@@ -11,8 +11,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -36,10 +36,12 @@ fun AudioPlayerScreen(
 ) {
     val app = LocalContext.current.applicationContext as PineconeApplication
     val darkTheme = isSystemInDarkTheme()
-    val reader: ReaderViewModel = viewModel(factory = ReaderViewModel.Factory(app, bookId, darkTheme))
+    val reader: ReaderViewModel =
+        viewModel(factory = ReaderViewModel.Factory(app, bookId, darkTheme))
     val search: ReaderSearchViewModel = viewModel(factory = ReaderSearchViewModel.Factory(app))
     val notes: ReaderNotesViewModel = viewModel(factory = ReaderNotesViewModel.Factory(app, bookId))
-    val dictionary: ReaderDictionaryViewModel = viewModel(factory = ReaderDictionaryViewModel.Factory(app))
+    val dictionary: ReaderDictionaryViewModel =
+        viewModel(factory = ReaderDictionaryViewModel.Factory(app))
     val publication by reader.publication.collectAsStateWithLifecycle()
     val bookState by reader.bookState.collectAsStateWithLifecycle()
     val audioState by app.audioSession.state.collectAsStateWithLifecycle()
@@ -69,7 +71,11 @@ fun AudioPlayerScreen(
     }
     Box(Modifier.fillMaxSize()) {
         // Wait for real metadata instead of reserving extra title/author lines.
-        if (!bookState.isLoading && (bookState.error != null || audioPlayerMetadataReady(bookId, audioState))) {
+        if (!bookState.isLoading && (bookState.error != null || audioPlayerMetadataReady(
+                bookId,
+                audioState
+            ))
+        ) {
             ReaderOverlay(
                 viewModel = reader,
                 searchViewModel = search,

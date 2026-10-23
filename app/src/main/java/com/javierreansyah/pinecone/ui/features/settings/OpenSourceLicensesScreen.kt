@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -31,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.components.SegmentedListItem
+import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import com.mikepenz.aboutlibraries.Libs
 import com.mikepenz.aboutlibraries.entity.Library
 import com.mikepenz.aboutlibraries.util.withContext
@@ -87,7 +87,10 @@ fun OpenSourceLicensesScreen(
                     .fillMaxSize()
                     .padding(innerPadding)
                     .padding(horizontal = 16.dp),
-                contentPadding = PaddingValues(top = 8.dp, bottom = 8.dp + LocalAudioPlayerBottomPadding.current),
+                contentPadding = PaddingValues(
+                    top = 8.dp,
+                    bottom = 8.dp + LocalAudioPlayerBottomPadding.current
+                ),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 itemsIndexed(

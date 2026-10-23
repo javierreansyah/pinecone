@@ -152,21 +152,27 @@ class ReaderSearchViewModel(
                     kotlinx.coroutines.currentCoroutineContext().ensureActive()
                     val page = pdf.search(index, query)
                     val text = page.text
-                    for (hit in page.matches) {
+                    for ((start, end, quads) in page.matches) {
                         if (matches.size >= 10_000) break
-                        val before = text.substring(maxOf(0, hit.start - 60), hit.start)
-                        val highlight = text.substring(hit.start, hit.end)
-                        val after = text.substring(hit.end, minOf(text.length, hit.end + 100))
+                        val before = text.substring(maxOf(0, start - 60), start)
+                        val highlight = text.substring(start, end)
+                        val after = text.substring(end, minOf(text.length, end + 100))
                         val locator = base.copyWithLocations(
                             fragments = listOf("page=${index + 1}"),
                             position = index + 1
-                        ).copy(text = Locator.Text(before = before, highlight = highlight, after = after))
+                        ).copy(
+                            text = Locator.Text(
+                                before = before,
+                                highlight = highlight,
+                                after = after
+                            )
+                        )
                         matches += SearchResultItem(
                             locator,
                             link.title,
                             application.getString(R.string.reader_page_label, index + 1),
                             before, highlight, after,
-                            PdfSearchMatch(matches.size, base.href.toString(), index, hit.quads),
+                            PdfSearchMatch(matches.size, base.href.toString(), index, quads),
                         )
                     }
                     _searchState.update { it.copy(results = matches.toList()) }
@@ -229,8 +235,6 @@ class ReaderSearchViewModel(
         private val application: Application,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return ReaderSearchViewModel(application) as T
-        }
+        override fun <T : ViewModel> create(modelClass: Class<T>): T = ReaderSearchViewModel(application) as T
     }
 }

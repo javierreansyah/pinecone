@@ -7,8 +7,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -48,13 +48,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -81,7 +81,9 @@ import org.readium.r2.shared.util.data.ReadError
 
 class MuPdfDocumentFragment(
     private val input: PdfDocumentFragmentInput<MuPdfSettings>,
-    private val searchHighlights: StateFlow<PdfSearchHighlights> = MutableStateFlow(PdfSearchHighlights()),
+    private val searchHighlights: StateFlow<PdfSearchHighlights> = MutableStateFlow(
+        PdfSearchHighlights()
+    ),
     private val selectionController: PdfSelectionController = PdfSelectionController(),
 ) :
     PdfDocumentFragment<MuPdfSettings>() {
@@ -130,7 +132,9 @@ class MuPdfDocumentFragment(
                                                 val bounds = page.bounds
                                                 ((bounds.x1 - bounds.x0) / (bounds.y1 - bounds.y0))
                                                     .takeIf { it.isFinite() && it > 0f } ?: 1f
-                                            } finally { page.destroy() }
+                                            } finally {
+                                                page.destroy()
+                                            }
                                         }
                                     }
                                 }
@@ -155,7 +159,11 @@ class MuPdfDocumentFragment(
         }
 
     @Composable
-    private fun Pages(pdf: MuPdfDocument, preferences: MuPdfPreferences, aspectRatios: List<Float>) {
+    private fun Pages(
+        pdf: MuPdfDocument,
+        preferences: MuPdfPreferences,
+        aspectRatios: List<Float>
+    ) {
         val request by requestedPage.collectAsState()
         val highlights by searchHighlights.collectAsState()
         val matchesByPage = remember(highlights.matches) {
@@ -165,7 +173,12 @@ class MuPdfDocumentFragment(
             currentPage.collectAsState().value.coerceIn(0, (pdf.pageCount - 1).coerceAtLeast(0))
         val pager = rememberPagerState(initialPage = initial) { pdf.pageCount }
         val list = rememberLazyListState(initialFirstVisibleItemIndex = initial)
-        LaunchedEffect(request, preferences.scroll, preferences.horizontal, preferences.rightToLeft) {
+        LaunchedEffect(
+            request,
+            preferences.scroll,
+            preferences.horizontal,
+            preferences.rightToLeft
+        ) {
             if (preferences.scroll) list.scrollToItem(request.index) else pager.scrollToPage(request.index)
             if (requestedPage.value == request) {
                 currentPage.value = request.index
@@ -230,13 +243,17 @@ class MuPdfDocumentFragment(
                 reverseLayout = reverse,
                 pageSpacing = spacing
             ) { index ->
-                PageImage(pdf, index, preferences, Modifier.fillMaxSize(), aspectRatios[index],
-                    matchesByPage[index].orEmpty(), highlights.focusedIndex)
+                PageImage(
+                    pdf, index, preferences, Modifier.fillMaxSize(), aspectRatios[index],
+                    matchesByPage[index].orEmpty(), highlights.focusedIndex
+                )
             }
         } else {
             VerticalPager(pager, modifier, pageSpacing = spacing) { index ->
-                PageImage(pdf, index, preferences, Modifier.fillMaxSize(), aspectRatios[index],
-                    matchesByPage[index].orEmpty(), highlights.focusedIndex)
+                PageImage(
+                    pdf, index, preferences, Modifier.fillMaxSize(), aspectRatios[index],
+                    matchesByPage[index].orEmpty(), highlights.focusedIndex
+                )
             }
         }
     }
@@ -267,37 +284,39 @@ class MuPdfDocumentFragment(
         val imageModifier = if (preferences.scroll && !preferences.horizontal) {
             modifier.aspectRatio(aspectRatio)
         } else modifier
-        Box(imageModifier
-            .clipToBounds()
-            .pointerInput(index) {
-                detectTapGestures(
-                    onTap = { input.inputListener?.onTap(TapEvent(PointF(it.x, it.y))) },
-                    onDoubleTap = { zoom = if (zoom > 1f) 1f else 2f; offset = Offset.Zero },
-                )
-            }
-            .pointerInput(index) {
-                awaitEachGesture {
-                    awaitFirstDown(requireUnconsumed = false)
-                    do {
-                        val event = awaitPointerEvent()
-                        val multiTouch = event.changes.count { it.pressed } > 1
-                        if (multiTouch || (zoom > 1f && selectionController.selection.value == null)) {
-                            if (multiTouch) selectionController.clearSelection()
-                            val pan = event.calculatePan()
-                            zoom = (zoom * event.calculateZoom()).coerceIn(1f, 4f)
-                            offset = if (zoom > 1f) {
-                                val maxX = size.width * (zoom - 1) / 2
-                                val maxY = size.height * (zoom - 1) / 2
-                                Offset(
-                                    (offset.x + pan.x).coerceIn(-maxX, maxX),
-                                    (offset.y + pan.y).coerceIn(-maxY, maxY)
-                                )
-                            } else Offset.Zero
-                            event.changes.forEach { it.consume() }
-                        }
-                    } while (event.changes.any { it.pressed })
+        Box(
+            imageModifier
+                .clipToBounds()
+                .pointerInput(index) {
+                    detectTapGestures(
+                        onTap = { input.inputListener?.onTap(TapEvent(PointF(it.x, it.y))) },
+                        onDoubleTap = { zoom = if (zoom > 1f) 1f else 2f; offset = Offset.Zero },
+                    )
                 }
-            }, contentAlignment = Alignment.Center) {
+                .pointerInput(index) {
+                    awaitEachGesture {
+                        awaitFirstDown(requireUnconsumed = false)
+                        do {
+                            val event = awaitPointerEvent()
+                            val multiTouch = event.changes.count { it.pressed } > 1
+                            if (multiTouch || (zoom > 1f && selectionController.selection.value == null)) {
+                                if (multiTouch) selectionController.clearSelection()
+                                val pan = event.calculatePan()
+                                zoom = (zoom * event.calculateZoom()).coerceIn(1f, 4f)
+                                offset = if (zoom > 1f) {
+                                    val maxX = size.width * (zoom - 1) / 2
+                                    val maxY = size.height * (zoom - 1) / 2
+                                    Offset(
+                                        (offset.x + pan.x).coerceIn(-maxX, maxX),
+                                        (offset.y + pan.y).coerceIn(-maxY, maxY)
+                                    )
+                                } else Offset.Zero
+                                event.changes.forEach { it.consume() }
+                            }
+                        } while (event.changes.any { it.pressed })
+                    }
+                }, contentAlignment = Alignment.Center
+        ) {
             bitmap?.let {
                 val filter = if (preferences.invert == true) ColorFilter.colorMatrix(
                     ColorMatrix(
@@ -337,9 +356,9 @@ class MuPdfDocumentFragment(
                     // The bitmap and search overlay share sizing, scrolling, zoom and pan.
                     // Keep yellow outside the bitmap's inversion filter for dark PDF mode.
                     Box(image.graphicsLayer {
-                            scaleX = zoom; scaleY = zoom; translationX = offset.x; translationY =
-                            offset.y
-                        }) {
+                        scaleX = zoom; scaleY = zoom; translationX = offset.x; translationY =
+                        offset.y
+                    }) {
                         Image(
                             it.asImageBitmap(),
                             stringResource(R.string.reader_page_label, index + 1),
@@ -356,16 +375,30 @@ class MuPdfDocumentFragment(
                             imageHeight = it.height,
                             inverted = preferences.invert == true,
                             controller = selectionController,
-                            onTap = { point -> input.inputListener?.onTap(TapEvent(PointF(point.x, point.y))) },
-                            onDoubleTap = { zoom = if (zoom > 1f) 1f else 2f; offset = Offset.Zero },
+                            onTap = { point ->
+                                input.inputListener?.onTap(
+                                    TapEvent(
+                                        PointF(
+                                            point.x,
+                                            point.y
+                                        )
+                                    )
+                                )
+                            },
+                            onDoubleTap = {
+                                zoom = if (zoom > 1f) 1f else 2f; offset = Offset.Zero
+                            },
                         )
                         if (matches.isNotEmpty()) Canvas(Modifier.matchParentSize()) {
-                            val viewport = pdfImageViewport(size.width, size.height, it.width, it.height)
+                            val viewport =
+                                pdfImageViewport(size.width, size.height, it.width, it.height)
+
                             fun Path.point(point: PdfSearchPoint, first: Boolean = false) {
                                 val x = viewport.left + point.x * viewport.width
                                 val y = viewport.top + point.y * viewport.height
                                 if (first) moveTo(x, y) else lineTo(x, y)
                             }
+
                             // Focus draws last so overlapping hits keep the stronger marker.
                             fun drawMatch(match: PdfSearchMatch, focused: Boolean) {
                                 val path = Path().apply {
@@ -375,12 +408,25 @@ class MuPdfDocumentFragment(
                                         close()
                                     }
                                 }
-                                drawPath(path, Color.Yellow.copy(alpha = if (focused) .55f else .20f),
-                                    blendMode = if (preferences.invert == true) BlendMode.Screen else BlendMode.Multiply)
+                                drawPath(
+                                    path, Color.Yellow.copy(alpha = if (focused) .55f else .20f),
+                                    blendMode = if (preferences.invert == true) BlendMode.Screen else BlendMode.Multiply
+                                )
                             }
-                            clipRect(viewport.left, viewport.top, viewport.left + viewport.width, viewport.top + viewport.height) {
-                                matches.forEach { match -> if (match.resultIndex != focusedIndex) drawMatch(match, false) }
-                                matches.firstOrNull { match -> match.resultIndex == focusedIndex }?.let { match -> drawMatch(match, true) }
+                            clipRect(
+                                viewport.left,
+                                viewport.top,
+                                viewport.left + viewport.width,
+                                viewport.top + viewport.height
+                            ) {
+                                matches.forEach { match ->
+                                    if (match.resultIndex != focusedIndex) drawMatch(
+                                        match,
+                                        false
+                                    )
+                                }
+                                matches.firstOrNull { match -> match.resultIndex == focusedIndex }
+                                    ?.let { match -> drawMatch(match, true) }
                             }
                         }
                     }
@@ -413,8 +459,9 @@ class MuPdfDocumentFragment(
         // A late settings emission must not replace an outstanding search/page jump.
         val before = this.settings.value.preferences
         val after = settings.preferences
-        val layoutChanged = before.scroll != after.scroll || before.horizontal != after.horizontal ||
-            before.rightToLeft != after.rightToLeft
+        val layoutChanged =
+            before.scroll != after.scroll || before.horizontal != after.horizontal ||
+                    before.rightToLeft != after.rightToLeft
         if (!navigationPending && layoutChanged) requestPage(currentPage.value)
         this.settings.value = settings
     }

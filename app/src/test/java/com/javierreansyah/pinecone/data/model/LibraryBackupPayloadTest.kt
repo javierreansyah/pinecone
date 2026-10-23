@@ -52,7 +52,11 @@ class LibraryBackupPayloadTest {
     @Test
     fun backupRecordConvertsToCurrentEntity() {
         val record = BookBackupRecord(
-            id = "id", title = "Title", filePath = "/new/book.epub", addedDate = 10, isUnsorted = true,
+            id = "id",
+            title = "Title",
+            filePath = "/new/book.epub",
+            addedDate = 10,
+            isUnsorted = true,
         )
         assertEquals(record.filePath, record.toEntity().filePath)
         assertEquals(record, record.toEntity().toBackupRecord())

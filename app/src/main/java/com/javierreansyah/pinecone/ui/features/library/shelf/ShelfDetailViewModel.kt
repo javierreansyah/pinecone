@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.library.shelf
 
-import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,8 +7,10 @@ import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.ShelfEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
+import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.SortType
 import com.javierreansyah.pinecone.ui.features.library.StatusFilter
@@ -72,11 +73,12 @@ class ShelfDetailViewModel(
         viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList(),
     )
 
-    val allSpaces = bookRepository.getAllSpaces().stateIn(
+    val allSpaces: StateFlow<List<SpaceEntity>> = bookRepository.getAllSpaces().stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList(),
     )
-    val spacesEnabled = (application as PineconeApplication).readerPreferences.readerSettings
-        .map { it.spacesEnabled }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val spacesEnabled: StateFlow<Boolean> = (application as PineconeApplication).readerPreferences.readerSettings
+        .map { it.spacesEnabled }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     fun transferShelf(id: String, destinationId: String, copy: Boolean) {
         viewModelScope.launch { bookRepository.transferShelves(listOf(id), destinationId, copy) }
@@ -153,7 +155,8 @@ class ShelfDetailViewModel(
     fun toggleFileFilter(format: FileFilter) {
         _uiState.update { state ->
             val current = state.bookPreferences
-            val prefs = current.copy(selectedFormats = current.selectedFormats.let { if (format in it) it - format else it + format })
+            val prefs =
+                current.copy(selectedFormats = current.selectedFormats.let { if (format in it) it - format else it + format })
             prefsManager.savePreferences(globalSpaceId.value, screenKey, prefs)
             state.copy(bookPreferences = prefs)
         }

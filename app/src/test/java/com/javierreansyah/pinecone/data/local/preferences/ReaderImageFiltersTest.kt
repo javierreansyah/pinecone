@@ -43,7 +43,10 @@ class ReaderImageFiltersTest {
         val settings = ReaderSettings(themeMode = "Dark")
         assertFalse(settings.copy(pineconeThemePreset = "Light").readingThemeIsDark(true))
         assertFalse(settings.copy(pineconeThemePreset = "Warm").readingThemeIsDark(true))
-        assertTrue(settings.copy(themeMode = "Light", pineconeThemePreset = "Dark").readingThemeIsDark(false))
+        assertTrue(
+            settings.copy(themeMode = "Light", pineconeThemePreset = "Dark")
+                .readingThemeIsDark(false)
+        )
         assertTrue(settings.readingThemeIsDark(false))
         assertFalse(settings.copy(themeMode = "Light").readingThemeIsDark(true))
         assertTrue(settings.copy(themeMode = "System").readingThemeIsDark(true))
@@ -52,9 +55,16 @@ class ReaderImageFiltersTest {
 
     @Test
     fun `custom reading backgrounds determine filter activation independently of toolbar theme`() {
-        val custom = ReaderSettings(pineconeThemePreset = "Custom", themeMode = "Light", customBackgroundColor = "#181818")
+        val custom = ReaderSettings(
+            pineconeThemePreset = "Custom",
+            themeMode = "Light",
+            customBackgroundColor = "#181818"
+        )
         assertTrue(custom.readingThemeIsDark(false))
-        assertFalse(custom.copy(customBackgroundColor = "#FAF4E8", themeMode = "Dark").readingThemeIsDark(true))
+        assertFalse(
+            custom.copy(customBackgroundColor = "#FAF4E8", themeMode = "Dark")
+                .readingThemeIsDark(true)
+        )
     }
 
     @Test
@@ -63,9 +73,13 @@ class ReaderImageFiltersTest {
         assertEquals("", settings.epubImageFilterCss(true))
         val dark = settings.copy(pineconeThemePreset = "Dark")
         assertTrue(dark.epubImageFilterCss(false).contains("invert(1)"))
-        val always = settings.copy(formatPreferences = settings.formatPreferences.copy(epubImageFilterFollowTheme = false))
+        val always = settings.copy(
+            formatPreferences = settings.formatPreferences.copy(epubImageFilterFollowTheme = false)
+        )
         assertTrue(always.epubImageFilterCss(false).contains("invert(1)"))
-        assertTrue(always.copy(imageFilter = "Darken").epubImageFilterCss(false).contains("brightness("))
+        assertTrue(
+            always.copy(imageFilter = "Darken").epubImageFilterCss(false).contains("brightness(")
+        )
         assertEquals("", always.copy(imageFilter = "None").epubImageFilterCss(false))
     }
 
@@ -73,10 +87,15 @@ class ReaderImageFiltersTest {
     fun `saved settings preserve activation modes and existing PDF inversion choices`() {
         val modes = listOf(null, true, false)
         modes.forEach { invert ->
-            val settings = ReaderSettings(formatPreferences = FormatPreferences(
-                pdf = MuPdfPreferences(invert = invert), epubImageFilterFollowTheme = false,
-            ))
-            assertEquals(settings, Json.decodeFromString<ReaderSettings>(Json.encodeToString(settings)))
+            val settings = ReaderSettings(
+                formatPreferences = FormatPreferences(
+                    pdf = MuPdfPreferences(invert = invert), epubImageFilterFollowTheme = false,
+                )
+            )
+            assertEquals(
+                settings,
+                Json.decodeFromString<ReaderSettings>(Json.encodeToString(settings))
+            )
         }
         assertEquals(true, Json.decodeFromString<MuPdfPreferences>("""{"invert":true}""").invert)
         assertEquals(false, Json.decodeFromString<MuPdfPreferences>("""{"invert":false}""").invert)
@@ -85,9 +104,11 @@ class ReaderImageFiltersTest {
     @Test
     fun `rendition overrides retain image filter modes without replacing app settings`() {
         val global = ReaderSettings(themeMode = "Light", spacesEnabled = false)
-        val local = ReaderSettings(imageFilter = "Darken", formatPreferences = FormatPreferences(
-            pdf = MuPdfPreferences(invert = false), epubImageFilterFollowTheme = false,
-        ))
+        val local = ReaderSettings(
+            imageFilter = "Darken", formatPreferences = FormatPreferences(
+                pdf = MuPdfPreferences(invert = false), epubImageFilterFollowTheme = false,
+            )
+        )
         val merged = global.withReadingPreferencesFrom(local)
         assertEquals(global.themeMode, merged.themeMode)
         assertEquals(global.spacesEnabled, merged.spacesEnabled)

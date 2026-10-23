@@ -43,6 +43,8 @@ import com.composables.icons.materialsymbols.outlined.Select
 import com.composables.icons.materialsymbols.outlined.Unarchive
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.ui.features.library.PublicationWording
+import com.javierreansyah.pinecone.ui.features.library.publicationWording
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,6 +67,7 @@ fun BookContextMenu(
     )
 
     val book = allBooks.find { (itId) -> itId == bookId }
+    val wording = book?.publicationWording ?: PublicationWording.Items
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -129,7 +132,7 @@ fun BookContextMenu(
                 elevation = ListItemDefaults.elevation(),
                 content = {
                     Text(
-                        stringResource(R.string.book_info_title),
+                        stringResource(wording.infoTitle),
                         style = MaterialTheme.typography.titleMedium,
                     )
                 },
@@ -273,13 +276,13 @@ fun BookContextMenu(
             onDismissRequest = { showDeleteConfirmation = false },
             title = {
                 Text(
-                    stringResource(R.string.book_delete_title),
+                    stringResource(wording.deleteTitle),
                     style = MaterialTheme.typography.titleLarge,
                 )
             },
             text = {
                 Text(
-                    stringResource(R.string.book_delete_message),
+                    stringResource(wording.deleteMessage),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             },

@@ -63,6 +63,7 @@ import com.javierreansyah.pinecone.data.local.database.dictionary.DictionaryEntr
 import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
+import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.reader.ReaderDictionaryViewModel
 import com.javierreansyah.pinecone.ui.features.reader.ReaderNavigationRouter
 import com.javierreansyah.pinecone.ui.features.reader.ReaderNotesViewModel
@@ -168,8 +169,10 @@ fun ReaderOverlay(
     BackHandler(enabled = searchState.value.isInNavMode) {
         searchViewModel.exitSearchNavigation()
     }
-    BackHandler(enabled = profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF &&
-        (selectionState.value.selectionLocator != null || selectionState.value.viewingHighlight != null)) {
+    BackHandler(
+        enabled = profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF &&
+                (selectionState.value.selectionLocator != null || selectionState.value.viewingHighlight != null)
+    ) {
         notesViewModel.hideSelectionMenu()
         notesViewModel.hideViewHighlight()
     }
@@ -182,7 +185,8 @@ fun ReaderOverlay(
             isAudio -> MaterialTheme.colorScheme.background
             else -> readerBgColor
         }
-        val effectiveTextColor = if (isAudio) MaterialTheme.colorScheme.onBackground else readerTextColor
+        val effectiveTextColor =
+            if (isAudio) MaterialTheme.colorScheme.onBackground else readerTextColor
 
         Box(modifier = Modifier.fillMaxSize()) {
             if (isAudio) {
@@ -209,7 +213,8 @@ fun ReaderOverlay(
                             viewModel.audioSession.locator.value?.let { locator ->
                                 notesViewModel.addNoteAndEdit(
                                     locator,
-                                    locator.title ?: audioState.chapter.ifBlank { bookState.value.chapter },
+                                    locator.title
+                                        ?: audioState.chapter.ifBlank { bookState.value.chapter },
                                 )
                             }
                         }
@@ -370,6 +375,9 @@ fun ReaderOverlay(
             )
 
             ReaderSheetsLayer(
+                wording = if (profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.EPUB && !bookState.value.sourceIsPdf) {
+                    PublicationWording.Books
+                } else PublicationWording.Items,
                 showToc = controlsState.value.showToc,
                 contentsInitialTab = controlsState.value.contentsInitialTab,
                 showSettings = controlsState.value.showSettings,
@@ -768,6 +776,7 @@ fun ReaderSheetsLayer(
     onUseBookSettings: (Boolean) -> Unit = {},
     onReparsePdf: (() -> Unit)? = null,
     publication: org.readium.r2.shared.publication.Publication? = null,
+    wording: PublicationWording = PublicationWording.Items,
 ) {
     val settingsSheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
@@ -836,6 +845,7 @@ fun ReaderSheetsLayer(
         exit = fadeOut(animationSpec = actionsEffectsSpec),
     ) {
         ReaderSearch(
+            wording = wording,
             query = searchQuery,
             results = searchResults,
             isLoading = searchLoading,
