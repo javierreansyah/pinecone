@@ -1,12 +1,14 @@
 package com.javierreansyah.pinecone.ui.components
 
 import androidx.compose.runtime.MonotonicFrameClock
+import androidx.compose.material3.MotionScheme
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ScreenDismissStateTest {
+    private val motionSpec = MotionScheme.expressive().defaultEffectsSpec<Float>()
     @Test
     fun committedGestureFinishesShrinkingBeforeFlyingAndClosesOnlyOnce() {
         val state = ScreenDismissState()
@@ -16,12 +18,12 @@ class ScreenDismissStateTest {
         var closes = 0
 
         runBlocking(clock) {
-            state.dismiss {
+            state.dismiss(motionSpec) {
                 assertEquals(1f, state.progress)
                 assertEquals(1f, state.exit)
                 closes++
             }
-            state.dismiss { closes++ }
+            state.dismiss(motionSpec) { closes++ }
         }
 
         assertTrue(frames.any { (progress, exit) -> progress > 0.37f && progress < 1f && exit == 0f })
@@ -36,7 +38,7 @@ class ScreenDismissStateTest {
         state.seek(0.65f)
         val frames = mutableListOf<Pair<Float, Float>>()
 
-        runBlocking(FrameClock { frames += state.progress to state.exit }) { state.restore() }
+        runBlocking(FrameClock { frames += state.progress to state.exit }) { state.restore(motionSpec) }
 
         assertEquals(0f, state.progress)
         assertTrue(frames.all { (_, exit) -> exit == 0f })
@@ -48,12 +50,12 @@ class ScreenDismissStateTest {
     fun buttonBackUsesBothPhasesAndResetAllowsAnotherNavigation() {
         val state = ScreenDismissState()
         var closes = 0
-        runBlocking(FrameClock {}) { state.dismiss { closes++ } }
+        runBlocking(FrameClock {}) { state.dismiss(motionSpec) { closes++ } }
         state.reset()
 
         assertEquals(0f, state.progress)
         assertEquals(0f, state.exit)
-        runBlocking(FrameClock {}) { state.dismiss { closes++ } }
+        runBlocking(FrameClock {}) { state.dismiss(motionSpec) { closes++ } }
         assertEquals(2, closes)
     }
 

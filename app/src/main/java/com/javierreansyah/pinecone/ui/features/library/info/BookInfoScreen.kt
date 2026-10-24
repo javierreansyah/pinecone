@@ -415,7 +415,7 @@ private fun BookInfoContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .wrapContentHeight()
-                    .animateContentSize(),
+                    .animateContentSize(animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()),
                 verticalAlignment = Alignment.Top,
             ) { page ->
                 when (page) {
@@ -1081,6 +1081,7 @@ private fun BookButtonGroup(
                         ) {
                             val rotation: Float by animateFloatAsState(
                                 targetValue = if (splitMenuExpanded) 180f else 0f,
+                                animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
                                 label = "Trailing Icon Rotation",
                             )
                             Icon(
@@ -1429,7 +1430,7 @@ private fun BookDescription(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
                 .fillMaxWidth()
-                .animateContentSize(),
+                .animateContentSize(animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()),
         )
         if (description.length > 200) {
             val labelText =

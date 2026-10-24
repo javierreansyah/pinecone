@@ -34,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.composables.icons.materialsymbols.outlinedfilled.Forest as FilledForest
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Add
 import com.composables.icons.materialsymbols.outlined.Archive
@@ -67,12 +68,12 @@ fun AppDrawer(
     onNavigateToDictionaries: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
+    val onClose: () -> Unit = { scope.launch { drawerState.collapse() } }
 
     ModalWideNavigationRail(
         state = drawerState,
         hideOnCollapse = true,
         modifier = Modifier.fillMaxHeight(),
-        expandedHeaderTopPadding = 0.dp,
         contentPadding = PaddingValues(0.dp),
     ) {
         Column(
@@ -81,9 +82,7 @@ fun AppDrawer(
                 .verticalScroll(rememberScrollState()),
         ) {
             IconButton(
-                onClick = {
-                    scope.launch { drawerState.collapse() }
-                },
+                onClick = onClose,
                 modifier = Modifier
                     .padding(start = 8.dp, top = 8.dp),
             ) {
@@ -141,7 +140,7 @@ fun AppDrawer(
                             onClick = {
                                 menuExpanded = false
                                 onImportFilesClick()
-                                scope.launch { drawerState.collapse() }
+                                onClose()
                             },
                         )
                         SelectableDropdownMenuItem(
@@ -158,7 +157,7 @@ fun AppDrawer(
                             onClick = {
                                 menuExpanded = false
                                 onScanFolderClick()
-                                scope.launch { drawerState.collapse() }
+                                onClose()
                             },
                         )
                     }
@@ -178,7 +177,7 @@ fun AppDrawer(
                     selected = false,
                     onClick = {
                         onNavigateToUnsorted()
-                        scope.launch { drawerState.collapse() }
+                        onClose()
                     },
                 )
             }
@@ -196,7 +195,7 @@ fun AppDrawer(
                     selected = false,
                     onClick = {
                         onNavigateToAllSpaces()
-                        scope.launch { drawerState.collapse() }
+                        onClose()
                     },
                 )
             }
@@ -213,7 +212,7 @@ fun AppDrawer(
                 selected = false,
                 onClick = {
                     onNavigateToArchives()
-                    scope.launch { drawerState.collapse() }
+                    onClose()
                 },
             )
 
@@ -229,7 +228,7 @@ fun AppDrawer(
                 selected = false,
                 onClick = {
                     onNavigateToDictionaries()
-                    scope.launch { drawerState.collapse() }
+                    onClose()
                 },
             )
 
@@ -245,7 +244,7 @@ fun AppDrawer(
                 selected = false,
                 onClick = {
                     onNavigateToSettings()
-                    scope.launch { drawerState.collapse() }
+                    onClose()
                 },
             )
 
@@ -265,7 +264,7 @@ fun AppDrawer(
                             AnimatedSelectionIcon(
                                 selected = selectedSpaceId == null || selectedSpaceId == "_all_",
                                 outlinedIcon = MaterialSymbols.Outlined.Forest,
-                                filledIcon = MaterialSymbols.OutlinedFilled.Forest,
+                                filledIcon = MaterialSymbols.OutlinedFilled.FilledForest,
                                 contentDescription = null,
                             )
                         },
@@ -273,7 +272,7 @@ fun AppDrawer(
                         selected = selectedSpaceId == null || selectedSpaceId == "_all_",
                         onClick = {
                             onSpaceSelected("_all_")
-                            scope.launch { drawerState.collapse() }
+                            onClose()
                         },
                     )
                 }
@@ -285,7 +284,7 @@ fun AppDrawer(
                             AnimatedSelectionIcon(
                                 selected = selectedSpaceId == spaceId,
                                 outlinedIcon = MaterialSymbols.Outlined.Forest,
-                                filledIcon = MaterialSymbols.OutlinedFilled.Forest,
+                                filledIcon = MaterialSymbols.OutlinedFilled.FilledForest,
                                 contentDescription = null,
                             )
                         },
@@ -293,7 +292,7 @@ fun AppDrawer(
                         selected = selectedSpaceId == spaceId,
                         onClick = {
                             onSpaceSelected(spaceId)
-                            scope.launch { drawerState.collapse() }
+                            onClose()
                         },
                     )
                 }

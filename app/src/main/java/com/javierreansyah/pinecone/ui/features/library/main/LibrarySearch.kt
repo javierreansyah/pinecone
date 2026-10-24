@@ -2,7 +2,6 @@ package com.javierreansyah.pinecone.ui.features.library.main
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
@@ -311,12 +310,15 @@ private fun SearchInputField(
     onSearchQueryChange: (String) -> Unit,
 ) {
     val isExpanded = searchBarState.targetValue == SearchBarValue.Expanded
+    val inputEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val scope = rememberCoroutineScope()
 
     val alignmentBias by animateFloatAsState(
-        targetValue = if (isExpanded) -1f else 0f, label = "placeholderAlignment",
+        targetValue = if (isExpanded) -1f else 0f,
+        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+        label = "placeholderAlignment",
     )
 
     val launchVoiceSearch = rememberVoiceSearchLauncher { spokenText ->
@@ -356,8 +358,8 @@ private fun SearchInputField(
         leadingIcon = {
             AnimatedVisibility(
                 visible = isExpanded,
-                enter = fadeIn(animationSpec = tween(durationMillis = 150, delayMillis = 200)),
-                exit = fadeOut(animationSpec = tween(durationMillis = 50)),
+                enter = fadeIn(animationSpec = inputEffectsSpec),
+                exit = fadeOut(animationSpec = inputEffectsSpec),
             ) {
                 IconButton(
                     onClick = {
@@ -376,8 +378,8 @@ private fun SearchInputField(
         trailingIcon = {
             AnimatedVisibility(
                 visible = isExpanded,
-                enter = fadeIn(animationSpec = tween(durationMillis = 150, delayMillis = 200)),
-                exit = fadeOut(animationSpec = tween(durationMillis = 50)),
+                enter = fadeIn(animationSpec = inputEffectsSpec),
+                exit = fadeOut(animationSpec = inputEffectsSpec),
             ) {
                 if (textFieldState.text.isNotEmpty()) {
                     IconButton(

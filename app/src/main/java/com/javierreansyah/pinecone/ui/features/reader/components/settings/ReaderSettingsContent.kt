@@ -63,6 +63,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
+import com.composables.icons.materialsymbols.outlinedfilled.Brightness_auto as FilledBrightnessAuto
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Brightness_medium
 import com.composables.icons.materialsymbols.outlined.Contrast
@@ -72,7 +73,7 @@ import com.composables.icons.materialsymbols.outlined.Format_align_right
 import com.composables.icons.materialsymbols.outlined.Image
 import com.composables.icons.materialsymbols.outlined.Invert_colors
 import com.composables.icons.materialsymbols.outlined.Restart_alt
-import com.composables.icons.materialsymbols.outlinedfilled.Brightness_auto
+
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.CustomPineconeTheme
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
@@ -851,7 +852,7 @@ internal fun ReaderBrightnessControl(
                 AnimatedSelectionIcon(
                     selected = settings.autoBrightness,
                     outlinedIcon = MaterialSymbols.Outlined.Brightness_medium,
-                    filledIcon = MaterialSymbols.OutlinedFilled.Brightness_auto,
+                    filledIcon = MaterialSymbols.OutlinedFilled.FilledBrightnessAuto,
                     contentDescription = stringResource(R.string.reader_settings_auto_brightness),
                 )
             }
@@ -900,7 +901,6 @@ internal fun AdvancedTabContent(
 
     Column {
         content()
-
 
         if (includeTextPreferences) {
             Row(

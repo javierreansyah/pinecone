@@ -61,6 +61,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.composables.icons.materialsymbols.outlinedfilled.Bookmark_check as FilledBookmarkCheck
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Bookmark
@@ -73,7 +74,7 @@ import com.composables.icons.materialsymbols.outlined.Match_case
 import com.composables.icons.materialsymbols.outlined.More_vert
 import com.composables.icons.materialsymbols.outlined.Restart_alt
 import com.composables.icons.materialsymbols.outlined.Search
-import com.composables.icons.materialsymbols.outlinedfilled.Bookmark_check
+
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
 import org.readium.r2.shared.publication.Locator
@@ -256,7 +257,7 @@ fun ReaderTopBar(
                                     AnimatedSelectionIcon(
                                         selected = isBookmarked,
                                         outlinedIcon = MaterialSymbols.Outlined.Bookmark,
-                                        filledIcon = MaterialSymbols.OutlinedFilled.Bookmark_check,
+                                        filledIcon = MaterialSymbols.OutlinedFilled.FilledBookmarkCheck,
                                         contentDescription = if (isBookmarked) stringResource(R.string.reader_remove_bookmark) else stringResource(
                                             R.string.reader_add_bookmark,
                                         ),

@@ -20,7 +20,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
-import coil3.request.crossfade
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.CoverDisplayMode
 import com.javierreansyah.pinecone.data.model.Book
@@ -42,7 +41,6 @@ fun CoverImage(
             ImageRequest.Builder(context)
                 .data(File(book.coverPath))
                 .memoryCacheKey(book.coverPath)
-                .crossfade(150)
                 .build()
         }
 
@@ -110,7 +108,6 @@ fun AutoWidthCoverImage(
             ImageRequest.Builder(context)
                 .data(File(book.coverPath))
                 .memoryCacheKey(book.coverPath)
-                .crossfade(150)
                 .build()
         }
         val painter = rememberAsyncImagePainter(
