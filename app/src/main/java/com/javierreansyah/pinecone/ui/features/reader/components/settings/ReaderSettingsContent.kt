@@ -222,6 +222,8 @@ fun ReaderSettingsContent(
                                         useBookSettings,
                                         onUseBookSettings
                                     )
+                                },
+                                textPreferencesContent = {
                                     editor?.let { preferences ->
                                         if (preferences.verticalText.isEffective) PreferenceSwitch(
                                             stringResource(R.string.reader_vertical_text),
@@ -888,6 +890,7 @@ internal fun AdvancedTabContent(
     includeTextPreferences: Boolean = true,
     onRestoreDefaultsClick: () -> Unit,
     content: @Composable () -> Unit = {},
+    textPreferencesContent: @Composable () -> Unit = {},
 ) {
     var showDictionaryDialog by remember { mutableStateOf(value = false) }
     var showOrientationDialog by remember { mutableStateOf(value = false) }
@@ -1122,6 +1125,8 @@ internal fun AdvancedTabContent(
                 onCheckedChange = { onSettingsChange(settings.copy(hyphens = it)) },
                 enabled = !settings.publisherStyles,
             )
+
+            textPreferencesContent()
 
             SettingsSwitchRow(
                 title = stringResource(R.string.reader_settings_text_normalization),
