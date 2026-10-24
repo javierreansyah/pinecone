@@ -101,6 +101,10 @@ fun ReaderTopBar(
     showReadMode: Boolean = false,
     readMode: Boolean = false,
     onToggleReadMode: () -> Unit = {},
+    converting: Boolean = false,
+    conversionPage: Int = 0,
+    conversionTotal: Int = 0,
+    onCancelConversion: () -> Unit = {},
 ) {
     Box(
         modifier = modifier
@@ -164,6 +168,9 @@ fun ReaderTopBar(
                 }
             },
             actions = {
+                if (converting) {
+                    ConversionProgressAction(conversionPage, conversionTotal, readerTextColor, onCancelConversion)
+                }
                 val topBarState = when {
                     isInSearchMode -> TopBarState.SEARCH
                     jumpOrigin != null -> TopBarState.JUMP
@@ -220,7 +227,7 @@ fun ReaderTopBar(
                                 Spacer(modifier = Modifier.width(4.dp))
                             }
 
-                            if (showReadMode) {
+                            if (showReadMode && !converting) {
                                 IconButton(onClick = onToggleReadMode) {
                                     Icon(
                                         imageVector = if (readMode) MaterialSymbols.Outlined.Description else Icons.AutoMirrored.Rounded.MenuBook,

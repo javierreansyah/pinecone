@@ -163,7 +163,7 @@ class PdfReadModeConverter {
     }
 
     companion object {
-        const val VERSION: Int = 17
+        const val VERSION: Int = 20
         fun joinLines(text: String): String =
             text.replace(Regex("(?<=\\p{L})-\\r?\\n(?=\\p{Ll})"), "")
                 .replace(Regex("[\\r\\n]+"), " ").replace(Regex("[ \\t]+"), " ").trim()

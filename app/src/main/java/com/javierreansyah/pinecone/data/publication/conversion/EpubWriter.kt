@@ -88,7 +88,7 @@ class EpubWriter(
                     ".reflow-list .list-item{display:grid;grid-template-columns:var(--list-marker-width,.6em) minmax(0,1fr);column-gap:.45em;padding:0;margin:0 0 .65em;text-indent:0!important}" +
                     ".list-marker{text-align:start;font-variant-numeric:tabular-nums}.list-content{min-width:0;text-indent:0!important}.list-item>.reflow-list{grid-column:2}" +
                     ".reference,.reference-continuation{padding-inline-start:0;text-indent:0!important;overflow-wrap:anywhere}" +
-                    ".table-scroll{max-width:100%;overflow-x:auto;margin:1em 0}table{border-collapse:collapse;font-size:.9em}" +
+                    ".table-scroll{max-width:100%;max-height:calc(100vh - 2em);overflow:auto;overscroll-behavior:contain;margin:1em 0}table{border-collapse:collapse;font-size:.9em}" +
                     "th,td{padding:.35em .6em;text-align:start;vertical-align:top;border-bottom:1px solid currentColor}" +
                     "th{font-weight:700}thead{display:table-header-group}tr{break-inside:avoid}" +
                     ".math-transcript{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}").toByteArray()
