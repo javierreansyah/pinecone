@@ -193,7 +193,11 @@ inline fun SegmentedLazyColumn(
             key(item.key ?: index) {
                 item.wrapper {
                     SegmentedListItem(
-                        modifier = Modifier.animateItem(),
+                        modifier = Modifier.animateItem(
+                            fadeInSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
+                            placementSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+                            fadeOutSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
+                        ),
                         selected = item.selected,
                         onClick = item.onClick,
                         onLongClick = item.onLongClick,
@@ -269,6 +273,7 @@ fun SegmentedListItem(
     val containerColor = if (animated) {
         val animatedContainer by animateColorAsState(
             targetValue = targetContainerColor,
+            animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
             label = "color",
         )
         animatedContainer
@@ -281,6 +286,7 @@ fun SegmentedListItem(
     val baseContentColor = if (animated) {
         val animatedBaseContent by animateColorAsState(
             targetValue = targetBaseContentColor,
+            animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
             label = "contentColor",
         )
         animatedBaseContent

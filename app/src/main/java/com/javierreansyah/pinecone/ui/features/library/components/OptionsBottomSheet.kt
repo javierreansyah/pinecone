@@ -29,6 +29,10 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.composables.icons.materialsymbols.outlinedfilled.Calendar_view_month as FilledCalendarViewMonth
+import com.composables.icons.materialsymbols.outlinedfilled.View_carousel as FilledViewCarousel
+import com.composables.icons.materialsymbols.outlinedfilled.View_list as FilledViewList
+import com.composables.icons.materialsymbols.outlinedfilled.Window as FilledWindow
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_drop_down
 import com.composables.icons.materialsymbols.outlined.Arrow_drop_up
@@ -452,10 +456,10 @@ private fun LayoutModeIcon(mode: LayoutMode, selected: Boolean) {
         LayoutMode.BigList -> MaterialSymbols.Outlined.View_carousel
     }
     val filledIcon = when (mode) {
-        LayoutMode.Grid -> MaterialSymbols.OutlinedFilled.Calendar_view_month
-        LayoutMode.BigGrid -> MaterialSymbols.OutlinedFilled.Window
-        LayoutMode.List -> MaterialSymbols.OutlinedFilled.View_list
-        LayoutMode.BigList -> MaterialSymbols.OutlinedFilled.View_carousel
+        LayoutMode.Grid -> MaterialSymbols.OutlinedFilled.FilledCalendarViewMonth
+        LayoutMode.BigGrid -> MaterialSymbols.OutlinedFilled.FilledWindow
+        LayoutMode.List -> MaterialSymbols.OutlinedFilled.FilledViewList
+        LayoutMode.BigList -> MaterialSymbols.OutlinedFilled.FilledViewCarousel
     }
     AnimatedSelectionIcon(selected, outlinedIcon, filledIcon, contentDescription = null)
 }

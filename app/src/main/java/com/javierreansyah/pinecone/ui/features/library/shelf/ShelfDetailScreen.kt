@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -807,6 +806,7 @@ private fun ShelfDetailBookListContent(
     modifier: Modifier = Modifier,
     scrollKey: Any? = null,
 ) {
+    val layoutEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
     Box(
         modifier = modifier.fillMaxSize(),
     ) {
@@ -837,16 +837,13 @@ private fun ShelfDetailBookListContent(
                 targetState = isReordering,
                 transitionSpec = {
                     fadeIn(
-                        animationSpec = tween(
-                            durationMillis = 100,
-                            delayMillis = 100,
-                        ),
+                        animationSpec = layoutEffectsSpec,
                     ) + scaleIn(
                         initialScale = 0.9f,
-                        animationSpec = tween(durationMillis = 100, delayMillis = 100),
-                    ) togetherWith fadeOut(animationSpec = tween(durationMillis = 100)) + scaleOut(
+                        animationSpec = layoutEffectsSpec,
+                    ) togetherWith fadeOut(animationSpec = layoutEffectsSpec) + scaleOut(
                         targetScale = 0.9f,
-                        animationSpec = tween(durationMillis = 100),
+                        animationSpec = layoutEffectsSpec,
                     )
                 },
                 label = "shelfDetailContentReorderTransition",
@@ -870,7 +867,11 @@ private fun ShelfDetailBookListContent(
                             reorderBooks,
                             { (itId4, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId4 }) { item ->
                             ReorderableItem(reorderState, key = item.id) { isDragging ->
-                                val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp)
+                                val elevation by animateDpAsState(
+                                    targetValue = if (isDragging) 8.dp else 0.dp,
+                                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+                                    label = "Reorder elevation",
+                                )
                                 Surface(
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = if (isDragging) MaterialTheme.shapes.small else RectangleShape,

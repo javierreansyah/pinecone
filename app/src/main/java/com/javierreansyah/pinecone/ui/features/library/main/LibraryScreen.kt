@@ -30,24 +30,19 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.composables.icons.materialsymbols.outlinedfilled.Book as FilledBook
+import com.composables.icons.materialsymbols.outlinedfilled.Folder as FilledFolder
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Book
 import com.composables.icons.materialsymbols.outlined.Folder
@@ -177,13 +172,8 @@ fun LibraryScreen(
     onImportFilesClick: () -> Unit,
     onScanFolderClick: () -> Unit,
 ) {
-    val drawerState =
-        rememberWideNavigationRailState(initialValue = WideNavigationRailValue.Collapsed)
+    val drawerState = rememberWideNavigationRailState(initialValue = WideNavigationRailValue.Collapsed)
     val scope = rememberCoroutineScope()
-
-    BackHandler(enabled = drawerState.currentValue == WideNavigationRailValue.Expanded) {
-        scope.launch { drawerState.collapse() }
-    }
 
     val showFilterSheet = remember { mutableStateOf(value = false) }
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
@@ -211,53 +201,6 @@ fun LibraryScreen(
 
     val isMultiSelect = isInMultiSelectMode && !isShelvesTab
     val isShelvesMultiSelect = isInMultiSelectMode && isShelvesTab
-
-    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    val canSwipeOpenRail by rememberUpdatedState {
-        !isInMultiSelectMode && !showFilterSheet.value && selectedBookContext == null &&
-                drawerState.targetValue == WideNavigationRailValue.Collapsed &&
-                (if (isRtl) !pagerState.canScrollForward else !pagerState.canScrollBackward)
-    }
-    val railSwipeConnection = remember(pagerState) {
-        object : NestedScrollConnection {
-            var trackingDrag = false
-            var startedAtLeftEdge = false
-            var opened = false
-
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (source == NestedScrollSource.UserInput && available.x != 0f && !trackingDrag) {
-                    trackingDrag = true
-                    startedAtLeftEdge = canSwipeOpenRail()
-                }
-                return Offset.Zero
-            }
-
-            override fun onPostScroll(
-                consumed: Offset,
-                available: Offset,
-                source: NestedScrollSource,
-            ): Offset {
-                if (source != NestedScrollSource.UserInput || !startedAtLeftEdge || !canSwipeOpenRail()) {
-                    return Offset.Zero
-                }
-                // The pager has already applied horizontal touch slop. Start the native rail
-                // animation on the first outward delta instead of imposing a second threshold.
-                if (available.x > 0f && !opened) {
-                    opened = true
-                    scope.launch { drawerState.expand() }
-                }
-                // Let the pager handle page changes; consume only the outward drag at its edge.
-                return Offset(available.x.coerceAtLeast(0f), 0f)
-            }
-
-            override suspend fun onPreFling(available: Velocity): Velocity {
-                trackingDrag = false
-                startedAtLeftEdge = false
-                opened = false
-                return Velocity.Zero
-            }
-        }
-    }
 
     val exitMultiSelect = {
         if (isShelvesTab) {
@@ -388,9 +331,7 @@ fun LibraryScreen(
                         HorizontalPager(
                             state = pagerState,
                             userScrollEnabled = !isInMultiSelectMode,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .nestedScroll(railSwipeConnection),
+                            modifier = Modifier.fillMaxSize(),
                         ) { page ->
                             when (if (libraryView == LibraryView.Shelves) 1 else page) {
                                 0 -> {
@@ -627,7 +568,7 @@ private fun LibraryShortBottomNavigation(
                 AnimatedSelectionIcon(
                     selected = currentPage == 0,
                     outlinedIcon = MaterialSymbols.Outlined.Book,
-                    filledIcon = MaterialSymbols.OutlinedFilled.Book,
+                    filledIcon = MaterialSymbols.OutlinedFilled.FilledBook,
                     contentDescription = stringResource(wording.libraryTab),
                 )
             },
@@ -640,7 +581,7 @@ private fun LibraryShortBottomNavigation(
                 AnimatedSelectionIcon(
                     selected = currentPage == 1,
                     outlinedIcon = MaterialSymbols.Outlined.Folder,
-                    filledIcon = MaterialSymbols.OutlinedFilled.Folder,
+                    filledIcon = MaterialSymbols.OutlinedFilled.FilledFolder,
                     contentDescription = stringResource(R.string.library_tab_shelves),
                 )
             },

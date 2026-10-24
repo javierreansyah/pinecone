@@ -45,6 +45,8 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
+import com.composables.icons.materialsymbols.outlinedfilled.Folder as FilledFolder
+import com.composables.icons.materialsymbols.outlinedfilled.Forest as FilledForest
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Folder
@@ -343,7 +345,7 @@ private fun OrganizeContent(
                                 AnimatedSelectionIcon(
                                     selected = isSpaceSelected,
                                     outlinedIcon = if (spacesEnabled) MaterialSymbols.Outlined.Forest else MaterialSymbols.Outlined.Folder,
-                                    filledIcon = if (spacesEnabled) MaterialSymbols.OutlinedFilled.Forest else MaterialSymbols.OutlinedFilled.Folder,
+                                    filledIcon = if (spacesEnabled) MaterialSymbols.OutlinedFilled.FilledForest else MaterialSymbols.OutlinedFilled.FilledFolder,
                                     contentDescription = null,
                                     tint = if (isSpaceSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.primary,
                                 )
@@ -374,7 +376,7 @@ private fun OrganizeContent(
                                     AnimatedSelectionIcon(
                                         selected = isShelfSelected,
                                         outlinedIcon = MaterialSymbols.Outlined.Folder,
-                                        filledIcon = MaterialSymbols.OutlinedFilled.Folder,
+                                        filledIcon = MaterialSymbols.OutlinedFilled.FilledFolder,
                                         contentDescription = null,
                                         tint = if (isShelfSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.secondary,
                                     )

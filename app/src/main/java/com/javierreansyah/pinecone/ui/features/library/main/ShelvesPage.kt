@@ -1,7 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library.main
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -64,6 +63,7 @@ fun ShelvesPage(
     bottomContentPadding: Dp = 0.dp,
     onShelfToggleSelect: ((String) -> Unit)? = null,
 ) {
+    val layoutEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
 
     key(scrollKey) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.TopStart) {
@@ -71,13 +71,13 @@ fun ShelvesPage(
                 AnimatedContent(
                     targetState = layoutMode,
                     transitionSpec = {
-                        fadeIn(animationSpec = tween(durationMillis = 100, delayMillis = 100)) +
+                        fadeIn(animationSpec = layoutEffectsSpec) +
                                 scaleIn(
                                     initialScale = 0.9f,
-                                    animationSpec = tween(durationMillis = 100, delayMillis = 100),
-                                ) togetherWith fadeOut(animationSpec = tween(durationMillis = 100)) + scaleOut(
+                                    animationSpec = layoutEffectsSpec,
+                                ) togetherWith fadeOut(animationSpec = layoutEffectsSpec) + scaleOut(
                             targetScale = 0.9f,
-                            animationSpec = tween(durationMillis = 100),
+                            animationSpec = layoutEffectsSpec,
                         )
                     },
                     label = "shelvesPageLayoutTransition",

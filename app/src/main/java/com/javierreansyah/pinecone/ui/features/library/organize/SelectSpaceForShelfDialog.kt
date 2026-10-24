@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.composables.icons.materialsymbols.outlinedfilled.Forest as FilledForest
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Forest
 import com.javierreansyah.pinecone.R
@@ -78,7 +79,7 @@ fun SelectSpaceForShelfDialog(
                                 AnimatedSelectionIcon(
                                     selected = isSelected,
                                     outlinedIcon = MaterialSymbols.Outlined.Forest,
-                                    filledIcon = MaterialSymbols.OutlinedFilled.Forest,
+                                    filledIcon = MaterialSymbols.OutlinedFilled.FilledForest,
                                     contentDescription = null,
                                     tint = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.primary,
                                 )

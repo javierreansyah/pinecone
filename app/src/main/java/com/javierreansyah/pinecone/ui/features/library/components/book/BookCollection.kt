@@ -1,7 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library.components.book
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -13,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
@@ -35,17 +35,18 @@ fun BookCollection(
     scrollKey: Any? = null,
     bottomContentPadding: Dp = LocalAudioPlayerBottomPadding.current,
 ) {
+    val layoutEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
     key(scrollKey) {
         AnimatedContent(
             targetState = layoutMode,
             transitionSpec = {
-                fadeIn(animationSpec = tween(durationMillis = 100, delayMillis = 100)) +
+                fadeIn(animationSpec = layoutEffectsSpec) +
                         scaleIn(
                             initialScale = 0.9f,
-                            animationSpec = tween(durationMillis = 100, delayMillis = 100),
-                        ) togetherWith fadeOut(animationSpec = tween(durationMillis = 100)) + scaleOut(
+                            animationSpec = layoutEffectsSpec,
+                        ) togetherWith fadeOut(animationSpec = layoutEffectsSpec) + scaleOut(
                     targetScale = 0.9f,
-                    animationSpec = tween(durationMillis = 100)
+                    animationSpec = layoutEffectsSpec
                 )
             },
             label = "bookCollectionLayoutTransition",

@@ -200,8 +200,8 @@ fun BookCoverWithSelection(
             Box(modifier = Modifier.matchParentSize()) {
                 AnimatedVisibility(
                     visible = isSelected && !isList,
-                    enter = fadeIn(),
-                    exit = fadeOut(),
+                    enter = fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()),
+                    exit = fadeOut(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()),
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     Box(

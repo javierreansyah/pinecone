@@ -1,9 +1,8 @@
 package com.javierreansyah.pinecone.ui.components
 
 import androidx.activity.compose.PredictiveBackHandler
-import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.animate
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,9 +26,6 @@ import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 
 internal const val ScreenMinimizedScale = 0.9f
-internal const val ScreenShrinkMillis = 80
-internal const val ScreenExitMillis = 180
-internal const val ScreenReturnMillis = 180
 
 /** Shared by navigation and overlays; only the outer surface knows about gesture progress. */
 @Stable
@@ -45,22 +41,22 @@ internal class ScreenDismissState {
         if (!isDismissing) this.progress = progress.coerceIn(0f, 1f)
     }
 
-    suspend fun restore() {
-        animate(progress, 0f, animationSpec = tween(ScreenReturnMillis)) { value, _ ->
+    suspend fun restore(animationSpec: FiniteAnimationSpec<Float>) {
+        animate(progress, 0f, animationSpec = animationSpec) { value, _ ->
             progress = value
         }
     }
 
-    suspend fun dismiss(onDismissed: () -> Unit) {
+    suspend fun dismiss(animationSpec: FiniteAnimationSpec<Float>, onDismissed: () -> Unit) {
         if (isDismissing) return
         isDismissing = true
         // Settle into the box first, including when Back was tapped instead of swiped.
-        animate(progress, 1f, animationSpec = tween(ScreenShrinkMillis)) { value, _ ->
+        animate(progress, 1f, animationSpec = animationSpec) { value, _ ->
             progress = value
         }
         animate(
             exit, 1f,
-            animationSpec = tween(ScreenExitMillis, easing = FastOutSlowInEasing),
+            animationSpec = animationSpec,
         ) { value, _ -> exit = value }
         onDismissed()
     }
@@ -105,6 +101,7 @@ fun PredictiveBackOverlay(
     backgroundColor: Color = MaterialTheme.colorScheme.surface,
     content: @Composable (onBack: () -> Unit) -> Unit,
 ) {
+    val motionSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
     val state = remember { ScreenDismissState() }
     val scope = rememberCoroutineScope()
     val currentOnClose by rememberUpdatedState(onClose)
@@ -112,7 +109,7 @@ fun PredictiveBackOverlay(
     val dismiss: () -> Unit = {
         if (!state.isDismissing) {
             animation?.cancel()
-            animation = scope.launch { state.dismiss { currentOnClose() } }
+            animation = scope.launch { state.dismiss(motionSpec) { currentOnClose() } }
         }
     }
 
@@ -125,7 +122,7 @@ fun PredictiveBackOverlay(
                 it.collect { event -> state.seek(event.progress) }
                 dismiss()
             } catch (_: CancellationException) {
-                animation = scope.launch { state.restore() }
+                animation = scope.launch { state.restore(motionSpec) }
             }
         }
     }

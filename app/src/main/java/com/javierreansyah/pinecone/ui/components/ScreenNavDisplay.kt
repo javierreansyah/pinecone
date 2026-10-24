@@ -5,12 +5,12 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.SeekableTransitionState
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.rememberTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
@@ -29,6 +29,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.rememberLifecycleOwner
@@ -62,6 +63,10 @@ fun <T : Any> ScreenNavDisplay(
     modifier: Modifier = Modifier,
     entryProvider: (T) -> NavEntry<T>,
 ) {
+    val entranceEffectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+    val entranceOffsetSpec = MaterialTheme.motionScheme.defaultEffectsSpec<IntOffset>()
+    val exitEffectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+    val exitOffsetSpec = MaterialTheme.motionScheme.defaultEffectsSpec<IntOffset>()
     val entries = rememberDecoratedNavEntries(backStack, entryDecorators, entryProvider)
     val currentEntry = entries.last()
     val latestEntries by rememberUpdatedState(entries)
@@ -91,7 +96,7 @@ fun <T : Any> ScreenNavDisplay(
                         transitionState.snapTo(outgoing)
                     }
                     transitionState.seekTo(0.5f, previous)
-                    motion.dismiss {
+                    motion.dismiss(exitEffectsSpec) {
                         pendingPopKey = previous.contentKey
                         currentOnBack()
                     }
@@ -144,7 +149,7 @@ fun <T : Any> ScreenNavDisplay(
             } catch (_: CancellationException) {
                 if (latestEntries.last().contentKey == outgoing.contentKey) {
                     operation = scope.launch {
-                        motion.restore()
+                        motion.restore(exitEffectsSpec)
                         transitionState.snapTo(outgoing)
                         outgoingKey = null
                         preview = false
@@ -155,30 +160,39 @@ fun <T : Any> ScreenNavDisplay(
     }
 
     Box(modifier) {
+        if (preview) {
+            // A real 0..1 timeline keeps both entries composed even though their alpha stays 1.
+            // Equal alpha endpoints alone would give a theme spring zero duration.
+            transition.animateFloat(
+                transitionSpec = { exitEffectsSpec },
+                label = "Back preview lifetime",
+            ) { entry -> if (entry.contentKey == outgoingKey) 0f else 1f }
+        }
         transition.AnimatedContent(
             modifier = Modifier.fillMaxSize(),
             contentKey = { it.contentKey },
             transitionSpec = {
                 when {
                     preview -> {
-                        // Nonzero duration keeps both entries composed while the gesture is held.
-                        (fadeIn(tween(1), initialAlpha = 1f) togetherWith
-                                fadeOut(tween(1), targetAlpha = 1f))
+                        // Keep both entries composed while the gesture is held.
+                        (fadeIn(exitEffectsSpec, initialAlpha = 1f) togetherWith
+                                fadeOut(exitEffectsSpec, targetAlpha = 1f))
                     }
 
                     latestEntries.any { it.contentKey == initialState.contentKey } -> {
-                        (scaleIn(
-                            tween(ScreenExitMillis),
-                            initialScale = ScreenMinimizedScale,
+                        (slideInHorizontally(
+                            animationSpec = entranceOffsetSpec,
+                        ) { it } + fadeIn(
+                            animationSpec = entranceEffectsSpec,
                         ) togetherWith ExitTransition.None)
                     }
 
                     else -> {
                         // Covers programmatic pops that did not use the shared Back dispatcher.
                         (EnterTransition.None togetherWith scaleOut(
-                            tween(ScreenShrinkMillis), targetScale = ScreenMinimizedScale,
+                            exitEffectsSpec, targetScale = ScreenMinimizedScale,
                         ) + slideOutHorizontally(
-                            tween(ScreenExitMillis, delayMillis = ScreenShrinkMillis),
+                            exitOffsetSpec,
                         ) { it })
                     }
                 }.apply {
