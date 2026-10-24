@@ -149,4 +149,5 @@
     <string name="reader_two_pages">Two pages</string>
     <string name="reader_unknown_chapter">Unknown chapter</string>
     <string name="reader_vertical_text">Vertical text</string>
+    <string name="reader_hide_conversion">Hide</string>
 </resources>

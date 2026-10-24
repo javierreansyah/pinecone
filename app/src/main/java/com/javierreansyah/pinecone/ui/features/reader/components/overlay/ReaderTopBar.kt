@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -55,6 +56,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -102,9 +105,8 @@ fun ReaderTopBar(
     readMode: Boolean = false,
     onToggleReadMode: () -> Unit = {},
     converting: Boolean = false,
-    conversionPage: Int = 0,
-    conversionTotal: Int = 0,
-    onCancelConversion: () -> Unit = {},
+    showConversionSpinner: Boolean = false,
+    onShowConversionProgress: () -> Unit = {},
 ) {
     Box(
         modifier = modifier
@@ -168,13 +170,18 @@ fun ReaderTopBar(
                 }
             },
             actions = {
-                if (converting) {
-                    ConversionProgressAction(
-                        conversionPage,
-                        conversionTotal,
-                        readerTextColor,
-                        onCancelConversion
-                    )
+                if (converting && showConversionSpinner) {
+                    val progressDescription = stringResource(R.string.reader_preparing_read_mode)
+                    IconButton(
+                        onClick = onShowConversionProgress,
+                        modifier = Modifier.semantics { contentDescription = progressDescription },
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = readerTextColor,
+                            strokeWidth = 2.dp,
+                        )
+                    }
                 }
                 val topBarState = when {
                     isInSearchMode -> TopBarState.SEARCH

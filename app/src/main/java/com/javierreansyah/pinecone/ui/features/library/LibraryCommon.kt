@@ -150,10 +150,9 @@ fun mapAndSortShelves(
     unshelvedLabel: String,
     globalSpaceId: String? = null,
 ): List<ShelfWithCovers> {
-    val formatsFiltered = prefs.selectedFormats != FileFilter.entries.toSet()
     val mappedShelves = sortShelfBooks(shelvesList, crossRefs, globalSpaceId).map { shelf ->
         shelf.copy(books = shelf.books.filter { it.book.fileFormat() in prefs.selectedFormats })
-    }.filter { !formatsFiltered || it.books.isNotEmpty() }
+    }.filter { it.books.isNotEmpty() }
 
     val sortedShelves = mappedShelves.let { processedShelves ->
         val baseComparator = when (prefs.sortType) {

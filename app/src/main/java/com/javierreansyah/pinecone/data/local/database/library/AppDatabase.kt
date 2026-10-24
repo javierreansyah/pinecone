@@ -27,7 +27,11 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         val BACKUP_REVISION_CALLBACK: Callback = object : Callback() {
             override fun onCreate(db: SupportSQLiteDatabase) = installRevisionTracking(db)
-            override fun onOpen(db: SupportSQLiteDatabase) = installRevisionTracking(db)
+            override fun onOpen(db: SupportSQLiteDatabase) {
+                installRevisionTracking(db)
+                // Remove empty shelves left by earlier app versions, not shelves hidden by filters.
+                db.execSQL("DELETE FROM shelves WHERE id NOT IN (SELECT DISTINCT shelfId FROM shelf_book_cross_ref) AND id != 'unshelved'")
+            }
 
             private fun installRevisionTracking(db: SupportSQLiteDatabase) {
                 db.execSQL("INSERT OR IGNORE INTO spaces (id, name, createdAt) VALUES ('_all_', 'All', 0)")

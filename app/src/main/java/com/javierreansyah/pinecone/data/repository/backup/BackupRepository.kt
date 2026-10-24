@@ -832,6 +832,7 @@ class BackupRepository(private val context: Context) {
         db.bookmarkDao().insertAll(payload.bookmarks.map { it.toEntity() })
         db.noteDao().insertAll(payload.notes.map { it.toEntity() })
         db.shelfDao().insertAllShelfBookCrossRefs(payload.shelfBookCrossRefs.map { it.toEntity() })
+        db.shelfDao().deleteEmptyShelves()
         db.spaceDao().insertAllBookSpaceCrossRefs(payload.bookSpaceCrossRefs.map { it.toEntity() })
         db.spaceDao().insertAllBookSpaceCrossRefs(books.map {
             com.javierreansyah.pinecone.data.local.database.library.BookSpaceCrossRef(
