@@ -9,9 +9,12 @@ import kotlin.math.min
 
 /** Small document-wide style/margin statistics; native page records stay on disk. */
 internal class MuPdfReflowProfile {
+    private data class MarginKey(val text: String, val bottom: Boolean)
+    private data class MarginOccurrences(var count: Int, var minY: Float, var maxY: Float)
+
     private val sizes = mutableMapOf<Int, Int>()
     private val allSizes = mutableMapOf<Int, Int>()
-    private val margins = mutableMapOf<String, Int>()
+    private val margins = mutableMapOf<MarginKey, MarginOccurrences>()
     private var pages = 0
     val bodySize: Float
         get() = (sizes.ifEmpty { allSizes }.maxByOrNull { it.value }?.key ?: 48) / 4f
@@ -25,15 +28,58 @@ internal class MuPdfReflowProfile {
                 if (!it.math) sizes[key] = (sizes[key] ?: 0) + 1
             }
         }
-        page.blocks.filter { margin(it.bounds, page.bounds) }.map { it.text.trim() }.distinct()
-            .forEach {
-                if (margins.size < 2048 || it in margins) margins[it] = (margins[it] ?: 0) + 1
+        page.blocks.filter { margin(it.bounds, page.bounds) && it.text.isNotBlank() }
+            .groupBy { marginKey(it.text, it.bounds, page.bounds) }.forEach { (key, blocks) ->
+                val positions = blocks.map { relativeY(it.bounds, page.bounds) }
+                val occurrence = margins[key]
+                if (occurrence != null) {
+                    occurrence.count++
+                    occurrence.minY = min(occurrence.minY, positions.min())
+                    occurrence.maxY = max(occurrence.maxY, positions.max())
+                } else if (margins.size < 2048) {
+                    margins[key] = MarginOccurrences(1, positions.min(), positions.max())
+                }
             }
     }
 
-    fun repeated(text: String): Boolean = (margins[text.trim()] ?: 0) >= max(3, pages / 3)
+    private fun marginKey(text: String, box: FigureBounds, page: FigureBounds) =
+        MarginKey(text.trim(), box.top > page.top + page.height / 2)
+
+    private fun relativeY(box: FigureBounds, page: FigureBounds) =
+        (box.top - page.top) / page.height.coerceAtLeast(1f)
+
+    /** Prefer retaining an ambiguous line to silently losing paragraph content. */
+    fun decoration(text: String, box: FigureBounds, page: MuPdfPageRecord): Boolean {
+        if (!margin(box, page.bounds) || text.length !in 1..160 || box.height > bodySize * 1.8f)
+            return false
+        val connected = page.blocks.any { other ->
+            val bounds = other.bounds
+            if (bounds == box || other.text.isBlank()) return@any false
+            val overlap = min(box.right, bounds.right) - max(box.left, bounds.left)
+            val lineGap = max(box.top - bounds.bottom, bounds.top - box.bottom)
+            val sameColumn = overlap > min(box.width, bounds.width) * .5f &&
+                    lineGap in -bodySize * .3f..bodySize * 1.2f
+            val sameLine = abs(box.top - bounds.top) < bodySize * .35f &&
+                    max(box.left - bounds.right, bounds.left - box.right) in -bodySize * .3f..bodySize * 2
+            sameColumn || sameLine
+        }
+        if (connected) return false
+        val occurrence = margins[marginKey(text, box, page.bounds)]
+        val repeated = occurrence != null && occurrence.count >= max(3, pages / 3) &&
+                occurrence.maxY - occurrence.minY <= .01f &&
+                abs(relativeY(box, page.bounds) - occurrence.minY) <= .01f
+        return repeated || PAGE_NUMBER.matches(text.trim())
+    }
+
     fun margin(box: FigureBounds, page: FigureBounds): Boolean =
         box.bottom < page.top + page.height * .08f || box.top > page.bottom - page.height * .10f
+
+    private companion object {
+        val PAGE_NUMBER = Regex(
+            "^(?:[0-9]+|[ivxlcdm]+|(?:Page|Halaman)\\s+\\d+(?:\\s+(?:of|/)\\s+\\d+)?)$",
+            RegexOption.IGNORE_CASE
+        )
+    }
 }
 
 internal data class MuPdfCleanPage(
@@ -85,6 +131,11 @@ internal class MuPdfReflowCleaner(private val profile: MuPdfReflowProfile) {
 
         var imageIndex = 0
         val units = mutableListOf<UnitBlock>()
+        fun addParagraph(element: Element) {
+            if (element.textContent.isBlank()) return
+            val metadata = match(element)
+            units += UnitBlock(element, listOfNotNull(metadata), metadata?.bounds ?: page.bounds)
+        }
         fun flatten(element: Element) {
             val tag = element.localTag.lowercase()
             val children = element.children()
@@ -92,20 +143,29 @@ internal class MuPdfReflowCleaner(private val profile: MuPdfReflowProfile) {
                 val box = page.images.getOrNull(imageIndex++) ?: page.bounds
                 units += UnitBlock(element, emptyList(), box, "figure")
             } else if (tag in TEXT_TAGS && children.none {
-                    it.descendants().any { child -> child.localTag.lowercase() in TEXT_TAGS }
+                    it.descendants().any { child -> child.localTag.lowercase() in BLOCK_TAGS }
                 }) {
-                if (element.descendants("img").isNotEmpty()) children.forEach(::flatten)
-                else if (element.textContent.isNotBlank()) {
-                    val metadata = match(element)
-                    units += UnitBlock(
-                        element,
-                        listOfNotNull(metadata),
-                        metadata?.bounds ?: page.bounds
-                    )
+                addParagraph(element)
+            } else {
+                // Walking only element children silently drops text nodes beside an
+                // image or nested paragraph. Flush inline fragments around each block.
+                var paragraph = document.createElementNS(XHTML, "p")
+                fun flush() {
+                    addParagraph(paragraph)
+                    paragraph = document.createElementNS(XHTML, "p")
                 }
-            } else children.forEach(::flatten)
+                (0 until element.childNodes.length).map { element.childNodes.item(it) }.forEach { child ->
+                    if (child is Element && child.descendants().any { it.localTag.lowercase() in BLOCK_TAGS }) {
+                        flush()
+                        flatten(child)
+                    } else if (child is Element || child.nodeType == Node.TEXT_NODE || child.nodeType == Node.CDATA_SECTION_NODE) {
+                        paragraph.appendChild(child.cloneNode(true))
+                    }
+                }
+                flush()
+            }
         }
-        root.descendants("body").single().children().forEach(::flatten)
+        flatten(root.descendants("body").single())
 
         val scanned = page.blocks.sumOf { it.text.count { char -> !char.isWhitespace() } } < 5
         if (scanned) {
@@ -117,7 +177,16 @@ internal class MuPdfReflowCleaner(private val profile: MuPdfReflowProfile) {
             units.clear(); units += UnitBlock(figure, emptyList(), page.bounds, "figure")
         } else {
             // Use MuPDF's table cells/spans as-is; reject prose, reference and figure false positives.
-            val tables = page.tables.filter { validTable(it, page) }
+            val tables = page.tables.filter { table ->
+                if (!validTable(table, page)) return@filter false
+                val content = folded(MuPdfStructure.parse(table.xhtml).textContent)
+                // Geometry alone is not evidence that every selected sentence made
+                // it into the cells. Fall back to prose if the table would lose text.
+                units.none { unit ->
+                    unit.texts.isNotEmpty() && table.bounds.containsCenter(unit.bounds) &&
+                            !content.contains(folded(unit.text))
+                }
+            }
             val charts = chartRegions(page, tables)
             charts.forEach { region -> replaceVisual(units, region, "figure", svg) }
             tables.filter { table -> charts.none { it.intersects(table.bounds) } }
@@ -203,13 +272,9 @@ internal class MuPdfReflowCleaner(private val profile: MuPdfReflowProfile) {
             if (unit.kind == "paragraph") unit.element = rename(unit.element, "p")
         }
         units.removeAll { unit ->
-            unit.kind == "paragraph" && profile.margin(unit.bounds, page.bounds) &&
-                    (profile.repeated(unit.text) || Regex(
-                        "^(?:[0-9]+|[ivxlcdm]+|(?:Page|Halaman)\\s+\\d+(?:\\s+(?:of|/)\\s+\\d+)?)$",
-                        RegexOption.IGNORE_CASE
-                    ).matches(unit.text))
+            unit.kind == "paragraph" && unit.text !in outline &&
+                    profile.decoration(unit.text, unit.bounds, page)
         }
-        units.removeAll { it.kind == "paragraph" && it.text.length > 10 && it.bounds.height > it.bounds.width * 3 }
         normalizeCaptions(units)
         normalizeHeadings(units, outline)
         joinDetachedListMarkers(units)
@@ -638,11 +703,7 @@ internal class MuPdfReflowCleaner(private val profile: MuPdfReflowProfile) {
                     groupCrops.getOrPut(group) {
                         val drawings = seeds.filter { group.bounds.containsCenter(it) }
                         val parts = drawings + page.blocks.filter { block ->
-                            val decoration = profile.margin(block.bounds, page.bounds) &&
-                                    (profile.repeated(block.text) || Regex(
-                                        "^(?:\\d+|[ivxlcdm]+)$",
-                                        RegexOption.IGNORE_CASE
-                                    ).matches(block.text.trim())) &&
+                            val decoration = profile.decoration(block.text, block.bounds, page) &&
                                     drawings.none { it.near(block.bounds, bodySize * 2) }
                             val sectionHeading = block.structure.startsWith("H") && drawings.none {
                                 it.near(
@@ -752,6 +813,9 @@ internal class MuPdfReflowCleaner(private val profile: MuPdfReflowProfile) {
         val selected = units.filter {
             (it.texts.isNotEmpty() || it.kind != "paragraph") && box.containsCenter(it.bounds)
         }
+        // A block's center can fall inside a drawing while its first/last lines
+        // extend outside. Replacing that whole block with this crop truncates it.
+        if (selected.any { !box.encloses(it.bounds) }) return
         val first = selected.firstOrNull() ?: units.firstOrNull() ?: return
         val transcript = selected.joinToString(" ") { it.text }
         val element = first.element.ownerDocument.createElementNS(
@@ -918,9 +982,17 @@ internal class MuPdfReflowCleaner(private val profile: MuPdfReflowProfile) {
             if (unit.kind == "paragraph") {
                 val text = unit.text
                 val numbered = Regex("^(\\d+(?:\\.\\d+)*)\\.?\\s+\\p{L}.*$").matchEntire(text)
-                val heading = text in outline ||
-                        (text.length < 120 && unit.texts.any { it.size > bodySize * 1.2f || (it.bold && numbered != null) })
-                        || (unit.texts.any { it.structure.startsWith("H") && it.bold } && text.length < 120)
+                // A native H tag may cover a body line at a page break. Without an
+                // outline entry, require separation from the next line of prose.
+                val following = units.getOrNull(index + 1)
+                val continuesParagraph = following?.kind == "paragraph" &&
+                        following.bounds.top - unit.bounds.bottom in -bodySize * .3f..bodySize * .9f &&
+                        min(unit.bounds.right, following.bounds.right) - max(unit.bounds.left, following.bounds.left) >
+                        min(unit.bounds.width, following.bounds.width) * .5f
+                val styled = text.length < 120 && unit.texts.any {
+                    it.size > bodySize * 1.2f || (it.bold && (numbered != null || it.structure.startsWith("H")))
+                }
+                val heading = text in outline || (!continuesParagraph && styled)
                 if (heading && text.length < 200 && !CAPTION.containsMatchIn(text) &&
                     (numbered != null || text in outline || (!text.endsWith('.') && text.firstOrNull()
                         ?.isLowerCase() != true))
@@ -1123,6 +1195,10 @@ internal class MuPdfReflowCleaner(private val profile: MuPdfReflowProfile) {
         private const val XHTML = "http://www.w3.org/1999/xhtml"
         private const val SVG = "http://www.w3.org/2000/svg"
         private val TEXT_TAGS = setOf("p", "h1", "h2", "h3", "h4", "h5", "h6")
+        private val BLOCK_TAGS = TEXT_TAGS + setOf(
+            "img", "div", "section", "article", "body", "ul", "ol", "li", "table",
+            "thead", "tbody", "tfoot", "tr", "td", "th", "blockquote", "pre", "figure", "figcaption"
+        )
         private const val MATH =
             "=\u2248\u2260\u2264\u2265\u2211\u220f\u222b\u221a\u00b1\u00d7\u00f7\u2202\u2207"
         private val REFERENCE = Regex("^\\s*\\[\\d+]\\s*")

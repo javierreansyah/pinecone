@@ -27,10 +27,7 @@ class MuPdfExportTest {
                             pdf,
                             index,
                             format,
-                            MuPdfPageExporter.TEXT_OPTIONS.replace(
-                                "table-hunt=yes",
-                                "table-hunt=no"
-                            )
+                            MuPdfPageExporter.PROSE_OPTIONS
                         )
                     )
                 }

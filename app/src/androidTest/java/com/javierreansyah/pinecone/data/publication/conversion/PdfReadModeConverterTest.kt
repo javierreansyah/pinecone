@@ -25,6 +25,60 @@ class PdfReadModeConverterTest {
     val logging: InstrumentationLoggingRule = InstrumentationLoggingRule()
 
     @Test
+    fun raggedParagraphEndingsStayWithTheirParagraphInReadingOrder(): Unit = runBlocking {
+        // Entirely synthetic prose: several wide lines followed by a short last line.
+        // Region segmentation can wrongly move all the short endings ahead of the prose.
+        val paragraphs = (1..4).map { paragraph ->
+            (1..5).map { line ->
+                "Paragraph $paragraph line $line has ordinary text filling the available width."
+            } + "The ending of paragraph $paragraph."
+        }
+        val commands = buildString {
+            append("BT /F1 16 Tf 1 0 0 1 220 730 Tm (Document heading) Tj ET\n")
+            paragraphs.forEachIndexed { paragraph, lines ->
+                lines.forEachIndexed { line, text ->
+                    val x = if (line == 0) 90 else 72
+                    val y = 650 - paragraph * 130 - line * 20
+                    val scale = when (line) {
+                        0 -> "114.85"
+                        lines.lastIndex -> "118.43"
+                        else -> "119.58"
+                    }
+                    append("BT /F1 14 Tf $scale Tz 1 0 0 1 $x $y Tm ($text) Tj ET\n")
+                }
+            }
+        }
+        val pdf = MuPdfDocument(Document.openDocument(vectorPdf(commands), "application/pdf"))
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val destination = File.createTempFile("ragged-paragraphs-", ".epub", context.cacheDir)
+        try {
+            PdfReadModeConverter().convert(
+                listOf(PdfSource(pdf, "synthetic.pdf")), destination,
+                "test:paragraph-order", "Paragraph order", "en",
+                GeneratedPublicationStrings("Contents", "Scanned") { "Page $it" }
+            ) { _, _ -> }
+            val entries = mutableMapOf<String, ByteArray>()
+            ZipInputStream(destination.inputStream()).use { zip ->
+                while (true) {
+                    val entry = zip.nextEntry ?: break
+                    entries[entry.name] = zip.readBytes()
+                }
+            }
+            val content = combinedContent(entries).documentElement
+            val actual = content.descendants("p").map {
+                it.textContent.replace(Regex("\\s+"), " ").trim()
+            }.filter { it != "Document heading" }
+            assertEquals(
+                "Each ending must stay in its original paragraph, not merely exist somewhere in the EPUB",
+                paragraphs.map { it.joinToString(" ") }, actual
+            )
+        } finally {
+            pdf.close()
+            destination.delete()
+        }
+    }
+
+    @Test
     fun aVectorChartKeepsItsPathsColorsAndLabelsInOneSvg(): Unit = runBlocking {
         val commands = "BT /F1 12 Tf 50 740 Td (This paragraph stays outside the chart.) Tj ET\n" +
                 "0 0 0 RG 1 w 100 300 m 100 550 l 420 550 l S\n" +

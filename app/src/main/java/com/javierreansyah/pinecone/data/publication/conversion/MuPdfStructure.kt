@@ -131,6 +131,13 @@ internal object MuPdfStructure {
         // Table hunting can move text out of the original tagged Table, leaving an
         // empty structural shell. Never zip those shells with the emitted HTML.
         val tableRoot = parse(tableXml)
+        // Canonical prose is unsegmented so ragged paragraph endings keep their
+        // reading order. Reuse the auxiliary export's layout regions for charts.
+        groups += tableRoot.descendants("struct").mapNotNull { element ->
+            val kind = element.getAttribute("std")
+            if (kind in setOf("Div", "Figure")) element.box()?.let { MuPdfRegion(kind, it) }
+            else null
+        }
         val tableRules = tableRoot.descendants("vector").mapNotNull { it.box() }
         val tableGeometry = tableRoot.descendants("struct").filter {
             it.getAttribute("std") == "Table" && it.descendants("line").isNotEmpty()
@@ -171,7 +178,7 @@ internal object MuPdfStructure {
                     rules.count { it.width <= 2f && it.height >= 10f } >= 2
             MuPdfTable(bounds, EpubWriter.serialize(element), rows, ruled)
         }
-        return MuPdfPageRecord(xhtml, pageBounds, blocks, images, vectors, groups, tables)
+        return MuPdfPageRecord(xhtml, pageBounds, blocks, images, vectors, groups.distinct(), tables)
     }
 
     /** Native exports have a known XHTML doctype; never fetch a DTD or resolve external entities. */

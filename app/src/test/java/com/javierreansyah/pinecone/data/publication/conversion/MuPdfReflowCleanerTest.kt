@@ -49,12 +49,15 @@ class MuPdfReflowCleanerTest {
 
     private fun clean(
         record: MuPdfPageRecord,
-        previous: List<SourceBlock> = emptyList()
+        previous: List<SourceBlock> = emptyList(),
+        profile: MuPdfReflowProfile = MuPdfReflowProfile().apply { observe(record) },
+        outline: Set<String> = emptySet(),
+        allowFigures: Boolean = false
     ): MuPdfCleanPage {
         var next = 0
-        return MuPdfReflowCleaner(MuPdfReflowProfile().apply { observe(record) })
-            .clean(record, 1, previous, emptySet(), svg = { bounds, standalone ->
-                assertFalse("This fixture contains equations, not figures", standalone)
+        return MuPdfReflowCleaner(profile)
+            .clean(record, 1, previous, outline, svg = { bounds, standalone ->
+                if (!allowFigures) assertFalse("This fixture contains equations, not figures", standalone)
                 MuPdfVisual(
                     "visual-${next++}.svg", "<svg xmlns=\"http://www.w3.org/2000/svg\" " +
                             "xmlns:xlink=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 ${bounds.width} ${bounds.height}\">" +
@@ -139,6 +142,142 @@ class MuPdfReflowCleanerTest {
         assertEquals(2, list.descendants("li").size)
         assertEquals("1.Initialize the state.", list.descendants("li")[0].textContent)
         assertEquals("2.Evaluate the result.", list.descendants("li")[1].textContent)
+    }
+
+    @Test
+    fun repeatedFirstLinesConnectedToBodyTextAreNotRunningHeaders() {
+        val records = (1..3).map {
+            page(
+                text("continues across the page boundary", 50f, 40f),
+                text("with the rest of paragraph $it.", 50f, 58f)
+            )
+        }
+        val profile = MuPdfReflowProfile().apply { records.forEach(::observe) }
+        records.forEach { record ->
+            val result = clean(record, profile = profile)
+            assertEquals(record.blocks.joinToString(" ") { it.text }, result.body.textContent)
+            assertEquals(1, result.body.children().size)
+        }
+    }
+
+    @Test
+    fun isolatedRunningHeadersAndPageNumbersAreStillRemoved() {
+        val records = (1..3).map {
+            page(
+                text("Book title", 50f, 20f),
+                text("The body of page $it.", 50f, 100f),
+                text(it.toString(), 300f, 760f)
+            )
+        }
+        val profile = MuPdfReflowProfile().apply { records.forEach(::observe) }
+        records.forEach { record ->
+            assertEquals(record.blocks[1].text, clean(record, profile = profile).body.textContent)
+        }
+    }
+
+    @Test
+    fun repetitionsMustBelongToTheSameMarginAndVerticalPosition() {
+        val records = listOf(20f, 40f, 760f).map { y ->
+            page(text("Repeated content", 50f, y), text("Main body text.", 50f, 100f))
+        }
+        val profile = MuPdfReflowProfile().apply { records.forEach(::observe) }
+        records.forEach { record ->
+            assertTrue(clean(record, profile = profile).body.textContent.contains("Repeated content"))
+        }
+        val topOnly = listOf(15f, 32f, 49f).map { y ->
+            page(text("Repeated content", 50f, y), text("Main body text.", 50f, 100f))
+        }
+        val topProfile = MuPdfReflowProfile().apply { topOnly.forEach(::observe) }
+        topOnly.forEach { record ->
+            assertTrue(clean(record, profile = topProfile).body.textContent.contains("Repeated content"))
+        }
+    }
+
+    @Test
+    fun numberLikeTextAtPageTopIsKeptWhenItContinuesTheParagraph() {
+        val result = clean(page(text("mix", 50f, 40f), text("the ingredients thoroughly.", 50f, 58f)))
+        assertEquals("mix the ingredients thoroughly.", result.body.textContent)
+    }
+
+    @Test
+    fun nativeHeadingTagsDoNotPromoteTheFirstLineOfAContinuingParagraph() {
+        val result = clean(
+            page(
+                text("An ordinary continuation", 50f, 40f, "H"),
+                text("of the paragraph from the preceding page.", 50f, 58f)
+            )
+        )
+        assertEquals(listOf("p"), result.body.children().map { it.localTag })
+        assertEquals(
+            "An ordinary continuation of the paragraph from the preceding page.",
+            result.body.textContent
+        )
+    }
+
+    @Test
+    fun outlineHeadingsAreNotDeletedAsRepeatedMarginText() {
+        val record = page(text("Introduction", 50f, 20f, "H"), text("Body text.", 50f, 100f))
+        val profile = MuPdfReflowProfile().apply { repeat(3) { observe(record) } }
+        val result = clean(record, profile = profile, outline = setOf("Introduction"))
+        assertEquals("Introduction", result.body.descendants("h2").single().textContent)
+    }
+
+    @Test
+    fun sentencesAroundAnInlineImageAreNotDiscarded() {
+        val before = text("The sentence before the illustration.", 50f, 100f)
+        val after = text("The sentence after the illustration.", 50f, 140f)
+        val record = page(before, after).copy(
+            xhtml = "<html><body><p>${before.text}<img src=\"illustration.png\"/>${after.text}</p></body></html>",
+            images = listOf(FigureBounds(50f, 120f, 100f, 130f))
+        )
+        val result = clean(record, allowFigures = true)
+        assertEquals(before.text + after.text, result.body.textContent)
+        assertEquals(listOf("p", "figure", "p"), result.body.children().map { it.localTag })
+    }
+
+    @Test
+    fun textBesideNestedParagraphWrappersIsNotDiscarded() {
+        val before = text("The opening sentence.", 50f, 100f)
+        val middle = text("The nested sentence.", 50f, 140f)
+        val after = text("The final sentence.", 50f, 180f)
+        val record = page(before, middle, after).copy(
+            xhtml = "<html><body><div>${before.text}<div><p>${middle.text}</p></div>${after.text}</div></body></html>"
+        )
+        assertEquals(before.text + middle.text + after.text, clean(record).body.textContent)
+    }
+
+    @Test
+    fun narrowTextBlocksAreNotDeletedBasedOnTheirAspectRatio() {
+        val sentence = text("This sentence is arranged in a narrow text column.", 50f, 200f)
+            .copy(bounds = FigureBounds(50f, 200f, 80f, 400f))
+        assertEquals(sentence.text, clean(page(sentence)).body.textContent)
+    }
+
+    @Test
+    fun aTableCannotReplaceAParagraphWhoseSentenceIsMissingFromItsCells() {
+        val sentence = "Name Value Alpha Beta This sentence must not disappear."
+        val table = MuPdfTable(
+            FigureBounds(40f, 100f, 450f, 230f),
+            "<table><tr><td>Name</td><td>Value</td></tr>" +
+                    "<tr><td>Alpha</td><td>Beta</td></tr></table>", ruled = true
+        )
+        val result = clean(page(text(sentence, 50f, 110f), tables = listOf(table)))
+        assertEquals(sentence, result.body.textContent)
+        assertTrue(result.body.descendants("table").isEmpty())
+    }
+
+    @Test
+    fun aVisualCropCannotReplaceTextThatExtendsOutsideItsBounds() {
+        val sentence = "The complete sentence extends beyond the detected drawing region."
+        val record = page(text(sentence, 50f, 100f)).copy(
+            vectors = listOf(FigureBounds(180f, 95f, 240f, 115f))
+        )
+        val result = MuPdfReflowCleaner(MuPdfReflowProfile().apply { observe(record) })
+            .clean(record, 1, emptyList(), emptySet(), svg = { _, _ ->
+                fail("A partial crop would truncate the sentence")
+                error("Unexpected visual crop")
+            }, asset = { _, _, _ -> fail("Unexpected asset") })
+        assertEquals(sentence, result.body.textContent)
     }
 
     @Test
@@ -293,6 +432,35 @@ class MuPdfReflowCleanerTest {
         assertEquals(300f, record.tables[1].bounds.top)
         assertEquals("First", record.tables[0].rows.single().single().lines.single().text)
         assertTrue("Cell-sized ruling segments form a ruled table", record.tables[0].ruled)
+    }
+
+    @Test
+    fun auxiliaryLayoutRegionsDoNotReplaceCanonicalProse() {
+        val box = FigureBounds(40f, 100f, 400f, 300f)
+        val xml = "<document><page width=\"600\" height=\"800\">" +
+                "<block bbox=\"50 100 200 120\"><line><font name=\"Regular\" size=\"12\">" +
+                "<char quad=\"50 100 200 100 50 120 200 120\" y=\"115\" c=\"Canonical prose.\"/>" +
+                "</font></line></block></page></document>"
+        val layout = "<document><page width=\"600\" height=\"800\">" +
+                "<struct std=\"Div\" bbox=\"40 100 400 300\"><vector bbox=\"50 150 300 250\"/>" +
+                "</struct></page></document>"
+        val record = MuPdfStructure.read(
+            "<html><body><p>Canonical prose.</p></body></html>", xml,
+            "<html><body/></html>", layout
+        )
+        assertEquals(listOf("Canonical prose."), record.blocks.map { it.text })
+        assertEquals(listOf(MuPdfRegion("Div", box)), record.groups)
+    }
+
+    @Test
+    fun regionSegmentationIsOnlyUsedForAuxiliaryLayoutExports() {
+        val prose = MuPdfPageExporter.PROSE_OPTIONS.split(',').toSet()
+        assertTrue("segment=no" in prose)
+        assertTrue("table-hunt=no" in prose)
+        assertTrue("paragraph-break=yes" in prose)
+        val layout = MuPdfPageExporter.TEXT_OPTIONS.split(',').toSet()
+        assertTrue("segment=yes" in layout)
+        assertTrue("table-hunt=yes" in layout)
     }
 
     @Test

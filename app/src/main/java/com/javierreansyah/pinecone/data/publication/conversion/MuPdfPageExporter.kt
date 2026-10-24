@@ -14,6 +14,12 @@ internal object MuPdfPageExporter {
             "table-hunt=yes,dehyphenate=yes,collect-styles=yes,vectors=yes,accurate-bboxes=yes," +
             "lazy-vectors=yes,vertically-collapse-bordered-cells=no"
 
+    // Region segmentation can detach short final lines from wide paragraphs and emit
+    // them before the paragraph. Use native paragraph order for the canonical prose;
+    // keep segmented exports only for auxiliary table/figure geometry.
+    val PROSE_OPTIONS: String = TEXT_OPTIONS.replace("table-hunt=yes", "table-hunt=no")
+        .replace("segment=yes", "segment=no")
+
     fun read(pdf: MuPdfDocument, index: Int, checkCancelled: () -> Unit): MuPdfPageRecord {
         checkCancelled()
         // Only page loading touches the shared document. Each worker owns its display list;
@@ -33,10 +39,7 @@ internal object MuPdfPageExporter {
                 checkCancelled()
                 return export(
                     display, bounds, format,
-                    if (tables) TEXT_OPTIONS else TEXT_OPTIONS.replace(
-                        "table-hunt=yes",
-                        "table-hunt=no"
-                    )
+                    if (tables) TEXT_OPTIONS else PROSE_OPTIONS
                 )
             }
 
