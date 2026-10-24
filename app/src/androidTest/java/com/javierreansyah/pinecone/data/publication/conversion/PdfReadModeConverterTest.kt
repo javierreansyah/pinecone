@@ -79,6 +79,52 @@ class PdfReadModeConverterTest {
     }
 
     @Test
+    fun aColumnFirstPdfStillProducesSelectableRowOrderedTableCells(): Unit = runBlocking {
+        val commands = buildString {
+            for (y in 580..640 step 20) append("80 $y m 460 $y l S\n")
+            for (x in listOf(80, 260, 460)) append("$x 580 m $x 640 l S\n")
+            // The content stream visits entire columns, not rows.
+            listOf(listOf("Model", "Alpha", "Beta"), listOf("Score", "12", "34"))
+                .forEachIndexed { column, values ->
+                    values.forEachIndexed { row, value ->
+                        append("BT /F1 12 Tf 1 0 0 1 ${100 + column * 180} ${626 - row * 20} Tm ($value) Tj ET\n")
+                    }
+                }
+        }
+        val pdf = MuPdfDocument(Document.openDocument(vectorPdf(commands), "application/pdf"))
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val destination = File.createTempFile("column-first-table-", ".epub", context.cacheDir)
+        try {
+            PdfReadModeConverter().convert(
+                listOf(PdfSource(pdf, "synthetic.pdf")), destination,
+                "test:table-order", "Table order", "en",
+                GeneratedPublicationStrings("Contents", "Scanned") { "Page $it" }
+            ) { _, _ -> }
+            val entries = mutableMapOf<String, ByteArray>()
+            ZipInputStream(destination.inputStream()).use { zip ->
+                while (true) {
+                    val entry = zip.nextEntry ?: break
+                    entries[entry.name] = zip.readBytes()
+                }
+            }
+            val content = combinedContent(entries).documentElement
+            val table = content.descendants("table").single()
+            val cells = table.descendants("tr").flatMap { row -> row.children() }
+            assertEquals(
+                listOf("Model", "Score", "Alpha", "12", "Beta", "34"),
+                cells.map { it.textContent.trim() }.filter(String::isNotEmpty)
+            )
+            assertEquals(
+                "Table text must not also be emitted as loose paragraphs",
+                table.textContent.filterNot(Char::isWhitespace), content.textContent.filterNot(Char::isWhitespace)
+            )
+        } finally {
+            pdf.close()
+            destination.delete()
+        }
+    }
+
+    @Test
     fun aVectorChartKeepsItsPathsColorsAndLabelsInOneSvg(): Unit = runBlocking {
         val commands = "BT /F1 12 Tf 50 740 Td (This paragraph stays outside the chart.) Tj ET\n" +
                 "0 0 0 RG 1 w 100 300 m 100 550 l 420 550 l S\n" +

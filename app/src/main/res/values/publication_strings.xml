@@ -64,7 +64,7 @@
     <string name="reader_read_mode">Switch to read mode</string>
     <string name="reader_original_pdf">Switch to original PDF</string>
     <string name="reader_preparing_read_mode">Preparing read mode</string>
-    <string name="reader_conversion_progress">Processing page %1$d of %2$d. Everything stays on this device.</string>
+    <string name="reader_conversion_progress">Processing %1$d of %2$d</string>
     <string name="reader_read_mode_failed">Could not prepare read mode</string>
     <string name="publication_credits">Contributors</string>
     <string name="publication_volume">Volume</string>

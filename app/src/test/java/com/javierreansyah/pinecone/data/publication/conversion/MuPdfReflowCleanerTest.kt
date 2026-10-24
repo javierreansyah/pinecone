@@ -68,6 +68,29 @@ class MuPdfReflowCleanerTest {
     }
 
     @Test
+    fun standaloneImagesKeepDistinctBlockAndRunAnchors() {
+        val record = page(text("Synthetic image labels", 50f, 100f)).copy(
+            xhtml = "<html xmlns=\"http://www.w3.org/1999/xhtml\"><body>" +
+                    "<img src=\"../images/first.png\" alt=\"First image\"/>" +
+                    "<p>Synthetic image labels</p>" +
+                    "<img src=\"../images/second.png\" alt=\"Second image\"/>" +
+                    "</body></html>",
+        )
+        val result = clean(record)
+        val ids = result.body.descendants().mapNotNull { it.getAttribute("id").takeIf(String::isNotEmpty) }
+        assertEquals(ids.size, ids.toSet().size)
+        assertEquals(2, result.body.descendants("figure").size)
+        assertEquals(3, result.sources.size)
+        result.sources.forEach { source ->
+            assertTrue("Missing block anchor ${source.anchor}", source.anchor in ids)
+            source.textRuns.forEach { run -> assertTrue("Missing run anchor ${run.anchor}", run.anchor in ids) }
+        }
+        result.body.descendants("figure").forEach { figure ->
+            assertTrue(figure.getAttribute("id") != figure.descendants("img").single().getAttribute("id"))
+        }
+    }
+
+    @Test
     fun nativeSvgOutlinesKeepTheirTreeAndHaveUniqueReferenceIds() {
         val result = clean(
             page(
@@ -264,6 +287,33 @@ class MuPdfReflowCleanerTest {
         val result = clean(page(text(sentence, 50f, 110f), tables = listOf(table)))
         assertEquals(sentence, result.body.textContent)
         assertTrue(result.body.descendants("table").isEmpty())
+    }
+
+    @Test
+    fun tableCellsCanUseRowOrderWhenSourceBlocksUseColumnOrder() {
+        val table = MuPdfTable(
+            FigureBounds(40f, 100f, 450f, 230f),
+            "<table><tr><td>Name</td><td>Value</td></tr>" +
+                    "<tr><td>Alpha</td><td>Beta</td></tr></table>", ruled = true
+        )
+        val result = clean(
+            page(text("Name Alpha", 50f, 110f), text("Value Beta", 250f, 110f), tables = listOf(table))
+        )
+        val output = result.body.descendants("table").single()
+        assertEquals(listOf("Name", "Value", "Alpha", "Beta"), output.descendants("td").map { it.textContent })
+        assertEquals(1, result.body.children().size)
+    }
+
+    @Test
+    fun tableReplacementMustAccountForRepeatedSourceValues() {
+        val table = MuPdfTable(
+            FigureBounds(40f, 100f, 450f, 230f),
+            "<table><tr><td>Name</td><td>Value</td></tr>" +
+                    "<tr><td>12</td><td>34</td></tr></table>", ruled = true
+        )
+        val result = clean(page(text("Name", 50f, 110f), text("Name", 50f, 150f), tables = listOf(table)))
+        assertTrue(result.body.descendants("table").isEmpty())
+        assertEquals(listOf("Name", "Name"), result.body.descendants("p").map { it.textContent })
     }
 
     @Test

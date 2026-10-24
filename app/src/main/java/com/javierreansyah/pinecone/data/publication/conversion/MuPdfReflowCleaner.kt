@@ -141,7 +141,10 @@ internal class MuPdfReflowCleaner(private val profile: MuPdfReflowProfile) {
             val children = element.children()
             if (tag == "img") {
                 val box = page.images.getOrNull(imageIndex++) ?: page.bounds
-                units += UnitBlock(element, emptyList(), box, "figure")
+                // Keep the block anchor on a container, separate from the image-run
+                // anchor assigned to the img itself during source-map annotation.
+                val figure = document.createElementNS(XHTML, "figure").apply { appendChild(element) }
+                units += UnitBlock(figure, emptyList(), box, "figure")
             } else if (tag in TEXT_TAGS && children.none {
                     it.descendants().any { child -> child.localTag.lowercase() in BLOCK_TAGS }
                 }) {
@@ -179,12 +182,19 @@ internal class MuPdfReflowCleaner(private val profile: MuPdfReflowProfile) {
             // Use MuPDF's table cells/spans as-is; reject prose, reference and figure false positives.
             val tables = page.tables.filter { table ->
                 if (!validTable(table, page)) return@filter false
-                val content = folded(MuPdfStructure.parse(table.xhtml).textContent)
-                // Geometry alone is not evidence that every selected sentence made
-                // it into the cells. Fall back to prose if the table would lose text.
-                units.none { unit ->
-                    unit.texts.isNotEmpty() && table.bounds.containsCenter(unit.bounds) &&
-                            !content.contains(folded(unit.text))
+                // Native cells may be row-major while the prose export is column-major
+                // (or interleaves wrapped headers). Compare counted tokens, not substrings;
+                // still reject a replacement that omits words, values or math symbols.
+                fun tokens(text: String) = TABLE_TOKENS.findAll(text.replace("\u00ad", ""))
+                    .map { it.value }.filterNot { it.isBlank() }
+                val available = MuPdfStructure.parse(table.xhtml).descendants("tr").asSequence()
+                    .flatMap { row -> row.children().filter { it.localTag in setOf("td", "th") } }
+                    .flatMap { tokens(it.textContent) }.groupingBy { it }.eachCount()
+                val required = units.asSequence().filter { unit ->
+                    unit.texts.isNotEmpty() && table.bounds.containsCenter(unit.bounds)
+                }.flatMap { tokens(it.text) }.groupingBy { it }.eachCount()
+                required.all { (token, count) ->
+                    count <= (available[token] ?: 0)
                 }
             }
             val charts = chartRegions(page, tables)
@@ -1202,6 +1212,7 @@ internal class MuPdfReflowCleaner(private val profile: MuPdfReflowProfile) {
         private const val MATH =
             "=\u2248\u2260\u2264\u2265\u2211\u220f\u222b\u221a\u00b1\u00d7\u00f7\u2202\u2207"
         private val REFERENCE = Regex("^\\s*\\[\\d+]\\s*")
+        private val TABLE_TOKENS = Regex("[\\p{L}\\p{M}]+|\\p{N}+|[^\\p{L}\\p{M}\\p{N}\\s]")
         private val CAPTION =
             Regex("^(?:Figure|Fig\\.|Table|Gambar|Tabel)\\s*\\d", RegexOption.IGNORE_CASE)
         private val LIST =

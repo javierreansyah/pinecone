@@ -462,7 +462,7 @@ class ReaderViewModel(
         if (!_bookState.value.sourceIsPdf || conversionJob?.isActive == true) return
         conversionJob = viewModelScope.launch {
             val old = _publication.value ?: return@launch
-            val source = _currentLocator.value
+            var source = _currentLocator.value
             val destination =
                 if (forceReparse || activeRendition.value == "original") "read-mode" else "original"
             _bookState.update { it.copy(conversionError = null) }
@@ -490,9 +490,11 @@ class ReaderViewModel(
                             )
                         }
                     }
-                    // Opening an existing rendition is ordinary navigation, not conversion.
-                    _bookState.update { it.copy(converting = false) }
                 }
+                // The PDF remains interactive during conversion. Map the position the
+                // reader has reached now, rather than the position where it started.
+                source = _currentLocator.value ?: source
+                source?.let { repository.saveReadingPosition(bookId, it, activeRendition.value) }
                 repository.activateRendition(bookId, destination)
                 val item = requireNotNull(repository.getBook(bookId))
                 next = requireNotNull(repository.openPublication(item))

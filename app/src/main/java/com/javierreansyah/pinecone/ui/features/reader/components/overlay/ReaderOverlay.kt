@@ -286,6 +286,10 @@ fun ReaderOverlay(
                 showReadMode = bookState.value.sourceIsPdf,
                 readMode = bookState.value.readMode,
                 onToggleReadMode = viewModel::togglePdfReadMode,
+                converting = bookState.value.converting,
+                conversionPage = bookState.value.conversionPage,
+                conversionTotal = bookState.value.conversionTotal,
+                onCancelConversion = viewModel::cancelConversion,
             )
 
             ReaderBottomBarSection(
@@ -463,35 +467,6 @@ fun ReaderOverlay(
                 publication = publication,
             )
 
-            if (bookState.value.converting) {
-                androidx.compose.material3.AlertDialog(
-                    onDismissRequest = viewModel::cancelConversion,
-                    title = { Text(stringResource(R.string.reader_preparing_read_mode)) },
-                    text = {
-                        Column(
-                            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(
-                                16.dp
-                            )
-                        ) {
-                            androidx.compose.material3.LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                            Text(
-                                stringResource(
-                                    R.string.reader_conversion_progress,
-                                    bookState.value.conversionPage,
-                                    bookState.value.conversionTotal
-                                )
-                            )
-                        }
-                    },
-                    confirmButton = {
-                        androidx.compose.material3.TextButton(onClick = viewModel::cancelConversion) {
-                            Text(
-                                stringResource(R.string.action_cancel)
-                            )
-                        }
-                    },
-                )
-            }
             bookState.value.conversionError?.let { message ->
                 androidx.compose.material3.AlertDialog(
                     onDismissRequest = viewModel::dismissConversionError,
@@ -537,6 +512,10 @@ fun ReaderTopBarSection(
     showReadMode: Boolean = false,
     readMode: Boolean = false,
     onToggleReadMode: () -> Unit = {},
+    converting: Boolean = false,
+    conversionPage: Int = 0,
+    conversionTotal: Int = 0,
+    onCancelConversion: () -> Unit = {},
 ) {
     val actionsSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
     val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
@@ -582,6 +561,10 @@ fun ReaderTopBarSection(
             showReadMode = showReadMode,
             readMode = readMode,
             onToggleReadMode = onToggleReadMode,
+            converting = converting,
+            conversionPage = conversionPage,
+            conversionTotal = conversionTotal,
+            onCancelConversion = onCancelConversion,
         )
     }
 }
