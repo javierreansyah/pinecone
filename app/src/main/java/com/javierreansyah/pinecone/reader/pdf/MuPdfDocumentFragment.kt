@@ -10,10 +10,6 @@ import android.view.ViewGroup
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.calculatePan
-import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,7 +34,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -47,7 +42,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -55,7 +49,6 @@ import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.clipRect
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.ComposeView
@@ -200,60 +193,76 @@ class MuPdfDocumentFragment(
             .background(background)
         val spacing = preferences.pageSpacing.dp
         val reverse = preferences.horizontal && preferences.rightToLeft
-        if (preferences.scroll && preferences.horizontal) {
-            LazyRow(
-                modifier,
-                state = list,
-                reverseLayout = reverse,
-                horizontalArrangement = Arrangement.spacedBy(spacing)
-            ) {
-                items(pdf.pageCount) { index ->
+        val scrollBy: (Float) -> Float = remember(list, pager, preferences.scroll) {
+            { delta ->
+                if (preferences.scroll) list.dispatchRawDelta(delta)
+                else pager.dispatchRawDelta(delta)
+            }
+        }
+        PdfNavigatorZoom(
+            horizontal = preferences.horizontal,
+            reverse = reverse,
+            navigationKey = request,
+            selectionController = selectionController,
+            scrollBy = scrollBy,
+        ) { onDoubleTap ->
+            if (preferences.scroll && preferences.horizontal) {
+                LazyRow(
+                    modifier,
+                    state = list,
+                    reverseLayout = reverse,
+                    horizontalArrangement = Arrangement.spacedBy(spacing)
+                ) {
+                    items(pdf.pageCount) { index ->
+                        PageImage(
+                            pdf,
+                            index,
+                            preferences,
+                            Modifier.width((LocalWindowInfo.current.containerSize.width / resources.displayMetrics.density).dp),
+                            aspectRatios[index],
+                            matchesByPage[index].orEmpty(), highlights.focusedIndex,
+                            onDoubleTap,
+                        )
+                    }
+                }
+            } else if (preferences.scroll) {
+                LazyColumn(
+                    modifier,
+                    state = list,
+                    verticalArrangement = Arrangement.spacedBy(spacing),
+                    contentPadding = PaddingValues(vertical = spacing)
+                ) {
+                    items(pdf.pageCount) { index ->
+                        PageImage(
+                            pdf,
+                            index,
+                            preferences,
+                            Modifier.fillMaxWidth(),
+                            aspectRatios[index],
+                            matchesByPage[index].orEmpty(), highlights.focusedIndex,
+                            onDoubleTap,
+                        )
+                    }
+                }
+            } else if (preferences.horizontal) {
+                HorizontalPager(
+                    pager,
+                    modifier,
+                    reverseLayout = reverse,
+                    pageSpacing = spacing
+                ) { index ->
                     PageImage(
-                        pdf,
-                        index,
-                        preferences,
-                        Modifier.width((LocalWindowInfo.current.containerSize.width / resources.displayMetrics.density).dp),
-                        aspectRatios[index],
-                        matchesByPage[index].orEmpty(), highlights.focusedIndex,
+                        pdf, index, preferences, Modifier.fillMaxSize(), aspectRatios[index],
+                        matchesByPage[index].orEmpty(), highlights.focusedIndex, onDoubleTap
                     )
                 }
-            }
-        } else if (preferences.scroll) {
-            LazyColumn(
-                modifier,
-                state = list,
-                verticalArrangement = Arrangement.spacedBy(spacing),
-                contentPadding = PaddingValues(vertical = spacing)
-            ) {
-                items(pdf.pageCount) { index ->
+            } else {
+                VerticalPager(pager, modifier, pageSpacing = spacing) { index ->
                     PageImage(
-                        pdf,
-                        index,
-                        preferences,
-                        Modifier.fillMaxWidth(),
-                        aspectRatios[index],
-                        matchesByPage[index].orEmpty(), highlights.focusedIndex,
+                        pdf, index, preferences, Modifier.fillMaxSize(), aspectRatios[index],
+                        matchesByPage[index].orEmpty(), highlights.focusedIndex, onDoubleTap
                     )
                 }
-            }
-        } else if (preferences.horizontal) {
-            HorizontalPager(
-                pager,
-                modifier,
-                reverseLayout = reverse,
-                pageSpacing = spacing
-            ) { index ->
-                PageImage(
-                    pdf, index, preferences, Modifier.fillMaxSize(), aspectRatios[index],
-                    matchesByPage[index].orEmpty(), highlights.focusedIndex
-                )
-            }
-        } else {
-            VerticalPager(pager, modifier, pageSpacing = spacing) { index ->
-                PageImage(
-                    pdf, index, preferences, Modifier.fillMaxSize(), aspectRatios[index],
-                    matchesByPage[index].orEmpty(), highlights.focusedIndex
-                )
             }
         }
     }
@@ -267,6 +276,7 @@ class MuPdfDocumentFragment(
         aspectRatio: Float,
         matches: List<PdfSearchMatch>,
         focusedIndex: Int?,
+        onDoubleTap: () -> Unit,
     ) {
         var error by remember(index) { mutableStateOf<String?>(null) }
         val bitmap by produceState<android.graphics.Bitmap?>(null, pdf, index) {
@@ -279,43 +289,19 @@ class MuPdfDocumentFragment(
                 error = getString(R.string.reader_page_render_failed)
             }
         }
-        var zoom by remember(index) { mutableFloatStateOf(1f) }
-        var offset by remember(index) { mutableStateOf(Offset.Zero) }
         val imageModifier = if (preferences.scroll && !preferences.horizontal) {
             modifier.aspectRatio(aspectRatio)
         } else modifier
         Box(
             imageModifier
                 .clipToBounds()
-                .pointerInput(index) {
+                .pointerInput(index, onDoubleTap) {
                     detectTapGestures(
                         onTap = { input.inputListener?.onTap(TapEvent(PointF(it.x, it.y))) },
-                        onDoubleTap = { zoom = if (zoom > 1f) 1f else 2f; offset = Offset.Zero },
+                        onDoubleTap = { onDoubleTap() },
                     )
-                }
-                .pointerInput(index) {
-                    awaitEachGesture {
-                        awaitFirstDown(requireUnconsumed = false)
-                        do {
-                            val event = awaitPointerEvent()
-                            val multiTouch = event.changes.count { it.pressed } > 1
-                            if (multiTouch || (zoom > 1f && selectionController.selection.value == null)) {
-                                if (multiTouch) selectionController.clearSelection()
-                                val pan = event.calculatePan()
-                                zoom = (zoom * event.calculateZoom()).coerceIn(1f, 4f)
-                                offset = if (zoom > 1f) {
-                                    val maxX = size.width * (zoom - 1) / 2
-                                    val maxY = size.height * (zoom - 1) / 2
-                                    Offset(
-                                        (offset.x + pan.x).coerceIn(-maxX, maxX),
-                                        (offset.y + pan.y).coerceIn(-maxY, maxY)
-                                    )
-                                } else Offset.Zero
-                                event.changes.forEach { it.consume() }
-                            }
-                        } while (event.changes.any { it.pressed })
-                    }
-                }, contentAlignment = Alignment.Center
+                },
+            contentAlignment = Alignment.Center
         ) {
             bitmap?.let {
                 val filter = if (preferences.invert == true) ColorFilter.colorMatrix(
@@ -353,12 +339,9 @@ class MuPdfDocumentFragment(
                     val image = if (scrollPage) Modifier
                         .fillMaxWidth()
                         .aspectRatio(it.width.toFloat() / it.height) else Modifier.fillMaxSize()
-                    // The bitmap and search overlay share sizing, scrolling, zoom and pan.
+                    // The navigator transforms the bitmap and overlays together.
                     // Keep yellow outside the bitmap's inversion filter for dark PDF mode.
-                    Box(image.graphicsLayer {
-                        scaleX = zoom; scaleY = zoom; translationX = offset.x; translationY =
-                        offset.y
-                    }) {
+                    Box(image) {
                         Image(
                             it.asImageBitmap(),
                             stringResource(R.string.reader_page_label, index + 1),
@@ -385,9 +368,7 @@ class MuPdfDocumentFragment(
                                     )
                                 )
                             },
-                            onDoubleTap = {
-                                zoom = if (zoom > 1f) 1f else 2f; offset = Offset.Zero
-                            },
+                            onDoubleTap = onDoubleTap,
                         )
                         if (matches.isNotEmpty()) Canvas(Modifier.matchParentSize()) {
                             val viewport =
