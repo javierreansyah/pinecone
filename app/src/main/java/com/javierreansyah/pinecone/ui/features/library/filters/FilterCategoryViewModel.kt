@@ -52,13 +52,13 @@ class FilterCategoryViewModel(application: Application) : AndroidViewModel(appli
 
     val allAuthors: StateFlow<List<AuthorEntity>> =
         combine(bookRepository.getAllAuthors(), booksFlow) { authors, books ->
-            val namesInSpace = books.flatMapTo(mutableSetOf()) { (_, _, itAuthors) -> itAuthors }
+            val namesInSpace = books.flatMapTo(mutableSetOf()) { (_, _, itAuthors, coverPath, progress, lastOpened, language, addedDate, isArchived, description, publisher, published, tags, identifier, mediaType, filePath, isRead, furthestProgression, lastLocatorJson, furthestLocatorJson, spaces, metadata, credits, activeRendition, isUnsorted, originalFilename) -> itAuthors }
             authors.filter { (_, itName) -> itName in namesInSpace }
         }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val allTags: StateFlow<List<TagEntity>> =
         combine(bookRepository.getAllTags(), booksFlow) { tags, books ->
             val namesInSpace =
-                books.flatMapTo(mutableSetOf()) { (_, _, _, _, _, _, _, _, _, _, _, _, itTags) -> itTags }
+                books.flatMapTo(mutableSetOf()) { (_, _, _, _, _, _, _, _, _, _, _, _, itTags, identifier, mediaType, filePath, isRead, furthestProgression, lastLocatorJson, furthestLocatorJson, spaces, metadata, credits, activeRendition, isUnsorted, originalFilename) -> itTags }
             tags.filter { (_, itName2) -> itName2 in namesInSpace }
         }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val allSpaces: StateFlow<List<SpaceEntity>> =
@@ -88,7 +88,7 @@ class FilterCategoryViewModel(application: Application) : AndroidViewModel(appli
 
     val spacesWithCounts: StateFlow<List<FilterCollectionSummary>> =
         combine(allSpaces, unfilteredBooks, actionBooks) { spaces, books, allBooks ->
-            spaces.filter { it.id != "_all_" }.map { (spaceId2, spaceName) ->
+            spaces.filter { it.id != "_all_" }.map { (spaceId2, spaceName, createdAt) ->
                 val members = books.filter { !it.isUnsorted && spaceId2 in it.spaceIds }
                 FilterCollectionSummary(
                     spaceName, members.size, members.publicationWording(),

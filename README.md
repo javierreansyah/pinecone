@@ -84,4 +84,11 @@ From the repository root in Windows PowerShell:
 ```
 
 For **Complete** validation (all build types, JVM tests, and Android lint), see
-[VALIDATION.md](VALIDATION.md). IDE recommendations are handled manually in JetBrains tools.
+[docs/VALIDATION.md](docs/VALIDATION.md). IDE recommendations are handled manually in JetBrains
+tools.
+
+## Development documentation
+
+- [Repository structure and conventions](docs/DEVELOPMENT.md)
+- [PDF read mode](docs/PDF_READ_MODE.md)
+- [PDF conversion performance](docs/PDF_PERFORMANCE.md)

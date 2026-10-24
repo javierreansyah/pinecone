@@ -57,7 +57,10 @@ class MuPdfReflowCleanerTest {
         var next = 0
         return MuPdfReflowCleaner(profile)
             .clean(record, 1, previous, outline, svg = { bounds, standalone ->
-                if (!allowFigures) assertFalse("This fixture contains equations, not figures", standalone)
+                if (!allowFigures) assertFalse(
+                    "This fixture contains equations, not figures",
+                    standalone
+                )
                 MuPdfVisual(
                     "visual-${next++}.svg", "<svg xmlns=\"http://www.w3.org/2000/svg\" " +
                             "xmlns:xlink=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 ${bounds.width} ${bounds.height}\">" +
@@ -77,16 +80,24 @@ class MuPdfReflowCleanerTest {
                     "</body></html>",
         )
         val result = clean(record)
-        val ids = result.body.descendants().mapNotNull { it.getAttribute("id").takeIf(String::isNotEmpty) }
+        val ids = result.body.descendants()
+            .mapNotNull { it.getAttribute("id").takeIf(String::isNotEmpty) }
         assertEquals(ids.size, ids.toSet().size)
         assertEquals(2, result.body.descendants("figure").size)
         assertEquals(3, result.sources.size)
         result.sources.forEach { source ->
             assertTrue("Missing block anchor ${source.anchor}", source.anchor in ids)
-            source.textRuns.forEach { run -> assertTrue("Missing run anchor ${run.anchor}", run.anchor in ids) }
+            source.textRuns.forEach { run ->
+                assertTrue(
+                    "Missing run anchor ${run.anchor}",
+                    run.anchor in ids
+                )
+            }
         }
         result.body.descendants("figure").forEach { figure ->
-            assertTrue(figure.getAttribute("id") != figure.descendants("img").single().getAttribute("id"))
+            assertTrue(
+                figure.getAttribute("id") != figure.descendants("img").single().getAttribute("id")
+            )
         }
     }
 
@@ -148,7 +159,7 @@ class MuPdfReflowCleanerTest {
             assertTrue(source.anchor in ids)
             source.textRuns.forEach { assertTrue(it.anchor in ids); assertTrue(it.end >= it.start) }
         }
-        assertTrue(next.body.textContent.contains("\uD835\uDC5D"))
+        assertTrue("\uD835\uDC5D" in next.body.textContent)
     }
 
     @Test
@@ -160,7 +171,7 @@ class MuPdfReflowCleanerTest {
                 text("Evaluate the result.", 70f, 140f)
             )
         )
-        assertTrue(!result.body.textContent.contains("13"))
+        assertTrue("13" !in result.body.textContent)
         val list = result.body.descendants("ol").single()
         assertEquals(2, list.descendants("li").size)
         assertEquals("1.Initialize the state.", list.descendants("li")[0].textContent)
@@ -205,20 +216,31 @@ class MuPdfReflowCleanerTest {
         }
         val profile = MuPdfReflowProfile().apply { records.forEach(::observe) }
         records.forEach { record ->
-            assertTrue(clean(record, profile = profile).body.textContent.contains("Repeated content"))
+            assertTrue(
+                "Repeated content" in clean(
+                    record,
+                    profile = profile
+                ).body.textContent
+            )
         }
         val topOnly = listOf(15f, 32f, 49f).map { y ->
             page(text("Repeated content", 50f, y), text("Main body text.", 50f, 100f))
         }
         val topProfile = MuPdfReflowProfile().apply { topOnly.forEach(::observe) }
         topOnly.forEach { record ->
-            assertTrue(clean(record, profile = topProfile).body.textContent.contains("Repeated content"))
+            assertTrue(
+                "Repeated content" in clean(
+                    record,
+                    profile = topProfile
+                ).body.textContent
+            )
         }
     }
 
     @Test
     fun numberLikeTextAtPageTopIsKeptWhenItContinuesTheParagraph() {
-        val result = clean(page(text("mix", 50f, 40f), text("the ingredients thoroughly.", 50f, 58f)))
+        val result =
+            clean(page(text("mix", 50f, 40f), text("the ingredients thoroughly.", 50f, 58f)))
         assertEquals("mix the ingredients thoroughly.", result.body.textContent)
     }
 
@@ -297,10 +319,16 @@ class MuPdfReflowCleanerTest {
                     "<tr><td>Alpha</td><td>Beta</td></tr></table>", ruled = true
         )
         val result = clean(
-            page(text("Name Alpha", 50f, 110f), text("Value Beta", 250f, 110f), tables = listOf(table))
+            page(
+                text("Name Alpha", 50f, 110f),
+                text("Value Beta", 250f, 110f),
+                tables = listOf(table)
+            )
         )
         val output = result.body.descendants("table").single()
-        assertEquals(listOf("Name", "Value", "Alpha", "Beta"), output.descendants("td").map { it.textContent })
+        assertEquals(
+            listOf("Name", "Value", "Alpha", "Beta"),
+            output.descendants("td").map { it.textContent })
         assertEquals(1, result.body.children().size)
     }
 
@@ -311,7 +339,8 @@ class MuPdfReflowCleanerTest {
             "<table><tr><td>Name</td><td>Value</td></tr>" +
                     "<tr><td>12</td><td>34</td></tr></table>", ruled = true
         )
-        val result = clean(page(text("Name", 50f, 110f), text("Name", 50f, 150f), tables = listOf(table)))
+        val result =
+            clean(page(text("Name", 50f, 110f), text("Name", 50f, 150f), tables = listOf(table)))
         assertTrue(result.body.descendants("table").isEmpty())
         assertEquals(listOf("Name", "Name"), result.body.descendants("p").map { it.textContent })
     }
@@ -388,8 +417,8 @@ class MuPdfReflowCleanerTest {
             "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" " +
                     "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\"><html><p>&#x1d45d; &#x0;</p><p>Final page</p></html>"
         )
-        assertTrue(document.textContent.contains("\uD835\uDC5D"))
-        assertTrue(document.textContent.contains("Final page"))
+        assertTrue("\uD835\uDC5D" in document.textContent)
+        assertTrue("Final page" in document.textContent)
         assertThrows(IllegalArgumentException::class.java) {
             MuPdfStructure.parse("<!DOCTYPE html [<!ENTITY sample SYSTEM 'file:///test'>]><html>&sample;</html>")
         }
@@ -455,7 +484,7 @@ class MuPdfReflowCleanerTest {
         assertEquals(description, output.descendants("tr")[1].children()[1].textContent)
         assertTrue(
             output.descendants("p")
-                .all { it.children().none { it.localTag in setOf("p", "div", "th") } })
+                .all { it.children().none { it -> it.localTag in setOf("p", "div", "th") } })
     }
 
     @Test

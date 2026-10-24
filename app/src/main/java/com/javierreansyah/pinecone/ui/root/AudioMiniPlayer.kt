@@ -61,7 +61,8 @@ import kotlinx.coroutines.flow.flowOf
 import java.io.File
 
 /** Extra scroll space, not viewport padding: content can draw behind the floating card. */
-val LocalAudioPlayerBottomPadding: ProvidableCompositionLocal<Dp> = staticCompositionLocalOf { 0.dp }
+val LocalAudioPlayerBottomPadding: ProvidableCompositionLocal<Dp> =
+    staticCompositionLocalOf { 0.dp }
 
 internal val MiniPlayerArtworkRadius = 10.dp
 internal val MiniPlayerArtworkInset = 10.dp
@@ -88,16 +89,19 @@ fun AudioMiniPlayerHost(enabled: Boolean = true, content: @Composable () -> Unit
         if (visible) (handleHeight - navigationBarHeight).coerceAtLeast(0).toDp() else 0.dp
     }
 
-    Box(Modifier
-        .fillMaxSize()
-        .background(MaterialTheme.colorScheme.background)) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         CompositionLocalProvider(LocalAudioPlayerBottomPadding provides bottomPadding) {
             content()
         }
         if (enabled) {
-            Box(Modifier
-                .align(Alignment.BottomCenter)
-                .onSizeChanged { handleHeight = it.height }) {
+            Box(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .onSizeChanged { handleHeight = it.height }) {
                 AudioMiniPlayerBar()
             }
         }
@@ -199,9 +203,11 @@ internal fun AudioMiniPlayer(
                         }
                     }
                 }
-                Column(Modifier
-                    .weight(1f)
-                    .padding(horizontal = 10.dp)) {
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .padding(horizontal = 10.dp)
+                ) {
                     Text(
                         text = state.title,
                         style = MaterialTheme.typography.titleSmall,

@@ -381,16 +381,14 @@ private fun AudioTransportButtons(
                                 AnimatedContent(
                                     targetState = playing,
                                     transitionSpec = {
-                                        (fadeIn(animationSpec = effectsSpec) +
+                                        fadeIn(animationSpec = effectsSpec) +
                                                 scaleIn(
                                                     initialScale = 0.75f,
                                                     animationSpec = iconSpatialSpec
-                                                )) togetherWith
-                                                (fadeOut(animationSpec = effectsSpec) +
-                                                        scaleOut(
-                                                            targetScale = 0.75f,
-                                                            animationSpec = iconSpatialSpec
-                                                        ))
+                                                ) togetherWith fadeOut(animationSpec = effectsSpec) + scaleOut(
+                                            targetScale = 0.75f,
+                                            animationSpec = iconSpatialSpec
+                                        )
                                     },
                                     label = "playPauseTransition",
                                 ) { isPlaying ->
@@ -572,7 +570,7 @@ private fun AudioSeekBar(
                 // Draw only the final handle; animate its layer vertically, never its width/shape.
                 val handleWidth = 4.5.dp.toPx()
                 val halfWidth = handleWidth / 2f
-                val rawX = size.width * if (rtl) (1f - progress) else progress
+                val rawX = size.width * if (rtl) 1f - progress else progress
                 val shiftedX = rawX + 2.dp.toPx()
                 val clampedX =
                     shiftedX.coerceIn(halfWidth, (size.width - halfWidth).coerceAtLeast(halfWidth))

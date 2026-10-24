@@ -76,10 +76,12 @@ fun FormatReaderSettings(
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current
     val sheetHeight = with(density) { (windowInfo.containerSize.height * 0.6f).toDp() }
-    Column(Modifier
-        .fillMaxWidth()
-        .height(sheetHeight)
-        .padding(bottom = 4.dp)) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .height(sheetHeight)
+            .padding(bottom = 4.dp)
+    ) {
         PrimaryTabRow(
             selectedTabIndex = pagerState.currentPage,
             containerColor = Color.Transparent
@@ -248,10 +250,12 @@ fun FormatReaderSettings(
                                         profile == ReaderProfile.PDF -> settings.formatPreferences.copy(
                                             pdf = com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences()
                                         )
+
                                         profile == ReaderProfile.AUDIO -> settings.formatPreferences.copy(
                                             audioSpeed = 1.0,
                                             audioPitch = 1.0
                                         )
+
                                         fixedEpub -> settings.formatPreferences.copy(epubSpread = "auto")
                                         else -> settings.formatPreferences
                                     }
@@ -360,9 +364,11 @@ private fun FormatLighting(
             stringResource(R.string.reader_settings_theme),
             style = MaterialTheme.typography.titleMedium
         )
-        Row(Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+        ) {
             val themes = listOf(
                 Triple("Auto", R.string.reader_settings_theme_auto, Color.Transparent),
                 Triple("Light", R.string.reader_settings_theme_light, Color.White),

@@ -78,10 +78,10 @@ fun NavGraph(
             }
 
             override fun parseResult(resultCode: Int, intent: Intent?): List<Uri> {
-                if ((resultCode != Activity.RESULT_OK) || (intent == null)) return emptyList()
+                if (resultCode != Activity.RESULT_OK || intent == null) return emptyList()
                 val clipData = intent.clipData
                 return clipData?.let { data ->
-                    (0 until data.itemCount).map { data.getItemAt(it).uri }
+                    (0..<data.itemCount).map { data.getItemAt(it).uri }
                 } ?: listOfNotNull(intent.data)
             }
         },
@@ -146,7 +146,7 @@ fun NavGraph(
 
     val navigateBack: () -> Unit = {
         val now = android.os.SystemClock.elapsedRealtime()
-        if ((now - lastBackClickTime) > 300L) {
+        if (now - lastBackClickTime > 300L) {
             lastBackClickTime = now
             if (backStack.size > 1) {
                 backStack.removeLastOrNull()
@@ -178,7 +178,7 @@ fun NavGraph(
             },
         onBack = {
             val now = android.os.SystemClock.elapsedRealtime()
-            if (((now - lastBackClickTime) > 400L) || (backStack.size == 1)) {
+            if (now - lastBackClickTime > 400L || backStack.size == 1) {
                 lastBackClickTime = now
                 if (backStack.size > 1) {
                     backStack.removeLastOrNull()
@@ -188,32 +188,29 @@ fun NavGraph(
             }
         },
         transitionSpec = {
-            ((fadeIn(animationSpec = effectsSpec) + scaleIn(
+            (fadeIn(animationSpec = effectsSpec) + scaleIn(
                 initialScale = 0.9f,
                 animationSpec = spatialSpec,
-            )) togetherWith
-                    (fadeOut(animationSpec = effectsSpec) + scaleOut(
-                        targetScale = 0.9f,
-                        animationSpec = spatialSpec,
-                    ))).apply {
+            ) togetherWith fadeOut(animationSpec = effectsSpec) + scaleOut(
+                targetScale = 0.9f,
+                animationSpec = spatialSpec,
+            )).apply {
                 targetContentZIndex = 1f
             }
         },
         popTransitionSpec = {
-            (fadeIn(animationSpec = effectsSpec) togetherWith
-                    (fadeOut(animationSpec = effectsSpec) + scaleOut(
-                        targetScale = 0.9f,
-                        animationSpec = spatialSpec,
-                    ))).apply {
+            (fadeIn(animationSpec = effectsSpec) togetherWith fadeOut(animationSpec = effectsSpec) + scaleOut(
+                targetScale = 0.9f,
+                animationSpec = spatialSpec,
+            )).apply {
                 targetContentZIndex = -1f
             }
         },
         predictivePopTransitionSpec = {
-            (fadeIn(animationSpec = effectsSpec) togetherWith
-                    (fadeOut(animationSpec = effectsSpec) + scaleOut(
-                        targetScale = 0.9f,
-                        animationSpec = spatialSpec,
-                    ))).apply {
+            (fadeIn(animationSpec = effectsSpec) togetherWith fadeOut(animationSpec = effectsSpec) + scaleOut(
+                targetScale = 0.9f,
+                animationSpec = spatialSpec,
+            )).apply {
                 targetContentZIndex = -1f
             }
         },

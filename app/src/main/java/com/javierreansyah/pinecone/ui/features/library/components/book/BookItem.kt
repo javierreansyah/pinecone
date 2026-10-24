@@ -89,7 +89,7 @@ fun BookItem(
                     )
                     Text(
                         text = if (book.authors.isNotEmpty()) book.authors.joinToString(", ") else stringResource(
-                            R.string.book_unknown_author,
+                            R.string.publication_unknown_author,
                         ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -158,7 +158,7 @@ fun BookItem(
             ) {
                 Text(
                     text = if (book.authors.isNotEmpty()) book.authors.joinToString(", ") else stringResource(
-                        R.string.book_unknown_author,
+                        R.string.publication_unknown_author,
                     ),
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1,

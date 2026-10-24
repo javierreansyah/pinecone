@@ -300,15 +300,16 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
     }
     val book by bookFlow.collectAsStateWithLifecycle(initialValue = null)
     val visible =
-        request != null || (playback.bookId != null && navigator != null && playback.bookId != dismissedBookId)
+        request != null || playback.bookId != null && navigator != null && playback.bookId != dismissedBookId
     val collapseLabel = stringResource(R.string.reader_collapse_audio_player)
     val expandLabel = stringResource(R.string.reader_open_audio_player)
     val dismissLabel = stringResource(R.string.reader_dismiss_audio_player)
 
-    Box(Modifier
-        .fillMaxSize()
-        .onSizeChanged { rootSize = it }
-        .clipToBounds()) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .onSizeChanged { rootSize = it }
+            .clipToBounds()) {
         CompositionLocalProvider(LocalAudioPlayerHandle provides reportHandle) {
             Box(if (fraction > 0.01f) Modifier.clearAndSetSemantics {} else Modifier) {
                 AudioMiniPlayerHost(enabled = underlyingScreen != Screen.Library, content = content)
@@ -405,9 +406,10 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
                     }
                 }
                 if (opacity.miniPlayer > 0f) {
-                    Box(Modifier
-                        .fillMaxWidth()
-                        .graphicsLayer { alpha = opacity.miniPlayer }) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .graphicsLayer { alpha = opacity.miniPlayer }) {
                         AudioMiniPlayer(
                             state = playback,
                             coverPath = book?.book?.coverPath,

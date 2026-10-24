@@ -85,12 +85,12 @@ fun MultiSelectAppBar(
                 if (showMarkAsRead) {
                     Icon(
                         imageVector = MaterialSymbols.Outlined.Check_circle,
-                        contentDescription = stringResource(R.string.book_mark_as_read),
+                        contentDescription = stringResource(R.string.publication_mark_as_read),
                     )
                 } else {
                     Icon(
                         imageVector = MaterialSymbols.Outlined.Circle,
-                        contentDescription = stringResource(R.string.book_mark_as_unread),
+                        contentDescription = stringResource(R.string.publication_mark_as_unread),
                     )
                 }
             }
@@ -104,12 +104,12 @@ fun MultiSelectAppBar(
                 if (isUnarchive) {
                     Icon(
                         imageVector = MaterialSymbols.Outlined.Unarchive,
-                        contentDescription = stringResource(R.string.book_unarchive),
+                        contentDescription = stringResource(R.string.publication_unarchive),
                     )
                 } else {
                     Icon(
                         imageVector = MaterialSymbols.Outlined.Archive,
-                        contentDescription = stringResource(R.string.book_archive),
+                        contentDescription = stringResource(R.string.publication_archive),
                     )
                 }
             }

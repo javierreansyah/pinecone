@@ -63,7 +63,7 @@ fun ThemeSwatch(
                 }
                 .padding(4.dp)
                 .clip(CircleShape)
-                .background(if (isAuto || isCustom || (iconRes != null)) Color.Transparent else color)
+                .background(if (isAuto || isCustom || iconRes != null) Color.Transparent else color)
                 .border(
                     width = 1.5.dp,
                     color = MaterialTheme.colorScheme.outlineVariant,

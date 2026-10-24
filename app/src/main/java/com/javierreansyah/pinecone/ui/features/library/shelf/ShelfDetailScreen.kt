@@ -129,7 +129,7 @@ fun ShelfDetailScreen(
 
     val shelves by viewModel.shelves.collectAsState()
     val allBooks by viewModel.allBooks.collectAsState()
-    val shelfWithCovers = shelves.find { (itShelf) -> itShelf.id == shelfId }
+    val shelfWithCovers = shelves.find { (itShelf, _) -> itShelf.id == shelfId }
 
     val baseBooksFlow = remember(shelfWithCovers) {
         flowOf(shelfWithCovers?.books?.map { Book.fromEntity(it) } ?: emptyList())
@@ -175,10 +175,10 @@ fun ShelfDetailScreen(
             isInMultiSelectMode = true
         },
         onExitMultiSelect = exitMultiSelect,
-        onSelectAll = { selectedBooks = books.map { (itId) -> itId }.toSet() },
+        onSelectAll = { selectedBooks = books.map { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId }.toSet() },
         onClearSelection = { selectedBooks = emptySet() },
         onToggleBookSelection = { bookId ->
-            selectedBooks = if (selectedBooks.contains(bookId)) {
+            selectedBooks = if (bookId in selectedBooks) {
                 selectedBooks - bookId
             } else {
                 selectedBooks + bookId
@@ -222,7 +222,7 @@ fun ShelfDetailScreen(
         },
         onCancelReorder = { isReordering = false },
         onSaveReorder = {
-            viewModel.updateShelfOrder(shelfId, reorderBooks.map { (itId2) -> itId2 })
+            viewModel.updateShelfOrder(shelfId, reorderBooks.map { (itId2, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId2 })
             if (uiState.value.bookPreferences.sortType != SortType.Custom) {
                 viewModel.onSortTypeChange(SortType.Custom)
             }
@@ -231,9 +231,9 @@ fun ShelfDetailScreen(
         onReorderBooksChange = { reorderBooks = it },
         onShowFilterSheet = { showFilterSheet = true },
         onShowDeleteDialog = { showDeleteDialog = true },
-        onTransferShelf = if (spacesEnabled && shelfId != "unshelved") ({ copy ->
+        onTransferShelf = if (spacesEnabled && shelfId != "unshelved") { copy ->
             transferCopy = copy
-        }) else null,
+        } else null,
         onBookClick = onNavigateToReader,
         onBookLongClick = { selectedBookForMenu = it },
         scrollKey = Triple(
@@ -270,7 +270,7 @@ fun ShelfDetailScreen(
         ) { showFilterSheet = false }
     }
 
-    if (showDeleteDialog && (shelfWithCovers != null)) {
+    if (showDeleteDialog && shelfWithCovers != null) {
         DeleteShelfDialog(
             shelfName = shelfWithCovers.shelf.name,
             wording = publicationWording(shelfWithCovers.books.map { it.book.fileFormat() }),
@@ -440,8 +440,8 @@ private fun ShelfDetailTopBar(
     modifier: Modifier = Modifier,
 ) {
     val showMarkAsRead = remember(allBooks, selectedBooks) {
-        allBooks.filter { (itId3) -> itId3 in selectedBooks }
-            .any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itIsRead) -> !itIsRead }
+        allBooks.filter { (itId3, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId3 in selectedBooks }
+            .any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itIsRead, _, _, _, _, _, _, _, _, _) -> !itIsRead }
     }
 
     MultiSelectTopBarTransition(
@@ -450,7 +450,7 @@ private fun ShelfDetailTopBar(
             MultiSelectAppBar(
                 wording = allBooks.filter { it.id in selectedBooks }.publicationWording(),
                 selectedCount = selectedBooks.size,
-                isAllSelected = books.isNotEmpty() && (selectedBooks.size == books.size),
+                isAllSelected = books.isNotEmpty() && selectedBooks.size == books.size,
                 showMarkAsRead = showMarkAsRead,
                 onCloseMultiSelect = onExitMultiSelect,
                 onClearSelection = onClearSelection,
@@ -613,17 +613,17 @@ private fun ShelfDetailDefaultTopAppBar(
                 targetState = isEditMode,
                 transitionSpec = {
                     if (targetState) {
-                        fadeIn(animationSpec = actionsEffectsSpec) togetherWith (fadeOut(
+                        fadeIn(animationSpec = actionsEffectsSpec) togetherWith fadeOut(
                             animationSpec = actionsEffectsSpec,
                         ) + slideOutHorizontally(
                             targetOffsetX = { slideOffsetPx },
                             animationSpec = actionsSpatialSpec,
-                        ))
+                        )
                     } else {
-                        (fadeIn(animationSpec = actionsEffectsSpec) + slideInHorizontally(
+                        fadeIn(animationSpec = actionsEffectsSpec) + slideInHorizontally(
                             initialOffsetX = { slideOffsetPx },
                             animationSpec = actionsSpatialSpec,
-                        )) togetherWith fadeOut(animationSpec = actionsEffectsSpec)
+                        ) togetherWith fadeOut(animationSpec = actionsEffectsSpec)
                     }
                 },
                 label = "actionsContent",
@@ -813,7 +813,7 @@ private fun ShelfDetailBookListContent(
         } else if (books.isEmpty() && !isReordering) {
             EmptyState(
                 icon = MaterialSymbols.Outlined.Book,
-                text = stringResource(R.string.library_empty_books),
+                text = stringResource(R.string.library_empty_items),
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
@@ -821,7 +821,7 @@ private fun ShelfDetailBookListContent(
         } else if (reorderBooks.isEmpty() && isReordering) {
             EmptyState(
                 icon = MaterialSymbols.Outlined.Book,
-                text = stringResource(R.string.library_empty_books),
+                text = stringResource(R.string.library_empty_items),
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
@@ -830,7 +830,7 @@ private fun ShelfDetailBookListContent(
             AnimatedContent(
                 targetState = isReordering,
                 transitionSpec = {
-                    (fadeIn(
+                    fadeIn(
                         animationSpec = tween(
                             durationMillis = 100,
                             delayMillis = 100,
@@ -838,10 +838,10 @@ private fun ShelfDetailBookListContent(
                     ) + scaleIn(
                         initialScale = 0.9f,
                         animationSpec = tween(durationMillis = 100, delayMillis = 100),
-                    )) togetherWith (fadeOut(animationSpec = tween(durationMillis = 100)) + scaleOut(
+                    ) togetherWith fadeOut(animationSpec = tween(durationMillis = 100)) + scaleOut(
                         targetScale = 0.9f,
                         animationSpec = tween(durationMillis = 100),
-                    ))
+                    )
                 },
                 label = "shelfDetailContentReorderTransition",
             ) { targetIsReordering ->
@@ -860,7 +860,7 @@ private fun ShelfDetailBookListContent(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(bottom = LocalAudioPlayerBottomPadding.current),
                     ) {
-                        items(reorderBooks, { (itId4) -> itId4 }) { item ->
+                        items(reorderBooks, { (itId4, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId4 }) { item ->
                             ReorderableItem(reorderState, key = item.id) { isDragging ->
                                 val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp)
                                 Surface(

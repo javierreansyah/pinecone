@@ -44,7 +44,7 @@ internal class PdfTableReconstructor(private val size: Float) {
         val text = page.blocks.filter { !it.image && it.text.isNotBlank() }
         val captions = text.filter { caption.containsMatchIn(it.text) }
         val regions = mutableListOf<FigureBounds>()
-        for ((_, bounds) in captions) {
+        for ((_, bounds, _, _) in captions) {
             // A caption must be adjacent; prose mentioning a table is not a table region.
             val after = text.filter {
                 it.bounds.top >= bounds.bottom &&
@@ -216,7 +216,7 @@ internal class PdfTableReconstructor(private val size: Float) {
             }
             // Remove rows that held only a vertically centered label and adjust its span.
             normalized.indices.reversed().filter { normalized[it].isEmpty() }.forEach { removed ->
-                for (index in 0 until removed) normalized[index].replaceAll { cell ->
+                for (index in 0..<removed) normalized[index].replaceAll { cell ->
                     if (index + cell.rowSpan > removed) cell.copy(rowSpan = cell.rowSpan - 1) else cell
                 }
                 normalized.removeAt(removed)
@@ -237,14 +237,14 @@ internal class PdfTableReconstructor(private val size: Float) {
                     .flatMapIndexed { row, items -> items.map { row to it } }
                     .filter { (_, cell) ->
                         cell.columnSpan == 1 && normalized.take(headers).flatten().count {
-                            cell.column in it.column until it.column + it.columnSpan
+                            cell.column in it.column..<it.column + it.columnSpan
                         } == 1
                     }
                 standalone.forEach { (row, cell) ->
                     normalized[row].remove(cell)
                     normalized[0].add(cell.copy(rowSpan = headers))
                 }
-                val empty = (0 until headers).filter { normalized[it].isEmpty() }
+                val empty = (0..<headers).filter { normalized[it].isEmpty() }
                 empty.reversed().forEach { normalized.removeAt(it) }
                 headers -= empty.size
                 normalized[0].replaceAll { if (it.rowSpan > 1) it.copy(rowSpan = headers) else it }

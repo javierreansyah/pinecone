@@ -46,7 +46,7 @@ class EditBookViewModel(
             _uiState.update { it.copy(isLoading = true, error = null) }
             val bookDetails = repository.getBook(bookId)
             if (bookDetails != null) {
-                val (_, bookTitle, bookCoverPath, _, _, _, _, _, _, _, _, _, bookDescription) = bookDetails.book
+                val (_, bookTitle, bookCoverPath, _, _, _, _, _, _, _, _, _, bookDescription, _, _, _, _, _, _, _, _, _, _, _) = bookDetails.book
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -56,15 +56,15 @@ class EditBookViewModel(
                         description = bookDescription ?: "",
                         existingCoverPath = bookCoverPath,
                         tags = bookDetails.tags.map { (_, tagName) -> tagName },
-                        authors = bookDetails.credits.filter { it.role == "author" }
-                            .sortedBy { it.position }.map { it.name },
+                        authors = bookDetails.credits.filter { it -> it.role == "author" }
+                            .sortedBy { it -> it.position }.map { it -> it.name },
                         metadata = com.javierreansyah.pinecone.data.publication.PublicationMetadata.decode(
                             bookDetails.book.metadataJson
                         ),
                         credits = bookDetails.credits,
-                        creditDrafts = bookDetails.credits.groupBy { it.role }
+                        creditDrafts = bookDetails.credits.groupBy { it -> it.role }
                             .mapValues { (_, values) ->
-                                values.sortedBy { it.position }.joinToString("\n") { it.name }
+                                values.sortedBy { it -> it.position }.joinToString("\n") { it -> it.name }
                             },
                         languageDraft = com.javierreansyah.pinecone.data.publication.PublicationMetadata.decode(
                             bookDetails.book.metadataJson
@@ -78,7 +78,7 @@ class EditBookViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = getApplication<Application>().getString(R.string.book_not_found)
+                        error = getApplication<Application>().getString(R.string.publication_not_found)
                     )
                 }
             }
@@ -99,7 +99,7 @@ class EditBookViewModel(
 
     fun addTag(tag: String) {
         val trimmed = tag.trim()
-        if (trimmed.isNotEmpty() && !_uiState.value.tags.contains(trimmed)) {
+        if (trimmed.isNotEmpty() && trimmed !in _uiState.value.tags) {
             _uiState.update { it.copy(tags = it.tags + trimmed) }
         }
     }
@@ -110,7 +110,7 @@ class EditBookViewModel(
 
     fun addAuthor(author: String) {
         val trimmed = author.trim()
-        if (trimmed.isNotEmpty() && !_uiState.value.authors.contains(trimmed)) {
+        if (trimmed.isNotEmpty() && trimmed !in _uiState.value.authors) {
             _uiState.update { it.copy(authors = it.authors + trimmed) }
         }
     }
@@ -123,7 +123,7 @@ class EditBookViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, error = null) }
             try {
-                val (_, stateTitle, stateDescription, stateCoverUri, _, stateTags, stateAuthors) = _uiState.value
+                val (_, stateTitle, stateDescription, stateCoverUri, _, stateTags, stateAuthors, _, _, _, _, _, _, _, _, _, _) = _uiState.value
                 val state = _uiState.value
                 validate(stateTitle.isNotBlank(), R.string.publication_title_required)
                 val drafts = state.creditDrafts + ("author" to stateAuthors.joinToString("\n"))

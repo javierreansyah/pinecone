@@ -160,7 +160,7 @@ fun ReaderProgressTracker(
     )
     // Soften against the reading background in both light and dark themes.
     val progressColor = readerTextColor.copy(alpha = readerTextColor.alpha * 0.65f)
-    val seekLabel = stringResource(R.string.book_reading_progress)
+    val seekLabel = stringResource(R.string.publication_reading_progress)
 
     LaunchedEffect(progression, isSeeking, pendingSeek) {
         val target = pendingSeek
@@ -259,7 +259,7 @@ fun ReaderProgressTracker(
                 // with a slimmer profile for the compact reading toolbar.
                 val handleWidth = 3.dp.toPx()
                 val halfWidth = handleWidth / 2f
-                val rawX = size.width * if (rtl) (1f - sliderPosition) else sliderPosition
+                val rawX = size.width * if (rtl) 1f - sliderPosition else sliderPosition
                 val shiftedX = rawX + 2.dp.toPx()
                 val handleX =
                     shiftedX.coerceIn(halfWidth, (size.width - halfWidth).coerceAtLeast(halfWidth))
@@ -275,7 +275,7 @@ fun ReaderProgressTracker(
             }
         }
 
-        val pageText = if (isSeeking || (pendingSeek != null)) {
+        val pageText = if (isSeeking || pendingSeek != null) {
             if (totalPages != null) {
                 val page = (sliderPosition * totalPages).roundToInt().coerceIn(1, totalPages)
                 androidx.compose.ui.res.pluralStringResource(
@@ -337,23 +337,23 @@ fun ReaderSearchNavigator(
 
         IconButton(
             onClick = onPrev,
-            enabled = (activeIndex != null) && (activeIndex > 0),
+            enabled = activeIndex != null && activeIndex > 0,
         ) {
             Icon(
                 MaterialSymbols.Outlined.Arrow_back,
                 contentDescription = stringResource(R.string.action_back),
-                tint = if ((activeIndex != null) && (activeIndex > 0)) textColor
+                tint = if (activeIndex != null && activeIndex > 0) textColor
                 else textColor.copy(alpha = 0.3f),
             )
         }
         IconButton(
             onClick = onNext,
-            enabled = (activeIndex != null) && (activeIndex < (totalResults - 1)),
+            enabled = activeIndex != null && activeIndex < totalResults - 1,
         ) {
             Icon(
                 MaterialSymbols.Outlined.Arrow_forward,
                 contentDescription = stringResource(R.string.action_more),
-                tint = if ((activeIndex != null) && (activeIndex < (totalResults - 1))) textColor
+                tint = if (activeIndex != null && activeIndex < totalResults - 1) textColor
                 else textColor.copy(alpha = 0.3f),
             )
         }

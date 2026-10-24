@@ -30,8 +30,7 @@ internal fun pdfFigureRegions(page: FigureBounds, paths: List<FigureBounds>): Li
     paths.forEach { path ->
         val box = path.clippedTo(page)
         if (!listOf(box.left, box.top, box.right, box.bottom).all { it.isFinite() } ||
-            box.width < 0 || box.height < 0 || isPageSized(box) ||
-            (box.width >= page.width * .8f && box.height <= 2f)
+            box.width < 0 || box.height < 0 || isPageSized(box) || box.width >= page.width * .8f && box.height <= 2f
         ) return@forEach
         var merged = box
         // Restart after a union: the larger region can now touch a previously separate part.

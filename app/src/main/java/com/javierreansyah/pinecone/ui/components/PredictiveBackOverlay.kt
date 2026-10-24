@@ -66,8 +66,8 @@ fun PredictiveBackOverlay(
                 val w = constraints.maxWidth
                 val h = constraints.maxHeight
 
-                if ((backProgress > 0f) && (w > 0)) {
-                    val targetWidth = (w * (1f - (backProgress * 0.112f))).toInt()
+                if (backProgress > 0f && w > 0) {
+                    val targetWidth = (w * (1f - backProgress * 0.112f)).toInt()
                     val childConstraints = constraints.copy(
                         minWidth = targetWidth.coerceAtMost(w),
                         maxWidth = targetWidth.coerceAtMost(w),

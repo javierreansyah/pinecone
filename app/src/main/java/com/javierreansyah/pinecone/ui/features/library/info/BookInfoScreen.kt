@@ -187,7 +187,7 @@ fun BookInfoScreen(
                     modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        stringResource(R.string.book_not_found),
+                        stringResource(R.string.publication_not_found),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.error,
                     )
@@ -584,7 +584,7 @@ private fun ChaptersTabContent(
             }
             val currentChapter = sourcePage?.let { page ->
                 tableOfContents.lastOrNull {
-                    GeneratedEpubLocations.page(it.href.toString())?.let { it <= page } == true
+                    GeneratedEpubLocations.page(it.href.toString())?.let { it -> it <= page } == true
                 }
             }
             items(tableOfContents) { link ->
@@ -606,7 +606,7 @@ private fun ChaptersTabContent(
                                         )
                                     ),
                                 )
-                            } else positions.firstOrNull { (itHref) ->
+                            } else positions.firstOrNull { (itHref, _, _, _, _) ->
                                 itHref.toString().substringBefore("#") == link.href.toString()
                                     .substringBefore("#")
                             } ?: Locator(
@@ -659,7 +659,7 @@ private fun BookmarksTabContent(
     modifier: Modifier = Modifier,
 ) {
     val hasBookmarks =
-        bookmarks.isNotEmpty() || (currentLocator != null) || (furthestLocator != null)
+        bookmarks.isNotEmpty() || currentLocator != null || furthestLocator != null
     if (!hasBookmarks) {
         Box(
             modifier = modifier
@@ -709,7 +709,7 @@ private fun BookmarksTabContent(
                         elevation = ListItemDefaults.elevation(),
                         content = {
                             Text(
-                                text = stringResource(R.string.book_info_current_position),
+                                text = stringResource(R.string.publication_info_current_position),
                                 style = MaterialTheme.typography.titleMedium,
                             )
                         },
@@ -754,7 +754,7 @@ private fun BookmarksTabContent(
                         elevation = ListItemDefaults.elevation(),
                         content = {
                             Text(
-                                text = stringResource(R.string.book_info_furthest_position),
+                                text = stringResource(R.string.publication_info_furthest_position),
                                 style = MaterialTheme.typography.titleMedium,
                             )
                         },
@@ -774,7 +774,7 @@ private fun BookmarksTabContent(
                     )
                 }
 
-                items(bookmarks) { (bookmarkId, _, bookmarkLocatorJson, bookmarkChapterTitle) ->
+                items(bookmarks) { (bookmarkId, _, bookmarkLocatorJson, bookmarkChapterTitle, _, _) ->
                     val locator = try {
                         Locator.fromJSON(JSONObject(bookmarkLocatorJson))
                     } catch (_: Exception) {
@@ -783,8 +783,8 @@ private fun BookmarksTabContent(
                     if (locator != null) {
                         val inDocument = stringResource(R.string.reader_in_document)
                         val chapterTitle =
-                            bookmarkChapterTitle?.takeIf { it.isNotBlank() && (it != inDocument) }
-                                ?: tableOfContents.find { (itHref2) ->
+                            bookmarkChapterTitle?.takeIf { it.isNotBlank() && it != inDocument }
+                                ?: tableOfContents.find { (itHref2, _, _, _, _, _, _, _, _, _, _, _) ->
                                     itHref2.toString()
                                         .substringBefore("#") == locator.href.toString()
                                         .substringBefore("#")
@@ -863,7 +863,7 @@ private fun NotesTabContent(
                 .height(maxTabHeight),
             contentPadding = PaddingValues(vertical = 8.dp),
         ) {
-            items(notes) { (noteId, _, noteLocatorJson, noteChapterTitle, noteNoteText, noteColor) ->
+            items(notes) { (noteId, _, noteLocatorJson, noteChapterTitle, noteNoteText, noteColor, _, _) ->
                 val locator = try {
                     Locator.fromJSON(JSONObject(noteLocatorJson))
                 } catch (_: Exception) {
@@ -872,8 +872,8 @@ private fun NotesTabContent(
                 if (locator != null) {
                     val inDocument = stringResource(R.string.reader_in_document)
                     val chapterTitle =
-                        noteChapterTitle?.takeIf { it.isNotBlank() && (it != inDocument) }
-                            ?: tableOfContents.find { (itHref3) ->
+                        noteChapterTitle?.takeIf { it.isNotBlank() && it != inDocument }
+                            ?: tableOfContents.find { (itHref3, _, _, _, _, _, _, _, _, _, _, _) ->
                                 itHref3.toString().substringBefore("#") == locator.href.toString()
                                     .substringBefore("#")
                             }?.title ?: inDocument
@@ -1094,7 +1094,7 @@ private fun BookButtonGroup(
                         ) {
                             SelectableDropdownMenuItem(
                                 selected = false,
-                                text = { Text(stringResource(R.string.book_read_furthest)) },
+                                text = { Text(stringResource(R.string.publication_read_furthest)) },
                                 leadingIcon = {
                                     Icon(
                                         imageVector = MaterialSymbols.Outlined.Book,
@@ -1109,7 +1109,7 @@ private fun BookButtonGroup(
                             )
                             SelectableDropdownMenuItem(
                                 selected = false,
-                                text = { Text(stringResource(R.string.book_read_from_start)) },
+                                text = { Text(stringResource(R.string.publication_read_from_start)) },
                                 leadingIcon = {
                                     Icon(
                                         imageVector = MaterialSymbols.Outlined.Replay,
@@ -1146,8 +1146,8 @@ private fun BookButtonGroup(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                if (book.isRead) stringResource(R.string.book_mark_as_unread)
-                else stringResource(R.string.book_mark_as_read),
+                if (book.isRead) stringResource(R.string.publication_mark_as_unread)
+                else stringResource(R.string.publication_mark_as_read),
             )
         }
 
@@ -1173,8 +1173,8 @@ private fun BookButtonGroup(
         ) {
             Icon(
                 imageVector = MaterialSymbols.Outlined.Archive,
-                contentDescription = if (book.isArchived) stringResource(R.string.book_unarchive) else stringResource(
-                    R.string.book_archive,
+                contentDescription = if (book.isArchived) stringResource(R.string.publication_unarchive) else stringResource(
+                    R.string.publication_archive,
                 ),
             )
         }
@@ -1202,7 +1202,7 @@ private fun BookCoverImage(
         val coverModel = remember(coverPath) { File(coverPath) }
         AsyncImage(
             model = coverModel,
-            contentDescription = stringResource(R.string.book_cover_description, title),
+            contentDescription = stringResource(R.string.publication_cover_description, title),
             modifier = modifier
                 .height(300.dp)
                 .shadow(8.dp, RoundedCornerShape(12.dp))
@@ -1245,7 +1245,7 @@ private fun BookHeaderDetails(
     modifier: Modifier = Modifier,
 ) {
     var isExpanded by remember { mutableStateOf(value = false) }
-    val showMoreChip = (tags.size > 5) && !isExpanded
+    val showMoreChip = tags.size > 5 && !isExpanded
 
     val tagsToShow = if (isExpanded) {
         tags
@@ -1268,7 +1268,7 @@ private fun BookHeaderDetails(
         )
         Text(
             text = if (authors.isNotEmpty()) authors.joinToString(", ") else stringResource(
-                R.string.book_unknown_author,
+                R.string.publication_unknown_author,
             ),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1317,7 +1317,7 @@ private fun BookHeaderDetails(
                             label = {
                                 Icon(
                                     imageVector = MaterialSymbols.Outlined.More_vert,
-                                    contentDescription = stringResource(R.string.book_show_more_tags),
+                                    contentDescription = stringResource(R.string.publication_show_more_tags),
                                     modifier = Modifier.size(16.dp),
                                 )
                             },
@@ -1327,13 +1327,13 @@ private fun BookHeaderDetails(
                             ),
                             border = null,
                         )
-                    } else if (isExpanded && (tags.size > 5)) {
+                    } else if (isExpanded && tags.size > 5) {
                         SuggestionChip(
                             onClick = { isExpanded = false },
                             label = {
                                 Icon(
                                     imageVector = MaterialSymbols.Outlined.Close,
-                                    contentDescription = stringResource(R.string.book_show_less_tags),
+                                    contentDescription = stringResource(R.string.publication_show_less_tags),
                                     modifier = Modifier.size(16.dp),
                                 )
                             },
@@ -1363,7 +1363,7 @@ private fun BookProgress(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = stringResource(R.string.book_reading_progress),
+                text = stringResource(R.string.publication_reading_progress),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
@@ -1402,7 +1402,7 @@ private fun BookDescription(
         modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
-            text = stringResource(R.string.book_description),
+            text = stringResource(R.string.publication_description),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
         )
@@ -1418,8 +1418,8 @@ private fun BookDescription(
         )
         if (description.length > 200) {
             val labelText =
-                if (isExpanded) stringResource(R.string.book_read_less) else stringResource(
-                    R.string.book_read_more,
+                if (isExpanded) stringResource(R.string.publication_read_less) else stringResource(
+                    R.string.publication_read_more,
                 )
             Text(
                 text = labelText,
@@ -1443,12 +1443,12 @@ private fun BookMetadata(
         modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
-            text = stringResource(R.string.book_publication_details),
+            text = stringResource(R.string.publication_publication_details),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
         )
 
-        val notAvailable = stringResource(R.string.book_not_available)
+        val notAvailable = stringResource(R.string.publication_not_available)
         val extraFields = richMetadataFields(book)
         SegmentedColumn(
             modifier = Modifier.fillMaxWidth(),
@@ -1456,7 +1456,7 @@ private fun BookMetadata(
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        text = stringResource(R.string.book_publisher),
+                        text = stringResource(R.string.publication_publisher),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -1470,7 +1470,7 @@ private fun BookMetadata(
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        text = stringResource(R.string.book_published_date),
+                        text = stringResource(R.string.publication_published_date),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -1484,7 +1484,7 @@ private fun BookMetadata(
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        text = stringResource(R.string.book_language),
+                        text = stringResource(R.string.publication_language),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -1500,7 +1500,7 @@ private fun BookMetadata(
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        text = stringResource(R.string.book_identifier),
+                        text = stringResource(R.string.publication_identifier),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -1514,13 +1514,13 @@ private fun BookMetadata(
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        text = stringResource(R.string.book_format),
+                        text = stringResource(R.string.publication_format),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = parseBookFormat(
-                            book.mediaType, stringResource(R.string.book_unknown),
+                            book.mediaType, stringResource(R.string.publication_unknown),
                         ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -1615,8 +1615,8 @@ private fun parseBookFormat(mediaType: String?, defaultUnknown: String): String 
     val lowerMediaType = mediaType.lowercase()
 
     val index = when {
-        lowerMediaType.contains(key) -> lowerMediaType.indexOf(key) + key.length
-        lowerMediaType.contains(altKey) -> lowerMediaType.indexOf(altKey) + altKey.length
+        key in lowerMediaType -> lowerMediaType.indexOf(key) + key.length
+        altKey in lowerMediaType -> lowerMediaType.indexOf(altKey) + altKey.length
         else -> -1
     }
 
@@ -1635,7 +1635,7 @@ private fun parseBookFormat(mediaType: String?, defaultUnknown: String): String 
         mime == "application/x-cbz" -> "CBZ"
         mime == "application/x-cbr" -> "CBR"
         mime == "application/pdf" -> "PDF"
-        mime.contains("/") -> {
+        "/" in mime -> {
             val lastSegment = mime.substringAfterLast('/')
             val clean = lastSegment.removePrefix("x-").substringBefore('+').uppercase()
             clean.ifBlank { lastSegment.uppercase() }
@@ -1648,12 +1648,12 @@ private fun parseBookFormat(mediaType: String?, defaultUnknown: String): String 
 @Composable
 private fun getPositionLabel(locator: Locator, positions: List<Locator>): String {
     val posIndex = locator.locations.totalProgression?.let { target ->
-        positions.indexOfLast { (_, _, _, itLocations) ->
+        positions.indexOfLast { (_, _, _, itLocations, _) ->
             (itLocations.totalProgression ?: -1.0) <= target
         }
-    }?.takeIf { it != -1 } ?: positions.indexOfLast { (posHref, _, _, posLocations) ->
-        (posHref == locator.href) && ((posLocations.progression
-            ?: 0.0) <= (locator.locations.progression ?: 0.0))
+    }?.takeIf { it != -1 } ?: positions.indexOfLast { (posHref, _, _, posLocations, _) ->
+        (((posHref == locator.href) && (posLocations.progression
+            ?: 0.0) <= (locator.locations.progression ?: 0.0)))
     }.takeIf { it != -1 }
 
     return when {
@@ -1676,7 +1676,7 @@ private fun getChapterPageLabel(link: Link, positions: List<Locator>): String {
     }
     if (positions.isEmpty()) return ""
     val linkHref = link.href.toString().substringBefore("#")
-    val posIndex = positions.indexOfFirst { (itHref4) ->
+    val posIndex = positions.indexOfFirst { (itHref4, _, _, _, _) ->
         itHref4.toString().substringBefore("#") == linkHref
     }
     return if (posIndex != -1) {

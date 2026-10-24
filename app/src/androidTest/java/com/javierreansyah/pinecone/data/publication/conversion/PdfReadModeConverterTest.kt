@@ -1,19 +1,20 @@
 package com.javierreansyah.pinecone.data.publication.conversion
 
 import android.annotation.SuppressLint
-import timber.log.Timber
-import com.javierreansyah.pinecone.testing.InstrumentationLoggingRule
-import org.junit.Rule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.artifex.mupdf.fitz.Document
 import com.javierreansyah.pinecone.reader.pdf.MuPdfDocument
+import com.javierreansyah.pinecone.testing.FixtureWebViewClient
+import com.javierreansyah.pinecone.testing.InstrumentationLoggingRule
 import com.javierreansyah.pinecone.ui.features.reader.resolveGeneratedLocator
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import timber.log.Timber
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.Locale
@@ -116,7 +117,8 @@ class PdfReadModeConverterTest {
             )
             assertEquals(
                 "Table text must not also be emitted as loose paragraphs",
-                table.textContent.filterNot(Char::isWhitespace), content.textContent.filterNot(Char::isWhitespace)
+                table.textContent.filterNot(Char::isWhitespace),
+                content.textContent.filterNot(Char::isWhitespace)
             )
         } finally {
             pdf.close()
@@ -156,10 +158,10 @@ class PdfReadModeConverterTest {
             val page = MuPdfStructure.parse(
                 entries.getValue("EPUB/text/content.xhtml").toString(Charsets.UTF_8)
             )
-            assertTrue(page.textContent.contains("This paragraph stays outside the chart."))
+            assertTrue("This paragraph stays outside the chart." in page.textContent)
             assertTrue(
                 "Chart labels must not become separate reading paragraphs",
-                !page.textContent.contains("Quarterly results")
+                "Quarterly results" !in page.textContent
             )
             val assets = entries.filterKeys { it.startsWith("EPUB/images/") }
             assertEquals("All paths and labels belong to one chart", 1, assets.size)
@@ -226,8 +228,8 @@ class PdfReadModeConverterTest {
                         .newDocumentBuilder().parse(zip.readBytes().inputStream())
                     if (entry.name == "EPUB/text/content.xhtml") {
                         assertEquals(3, xml.getElementsByTagNameNS("*", "section").length)
-                        assertTrue(xml.documentElement.textContent.contains(symbol))
-                        assertTrue(xml.documentElement.textContent.contains("The final page is still readable."))
+                        assertTrue(symbol in xml.documentElement.textContent)
+                        assertTrue("The final page is still readable." in xml.documentElement.textContent)
                         val svg = xml.getElementsByTagNameNS("http://www.w3.org/2000/svg", "svg")
                             .item(0) as org.w3c.dom.Element
                         assertEquals(symbol, svg.getAttribute("aria-label"))
@@ -270,7 +272,7 @@ class PdfReadModeConverterTest {
             assertEquals(native.pageCount, xml.getElementsByTagNameNS("*", "section").length)
             val all = xml.getElementsByTagName("*")
             val ids =
-                (0 until all.length).mapNotNull { all.item(it).attributes.getNamedItem("id")?.nodeValue }
+                (0..<all.length).mapNotNull { all.item(it).attributes.getNamedItem("id")?.nodeValue }
                     .toSet()
             (1..native.pageCount).forEach {
                 assertTrue(
@@ -280,7 +282,7 @@ class PdfReadModeConverterTest {
             }
             assertTrue(
                 "Supplementary math letters must survive serialization",
-                xml.documentElement.textContent.contains("\uD835\uDC5D")
+                "\uD835\uDC5D" in xml.documentElement.textContent
             )
             assertEquals(
                 "The thesis uses seven approximately 25-source-page files",
@@ -309,7 +311,7 @@ class PdfReadModeConverterTest {
             val ordered = tablePage.children().map { it.getAttribute("class") to it.textContent }
             val jobCaption = ordered.indexOfFirst { it.second.startsWith("Tabel 4.5") }
             val jobTable =
-                ordered.indexOfFirst { it.first == "table-scroll" && it.second.contains("Job ID") }
+                ordered.indexOfFirst { it.first == "table-scroll" && "Job ID" in it.second }
             assertTrue(
                 "A table belongs after its own caption",
                 jobCaption in 0..<jobTable
@@ -324,8 +326,7 @@ class PdfReadModeConverterTest {
                 .single { it.localTag == "p" && it.textContent.startsWith("Parameter critical") }
             assertTrue(
                 "Font changes must not detach inline table/figure references",
-                discussion.textContent.replace(Regex("\\s+"), " ")
-                    .contains("Tabel 6.5 dan Gambar 6.6")
+                "Tabel 6.5 dan Gambar 6.6" in discussion.textContent.replace(Regex("\\s+"), " ")
             )
             assertTrue(
                 "Inline references must remain body prose",
@@ -337,7 +338,9 @@ class PdfReadModeConverterTest {
             )
             Timber.tag("PdfReadModeConverterTest").i(
                 "THESIS_RECONSTRUCTION: pages=%d, tables=%d, elapsedMs=%d",
-                native.pageCount, root.descendants("table").size, (System.nanoTime() - started) / 1_000_000,
+                native.pageCount,
+                root.descendants("table").size,
+                (System.nanoTime() - started) / 1_000_000,
             )
         } finally {
             native.close()
@@ -358,32 +361,19 @@ class PdfReadModeConverterTest {
                 settings.blockNetworkLoads = true
                 settings.allowFileAccess = false
                 settings.allowContentAccess = false
-                // Lint flags this super-constructor call despite the override below, which
-                // destroys the WebView, unblocks the test, and returns true. The detector's
-                // visitConstructor reports calls whose source PSI is not KtSuperTypeCallEntry:
-                // https://github.com/androidx/androidx/blob/androidx-main/webkit/webkit-lint/src/main/java/androidx/webkit/lint/RenderProcessGoneDetector.kt
-                @SuppressLint("MissingOnRenderProcessGone")
-                class FixtureWebViewClient : android.webkit.WebViewClient() {
-                    override fun onPageFinished(webView: android.webkit.WebView, url: String) {
+                webViewClient = FixtureWebViewClient(
+                    onPageLoaded = { webView ->
                         webView.evaluateJavascript("!!document.getElementById('source-page-$pages')") { value ->
-                            result.set(
-                                value
-                            ); ready.countDown()
+                            result.set(value)
+                            ready.countDown()
                         }
-                    }
-
-                    override fun onRenderProcessGone(
-                        webView: android.webkit.WebView,
-                        detail: android.webkit.RenderProcessGoneDetail,
-                    ): Boolean {
-                        result.set("WebView renderer exited (crashed=${detail.didCrash()})")
+                    },
+                    onRendererExited = { failure ->
+                        result.set(failure)
                         view = null
-                        webView.destroy()
                         ready.countDown()
-                        return true
-                    }
-                }
-                webViewClient = FixtureWebViewClient()
+                    },
+                )
                 loadDataWithBaseURL(
                     "https://localhost/thesis.xhtml",
                     html,
@@ -434,7 +424,7 @@ class PdfReadModeConverterTest {
                 }
             }
             val page = entries.getValue("EPUB/text/content.xhtml").toString(Charsets.UTF_8)
-            assertTrue(page.contains("A PDF with extractable text."))
+            assertTrue("A PDF with extractable text." in page)
             val images = entries.filterKeys { it.startsWith("EPUB/images/") }
             assertEquals(1, images.size)
             assertTrue(images.keys.single().endsWith(".svg"))
@@ -616,7 +606,7 @@ class PdfReadModeConverterTest {
         try {
             if (InstrumentationRegistry.getArguments().getString("dumpLayout") == "true") {
                 val extractor = PdfLayoutExtractor()
-                (0 until native.pageCount).forEach { index ->
+                (0..<native.pageCount).forEach { index ->
                     File(context.cacheDir, "pdf-layout-${index + 1}.json").writeText(
                         kotlinx.serialization.json.Json.encodeToString(
                             extractor.extract(
@@ -645,7 +635,7 @@ class PdfReadModeConverterTest {
             val xml = combinedContent(entries)
             val headings = (1..6).flatMap { level ->
                 val nodes = xml.getElementsByTagNameNS("*", "h$level")
-                (0 until nodes.length).map {
+                (0..<nodes.length).map {
                     "h$level" to nodes.item(it).textContent.trim().replace(Regex("\\s+"), " ")
                 }
             }
@@ -674,48 +664,48 @@ class PdfReadModeConverterTest {
                 4,
                 tables.length
             )
-            assertTrue(tables.item(0).textContent.contains("Sequential Operations"))
+            assertTrue("Sequential Operations" in tables.item(0).textContent)
             val tableTwo = tables.item(1) as org.w3c.dom.Element
             val tableTwoCells = tableTwo.getElementsByTagNameNS("*", "td")
-            assertTrue((0 until tableTwoCells.length).any {
+            assertTrue((0..<tableTwoCells.length).any {
                 val cell = tableTwoCells.item(it) as org.w3c.dom.Element
                 cell.textContent.trim() == "BLEU"
             })
             val paragraphs = xml.getElementsByTagNameNS("*", "p")
             val convolution =
-                (0 until paragraphs.length).map { paragraphs.item(it) as org.w3c.dom.Element }
-                    .single { it.textContent.contains("Separable convolutions") }
-            assertTrue(convolution.textContent.contains("factor of k. Separable convolutions"))
+                (0..<paragraphs.length).map { paragraphs.item(it) as org.w3c.dom.Element }
+                    .single { "Separable convolutions" in it.textContent }
+            assertTrue("factor of k. Separable convolutions" in convolution.textContent)
             assertEquals(
                 "Inline math on consecutive prose lines must not create a spurious stacked expression",
                 0, convolution.getElementsByTagNameNS("http://www.w3.org/2000/svg", "svg").length
             )
             val references =
-                (0 until paragraphs.length).map { paragraphs.item(it) as org.w3c.dom.Element }
+                (0..<paragraphs.length).map { paragraphs.item(it) as org.w3c.dom.Element }
                     .filter { it.getAttribute("class") == "reference" }
             assertEquals(
                 "Line fragments should form the original 40 bibliography entries",
                 40,
                 references.size
             )
-            assertTrue(references.first().textContent.contains("arXiv:1607.06450, 2016."))
-            assertTrue(references[8].textContent.contains("sequence to sequence learning."))
+            assertTrue("arXiv:1607.06450, 2016." in references.first().textContent)
+            assertTrue("sequence to sequence learning." in references[8].textContent)
             val vectors = xml.getElementsByTagNameNS("http://www.w3.org/2000/svg", "svg")
-            val attention = (0 until vectors.length).map { vectors.item(it) as org.w3c.dom.Element }
+            val attention = (0..<vectors.length).map { vectors.item(it) as org.w3c.dom.Element }
                 .single { it.getAttribute("aria-label").startsWith("Attention(") }
             assertTrue(
                 "Use MuPDF's original glyph outlines, including the denominator radical",
                 attention.getElementsByTagNameNS("*", "path").length > 1
             )
-            assertTrue(attention.getAttribute("aria-label").contains("\u221a"))
-            val optimizer = (0 until vectors.length).map { vectors.item(it) as org.w3c.dom.Element }
+            assertTrue("\u221a" in attention.getAttribute("aria-label"))
+            val optimizer = (0..<vectors.length).map { vectors.item(it) as org.w3c.dom.Element }
                 .single { it.textContent.startsWith("lrate") }
             assertTrue(
                 "The complete optimizer expression must stay together",
-                optimizer.textContent.contains("warmup")
+                "warmup" in optimizer.textContent
             )
-            assertTrue(optimizer.textContent.contains("model"))
-            assertTrue(optimizer.getAttribute("aria-label").contains("warmup"))
+            assertTrue("model" in optimizer.textContent)
+            assertTrue("warmup" in optimizer.getAttribute("aria-label"))
             assertEquals(
                 "Extracted formulas must not contain bitmap images",
                 0,
@@ -723,8 +713,8 @@ class PdfReadModeConverterTest {
             )
             val bullets = xml.getElementsByTagNameNS("*", "ul")
             val applications =
-                (0 until bullets.length).map { bullets.item(it) as org.w3c.dom.Element }
-                    .single { it.textContent.contains("encoder-decoder attention") }
+                (0..<bullets.length).map { bullets.item(it) as org.w3c.dom.Element }
+                    .single { "encoder-decoder attention" in it.textContent }
             assertEquals(
                 "Section 3.2.3 must have exactly three list items",
                 3,
@@ -737,7 +727,7 @@ class PdfReadModeConverterTest {
             )
             val all = xml.getElementsByTagName("*")
             val ids =
-                (0 until all.length).mapNotNull { all.item(it).attributes.getNamedItem("id")?.nodeValue }
+                (0..<all.length).mapNotNull { all.item(it).attributes.getNamedItem("id")?.nodeValue }
             assertEquals(
                 "Source and run anchors must remain unique inside tables",
                 ids.size,
@@ -770,14 +760,15 @@ class PdfReadModeConverterTest {
         entries.filterKeys { it.startsWith("EPUB/text/") }.values.forEach { bytes ->
             MuPdfStructure.parse(bytes.toString(Charsets.UTF_8)).descendants("body").single()
                 .children().forEach { section ->
-                val page = section.getAttribute("data-source-page")
-                val existing = sections[page]
-                if (existing == null) {
-                    val copy = root.ownerDocument.importNode(section, true) as org.w3c.dom.Element
-                    body.appendChild(copy); sections[page] = copy
-                } else section.children()
-                    .forEach { existing.appendChild(root.ownerDocument.importNode(it, true)) }
-            }
+                    val page = section.getAttribute("data-source-page")
+                    val existing = sections[page]
+                    if (existing == null) {
+                        val copy =
+                            root.ownerDocument.importNode(section, true) as org.w3c.dom.Element
+                        body.appendChild(copy); sections[page] = copy
+                    } else section.children()
+                        .forEach { existing.appendChild(root.ownerDocument.importNode(it, true)) }
+                }
         }
         return root.ownerDocument
     }
@@ -866,8 +857,8 @@ class PdfReadModeConverterTest {
                 .parse(entries.getValue("EPUB/text/content.xhtml").inputStream())
             val sup = doc.getElementsByTagNameNS("*", "sup")
             val sub = doc.getElementsByTagNameNS("*", "sub")
-            assertTrue((0 until sup.length).any { sup.item(it).textContent == "2" })
-            assertTrue((0 until sub.length).any { sub.item(it).textContent == "i" })
+            assertTrue((0..<sup.length).any { sup.item(it).textContent == "2" })
+            assertTrue((0..<sub.length).any { sub.item(it).textContent == "i" })
         } finally {
             pdf.close(); file.delete()
         }
@@ -911,8 +902,7 @@ class PdfReadModeConverterTest {
 
     private fun vectorPdf(customContent: String? = null): ByteArray {
         val content = customContent ?: ("1 1 1 rg 0 0 600 800 re f\n" +
-                "0 0 0 rg 100 300 150 100 re f\n" +
-                "BT /F1 12 Tf 50 700 Td (A PDF with extractable text.) Tj ET\n")
+                "0 0 0 rg 100 300 150 100 re f\n" + "BT /F1 12 Tf 50 700 Td (A PDF with extractable text.) Tj ET\n")
         val objects = listOf(
             "<< /Type /Catalog /Pages 2 0 R >>",
             "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",

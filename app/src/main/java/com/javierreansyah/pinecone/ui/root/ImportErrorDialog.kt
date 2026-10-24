@@ -75,7 +75,7 @@ fun ImportErrorDialog(
             Column(
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                if ((report.failedFiles.size == 1) && (report.totalCount == 1)) {
+                if (report.failedFiles.size == 1 && report.totalCount == 1) {
                     Text(
                         text = stringResource(
                             R.string.import_failed_single_message,

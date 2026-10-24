@@ -4,8 +4,131 @@
     <!-- Locked means opt-in: unlisted inspections (including new IDE/plugin checks)
          stay disabled instead of inheriting the default profile. This is a batch
          recommendation profile, not a replacement for VALIDATION.md or editor checks.
-         No Android lint, compiler diagnostics, proofreading, unused-symbol searches,
-         or cross-method analysis. Selected Kotlin checks still require type resolution. -->
+         Kotlin-focused style and local cleanup, including local compiler diagnostics.
+         No Android lint, proofreading, project-wide unused-declaration searches, or
+         cross-method analysis. Semantic checks still require type resolution; weak
+         warning severity does not make them cheaper. See README.md in this directory. -->
+    <!-- Local unused code: do not enable UnusedSymbol (project-wide usage searches). -->
+    <inspection_tool class="UnusedVariable" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="VariableInitializerIsRedundant" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="KotlinUnusedImport" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="UnusedExpression" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="UnusedLambdaExpression" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="UnusedLambdaExpressionBody" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="UnusedUnaryOperator" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="UnusedEquals" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="UnusedDataClassCopyResult" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="ForEachParameterNotUsed" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <!-- Naming and syntax conventions; formatter settings remain the source of truth. -->
+    <inspection_tool class="ClassName" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ConstPropertyName" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="EnumEntryName" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <!-- Allow Compose PascalCase as well as ordinary camelCase functions. -->
+    <inspection_tool class="FunctionName" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="namePattern" value="[a-zA-Z][A-Za-z\d]*" />
+    </inspection_tool>
+    <inspection_tool class="LocalVariableName" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ObjectPrivatePropertyName" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ObjectPropertyName" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="PackageName" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="PrivatePropertyName" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="PropertyName" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="TestFunctionName" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="SortModifiers" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="TrailingComma" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <!-- Declaration, control-flow, and lambda idioms. -->
+    <inspection_tool class="DestructuringDeclaration" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="IncompleteDestructuring" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="MayBeConstant" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="UnnecessaryVariable" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="JoinDeclarationAndAssignment" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="MoveVariableDeclarationIntoWhen" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="IntroduceWhenSubject" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="WhenWithOnlyElse" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ConstantConditionIf" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="SimplifyWhenWithBooleanConstantCondition" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="LiftReturnOrAssignment" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="IfThenToElvis" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="IfThenToSafeAccess" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="NullChecksToSafeCall" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="VerboseNullabilityAndEmptiness" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="NullableBooleanElvis" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="NullableHashCode" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="MoveLambdaOutsideParentheses" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <!-- Prefer meaningful explicit names in nested lambdas over ambiguous nested it. -->
+    <inspection_tool class="NestedLambdaShadowedImplicitParameter" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="SimplifyNestedEachInScopeFunction" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ConvertTryFinallyToUseCall" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <!-- Collection, range, operator, and string idioms; no call-graph analysis. -->
+    <inspection_tool class="ConvertPairConstructorToToFunction" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ConvertToStringTemplate" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ConvertTwoComparisonsToRangeCheck" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="CopyWithoutNamedArguments" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="FilterIsInstanceCallWithClassLiteralArgument" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="JavaMapForEach" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="MapToForEach" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ReplaceArrayOfWithLiteral" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ReplaceAssociateFunction" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ReplaceCallWithBinaryOperator" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ReplaceContains" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ReplaceGetOrSet" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ReplaceIfExpressionWithFirstOrNull" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ReplaceIsEmptyWithIfEmpty" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ReplaceJavaStaticMethodWithKotlinAnalog" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ReplaceManualRangeWithIndicesCalls" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ReplaceMapKeysCallChainWithKeys" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ReplacePutWithAssignment" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ReplaceRangeStartEndInclusiveWithFirstLast" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ReplaceRangeToWithRangeUntil" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ReplaceUntilWithRangeUntil" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ReplaceSubstringWithDropLast" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ReplaceSubstringWithIndexingOperation" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ReplaceSubstringWithSubstringAfter" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ReplaceSubstringWithSubstringBefore" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ReplaceSubstringWithTake" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ReplaceToWithInfixForm" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ReplaceWithIgnoreCaseEquals" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ReplaceWithOperatorAssignment" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="SimplifiableCallChain" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <!-- Readability wins over removing semantically redundant grouping parentheses. -->
+    <inspection_tool class="UnclearPrecedenceOfBinaryExpression" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="UseWithIndex" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <!-- Additional redundant constructs. -->
+    <inspection_tool class="ComplexRedundantLet" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ControlFlowWithEmptyBody" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="ExplicitThis" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="KotlinDoubleNegation" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="KotlinRedundantOverride" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RedundantElvisReturnNull" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RedundantEnumConstructorInvocation" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RedundantExplicitType" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RedundantInnerClassModifier" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RedundantLabeledReturnOnLastExpressionInLambda" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RedundantLambdaOrAnonymousFunction" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <!-- Preserve null guards: removing requireNotNull(Url(href)) breaks compilation
+         with the current Readium API/compiler combination (PdfTextOverlay.kt). -->
+    <inspection_tool class="RedundantRequireNotNullCall" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="RedundantReturnKeyword" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RedundantReturnLabel" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RedundantSamConstructor" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RedundantUpperBound" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RedundantWith" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RemoveEmptyClassBody" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RemoveEmptyParenthesesFromAnnotationEntry" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RemoveEmptyParenthesesFromLambdaCall" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RemoveEmptyPrimaryConstructor" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RemoveEmptySecondaryConstructorBody" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RemoveExplicitSuperQualifier" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RemoveExplicitTypeArguments" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RemoveRedundantQualifierName" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RemoveSetterParameterType" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RemoveSingleExpressionStringTemplate" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RemoveToStringInStringTemplate" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <!-- Also preserve callback grouping: else ({ ... }) is a lambda, whereas
+         else { ... } is a block (compiler failure in OrganizeBottomSheet.kt). -->
+    <inspection_tool class="RemoveUnnecessaryParentheses" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="UnnecessaryOptInAnnotation" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <!-- Original lightweight style checks. -->
     <inspection_tool class="CanBePrimaryConstructorProperty" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
     <inspection_tool class="CanBeVal" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
     <inspection_tool class="CascadeIf" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
@@ -13,21 +136,22 @@
     <inspection_tool class="ObjectLiteralToLambda" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
     <inspection_tool class="RedundantAsSequence" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
     <inspection_tool class="RedundantCompanionReference" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
-    <inspection_tool class="RedundantConstructorKeyword" enabled="true" level="INFORMATION" enabled_by_default="true" />
+    <inspection_tool class="RedundantConstructorKeyword" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
     <inspection_tool class="RedundantElseInIf" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
     <inspection_tool class="RedundantEmptyInitializerBlock" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
     <inspection_tool class="RedundantGetter" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
     <inspection_tool class="RedundantIf" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
-    <inspection_tool class="RedundantLambdaArrow" enabled="true" level="INFORMATION" enabled_by_default="true" />
+    <!-- Preserve explicit lambda parameter lists used to avoid nested-it shadowing. -->
+    <inspection_tool class="RedundantLambdaArrow" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
     <inspection_tool class="RedundantModalityModifier" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
-    <inspection_tool class="RedundantSemicolon" enabled="true" level="INFORMATION" enabled_by_default="true" />
+    <inspection_tool class="RedundantSemicolon" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
     <inspection_tool class="RedundantSetter" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
     <inspection_tool class="RedundantUnitExpression" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
     <inspection_tool class="RedundantUnitReturnType" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
     <inspection_tool class="RedundantValueArgument" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
-    <inspection_tool class="RedundantVisibilityModifier" enabled="true" level="INFORMATION" enabled_by_default="true" />
-    <inspection_tool class="RemoveCurlyBracesFromTemplate" enabled="true" level="INFORMATION" enabled_by_default="true" />
-    <inspection_tool class="RemoveRedundantBackticks" enabled="true" level="INFORMATION" enabled_by_default="true" />
+    <inspection_tool class="RedundantVisibilityModifier" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RemoveCurlyBracesFromTemplate" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RemoveRedundantBackticks" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
     <inspection_tool class="ReplaceCollectionCountWithSize" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
     <inspection_tool class="ReplaceNegatedIsEmptyWithIsNotEmpty" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
     <inspection_tool class="ReplaceNotNullAssertionWithElvisReturn" enabled="true" level="WEAK WARNING" enabled_by_default="true" />

@@ -126,7 +126,7 @@ fun EditBookScreen(
             ) {
                 CircularProgressIndicator()
             }
-        } else if (!uiState.loaded && (uiState.error != null)) {
+        } else if (!uiState.loaded && uiState.error != null) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -134,7 +134,7 @@ fun EditBookScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    uiState.error ?: stringResource(R.string.book_not_found),
+                    uiState.error ?: stringResource(R.string.publication_not_found),
                     color = MaterialTheme.colorScheme.error,
                 )
             }
@@ -261,7 +261,7 @@ private fun EditBookContent(
         )
 
         AutocompleteChipTextField(
-            label = stringResource(R.string.book_label_authors),
+            label = stringResource(R.string.publication_label_authors),
             items = uiState.authors,
             suggestions = allAuthors,
             onAdd = onAddAuthor,
@@ -270,7 +270,7 @@ private fun EditBookContent(
         )
 
         AutocompleteChipTextField(
-            label = stringResource(R.string.book_label_tags),
+            label = stringResource(R.string.publication_label_tags),
             items = uiState.tags,
             suggestions = allTags,
             onAdd = onAddTag,
@@ -281,7 +281,7 @@ private fun EditBookContent(
         OutlinedTextField(
             value = uiState.description,
             onValueChange = onDescriptionChange,
-            label = { Text(stringResource(R.string.book_description)) },
+            label = { Text(stringResource(R.string.publication_description)) },
             modifier = Modifier
                 .fillMaxWidth()
                 .defaultMinSize(minHeight = 160.dp),
@@ -323,7 +323,7 @@ private fun BookCoverPicker(
         if (coverUri != null) {
             AsyncImage(
                 model = coverUri,
-                contentDescription = stringResource(R.string.book_cover_description, title),
+                contentDescription = stringResource(R.string.publication_cover_description, title),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
             )
@@ -331,7 +331,7 @@ private fun BookCoverPicker(
             val coverModel = remember(existingCoverPath) { File(existingCoverPath) }
             AsyncImage(
                 model = coverModel,
-                contentDescription = stringResource(R.string.book_cover_description, title),
+                contentDescription = stringResource(R.string.publication_cover_description, title),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
             )
@@ -351,7 +351,10 @@ private fun BookCoverPicker(
             ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Image,
-                    contentDescription = stringResource(R.string.book_cover_description, title),
+                    contentDescription = stringResource(
+                        R.string.publication_cover_description,
+                        title
+                    ),
                     modifier = Modifier.size(48.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 )
@@ -392,7 +395,7 @@ private fun AutocompleteChipTextField(
     var textFieldWidth by remember { mutableIntStateOf(0) }
 
     val filteredSuggestions = remember(suggestions, items, text) {
-        suggestions.filter { it.contains(text, ignoreCase = true) && !items.contains(it) }
+        suggestions.filter { it.contains(text, ignoreCase = true) && it !in items }
     }
 
     Box(
@@ -513,7 +516,7 @@ private fun AutocompleteChipTextField(
                 val finalSuggestions = filteredSuggestions.take(5)
                 val showCreateNew =
                     text.isNotBlank() && !suggestions.any { it.equals(text, ignoreCase = true) }
-                val totalCount = finalSuggestions.size + (if (showCreateNew) 1 else 0)
+                val totalCount = finalSuggestions.size + if (showCreateNew) 1 else 0
 
                 finalSuggestions.forEachIndexed { index, suggestion ->
                     SelectableDropdownMenuItem(
@@ -531,7 +534,7 @@ private fun AutocompleteChipTextField(
                 if (showCreateNew) {
                     SelectableDropdownMenuItem(
                         selected = false,
-                        text = { Text(stringResource(R.string.book_create_new, text)) },
+                        text = { Text(stringResource(R.string.publication_create_new, text)) },
                         shapes = MenuDefaults.itemShape(finalSuggestions.size, totalCount),
                         onClick = {
                             onAdd(text)

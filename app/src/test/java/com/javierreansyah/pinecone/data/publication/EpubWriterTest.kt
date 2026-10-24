@@ -68,21 +68,21 @@ class EpubWriterTest {
         assertEquals("A & B <C>", opf.getElementsByTagNameNS("*", "title").item(0).textContent)
         val items = opf.getElementsByTagNameNS("*", "item")
         val identifiers = mutableSetOf<String>()
-        for (index in 0 until items.length) {
+        for (index in 0..<items.length) {
             val item = items.item(index).attributes
             identifiers += item.getNamedItem("id").nodeValue
             assertTrue(entries.containsKey("EPUB/" + item.getNamedItem("href").nodeValue))
         }
         val spine = opf.getElementsByTagNameNS("*", "itemref")
         assertEquals(1, spine.length)
-        for (index in 0 until spine.length) assertTrue(spine.item(index).attributes.getNamedItem("idref").nodeValue in identifiers)
+        for (index in 0..<spine.length) assertTrue(spine.item(index).attributes.getNamedItem("idref").nodeValue in identifiers)
         val page = parse(entries.getValue("EPUB/text/content.xhtml"))
         assertEquals(
             "A <heading> & title",
             page.getElementsByTagNameNS("*", "h2").item(0).textContent
         )
-        assertFalse(page.documentElement.textContent.contains('\u0001'))
-        assertTrue(page.documentElement.textContent.contains("😀"))
+        assertFalse('\u0001' in page.documentElement.textContent)
+        assertTrue("😀" in page.documentElement.textContent)
         assertEquals(
             "source-page-1",
             page.getElementsByTagNameNS("*", "span").item(0).attributes.getNamedItem("id").nodeValue
@@ -94,7 +94,7 @@ class EpubWriterTest {
             entries.keys.filter { it.startsWith("EPUB/text/") })
         val ids = mutableSetOf<String>()
         val elements = page.getElementsByTagName("*")
-        for (index in 0 until elements.length) {
+        for (index in 0..<elements.length) {
             val id = elements.item(index).attributes.getNamedItem("id")?.nodeValue ?: continue
             assertTrue("Duplicate ID: $id", ids.add(id))
         }
@@ -110,7 +110,7 @@ class EpubWriterTest {
         )
         val links = navigation.getElementsByTagNameNS("*", "a")
         assertEquals(4, links.length)
-        for (index in 0 until links.length) {
+        for (index in 0..<links.length) {
             val href = links.item(index).attributes.getNamedItem("href").nodeValue
             assertEquals("text/content.xhtml", href.substringBefore('#'))
             assertTrue(href.substringAfter('#') in ids)
@@ -156,10 +156,10 @@ class EpubWriterTest {
         }
         val page = parse(entries.getValue("EPUB/text/content.xhtml"))
         assertEquals("Judul", page.getElementsByTagNameNS("*", "title").item(0).textContent)
-        assertTrue(page.documentElement.textContent.contains("OCR tidak diaktifkan."))
+        assertTrue("OCR tidak diaktifkan." in page.documentElement.textContent)
         val navigation = parse(entries.getValue("EPUB/nav.xhtml"))
         assertEquals("Daftar Isi", navigation.getElementsByTagNameNS("*", "h1").item(0).textContent)
-        assertTrue(navigation.documentElement.textContent.contains("Halaman 1"))
+        assertTrue("Halaman 1" in navigation.documentElement.textContent)
     }
 
     @Test(expected = IllegalArgumentException::class)
@@ -205,7 +205,7 @@ class EpubWriterTest {
                     assertEquals("1 Introduction", h.textContent)
                     val spans = doc.getElementsByTagNameNS("*", "span")
                     val ids =
-                        (0 until spans.length).map { spans.item(it).attributes.getNamedItem("id")?.nodeValue }
+                        (0..<spans.length).map { spans.item(it).attributes.getNamedItem("id")?.nodeValue }
                             .toSet()
                     assertTrue(
                         ids.containsAll(
@@ -256,7 +256,7 @@ class EpubWriterTest {
         assertEquals("", data.item(1).textContent)
         val elements = doc.getElementsByTagName("*")
         val ids =
-            (0 until elements.length).mapNotNull { elements.item(it).attributes.getNamedItem("id")?.nodeValue }
+            (0..<elements.length).mapNotNull { elements.item(it).attributes.getNamedItem("id")?.nodeValue }
         assertEquals(ids.size, ids.toSet().size)
         assertTrue(
             ids.containsAll(
@@ -303,7 +303,7 @@ class EpubWriterTest {
         assertEquals(2, paragraphs.length)
         assertEquals("[1] Author. A paper continued, 2024.", paragraphs.item(0).textContent)
         val spans = doc.getElementsByTagNameNS("*", "span")
-        val pageBreak = (0 until spans.length).map { spans.item(it) }
+        val pageBreak = (0..<spans.length).map { spans.item(it) }
             .single { it.attributes.getNamedItem("id")?.nodeValue == "source-page-2" }
         assertEquals(paragraphs.item(0), pageBreak.parentNode)
     }
@@ -354,14 +354,14 @@ class EpubWriterTest {
         val svg = doc.getElementsByTagNameNS("http://www.w3.org/2000/svg", "svg")
             .item(0) as org.w3c.dom.Element
         assertEquals("100.0 90.0 50.0 30.0", svg.getAttribute("viewBox"))
-        assertTrue(svg.getAttribute("style").contains("height:3.0em"))
-        assertTrue(svg.getAttribute("style").contains("vertical-align:-1.0em"))
+        assertTrue("height:3.0em" in svg.getAttribute("style"))
+        assertTrue("vertical-align:-1.0em" in svg.getAttribute("style"))
         assertEquals(1, svg.getElementsByTagNameNS("*", "line").length)
         assertEquals(0, doc.getElementsByTagNameNS("*", "img").length)
         assertTrue(entries.keys.none { it.startsWith("EPUB/images/") })
         val manifest =
             parse(entries.getValue("EPUB/package.opf")).getElementsByTagNameNS("*", "item")
-        assertTrue((0 until manifest.length).map { manifest.item(it) as org.w3c.dom.Element }
+        assertTrue((0..<manifest.length).map { manifest.item(it) as org.w3c.dom.Element }
             .any { it.getAttribute("id") == "content" && it.getAttribute("properties") == "svg" })
     }
 
@@ -387,8 +387,8 @@ class EpubWriterTest {
                 listOf(ReflowBlock(text = "The rest of the publication remains readable."))
             )
         }
-        assertTrue(doc.documentElement.textContent.contains(first))
-        assertTrue(doc.documentElement.textContent.contains("The rest of the publication remains readable."))
+        assertTrue(first in doc.documentElement.textContent)
+        assertTrue("The rest of the publication remains readable." in doc.documentElement.textContent)
         assertEquals(2, doc.getElementsByTagNameNS("*", "section").length)
     }
 

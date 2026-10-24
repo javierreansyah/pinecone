@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_agpl_title">GNU AGPL v3 atau yang lebih baru</string>
+    <string name="about_copyright">Hak cipta © 2026 Javier Aahmes Reansyah</string>
+    <string name="about_no_libraries">Tidak ada perpustakaan sumber terbuka yang ditemukan.</string>
+    <string name="about_open_source_licenses">Lisensi sumber terbuka</string>
+    <string name="about_source_code">Kode sumber (GitHub)</string>
+    <string name="about_title">Pinecone</string>
+    <string name="about_unknown_license">Lisensi tidak diketahui</string>
+    <string name="about_view_full_license">Lihat lisensi penuh</string>
+</resources>

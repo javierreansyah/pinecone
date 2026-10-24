@@ -72,13 +72,13 @@ class ReaderImageFiltersTest {
         val settings = ReaderSettings(pineconeThemePreset = "Light", imageFilter = "Invert")
         assertEquals("", settings.epubImageFilterCss(true))
         val dark = settings.copy(pineconeThemePreset = "Dark")
-        assertTrue(dark.epubImageFilterCss(false).contains("invert(1)"))
+        assertTrue("invert(1)" in dark.epubImageFilterCss(false))
         val always = settings.copy(
             formatPreferences = settings.formatPreferences.copy(epubImageFilterFollowTheme = false)
         )
-        assertTrue(always.epubImageFilterCss(false).contains("invert(1)"))
+        assertTrue("invert(1)" in always.epubImageFilterCss(false))
         assertTrue(
-            always.copy(imageFilter = "Darken").epubImageFilterCss(false).contains("brightness(")
+            "brightness(" in always.copy(imageFilter = "Darken").epubImageFilterCss(false)
         )
         assertEquals("", always.copy(imageFilter = "None").epubImageFilterCss(false))
     }
@@ -113,6 +113,6 @@ class ReaderImageFiltersTest {
         assertEquals(global.themeMode, merged.themeMode)
         assertEquals(global.spacesEnabled, merged.spacesEnabled)
         assertEquals(local.formatPreferences, merged.formatPreferences)
-        assertTrue(merged.epubImageFilterCss(false).contains("brightness("))
+        assertTrue("brightness(" in merged.epubImageFilterCss(false))
     }
 }

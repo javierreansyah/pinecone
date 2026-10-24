@@ -178,7 +178,15 @@ internal object MuPdfStructure {
                     rules.count { it.width <= 2f && it.height >= 10f } >= 2
             MuPdfTable(bounds, EpubWriter.serialize(element), rows, ruled)
         }
-        return MuPdfPageRecord(xhtml, pageBounds, blocks, images, vectors, groups.distinct(), tables)
+        return MuPdfPageRecord(
+            xhtml,
+            pageBounds,
+            blocks,
+            images,
+            vectors,
+            groups.distinct(),
+            tables
+        )
     }
 
     /** Native exports have a known XHTML doctype; never fetch a DTD or resolve external entities. */
@@ -232,7 +240,7 @@ internal fun Node.textNodes(): List<Node> = buildList {
     fun visit(node: Node) {
         if (node is Element && node.namespaceURI == "http://www.w3.org/2000/svg") return
         if (node.nodeType == Node.TEXT_NODE) add(node)
-        else (0 until node.childNodes.length).forEach { visit(node.childNodes.item(it)) }
+        else (0..<node.childNodes.length).forEach { visit(node.childNodes.item(it)) }
     }
     visit(this@textNodes)
 }

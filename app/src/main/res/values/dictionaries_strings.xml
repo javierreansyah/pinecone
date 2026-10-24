@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dictionaries_delete_message">Are you sure you want to delete \'%s\'?</string>
+    <string name="dictionaries_delete_title">Delete dictionary</string>
+    <string name="dictionaries_empty">No dictionaries installed\nTap + to import a Stardict .zip file</string>
+    <string name="dictionaries_import_stardict">Import Stardict</string>
+    <string name="dictionaries_install_success">Dictionary installed successfully</string>
+    <string name="dictionaries_installing">Installing dictionary…</string>
+    <string name="dictionaries_none_installed">No dictionaries installed. Install one from the navigation drawer.</string>
+    <string name="dictionaries_rename_title">Rename dictionary</string>
+    <string name="dictionaries_select">Select dictionary</string>
+    <string name="dictionaries_title">Dictionaries</string>
+    <plurals name="dictionaries_word_count">
+        <item quantity="one">%d word</item>
+        <item quantity="other">%d words</item>
+    </plurals>
+</resources>

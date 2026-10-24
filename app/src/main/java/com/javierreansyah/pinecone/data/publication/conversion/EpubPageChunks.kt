@@ -72,7 +72,7 @@ internal class EpubPageChunks(private val firstFile: File, private val header: S
                 val href = link.getAttribute("href")
                 val path = href.substringBefore('#')
                 val anchor = href.substringAfter('#', "")
-                if (anchor in anchors && !path.contains(':') && !path.startsWith("//") &&
+                if (anchor in anchors && ':' !in path && !path.startsWith("//") &&
                     (path.isEmpty() || GeneratedEpubLocations.isContent(path) ||
                             path.matches(Regex("content(?:-\\d+)?\\.xhtml")))
                 ) {
@@ -99,7 +99,7 @@ internal class EpubPageChunks(private val firstFile: File, private val header: S
         const val PAGES_PER_FILE = 25
 
         internal fun Element.hasClass(name: String) =
-            getAttribute("class").split(Regex("\\s+")).contains(name)
+            name in getAttribute("class").split(Regex("\\s+"))
 
         internal fun isVisual(element: Element?) = element != null &&
                 (element.localTag in setOf("figure", "table") || element.hasClass("table-scroll"))

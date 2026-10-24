@@ -78,7 +78,7 @@ fun OrganizeBottomSheet(
             uiState.value.spaces.mapNotNull { spaceWithShelves ->
                 val spaceMatches =
                     spaceWithShelves.space.name.contains(searchQuery, ignoreCase = true)
-                val matchingShelves = spaceWithShelves.shelves.filter { (itShelf) ->
+                val matchingShelves = spaceWithShelves.shelves.filter { (itShelf, _) ->
                     itShelf.name.contains(searchQuery, ignoreCase = true)
                 }
                 if (spaceMatches || matchingShelves.isNotEmpty()) {
@@ -151,7 +151,7 @@ fun OrganizeBottomSheet(
     shelfNameToCreate?.let { shelfName ->
         SelectSpaceForShelfDialog(
             shelfName = shelfName,
-            spaces = uiState.value.spaces.map { (itSpace) -> itSpace },
+            spaces = uiState.value.spaces.map { (itSpace, _, _) -> itSpace },
             onDismiss = { shelfNameToCreate = null },
         ) { spaceIds ->
             spaceIds.forEach { spaceId ->
@@ -238,7 +238,7 @@ private fun OrganizeContent(
     onToggleShelf: (String, ToggleableState) -> Unit,
 ) {
     val showCreateSpace =
-        spacesEnabled && searchQuery.isNotBlank() && !allSpaces.any { (itSpace2) ->
+        spacesEnabled && searchQuery.isNotBlank() && !allSpaces.any { (itSpace2, _, _) ->
             itSpace2.name.equals(searchQuery, ignoreCase = true)
         }
     val showCreateShelf = searchQuery.isNotBlank() && allSpaces.isNotEmpty()
@@ -253,8 +253,8 @@ private fun OrganizeContent(
     AnimatedContent(
         targetState = isSearchEmpty,
         transitionSpec = {
-            (fadeIn(animationSpec = fastEffectsSpec) togetherWith
-                    fadeOut(animationSpec = fastEffectsSpec)) using SizeTransform { _, _ ->
+            fadeIn(animationSpec = fastEffectsSpec) togetherWith
+                    fadeOut(animationSpec = fastEffectsSpec) using SizeTransform { _, _ ->
                 fastSpatialSpec
             }
         },
@@ -320,8 +320,8 @@ private fun OrganizeContent(
 
                 items(
                     spaces,
-                    key = { (itSpace3) -> itSpace3.id }) { (spaceItemSpace, spaceItemState, spaceItemShelves) ->
-                    val (spaceId2, spaceName) = spaceItemSpace
+                    key = { (itSpace3, _, _) -> itSpace3.id }) { (spaceItemSpace, spaceItemState, spaceItemShelves) ->
+                    val (spaceId2, spaceName, _) = spaceItemSpace
                     val spaceShelves = spaceItemShelves
                     val isSpaceSelected = spaceItemState == ToggleableState.On
 

@@ -145,7 +145,7 @@ fun SettingsScreen(
         contract = ActivityResultContracts.CreateDocument("application/octet-stream"),
     ) { destination ->
         val selected = selectedBackupToExport
-        if ((destination != null) && (selected != null)) {
+        if (destination != null && selected != null) {
             viewModel.exportBackup(
                 selected.uri, destination,
                 onSuccess = {
@@ -694,7 +694,7 @@ private fun GeneralSettingsSection(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            if (!isDynamic && (parsedColor != null)) {
+                            if (!isDynamic && parsedColor != null) {
                                 Box(
                                     modifier = Modifier
                                         .size(24.dp)
@@ -1089,9 +1089,9 @@ private fun RestoreBottomSheet(
                 )
             } else {
                 val groupedBackups =
-                    availableBackups.groupBy { (_, _, _, itIsManual) -> itIsManual }
+                    availableBackups.groupBy { (_, _, _, itIsManual, _) -> itIsManual }
                 val groups = groupedBackups.entries.sortedByDescending { (_, entryValue) ->
-                    entryValue.maxOfOrNull { (_, _, itTimestamp) -> itTimestamp } ?: 0L
+                    entryValue.maxOfOrNull { (_, _, itTimestamp, _, _) -> itTimestamp } ?: 0L
                 }
 
                 Column(
@@ -1107,7 +1107,7 @@ private fun RestoreBottomSheet(
                                 color = MaterialTheme.colorScheme.primary,
                             )
                             SegmentedColumn {
-                                backups.sortedByDescending { (_, _, itTimestamp2) -> itTimestamp2 }
+                                backups.sortedByDescending { (_, _, itTimestamp2, _, _) -> itTimestamp2 }
                                     .forEach { backup ->
                                         item(
                                             onClick = {

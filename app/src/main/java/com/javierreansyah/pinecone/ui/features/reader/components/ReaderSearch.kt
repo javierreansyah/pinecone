@@ -218,7 +218,7 @@ fun ReaderSearch(
                             val progress = backProgress.coerceIn(0f, 1f)
                             val targetWidth = constraints.maxWidth
                             val originalWidth = if (progress > 0f) {
-                                (targetWidth / (1f - (progress * 0.112f))).toInt()
+                                (targetWidth / (1f - progress * 0.112f)).toInt()
                             } else {
                                 targetWidth
                             }

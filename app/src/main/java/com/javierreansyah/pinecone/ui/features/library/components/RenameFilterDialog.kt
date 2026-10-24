@@ -48,7 +48,7 @@ fun RenameFilterDialog(
     val filteredSuggestions = remember(text, suggestions) {
         if (text.isBlank()) emptyList()
         else suggestions.asSequence()
-            .filter { it.contains(text, ignoreCase = true) && (it != text) }.take(5).toList()
+            .filter { it.contains(text, ignoreCase = true) && it != text }.take(5).toList()
     }
 
     LaunchedEffect(Unit) {
@@ -102,7 +102,7 @@ fun RenameFilterDialog(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                } else if (text.isNotBlank() && suggestions.contains(text) && (text != initialName)) {
+                } else if (text.isNotBlank() && text in suggestions && text != initialName) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = stringResource(

@@ -43,7 +43,7 @@ fun BookmarksList(
         LazyColumn(
             modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 8.dp),
         ) {
-            items(bookmarks) { (bookmarkId, _, bookmarkLocatorJson, bookmarkChapterTitle, bookmarkCreatedAt) ->
+            items(bookmarks) { (bookmarkId, _, bookmarkLocatorJson, bookmarkChapterTitle, bookmarkCreatedAt, _) ->
                 val locator = try {
                     Locator.fromJSON(org.json.JSONObject(bookmarkLocatorJson))
                 } catch (_: Exception) {
@@ -52,7 +52,7 @@ fun BookmarksList(
                 if (locator != null) {
                     val inDocument = stringResource(R.string.reader_in_document)
                     val chapterTitle =
-                        bookmarkChapterTitle?.takeIf { it.isNotBlank() && (it != inDocument) }
+                        bookmarkChapterTitle?.takeIf { it.isNotBlank() && it != inDocument }
                             ?: inDocument
 
                     val positionLabel = getPositionLabel(locator)

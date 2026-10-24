@@ -91,7 +91,7 @@ fun AllFilterItemsScreen(
     val suggestionList = remember(filterType, allAuthors, allTags, allSpaces) {
         when (filterType) {
             "author" -> allAuthors.map { (_, itName) -> itName }
-            "space" -> allSpaces.map { (_, itName2) -> itName2 }
+            "space" -> allSpaces.map { (_, itName2, _) -> itName2 }
             else -> allTags.map { (_, itName3) -> itName3 }
         }
     }
@@ -184,7 +184,7 @@ private fun AllFilterItemsContent(
                         },
                         onClearSelection = { selectedItems = emptySet() },
                         onSelectAll = {
-                            selectedItems = sortedItems.map { (itFirst) -> itFirst }.toSet()
+                            selectedItems = sortedItems.map { (itFirst, _, _, _) -> itFirst }.toSet()
                         },
                         onRenameClick = {
                             itemToRename = selectedItems.firstOrNull() ?: ""
@@ -235,7 +235,7 @@ private fun AllFilterItemsContent(
                     itemToDelete = name
                 },
                 onToggleSelect = { name ->
-                    selectedItems = if (selectedItems.contains(name)) {
+                    selectedItems = if (name in selectedItems) {
                         selectedItems - name
                     } else {
                         selectedItems + name
@@ -276,7 +276,7 @@ private fun AllFilterItemsContent(
                     onRenameItemsConfirm(items, newName)
                 } else {
                     onRenameConfirm(oldName, newName)
-                    if (selectedItems.contains(oldName)) {
+                    if (oldName in selectedItems) {
                         selectedItems = emptySet()
                     }
                 }
@@ -376,8 +376,8 @@ private fun AllFilterItemsList(
             .padding(horizontal = 16.dp),
         contentPadding = PaddingValues(bottom = 16.dp + LocalAudioPlayerBottomPadding.current),
     ) {
-        sortedItems.forEach { (itemFirst, itemSecond, wording) ->
-            val isSelected = selectedItems.contains(itemFirst)
+        sortedItems.forEach { (itemFirst, itemSecond, wording, _) ->
+            val isSelected = itemFirst in selectedItems
             item(
                 selected = isSelected,
                 onClick = {
@@ -394,7 +394,7 @@ private fun AllFilterItemsList(
                 trailingContent = {
                     if (isInMultiSelectMode) {
                         Checkbox(
-                            checked = selectedItems.contains(itemFirst),
+                            checked = itemFirst in selectedItems,
                             onCheckedChange = { onToggleSelect(itemFirst) },
                         )
                     } else {

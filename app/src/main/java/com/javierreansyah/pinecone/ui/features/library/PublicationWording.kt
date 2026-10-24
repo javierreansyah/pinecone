@@ -34,13 +34,13 @@ enum class PublicationWording(
         R.plurals.content_delete_book_shelves, R.plurals.content_delete_book_labels,
     ),
     Items(
-        R.plurals.content_items_count, R.string.library_tab_books,
-        R.string.book_info_title, R.string.book_edit_title,
-        R.string.book_delete_title, R.string.book_delete_message,
-        R.string.reader_search_in_book, R.string.library_delete_shelf_message,
-        R.string.library_delete_item_message, R.string.library_warning_merge,
+        R.plurals.content_items_count, R.string.library_tab_items,
+        R.string.publication_info_title, R.string.publication_edit_title,
+        R.string.publication_delete_title, R.string.publication_delete_message,
+        R.string.reader_search_placeholder, R.string.library_delete_shelf_message,
+        R.string.library_delete_label_message, R.string.library_warning_merge,
         R.plurals.content_delete_items_title, R.plurals.content_delete_items_message,
-        R.plurals.library_delete_shelves_message, R.plurals.library_delete_items_message,
+        R.plurals.library_delete_shelves_message, R.plurals.library_delete_labels_message,
     ),
 }
 

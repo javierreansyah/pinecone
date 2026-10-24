@@ -35,7 +35,7 @@ class DictionaryRepository(
 
         val currentSettings = preferences.readerSettings.first()
         val newInstalled =
-            currentSettings.installedDictionaries.filter { (itId) -> itId != dictionaryId }
+            currentSettings.installedDictionaries.filter { (itId, _, _) -> itId != dictionaryId }
         val newActiveId = if (currentSettings.activeDictionaryId == dictionaryId) {
             newInstalled.firstOrNull()?.id ?: ""
         } else {

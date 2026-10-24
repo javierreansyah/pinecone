@@ -107,7 +107,7 @@ fun FilterResultScreen(
     val suggestionList = remember(filterType, allAuthors, allTags, allSpaces) {
         when (filterType) {
             "author" -> allAuthors.map { (_, itName) -> itName }
-            "space" -> allSpaces.map { (_, itName2) -> itName2 }
+            "space" -> allSpaces.map { (_, itName2, _) -> itName2 }
             else -> allTags.map { (_, itName3) -> itName3 }
         }
     }
@@ -226,7 +226,7 @@ private fun FilterResultContent(
                 onSaveRename = {
                     val newName = renameName.text.trim()
                     if (newName.isNotBlank()) {
-                        if (suggestionList.contains(newName) && (newName != filterValue)) {
+                        if (newName in suggestionList && newName != filterValue) {
                             pendingRenameName = newName
                             showMergeWarningDialog = true
                         } else {
@@ -256,7 +256,7 @@ private fun FilterResultContent(
                 onEnterMultiSelect = { isInMultiSelectMode = true },
                 onExitMultiSelect = exitMultiSelect,
                 onClearSelection = { selectedBooks = emptySet() },
-                onSelectAll = { selectedBooks = books.map { (itId) -> itId }.toSet() },
+                onSelectAll = { selectedBooks = books.map { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId }.toSet() },
                 onMarkAsReadUnread = { showMarkAsRead ->
                     onMarkBooksReadStatus(selectedBooks, showMarkAsRead)
                     exitMultiSelect()
@@ -285,7 +285,7 @@ private fun FilterResultContent(
             isInMultiSelectMode = isInMultiSelectMode,
             onBookClick = { bookId ->
                 if (isInMultiSelectMode) {
-                    selectedBooks = if (selectedBooks.contains(bookId)) {
+                    selectedBooks = if (bookId in selectedBooks) {
                         selectedBooks - bookId
                     } else {
                         selectedBooks + bookId
@@ -400,8 +400,8 @@ private fun FilterResultTopBar(
     modifier: Modifier = Modifier,
 ) {
     val showMarkAsRead = remember(allBooks, selectedBooks) {
-        allBooks.filter { (itId2) -> itId2 in selectedBooks }
-            .any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itIsRead) -> !itIsRead }
+        allBooks.filter { (itId2, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId2 in selectedBooks }
+            .any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itIsRead, _, _, _, _, _, _, _, _, _) -> !itIsRead }
     }
 
     MultiSelectTopBarTransition(
@@ -410,7 +410,7 @@ private fun FilterResultTopBar(
             MultiSelectAppBar(
                 wording = allBooks.filter { it.id in selectedBooks }.publicationWording(),
                 selectedCount = selectedBooks.size,
-                isAllSelected = books.isNotEmpty() && (selectedBooks.size == books.size),
+                isAllSelected = books.isNotEmpty() && selectedBooks.size == books.size,
                 showMarkAsRead = showMarkAsRead,
                 onCloseMultiSelect = onExitMultiSelect,
                 onClearSelection = onClearSelection,
@@ -471,7 +471,7 @@ private fun FilterResultDefaultTopAppBar(
             it.contains(
                 renameName.text,
                 ignoreCase = true,
-            ) && (it != renameName.text)
+            ) && it != renameName.text
         }.take(5)
     }
 
@@ -568,16 +568,17 @@ private fun FilterResultDefaultTopAppBar(
                     targetState = isRenaming,
                     transitionSpec = {
                         if (targetState) {
-                            fadeIn(animationSpec = actionsEffectsSpec) togetherWith
-                                    (fadeOut(animationSpec = actionsEffectsSpec) + slideOutHorizontally(
-                                        targetOffsetX = { slideOffsetPx },
-                                        animationSpec = actionsSpatialSpec,
-                                    ))
+                            fadeIn(animationSpec = actionsEffectsSpec) togetherWith fadeOut(
+                                animationSpec = actionsEffectsSpec
+                            ) + slideOutHorizontally(
+                                targetOffsetX = { slideOffsetPx },
+                                animationSpec = actionsSpatialSpec,
+                            )
                         } else {
-                            (fadeIn(animationSpec = actionsEffectsSpec) + slideInHorizontally(
+                            fadeIn(animationSpec = actionsEffectsSpec) + slideInHorizontally(
                                 initialOffsetX = { slideOffsetPx },
                                 animationSpec = actionsSpatialSpec,
-                            )) togetherWith
+                            ) togetherWith
                                     fadeOut(animationSpec = actionsEffectsSpec)
                         }
                     },
@@ -749,7 +750,7 @@ private fun FilterResultBookContent(
     ) {
         if (books.isEmpty()) {
             Text(
-                stringResource(R.string.library_empty_books),
+                stringResource(R.string.library_empty_items),
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(16.dp),
             )
@@ -805,7 +806,7 @@ private fun FilterResultDialogsAndSheets(
         )
     }
 
-    selectedBookContext?.let { (contextFirst) ->
+    selectedBookContext?.let { (contextFirst, _) ->
         val bookId = contextFirst
         BookContextMenu(
             bookId = bookId,

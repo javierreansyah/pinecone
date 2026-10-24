@@ -45,7 +45,10 @@ class UiStringStyleTest {
         val translated = resources.filter { requireNotNull(it.file.parentFile).name == "values-in" }
             .map { it.name }.toSet()
         val missing = defaults - translated
-        assertTrue("Missing Indonesian translations: ${missing.sorted().joinToString()}", missing.isEmpty())
+        assertTrue(
+            "Missing Indonesian translations: ${missing.sorted().joinToString()}",
+            missing.isEmpty()
+        )
     }
 
     private fun entries(includeAliases: Boolean = false): List<Entry> {
@@ -55,7 +58,7 @@ class UiStringStyleTest {
                 .flatMap { file ->
                     val root = DocumentBuilderFactory.newInstance().newDocumentBuilder()
                         .parse(file).documentElement
-                    (0 until root.childNodes.length).flatMap nodeLoop@{ index ->
+                    (0..<root.childNodes.length).flatMap nodeLoop@{ index ->
                         val node =
                             root.childNodes.item(index) as? Element ?: return@nodeLoop emptyList()
                         val name = node.getAttribute("name")
@@ -65,7 +68,8 @@ class UiStringStyleTest {
                             "item" -> if (node.getAttribute("type") == "string") {
                                 listOf(Entry(file, name, node.textContent))
                             } else emptyList()
-                            "plurals" -> (0 until node.childNodes.length).mapNotNull { child ->
+
+                            "plurals" -> (0..<node.childNodes.length).mapNotNull { child ->
                                 (node.childNodes.item(child) as? Element)?.let {
                                     Entry(
                                         file,

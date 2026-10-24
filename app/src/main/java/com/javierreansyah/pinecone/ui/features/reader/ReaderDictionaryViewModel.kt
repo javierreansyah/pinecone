@@ -40,7 +40,7 @@ class ReaderDictionaryViewModel(
             _definitionState.update { state ->
                 val newHistory = if (clearHistory) {
                     emptyList()
-                } else if (state.showDefinition && state.definitionWord.isNotBlank() && (cleanWord != state.definitionWord)) {
+                } else if (state.showDefinition && state.definitionWord.isNotBlank() && cleanWord != state.definitionWord) {
                     state.wordHistory + (state.definitionWord to state.definitionResults)
                 } else {
                     state.wordHistory

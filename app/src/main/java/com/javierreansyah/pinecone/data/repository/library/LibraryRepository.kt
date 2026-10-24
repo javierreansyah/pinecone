@@ -113,13 +113,13 @@ class LibraryRepository(
                 (books.map { it.filePath } + publicationDao.allRenditions().map { it.filePath })
                     .map { File(it).canonicalPath }.toSet()
             val referencedCovers =
-                books.asSequence().mapNotNull { (_, _, itCoverPath) -> itCoverPath }
+                books.asSequence().mapNotNull { (_, _, itCoverPath, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itCoverPath }
                     .map { File(it).canonicalPath }.toSet()
             booksDir.listFiles()?.asSequence()
-                ?.filter { it.isFile && (it.canonicalPath !in referencedBooks) }
+                ?.filter { it.isFile && it.canonicalPath !in referencedBooks }
                 ?.forEach { it.delete() }
             coversDir.listFiles()?.asSequence()
-                ?.filter { it.isFile && (it.canonicalPath !in referencedCovers) }
+                ?.filter { it.isFile && it.canonicalPath !in referencedCovers }
                 ?.forEach { it.delete() }
         }
     }
@@ -463,7 +463,7 @@ class LibraryRepository(
         renditionKey: String = "original"
     ): Unit = database.withTransaction {
         val rendition = publicationDao.rendition(bookId, renditionKey) ?: return@withTransaction
-        val (detailsBook) = bookDao.getById(bookId) ?: return@withTransaction
+        val (detailsBook, _, _, _, _, _) = bookDao.getById(bookId) ?: return@withTransaction
         val progression = locator.locations.totalProgression ?: 0.0
 
         val hasJumpOrigin = !rendition.jumpOriginLocatorJson.isNullOrBlank()
@@ -498,7 +498,7 @@ class LibraryRepository(
     }
 
     suspend fun saveJumpOrigin(bookId: String, locator: Locator): Unit = database.withTransaction {
-        val (detailsBook2) = bookDao.getById(bookId) ?: return@withTransaction
+        val (detailsBook2, _, _, _, _, _) = bookDao.getById(bookId) ?: return@withTransaction
         if (detailsBook2.jumpOriginLocatorJson.isNullOrBlank()) {
             bookDao.update(
                 detailsBook2.copy(
@@ -519,7 +519,7 @@ class LibraryRepository(
 
     suspend fun saveJumpReadingPosition(bookId: String, locator: Locator): Unit? =
         database.withTransaction {
-            val (detailsBook3) = bookDao.getById(bookId) ?: return@withTransaction
+            val (detailsBook3, _, _, _, _, _) = bookDao.getById(bookId) ?: return@withTransaction
             val progression = locator.locations.totalProgression ?: 0.0
 
             val existingJumpOrigin = detailsBook3.jumpOriginLocatorJson
@@ -551,7 +551,7 @@ class LibraryRepository(
         }
 
     suspend fun clearJumpOrigin(bookId: String): Unit = database.withTransaction {
-        val (detailsBook4) = bookDao.getById(bookId) ?: return@withTransaction
+        val (detailsBook4, _, _, _, _, _) = bookDao.getById(bookId) ?: return@withTransaction
         if (detailsBook4.jumpOriginLocatorJson != null) {
             bookDao.update(
                 detailsBook4.copy(
@@ -565,7 +565,7 @@ class LibraryRepository(
     }
 
     suspend fun resetFurthestToCurrent(bookId: String): Unit? = database.withTransaction {
-        val (detailsBook5) = bookDao.getById(bookId) ?: return@withTransaction
+        val (detailsBook5, _, _, _, _, _) = bookDao.getById(bookId) ?: return@withTransaction
         bookDao.update(
             detailsBook5.copy(
                 furthestProgression = detailsBook5.progression,
@@ -585,7 +585,7 @@ class LibraryRepository(
     }
 
     suspend fun getLastLocator(bookId: String): Locator? {
-        val (_, _, _, _, _, _, _, _, bookLastLocatorJson) = bookDao.getById(bookId)?.book
+        val (_, _, _, _, _, _, _, _, bookLastLocatorJson, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) = bookDao.getById(bookId)?.book
             ?: return null
         val json = bookLastLocatorJson ?: return null
         return try {
@@ -657,7 +657,7 @@ class LibraryRepository(
         metadata: PublicationMetadata? = null,
         credits: List<PublicationCreditEntity>? = null,
     ): Unit = withContext(Dispatchers.IO) {
-        val (bookDetailsBook) = bookDao.getById(bookId) ?: return@withContext
+        val (bookDetailsBook, _, _, _, _, _) = bookDao.getById(bookId) ?: return@withContext
 
         var newCoverPath = bookDetailsBook.coverPath
         if (coverUri != null) {
@@ -750,7 +750,7 @@ class LibraryRepository(
                 publicationDao.renamePrimaryCredit(oldName, trimmedNewName)
                 val existingDest = bookDao.getAuthorByName(trimmedNewName)
                 val source = bookDao.getAuthorByName(oldName)
-                if ((existingDest != null) && (source != null)) {
+                if (existingDest != null && source != null) {
                     bookDao.mergeBookAuthorCrossRef(source.id, existingDest.id)
                     bookDao.deleteAuthorByName(oldName)
                 } else {
@@ -759,7 +759,7 @@ class LibraryRepository(
             } else if (type == "tag") {
                 val existingDest = bookDao.getTagByName(trimmedNewName)
                 val source = bookDao.getTagByName(oldName)
-                if ((existingDest != null) && (source != null)) {
+                if (existingDest != null && source != null) {
                     bookDao.mergeBookTagCrossRef(source.id, existingDest.id)
                     bookDao.deleteTagByName(oldName)
                 } else {
@@ -769,13 +769,13 @@ class LibraryRepository(
                 val existingDest = spaceDao.getSpaceByName(trimmedNewName)
                 val source = spaceDao.getSpaceByName(oldName)
                 if (source?.id == ALL_SPACES_ID || existingDest?.id == ALL_SPACES_ID) return@withContext
-                if ((existingDest != null) && (source != null)) {
+                if (existingDest != null && source != null) {
                     database.withTransaction {
                         spaceDao.mergeBookSpaceCrossRef(source.id, existingDest.id)
                         spaceDao.deleteSpace(source)
                     }
                 } else {
-                    source?.let { (itId) -> spaceDao.renameSpace(itId, trimmedNewName) }
+                    source?.let { (itId, _, _) -> spaceDao.renameSpace(itId, trimmedNewName) }
                 }
             }
         }
@@ -793,7 +793,7 @@ class LibraryRepository(
     fun getAllShelvesWithBooks(): Flow<List<ShelfWithCovers>> =
         shelfDao.getAllShelvesWithBooks().map { shelves ->
             shelves.map { shelf ->
-                shelf.copy(books = shelf.books.filter { (itBook) -> !itBook.isArchived })
+                shelf.copy(books = shelf.books.filter { (itBook, _, _, _, _, _) -> !itBook.isArchived })
             }
         }
 
@@ -844,7 +844,7 @@ class LibraryRepository(
 
     suspend fun addBookToShelf(shelfId: String, bookId: String) {
         database.withTransaction {
-            val (_, shelfSpaceId) = shelfDao.getShelfById(shelfId) ?: return@withTransaction
+            val (_, shelfSpaceId, _, _) = shelfDao.getShelfById(shelfId) ?: return@withTransaction
             ensureAllSpace()
             bookDao.markOrganized(bookId)
             spaceDao.insertBookSpaceCrossRef(BookSpaceCrossRef(bookId, ALL_SPACES_ID))

@@ -245,7 +245,8 @@ class ReaderPreferences(private val context: Context) {
         val SHOW_ALL_SPACES: Preferences.Key<Boolean> = booleanPreferencesKey("show_all_spaces")
         val SPACES_ENABLED: Preferences.Key<Boolean> = booleanPreferencesKey("spaces_enabled")
         val UNSORTED_ENABLED: Preferences.Key<Boolean> = booleanPreferencesKey("unsorted_enabled")
-        val SHOW_LIBRARY_BOTTOM_NAVIGATION: Preferences.Key<Boolean> = booleanPreferencesKey("show_library_bottom_navigation")
+        val SHOW_LIBRARY_BOTTOM_NAVIGATION: Preferences.Key<Boolean> =
+            booleanPreferencesKey("show_library_bottom_navigation")
         val FORMAT_PREFERENCES: Preferences.Key<String> = stringPreferencesKey("format_preferences")
     }
 
@@ -279,7 +280,7 @@ class ReaderPreferences(private val context: Context) {
                     str.split(",").associate { pair ->
                         val parts = pair.split(":")
                         val weight = parts[1].toDouble()
-                        parts[0] to (if (weight > 10.0) 1.0 else weight)
+                        parts[0] to if (weight > 10.0) 1.0 else weight
                     }
                 } else emptyMap()
             } ?: emptyMap(),
@@ -312,7 +313,7 @@ class ReaderPreferences(private val context: Context) {
             activeDictionaryId = preferences[ACTIVE_DICTIONARY_ID] ?: "",
             installedDictionaries = preferences[INSTALLED_DICTIONARIES]?.mapNotNull {
                 val parts = it.split("|")
-                if ((parts.size == 3) && parts[0].isNotEmpty()) {
+                if (parts.size == 3 && parts[0].isNotEmpty()) {
                     InstalledDictionary(parts[0], parts[1], parts[2].toIntOrNull() ?: 0)
                 } else {
                     null

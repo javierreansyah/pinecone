@@ -66,7 +66,7 @@ fun BookContextMenu(
         enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
     )
 
-    val book = allBooks.find { (itId) -> itId == bookId }
+    val book = allBooks.find { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId == bookId }
     val wording = book?.publicationWording ?: PublicationWording.Items
 
     ModalBottomSheet(
@@ -99,7 +99,7 @@ fun BookContextMenu(
                         )
                         Text(
                             text = if (book.authors.isNotEmpty()) book.authors.joinToString(", ") else stringResource(
-                                R.string.book_unknown_author,
+                                R.string.publication_unknown_author,
                             ),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -156,8 +156,8 @@ fun BookContextMenu(
                 elevation = ListItemDefaults.elevation(),
                 content = {
                     val labelText =
-                        if (book?.isRead == true) stringResource(R.string.book_mark_as_unread) else stringResource(
-                            R.string.book_mark_as_read,
+                        if (book?.isRead == true) stringResource(R.string.publication_mark_as_unread) else stringResource(
+                            R.string.publication_mark_as_read,
                         )
                     Text(labelText, style = MaterialTheme.typography.titleMedium)
                 },
@@ -204,8 +204,8 @@ fun BookContextMenu(
                 elevation = ListItemDefaults.elevation(),
                 content = {
                     val labelText =
-                        if (book?.isArchived == true) stringResource(R.string.book_unarchive) else stringResource(
-                            R.string.book_archive,
+                        if (book?.isArchived == true) stringResource(R.string.publication_unarchive) else stringResource(
+                            R.string.publication_archive,
                         )
                     Text(
                         labelText,

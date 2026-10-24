@@ -30,6 +30,7 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
+import com.javierreansyah.pinecone.ui.features.library.LibraryCollectionUiState
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.components.FilterResultBottomSheet
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectAppBar
@@ -48,7 +49,7 @@ fun UnsortedScreen(
     viewModel: UnsortedViewModel = viewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val unsortedBooks by viewModel.unsortedBooks.collectAsState()
+    val unsortedBooks by viewModel.filteredBooks.collectAsState()
     val allBooks by viewModel.allBooks.collectAsState()
 
     var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
@@ -75,10 +76,10 @@ fun UnsortedScreen(
             isInMultiSelectMode = true
         },
         onExitMultiSelect = exitMultiSelect,
-        onSelectAll = { selectedBooks = unsortedBooks.map { (itId) -> itId }.toSet() },
+        onSelectAll = { selectedBooks = unsortedBooks.map { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId }.toSet() },
         onClearSelection = { selectedBooks = emptySet() },
         onToggleBookSelection = { bookId ->
-            selectedBooks = if (selectedBooks.contains(bookId)) {
+            selectedBooks = if (bookId in selectedBooks) {
                 selectedBooks - bookId
             } else {
                 selectedBooks + bookId
@@ -138,7 +139,7 @@ fun UnsortedScreen(
 fun UnsortedContent(
     unsortedBooks: List<Book>,
     allBooks: List<Book>,
-    uiState: UnsortedUiState,
+    uiState: LibraryCollectionUiState,
     selectedBooks: Set<String>,
     isInMultiSelectMode: Boolean,
     onNavigateBack: () -> Unit,
@@ -161,8 +162,8 @@ fun UnsortedContent(
 
     val showMarkAsRead = remember(allBooks, selectedBooks) {
         allBooks
-            .filter { (itId2) -> itId2 in selectedBooks }
-            .any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itIsRead) -> !itIsRead }
+            .filter { (itId2, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId2 in selectedBooks }
+            .any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itIsRead, _, _, _, _, _, _, _, _, _) -> !itIsRead }
     }
 
     Scaffold(
@@ -177,7 +178,7 @@ fun UnsortedContent(
                 isInMultiSelectMode = isInMultiSelectMode,
                 isEmpty = isEmpty,
                 selectedCount = selectedBooks.size,
-                isAllSelected = unsortedBooks.isNotEmpty() && (selectedBooks.size == unsortedBooks.size),
+                isAllSelected = unsortedBooks.isNotEmpty() && selectedBooks.size == unsortedBooks.size,
                 showMarkAsRead = showMarkAsRead,
                 scrollBehavior = scrollBehavior,
                 onNavigateBack = onNavigateBack,

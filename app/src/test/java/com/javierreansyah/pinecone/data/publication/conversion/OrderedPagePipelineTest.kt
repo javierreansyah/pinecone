@@ -33,7 +33,7 @@ class OrderedPagePipelineTest {
                 assertEquals(index * 10, result)
                 consumed += index
             }
-            assertEquals((0 until 8).toList(), consumed)
+            assertEquals((0..<8).toList(), consumed)
             assertEquals(2, peak.get())
         }
     }

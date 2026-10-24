@@ -15,7 +15,10 @@ import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.SortType
 import com.javierreansyah.pinecone.ui.features.library.StatusFilter
 import com.javierreansyah.pinecone.ui.features.library.filterAndSort
+import com.javierreansyah.pinecone.ui.features.library.selectSort
 import com.javierreansyah.pinecone.ui.features.library.sortShelfBooks
+import com.javierreansyah.pinecone.ui.features.library.toggleFormat
+import com.javierreansyah.pinecone.ui.features.library.toggleStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -76,9 +79,10 @@ class ShelfDetailViewModel(
     val allSpaces: StateFlow<List<SpaceEntity>> = bookRepository.getAllSpaces().stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList(),
     )
-    val spacesEnabled: StateFlow<Boolean> = (application as PineconeApplication).readerPreferences.readerSettings
-        .map { it.spacesEnabled }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val spacesEnabled: StateFlow<Boolean> =
+        (application as PineconeApplication).readerPreferences.readerSettings
+            .map { it.spacesEnabled }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     fun transferShelf(id: String, destinationId: String, copy: Boolean) {
         viewModelScope.launch { bookRepository.transferShelves(listOf(id), destinationId, copy) }
@@ -91,24 +95,24 @@ class ShelfDetailViewModel(
         globalSpaceId,
     ) { shelvesList, crossRefs, allBooksEntities, spaceId ->
         val sortedShelves = sortShelfBooks(shelvesList, crossRefs)
-        val isSpaceSelected = (spaceId != null) && (spaceId != "_all_")
+        val isSpaceSelected = spaceId != null && spaceId != "_all_"
         val currentSpaceShelves = if (isSpaceSelected) {
-            shelvesList.filter { (itShelf) -> itShelf.spaceId == spaceId }
+            shelvesList.filter { (itShelf, books) -> itShelf.spaceId == spaceId }
         } else {
             shelvesList
         }
-        val currentSpaceShelfIds = currentSpaceShelves.map { (itShelf2) -> itShelf2.id }.toSet()
+        val currentSpaceShelfIds = currentSpaceShelves.map { (itShelf2, books) -> itShelf2.id }.toSet()
         val shelvedBookIds =
-            crossRefs.filter { (itShelfId) -> itShelfId in currentSpaceShelfIds }
-                .map { (_, itBookId) -> itBookId }.toSet()
+            crossRefs.filter { (itShelfId, bookId, addedAt, orderIndex) -> itShelfId in currentSpaceShelfIds }
+                .map { (_, itBookId, addedAt, orderIndex) -> itBookId }.toSet()
 
-        val unshelvedBooks = allBooksEntities.filter { (itBook, _, _, _, itSpaces) ->
+        val unshelvedBooks = allBooksEntities.filter { (itBook, _, _, _, itSpaces, credits) ->
             val inSpace = if (isSpaceSelected) {
-                itSpaces.any { (spaceId2) -> spaceId2 == spaceId }
+                itSpaces.any { (spaceId2, name, createdAt) -> spaceId2 == spaceId }
             } else {
                 itSpaces.isNotEmpty()
             }
-            inSpace && !itBook.isUnsorted && (itBook.id !in shelvedBookIds)
+            inSpace && !itBook.isUnsorted && itBook.id !in shelvedBookIds
         }
 
         val unshelvedShelf = ShelfWithCovers(
@@ -141,12 +145,7 @@ class ShelfDetailViewModel(
     fun onSortTypeChange(sortType: SortType) {
         _uiState.update { state ->
             val currentPrefs = state.bookPreferences
-            val newPrefs = if (currentPrefs.sortType == sortType) {
-                currentPrefs.copy(isAscending = !currentPrefs.isAscending)
-            } else {
-                val initialAscending = sortType != SortType.LastRead
-                currentPrefs.copy(sortType = sortType, isAscending = initialAscending)
-            }
+            val newPrefs = currentPrefs.selectSort(sortType)
             prefsManager.savePreferences(globalSpaceId.value, screenKey, newPrefs)
             state.copy(bookPreferences = newPrefs)
         }
@@ -155,8 +154,7 @@ class ShelfDetailViewModel(
     fun toggleFileFilter(format: FileFilter) {
         _uiState.update { state ->
             val current = state.bookPreferences
-            val prefs =
-                current.copy(selectedFormats = current.selectedFormats.let { if (format in it) it - format else it + format })
+            val prefs = current.toggleFormat(format)
             prefsManager.savePreferences(globalSpaceId.value, screenKey, prefs)
             state.copy(bookPreferences = prefs)
         }
@@ -165,10 +163,7 @@ class ShelfDetailViewModel(
     fun toggleStatusFilter(status: StatusFilter) {
         _uiState.update { state ->
             val currentPrefs = state.bookPreferences
-            val updatedStatus = currentPrefs.selectedStatus.toMutableSet().apply {
-                if (contains(status)) remove(status) else add(status)
-            }
-            val newPrefs = currentPrefs.copy(selectedStatus = updatedStatus)
+            val newPrefs = currentPrefs.toggleStatus(status)
             prefsManager.savePreferences(globalSpaceId.value, screenKey, newPrefs)
             state.copy(bookPreferences = newPrefs)
         }
@@ -212,10 +207,10 @@ class ShelfDetailViewModel(
 
     fun archiveBooks(bookIds: Collection<String>) {
         viewModelScope.launch {
-            val currentBooks = allBooks.value
+            val currentBooks = allBooks.value.associateBy(Book::id)
             bookIds.forEach { bookId ->
-                val book = currentBooks.find { (itId) -> itId == bookId }
-                if ((book != null) && !book.isArchived) {
+                val book = currentBooks[bookId]
+                if (book != null && !book.isArchived) {
                     bookRepository.toggleArchive(bookId)
                 }
             }
@@ -230,10 +225,10 @@ class ShelfDetailViewModel(
 
     fun markBooksReadStatus(bookIds: Collection<String>, markAsRead: Boolean) {
         viewModelScope.launch {
-            val currentBooks = allBooks.value
+            val currentBooks = allBooks.value.associateBy(Book::id)
             bookIds.forEach { bookId ->
-                val book = currentBooks.find { (itId2) -> itId2 == bookId }
-                if ((book != null) && (book.isRead != markAsRead)) {
+                val book = currentBooks[bookId]
+                if (book != null && book.isRead != markAsRead) {
                     bookRepository.toggleReadStatus(bookId)
                 }
             }

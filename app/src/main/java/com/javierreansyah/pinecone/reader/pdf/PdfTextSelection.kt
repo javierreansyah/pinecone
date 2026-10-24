@@ -143,7 +143,8 @@ internal fun pdfSelectionLocator(
         ),
     )
 
-internal fun pdfSelectionAnchor(locator: Locator): PdfSelectionAnchor? = decodePdfSelectionAnchor(locator.locations.otherLocations[PDF_SELECTION_KEY] as? String)
+internal fun pdfSelectionAnchor(locator: Locator): PdfSelectionAnchor? =
+    decodePdfSelectionAnchor(locator.locations.otherLocations[PDF_SELECTION_KEY] as? String)
 
 internal fun decodePdfSelectionAnchor(encoded: String?): PdfSelectionAnchor? {
     if (encoded == null) return null

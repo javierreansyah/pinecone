@@ -16,7 +16,10 @@ import com.javierreansyah.pinecone.ui.features.library.SortType
 import com.javierreansyah.pinecone.ui.features.library.StatusFilter
 import com.javierreansyah.pinecone.ui.features.library.filterAndSort
 import com.javierreansyah.pinecone.ui.features.library.inSpace
+import com.javierreansyah.pinecone.ui.features.library.selectSort
 import com.javierreansyah.pinecone.ui.features.library.sortShelfBooks
+import com.javierreansyah.pinecone.ui.features.library.toggleFormat
+import com.javierreansyah.pinecone.ui.features.library.toggleStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -93,29 +96,29 @@ class FilterResultViewModel(
 
     val allAuthors: StateFlow<List<AuthorEntity>> =
         combine(bookRepository.getAllAuthors(), allBooks) { authors, books ->
-            val namesInSpace = books.flatMapTo(mutableSetOf()) { (_, _, itAuthors) -> itAuthors }
+            val namesInSpace = books.flatMapTo(mutableSetOf()) { it.authors }
             authors.filter { (_, itName) -> itName in namesInSpace }
         }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val allTags: StateFlow<List<TagEntity>> =
         combine(bookRepository.getAllTags(), allBooks) { tags, books ->
             val namesInSpace =
-                books.flatMapTo(mutableSetOf()) { (_, _, _, _, _, _, _, _, _, _, _, _, itTags) -> itTags }
+                books.flatMapTo(mutableSetOf()) { it.tags }
             tags.filter { (_, itName2) -> itName2 in namesInSpace }
         }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val allSpaces: StateFlow<List<SpaceEntity>> =
         bookRepository.getAllSpaces().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     fun getBooksByAuthor(author: String): Flow<List<Book>> = allBooks.map { books ->
-        books.filter { (_, _, itAuthors2) -> itAuthors2.contains(author) }
+        books.filter { author in it.authors }
     }
 
     fun getBooksByTag(tag: String): Flow<List<Book>> = allBooks.map { books ->
-        books.filter { (_, _, _, _, _, _, _, _, _, _, _, _, itTags2) -> itTags2.contains(tag) }
+        books.filter { tag in it.tags }
     }
 
     fun getBooksBySpace(spaceName: String): Flow<List<Book>> =
         combine(allBooksAcrossSpaces, allSpaces) { books, spaces ->
-            val space = spaces.find { (_, itName3) -> itName3 == spaceName }
+            val space = spaces.find { (_, itName3, _) -> itName3 == spaceName }
             if (space != null) {
                 books.inSpace(space.id)
             } else {
@@ -140,12 +143,7 @@ class FilterResultViewModel(
     fun onSortTypeChange(sortType: SortType) {
         _uiState.update { state ->
             val currentPrefs = state.bookPreferences
-            val newPrefs = if (currentPrefs.sortType == sortType) {
-                currentPrefs.copy(isAscending = !currentPrefs.isAscending)
-            } else {
-                val initialAscending = sortType != SortType.LastRead
-                currentPrefs.copy(sortType = sortType, isAscending = initialAscending)
-            }
+            val newPrefs = currentPrefs.selectSort(sortType)
             prefsManager.savePreferences(globalSpaceId.value, screenKey, newPrefs)
             state.copy(bookPreferences = newPrefs)
         }
@@ -154,8 +152,7 @@ class FilterResultViewModel(
     fun toggleFileFilter(format: FileFilter) {
         _uiState.update { state ->
             val current = state.bookPreferences
-            val prefs =
-                current.copy(selectedFormats = current.selectedFormats.let { if (format in it) it - format else it + format })
+            val prefs = current.toggleFormat(format)
             prefsManager.savePreferences(globalSpaceId.value, screenKey, prefs)
             state.copy(bookPreferences = prefs)
         }
@@ -164,10 +161,7 @@ class FilterResultViewModel(
     fun toggleStatusFilter(status: StatusFilter) {
         _uiState.update { state ->
             val currentPrefs = state.bookPreferences
-            val updatedStatus = currentPrefs.selectedStatus.toMutableSet().apply {
-                if (contains(status)) remove(status) else add(status)
-            }
-            val newPrefs = currentPrefs.copy(selectedStatus = updatedStatus)
+            val newPrefs = currentPrefs.toggleStatus(status)
             prefsManager.savePreferences(globalSpaceId.value, screenKey, newPrefs)
             state.copy(bookPreferences = newPrefs)
         }
@@ -209,10 +203,10 @@ class FilterResultViewModel(
 
     fun archiveBooks(bookIds: Collection<String>) {
         viewModelScope.launch {
-            val currentBooks = allBooksAcrossSpaces.value
+            val currentBooks = allBooksAcrossSpaces.value.associateBy(Book::id)
             bookIds.forEach { bookId ->
-                val book = currentBooks.find { (itId) -> itId == bookId }
-                if ((book != null) && !book.isArchived) {
+                val book = currentBooks[bookId]
+                if (book != null && !book.isArchived) {
                     bookRepository.toggleArchive(bookId)
                 }
             }
@@ -227,10 +221,10 @@ class FilterResultViewModel(
 
     fun markBooksReadStatus(bookIds: Collection<String>, markAsRead: Boolean) {
         viewModelScope.launch {
-            val currentBooks = allBooksAcrossSpaces.value
+            val currentBooks = allBooksAcrossSpaces.value.associateBy(Book::id)
             bookIds.forEach { bookId ->
-                val book = currentBooks.find { (itId2) -> itId2 == bookId }
-                if ((book != null) && (book.isRead != markAsRead)) {
+                val book = currentBooks[bookId]
+                if (book != null && book.isRead != markAsRead) {
                     bookRepository.toggleReadStatus(bookId)
                 }
             }

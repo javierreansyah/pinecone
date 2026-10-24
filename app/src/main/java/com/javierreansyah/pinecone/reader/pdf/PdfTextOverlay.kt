@@ -248,7 +248,7 @@ internal fun PdfTextOverlay(
                 )
                 val radiusPx = with(LocalDensity.current) { 18.dp.toPx() }
                 val label =
-                    stringResource(if (start) R.string.pdf_selection_start else R.string.pdf_selection_end)
+                    stringResource(if (start) R.string.reader_pdf_selection_start else R.string.reader_pdf_selection_end)
                 Canvas(
                     Modifier
                         .offset {

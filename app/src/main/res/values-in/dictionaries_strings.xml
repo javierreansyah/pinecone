@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dictionaries_delete_message">Apakah Anda yakin ingin menghapus \'%s\'?</string>
+    <string name="dictionaries_delete_title">Hapus kamus</string>
+    <string name="dictionaries_empty">Kamus tidak terinstal\nKetuk + untuk mengimpor file .zip Stardict</string>
+    <string name="dictionaries_import_stardict">Impor Stardict</string>
+    <string name="dictionaries_install_success">Kamus berhasil diinstal</string>
+    <string name="dictionaries_installing">Menginstal kamus…</string>
+    <string name="dictionaries_none_installed">Kamus tidak terinstal. Instal kamus dari laci navigasi.</string>
+    <string name="dictionaries_rename_title">Ubah nama kamus</string>
+    <string name="dictionaries_select">Pilih kamus</string>
+    <string name="dictionaries_title">Kamus</string>
+    <plurals name="dictionaries_word_count">
+        <item quantity="other">%d kata</item>
+    </plurals>
+</resources>

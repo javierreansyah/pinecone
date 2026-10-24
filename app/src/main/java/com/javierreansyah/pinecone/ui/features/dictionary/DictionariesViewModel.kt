@@ -24,7 +24,7 @@ class DictionariesViewModel(
     val importState: StateFlow<DictionaryState> = importManager.importState
 
     val installedDictionaries: StateFlow<List<InstalledDictionary>> = preferences.readerSettings
-        .map { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itInstalledDictionaries) -> itInstalledDictionaries }
+        .map { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itInstalledDictionaries, jumpHistoryMode, showAllSpaces, formatPreferences, spacesEnabled, unsortedEnabled, showLibraryBottomNavigation) -> itInstalledDictionaries }
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     fun importDictionary(uri: Uri) {

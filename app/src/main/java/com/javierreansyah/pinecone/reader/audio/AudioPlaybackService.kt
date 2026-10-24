@@ -10,8 +10,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel as cancelScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.cancel as cancelScope
 
 class AudioPlaybackService : MediaSessionService() {
     companion object {

@@ -148,7 +148,7 @@ class ReaderSearchViewModel(
                     .getOrNull() ?: continue
             try {
                 val base = publication.locatorFromLink(link) ?: continue
-                for (index in 0 until pdf.pageCount) {
+                for (index in 0..<pdf.pageCount) {
                     kotlinx.coroutines.currentCoroutineContext().ensureActive()
                     val page = pdf.search(index, query)
                     val text = page.text
@@ -187,7 +187,7 @@ class ReaderSearchViewModel(
 
     fun selectSearchResult(index: Int) {
         val results = _searchState.value.results
-        if ((index < 0) || (index >= results.size)) return
+        if (index < 0 || index >= results.size) return
         _searchState.update {
             it.copy(
                 activeIndex = index,
@@ -235,6 +235,7 @@ class ReaderSearchViewModel(
         private val application: Application,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T = ReaderSearchViewModel(application) as T
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            ReaderSearchViewModel(application) as T
     }
 }

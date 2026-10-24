@@ -188,7 +188,7 @@ class EpubNavigatorController(
         nav.addInputListener(
             object : InputListener {
                 override fun onTap(event: TapEvent): Boolean {
-                    if ((notesViewModel.selectionState.value.selectionLocator != null) || (notesViewModel.selectionState.value.viewingHighlight != null)) {
+                    if (notesViewModel.selectionState.value.selectionLocator != null || notesViewModel.selectionState.value.viewingHighlight != null) {
                         notesViewModel.hideSelectionMenu()
                         notesViewModel.hideViewHighlight()
                         return true
@@ -206,7 +206,7 @@ class EpubNavigatorController(
                     val noteIdStr = event.decoration.id.removePrefix("note_")
                     val noteId = noteIdStr.toLongOrNull() ?: return false
                     val note =
-                        notesViewModel.allNotesAndHighlights.value.find { (itId) -> itId == noteId }
+                        notesViewModel.allNotesAndHighlights.value.find { (itId, _, _, _, _, _, _, _) -> itId == noteId }
                             ?: return false
 
                     if (note.noteText.isBlank()) {
@@ -232,7 +232,7 @@ class EpubNavigatorController(
         }
         lifecycleScope.launch {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.themeColors.collect { (_, _, colorsBackgroundColorInt) ->
+                viewModel.themeColors.collect { (_, _, colorsBackgroundColorInt, _) ->
                     injectSelectionCss(colorsBackgroundColorInt)
                 }
             }
@@ -296,9 +296,9 @@ class EpubNavigatorController(
                                     position.copy(
                                         locations = position.locations.copy(
                                             fragments = sourcePage?.let { listOf("source-page-$it") }
-                                            ?: position.locations.fragments,
-                                        otherLocations = position.locations.otherLocations + visible?.locations?.otherLocations.orEmpty(),
-                                    ), text = visible?.text ?: position.text)
+                                                ?: position.locations.fragments,
+                                            otherLocations = position.locations.otherLocations + visible?.locations?.otherLocations.orEmpty(),
+                                        ), text = visible?.text ?: position.text)
                                 } else position)
                         if (viewModel.activeRendition.value == renditionKey) viewModel.onLocatorChanged(
                             locator
@@ -330,7 +330,7 @@ class EpubNavigatorController(
                     nav to notes
                 }.collectLatest { (nav, notes) ->
                     val decorations =
-                        notes.mapNotNull { (noteId2, _, noteLocatorJson, _, noteNoteText, noteColor) ->
+                        notes.mapNotNull { (noteId2, _, noteLocatorJson, _, noteNoteText, noteColor, _, _) ->
                             try {
                                 val locator = Locator.fromJSON(
                                     org.json.JSONObject(noteLocatorJson),
@@ -373,7 +373,7 @@ class EpubNavigatorController(
         lifecycleScope.launch {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 searchViewModel.searchState
-                    .map { (_, _, _, _, itIsInNavMode) -> itIsInNavMode }
+                    .map { (_, _, _, _, itIsInNavMode, _) -> itIsInNavMode }
                     .distinctUntilChanged()
                     .collect { isInNavMode ->
                         if (!isInNavMode) clearSearchHighlight()
@@ -481,7 +481,7 @@ class EpubNavigatorController(
     }
 
     private suspend fun applySearchHighlight(locator: Locator) {
-        val nav = (navigator as? DecorableNavigator) ?: return
+        val nav = navigator as? DecorableNavigator ?: return
         val decoration = Decoration(
             id = "search_current", locator = locator,
             style = Decoration.Style.Highlight(
@@ -493,7 +493,7 @@ class EpubNavigatorController(
     }
 
     private fun clearSearchHighlight() {
-        val nav = (navigator as? DecorableNavigator) ?: return
+        val nav = navigator as? DecorableNavigator ?: return
         lifecycleScope.launch {
             nav.applyDecorations(emptyList(), group = "search")
         }

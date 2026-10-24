@@ -16,8 +16,9 @@ object GeneratedEpubLocations {
     private val anchorPage = Regex("(?:source-page-|page-)(\\d+)(?=$|[^0-9])")
     fun pageHref(page: Int): String = "$CONTENT_HREF#source-page-$page"
     fun blockAnchor(page: Int, block: Int): String = "page-$page-block-$block"
-    private fun contentResource(href: String): String? = Regex("(?:^|/)(text/content(?:-\\d+)?\\.xhtml)$")
-        .find(href.substringBefore('#'))?.groupValues?.get(1)
+    private fun contentResource(href: String): String? =
+        Regex("(?:^|/)(text/content(?:-\\d+)?\\.xhtml)$")
+            .find(href.substringBefore('#'))?.groupValues?.get(1)
 
     fun isContent(href: String): Boolean = contentResource(href) != null
     fun sameContentResource(left: String, right: String): Boolean =
@@ -31,7 +32,8 @@ object GeneratedEpubLocations {
         if (!isContent(href) && !legacyPage.containsMatchIn(href)) return null
         return sequenceOf(cssSelector, *fragments.toTypedArray(), href.substringAfter('#', ""))
             .filterNotNull()
-            .firstNotNullOfOrNull { anchorPage.find(it)?.groupValues?.get(1)?.toIntOrNull() } ?: legacyPage.find(href)?.groupValues?.get(1)?.toIntOrNull()
+            .firstNotNullOfOrNull { anchorPage.find(it)?.groupValues?.get(1)?.toIntOrNull() }
+            ?: legacyPage.find(href)?.groupValues?.get(1)?.toIntOrNull()
     }
 
     /** Exact heading anchors distinguish chapters sharing a PDF page or HTML file. */
@@ -55,9 +57,9 @@ object GeneratedEpubLocations {
             ).firstNotNullOfOrNull(::block)
         return chapters.indexOfLast { target ->
             val targetPage = page(target) ?: return@indexOfLast false
-            targetPage < currentPage || (targetPage == currentPage && (currentBlock == null || (block(
+            targetPage < currentPage || targetPage == currentPage && (currentBlock == null || (block(
                 target
-            ) ?: -1) <= currentBlock))
+            ) ?: -1) <= currentBlock)
         }.coerceAtLeast(0)
     }
 
@@ -96,7 +98,7 @@ object GeneratedEpubLocations {
                 if (fragment.startsWith("block-")) "page-$page-$fragment" else fragment
             }.filterNot { it.startsWith("epubcfi(") }
         rebased["fragments"] =
-            JsonArray((fragments.ifEmpty { listOf("source-page-$page") }).map(::JsonPrimitive))
+            JsonArray(fragments.ifEmpty { listOf("source-page-$page") }.map(::JsonPrimitive))
         if (rebased["cssSelector"] == null) rebased["cssSelector"] =
             JsonPrimitive("#${fragments.firstOrNull() ?: "source-page-$page"}")
         return JsonObject(
@@ -210,7 +212,7 @@ object GeneratedEpubLocations {
         if (startResource != null && endResource != null && startResource != endResource) cannotSelectText =
             true
         val sourcePage = page(
-            href, selector, ((rebuilt["fragments"] as? JsonArray).orEmpty())
+            href, selector, (rebuilt["fragments"] as? JsonArray).orEmpty()
                 .mapNotNull { (it as? JsonPrimitive)?.contentOrNull })
         val destination = resource(selector) ?: startResource
         ?: updated.firstOrNull { it.page == sourcePage }?.href?.substringBefore('#')
