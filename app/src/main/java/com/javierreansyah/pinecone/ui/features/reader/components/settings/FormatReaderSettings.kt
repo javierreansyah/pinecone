@@ -18,6 +18,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSliderState
@@ -31,6 +32,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Restart_alt
@@ -41,7 +43,7 @@ import com.javierreansyah.pinecone.ui.components.SegmentedButtonGroup
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
-/** Same tabbed sheet and expressive grouped surfaces as the reflowable EPUB reader. */
+/** Format settings sheet, with tabs only for formats that have multiple settings pages. */
 @Composable
 fun FormatReaderSettings(
     settings: ReaderSettings,
@@ -57,7 +59,6 @@ fun FormatReaderSettings(
     val titles = if (isAudio) {
         listOf(
             stringResource(R.string.reader_playback),
-            stringResource(R.string.reader_settings_tab_advanced),
         )
     } else if (isPdf) {
         listOf(
@@ -82,15 +83,17 @@ fun FormatReaderSettings(
             .height(sheetHeight)
             .padding(bottom = 4.dp)
     ) {
-        PrimaryTabRow(
-            selectedTabIndex = pagerState.currentPage,
-            containerColor = Color.Transparent
-        ) {
-            titles.forEachIndexed { index, title ->
-                Tab(
-                    selected = pagerState.currentPage == index,
-                    onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-                    text = { Text(title, style = MaterialTheme.typography.titleMedium) })
+        if (titles.size > 1) {
+            PrimaryTabRow(
+                selectedTabIndex = pagerState.currentPage,
+                containerColor = Color.Transparent
+            ) {
+                titles.forEachIndexed { index, title ->
+                    Tab(
+                        selected = pagerState.currentPage == index,
+                        onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                        text = { Text(title, style = MaterialTheme.typography.titleMedium) })
+                }
             }
         }
         CompositionLocalProvider(LocalOverscrollFactory provides null) {
@@ -104,10 +107,10 @@ fun FormatReaderSettings(
                     Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
-                        .padding(vertical = 16.dp),
+                        .padding(top = if (isAudio) 0.dp else 16.dp, bottom = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    val advancedPage = if (isAudio || isPdf) 1 else 2
+                    val advancedPage = if (isAudio) 0 else if (isPdf) 1 else 2
                     when {
                         page == 0 -> when {
                             profile == ReaderProfile.PDF -> {
@@ -172,7 +175,9 @@ fun FormatReaderSettings(
                                 PreferenceSlider(
                                     stringResource(R.string.reader_playback_speed),
                                     settings.formatPreferences.audioSpeed.toFloat(),
-                                    .25f..3f
+                                    .3f..3f,
+                                    presets = listOf(.5f, 1f, 1.5f, 2f),
+                                    topPadding = 0.dp,
                                 ) {
                                     onChange(
                                         settings.copy(
@@ -241,75 +246,75 @@ fun FormatReaderSettings(
                         !isAudio && !isPdf && page == 1 -> {
                             FormatLighting(settings, onChange, showChromeHint = true)
                         }
+                    }
 
-                        page == advancedPage -> {
-                            AdvancedTabContent(
-                                settings, onChange, includeTextPreferences = false,
-                                onRestoreDefaultsClick = {
-                                    val format = when {
-                                        profile == ReaderProfile.PDF -> settings.formatPreferences.copy(
-                                            pdf = com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences()
-                                        )
-
-                                        profile == ReaderProfile.AUDIO -> settings.formatPreferences.copy(
-                                            audioSpeed = 1.0,
-                                            audioPitch = 1.0
-                                        )
-
-                                        fixedEpub -> settings.formatPreferences.copy(epubSpread = "auto")
-                                        else -> settings.formatPreferences
-                                    }
-                                    onChange(
-                                        settings.copy(
-                                            formatPreferences = format,
-                                            brightness = .5f,
-                                            autoBrightness = true,
-                                            forceOrientation = "Auto",
-                                            preventScreenTimeout = false,
-                                            alwaysShowStatusBar = false,
-                                            pineconeThemePreset = "Auto"
-                                        )
+                    if (page == advancedPage) {
+                        AdvancedTabContent(
+                            settings, onChange, includeTextPreferences = false,
+                            onRestoreDefaultsClick = {
+                                val format = when {
+                                    profile == ReaderProfile.PDF -> settings.formatPreferences.copy(
+                                        pdf = com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences()
                                     )
-                                },
-                                content = {
-                                    PreferenceSwitch(
-                                        stringResource(R.string.reader_settings_this_publication),
-                                        useBookSettings,
-                                        onUseBookSettings
+
+                                    profile == ReaderProfile.AUDIO -> settings.formatPreferences.copy(
+                                        audioSpeed = 1.0,
+                                        audioPitch = 1.0
                                     )
-                                    if (isPdf && onReparsePdf != null) {
-                                        Row(
-                                            Modifier
-                                                .fillMaxWidth()
-                                                .clickable(onClick = onReparsePdf)
-                                                .padding(horizontal = 16.dp, vertical = 16.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+
+                                    fixedEpub -> settings.formatPreferences.copy(epubSpread = "auto")
+                                    else -> settings.formatPreferences
+                                }
+                                onChange(
+                                    settings.copy(
+                                        formatPreferences = format,
+                                        brightness = .5f,
+                                        autoBrightness = true,
+                                        forceOrientation = "Auto",
+                                        preventScreenTimeout = false,
+                                        alwaysShowStatusBar = false,
+                                        pineconeThemePreset = "Auto"
+                                    )
+                                )
+                            },
+                            content = {
+                                PreferenceSwitch(
+                                    stringResource(R.string.reader_settings_this_publication),
+                                    useBookSettings,
+                                    onUseBookSettings
+                                )
+                                if (isPdf && onReparsePdf != null) {
+                                    Row(
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .clickable(onClick = onReparsePdf)
+                                            .padding(horizontal = 16.dp, vertical = 16.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                    ) {
+                                        Column(
+                                            Modifier.weight(1f),
+                                            verticalArrangement = Arrangement.spacedBy(4.dp)
                                         ) {
-                                            Column(
-                                                Modifier.weight(1f),
-                                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                                            ) {
-                                                Text(
-                                                    stringResource(R.string.reader_reparse_pdf),
-                                                    style = MaterialTheme.typography.titleMedium
-                                                )
-                                                Text(
-                                                    stringResource(R.string.reader_reparse_pdf_description),
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                            Icon(
-                                                MaterialSymbols.Outlined.Restart_alt,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            Text(
+                                                stringResource(R.string.reader_reparse_pdf),
+                                                style = MaterialTheme.typography.titleMedium
+                                            )
+                                            Text(
+                                                stringResource(R.string.reader_reparse_pdf_description),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
+                                        Icon(
+                                            MaterialSymbols.Outlined.Restart_alt,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     }
-                                },
-                            )
-                        }
+                                }
+                            },
+                        )
                     }
                 }
             }
@@ -409,18 +414,44 @@ private fun PreferenceSlider(
     label: String,
     value: Float,
     range: ClosedFloatingPointRange<Float>,
+    presets: List<Float> = emptyList(),
+    topPadding: Dp = 8.dp,
     onChange: (Float) -> Unit
 ) {
-    Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+    Column(Modifier.padding(start = 16.dp, end = 16.dp, top = topPadding, bottom = 8.dp)) {
         Text(
             stringResource(
                 R.string.reader_setting_value,
                 label,
-                String.format(LocalLocale.current.platformLocale, "%.2f", value)
+                String.format(LocalLocale.current.platformLocale, "%.1f", value)
             ), style = MaterialTheme.typography.titleSmall
         )
-        val slider = rememberSliderState(trackRange = range)
+        val slider = rememberSliderState(
+            steps = ((range.endInclusive - range.start) * 10).roundToInt() - 1,
+            trackRange = range,
+        )
         slider.value = value.coerceIn(range)
-        Slider(state = slider, onValueChange = onChange)
+        Slider(
+            state = slider,
+            onValueChange = { onChange((it * 10).roundToInt() / 10f) },
+            track = { sliderState ->
+                SliderDefaults.Track(
+                    sliderState = sliderState,
+                    drawTick = { _, _ -> },
+                    drawStopIndicator = null,
+                )
+            },
+        )
+        if (presets.isNotEmpty()) {
+            val locale = LocalLocale.current.platformLocale
+            val labels = presets.map { String.format(locale, "%.1f×", it) }
+            SegmentedButtonGroup(
+                options = labels,
+                icons = emptyList(),
+                selected = presets.indexOf(value).let { labels.getOrNull(it) }.orEmpty(),
+                onSelected = { onChange(presets[labels.indexOf(it)]) },
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+            )
+        }
     }
 }
