@@ -189,10 +189,13 @@ class ScreenNavDisplayTest {
         val intercept = mutableStateOf(false)
         val models = ConcurrentHashMap<String, EntryModel>()
         val composed: MutableSet<String> = ConcurrentHashMap.newKeySet()
+
         @Volatile
         var intercepted = 0
+
         @Volatile
         var pops = 0
+
         @Volatile
         var localBackReady = false
     }

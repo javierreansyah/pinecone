@@ -44,6 +44,20 @@ class AudioMiniPlayerGeometryTest {
     }
 
     @Test
+    fun `tablet sheet retains full width independently of the mini-player card limit`() {
+        val handle = AudioPlayerHandle(height = 88, bottomInset = 0, navigationBarsPadding = true)
+        assertEquals(600.dp, MiniPlayerMaxWidth)
+        assertEquals(
+            Rect(0f, 712f, 1200f, 800f),
+            audioMiniPlayerBounds(IntSize(1200, 800), handle),
+        )
+        assertEquals(
+            Rect(0f, 712f, 400f, 800f),
+            audioMiniPlayerBounds(IntSize(400, 800), handle),
+        )
+    }
+
+    @Test
     fun `bounds adapt to resizing and remain valid before layout`() {
         val handle = AudioPlayerHandle(height = 84, bottomInset = 24, navigationBarsPadding = false)
         assertEquals(Rect(0f, 292f, 600f, 376f), audioMiniPlayerBounds(IntSize(600, 400), handle))

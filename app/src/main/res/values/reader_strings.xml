@@ -25,7 +25,7 @@
     <string name="reader_horizontal">Horizontal navigation</string>
     <string name="reader_image_filter_activation">Apply image filter</string>
     <string name="reader_image_settings_hint">This Readium image navigator supports paged viewing and image zoom. It does not expose typography or continuous-scroll preferences.</string>
-    <string name="reader_in_document">In item</string>
+    <string name="reader_in_document">In title</string>
     <string name="reader_invert_pages">Invert page colors</string>
     <string name="reader_jump_go_back">Go back</string>
     <string name="reader_jump_history_mode">Jump history</string>
@@ -81,7 +81,7 @@
     <string name="reader_rewind">Rewind 10 seconds</string>
     <string name="reader_right_to_left">Right to left</string>
     <string name="reader_scanned_page_notice">This page has no extractable text. Its original appearance is preserved below; OCR is not enabled.</string>
-    <string name="reader_search_placeholder">Search in item…</string>
+    <string name="reader_search_placeholder">Search in title…</string>
     <string name="reader_search_no_results_for">No results for \"%s\"</string>
     <plurals name="reader_search_results_count">
         <item quantity="one">%d result</item>

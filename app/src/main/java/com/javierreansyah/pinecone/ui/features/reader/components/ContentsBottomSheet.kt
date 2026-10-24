@@ -189,8 +189,14 @@ fun ReaderBottomSheet(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(end = 16.dp, bottom = 16.dp),
-                enter = fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) + scaleIn(initialScale = 0.8f, animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()),
-                exit = fadeOut(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) + scaleOut(targetScale = 0.8f, animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()),
+                enter = fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) + scaleIn(
+                    initialScale = 0.8f,
+                    animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()
+                ),
+                exit = fadeOut(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) + scaleOut(
+                    targetScale = 0.8f,
+                    animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()
+                ),
             ) {
                 Box {
                     var showSortMenu by remember { mutableStateOf(value = false) }

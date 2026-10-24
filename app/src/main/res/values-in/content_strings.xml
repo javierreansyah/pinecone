@@ -21,16 +21,16 @@
         <item quantity="other">Hapus buku</item>
     </plurals>
     <plurals name="content_delete_items_message">
-        <item quantity="other">Apakah Anda yakin ingin menghapus %d item? Tindakan ini tidak dapat dibatalkan.</item>
+        <item quantity="other">Apakah Anda yakin ingin menghapus %d judul? Tindakan ini tidak dapat dibatalkan.</item>
     </plurals>
     <plurals name="content_delete_items_title">
-        <item quantity="other">Hapus item</item>
+        <item quantity="other">Hapus judul</item>
     </plurals>
     <string name="content_delete_space">Hapus ruang</string>
     <string name="content_delete_tag">Hapus tag</string>
     <string name="content_edit_book">Edit buku</string>
     <plurals name="content_items_count">
-        <item quantity="other">%d item</item>
+        <item quantity="other">%d judul</item>
     </plurals>
     <string name="content_merge_book_label">Peringatan: Label yang cocok sudah ada. Menyimpan akan menggabungkan label ini dan bukunya ke dalam label yang sudah ada.</string>
     <string name="content_search_book">Cari di dalam buku…</string>

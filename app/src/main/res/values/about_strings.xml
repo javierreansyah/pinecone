@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="about_agpl_title">GNU AGPL v3 or later</string>
+    <string name="about_license_summary">Pinecone is licensed under AGPL-3.0-or-later. No alternative license is offered.</string>
     <string name="about_copyright">Copyright © 2026 Javier Aahmes Reansyah</string>
     <string name="about_no_libraries">No open source libraries found.</string>
     <string name="about_open_source_licenses">Open source licenses</string>

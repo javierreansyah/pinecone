@@ -1,7 +1,7 @@
 package com.javierreansyah.pinecone.ui.components
 
-import androidx.compose.runtime.MonotonicFrameClock
 import androidx.compose.material3.MotionScheme
+import androidx.compose.runtime.MonotonicFrameClock
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -9,6 +9,7 @@ import org.junit.Test
 
 class ScreenDismissStateTest {
     private val motionSpec = MotionScheme.expressive().defaultEffectsSpec<Float>()
+
     @Test
     fun committedGestureFinishesShrinkingBeforeFlyingAndClosesOnlyOnce() {
         val state = ScreenDismissState()
@@ -38,7 +39,11 @@ class ScreenDismissStateTest {
         state.seek(0.65f)
         val frames = mutableListOf<Pair<Float, Float>>()
 
-        runBlocking(FrameClock { frames += state.progress to state.exit }) { state.restore(motionSpec) }
+        runBlocking(FrameClock { frames += state.progress to state.exit }) {
+            state.restore(
+                motionSpec
+            )
+        }
 
         assertEquals(0f, state.progress)
         assertTrue(frames.all { (_, exit) -> exit == 0f })

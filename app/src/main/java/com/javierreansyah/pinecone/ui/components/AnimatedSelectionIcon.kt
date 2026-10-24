@@ -21,13 +21,12 @@ fun AnimatedSelectionIcon(
     modifier: Modifier = Modifier,
     tint: Color = LocalContentColor.current,
 ) {
-    val description = contentDescription
     Crossfade(
         targetState = selected,
         animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
-        modifier = if (description == null) modifier else modifier.semantics {
+        modifier = if (contentDescription == null) modifier else modifier.semantics {
             // Expose one label throughout the transition, even while both icons are drawn.
-            this.contentDescription = description
+            this.contentDescription = contentDescription
         },
         label = "Icon selection fill",
     ) { filled ->

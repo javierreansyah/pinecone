@@ -33,6 +33,54 @@ enum class PublicationWording(
         R.plurals.content_delete_books_title, R.plurals.content_delete_books_message,
         R.plurals.content_delete_book_shelves, R.plurals.content_delete_book_labels,
     ),
+    Documents(
+        R.plurals.wording_document_count,
+        R.string.wording_document_tab,
+        R.string.wording_document_info,
+        R.string.wording_document_edit,
+        R.string.wording_document_delete,
+        R.string.wording_document_delete_message,
+        R.string.wording_document_search,
+        R.string.wording_document_shelf,
+        R.string.wording_document_label,
+        R.string.wording_document_merge,
+        R.plurals.wording_document_delete_title,
+        R.plurals.wording_document_delete_selection_message,
+        R.plurals.wording_document_shelves,
+        R.plurals.wording_document_labels,
+    ),
+    Audiobooks(
+        R.plurals.wording_audiobook_count,
+        R.string.wording_audiobook_tab,
+        R.string.wording_audiobook_info,
+        R.string.wording_audiobook_edit,
+        R.string.wording_audiobook_delete,
+        R.string.wording_audiobook_delete_message,
+        R.string.wording_audiobook_search,
+        R.string.wording_audiobook_shelf,
+        R.string.wording_audiobook_label,
+        R.string.wording_audiobook_merge,
+        R.plurals.wording_audiobook_delete_title,
+        R.plurals.wording_audiobook_delete_selection_message,
+        R.plurals.wording_audiobook_shelves,
+        R.plurals.wording_audiobook_labels,
+    ),
+    Comics(
+        R.plurals.wording_comic_count,
+        R.string.wording_comic_tab,
+        R.string.wording_comic_info,
+        R.string.wording_comic_edit,
+        R.string.wording_comic_delete,
+        R.string.wording_comic_delete_message,
+        R.string.wording_comic_search,
+        R.string.wording_comic_shelf,
+        R.string.wording_comic_label,
+        R.string.wording_comic_merge,
+        R.plurals.wording_comic_delete_title,
+        R.plurals.wording_comic_delete_selection_message,
+        R.plurals.wording_comic_shelves,
+        R.plurals.wording_comic_labels,
+    ),
     Items(
         R.plurals.content_items_count, R.string.library_tab_items,
         R.string.publication_info_title, R.string.publication_edit_title,
@@ -45,12 +93,16 @@ enum class PublicationWording(
 }
 
 fun publicationWording(formats: Iterable<FileFilter>): PublicationWording {
-    val iterator = formats.iterator()
-    if (!iterator.hasNext()) return PublicationWording.Items
-    while (iterator.hasNext()) {
-        if (iterator.next() != FileFilter.EPUB) return PublicationWording.Items
+    val wordings = formats.map { format ->
+        when (format) {
+            FileFilter.EPUB -> PublicationWording.Books
+            FileFilter.PDF -> PublicationWording.Documents
+            FileFilter.Audio -> PublicationWording.Audiobooks
+            FileFilter.Comics -> PublicationWording.Comics
+            else -> PublicationWording.Items
+        }
     }
-    return PublicationWording.Books
+    return wordings.combinedWording()
 }
 
 val Book.publicationWording: PublicationWording
@@ -70,9 +122,8 @@ fun Iterable<Book>.inNamedCollection(type: String, name: String): List<Book> = f
 
 fun Iterable<PublicationWording>.combinedWording(): PublicationWording {
     val values = toList()
-    return if (values.isNotEmpty() && values.all { it == PublicationWording.Books }) {
-        PublicationWording.Books
-    } else PublicationWording.Items
+    return values.firstOrNull()?.takeIf { first -> values.all { it == first } }
+        ?: PublicationWording.Items
 }
 
 @StringRes

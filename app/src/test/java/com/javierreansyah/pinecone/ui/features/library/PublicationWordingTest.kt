@@ -7,14 +7,20 @@ import org.junit.Test
 
 class PublicationWordingTest {
     @Test
-    fun `only nonempty EPUB collections use books`() {
+    fun `homogeneous collections use their format and mixed collections use titles`() {
         assertEquals(
             PublicationWording.Books,
             publicationWording(listOf(FileFilter.EPUB, FileFilter.EPUB))
         )
         assertEquals(PublicationWording.Items, publicationWording(emptyList()))
         FileFilter.entries.filterNot { it == FileFilter.EPUB }.forEach { format ->
-            assertEquals(format.name, PublicationWording.Items, publicationWording(listOf(format)))
+            val expected = when (format) {
+                FileFilter.PDF -> PublicationWording.Documents
+                FileFilter.Audio -> PublicationWording.Audiobooks
+                FileFilter.Comics -> PublicationWording.Comics
+                else -> PublicationWording.Items
+            }
+            assertEquals(format.name, expected, publicationWording(listOf(format, format)))
             assertEquals(
                 format.name,
                 PublicationWording.Items,
@@ -26,7 +32,7 @@ class PublicationWordingTest {
     @Test
     fun `generated EPUB rendition does not turn a PDF into a book`() {
         val pdf = item("source.pdf").copy(activeRendition = "read-mode")
-        assertEquals(PublicationWording.Items, pdf.publicationWording)
+        assertEquals(PublicationWording.Documents, pdf.publicationWording)
         assertEquals(PublicationWording.Books, item("source.EPUB").publicationWording)
     }
 
@@ -40,7 +46,7 @@ class PublicationWordingTest {
             library.inNamedCollection("author", "Novelist").publicationWording()
         )
         assertEquals(
-            PublicationWording.Items,
+            PublicationWording.Comics,
             library.inNamedCollection("author", "Artist").publicationWording()
         )
         assertEquals(
@@ -48,7 +54,7 @@ class PublicationWordingTest {
             library.inNamedCollection("tag", "Fiction").publicationWording()
         )
         assertEquals(
-            PublicationWording.Items,
+            PublicationWording.Comics,
             library.inNamedCollection("tag", "Comics").publicationWording()
         )
         assertEquals(
@@ -75,7 +81,7 @@ class PublicationWordingTest {
             library.inNamedCollection("space", "Reading").publicationWording()
         )
         assertEquals(
-            PublicationWording.Items,
+            PublicationWording.Audiobooks,
             library.inNamedCollection("space", "Audio").publicationWording()
         )
     }
@@ -90,6 +96,9 @@ class PublicationWordingTest {
             PublicationWording.Items,
             listOf(PublicationWording.Books, PublicationWording.Items).combinedWording()
         )
+        PublicationWording.entries.forEach { wording ->
+            assertEquals(wording, listOf(wording, wording).combinedWording())
+        }
         assertEquals(PublicationWording.Items, emptyList<PublicationWording>().combinedWording())
     }
 

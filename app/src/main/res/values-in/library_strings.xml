@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="library_add_to_library">Tambahkan ke pustaka</string>
     <string name="library_archives_title">Arsip</string>
     <string name="library_author_name_label">Nama penulis</string>
@@ -9,23 +9,23 @@
     </plurals>
     <string name="library_copy_shelves">Salin ke ruang</string>
     <string name="library_create_shelf_title">Buat rak baru</string>
-    <string name="library_delete_label_message">Apakah Anda yakin ingin menghapus \'%s\'? Ini akan menghapusnya dari semua item.</string>
+    <string name="library_delete_label_message">Apakah Anda yakin ingin menghapus \'%s\'? Ini akan menghapusnya dari semua judul.</string>
     <plurals name="library_delete_labels_message">
-        <item quantity="other">Apakah Anda yakin ingin menghapus %d label? Ini akan menghapusnya dari semua item.</item>
+        <item quantity="other">Apakah Anda yakin ingin menghapus %d label? Ini akan menghapusnya dari semua judul.</item>
     </plurals>
-    <string name="library_delete_shelf_message">Apakah Anda yakin ingin menghapus \'%s\'? Item di dalamnya tidak akan dihapus.</string>
+    <string name="library_delete_shelf_message">Apakah Anda yakin ingin menghapus \'%s\'? judul di dalamnya tidak akan dihapus.</string>
     <string name="library_delete_shelf_title">Hapus rak</string>
     <plurals name="library_delete_shelves_message">
-        <item quantity="other">Apakah Anda yakin ingin menghapus %d rak? Item di dalamnya tidak akan dihapus.</item>
+        <item quantity="other">Apakah Anda yakin ingin menghapus %d rak? judul di dalamnya tidak akan dihapus.</item>
     </plurals>
-    <string name="library_empty_archives">Tidak ada item yang diarsipkan.</string>
+    <string name="library_empty_archives">Tidak ada judul yang diarsipkan.</string>
     <string name="library_empty_authors">Penulis tidak ditemukan.</string>
-    <string name="library_empty_items">Item tidak ditemukan</string>
+    <string name="library_empty_items">judul tidak ditemukan</string>
     <string name="library_empty_shelf">Rak kosong</string>
     <string name="library_empty_shelves">Rak tidak ditemukan</string>
     <string name="library_empty_spaces">Belum ada ruang</string>
     <string name="library_empty_tags">Tag tidak ditemukan.</string>
-    <string name="library_empty_unsorted">Tidak ada item yang belum disortir.</string>
+    <string name="library_empty_unsorted">Tidak ada judul yang belum disortir.</string>
     <string name="library_format_audio">Audio</string>
     <string name="library_format_comics">Komik</string>
     <string name="library_format_images">Gambar</string>
@@ -46,7 +46,7 @@
     <string name="library_search_placeholder">Cari di pustaka</string>
     <string name="library_select_space_prompt">Pilih ruang untuk rak \"%s\":</string>
     <string name="library_shelf_name_label">Nama rak</string>
-    <string name="library_show_items">Item saja</string>
+    <string name="library_show_items">judul saja</string>
     <string name="library_show_both">Keduanya</string>
     <string name="library_show_shelves">Rak saja</string>
     <string name="library_sort_added">Tanggal ditambahkan</string>
@@ -56,18 +56,22 @@
     <string name="library_sort_last_read">Tanggal terakhir dibaca</string>
     <string name="library_sort_progress">Persentase selesai</string>
     <string name="library_sort_size">Ukuran</string>
-    <string name="library_sort_title">Judul</string>
+    <!-- English distinguishes the singular sort key "Title" from the plural tab
+         noun "Titles" (library_tab_items). Indonesian uses the same word; retain
+         separate translations and their contextual capitalization. Lint reports
+         the pair on this sort key, so the exception belongs here. -->
+    <string name="library_sort_title" tools:ignore="DuplicateStrings">Judul</string>
     <string name="library_space_name_label">Nama ruang</string>
     <string name="library_spaces_title">Ruang</string>
     <string name="library_status_finished">Selesai</string>
     <string name="library_status_not_started">Belum dimulai</string>
     <string name="library_status_reading">Sedang dibaca</string>
-    <string name="library_tab_items">Item</string>
+    <string name="library_tab_items">judul</string>
     <string name="library_tab_shelves">Rak</string>
     <string name="library_tag_name_label">Nama tag</string>
     <string name="library_tags_title">Tag</string>
-    <string name="library_transfer_destination">Pilih ruang tujuan. Item yang belum ada akan ditambahkan secara otomatis.</string>
+    <string name="library_transfer_destination">Pilih ruang tujuan. judul yang belum ada akan ditambahkan secara otomatis.</string>
     <string name="library_unsorted_title">Belum disortir</string>
     <string name="library_warning_merge">Peringatan: Label yang cocok sudah ada. Menyimpan akan menggabungkan label ini dan itemnya ke dalam label yang sudah ada.</string>
-    <string name="library_warning_merge_multiple">Beberapa item akan digabungkan menjadi satu.</string>
+    <string name="library_warning_merge_multiple">Beberapa judul akan digabungkan menjadi satu.</string>
 </resources>

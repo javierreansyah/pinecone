@@ -34,7 +34,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.composables.icons.materialsymbols.outlinedfilled.Forest as FilledForest
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Add
 import com.composables.icons.materialsymbols.outlined.Archive
@@ -49,6 +48,7 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
 import kotlinx.coroutines.launch
+import com.composables.icons.materialsymbols.outlinedfilled.Forest as FilledForest
 
 @Composable
 fun AppDrawer(

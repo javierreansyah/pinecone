@@ -105,12 +105,16 @@ internal fun richMetadataFields(book: Book): List<Pair<String, String>> {
     val metadata = book.metadata
     val numbers = java.text.NumberFormat.getIntegerInstance(LocalLocale.current.platformLocale)
     val fields = buildList {
+        metadataCredits(book).forEach { (role, names) ->
+            add(roleLabel(role) to names.joinToString(", "))
+        }
         if (metadata.subtitle.isNotBlank()) add(stringResource(R.string.publication_subtitle) to metadata.subtitle)
         if (metadata.volume.isNotBlank()) add(stringResource(R.string.publication_volume) to metadata.volume)
         if (metadata.issue.isNotBlank()) add(stringResource(R.string.publication_issue) to metadata.issue)
         if (metadata.ageRating.isNotBlank()) add(stringResource(R.string.publication_age_rating) to metadata.ageRating)
-        metadata.pageCount?.let { add(stringResource(R.string.reader_pages) to numbers.format(it)) }
-        metadata.duration?.let { duration ->
+        metadata.pageCount?.takeIf { it > 0 }
+            ?.let { add(stringResource(R.string.reader_pages) to numbers.format(it)) }
+        metadata.duration?.takeIf { it.isFinite() && it > 0 }?.let { duration ->
             val minutes = (duration / 60).toInt()
             add(
                 stringResource(R.string.publication_duration) to pluralStringResource(
@@ -120,14 +124,16 @@ internal fun richMetadataFields(book: Book): List<Pair<String, String>> {
                 )
             )
         }
+        val seenIdentifiers = mutableSetOf<String>()
+        metadataValue(book.identifier)?.let { seenIdentifiers.add(it.lowercase(java.util.Locale.ROOT)) }
         metadata.identifiers.forEach { (scheme, value) ->
-            if (value.isNotBlank() && value != book.identifier) add(scheme to value)
-        }
-        book.credits.groupBy { it.role }.forEach { (role, credits) ->
-            add(roleLabel(role) to credits.sortedBy { it.position }.joinToString(", ") { it.name })
+            metadataValue(value)?.let {
+                if (seenIdentifiers.add(it.lowercase(java.util.Locale.ROOT))) add(scheme to it)
+            }
         }
     }
-    return fields.filter { (_, value) -> value.isNotBlank() }
+    return fields.mapNotNull { (label, value) -> metadataValue(value)?.let { label to it } }
+        .distinct()
 }
 
 @Composable

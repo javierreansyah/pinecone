@@ -25,7 +25,7 @@
     <string name="reader_horizontal">Navigasi horizontal</string>
     <string name="reader_image_filter_activation">Terapkan filter gambar</string>
     <string name="reader_image_settings_hint">Navigator gambar Readium ini mendukung tampilan per halaman dan pembesaran gambar. Pengaturan tipografi dan gulir berkelanjutan tidak tersedia.</string>
-    <string name="reader_in_document">Dalam item</string>
+    <string name="reader_in_document">Dalam judul</string>
     <string name="reader_invert_pages">Balikkan warna halaman</string>
     <string name="reader_jump_go_back">@string/action_back</string>
     <string name="reader_jump_history_mode">Riwayat lompatan</string>
@@ -79,7 +79,7 @@
     <string name="reader_rewind">Mundur 10 detik</string>
     <string name="reader_right_to_left">Kanan ke kiri</string>
     <string name="reader_scanned_page_notice">Tidak ada teks yang dapat diekstrak dari halaman ini. Tampilan aslinya dipertahankan di bawah ini; OCR tidak diaktifkan.</string>
-    <string name="reader_search_placeholder">Cari di dalam item…</string>
+    <string name="reader_search_placeholder">Cari di dalam judul…</string>
     <string name="reader_search_no_results_for">Tidak ada hasil untuk \"%s\"</string>
     <plurals name="reader_search_results_count">
         <item quantity="other">%d hasil</item>

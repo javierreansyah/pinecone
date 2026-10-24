@@ -45,8 +45,6 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
-import com.composables.icons.materialsymbols.outlinedfilled.Folder as FilledFolder
-import com.composables.icons.materialsymbols.outlinedfilled.Forest as FilledForest
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Folder
@@ -57,6 +55,8 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
 import com.javierreansyah.pinecone.ui.components.SegmentedColumn
 import com.javierreansyah.pinecone.ui.components.rememberVoiceSearchLauncher
+import com.composables.icons.materialsymbols.outlinedfilled.Folder as FilledFolder
+import com.composables.icons.materialsymbols.outlinedfilled.Forest as FilledForest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -134,12 +134,9 @@ fun OrganizeBottomSheet(
                         keyboardController?.hide()
                     },
                     onRequestCreateShelf = { name ->
-                        if (uiState.value.defaultShelfSpaceId == null) shelfNameToCreate = name
+                        if (uiState.value.spacesEnabled) shelfNameToCreate = name
                         else {
-                            viewModel.createShelf(
-                                uiState.value.defaultShelfSpaceId ?: "_all_",
-                                name
-                            )
+                            viewModel.createShelf("_all_", name)
                             textFieldState.edit { replace(0, length, "") }
                             keyboardController?.hide()
                         }

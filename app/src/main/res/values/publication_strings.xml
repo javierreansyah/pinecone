@@ -5,15 +5,15 @@
     <string name="publication_cover_description">Cover for %s</string>
     <string name="publication_create_new">Create new: \"%s\"</string>
     <string name="publication_credits">Contributors</string>
-    <string name="publication_delete_message">Are you sure you want to delete this item? This action cannot be undone.</string>
-    <string name="publication_delete_title">Delete item</string>
+    <string name="publication_delete_message">Are you sure you want to delete this title? This action cannot be undone.</string>
+    <string name="publication_delete_title">Delete title</string>
     <string name="publication_description">Description</string>
     <string name="publication_duration">Duration</string>
     <plurals name="publication_duration_minutes">
         <item quantity="one">%1$d minute</item>
         <item quantity="other">%1$d minutes</item>
     </plurals>
-    <string name="publication_edit_title">Edit item</string>
+    <string name="publication_edit_title">Edit title</string>
     <string name="publication_format">Format</string>
     <string name="publication_identifier">Identifier (ISBN/ID)</string>
     <string name="publication_identifier_empty_error">Identifier scheme and value cannot be empty.</string>
@@ -21,7 +21,7 @@
     <string name="publication_identifiers">Identifiers (one scheme=value per line)</string>
     <string name="publication_info_current_position">Current position</string>
     <string name="publication_info_furthest_position">Furthest position reached</string>
-    <string name="publication_info_title">Item info</string>
+    <string name="publication_info_title">Title info</string>
     <string name="publication_issue">Issue</string>
     <string name="publication_label_authors">@string/library_authors_title</string>
     <string name="publication_label_tags">@string/library_tags_title</string>
@@ -30,8 +30,7 @@
     <string name="publication_left_to_right">Left to right</string>
     <string name="publication_mark_as_read">Mark as read</string>
     <string name="publication_mark_as_unread">Mark as unread</string>
-    <string name="publication_not_available">N/A</string>
-    <string name="publication_not_found">Item not found</string>
+    <string name="publication_not_found">Title not found</string>
     <string name="publication_publication_details">Publication details</string>
     <string name="publication_published">Publication date</string>
     <string name="publication_published_date">Published date</string>

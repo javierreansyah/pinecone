@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Forward10
@@ -70,6 +71,9 @@ internal val MiniPlayerContainerRadius = MiniPlayerArtworkRadius + MiniPlayerArt
 internal val MiniPlayerArtworkSize = 48.dp
 internal val MiniPlayerProgressHeight = 4.dp
 internal val MiniPlayerOuterVerticalPadding = 8.dp
+internal val MiniPlayerMaxWidth = 600.dp
+internal val MiniPlayerHorizontalPadding = 12.dp
+internal val MiniPlayerMaxOuterWidth = MiniPlayerMaxWidth + MiniPlayerHorizontalPadding * 2
 internal val MiniPlayerHeight = MiniPlayerArtworkSize + MiniPlayerArtworkInset * 2 +
         MiniPlayerProgressHeight + MiniPlayerOuterVerticalPadding * 2
 
@@ -137,6 +141,7 @@ fun AudioMiniPlayerBar(includeNavigationBarPadding: Boolean = true, bottomInset:
     }
     Box(
         Modifier
+            .widthIn(max = MiniPlayerMaxOuterWidth)
             .onSizeChanged { height = it.height }
             .graphicsLayer { alpha = 0f }
             .clearAndSetSemantics {},
@@ -149,7 +154,10 @@ fun AudioMiniPlayerBar(includeNavigationBarPadding: Boolean = true, bottomInset:
             onSkip = {},
             modifier = Modifier
                 .then(if (includeNavigationBarPadding) Modifier.navigationBarsPadding() else Modifier)
-                .padding(horizontal = 12.dp, vertical = MiniPlayerOuterVerticalPadding),
+                .padding(
+                    horizontal = MiniPlayerHorizontalPadding,
+                    vertical = MiniPlayerOuterVerticalPadding
+                ),
         )
     }
 }
@@ -167,6 +175,7 @@ internal fun AudioMiniPlayer(
     Surface(
         onClick = onOpenPlayer,
         modifier = modifier
+            .widthIn(max = MiniPlayerMaxWidth)
             .fillMaxWidth()
             .semantics { onClick(label = openLabel, action = null) },
         shape = RoundedCornerShape(MiniPlayerContainerRadius),

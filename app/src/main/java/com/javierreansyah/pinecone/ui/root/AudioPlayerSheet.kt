@@ -351,13 +351,15 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
                         .clickable(onClickLabel = collapseLabel, onClick = collapse),
                 )
             }
-            val width = bounds.width + (rootSize.width - bounds.width) * fraction
+            // Keep the sheet full-width so expansion only grows upward.
+            // The mini-player card has its own centered width limit.
+            val width = rootSize.width
             val height = bounds.height + (rootSize.height - bounds.height) * fraction
             Box(
                 Modifier
                     .offset {
                         IntOffset(
-                            (bounds.left * (1f - fraction) + horizontalOffset).roundToInt(),
+                            horizontalOffset.roundToInt(),
                             offset.roundToInt()
                         )
                     }
@@ -409,7 +411,9 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
                     Box(
                         Modifier
                             .fillMaxWidth()
-                            .graphicsLayer { alpha = opacity.miniPlayer }) {
+                            .graphicsLayer { alpha = opacity.miniPlayer },
+                        contentAlignment = Alignment.TopCenter,
+                    ) {
                         AudioMiniPlayer(
                             state = playback,
                             coverPath = book?.book?.coverPath,
@@ -419,7 +423,7 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
                             modifier = Modifier
                                 .then(if (handle.navigationBarsPadding) Modifier.navigationBarsPadding() else Modifier)
                                 .padding(
-                                    horizontal = 12.dp,
+                                    horizontal = MiniPlayerHorizontalPadding,
                                     vertical = MiniPlayerOuterVerticalPadding
                                 ),
                         )

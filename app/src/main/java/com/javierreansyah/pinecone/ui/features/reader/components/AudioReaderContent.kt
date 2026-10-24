@@ -84,12 +84,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.composables.icons.materialsymbols.outlinedfilled.Bookmark_check as FilledBookmarkCheck
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Bookmark
 import com.composables.icons.materialsymbols.outlined.Edit_note
 import com.composables.icons.materialsymbols.outlined.List
-
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.reader.audio.AudioPlaybackState
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
@@ -99,6 +97,7 @@ import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToLong
 import kotlin.time.Duration.Companion.milliseconds
+import com.composables.icons.materialsymbols.outlinedfilled.Bookmark_check as FilledBookmarkCheck
 
 @Composable
 fun AudioReaderContent(
@@ -281,6 +280,7 @@ private fun AudioPlaybackPanel(
             playing = state.playing,
             onPlayPause = onPlayPause,
             onTrack = onTrack,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
         )
 
         AudioActionsStrip(
@@ -300,6 +300,7 @@ private fun AudioTransportButtons(
     playing: Boolean,
     onPlayPause: () -> Unit,
     onTrack: (Int) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val labels = listOf(
         stringResource(R.string.reader_previous_track),
@@ -310,7 +311,9 @@ private fun AudioTransportButtons(
 
     ButtonGroup(
         overflowIndicator = { ButtonGroupDefaults.OverflowIndicator(menuState = it) },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier
+            .widthIn(max = 400.dp)
+            .fillMaxWidth(),
         expandedRatio = 0.32f,
         horizontalArrangement = ButtonGroupDefaults.HorizontalArrangement,
     ) {
