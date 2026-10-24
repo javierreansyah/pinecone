@@ -64,7 +64,6 @@ import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Bookmark
-import com.composables.icons.materialsymbols.outlined.Bookmark_check
 import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Description
 import com.composables.icons.materialsymbols.outlined.Info
@@ -74,7 +73,9 @@ import com.composables.icons.materialsymbols.outlined.Match_case
 import com.composables.icons.materialsymbols.outlined.More_vert
 import com.composables.icons.materialsymbols.outlined.Restart_alt
 import com.composables.icons.materialsymbols.outlined.Search
+import com.composables.icons.materialsymbols.outlinedfilled.Bookmark_check
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
 import org.readium.r2.shared.publication.Locator
 
 enum class TopBarState { NORMAL, JUMP, SEARCH }
@@ -252,8 +253,10 @@ fun ReaderTopBar(
 
                             if (!audioPlayer) {
                                 IconButton(onClick = onToggleBookmark) {
-                                    Icon(
-                                        imageVector = if (isBookmarked) MaterialSymbols.Outlined.Bookmark_check else MaterialSymbols.Outlined.Bookmark,
+                                    AnimatedSelectionIcon(
+                                        selected = isBookmarked,
+                                        outlinedIcon = MaterialSymbols.Outlined.Bookmark,
+                                        filledIcon = MaterialSymbols.OutlinedFilled.Bookmark_check,
                                         contentDescription = if (isBookmarked) stringResource(R.string.reader_remove_bookmark) else stringResource(
                                             R.string.reader_add_bookmark,
                                         ),

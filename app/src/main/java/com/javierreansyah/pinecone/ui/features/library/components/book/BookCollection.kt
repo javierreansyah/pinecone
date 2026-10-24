@@ -147,7 +147,9 @@ private fun BookList(
             .fillMaxSize()
             .padding(horizontal = horizontalPadding),
     ) {
-        items(books, key = { (itId2, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId2 }) { book ->
+        items(
+            books,
+            key = { (itId2, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId2 }) { book ->
             BookItem(
                 book = book,
                 onClick = { onBookClick(book.id) },

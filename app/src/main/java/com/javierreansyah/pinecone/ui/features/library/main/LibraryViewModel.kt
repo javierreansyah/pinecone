@@ -138,17 +138,18 @@ class LibraryViewModel(
         // and nothing competes with the expansion animation on the UI thread.
         viewModelScope.launch {
             allBooks.take(1).collect { books ->
-                books.take(8).forEach { (_, _, _, bookCoverPath, progress, lastOpened, language, addedDate, isArchived, description, publisher, published, tags, identifier, mediaType, filePath, isRead, furthestProgression, lastLocatorJson, furthestLocatorJson, spaces, metadata, credits, activeRendition, isUnsorted, originalFilename) ->
-                    if (bookCoverPath != null) {
-                        val request = ImageRequest.Builder(application)
-                            .data(File(bookCoverPath))
-                            .size(400, 600)
-                            .scale(Scale.FILL)
-                            .memoryCacheKey(bookCoverPath)
-                            .build()
-                        application.imageLoader.enqueue(request)
+                books.take(8)
+                    .forEach { (_, _, _, bookCoverPath, progress, lastOpened, language, addedDate, isArchived, description, publisher, published, tags, identifier, mediaType, filePath, isRead, furthestProgression, lastLocatorJson, furthestLocatorJson, spaces, metadata, credits, activeRendition, isUnsorted, originalFilename) ->
+                        if (bookCoverPath != null) {
+                            val request = ImageRequest.Builder(application)
+                                .data(File(bookCoverPath))
+                                .size(400, 600)
+                                .scale(Scale.FILL)
+                                .memoryCacheKey(bookCoverPath)
+                                .build()
+                            application.imageLoader.enqueue(request)
+                        }
                     }
-                }
             }
         }
 
@@ -223,7 +224,8 @@ class LibraryViewModel(
     @OptIn(ExperimentalCoroutinesApi::class)
     private val searchResults: StateFlow<SearchResults> = combine(
         debouncedSearchQuery,
-        _uiState.map { (_, itSearchCategory, isImporting, bookPreferences, shelvesPreferences) -> itSearchCategory }.distinctUntilChanged(),
+        _uiState.map { (_, itSearchCategory, isImporting, bookPreferences, shelvesPreferences) -> itSearchCategory }
+            .distinctUntilChanged(),
     ) { query, category ->
         query to category
     }.flatMapLatest { (query, category) ->

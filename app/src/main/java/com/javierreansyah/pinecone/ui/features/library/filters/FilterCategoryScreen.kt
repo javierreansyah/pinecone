@@ -184,7 +184,8 @@ private fun AllFilterItemsContent(
                         },
                         onClearSelection = { selectedItems = emptySet() },
                         onSelectAll = {
-                            selectedItems = sortedItems.map { (itFirst, _, _, _) -> itFirst }.toSet()
+                            selectedItems =
+                                sortedItems.map { (itFirst, _, _, _) -> itFirst }.toSet()
                         },
                         onRenameClick = {
                             itemToRename = selectedItems.firstOrNull() ?: ""

@@ -18,7 +18,6 @@
     <string name="settings_color_palette">Palet warna</string>
     <string name="settings_error_set_backup_location">Harap pilih lokasi cadangan terlebih dahulu</string>
     <string name="settings_export_backup">Ekspor cadangan</string>
-    <string name="settings_general">Umum</string>
     <string name="settings_hide_all_space">Sembunyikan ruang Semua</string>
     <string name="settings_hide_all_space_summary">Sembunyikan Semua dari navigasi.</string>
     <string name="settings_import_backup">Impor cadangan</string>
@@ -43,7 +42,7 @@
     <string name="settings_restore_backup_warning">Apakah Anda yakin ingin memulihkan? Ini akan menimpa perpustakaan dan pengaturan Anda saat ini.</string>
     <string name="settings_restore_defaults">Pulihkan setelan awal</string>
     <string name="settings_restore_defaults_success">Pengaturan dipulihkan ke default</string>
-    <string name="settings_restore_defaults_warning">Apakah Anda yakin ingin memulihkan pengaturan ke nilai default? Tindakan ini akan mereset tema, palet warna, bahasa, dan pengaturan cadangan otomatis Anda.\n\nPengaturan pembaca (seperti ukuran font, kecerahan, dll.) tidak akan diubah.</string>
+    <string name="settings_restore_defaults_warning">Apakah Anda yakin ingin memulihkan pengaturan ke nilai default? Tindakan ini akan mereset pengaturan bahasa, pustaka, ruang, tema, dan cadangan otomatis Anda.\n\nPengaturan pembaca (seperti ukuran font, kecerahan, dll.) tidak akan diubah.</string>
     <string name="settings_restore_partial">Pemulihan tersimpan, tetapi pembersihan akhir belum selesai. Mulai ulang Pinecone untuk menyelesaikan pemulihan.</string>
     <string name="settings_restore_summary">Pulihkan perpustakaan dan kamus</string>
     <string name="settings_spaces_enabled">Gunakan ruang</string>
@@ -53,4 +52,9 @@
     <string name="settings_title">Pengaturan</string>
     <string name="settings_unsorted_enabled">Gunakan kotak masuk Belum disortir</string>
     <string name="settings_unsorted_enabled_summary">Pisahkan impor baru sampai diatur.</string>
+    <string name="settings_library">Pustaka</string>
+    <string name="settings_space">@string/library_spaces_title</string>
+    <string name="settings_cover_display">Tampilan sampul</string>
+    <string name="settings_cover_contain">Utuh (tampilkan seluruh sampul)</string>
+    <string name="settings_cover_cover">Penuhi (potong bagian berlebih)</string>
 </resources>

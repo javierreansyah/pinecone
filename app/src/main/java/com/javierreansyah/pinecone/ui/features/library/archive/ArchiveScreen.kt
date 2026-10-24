@@ -76,7 +76,10 @@ fun ArchiveScreen(
             isInMultiSelectMode = true
         },
         onExitMultiSelect = exitMultiSelect,
-        onSelectAll = { selectedBooks = archivedBooks.map { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId }.toSet() },
+        onSelectAll = { selectedBooks =
+            archivedBooks.map { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId }
+                .toSet()
+        },
         onClearSelection = { selectedBooks = emptySet() },
         onToggleBookSelection = { bookId ->
             selectedBooks = if (bookId in selectedBooks) {

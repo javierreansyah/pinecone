@@ -51,7 +51,8 @@ class OrganizeViewModel(
         repository.getAllBooks(),
     ) { shelvesWithBooks, spaces, spaceCrossRefs, context, books ->
         val (settings, currentSpaceId) = context
-        val validShelves = shelvesWithBooks.filter { (itShelf, books1) -> itShelf.id != "unshelved" }
+        val validShelves =
+            shelvesWithBooks.filter { (itShelf, books1) -> itShelf.id != "unshelved" }
 
         val spaceItems =
             spaces.asSequence().filter { settings.spacesEnabled || it.id == "_all_" }.map { space ->
@@ -71,7 +72,8 @@ class OrganizeViewModel(
                 val spaceShelves = validShelves.asSequence()
                     .filter { (itShelf2, books1) -> !settings.spacesEnabled || itShelf2.spaceId == spaceId }
                     .map { (shelfWithBooksShelf, shelfWithBooksBooks) ->
-                        val booksInShelf = shelfWithBooksBooks.map { (itBook, authors, authorCrossRefs, tags, spaces1, credits) -> itBook.id }
+                        val booksInShelf =
+                            shelfWithBooksBooks.map { (itBook, authors, authorCrossRefs, tags, spaces1, credits) -> itBook.id }
                         val countInShelf = targetBookIds.count { it in booksInShelf }
                         val shelfState = when (countInShelf) {
                             0 -> ToggleableState.Off

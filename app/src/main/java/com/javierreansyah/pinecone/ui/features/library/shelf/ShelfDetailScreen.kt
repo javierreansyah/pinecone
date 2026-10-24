@@ -175,7 +175,11 @@ fun ShelfDetailScreen(
             isInMultiSelectMode = true
         },
         onExitMultiSelect = exitMultiSelect,
-        onSelectAll = { selectedBooks = books.map { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId }.toSet() },
+        onSelectAll = {
+            selectedBooks =
+                books.map { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId }
+                    .toSet()
+        },
         onClearSelection = { selectedBooks = emptySet() },
         onToggleBookSelection = { bookId ->
             selectedBooks = if (bookId in selectedBooks) {
@@ -222,7 +226,9 @@ fun ShelfDetailScreen(
         },
         onCancelReorder = { isReordering = false },
         onSaveReorder = {
-            viewModel.updateShelfOrder(shelfId, reorderBooks.map { (itId2, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId2 })
+            viewModel.updateShelfOrder(
+                shelfId,
+                reorderBooks.map { (itId2, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId2 })
             if (uiState.value.bookPreferences.sortType != SortType.Custom) {
                 viewModel.onSortTypeChange(SortType.Custom)
             }
@@ -860,7 +866,9 @@ private fun ShelfDetailBookListContent(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(bottom = LocalAudioPlayerBottomPadding.current),
                     ) {
-                        items(reorderBooks, { (itId4, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId4 }) { item ->
+                        items(
+                            reorderBooks,
+                            { (itId4, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId4 }) { item ->
                             ReorderableItem(reorderState, key = item.id) { isDragging ->
                                 val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp)
                                 Surface(

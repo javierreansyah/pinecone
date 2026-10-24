@@ -113,7 +113,8 @@ class LibraryRepository(
                 (books.map { it.filePath } + publicationDao.allRenditions().map { it.filePath })
                     .map { File(it).canonicalPath }.toSet()
             val referencedCovers =
-                books.asSequence().mapNotNull { (_, _, itCoverPath, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itCoverPath }
+                books.asSequence()
+                    .mapNotNull { (_, _, itCoverPath, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itCoverPath }
                     .map { File(it).canonicalPath }.toSet()
             booksDir.listFiles()?.asSequence()
                 ?.filter { it.isFile && it.canonicalPath !in referencedBooks }
@@ -585,7 +586,9 @@ class LibraryRepository(
     }
 
     suspend fun getLastLocator(bookId: String): Locator? {
-        val (_, _, _, _, _, _, _, _, bookLastLocatorJson, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) = bookDao.getById(bookId)?.book
+        val (_, _, _, _, _, _, _, _, bookLastLocatorJson, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) = bookDao.getById(
+            bookId
+        )?.book
             ?: return null
         val json = bookLastLocatorJson ?: return null
         return try {

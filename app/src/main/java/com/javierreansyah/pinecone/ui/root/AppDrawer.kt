@@ -46,6 +46,7 @@ import com.composables.icons.materialsymbols.outlined.Settings
 import com.composables.icons.materialsymbols.outlined.Upload
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
+import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
 import kotlinx.coroutines.launch
 
 @Composable
@@ -261,8 +262,10 @@ fun AppDrawer(
                     WideNavigationRailItem(
                         railExpanded = true,
                         icon = {
-                            Icon(
-                                imageVector = MaterialSymbols.Outlined.Forest,
+                            AnimatedSelectionIcon(
+                                selected = selectedSpaceId == null || selectedSpaceId == "_all_",
+                                outlinedIcon = MaterialSymbols.Outlined.Forest,
+                                filledIcon = MaterialSymbols.OutlinedFilled.Forest,
                                 contentDescription = null,
                             )
                         },
@@ -279,8 +282,10 @@ fun AppDrawer(
                     WideNavigationRailItem(
                         railExpanded = true,
                         icon = {
-                            Icon(
-                                imageVector = MaterialSymbols.Outlined.Forest,
+                            AnimatedSelectionIcon(
+                                selected = selectedSpaceId == spaceId,
+                                outlinedIcon = MaterialSymbols.Outlined.Forest,
+                                filledIcon = MaterialSymbols.OutlinedFilled.Forest,
                                 contentDescription = null,
                             )
                         },

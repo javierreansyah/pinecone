@@ -86,11 +86,12 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Bookmark
-import com.composables.icons.materialsymbols.outlined.Bookmark_check
 import com.composables.icons.materialsymbols.outlined.Edit_note
 import com.composables.icons.materialsymbols.outlined.List
+import com.composables.icons.materialsymbols.outlinedfilled.Bookmark_check
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.reader.audio.AudioPlaybackState
+import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
 import kotlinx.coroutines.delay
 import java.io.File
 import java.util.Locale
@@ -677,7 +678,9 @@ private fun AudioActionsStrip(
             ExpressiveConnectedActionButton(
                 onClick = onToggleBookmark,
                 modifier = Modifier.weight(1f),
-                icon = if (isBookmarked) MaterialSymbols.Outlined.Bookmark_check else MaterialSymbols.Outlined.Bookmark,
+                icon = MaterialSymbols.Outlined.Bookmark,
+                filledIcon = MaterialSymbols.OutlinedFilled.Bookmark_check,
+                selected = isBookmarked,
                 contentDescription = stringResource(
                     if (isBookmarked) R.string.reader_remove_bookmark else R.string.reader_add_bookmark
                 ),
@@ -732,6 +735,8 @@ private fun ExpressiveConnectedActionButton(
     modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     enabled: Boolean = true,
+    filledIcon: ImageVector? = null,
+    selected: Boolean = false,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val actionTint = if (enabled) tint else tint.copy(alpha = 0.38f)
@@ -760,12 +765,23 @@ private fun ExpressiveConnectedActionButton(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = contentDescription,
-                modifier = Modifier.size(24.dp),
-                tint = actionTint,
-            )
+            if (filledIcon != null) {
+                AnimatedSelectionIcon(
+                    selected = selected,
+                    outlinedIcon = icon,
+                    filledIcon = filledIcon,
+                    contentDescription = contentDescription,
+                    modifier = Modifier.size(24.dp),
+                    tint = actionTint,
+                )
+            } else {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = contentDescription,
+                    modifier = Modifier.size(24.dp),
+                    tint = actionTint,
+                )
+            }
         }
     }
 }

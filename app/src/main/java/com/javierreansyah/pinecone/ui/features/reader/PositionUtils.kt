@@ -54,7 +54,9 @@ fun List<Locator>.findIndexForLocator(locator: Locator): Int {
     }
     if (bestIndex != -1) return bestIndex
 
-    return indexOfFirst { (itHref, _, _, _, _) -> itHref.toString().substringBefore("#") == targetHref }
+    return indexOfFirst { (itHref, _, _, _, _) ->
+        itHref.toString().substringBefore("#") == targetHref
+    }
 }
 
 fun List<Locator>.findClosestByProgression(targetProgression: Double): Locator? {

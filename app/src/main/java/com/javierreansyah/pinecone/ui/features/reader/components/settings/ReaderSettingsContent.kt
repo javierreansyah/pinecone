@@ -32,7 +32,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
@@ -65,7 +64,6 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Brightness_auto
 import com.composables.icons.materialsymbols.outlined.Brightness_medium
 import com.composables.icons.materialsymbols.outlined.Contrast
 import com.composables.icons.materialsymbols.outlined.Format_align_justify
@@ -74,10 +72,13 @@ import com.composables.icons.materialsymbols.outlined.Format_align_right
 import com.composables.icons.materialsymbols.outlined.Image
 import com.composables.icons.materialsymbols.outlined.Invert_colors
 import com.composables.icons.materialsymbols.outlined.Restart_alt
+import com.composables.icons.materialsymbols.outlinedfilled.Brightness_auto
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.CustomPineconeTheme
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
+import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
 import com.javierreansyah.pinecone.ui.components.SegmentedButtonGroup
+import com.javierreansyah.pinecone.ui.components.SettingsChoiceDialog
 import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -847,8 +848,10 @@ internal fun ReaderBrightnessControl(
                 shapes = IconButtonDefaults.toggleableShapes(),
                 modifier = Modifier.size(48.dp),
             ) {
-                Icon(
-                    imageVector = if (settings.autoBrightness) MaterialSymbols.Outlined.Brightness_auto else MaterialSymbols.Outlined.Brightness_medium,
+                AnimatedSelectionIcon(
+                    selected = settings.autoBrightness,
+                    outlinedIcon = MaterialSymbols.Outlined.Brightness_medium,
+                    filledIcon = MaterialSymbols.OutlinedFilled.Brightness_auto,
                     contentDescription = stringResource(R.string.reader_settings_auto_brightness),
                 )
             }
@@ -923,51 +926,14 @@ internal fun AdvancedTabContent(
             }
 
             if (showDictionaryDialog) {
-                AlertDialog(
-                    onDismissRequest = { showDictionaryDialog = false },
-                    title = { Text(stringResource(R.string.dictionaries_select)) },
-                    text = {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            if (settings.installedDictionaries.isEmpty()) {
-                                Text(
-                                    text = stringResource(R.string.dictionaries_none_installed),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                )
-                            } else {
-                                settings.installedDictionaries.forEach { (dictId, dictName, _) ->
-                                    val isSelected = settings.activeDictionaryId == dictId
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(MaterialTheme.shapes.small)
-                                            .clickable {
-                                                onSettingsChange(settings.copy(activeDictionaryId = dictId))
-                                                showDictionaryDialog = false
-                                            },
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        RadioButton(
-                                            selected = isSelected,
-                                            onClick = {
-                                                onSettingsChange(settings.copy(activeDictionaryId = dictId))
-                                                showDictionaryDialog = false
-                                            },
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = dictName,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    confirmButton = {
-                        TextButton(onClick = { showDictionaryDialog = false }) {
-                            Text(stringResource(R.string.action_close))
-                        }
-                    },
+                SettingsChoiceDialog(
+                    content = { Text(stringResource(R.string.dictionaries_select)) },
+                    options = settings.installedDictionaries,
+                    isSelected = { it.id == settings.activeDictionaryId },
+                    optionLabel = { it.name },
+                    emptyText = stringResource(R.string.dictionaries_none_installed),
+                    onSelected = { onSettingsChange(settings.copy(activeDictionaryId = it.id)) },
+                    onDismiss = { showDictionaryDialog = false },
                 )
             }
 
@@ -1001,44 +967,13 @@ internal fun AdvancedTabContent(
         }
 
         if (showOrientationDialog) {
-            AlertDialog(
-                onDismissRequest = { showOrientationDialog = false },
-                title = { Text(stringResource(R.string.reader_settings_force_orientation)) },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        orientationOptionsMap.forEach { (key, name) ->
-                            val isSelected = settings.forceOrientation == key
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(MaterialTheme.shapes.small)
-                                    .clickable {
-                                        onSettingsChange(settings.copy(forceOrientation = key))
-                                        showOrientationDialog = false
-                                    },
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                RadioButton(
-                                    selected = isSelected,
-                                    onClick = {
-                                        onSettingsChange(settings.copy(forceOrientation = key))
-                                        showOrientationDialog = false
-                                    },
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = name,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                )
-                            }
-                        }
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = { showOrientationDialog = false }) {
-                        Text(stringResource(R.string.action_close))
-                    }
-                },
+            SettingsChoiceDialog(
+                content = { Text(stringResource(R.string.reader_settings_force_orientation)) },
+                options = orientationOptionsMap.keys.toList(),
+                isSelected = { it == settings.forceOrientation },
+                optionLabel = { orientationOptionsMap.getValue(it) },
+                onSelected = { onSettingsChange(settings.copy(forceOrientation = it)) },
+                onDismiss = { showOrientationDialog = false },
             )
         }
 
@@ -1071,44 +1006,13 @@ internal fun AdvancedTabContent(
         }
 
         if (showJumpHistoryDialog) {
-            AlertDialog(
-                onDismissRequest = { showJumpHistoryDialog = false },
-                title = { Text(stringResource(R.string.reader_jump_history_mode)) },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        jumpHistoryOptionsMap.forEach { (key, name) ->
-                            val isSelected = settings.jumpHistoryMode == key
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(MaterialTheme.shapes.small)
-                                    .clickable {
-                                        onSettingsChange(settings.copy(jumpHistoryMode = key))
-                                        showJumpHistoryDialog = false
-                                    },
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                RadioButton(
-                                    selected = isSelected,
-                                    onClick = {
-                                        onSettingsChange(settings.copy(jumpHistoryMode = key))
-                                        showJumpHistoryDialog = false
-                                    },
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = name,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                )
-                            }
-                        }
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = { showJumpHistoryDialog = false }) {
-                        Text(stringResource(R.string.action_close))
-                    }
-                },
+            SettingsChoiceDialog(
+                content = { Text(stringResource(R.string.reader_jump_history_mode)) },
+                options = jumpHistoryOptionsMap.keys.toList(),
+                isSelected = { it == settings.jumpHistoryMode },
+                optionLabel = { jumpHistoryOptionsMap.getValue(it) },
+                onSelected = { onSettingsChange(settings.copy(jumpHistoryMode = it)) },
+                onDismiss = { showJumpHistoryDialog = false },
             )
         }
 

@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
@@ -31,15 +30,22 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.composables.icons.materialsymbols.MaterialSymbols
@@ -48,6 +54,7 @@ import com.composables.icons.materialsymbols.outlined.Folder
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
@@ -205,6 +212,53 @@ fun LibraryScreen(
     val isMultiSelect = isInMultiSelectMode && !isShelvesTab
     val isShelvesMultiSelect = isInMultiSelectMode && isShelvesTab
 
+    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val canSwipeOpenRail by rememberUpdatedState {
+        !isInMultiSelectMode && !showFilterSheet.value && selectedBookContext == null &&
+                drawerState.targetValue == WideNavigationRailValue.Collapsed &&
+                (if (isRtl) !pagerState.canScrollForward else !pagerState.canScrollBackward)
+    }
+    val railSwipeConnection = remember(pagerState) {
+        object : NestedScrollConnection {
+            var trackingDrag = false
+            var startedAtLeftEdge = false
+            var opened = false
+
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (source == NestedScrollSource.UserInput && available.x != 0f && !trackingDrag) {
+                    trackingDrag = true
+                    startedAtLeftEdge = canSwipeOpenRail()
+                }
+                return Offset.Zero
+            }
+
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: NestedScrollSource,
+            ): Offset {
+                if (source != NestedScrollSource.UserInput || !startedAtLeftEdge || !canSwipeOpenRail()) {
+                    return Offset.Zero
+                }
+                // The pager has already applied horizontal touch slop. Start the native rail
+                // animation on the first outward delta instead of imposing a second threshold.
+                if (available.x > 0f && !opened) {
+                    opened = true
+                    scope.launch { drawerState.expand() }
+                }
+                // Let the pager handle page changes; consume only the outward drag at its edge.
+                return Offset(available.x.coerceAtLeast(0f), 0f)
+            }
+
+            override suspend fun onPreFling(available: Velocity): Velocity {
+                trackingDrag = false
+                startedAtLeftEdge = false
+                opened = false
+                return Velocity.Zero
+            }
+        }
+    }
+
     val exitMultiSelect = {
         if (isShelvesTab) {
             selectedShelves = emptySet()
@@ -291,7 +345,9 @@ fun LibraryScreen(
                             },
                             onClearBooksSelection = { selectedBooks = emptySet() },
                             onSelectAllBooks = {
-                                selectedBooks = uiState.filteredBooks.map { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId }.toSet()
+                                selectedBooks =
+                                    uiState.filteredBooks.map { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId }
+                                        .toSet()
                             },
                             onMarkBooksReadStatus = { showMarkAsRead ->
                                 markBooksReadStatus(selectedBooks, showMarkAsRead)
@@ -333,7 +389,8 @@ fun LibraryScreen(
                             state = pagerState,
                             userScrollEnabled = !isInMultiSelectMode,
                             modifier = Modifier
-                                .fillMaxSize(),
+                                .fillMaxSize()
+                                .nestedScroll(railSwipeConnection),
                         ) { page ->
                             when (if (libraryView == LibraryView.Shelves) 1 else page) {
                                 0 -> {
@@ -567,8 +624,10 @@ private fun LibraryShortBottomNavigation(
             selected = currentPage == 0,
             onClick = { onTabSelected(0) },
             icon = {
-                Icon(
-                    MaterialSymbols.Outlined.Book,
+                AnimatedSelectionIcon(
+                    selected = currentPage == 0,
+                    outlinedIcon = MaterialSymbols.Outlined.Book,
+                    filledIcon = MaterialSymbols.OutlinedFilled.Book,
                     contentDescription = stringResource(wording.libraryTab),
                 )
             },
@@ -578,8 +637,10 @@ private fun LibraryShortBottomNavigation(
             selected = currentPage == 1,
             onClick = { onTabSelected(1) },
             icon = {
-                Icon(
-                    MaterialSymbols.Outlined.Folder,
+                AnimatedSelectionIcon(
+                    selected = currentPage == 1,
+                    outlinedIcon = MaterialSymbols.Outlined.Folder,
+                    filledIcon = MaterialSymbols.OutlinedFilled.Folder,
                     contentDescription = stringResource(R.string.library_tab_shelves),
                 )
             },

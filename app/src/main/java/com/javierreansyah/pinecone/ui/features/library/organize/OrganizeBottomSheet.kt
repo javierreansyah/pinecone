@@ -52,6 +52,7 @@ import com.composables.icons.materialsymbols.outlined.Forest
 import com.composables.icons.materialsymbols.outlined.Mic
 import com.composables.icons.materialsymbols.outlined.Search
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
 import com.javierreansyah.pinecone.ui.components.SegmentedColumn
 import com.javierreansyah.pinecone.ui.components.rememberVoiceSearchLauncher
 
@@ -339,8 +340,10 @@ private fun OrganizeContent(
                                 )
                             }),
                             leadingContent = {
-                                Icon(
-                                    if (spacesEnabled) MaterialSymbols.Outlined.Forest else MaterialSymbols.Outlined.Folder,
+                                AnimatedSelectionIcon(
+                                    selected = isSpaceSelected,
+                                    outlinedIcon = if (spacesEnabled) MaterialSymbols.Outlined.Forest else MaterialSymbols.Outlined.Folder,
+                                    filledIcon = if (spacesEnabled) MaterialSymbols.OutlinedFilled.Forest else MaterialSymbols.OutlinedFilled.Folder,
                                     contentDescription = null,
                                     tint = if (isSpaceSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.primary,
                                 )
@@ -368,8 +371,10 @@ private fun OrganizeContent(
                                 selected = isShelfSelected,
                                 onClick = { onToggleShelf(shelfItemShelf.id, shelfItemState) },
                                 leadingContent = {
-                                    Icon(
-                                        MaterialSymbols.Outlined.Folder,
+                                    AnimatedSelectionIcon(
+                                        selected = isShelfSelected,
+                                        outlinedIcon = MaterialSymbols.Outlined.Folder,
+                                        filledIcon = MaterialSymbols.OutlinedFilled.Folder,
                                         contentDescription = null,
                                         tint = if (isShelfSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.secondary,
                                     )
