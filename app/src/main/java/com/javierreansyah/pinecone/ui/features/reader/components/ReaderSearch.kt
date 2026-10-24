@@ -1,7 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.reader.components
 
-import androidx.activity.BackEventCompat
-import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.clickable
@@ -32,16 +30,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberContainedSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -60,7 +53,6 @@ import com.javierreansyah.pinecone.ui.components.PredictiveBackOverlay
 import com.javierreansyah.pinecone.ui.components.rememberVoiceSearchLauncher
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.reader.SearchResultItem
-import kotlin.coroutines.cancellation.CancellationException
 
 @Composable
 fun ReaderSearch(
@@ -108,35 +100,13 @@ fun ReaderSearch(
         keyboardController?.show()
     }
 
-    var backProgress by remember { mutableFloatStateOf(0f) }
-    var swipeEdge by remember { mutableIntStateOf(BackEventCompat.EDGE_LEFT) }
-
-    PredictiveBackHandler(enabled = true) { progressFlow ->
-        var isCompleted = false
-        try {
-            progressFlow.collect { backEvent ->
-                backProgress = backEvent.progress
-                swipeEdge = backEvent.swipeEdge
-            }
-            isCompleted = true
-            onClose()
-        } catch (_: CancellationException) {
-
-        } finally {
-            if (!isCompleted) {
-                backProgress = 0f
-            }
-        }
-    }
-
     val backgroundColor = MaterialTheme.colorScheme.surface
 
     PredictiveBackOverlay(
-        backProgress = backProgress,
-        swipeEdge = swipeEdge,
+        onClose = onClose,
         modifier = modifier,
         backgroundColor = backgroundColor,
-    ) {
+    ) { dismiss ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -167,7 +137,7 @@ fun ReaderSearch(
                     )
                 },
                 leadingIcon = {
-                    IconButton(onClick = onClose) {
+                    IconButton(onClick = dismiss) {
                         Icon(
                             MaterialSymbols.Outlined.Chevron_backward,
                             contentDescription = stringResource(R.string.action_close),
@@ -212,25 +182,7 @@ fun ReaderSearch(
             Box(modifier = Modifier.fillMaxSize()) {
                 LazyColumn(
                     contentPadding = PaddingValues(bottom = 8.dp, top = 16.dp),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .layout { measurable, constraints ->
-                            val progress = backProgress.coerceIn(0f, 1f)
-                            val targetWidth = constraints.maxWidth
-                            val originalWidth = if (progress > 0f) {
-                                (targetWidth / (1f - progress * 0.112f)).toInt()
-                            } else {
-                                targetWidth
-                            }
-                            val childConstraints = constraints.copy(
-                                minWidth = originalWidth.coerceAtLeast(0),
-                                maxWidth = originalWidth.coerceAtLeast(0),
-                            )
-                            val placeable = measurable.measure(childConstraints)
-                            layout(targetWidth, placeable.height) {
-                                placeable.placeRelative(0, 0)
-                            }
-                        },
+                    modifier = Modifier.fillMaxSize(),
                 ) {
                     if (searchPerformed && results.isNotEmpty()) {
                         item {

@@ -7,11 +7,13 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.ViewModelProvider
+import com.javierreansyah.pinecone.ui.features.library.components.book.LocalCoverDisplayMode
 import com.javierreansyah.pinecone.ui.root.MainViewModel
 import com.javierreansyah.pinecone.ui.root.NavGraph
 import com.javierreansyah.pinecone.ui.theme.AppTheme
@@ -98,10 +100,12 @@ class MainActivity : AppCompatActivity() {
                 com.javierreansyah.pinecone.ui.root.AudioPlayerSheetHost(
                     backStack = backStack,
                 ) {
-                    NavGraph(
-                        backStack = backStack,
-                        mainViewModel = viewModel,
-                    )
+                    CompositionLocalProvider(LocalCoverDisplayMode provides settings.value.coverDisplayMode) {
+                        NavGraph(
+                            backStack = backStack,
+                            mainViewModel = viewModel,
+                        )
+                    }
                 }
             }
         }

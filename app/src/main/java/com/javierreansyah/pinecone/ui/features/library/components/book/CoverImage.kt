@@ -10,6 +10,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,14 +22,20 @@ import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.data.local.preferences.CoverDisplayMode
 import com.javierreansyah.pinecone.data.model.Book
 import java.io.File
+
+val LocalCoverDisplayMode = staticCompositionLocalOf { CoverDisplayMode.Contain }
 
 @Composable
 fun CoverImage(
     book: Book, modifier: Modifier = Modifier,
     content: @Composable BoxScope.() -> Unit = {},
 ) {
+    val displayMode = LocalCoverDisplayMode.current
+    val contentScale =
+        if (displayMode == CoverDisplayMode.Cover) ContentScale.Crop else ContentScale.Fit
     if (book.coverPath != null) {
         val context = LocalContext.current
         val imageRequest = remember(book.coverPath) {
@@ -41,7 +48,7 @@ fun CoverImage(
 
         val painter = rememberAsyncImagePainter(
             model = imageRequest,
-            contentScale = ContentScale.Crop,
+            contentScale = contentScale,
         )
 
         val intrinsicSize = painter.intrinsicSize
@@ -54,13 +61,16 @@ fun CoverImage(
         }
 
         Box(
-            modifier = modifier,
+            modifier = modifier.clip(MaterialTheme.shapes.small),
             contentAlignment = Alignment.TopCenter,
         ) {
 
             Box(
-                modifier = Modifier
-                    .aspectRatio(imageAspectRatio)
+                modifier = (if (displayMode == CoverDisplayMode.Cover) {
+                    Modifier.fillMaxSize()
+                } else {
+                    Modifier.aspectRatio(imageAspectRatio)
+                })
                     .clip(MaterialTheme.shapes.small),
             ) {
                 Image(
@@ -70,7 +80,7 @@ fun CoverImage(
                         book.title,
                     ),
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
+                    contentScale = contentScale,
                 )
                 content()
             }

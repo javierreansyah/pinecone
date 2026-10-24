@@ -64,7 +64,8 @@ class EditBookViewModel(
                         credits = bookDetails.credits,
                         creditDrafts = bookDetails.credits.groupBy { it -> it.role }
                             .mapValues { (_, values) ->
-                                values.sortedBy { it -> it.position }.joinToString("\n") { it -> it.name }
+                                values.sortedBy { it -> it.position }
+                                    .joinToString("\n") { it -> it.name }
                             },
                         languageDraft = com.javierreansyah.pinecone.data.publication.PublicationMetadata.decode(
                             bookDetails.book.metadataJson

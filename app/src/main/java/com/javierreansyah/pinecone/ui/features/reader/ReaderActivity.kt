@@ -54,6 +54,14 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
         // Readium factories need a live Publication before fragment restoration. Recreate the
         // presentation from durable locators instead of restoring stale native/WebView fragments.
         super.onCreate(null)
+        // Keep native reader content and its Compose overlay in the same window transition.
+        // The platform continues to own cross-activity predictive back previews.
+        overrideActivityTransition(OVERRIDE_TRANSITION_OPEN, R.anim.screen_open, R.anim.screen_hold)
+        overrideActivityTransition(
+            OVERRIDE_TRANSITION_CLOSE,
+            R.anim.screen_hold,
+            R.anim.screen_close
+        )
         setContentView(R.layout.activity_reader)
 
         navigatorContainer = findViewById(R.id.navigator_container)

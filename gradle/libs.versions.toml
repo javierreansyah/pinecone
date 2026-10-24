@@ -73,6 +73,7 @@ materialKolor = { module = "com.materialkolor:material-kolor", version.ref = "ma
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 aboutlibraries-compose = { module = "com.mikepenz:aboutlibraries-compose-m3", version.ref = "aboutlibraries" }
 composables-icons-material-symbols-outlined = { module = "com.composables:icons-material-symbols-outlined-cmp", version.ref = "materialSymbols" }
+composables-icons-material-symbols-outlined-filled = { module = "com.composables:icons-material-symbols-outlined-filled-cmp", version.ref = "materialSymbols" }
 junit = { module = "junit:junit", version.ref = "junit" }
 
 [plugins]

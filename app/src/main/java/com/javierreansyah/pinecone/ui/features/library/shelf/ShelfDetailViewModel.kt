@@ -101,7 +101,8 @@ class ShelfDetailViewModel(
         } else {
             shelvesList
         }
-        val currentSpaceShelfIds = currentSpaceShelves.map { (itShelf2, books) -> itShelf2.id }.toSet()
+        val currentSpaceShelfIds =
+            currentSpaceShelves.map { (itShelf2, books) -> itShelf2.id }.toSet()
         val shelvedBookIds =
             crossRefs.filter { (itShelfId, bookId, addedAt, orderIndex) -> itShelfId in currentSpaceShelfIds }
                 .map { (_, itBookId, addedAt, orderIndex) -> itBookId }.toSet()

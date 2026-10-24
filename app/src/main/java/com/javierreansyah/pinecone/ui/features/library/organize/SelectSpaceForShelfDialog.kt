@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -22,6 +21,7 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Forest
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
+import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
 import com.javierreansyah.pinecone.ui.components.SegmentedColumn
 
 @Composable
@@ -75,8 +75,10 @@ fun SelectSpaceForShelfDialog(
                                 }
                             },
                             leadingContent = {
-                                Icon(
-                                    MaterialSymbols.Outlined.Forest,
+                                AnimatedSelectionIcon(
+                                    selected = isSelected,
+                                    outlinedIcon = MaterialSymbols.Outlined.Forest,
+                                    filledIcon = MaterialSymbols.OutlinedFilled.Forest,
                                     contentDescription = null,
                                     tint = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.primary,
                                 )

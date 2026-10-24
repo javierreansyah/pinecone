@@ -96,7 +96,9 @@ fun List<Book>.filterAndSort(
                     keySelector = { (_, itValue) -> itValue.id },
                     valueTransform = IndexedValue<Book>::index,
                 )
-                compareBy<Book> { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> indexMap[itId] ?: 0 }
+                compareBy<Book> { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) ->
+                    indexMap[itId] ?: 0
+                }
             }
         }
 
@@ -191,7 +193,8 @@ fun mapAndSortShelves(
     val currentSpaceShelfIds =
         currentSpaceShelves.asSequence().map { (itShelf7, _) -> itShelf7.id }.toSet()
     val shelvedBookIdsInCurrentSpace =
-        crossRefs.asSequence().filter { (itShelfId2, _, _, _) -> itShelfId2 in currentSpaceShelfIds }
+        crossRefs.asSequence()
+            .filter { (itShelfId2, _, _, _) -> itShelfId2 in currentSpaceShelfIds }
             .map { (_, itBookId2, _, _) -> itBookId2 }.toSet()
 
     val unshelvedBooks = allBooksEntities.filter { details ->

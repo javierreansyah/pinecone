@@ -256,7 +256,10 @@ private fun FilterResultContent(
                 onEnterMultiSelect = { isInMultiSelectMode = true },
                 onExitMultiSelect = exitMultiSelect,
                 onClearSelection = { selectedBooks = emptySet() },
-                onSelectAll = { selectedBooks = books.map { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId }.toSet() },
+                onSelectAll = { selectedBooks =
+                    books.map { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId }
+                        .toSet()
+                },
                 onMarkAsReadUnread = { showMarkAsRead ->
                     onMarkBooksReadStatus(selectedBooks, showMarkAsRead)
                     exitMultiSelect()

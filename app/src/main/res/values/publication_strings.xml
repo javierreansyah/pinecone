@@ -66,4 +66,10 @@
     <string name="publication_unknown_author">Unknown author</string>
     <string name="publication_untitled">Untitled publication</string>
     <string name="publication_volume">Volume</string>
+    <string name="publication_listen">Listen</string>
+    <string name="publication_listen_from_start">Listen from start</string>
+    <string name="publication_listen_furthest">Listen from furthest position</string>
+    <string name="publication_mark_as_listened">Mark as listened</string>
+    <string name="publication_mark_as_unlistened">Mark as unlistened</string>
+    <string name="publication_listening_progress">Listening progress</string>
 </resources>

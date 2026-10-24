@@ -1,110 +1,136 @@
-@file:Suppress("RedundantSuppression", "unused")
-
 package com.javierreansyah.pinecone.ui.components
 
-import androidx.activity.BackEventCompat
+import androidx.activity.compose.PredictiveBackHandler
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.RoundRect
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Outline
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.layout
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
+
+internal const val ScreenMinimizedScale = 0.9f
+internal const val ScreenShrinkMillis = 80
+internal const val ScreenExitMillis = 180
+internal const val ScreenReturnMillis = 180
+
+/** Shared by navigation and overlays; only the outer surface knows about gesture progress. */
+@Stable
+internal class ScreenDismissState {
+    var progress by mutableFloatStateOf(0f)
+        private set
+    var exit by mutableFloatStateOf(0f)
+        private set
+    var isDismissing by mutableStateOf(false)
+        private set
+
+    fun seek(progress: Float) {
+        if (!isDismissing) this.progress = progress.coerceIn(0f, 1f)
+    }
+
+    suspend fun restore() {
+        animate(progress, 0f, animationSpec = tween(ScreenReturnMillis)) { value, _ ->
+            progress = value
+        }
+    }
+
+    suspend fun dismiss(onDismissed: () -> Unit) {
+        if (isDismissing) return
+        isDismissing = true
+        // Settle into the box first, including when Back was tapped instead of swiped.
+        animate(progress, 1f, animationSpec = tween(ScreenShrinkMillis)) { value, _ ->
+            progress = value
+        }
+        animate(
+            exit, 1f,
+            animationSpec = tween(ScreenExitMillis, easing = FastOutSlowInEasing),
+        ) { value, _ -> exit = value }
+        onDismissed()
+    }
+
+    fun reset() {
+        progress = 0f
+        exit = 0f
+        isDismissing = false
+    }
+}
 
 @Composable
-fun PredictiveBackOverlay(
-    backProgress: Float,
-    swipeEdge: Int,
+internal fun ScreenDismissSurface(
+    state: ScreenDismissState,
     modifier: Modifier = Modifier,
     backgroundColor: Color = MaterialTheme.colorScheme.surface,
     content: @Composable () -> Unit,
 ) {
-
-    val customShape = remember(backProgress) {
-        object : Shape {
-            override fun createOutline(
-                size: Size,
-                layoutDirection: LayoutDirection,
-                density: Density,
-            ): Outline {
-                val w = size.width
-                val h = size.height
-                val bottomClipPx = backProgress * 0.08f * h
-                val cornerRadiusPx = with(density) { (backProgress * 28f).dp.toPx() }
-
-                val rect = Rect(
-                    left = 0f,
-                    top = 0f,
-                    right = w,
-                    bottom = h - bottomClipPx,
-                )
-                val roundRect = RoundRect(
-                    rect = rect,
-                    cornerRadius = CornerRadius(cornerRadiusPx),
-                )
-                return Outline.Rounded(roundRect)
-            }
-        }
-    }
-
     Box(
         modifier = modifier
             .fillMaxSize()
-            .layout { measurable, constraints ->
-                val w = constraints.maxWidth
-                val h = constraints.maxHeight
-
-                if (backProgress > 0f && w > 0) {
-                    val targetWidth = (w * (1f - backProgress * 0.112f)).toInt()
-                    val childConstraints = constraints.copy(
-                        minWidth = targetWidth.coerceAtMost(w),
-                        maxWidth = targetWidth.coerceAtMost(w),
-                        minHeight = h,
-                        maxHeight = h,
-                    )
-                    val placeable = measurable.measure(childConstraints)
-
-                    layout(w, h) {
-                        val leftGap = if (swipeEdge == BackEventCompat.EDGE_LEFT) {
-                            (backProgress * 0.08f * w).toInt()
-                        } else {
-                            (backProgress * 0.032f * w).toInt()
-                        }
-                        placeable.placeRelative(leftGap, 0)
-                    }
-                } else {
-                    val placeable = measurable.measure(constraints)
-                    layout(placeable.width, placeable.height) {
-                        placeable.placeRelative(0, 0)
-                    }
-                }
-            }
             .graphicsLayer {
-                if (backProgress > 0f) {
-                    scaleX = 1f
-                    scaleY = 1f
-                    clip = true
-                    shape = customShape
-                } else {
-                    scaleX = 1f
-                    scaleY = 1f
-                    clip = false
-                }
+                val progress = state.progress
+                val scale = 1f - (1f - ScreenMinimizedScale) * progress
+                scaleX = scale
+                scaleY = scale
+                // Physical right for gestures from either edge, including RTL layouts.
+                translationX = size.width * state.exit
+                shape = RoundedCornerShape((28f * progress).dp)
+                clip = progress > 0f
             }
             .background(backgroundColor),
     ) {
         content()
+    }
+}
+
+@Composable
+fun PredictiveBackOverlay(
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+    backgroundColor: Color = MaterialTheme.colorScheme.surface,
+    content: @Composable (onBack: () -> Unit) -> Unit,
+) {
+    val state = remember { ScreenDismissState() }
+    val scope = rememberCoroutineScope()
+    val currentOnClose by rememberUpdatedState(onClose)
+    var animation by remember { mutableStateOf<Job?>(null) }
+    val dismiss: () -> Unit = {
+        if (!state.isDismissing) {
+            animation?.cancel()
+            animation = scope.launch { state.dismiss { currentOnClose() } }
+        }
+    }
+
+    PredictiveBackHandler {
+        if (state.isDismissing) {
+            it.collect { }
+        } else {
+            animation?.cancel()
+            try {
+                it.collect { event -> state.seek(event.progress) }
+                dismiss()
+            } catch (_: CancellationException) {
+                animation = scope.launch { state.restore() }
+            }
+        }
+    }
+
+    ScreenDismissSurface(state, modifier, backgroundColor) {
+        content(dismiss)
     }
 }

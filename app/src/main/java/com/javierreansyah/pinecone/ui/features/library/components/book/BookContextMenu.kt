@@ -66,7 +66,8 @@ fun BookContextMenu(
         enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
     )
 
-    val book = allBooks.find { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId == bookId }
+    val book =
+        allBooks.find { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId == bookId }
     val wording = book?.publicationWording ?: PublicationWording.Items
 
     ModalBottomSheet(

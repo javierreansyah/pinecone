@@ -63,6 +63,7 @@ import com.composables.icons.materialsymbols.outlined.Contrast
 import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Forest
 import com.composables.icons.materialsymbols.outlined.History
+import com.composables.icons.materialsymbols.outlined.Image
 import com.composables.icons.materialsymbols.outlined.Inbox
 import com.composables.icons.materialsymbols.outlined.Info
 import com.composables.icons.materialsymbols.outlined.Keyboard_arrow_right
@@ -75,9 +76,11 @@ import com.composables.icons.materialsymbols.outlined.Tune
 import com.composables.icons.materialsymbols.outlined.Visibility_off
 import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.data.local.preferences.CoverDisplayMode
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.components.SegmentedColumn
+import com.javierreansyah.pinecone.ui.components.SegmentedListScope
 import com.javierreansyah.pinecone.ui.features.settings.components.ColorSchemePickerDialog
 import com.javierreansyah.pinecone.ui.features.settings.components.SettingsItem
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
@@ -218,6 +221,9 @@ fun SettingsScreen(
         onLibraryBottomNavigationChanged = { enabled ->
             viewModel.updateSettings(settings.copy(showLibraryBottomNavigation = enabled))
         },
+        onCoverDisplayModeSelected = { mode ->
+            viewModel.updateSettings(settings.copy(coverDisplayMode = mode))
+        },
         onLanguageSelected = { localeKey ->
             scope.launch {
                 viewModel.updateSettingsSuspended(settings.copy(locale = localeKey))
@@ -336,6 +342,7 @@ fun SettingsScreen(
                 spacesEnabled = true,
                 unsortedEnabled = true,
                 showLibraryBottomNavigation = true,
+                coverDisplayMode = CoverDisplayMode.Contain,
             )
             viewModel.updateSettings(defaultSettings)
 
@@ -385,6 +392,7 @@ private fun SettingsContent(
     onShowAllSpacesChanged: (Boolean) -> Unit,
     onUnsortedEnabledChanged: (Boolean) -> Unit,
     onLibraryBottomNavigationChanged: (Boolean) -> Unit,
+    onCoverDisplayModeSelected: (CoverDisplayMode) -> Unit,
     onLanguageSelected: (String) -> Unit,
     onAutoBackupFrequencySelected: (String) -> Unit,
     onBackupLocationClick: () -> Unit,
@@ -414,16 +422,23 @@ private fun SettingsContent(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            GeneralSettingsSection(
+            LanguageSettingsSection(settings, onLanguageSelected)
+            LibrarySettingsSection(
+                settings = settings,
+                onCoverDisplayModeSelected = onCoverDisplayModeSelected,
+                onLibraryBottomNavigationChanged = onLibraryBottomNavigationChanged,
+                onUnsortedEnabledChanged = onUnsortedEnabledChanged,
+            )
+            SpaceSettingsSection(
+                settings = settings,
+                onSpacesEnabledChanged = onSpacesEnabledChanged,
+                onShowAllSpacesChanged = onShowAllSpacesChanged,
+            )
+            ThemeSettingsSection(
                 settings = settings,
                 onThemeModeSelected = onThemeModeSelected,
                 onColorPaletteClick = onColorPaletteClick,
                 onThemeContrastSelected = onThemeContrastSelected,
-                onSpacesEnabledChanged = onSpacesEnabledChanged,
-                onShowAllSpacesChanged = onShowAllSpacesChanged,
-                onUnsortedEnabledChanged = onUnsortedEnabledChanged,
-                onLibraryBottomNavigationChanged = onLibraryBottomNavigationChanged,
-                onLanguageSelected = onLanguageSelected,
             )
 
             BackupSettingsSection(
@@ -471,281 +486,315 @@ private fun SettingsTopBar(
     )
 }
 
+// Keep section content in the caller's composition scope: it populates a transient
+// SegmentedColumn builder, so restarting it independently would leave rendered rows stale.
 @Composable
-private fun GeneralSettingsSection(
+private inline fun SettingsSection(
+    title: String,
+    content: @Composable SegmentedListScope.() -> Unit,
+) {
+    Column {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+        SegmentedColumn(modifier = Modifier.padding(bottom = 16.dp), content = content)
+    }
+}
+
+@Composable
+private fun LanguageSettingsSection(
+    settings: ReaderSettings,
+    onLanguageSelected: (String) -> Unit,
+) {
+    SettingsSection(stringResource(R.string.settings_language)) {
+        val languagesMap = mapOf(
+            "System" to stringResource(R.string.settings_option_system),
+            "en" to "English",
+            "id" to "Bahasa Indonesia",
+        )
+
+        val languageLabel = stringResource(R.string.settings_language)
+        val localeKey = if (settings.locale == "in") "id" else settings.locale
+        val currentLanguageName = languagesMap[localeKey] ?: languagesMap.getValue("System")
+
+        SettingsItem(
+            content = { Text(languageLabel, style = MaterialTheme.typography.titleMedium) },
+            value = currentLanguageName,
+            options = languagesMap.values.toList(),
+            onSelected = { selectedName ->
+                val selectedKey =
+                    languagesMap.entries.find { (_, itValue) -> itValue == selectedName }?.key
+                        ?: selectedName
+                onLanguageSelected(selectedKey)
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = MaterialSymbols.Outlined.Translate,
+                    contentDescription = null,
+                )
+            },
+        )
+    }
+}
+
+@Composable
+private fun LibrarySettingsSection(
+    settings: ReaderSettings,
+    onCoverDisplayModeSelected: (CoverDisplayMode) -> Unit,
+    onLibraryBottomNavigationChanged: (Boolean) -> Unit,
+    onUnsortedEnabledChanged: (Boolean) -> Unit,
+) {
+    SettingsSection(stringResource(R.string.settings_library)) {
+        val coverModes = mapOf(
+            CoverDisplayMode.Contain to stringResource(R.string.settings_cover_contain),
+            CoverDisplayMode.Cover to stringResource(R.string.settings_cover_cover),
+        )
+        SettingsItem(
+            content = {
+                Text(
+                    stringResource(R.string.settings_cover_display),
+                    style = MaterialTheme.typography.titleMedium
+                )
+            },
+            value = coverModes.getValue(settings.coverDisplayMode),
+            options = coverModes.values.toList(),
+            onSelected = { label ->
+                coverModes.entries.firstOrNull { it.value == label }?.key?.let(
+                    onCoverDisplayModeSelected
+                )
+            },
+            leadingIcon = { Icon(MaterialSymbols.Outlined.Image, contentDescription = null) },
+        )
+        item(
+            onClick = { onLibraryBottomNavigationChanged(!settings.showLibraryBottomNavigation) },
+            leadingContent = {
+                Icon(
+                    imageVector = MaterialSymbols.Outlined.Swap_horiz,
+                    contentDescription = null
+                )
+            },
+            content = {
+                Text(
+                    stringResource(R.string.settings_library_bottom_navigation),
+                    style = MaterialTheme.typography.titleMedium
+                )
+            },
+            supportingContent = { Text(stringResource(R.string.settings_library_bottom_navigation_summary)) },
+            trailingContent = {
+                Switch(
+                    checked = settings.showLibraryBottomNavigation,
+                    onCheckedChange = null
+                )
+            },
+        )
+        item(
+            onClick = { onUnsortedEnabledChanged(!settings.unsortedEnabled) },
+            leadingContent = {
+                Icon(
+                    imageVector = MaterialSymbols.Outlined.Inbox,
+                    contentDescription = null
+                )
+            },
+            content = {
+                Text(
+                    stringResource(R.string.settings_unsorted_enabled),
+                    style = MaterialTheme.typography.titleMedium
+                )
+            },
+            supportingContent = { Text(stringResource(R.string.settings_unsorted_enabled_summary)) },
+            trailingContent = {
+                Switch(
+                    checked = settings.unsortedEnabled,
+                    onCheckedChange = null
+                )
+            },
+        )
+    }
+}
+
+@Composable
+private fun SpaceSettingsSection(
+    settings: ReaderSettings,
+    onSpacesEnabledChanged: (Boolean) -> Unit,
+    onShowAllSpacesChanged: (Boolean) -> Unit,
+) {
+    SettingsSection(stringResource(R.string.settings_space)) {
+        item(
+            onClick = { onSpacesEnabledChanged(!settings.spacesEnabled) },
+            leadingContent = {
+                Icon(
+                    imageVector = MaterialSymbols.Outlined.Forest,
+                    contentDescription = null
+                )
+            },
+            content = {
+                Text(
+                    stringResource(R.string.settings_spaces_enabled),
+                    style = MaterialTheme.typography.titleMedium
+                )
+            },
+            supportingContent = { Text(stringResource(R.string.settings_spaces_enabled_summary)) },
+            trailingContent = {
+                Switch(
+                    checked = settings.spacesEnabled,
+                    onCheckedChange = null
+                )
+            },
+        )
+        item(
+            enabled = settings.spacesEnabled,
+            onClick = { onShowAllSpacesChanged(!settings.showAllSpaces) },
+            leadingContent = {
+                Icon(
+                    imageVector = MaterialSymbols.Outlined.Visibility_off,
+                    contentDescription = null
+                )
+            },
+            content = {
+                Text(
+                    stringResource(R.string.settings_hide_all_space),
+                    style = MaterialTheme.typography.titleMedium
+                )
+            },
+            supportingContent = { Text(stringResource(R.string.settings_hide_all_space_summary)) },
+            trailingContent = {
+                Switch(
+                    checked = !settings.showAllSpaces,
+                    enabled = settings.spacesEnabled,
+                    onCheckedChange = null
+                )
+            },
+        )
+    }
+}
+
+@Composable
+private fun ThemeSettingsSection(
     settings: ReaderSettings,
     onThemeModeSelected: (String) -> Unit,
     onColorPaletteClick: () -> Unit,
     onThemeContrastSelected: (String) -> Unit,
-    onSpacesEnabledChanged: (Boolean) -> Unit,
-    onShowAllSpacesChanged: (Boolean) -> Unit,
-    onUnsortedEnabledChanged: (Boolean) -> Unit,
-    onLibraryBottomNavigationChanged: (Boolean) -> Unit,
-    onLanguageSelected: (String) -> Unit,
-    modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Column {
-            Text(
-                text = stringResource(R.string.settings_general),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp),
-            )
+    SettingsSection(stringResource(R.string.reader_settings_theme)) {
+        val themeOptionsMap = mapOf(
+            "System" to stringResource(R.string.settings_option_system),
+            "Light" to stringResource(R.string.settings_option_light),
+            "Dark" to stringResource(R.string.settings_option_dark),
+        )
 
-            SegmentedColumn(modifier = Modifier.padding(bottom = 16.dp)) {
-                val languagesMap = mapOf(
-                    "System" to stringResource(R.string.settings_option_system),
-                    "en" to "English",
-                    "id" to "Bahasa Indonesia",
-                    "de" to "Deutsch",
-                    "zh" to "中文 (简体)",
+        val themeLabel = stringResource(R.string.settings_theme_mode)
+        SettingsItem(
+            content = { Text(themeLabel, style = MaterialTheme.typography.titleMedium) },
+            value = themeOptionsMap[settings.themeMode] ?: settings.themeMode,
+            options = themeOptionsMap.values.toList(),
+            onSelected = { label ->
+                val key =
+                    themeOptionsMap.entries.find { (_, itValue2) -> itValue2 == label }?.key
+                        ?: label
+                onThemeModeSelected(key)
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = MaterialSymbols.Outlined.Contrast,
+                    contentDescription = null,
                 )
+            },
+        )
 
-                val languageLabel = stringResource(R.string.settings_language)
-                val currentLanguageName = languagesMap[settings.locale] ?: settings.locale
+        val colorPaletteLabel = stringResource(R.string.settings_color_palette)
+        val colorPaletteValue =
+            if (settings.colorPalette == "Dynamic") stringResource(R.string.settings_option_dynamic) else settings.colorPalette
+        val isDynamic = settings.colorPalette == "Dynamic"
 
-                SettingsItem(
-                    content = { Text(languageLabel, style = MaterialTheme.typography.titleMedium) },
-                    value = currentLanguageName,
-                    options = languagesMap.values.toList(),
-                    onSelected = { selectedName ->
-                        val selectedKey =
-                            languagesMap.entries.find { (_, itValue) -> itValue == selectedName }?.key
-                                ?: selectedName
-                        onLanguageSelected(selectedKey)
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.Translate,
-                            contentDescription = null,
-                        )
-                    },
-                )
-
-                item(
-                    onClick = { onSpacesEnabledChanged(!settings.spacesEnabled) },
-                    leadingContent = {
-                        Icon(
-                            MaterialSymbols.Outlined.Forest,
-                            contentDescription = null
-                        )
-                    },
-                    content = {
-                        Text(
-                            stringResource(R.string.settings_spaces_enabled),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    },
-                    supportingContent = { Text(stringResource(R.string.settings_spaces_enabled_summary)) },
-                    trailingContent = {
-                        Switch(
-                            checked = settings.spacesEnabled,
-                            onCheckedChange = null
-                        )
-                    },
-                )
-                item(
-                    onClick = { onLibraryBottomNavigationChanged(!settings.showLibraryBottomNavigation) },
-                    leadingContent = {
-                        Icon(
-                            MaterialSymbols.Outlined.Swap_horiz,
-                            contentDescription = null
-                        )
-                    },
-                    content = {
-                        Text(
-                            stringResource(R.string.settings_library_bottom_navigation),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    },
-                    supportingContent = { Text(stringResource(R.string.settings_library_bottom_navigation_summary)) },
-                    trailingContent = {
-                        Switch(
-                            checked = settings.showLibraryBottomNavigation,
-                            onCheckedChange = null
-                        )
-                    },
-                )
-                item(
-                    enabled = settings.spacesEnabled,
-                    onClick = { onShowAllSpacesChanged(!settings.showAllSpaces) },
-                    leadingContent = {
-                        Icon(
-                            MaterialSymbols.Outlined.Visibility_off,
-                            contentDescription = null
-                        )
-                    },
-                    content = {
-                        Text(
-                            stringResource(R.string.settings_hide_all_space),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    },
-                    supportingContent = { Text(stringResource(R.string.settings_hide_all_space_summary)) },
-                    trailingContent = {
-                        Switch(
-                            checked = !settings.showAllSpaces,
-                            enabled = settings.spacesEnabled,
-                            onCheckedChange = null
-                        )
-                    },
-                )
-                item(
-                    onClick = { onUnsortedEnabledChanged(!settings.unsortedEnabled) },
-                    leadingContent = {
-                        Icon(
-                            MaterialSymbols.Outlined.Inbox,
-                            contentDescription = null
-                        )
-                    },
-                    content = {
-                        Text(
-                            stringResource(R.string.settings_unsorted_enabled),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    },
-                    supportingContent = { Text(stringResource(R.string.settings_unsorted_enabled_summary)) },
-                    trailingContent = {
-                        Switch(
-                            checked = settings.unsortedEnabled,
-                            onCheckedChange = null
-                        )
-                    },
-                )
-            }
-        }
-
-        Column {
-            Text(
-                text = stringResource(R.string.reader_settings_theme),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp),
-            )
-
-            SegmentedColumn(modifier = Modifier.padding(bottom = 16.dp)) {
-                val themeOptionsMap = mapOf(
-                    "System" to stringResource(R.string.settings_option_system),
-                    "Light" to stringResource(R.string.settings_option_light),
-                    "Dark" to stringResource(R.string.settings_option_dark),
-                )
-
-                val themeLabel = stringResource(R.string.settings_theme_mode)
-                SettingsItem(
-                    content = { Text(themeLabel, style = MaterialTheme.typography.titleMedium) },
-                    value = themeOptionsMap[settings.themeMode] ?: settings.themeMode,
-                    options = themeOptionsMap.values.toList(),
-                    onSelected = { label ->
-                        val key =
-                            themeOptionsMap.entries.find { (_, itValue2) -> itValue2 == label }?.key
-                                ?: label
-                        onThemeModeSelected(key)
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.Contrast,
-                            contentDescription = null,
-                        )
-                    },
-                )
-
-                val colorPaletteLabel = stringResource(R.string.settings_color_palette)
-                val colorPaletteValue =
-                    if (settings.colorPalette == "Dynamic") stringResource(R.string.settings_option_dynamic) else settings.colorPalette
-                val isDynamic = settings.colorPalette == "Dynamic"
-
-                val parsedColor = remember(settings.colorPalette) {
-                    if (isDynamic) null
-                    else {
-                        try {
-                            Color(settings.colorPalette.toColorInt())
-                        } catch (_: Exception) {
-                            null
-                        }
-                    }
+        val parsedColor = remember(settings.colorPalette) {
+            if (isDynamic) null
+            else {
+                try {
+                    Color(settings.colorPalette.toColorInt())
+                } catch (_: Exception) {
+                    null
                 }
-
-                item(
-                    onClick = onColorPaletteClick,
-                    leadingContent = {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.Palette,
-                            contentDescription = null,
-                        )
-                    },
-                    content = {
-                        Text(
-                            colorPaletteLabel,
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                    },
-                    supportingContent = {
-                        Text(
-                            colorPaletteValue,
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    },
-                    trailingContent = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            if (!isDynamic && parsedColor != null) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(24.dp)
-                                        .clip(CircleShape)
-                                        .background(parsedColor)
-                                        .border(
-                                            1.dp,
-                                            MaterialTheme.colorScheme.outlineVariant,
-                                            CircleShape,
-                                        ),
-                                )
-                            }
-                            Icon(
-                                imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                                contentDescription = null,
-                            )
-                        }
-                    },
-                )
-
-                val themeContrastMap = mapOf(
-                    "Standard" to stringResource(R.string.settings_option_standard),
-                    "Medium" to stringResource(R.string.settings_option_medium),
-                    "High" to stringResource(R.string.settings_option_high),
-                )
-
-                val themeContrastLabel = stringResource(R.string.settings_theme_contrast)
-                SettingsItem(
-                    content = {
-                        Text(
-                            themeContrastLabel,
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                    },
-                    value = themeContrastMap[settings.themeContrast] ?: settings.themeContrast,
-                    options = themeContrastMap.values.toList(),
-                    onSelected = { label ->
-                        val key =
-                            themeContrastMap.entries.find { (_, itValue3) -> itValue3 == label }?.key
-                                ?: label
-                        onThemeContrastSelected(key)
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.Contrast,
-                            contentDescription = null,
-                        )
-                    },
-                )
             }
         }
+
+        item(
+            onClick = onColorPaletteClick,
+            leadingContent = {
+                Icon(
+                    imageVector = MaterialSymbols.Outlined.Palette,
+                    contentDescription = null,
+                )
+            },
+            content = {
+                Text(
+                    colorPaletteLabel,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            },
+            supportingContent = {
+                Text(
+                    colorPaletteValue,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            },
+            trailingContent = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    if (!isDynamic && parsedColor != null) {
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(CircleShape)
+                                .background(parsedColor)
+                                .border(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.outlineVariant,
+                                    CircleShape,
+                                ),
+                        )
+                    }
+                    Icon(
+                        imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
+                        contentDescription = null,
+                    )
+                }
+            },
+        )
+
+        val themeContrastMap = mapOf(
+            "Standard" to stringResource(R.string.settings_option_standard),
+            "Medium" to stringResource(R.string.settings_option_medium),
+            "High" to stringResource(R.string.settings_option_high),
+        )
+
+        val themeContrastLabel = stringResource(R.string.settings_theme_contrast)
+        SettingsItem(
+            content = {
+                Text(
+                    themeContrastLabel,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            },
+            value = themeContrastMap[settings.themeContrast] ?: settings.themeContrast,
+            options = themeContrastMap.values.toList(),
+            onSelected = { label ->
+                val key =
+                    themeContrastMap.entries.find { (_, itValue3) -> itValue3 == label }?.key
+                        ?: label
+                onThemeContrastSelected(key)
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = MaterialSymbols.Outlined.Contrast,
+                    contentDescription = null,
+                )
+            },
+        )
     }
 }
 

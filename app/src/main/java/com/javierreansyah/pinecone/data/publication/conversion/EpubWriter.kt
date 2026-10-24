@@ -497,12 +497,12 @@ class EpubWriter(
                         val entries = outline.filter { it.second in 1..pages.size }
                         entries.ifEmpty { pages.mapIndexed { index, page -> page.second to index + 1 } }
                             .forEach { (name, page) ->
-                            val anchor = outlineAnchors[page to outlineKey(name)]
-                            child("li").child("a", name).setAttribute(
-                                "href",
-                                anchor?.let(content::hrefForAnchor) ?: pages[page - 1].first
-                            )
-                        }
+                                val anchor = outlineAnchors[page to outlineKey(name)]
+                                child("li").child("a", name).setAttribute(
+                                    "href",
+                                    anchor?.let(content::hrefForAnchor) ?: pages[page - 1].first
+                                )
+                            }
                     }
                 }
                 child("nav").apply {

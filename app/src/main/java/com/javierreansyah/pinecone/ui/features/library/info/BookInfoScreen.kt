@@ -121,6 +121,7 @@ import com.composables.icons.materialsymbols.outlined.Create_new_folder
 import com.composables.icons.materialsymbols.outlined.Delete
 import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Format_list_bulleted
+import com.composables.icons.materialsymbols.outlined.Headphones
 import com.composables.icons.materialsymbols.outlined.More_vert
 import com.composables.icons.materialsymbols.outlined.Radio_button_unchecked
 import com.composables.icons.materialsymbols.outlined.Replay
@@ -131,7 +132,9 @@ import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.SegmentedColumn
+import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
+import com.javierreansyah.pinecone.ui.features.library.fileFormat
 import com.javierreansyah.pinecone.ui.features.library.publicationWording
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import kotlinx.coroutines.launch
@@ -534,7 +537,10 @@ private fun AboutTabContent(
         verticalArrangement = Arrangement.spacedBy(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        BookProgress(progress = book.furthestProgression)
+        BookProgress(
+            progress = book.furthestProgression,
+            isAudio = book.fileFormat() == FileFilter.Audio
+        )
 
         if (!book.description.isNullOrBlank()) {
             BookDescription(description = book.description)
@@ -584,7 +590,8 @@ private fun ChaptersTabContent(
             }
             val currentChapter = sourcePage?.let { page ->
                 tableOfContents.lastOrNull {
-                    GeneratedEpubLocations.page(it.href.toString())?.let { it -> it <= page } == true
+                    GeneratedEpubLocations.page(it.href.toString())
+                        ?.let { it -> it <= page } == true
                 }
             }
             items(tableOfContents) { link ->
@@ -1024,6 +1031,9 @@ private fun BookButtonGroup(
     onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val isAudio = book.fileFormat() == FileFilter.Audio
+    val openIcon =
+        if (isAudio) MaterialSymbols.Outlined.Headphones else MaterialSymbols.Outlined.Book
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -1040,12 +1050,12 @@ private fun BookButtonGroup(
                     onClick = onReadClick,
                 ) {
                     Icon(
-                        imageVector = MaterialSymbols.Outlined.Book,
+                        imageVector = openIcon,
                         contentDescription = null,
                         modifier = Modifier.size(SplitButtonDefaults.LeadingIconSize),
                     )
                     Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
-                    Text(stringResource(R.string.action_read))
+                    Text(stringResource(if (isAudio) R.string.publication_listen else R.string.action_read))
                 }
             },
             trailingButton = {
@@ -1094,10 +1104,10 @@ private fun BookButtonGroup(
                         ) {
                             SelectableDropdownMenuItem(
                                 selected = false,
-                                text = { Text(stringResource(R.string.publication_read_furthest)) },
+                                text = { Text(stringResource(if (isAudio) R.string.publication_listen_furthest else R.string.publication_read_furthest)) },
                                 leadingIcon = {
                                     Icon(
-                                        imageVector = MaterialSymbols.Outlined.Book,
+                                        imageVector = openIcon,
                                         contentDescription = null,
                                     )
                                 },
@@ -1109,7 +1119,7 @@ private fun BookButtonGroup(
                             )
                             SelectableDropdownMenuItem(
                                 selected = false,
-                                text = { Text(stringResource(R.string.publication_read_from_start)) },
+                                text = { Text(stringResource(if (isAudio) R.string.publication_listen_from_start else R.string.publication_read_from_start)) },
                                 leadingIcon = {
                                     Icon(
                                         imageVector = MaterialSymbols.Outlined.Replay,
@@ -1146,8 +1156,13 @@ private fun BookButtonGroup(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                if (book.isRead) stringResource(R.string.publication_mark_as_unread)
-                else stringResource(R.string.publication_mark_as_read),
+                stringResource(
+                    if (isAudio) {
+                        if (book.isRead) R.string.publication_mark_as_unlistened else R.string.publication_mark_as_listened
+                    } else {
+                        if (book.isRead) R.string.publication_mark_as_unread else R.string.publication_mark_as_read
+                    },
+                ),
             )
         }
 
@@ -1352,7 +1367,7 @@ private fun BookHeaderDetails(
 
 @Composable
 private fun BookProgress(
-    progress: Double, modifier: Modifier = Modifier,
+    progress: Double, modifier: Modifier = Modifier, isAudio: Boolean = false,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -1363,7 +1378,7 @@ private fun BookProgress(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = stringResource(R.string.publication_reading_progress),
+                text = stringResource(if (isAudio) R.string.publication_listening_progress else R.string.publication_reading_progress),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )

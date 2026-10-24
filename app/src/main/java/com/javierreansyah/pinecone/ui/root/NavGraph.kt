@@ -8,11 +8,6 @@ import android.provider.DocumentsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.material3.MaterialTheme
@@ -34,9 +29,10 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
-import androidx.navigation3.ui.NavDisplay
 import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.data.publication.ReaderProfile
+import com.javierreansyah.pinecone.ui.components.ScreenBackDispatcher
+import com.javierreansyah.pinecone.ui.components.ScreenNavDisplay
 import com.javierreansyah.pinecone.ui.features.dictionary.DictionariesScreen
 import com.javierreansyah.pinecone.ui.features.dictionary.DictionariesViewModel
 import com.javierreansyah.pinecone.ui.features.library.archive.ArchiveScreen
@@ -137,24 +133,8 @@ fun NavGraph(
     val density = LocalDensity.current
     var organizeBookIds by remember { mutableStateOf<String?>(null) }
 
-    // Debounce to prevent rapid double-clicks from crashing the transition state machine
-    var lastBackClickTime by androidx.compose.runtime.remember {
-        androidx.compose.runtime.mutableLongStateOf(
-            0L,
-        )
-    }
-
-    val navigateBack: () -> Unit = {
-        val now = android.os.SystemClock.elapsedRealtime()
-        if (now - lastBackClickTime > 300L) {
-            lastBackClickTime = now
-            if (backStack.size > 1) {
-                backStack.removeLastOrNull()
-            } else {
-                (context as? Activity)?.finish()
-            }
-        }
-    }
+    val backDispatcher = remember { ScreenBackDispatcher() }
+    val navigateBack: () -> Unit = backDispatcher::onBack
 
     // Exclude the top area from the system's edge swipe.
     // This prevents the user's thumb from accidentally starting a predictive back gesture while clicking.
@@ -162,11 +142,9 @@ fun NavGraph(
     val exclusionWidth = windowInfo.containerSize.width.toFloat()
     val exclusionHeight = with(density) { 120.dp.toPx() }
 
-    val spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
-    val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-
-    NavDisplay(
+    ScreenNavDisplay(
         backStack = backStack.filterNot { it is Screen.AudioPlayer },
+        backDispatcher = backDispatcher,
         entryDecorators = listOf(
             rememberSaveableStateHolderNavEntryDecorator(),
             rememberViewModelStoreNavEntryDecorator(),
@@ -177,41 +155,10 @@ fun NavGraph(
                 Rect(0f, 0f, exclusionWidth, exclusionHeight)
             },
         onBack = {
-            val now = android.os.SystemClock.elapsedRealtime()
-            if (now - lastBackClickTime > 400L || backStack.size == 1) {
-                lastBackClickTime = now
-                if (backStack.size > 1) {
-                    backStack.removeLastOrNull()
-                } else {
-                    (context as? Activity)?.finish()
-                }
-            }
-        },
-        transitionSpec = {
-            (fadeIn(animationSpec = effectsSpec) + scaleIn(
-                initialScale = 0.9f,
-                animationSpec = spatialSpec,
-            ) togetherWith fadeOut(animationSpec = effectsSpec) + scaleOut(
-                targetScale = 0.9f,
-                animationSpec = spatialSpec,
-            )).apply {
-                targetContentZIndex = 1f
-            }
-        },
-        popTransitionSpec = {
-            (fadeIn(animationSpec = effectsSpec) togetherWith fadeOut(animationSpec = effectsSpec) + scaleOut(
-                targetScale = 0.9f,
-                animationSpec = spatialSpec,
-            )).apply {
-                targetContentZIndex = -1f
-            }
-        },
-        predictivePopTransitionSpec = {
-            (fadeIn(animationSpec = effectsSpec) togetherWith fadeOut(animationSpec = effectsSpec) + scaleOut(
-                targetScale = 0.9f,
-                animationSpec = spatialSpec,
-            )).apply {
-                targetContentZIndex = -1f
+            if (backStack.size > 1) {
+                backStack.removeLastOrNull()
+            } else {
+                (context as? Activity)?.finish()
             }
         },
         entryProvider = entryProvider {

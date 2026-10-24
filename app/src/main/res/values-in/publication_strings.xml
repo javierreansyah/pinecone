@@ -65,4 +65,10 @@
     <string name="publication_unknown_author">Penulis tidak diketahui</string>
     <string name="publication_untitled">Publikasi tanpa judul</string>
     <string name="publication_volume">Volume</string>
+    <string name="publication_listen">Dengarkan</string>
+    <string name="publication_listen_from_start">Dengarkan dari awal</string>
+    <string name="publication_listen_furthest">Dengarkan dari posisi terjauh</string>
+    <string name="publication_mark_as_listened">Tandai sebagai selesai didengarkan</string>
+    <string name="publication_mark_as_unlistened">Tandai sebagai belum didengarkan</string>
+    <string name="publication_listening_progress">Kemajuan mendengarkan</string>
 </resources>

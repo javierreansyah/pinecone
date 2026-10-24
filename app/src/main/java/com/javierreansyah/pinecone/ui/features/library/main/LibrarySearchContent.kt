@@ -96,8 +96,18 @@ internal fun ExpandedSearchContent(
         SearchResultsContent(
             searchCategory = searchCategory,
             results = searchResults,
-            onBookClick = { (bookId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> onNavigateToReader(bookId) },
-            onShelfClick = { (shelfId, _, shelfName, _) -> onNavigateToShelf(shelfId, shelfName, 0) },
+            onBookClick = { (bookId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) ->
+                onNavigateToReader(
+                    bookId
+                )
+            },
+            onShelfClick = { (shelfId, _, shelfName, _) ->
+                onNavigateToShelf(
+                    shelfId,
+                    shelfName,
+                    0
+                )
+            },
             onAuthorClick = { author -> onNavigateToAuthor(author) },
             onTagClick = { tag -> onNavigateToTag(tag) },
             onAuthorsHeaderClick = onAuthorsHeaderClick,
@@ -132,7 +142,9 @@ private fun SearchResultsContent(
         val maxTags = if (isPreview) 4 else Int.MAX_VALUE
 
         val booksToShow = if (isPreview) {
-            results.books.sortedByDescending { (_, _, _, _, _, itLastOpened, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itLastOpened ?: 0L }
+            results.books.sortedByDescending { (_, _, _, _, _, itLastOpened, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) ->
+                itLastOpened ?: 0L
+            }
                 .take(maxBooks)
         } else if (isAll) {
             results.books.take(maxBooks)
@@ -197,7 +209,8 @@ private fun SearchResultsContent(
             BookCollection(
                 books = booksToShow,
                 onBookClick = { id ->
-                    val book = booksToShow.find { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId == id }
+                    val book =
+                        booksToShow.find { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId == id }
                     book?.let(onBookClick)
                 },
                 fastEffectsSpec = fastEffectsSpec,
@@ -362,7 +375,9 @@ private fun BooksSection(
             state = listState,
             contentPadding = PaddingValues(horizontal = 8.dp),
         ) {
-            items(books, key = { (itId3, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId3 }) { book ->
+            items(
+                books,
+                key = { (itId3, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId3 }) { book ->
                 val animateModifier = if (fastEffectsSpec != null) {
                     Modifier.animateItem(
                         fadeInSpec = fastEffectsSpec,

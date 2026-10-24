@@ -152,11 +152,13 @@ internal class MuPdfReflowCleaner(private val profile: MuPdfReflowProfile) {
                         document.createElementNS(XHTML, "figure").apply { appendChild(element) }
                     units += UnitBlock(figure, emptyList(), box, "figure")
                 }
+
                 in TEXT_TAGS if children.none {
                     it.descendants().any { child -> child.localTag.lowercase() in BLOCK_TAGS }
                 } -> {
                     addParagraph(element)
                 }
+
                 else -> {
                     // Walking only element children silently drops text nodes beside an
                     // image or nested paragraph. Flush inline fragments around each block.

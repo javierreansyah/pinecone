@@ -43,7 +43,7 @@ import com.javierreansyah.pinecone.ui.components.SegmentedButtonGroup
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
-/** Format settings sheet, with tabs only for formats that have multiple settings pages. */
+/** Image/comic settings share one scrolling panel; other formats retain their settings pages. */
 @Composable
 fun FormatReaderSettings(
     settings: ReaderSettings,
@@ -54,6 +54,29 @@ fun FormatReaderSettings(
     onUseBookSettings: (Boolean) -> Unit,
     onReparsePdf: (() -> Unit)? = null,
 ) {
+    val density = LocalDensity.current
+    val windowInfo = LocalWindowInfo.current
+    val sheetHeight = with(density) { (windowInfo.containerSize.height * 0.6f).toDp() }
+    if (profile == ReaderProfile.IMAGE) {
+        CompositionLocalProvider(LocalOverscrollFactory provides null) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(sheetHeight)
+                    .verticalScroll(rememberScrollState())
+                    .padding(top = 16.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                FormatLighting(settings, onChange, showChromeHint = true)
+                FormatAdvancedSettings(
+                    settings, onChange, profile, fixedEpub,
+                    useBookSettings, onUseBookSettings, onReparsePdf,
+                )
+            }
+        }
+        return
+    }
+
     val isPdf = profile == ReaderProfile.PDF
     val isAudio = profile == ReaderProfile.AUDIO
     val titles = if (isAudio) {
@@ -74,9 +97,6 @@ fun FormatReaderSettings(
     }
     val pagerState = rememberPagerState { titles.size }
     val scope = rememberCoroutineScope()
-    val density = LocalDensity.current
-    val windowInfo = LocalWindowInfo.current
-    val sheetHeight = with(density) { (windowInfo.containerSize.height * 0.6f).toDp() }
     Column(
         Modifier
             .fillMaxWidth()
@@ -249,77 +269,94 @@ fun FormatReaderSettings(
                     }
 
                     if (page == advancedPage) {
-                        AdvancedTabContent(
-                            settings, onChange, includeTextPreferences = false,
-                            onRestoreDefaultsClick = {
-                                val format = when {
-                                    profile == ReaderProfile.PDF -> settings.formatPreferences.copy(
-                                        pdf = com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences()
-                                    )
-
-                                    profile == ReaderProfile.AUDIO -> settings.formatPreferences.copy(
-                                        audioSpeed = 1.0,
-                                        audioPitch = 1.0
-                                    )
-
-                                    fixedEpub -> settings.formatPreferences.copy(epubSpread = "auto")
-                                    else -> settings.formatPreferences
-                                }
-                                onChange(
-                                    settings.copy(
-                                        formatPreferences = format,
-                                        brightness = .5f,
-                                        autoBrightness = true,
-                                        forceOrientation = "Auto",
-                                        preventScreenTimeout = false,
-                                        alwaysShowStatusBar = false,
-                                        pineconeThemePreset = "Auto"
-                                    )
-                                )
-                            },
-                            content = {
-                                PreferenceSwitch(
-                                    stringResource(R.string.reader_settings_this_publication),
-                                    useBookSettings,
-                                    onUseBookSettings
-                                )
-                                if (isPdf && onReparsePdf != null) {
-                                    Row(
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .clickable(onClick = onReparsePdf)
-                                            .padding(horizontal = 16.dp, vertical = 16.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                    ) {
-                                        Column(
-                                            Modifier.weight(1f),
-                                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                                        ) {
-                                            Text(
-                                                stringResource(R.string.reader_reparse_pdf),
-                                                style = MaterialTheme.typography.titleMedium
-                                            )
-                                            Text(
-                                                stringResource(R.string.reader_reparse_pdf_description),
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                        Icon(
-                                            MaterialSymbols.Outlined.Restart_alt,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                            },
+                        FormatAdvancedSettings(
+                            settings, onChange, profile, fixedEpub,
+                            useBookSettings, onUseBookSettings, onReparsePdf,
                         )
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun FormatAdvancedSettings(
+    settings: ReaderSettings,
+    onChange: (ReaderSettings) -> Unit,
+    profile: ReaderProfile,
+    fixedEpub: Boolean,
+    useBookSettings: Boolean,
+    onUseBookSettings: (Boolean) -> Unit,
+    onReparsePdf: (() -> Unit)?,
+) {
+    val isPdf = profile == ReaderProfile.PDF
+    AdvancedTabContent(
+        settings, onChange, includeTextPreferences = false,
+        onRestoreDefaultsClick = {
+            val format = when {
+                profile == ReaderProfile.PDF -> settings.formatPreferences.copy(
+                    pdf = com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences()
+                )
+
+                profile == ReaderProfile.AUDIO -> settings.formatPreferences.copy(
+                    audioSpeed = 1.0,
+                    audioPitch = 1.0
+                )
+
+                fixedEpub -> settings.formatPreferences.copy(epubSpread = "auto")
+                else -> settings.formatPreferences
+            }
+            onChange(
+                settings.copy(
+                    formatPreferences = format,
+                    brightness = .5f,
+                    autoBrightness = true,
+                    forceOrientation = "Auto",
+                    preventScreenTimeout = false,
+                    alwaysShowStatusBar = false,
+                    pineconeThemePreset = "Auto"
+                )
+            )
+        },
+        content = {
+            PreferenceSwitch(
+                stringResource(R.string.reader_settings_this_publication),
+                useBookSettings,
+                onUseBookSettings
+            )
+            if (isPdf && onReparsePdf != null) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onReparsePdf)
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Column(
+                        Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            stringResource(R.string.reader_reparse_pdf),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            stringResource(R.string.reader_reparse_pdf_description),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(
+                        MaterialSymbols.Outlined.Restart_alt,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        },
+    )
 }
 
 @Composable

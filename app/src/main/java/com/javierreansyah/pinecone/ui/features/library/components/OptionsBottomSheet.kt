@@ -37,6 +37,7 @@ import com.composables.icons.materialsymbols.outlined.View_carousel
 import com.composables.icons.materialsymbols.outlined.View_list
 import com.composables.icons.materialsymbols.outlined.Window
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.FilterSortPreferences
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
@@ -252,7 +253,9 @@ fun LibraryFilterBottomSheet(
             options = layoutModes,
             selectedOption = preferences.layoutMode,
             onOptionSelected = onLayoutModeChange,
-        ) { mode -> Icon(layoutModeIcon(mode), contentDescription = null) }
+        ) { mode ->
+            LayoutModeIcon(mode, selected = mode == preferences.layoutMode)
+        }
 
         val sortTypes = if (isShelvesTab) listOf(
             SortType.Title, SortType.LastRead, SortType.Added, SortType.Progress,
@@ -339,7 +342,9 @@ fun ShelfDetailFilterBottomSheet(
             options = layoutModes,
             selectedOption = preferences.layoutMode,
             onOptionSelected = onLayoutModeChange,
-        ) { mode -> Icon(layoutModeIcon(mode), contentDescription = null) }
+        ) { mode ->
+            LayoutModeIcon(mode, selected = mode == preferences.layoutMode)
+        }
 
         val sortTypes =
             if (shelfId == "unshelved") SortType.entries.filter { it != SortType.Custom } else SortType.entries
@@ -384,7 +389,9 @@ fun FilterResultBottomSheet(
             options = layoutModes,
             selectedOption = preferences.layoutMode,
             onOptionSelected = onLayoutModeChange,
-        ) { mode -> Icon(layoutModeIcon(mode), contentDescription = null) }
+        ) { mode ->
+            LayoutModeIcon(mode, selected = mode == preferences.layoutMode)
+        }
 
         val sortTypes = listOf(
             SortType.Title, SortType.Author, SortType.LastRead, SortType.Added, SortType.Progress,
@@ -436,11 +443,21 @@ fun FilterItemSortBottomSheet(
     }
 }
 
-private fun layoutModeIcon(mode: LayoutMode) = when (mode) {
-    LayoutMode.Grid -> MaterialSymbols.Outlined.Calendar_view_month
-    LayoutMode.BigGrid -> MaterialSymbols.Outlined.Window
-    LayoutMode.List -> MaterialSymbols.Outlined.View_list
-    LayoutMode.BigList -> MaterialSymbols.Outlined.View_carousel
+@Composable
+private fun LayoutModeIcon(mode: LayoutMode, selected: Boolean) {
+    val outlinedIcon = when (mode) {
+        LayoutMode.Grid -> MaterialSymbols.Outlined.Calendar_view_month
+        LayoutMode.BigGrid -> MaterialSymbols.Outlined.Window
+        LayoutMode.List -> MaterialSymbols.Outlined.View_list
+        LayoutMode.BigList -> MaterialSymbols.Outlined.View_carousel
+    }
+    val filledIcon = when (mode) {
+        LayoutMode.Grid -> MaterialSymbols.OutlinedFilled.Calendar_view_month
+        LayoutMode.BigGrid -> MaterialSymbols.OutlinedFilled.Window
+        LayoutMode.List -> MaterialSymbols.OutlinedFilled.View_list
+        LayoutMode.BigList -> MaterialSymbols.OutlinedFilled.View_carousel
+    }
+    AnimatedSelectionIcon(selected, outlinedIcon, filledIcon, contentDescription = null)
 }
 
 private fun sortTypeLabelRes(type: SortType): Int = when (type) {
