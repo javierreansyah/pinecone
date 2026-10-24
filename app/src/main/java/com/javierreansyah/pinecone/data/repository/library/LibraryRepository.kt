@@ -629,6 +629,7 @@ class LibraryRepository(
 
             database.withTransaction {
                 bookDao.delete(book)
+                shelfDao.deleteEmptyShelves()
 
                 bookDao.deleteOrphanAuthors()
                 bookDao.deleteOrphanTags()
@@ -865,6 +866,7 @@ class LibraryRepository(
     suspend fun removeBookFromShelf(shelfId: String, bookId: String) {
         database.withTransaction {
             shelfDao.deleteShelfBookCrossRef(shelfId = shelfId, bookId = bookId)
+            shelfDao.deleteEmptyShelves()
         }
     }
 
@@ -908,6 +910,7 @@ class LibraryRepository(
             spaceShelves.forEach { shelf ->
                 shelfDao.deleteShelfBookCrossRef(shelfId = shelf.id, bookId = bookId)
             }
+            shelfDao.deleteEmptyShelves()
         }
     }
 

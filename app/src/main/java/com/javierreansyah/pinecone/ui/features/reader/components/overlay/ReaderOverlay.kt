@@ -35,7 +35,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -522,6 +525,16 @@ fun ReaderTopBarSection(
     val density = LocalDensity.current
     val offset = with(density) { 30.dp.roundToPx() }
 
+    var showConversionDialog by rememberSaveable(converting) { mutableStateOf(true) }
+    if (converting && showConversionDialog) {
+        ConversionProgressDialog(
+            page = conversionPage,
+            total = conversionTotal,
+            onHide = { showConversionDialog = false },
+            onCancel = onCancelConversion,
+        )
+    }
+
     AnimatedVisibility(
         visible = showControls && !showSearch,
         enter = slideInVertically(
@@ -562,9 +575,8 @@ fun ReaderTopBarSection(
             readMode = readMode,
             onToggleReadMode = onToggleReadMode,
             converting = converting,
-            conversionPage = conversionPage,
-            conversionTotal = conversionTotal,
-            onCancelConversion = onCancelConversion,
+            showConversionSpinner = !showConversionDialog,
+            onShowConversionProgress = { showConversionDialog = true },
         )
     }
 }

@@ -123,7 +123,7 @@ class LibraryCommonTest {
         assertEquals(listOf("mixed"), result.map { it.shelf.id })
         assertEquals(listOf("pdf"), result.single().books.map { it.book.id })
         assertEquals(
-            3,
+            2,
             mapAndSortShelves(
                 shelves,
                 refs,
@@ -134,6 +134,43 @@ class LibraryCommonTest {
             ).size
         )
         assertEquals(2, mixed.books.size)
+    }
+
+    @Test
+    fun `shelves with no visible books stay hidden even with all formats selected`() {
+        val inbox = details("inbox", "application/pdf").let {
+            it.copy(book = it.book.copy(isUnsorted = true))
+        }
+        val outsideSpace = details("outside", "application/pdf").copy(spaces = listOf(all, leisure))
+        val shelves = listOf(
+            ShelfWithCovers(ShelfEntity("empty", work.id, "Empty"), emptyList()),
+            ShelfWithCovers(ShelfEntity("inbox", work.id, "Inbox"), listOf(inbox)),
+            ShelfWithCovers(ShelfEntity("outside", work.id, "Outside"), listOf(outsideSpace)),
+        )
+
+        assertTrue(
+            mapAndSortShelves(
+                shelves, emptyList(), emptyList(), FilterSortPreferences(), "Unshelved", work.id
+            ).isEmpty()
+        )
+        assertEquals(1, shelves[1].books.size)
+        assertEquals(1, shelves[2].books.size)
+    }
+
+    @Test
+    fun `deselecting all formats hides shelves and unshelved without changing attachments`() {
+        val pdf = details("pdf", "application/pdf")
+        val shelf = ShelfWithCovers(ShelfEntity("shelf", work.id, "Shelf"), listOf(pdf))
+        val refs = listOf(ShelfBookCrossRefEntity("shelf", "pdf"))
+        val unshelved = details("unshelved-book", "application/pdf")
+        assertTrue(
+            mapAndSortShelves(
+                listOf(shelf), refs, listOf(pdf, unshelved),
+                FilterSortPreferences(selectedFormats = emptySet()), "Unshelved", ALL_SPACES_ID
+            ).isEmpty()
+        )
+        assertEquals(listOf(pdf), shelf.books)
+        assertEquals(1, refs.size)
     }
 
     @Test
