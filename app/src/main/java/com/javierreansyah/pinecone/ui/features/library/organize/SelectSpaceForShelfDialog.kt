@@ -60,7 +60,7 @@ fun SelectSpaceForShelfDialog(
                 SegmentedColumn(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    spaces.forEach { (spaceId, spaceName) ->
+                    spaces.forEach { (spaceId, spaceName, _) ->
                         val isSelected = spaceId in selectedSpaceIds
                         item(
                             key = spaceId,

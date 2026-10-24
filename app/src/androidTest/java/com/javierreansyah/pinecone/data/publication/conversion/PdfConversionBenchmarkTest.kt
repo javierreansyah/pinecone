@@ -1,17 +1,17 @@
 package com.javierreansyah.pinecone.data.publication.conversion
 
-import timber.log.Timber
-import com.javierreansyah.pinecone.testing.InstrumentationLoggingRule
-import org.junit.Rule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.artifex.mupdf.fitz.Document
 import com.javierreansyah.pinecone.reader.pdf.MuPdfDocument
+import com.javierreansyah.pinecone.testing.InstrumentationLoggingRule
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assume.assumeTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import timber.log.Timber
 import java.io.File
 import java.security.MessageDigest
 import java.util.zip.ZipFile
@@ -79,7 +79,7 @@ class PdfConversionBenchmarkTest {
                     expected = digests
                     Timber.tag("PdfConversionBenchmark").i(
                         "PDF_BENCHMARK: label=%s, file=%s, pass=%d, pages=%d, " +
-                            "extractionMs=%d, totalMs=%d, bytes=%d, contentDigest=%s",
+                                "extractionMs=%d, totalMs=%d, bytes=%d, contentDigest=%s",
                         label, File(path).name, pass, pdf.pageCount,
                         extractionMs, totalMs, output.length(),
                         digest(digests.toSortedMap().toString().toByteArray(Charsets.UTF_8)),

@@ -24,9 +24,9 @@ class SelectionPoller(
     fun start(navigator: SelectableNavigator, actionModeProvider: () -> ActionMode?) {
         job?.cancel()
         job = coroutineScope.launch {
-            while (isActive && (actionModeProvider() != null)) {
+            while (isActive && actionModeProvider() != null) {
                 val selection = navigator.currentSelection()
-                selection?.let { (itLocator) -> onSelectionUpdated(itLocator) }
+                selection?.let { (itLocator, _) -> onSelectionUpdated(itLocator) }
                 delay(300.milliseconds)
             }
         }

@@ -49,7 +49,7 @@ fun ShelfListItem(
             .fillMaxWidth()
             .combinedClickable(
                 onClick = {
-                    if (isInMultiSelectMode && (onToggleSelect != null)) {
+                    if (isInMultiSelectMode && onToggleSelect != null) {
                         onToggleSelect()
                     } else {
                         onClick()

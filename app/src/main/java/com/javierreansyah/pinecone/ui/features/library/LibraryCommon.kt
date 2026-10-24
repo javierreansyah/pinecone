@@ -10,7 +10,7 @@ import com.javierreansyah.pinecone.data.model.Book
 const val ALL_SPACES_ID: String = "_all_"
 
 fun List<Book>.inSpace(spaceId: String?): List<Book> =
-    filter { !it.isUnsorted && ((spaceId == null) || (spaceId == ALL_SPACES_ID) || spaceId in it.spaceIds) }
+    filter { !it.isUnsorted && (spaceId == null || spaceId == ALL_SPACES_ID || spaceId in it.spaceIds) }
 
 fun Book.fileFormat(): FileFilter = publicationFileFormat(mediaType, originalFilename, filePath)
 
@@ -72,7 +72,7 @@ private fun publicationFileFormat(
 fun List<Book>.filterAndSort(
     prefs: FilterSortPreferences,
 ): List<Book> {
-    return this.filter { book ->
+    return filter { book ->
         val bookProgress = book.progress
         val bookIsRead = book.isRead
         val status = when {
@@ -80,38 +80,34 @@ fun List<Book>.filterAndSort(
             bookProgress <= 0.0 -> StatusFilter.NotStarted
             else -> StatusFilter.Reading
         }
-        val statusMatch = prefs.selectedStatus.contains(status)
+        val statusMatch = status in prefs.selectedStatus
 
         statusMatch && book.fileFormat() in prefs.selectedFormats
 
     }.let { filtered ->
         val baseComparator = when (prefs.sortType) {
             SortType.Title -> compareBy { it.metadata.sortTitle.ifBlank { it.title }.lowercase() }
-            SortType.Author -> compareBy { (_, _, itAuthors) ->
-                itAuthors.firstOrNull()?.lowercase() ?: ""
-            }
-
-            SortType.LastRead -> compareBy { (_, _, _, _, _, itLastOpened) -> itLastOpened ?: 0L }
-            SortType.Added -> compareBy { (_, _, _, _, _, _, _, itAddedDate) -> itAddedDate }
-            SortType.Progress -> compareBy { (_, _, _, _, itProgress) -> itProgress }
+            SortType.Author -> compareBy { it.authors.firstOrNull()?.lowercase().orEmpty() }
+            SortType.LastRead -> compareBy { it.lastOpened ?: 0L }
+            SortType.Added -> compareBy { it.addedDate }
+            SortType.Progress -> compareBy { it.progress }
             SortType.Custom -> {
                 val indexMap = asSequence().withIndex().associateBy(
                     keySelector = { (_, itValue) -> itValue.id },
                     valueTransform = IndexedValue<Book>::index,
                 )
-                compareBy<Book> { (itId) -> indexMap[itId] ?: 0 }
+                compareBy<Book> { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> indexMap[itId] ?: 0 }
             }
         }
 
-        val finalComparator = if (prefs.sortType == SortType.Title) {
-            if (prefs.isAscending) baseComparator else baseComparator.reversed()
-        } else if (prefs.sortType == SortType.Custom) {
-            if (prefs.isAscending) baseComparator else baseComparator.reversed()
-        } else {
-            val mainComp =
+        val finalComparator =
+            if (prefs.sortType == SortType.Title || prefs.sortType == SortType.Custom) {
                 if (prefs.isAscending) baseComparator else baseComparator.reversed()
-            mainComp.thenBy { (_, itTitle2) -> itTitle2.lowercase() }
-        }
+            } else {
+                val mainComp =
+                    if (prefs.isAscending) baseComparator else baseComparator.reversed()
+                mainComp.thenBy { it.title.lowercase() }
+            }
 
         filtered.sortedWith(finalComparator)
     }
@@ -122,9 +118,9 @@ fun sortShelfBooks(
     crossRefs: List<ShelfBookCrossRefEntity>,
     globalSpaceId: String? = null,
 ): List<ShelfWithCovers> {
-    val crossRefsByShelf = crossRefs.groupBy { (itShelfId) -> itShelfId }
-    val filteredShelves = if ((globalSpaceId != null) && (globalSpaceId != ALL_SPACES_ID)) {
-        shelvesList.filter { (itShelf) -> itShelf.spaceId == globalSpaceId }
+    val crossRefsByShelf = crossRefs.groupBy { (itShelfId, _, _, _) -> itShelfId }
+    val filteredShelves = if (globalSpaceId != null && globalSpaceId != ALL_SPACES_ID) {
+        shelvesList.filter { (itShelf, _) -> itShelf.spaceId == globalSpaceId }
     } else {
         shelvesList
     }
@@ -137,9 +133,9 @@ fun sortShelfBooks(
             ShelfBookCrossRefEntity::orderIndex,
         )
         val filteredBooks = shelfWithCovers.books.filter { details ->
-            !details.book.isUnsorted && ((globalSpaceId == null) || (globalSpaceId == ALL_SPACES_ID) || details.spaces.any { it.id == globalSpaceId })
+            !details.book.isUnsorted && (globalSpaceId == null || globalSpaceId == ALL_SPACES_ID || details.spaces.any { it.id == globalSpaceId })
         }
-        val sortedBooks = filteredBooks.sortedBy { (bookBook) ->
+        val sortedBooks = filteredBooks.sortedBy { (bookBook, _, _, _, _, _) ->
             orderMap[bookBook.id] ?: 0
         }
         shelfWithCovers.copy(books = sortedBooks)
@@ -161,25 +157,25 @@ fun mapAndSortShelves(
 
     val sortedShelves = mappedShelves.let { processedShelves ->
         val baseComparator = when (prefs.sortType) {
-            SortType.Title -> compareBy { (itShelf2) -> itShelf2.name.lowercase() }
+            SortType.Title -> compareBy { (itShelf2, _) -> itShelf2.name.lowercase() }
             SortType.LastRead -> compareBy { shelf: ShelfWithCovers ->
-                shelf.books.maxOfOrNull { (itBook) ->
+                shelf.books.maxOfOrNull { (itBook, _, _, _, _, _) ->
                     itBook.lastReadDate ?: 0L
                 } ?: 0L
             }
 
             SortType.Progress -> compareBy { shelf: ShelfWithCovers ->
                 if (shelf.books.isEmpty()) 0.0 else shelf.books.asSequence()
-                    .map { (itBook2) -> itBook2.progression }
+                    .map { (itBook2, _, _, _, _, _) -> itBook2.progression }
                     .average()
             }
 
-            SortType.Added -> compareBy { (itShelf3) -> itShelf3.createdAt }
-            else -> compareBy { (itShelf4) -> itShelf4.name.lowercase() }
+            SortType.Added -> compareBy { (itShelf3, _) -> itShelf3.createdAt }
+            else -> compareBy { (itShelf4, _) -> itShelf4.name.lowercase() }
         }
 
         val finalComparator = if (prefs.isAscending) {
-            baseComparator.thenBy { (itShelf5) -> itShelf5.name.lowercase() }
+            baseComparator.thenBy { (itShelf5, _) -> itShelf5.name.lowercase() }
         } else {
             baseComparator.reversed().thenBy { it.shelf.name.lowercase() }
         }
@@ -187,32 +183,32 @@ fun mapAndSortShelves(
         processedShelves.sortedWith(finalComparator)
     }
 
-    val isSpaceSelected = (globalSpaceId != null) && (globalSpaceId != ALL_SPACES_ID)
+    val isSpaceSelected = globalSpaceId != null && globalSpaceId != ALL_SPACES_ID
     val currentSpaceShelves = if (isSpaceSelected) {
-        shelvesList.filter { (itShelf6) -> itShelf6.spaceId == globalSpaceId }
+        shelvesList.filter { (itShelf6, _) -> itShelf6.spaceId == globalSpaceId }
     } else {
         shelvesList
     }
     val currentSpaceShelfIds =
-        currentSpaceShelves.asSequence().map { (itShelf7) -> itShelf7.id }.toSet()
+        currentSpaceShelves.asSequence().map { (itShelf7, _) -> itShelf7.id }.toSet()
     val shelvedBookIdsInCurrentSpace =
-        crossRefs.asSequence().filter { (itShelfId2) -> itShelfId2 in currentSpaceShelfIds }
-            .map { (_, itBookId2) -> itBookId2 }.toSet()
+        crossRefs.asSequence().filter { (itShelfId2, _, _, _) -> itShelfId2 in currentSpaceShelfIds }
+            .map { (_, itBookId2, _, _) -> itBookId2 }.toSet()
 
     val unshelvedBooks = allBooksEntities.filter { details ->
         val itBook3 = details.book
         val itSpaces2 = details.spaces
         val inSpace = if (isSpaceSelected) {
-            itSpaces2.any { (spaceId3) -> spaceId3 == globalSpaceId }
+            itSpaces2.any { (spaceId3, _, _) -> spaceId3 == globalSpaceId }
         } else {
             itSpaces2.isNotEmpty()
         }
-        inSpace && !itBook3.isUnsorted && (itBook3.id !in shelvedBookIdsInCurrentSpace)
+        inSpace && !itBook3.isUnsorted && itBook3.id !in shelvedBookIdsInCurrentSpace
                 && details.book.fileFormat() in prefs.selectedFormats
     }
 
-    val showShelves = prefs.selectedShelfFilter.contains(ShelfFilter.Shelves)
-    val showUnshelved = prefs.selectedShelfFilter.contains(ShelfFilter.Unshelved)
+    val showShelves = ShelfFilter.Shelves in prefs.selectedShelfFilter
+    val showUnshelved = ShelfFilter.Unshelved in prefs.selectedShelfFilter
 
     val finalShelves = if (showShelves) sortedShelves else emptyList()
 

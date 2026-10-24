@@ -152,7 +152,7 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
     private fun observeWindowBackground() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.themeColors.collect { (_, _, colorsBackgroundColorInt) ->
+                viewModel.themeColors.collect { (_, _, colorsBackgroundColorInt, _) ->
                     if (viewModel.profile.value != com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO) {
                         window.decorView.setBackgroundColor(colorsBackgroundColorInt)
                     }
@@ -182,7 +182,7 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
 
                     navigatorContainer?.let { container ->
                         val lp = container.layoutParams as android.widget.FrameLayout.LayoutParams
-                        if ((lp.topMargin != newTop) || (lp.bottomMargin != newBottom)) {
+                        if (lp.topMargin != newTop || lp.bottomMargin != newBottom) {
                             lp.topMargin = newTop
                             lp.bottomMargin = newBottom
                             container.layoutParams = lp
@@ -208,7 +208,7 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
     private fun observeOrientation() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.settingsFlow.collect { (_, _, _, _, _, _, settingsForceOrientation) ->
+                viewModel.settingsFlow.collect { (_, _, _, _, _, _, settingsForceOrientation, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) ->
                     requestedOrientation = when (settingsForceOrientation) {
                         "Portrait" -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
                         "Landscape" -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
@@ -222,7 +222,7 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
     private fun observeScreenTimeout() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.settingsFlow.collect { (_, _, _, _, _, _, _, settingsPreventScreenTimeout) ->
+                viewModel.settingsFlow.collect { (_, _, _, _, _, _, _, settingsPreventScreenTimeout, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) ->
                     if (settingsPreventScreenTimeout) {
                         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     } else {
@@ -263,5 +263,5 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
     }
 
     private fun isNightMode(config: Configuration): Boolean =
-        (config.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        config.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
 }

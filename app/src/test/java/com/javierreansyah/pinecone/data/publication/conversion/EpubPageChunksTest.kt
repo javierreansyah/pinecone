@@ -99,7 +99,7 @@ class EpubPageChunksTest {
         val first = MuPdfStructure.parse(output.getValue("EPUB/text/content.xhtml"))
         val second = MuPdfStructure.parse(output.getValue("EPUB/text/content-0002.xhtml"))
         val entry = first.descendants("p").last()
-        assertTrue(entry.textContent.contains("Remaining entry."))
+        assertTrue("Remaining entry." in entry.textContent)
         assertTrue(entry.descendants().any { it.getAttribute("id") == "source-page-26" })
         assertTrue(entry.descendants().any { it.getAttribute("id") == "continued" })
         assertEquals("Next entry.", second.descendants("p").single().textContent)

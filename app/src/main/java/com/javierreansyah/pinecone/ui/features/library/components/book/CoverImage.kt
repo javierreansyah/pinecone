@@ -46,9 +46,7 @@ fun CoverImage(
 
         val intrinsicSize = painter.intrinsicSize
         val imageAspectRatio = if (
-            (intrinsicSize != Size.Unspecified) &&
-            (intrinsicSize.width > 0f) &&
-            (intrinsicSize.height > 0f)
+            intrinsicSize != Size.Unspecified && intrinsicSize.width > 0f && intrinsicSize.height > 0f
         ) {
             intrinsicSize.width / intrinsicSize.height
         } else {
@@ -68,7 +66,7 @@ fun CoverImage(
                 Image(
                     painter = painter,
                     contentDescription = stringResource(
-                        R.string.book_cover_description,
+                        R.string.publication_cover_description,
                         book.title,
                     ),
                     modifier = Modifier.fillMaxSize(),
@@ -111,7 +109,7 @@ fun AutoWidthCoverImage(
         )
         Image(
             painter = painter,
-            contentDescription = stringResource(R.string.book_cover_description, book.title),
+            contentDescription = stringResource(R.string.publication_cover_description, book.title),
             modifier = modifier.clip(MaterialTheme.shapes.small),
             contentScale = ContentScale.Fit,
         )

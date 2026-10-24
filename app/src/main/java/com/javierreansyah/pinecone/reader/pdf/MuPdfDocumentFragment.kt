@@ -423,7 +423,7 @@ class MuPdfDocumentFragment(
 
     override fun goToPageIndex(index: Int, animated: Boolean): Boolean {
         val count = document?.pageCount ?: return false
-        if (index !in 0 until count) return false
+        if (index !in 0..<count) return false
         selectionController.clearSelection()
         requestPage(index)
         currentPage.value = index

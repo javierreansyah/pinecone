@@ -469,10 +469,10 @@ document.body.addEventListener('click', function(e) {
 """
 
 internal fun Color.toCssRgba(): String {
-    val argb = this.toArgb()
-    val r = (argb shr 16) and 0xFF
-    val g = (argb shr 8) and 0xFF
+    val argb = toArgb()
+    val r = argb shr 16 and 0xFF
+    val g = argb shr 8 and 0xFF
     val b = argb and 0xFF
-    val a = ((argb shr 24) and 0xFF) / 255f
+    val a = (argb shr 24 and 0xFF) / 255f
     return "rgba($r, $g, $b, $a)"
 }

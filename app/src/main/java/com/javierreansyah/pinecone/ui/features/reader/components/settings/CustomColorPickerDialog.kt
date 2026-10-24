@@ -46,8 +46,8 @@ fun CustomColorPickerDialog(
     onConfirm: (String, String, String, String) -> Unit,
 ) {
     var name by remember { mutableStateOf(initialName) }
-    var bgColorInput by remember { mutableStateOf(if (initialBgColor.isBlank() || (initialBgColor == "#")) "#" else initialBgColor) }
-    var textColorInput by remember { mutableStateOf(if (initialTextColor.isBlank() || (initialTextColor == "#")) "#" else initialTextColor) }
+    var bgColorInput by remember { mutableStateOf(if (initialBgColor.isBlank() || initialBgColor == "#") "#" else initialBgColor) }
+    var textColorInput by remember { mutableStateOf(if (initialTextColor.isBlank() || initialTextColor == "#") "#" else initialTextColor) }
     var uiThemeInput by remember { mutableStateOf(initialUiTheme) }
 
     val formatColorInput = { input: String ->
@@ -56,7 +56,7 @@ fun CustomColorPickerDialog(
     }
 
     fun parseColorSafe(colorStr: String): Color? {
-        if ((colorStr.length != 7) && (colorStr.length != 9)) return null
+        if (colorStr.length != 7 && colorStr.length != 9) return null
         return try {
             Color(colorStr.toColorInt())
         } catch (_: Exception) {
@@ -67,7 +67,7 @@ fun CustomColorPickerDialog(
     val parsedBg = parseColorSafe(bgColorInput)
     val parsedText = parseColorSafe(textColorInput)
 
-    val isValid = name.isNotBlank() && (parsedBg != null) && (parsedText != null)
+    val isValid = name.isNotBlank() && parsedBg != null && parsedText != null
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -145,13 +145,13 @@ fun CustomColorPickerDialog(
 
                     SegmentedButtonGroup(
                         title = stringResource(R.string.settings_theme_mode),
-                        options = uiThemeOptions.map { (itFirst) -> itFirst },
+                        options = uiThemeOptions.map { (itFirst, _) -> itFirst },
                         icons = emptyList(),
                         selected = uiThemeOptions.find { (_, itSecond) -> itSecond == uiThemeInput }?.first
                             ?: stringResource(R.string.reader_settings_theme_setting),
                         onSelected = { selectedLabel ->
                             uiThemeInput =
-                                uiThemeOptions.find { (itFirst2) -> itFirst2 == selectedLabel }?.second
+                                uiThemeOptions.find { (itFirst2, _) -> itFirst2 == selectedLabel }?.second
                                     ?: "Setting"
                         },
                         modifier = Modifier.fillMaxWidth(),

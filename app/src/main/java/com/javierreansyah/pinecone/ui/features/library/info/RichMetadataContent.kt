@@ -143,7 +143,7 @@ private fun roleLabel(role: String): String = when (role) {
     "editor" -> stringResource(R.string.publication_role_editor)
     "translator" -> stringResource(R.string.publication_role_translator)
     "narrator" -> stringResource(R.string.publication_role_narrator)
-    "publisher" -> stringResource(R.string.book_publisher)
+    "publisher" -> stringResource(R.string.publication_publisher)
     "imprint" -> stringResource(R.string.publication_role_imprint)
     "contributor" -> stringResource(R.string.publication_role_contributor)
     else -> role // Preserve unknown, publisher-provided role identifiers verbatim.

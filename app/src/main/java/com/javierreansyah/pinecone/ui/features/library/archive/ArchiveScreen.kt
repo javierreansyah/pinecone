@@ -30,6 +30,7 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
+import com.javierreansyah.pinecone.ui.features.library.LibraryCollectionUiState
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.components.FilterResultBottomSheet
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectAppBar
@@ -48,7 +49,7 @@ fun ArchiveScreen(
     viewModel: ArchiveViewModel = viewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val archivedBooks by viewModel.archivedBooks.collectAsState()
+    val archivedBooks by viewModel.filteredBooks.collectAsState()
     val allBooks by viewModel.allBooks.collectAsState()
 
     var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
@@ -75,10 +76,10 @@ fun ArchiveScreen(
             isInMultiSelectMode = true
         },
         onExitMultiSelect = exitMultiSelect,
-        onSelectAll = { selectedBooks = archivedBooks.map { (itId) -> itId }.toSet() },
+        onSelectAll = { selectedBooks = archivedBooks.map { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId }.toSet() },
         onClearSelection = { selectedBooks = emptySet() },
         onToggleBookSelection = { bookId ->
-            selectedBooks = if (selectedBooks.contains(bookId)) {
+            selectedBooks = if (bookId in selectedBooks) {
                 selectedBooks - bookId
             } else {
                 selectedBooks + bookId
@@ -138,7 +139,7 @@ fun ArchiveScreen(
 fun ArchiveContent(
     archivedBooks: List<Book>,
     allBooks: List<Book>,
-    uiState: ArchiveUiState,
+    uiState: LibraryCollectionUiState,
     selectedBooks: Set<String>,
     isInMultiSelectMode: Boolean,
     onNavigateBack: () -> Unit,
@@ -161,8 +162,8 @@ fun ArchiveContent(
 
     val showMarkAsRead = remember(allBooks, selectedBooks) {
         allBooks
-            .filter { (itId2) -> itId2 in selectedBooks }
-            .any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itIsRead) -> !itIsRead }
+            .filter { (itId2, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId2 in selectedBooks }
+            .any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itIsRead, _, _, _, _, _, _, _, _, _) -> !itIsRead }
     }
 
     Scaffold(
@@ -177,7 +178,7 @@ fun ArchiveContent(
                 isInMultiSelectMode = isInMultiSelectMode,
                 isEmpty = isEmpty,
                 selectedCount = selectedBooks.size,
-                isAllSelected = archivedBooks.isNotEmpty() && (selectedBooks.size == archivedBooks.size),
+                isAllSelected = archivedBooks.isNotEmpty() && selectedBooks.size == archivedBooks.size,
                 showMarkAsRead = showMarkAsRead,
                 scrollBehavior = scrollBehavior,
                 onNavigateBack = onNavigateBack,

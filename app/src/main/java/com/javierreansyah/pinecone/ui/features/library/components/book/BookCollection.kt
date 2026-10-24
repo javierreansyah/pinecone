@@ -39,16 +39,14 @@ fun BookCollection(
         AnimatedContent(
             targetState = layoutMode,
             transitionSpec = {
-                (fadeIn(animationSpec = tween(durationMillis = 100, delayMillis = 100)) +
+                fadeIn(animationSpec = tween(durationMillis = 100, delayMillis = 100)) +
                         scaleIn(
                             initialScale = 0.9f,
                             animationSpec = tween(durationMillis = 100, delayMillis = 100),
-                        )) togetherWith
-                        (fadeOut(animationSpec = tween(durationMillis = 100)) +
-                                scaleOut(
-                                    targetScale = 0.9f,
-                                    animationSpec = tween(durationMillis = 100)
-                                ))
+                        ) togetherWith fadeOut(animationSpec = tween(durationMillis = 100)) + scaleOut(
+                    targetScale = 0.9f,
+                    animationSpec = tween(durationMillis = 100)
+                )
             },
             label = "bookCollectionLayoutTransition",
         ) { targetLayoutMode ->
@@ -111,7 +109,7 @@ private fun BookGrid(
     ) {
         items(
             items = books,
-            key = { (itId) -> "$itId-${layoutMode.name}" },
+            key = { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> "$itId-${layoutMode.name}" },
             contentType = { layoutMode },
         ) { book ->
             BookItem(
@@ -120,7 +118,7 @@ private fun BookGrid(
                 onLongClick = if (selectedBooks.isNotEmpty()) null else {
                     { onBookLongClick?.invoke(book.id) }
                 },
-                isSelected = selectedBooks.contains(book.id),
+                isSelected = book.id in selectedBooks,
                 isInMultiSelectMode = isInMultiSelectMode,
             )
         }
@@ -149,7 +147,7 @@ private fun BookList(
             .fillMaxSize()
             .padding(horizontal = horizontalPadding),
     ) {
-        items(books, key = { (itId2) -> itId2 }) { book ->
+        items(books, key = { (itId2, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId2 }) { book ->
             BookItem(
                 book = book,
                 onClick = { onBookClick(book.id) },
@@ -157,7 +155,7 @@ private fun BookList(
                     { onBookLongClick?.invoke(book.id) }
                 },
                 isList = true,
-                isSelected = selectedBooks.contains(book.id),
+                isSelected = book.id in selectedBooks,
                 isInMultiSelectMode = isInMultiSelectMode,
             )
         }

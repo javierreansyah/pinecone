@@ -169,7 +169,12 @@ fun ReaderTopBar(
             },
             actions = {
                 if (converting) {
-                    ConversionProgressAction(conversionPage, conversionTotal, readerTextColor, onCancelConversion)
+                    ConversionProgressAction(
+                        conversionPage,
+                        conversionTotal,
+                        readerTextColor,
+                        onCancelConversion
+                    )
                 }
                 val topBarState = when {
                     isInSearchMode -> TopBarState.SEARCH
@@ -185,19 +190,20 @@ fun ReaderTopBar(
                 AnimatedContent(
                     targetState = topBarState,
                     transitionSpec = {
-                        if ((targetState != TopBarState.NORMAL) && (initialState == TopBarState.NORMAL)) {
+                        if (targetState != TopBarState.NORMAL && initialState == TopBarState.NORMAL) {
 
-                            fadeIn(animationSpec = actionsEffectsSpec) togetherWith
-                                    (fadeOut(animationSpec = actionsEffectsSpec) + slideOutHorizontally(
-                                        targetOffsetX = { slideOffsetPx },
-                                        animationSpec = actionsSpatialSpec,
-                                    ))
-                        } else if ((targetState == TopBarState.NORMAL) && (initialState != TopBarState.NORMAL)) {
+                            fadeIn(animationSpec = actionsEffectsSpec) togetherWith fadeOut(
+                                animationSpec = actionsEffectsSpec
+                            ) + slideOutHorizontally(
+                                targetOffsetX = { slideOffsetPx },
+                                animationSpec = actionsSpatialSpec,
+                            )
+                        } else if (targetState == TopBarState.NORMAL && initialState != TopBarState.NORMAL) {
 
-                            (fadeIn(animationSpec = actionsEffectsSpec) + slideInHorizontally(
+                            fadeIn(animationSpec = actionsEffectsSpec) + slideInHorizontally(
                                 initialOffsetX = { slideOffsetPx },
                                 animationSpec = actionsSpatialSpec,
-                            )) togetherWith
+                            ) togetherWith
                                     fadeOut(animationSpec = actionsEffectsSpec)
                         } else {
 

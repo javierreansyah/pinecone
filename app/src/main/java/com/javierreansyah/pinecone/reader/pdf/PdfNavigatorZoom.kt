@@ -68,7 +68,9 @@ internal fun PdfNavigatorZoom(
         }
     }
     Box(
-        Modifier.fillMaxSize().clipToBounds()
+        Modifier
+            .fillMaxSize()
+            .clipToBounds()
             .pointerInput(horizontal, reverse, scrollBy) {
                 awaitEachGesture {
                     awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
@@ -79,9 +81,9 @@ internal fun PdfNavigatorZoom(
                         val multiTouch = event.changes.count { it.pressed } > 1
                         val pan = event.calculatePan()
                         totalPan += pan
-                        if (multiTouch || (scale > 1f &&
-                                selectionController.selection.value == null &&
-                                totalPan.getDistance() > viewConfiguration.touchSlop)) {
+                        if (multiTouch || scale > 1f &&
+                            selectionController.selection.value == null && totalPan.getDistance() > viewConfiguration.touchSlop
+                        ) {
                             transforming = true
                         }
                         if (transforming && event.changes.any { it.pressed && it.previousPressed }) {
@@ -106,13 +108,16 @@ internal fun PdfNavigatorZoom(
                 }
             }
     ) {
-        Box(Modifier.fillMaxSize().graphicsLayer {
-            transformOrigin = TransformOrigin(0f, 0f)
-            scaleX = scale
-            scaleY = scale
-            translationX = offset.x
-            translationY = offset.y
-        }) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    transformOrigin = TransformOrigin(0f, 0f)
+                    scaleX = scale
+                    scaleY = scale
+                    translationX = offset.x
+                    translationY = offset.y
+                }) {
             content(toggleZoom)
         }
     }

@@ -244,7 +244,8 @@ class PdfLayoutTest {
             rules = listOf(FigureBounds(119f, 113f, 161f, 114f))
         )
         val equation = output.first { it.kind == "equation" }
-        val crop = (equation.sources.flatMap { it.runs }.single { it.math != null }.math ?: return).bounds
+        val crop =
+            (equation.sources.flatMap { it.runs }.single { it.math != null }.math ?: return).bounds
         assertTrue(crop.left <= expression.bounds.left)
         assertTrue(crop.right >= closing.bounds.right)
         assertEquals(1, output.flatMap { it.sources }.count { it.anchor == "closing" })

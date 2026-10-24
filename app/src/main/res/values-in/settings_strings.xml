@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_about_app">Tentang aplikasi ini</string>
+    <string name="settings_about_section">Tentang</string>
+    <string name="settings_auto_backup_freq">Frekuensi cadangan otomatis</string>
+    <item name="settings_backup_auto_label" type="string">@string/reader_settings_theme_auto</item>
+    <string name="settings_backup_freq_12h">12 jam</string>
+    <string name="settings_backup_freq_1d">1 hari</string>
+    <string name="settings_backup_freq_1w">1 minggu</string>
+    <string name="settings_backup_freq_3d">3 hari</string>
+    <string name="settings_backup_freq_6h">6 jam</string>
+    <string name="settings_backup_location">Lokasi cadangan</string>
+    <string name="settings_backup_manual_label">Manual</string>
+    <string name="settings_backup_now">Cadangkan sekarang</string>
+    <string name="settings_backup_now_summary">Cadangkan perpustakaan dan kamus (%s)</string>
+    <string name="settings_backup_preferences">Cadangan lokal</string>
+    <string name="settings_choose_color_scheme">Pilih skema warna</string>
+    <string name="settings_color_palette">Palet warna</string>
+    <string name="settings_error_set_backup_location">Harap pilih lokasi cadangan terlebih dahulu</string>
+    <string name="settings_export_backup">Ekspor cadangan</string>
+    <string name="settings_general">Umum</string>
+    <string name="settings_hide_all_space">Sembunyikan ruang Semua</string>
+    <string name="settings_hide_all_space_summary">Sembunyikan Semua dari navigasi.</string>
+    <string name="settings_import_backup">Impor cadangan</string>
+    <string name="settings_import_backup_summary">Tambahkan cadangan portabel Pinecone ke brankas ini</string>
+    <string name="settings_language">@string/publication_language</string>
+    <string name="settings_last_backup_format">Terakhir: %s</string>
+    <string name="settings_library_bottom_navigation">Tampilkan navigasi bawah pustaka</string>
+    <string name="settings_library_bottom_navigation_summary">Tampilkan pengalih item dan rak. Saat disembunyikan, geser untuk berpindah halaman.</string>
+    <string name="settings_no_backups_found">Tidak ada cadangan yang ditemukan di folder yang dipilih.</string>
+    <string name="settings_option_dark">@string/reader_settings_theme_dark</string>
+    <string name="settings_option_dynamic">Dinamis</string>
+    <string name="settings_option_high">Tinggi</string>
+    <string name="settings_option_light">@string/reader_settings_theme_light</string>
+    <string name="settings_option_medium">Sedang</string>
+    <string name="settings_option_never">Jangan pernah</string>
+    <string name="settings_option_not_selected">Belum dipilih (cadangan otomatis dinonaktifkan)</string>
+    <string name="settings_option_selected">Dipilih</string>
+    <string name="settings_option_standard">Standar</string>
+    <string name="settings_option_system">Sistem</string>
+    <string name="settings_restore">Pulihkan</string>
+    <string name="settings_restore_backup_sheet_title">Pilih cadangan untuk dipulihkan</string>
+    <string name="settings_restore_backup_warning">Apakah Anda yakin ingin memulihkan? Ini akan menimpa perpustakaan dan pengaturan Anda saat ini.</string>
+    <string name="settings_restore_defaults">Pulihkan setelan awal</string>
+    <string name="settings_restore_defaults_success">Pengaturan dipulihkan ke default</string>
+    <string name="settings_restore_defaults_warning">Apakah Anda yakin ingin memulihkan pengaturan ke nilai default? Tindakan ini akan mereset tema, palet warna, bahasa, dan pengaturan cadangan otomatis Anda.\n\nPengaturan pembaca (seperti ukuran font, kecerahan, dll.) tidak akan diubah.</string>
+    <string name="settings_restore_partial">Pemulihan tersimpan, tetapi pembersihan akhir belum selesai. Mulai ulang Pinecone untuk menyelesaikan pemulihan.</string>
+    <string name="settings_restore_summary">Pulihkan perpustakaan dan kamus</string>
+    <string name="settings_spaces_enabled">Gunakan ruang</string>
+    <string name="settings_spaces_enabled_summary">Atur item dan rak berdasarkan ruang.</string>
+    <string name="settings_theme_contrast">Kontras tema</string>
+    <string name="settings_theme_mode">Mode tema</string>
+    <string name="settings_title">Pengaturan</string>
+    <string name="settings_unsorted_enabled">Gunakan kotak masuk Belum disortir</string>
+    <string name="settings_unsorted_enabled_summary">Pisahkan impor baru sampai diatur.</string>
+</resources>

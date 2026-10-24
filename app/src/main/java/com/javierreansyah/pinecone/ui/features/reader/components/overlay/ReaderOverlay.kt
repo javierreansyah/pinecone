@@ -137,20 +137,20 @@ fun ReaderOverlay(
 
     val isBookmarked = remember(sortedBookmarks, currentLocator) {
         val locator = currentLocator
-        (locator != null) && sortedBookmarks.any { (_, _, itLocatorJson) ->
+        locator != null && sortedBookmarks.any { (_, _, itLocatorJson, _, _, _) ->
             val loc = try {
                 Locator.fromJSON(JSONObject(itLocatorJson))
             } catch (_: Exception) {
                 null
             }
-            (loc != null) && loc.isSamePosition(locator)
+            loc != null && loc.isSamePosition(locator)
         }
     }
 
     val context = LocalContext.current
 
     LaunchedEffect(bookState.value.isLoading) {
-        if (!bookState.value.isLoading && (bookState.value.error == null)) {
+        if (!bookState.value.isLoading && bookState.value.error == null) {
             launch(Dispatchers.Default) {
                 // Pre-warm material icons used in the text selection control and bottom bar.
                 // This prevents main-thread jank when they are first rendered.
@@ -357,7 +357,7 @@ fun ReaderOverlay(
                     notesViewModel.hideViewHighlight()
                 },
                 onDelete = {
-                    selectionState.value.viewingHighlight?.let { (noteId) ->
+                    selectionState.value.viewingHighlight?.let { (noteId, _, _, _, _, _, _, _) ->
                         notesViewModel.deleteNote(noteId)
                         notesViewModel.hideViewHighlight()
                     }
@@ -595,8 +595,8 @@ fun ReaderBottomBarSection(
     modifier: Modifier = Modifier,
     showProgressBar: Boolean = true,
 ) {
-    val isSelectionActive = (selectionLocator != null) || (viewingHighlight != null)
-    val showBottomBar = (showControls && !showSearch) || isSelectionActive
+    val isSelectionActive = selectionLocator != null || viewingHighlight != null
+    val showBottomBar = showControls && !showSearch || isSelectionActive
 
     val actionsSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
     val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
@@ -641,13 +641,11 @@ fun ReaderBottomBarSection(
                 contentAlignment = Alignment.BottomCenter,
                 label = "BottomBarMode",
                 transitionSpec = {
-                    (slideInVertically(
+                    slideInVertically(
                         initialOffsetY = { offset }, animationSpec = actionsSpatialSpec,
-                    ) + fadeIn(animationSpec = actionsEffectsSpec)) togetherWith (
-                            slideOutVertically(
-                                targetOffsetY = { offset }, animationSpec = actionsSpatialSpec,
-                            ) + fadeOut(animationSpec = actionsEffectsSpec)
-                            )
+                    ) + fadeIn(animationSpec = actionsEffectsSpec) togetherWith slideOutVertically(
+                        targetOffsetY = { offset }, animationSpec = actionsSpatialSpec,
+                    ) + fadeOut(animationSpec = actionsEffectsSpec)
                 },
             ) { mode ->
                 when (mode) {
@@ -689,7 +687,7 @@ fun ReaderBottomBarSection(
                         ReaderTextSelectionControl(
                             selectedColorInt = selectedColorInt,
                             readerTextColor = readerTextColor,
-                            showDeleteOption = (viewingHighlight != null) && (selectionLocator == null),
+                            showDeleteOption = viewingHighlight != null && selectionLocator == null,
                             onCopy = { onCopy(highlightText) },
                             onSearch = { onSearch(highlightText) },
                             onMakeNote = onMakeNote,
@@ -955,13 +953,13 @@ private fun ReaderDefinitionBottomSheet(
                     ) {
                         val sortedResults =
                             definitionResults.sortedWith(
-                                compareBy<DictionaryEntry> { (_, _, entryWord) ->
+                                compareBy<DictionaryEntry> { (_, _, entryWord, _) ->
                                     when {
                                         entryWord == definitionWord -> 0
                                         entryWord.firstOrNull()?.isLowerCase() == true -> 1
                                         else -> 2
                                     }
-                                }.thenBy { (_, _, itWord) -> itWord },
+                                }.thenBy { (_, _, itWord, _) -> itWord },
                             )
 
                         val combinedHtmlContent =

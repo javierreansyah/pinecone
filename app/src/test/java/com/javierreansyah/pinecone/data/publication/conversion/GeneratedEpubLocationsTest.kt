@@ -93,7 +93,9 @@ class GeneratedEpubLocationsTest {
             "position":150,"progression":0.7,"cssSelector":"#$anchor-run-0","domRange":{
             "start":{"cssSelector":"#$anchor-run-0","charOffset":2},"end":{"cssSelector":"#$anchor-run-0","charOffset":8}}}}"""
         val migrated =
-            Json.parseToJsonElement(GeneratedEpubLocations.remap(saved, old, fresh) ?: return).jsonObject
+            Json.parseToJsonElement(
+                GeneratedEpubLocations.remap(saved, old, fresh) ?: return
+            ).jsonObject
         assertEquals("text/content.xhtml", migrated.getValue("href").jsonPrimitive.content)
         assertEquals(
             "selected words",
@@ -154,7 +156,9 @@ class GeneratedEpubLocationsTest {
             "cssSelector":"#page-3-block-4-run-0","domRange":{"start":{"cssSelector":"#page-3-block-4-run-0","charOffset":2},
             "end":{"cssSelector":"#page-3-block-4-run-0","charOffset":8}}}}"""
         val migrated =
-            Json.parseToJsonElement(GeneratedEpubLocations.remap(saved, old, fresh) ?: return).jsonObject
+            Json.parseToJsonElement(
+                GeneratedEpubLocations.remap(saved, old, fresh) ?: return
+            ).jsonObject
         assertEquals("text/content-0003.xhtml", migrated.getValue("href").jsonPrimitive.content)
         val locations = migrated.getValue("locations").jsonObject
         assertFalse(locations.containsKey("position")); assertFalse(locations.containsKey("progression"))
@@ -203,7 +207,9 @@ class GeneratedEpubLocationsTest {
             """{"href":"text/content.xhtml","text":{"highlight":"selected quote"},"locations":{"cssSelector":"#page-1-block-0",
             "domRange":{"start":{"cssSelector":"#page-1-block-0","charOffset":1},"end":{"cssSelector":"#page-1-block-1","charOffset":5}}}}"""
         val migrated =
-            Json.parseToJsonElement(GeneratedEpubLocations.remap(saved, old, fresh) ?: return).jsonObject
+            Json.parseToJsonElement(
+                GeneratedEpubLocations.remap(saved, old, fresh) ?: return
+            ).jsonObject
         assertEquals(
             "selected quote",
             migrated.getValue("text").jsonObject.getValue("highlight").jsonPrimitive.content
@@ -263,9 +269,10 @@ class GeneratedEpubLocationsTest {
         val body =
             GeneratedEpubLocations.migrate("""{"href":"text/page-2.xhtml","locations":{"cssSelector":"html > body > p:nth-child(3)"}}""")
                 ?: return
-        assertTrue(body.contains("#page-2 > p:nth-child(3)"))
-        val anchor = GeneratedEpubLocations.migrate("""{"href":"text/page-2.xhtml#block-7"}""") ?: return
-        assertTrue(anchor.contains("#page-2-block-7"))
+        assertTrue("#page-2 > p:nth-child(3)" in body)
+        val anchor =
+            GeneratedEpubLocations.migrate("""{"href":"text/page-2.xhtml#block-7"}""") ?: return
+        assertTrue("#page-2-block-7" in anchor)
         assertEquals(anchor, GeneratedEpubLocations.migrate(anchor))
     }
 
@@ -325,7 +332,9 @@ class GeneratedEpubLocationsTest {
             "domRange":{"start":{"cssSelector":"#page-1-block-0","charOffset":4,"textNodeIndex":0},
             "end":{"cssSelector":"#page-1-block-0","charOffset":8,"textNodeIndex":0}}}}"""
         val result =
-            Json.parseToJsonElement(GeneratedEpubLocations.remap(saved, old, fresh) ?: return).jsonObject
+            Json.parseToJsonElement(
+                GeneratedEpubLocations.remap(saved, old, fresh) ?: return
+            ).jsonObject
         val range = result.getValue("locations").jsonObject.getValue("domRange").jsonObject
         assertEquals(
             "#$anchor-run-1",
@@ -372,7 +381,9 @@ class GeneratedEpubLocationsTest {
             """{"href":"text/content.xhtml","text":{"highlight":"math"},"locations":{"cssSelector":"#page-1-block-0",
             "domRange":{"start":{"cssSelector":"#page-1-block-0","charOffset":0},"end":{"cssSelector":"#page-1-block-0","charOffset":4}}}}"""
         val result =
-            Json.parseToJsonElement(GeneratedEpubLocations.remap(saved, old, fresh) ?: return).jsonObject
+            Json.parseToJsonElement(
+                GeneratedEpubLocations.remap(saved, old, fresh) ?: return
+            ).jsonObject
         assertFalse(result.getValue("locations").jsonObject.containsKey("domRange"))
         assertEquals(
             "#page-1-block-0",

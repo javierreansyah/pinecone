@@ -149,25 +149,27 @@ class ReaderViewModel(
 
     val systemDarkThemeFlow: MutableStateFlow<Boolean> = MutableStateFlow(initialSystemDark)
 
-    val pdfPreferences: StateFlow<MuPdfPreferences> = combine(settingsFlow, systemDarkThemeFlow) { settings, systemDark ->
-        settings.formatPreferences.pdf.resolveTheme(settings.readingThemeIsDark(systemDark))
-    }.stateIn(
-        viewModelScope, SharingStarted.Eagerly,
-        FormatPreferences().pdf.resolveTheme(initialSystemDark)
-    )
+    val pdfPreferences: StateFlow<MuPdfPreferences> =
+        combine(settingsFlow, systemDarkThemeFlow) { settings, systemDark ->
+            settings.formatPreferences.pdf.resolveTheme(settings.readingThemeIsDark(systemDark))
+        }.stateIn(
+            viewModelScope, SharingStarted.Eagerly,
+            FormatPreferences().pdf.resolveTheme(initialSystemDark)
+        )
 
-    val imageFilterCss: StateFlow<String> = combine(settingsFlow, systemDarkThemeFlow) { settings, systemDark ->
-        settings.epubImageFilterCss(systemDark)
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, "")
+    val imageFilterCss: StateFlow<String> =
+        combine(settingsFlow, systemDarkThemeFlow) { settings, systemDark ->
+            settings.epubImageFilterCss(systemDark)
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, "")
 
     val themeColors: StateFlow<PineconeThemeColors> = combine(
         settingsFlow, systemDarkThemeFlow,
-    ) { (settingsThemeMode, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, settingsPineconeThemePreset, settingsCustomBackgroundColor, settingsCustomTextColor, settingsCustomThemes), isSystemDark ->
+    ) { (settingsThemeMode, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, settingsPineconeThemePreset, settingsCustomBackgroundColor, settingsCustomTextColor, settingsCustomThemes, autoBackupFrequency, lastBackupTime, lastBackupRevision, backupFolderUri, activeDictionaryId, installedDictionaries, jumpHistoryMode, showAllSpaces, formatPreferences, spacesEnabled, unsortedEnabled, showLibraryBottomNavigation), isSystemDark ->
         val customTheme =
-            settingsCustomThemes.find { (itName) -> itName == settingsPineconeThemePreset }
+            settingsCustomThemes.find { (itName, backgroundColor, textColor, uiTheme) -> itName == settingsPineconeThemePreset }
         val uiThemeSetting = customTheme?.uiTheme ?: "Setting"
         val effectiveThemeMode =
-            if ((uiThemeSetting == "Setting") || (uiThemeSetting == "setting")) settingsThemeMode else uiThemeSetting
+            if (uiThemeSetting == "Setting" || uiThemeSetting == "setting") settingsThemeMode else uiThemeSetting
 
         val uiDarkTheme = when (effectiveThemeMode) {
             "Dark" -> true
@@ -248,7 +250,7 @@ class ReaderViewModel(
 
     init {
         viewModelScope.launch {
-            settingsFlow.collect { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, settingsJumpHistoryMode) ->
+            settingsFlow.collect { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, settingsJumpHistoryMode, showAllSpaces, formatPreferences, spacesEnabled, unsortedEnabled, showLibraryBottomNavigation) ->
                 if (settingsJumpHistoryMode == "disabled") {
                     repository.clearJumpOrigin(bookId)
                 }
@@ -269,7 +271,7 @@ class ReaderViewModel(
                 initialLocator = resolvedLocator
 
                 if (book == null) {
-                    val errorMsg = application.getString(R.string.book_not_found)
+                    val errorMsg = application.getString(R.string.publication_not_found)
                     _bookState.update { it.copy(isLoading = false, error = errorMsg) }
                     return@launch
                 }
@@ -351,7 +353,7 @@ class ReaderViewModel(
 
         if (oldLocator != null) {
             viewModelScope.launch {
-                val (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, settingsJumpHistoryMode2) = settingsFlow.first()
+                val (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, settingsJumpHistoryMode2, _, _, _, _, _) = settingsFlow.first()
                 if (settingsJumpHistoryMode2 == "disabled") {
                     repository.clearJumpOrigin(bookId)
                 } else if (settingsJumpHistoryMode2 == "page_turn") {
@@ -362,7 +364,7 @@ class ReaderViewModel(
                         val jumpOriginJson = details?.book?.jumpOriginLocatorJson
                         if (jumpOriginJson != null) {
                             val origin = fromJSON(JSONObject(jumpOriginJson))
-                            if ((origin != null) && !locator.isSamePosition(origin) && !locator.isSamePosition(
+                            if (origin != null && !locator.isSamePosition(origin) && !locator.isSamePosition(
                                     oldLocator,
                                 )
                             ) {
@@ -377,7 +379,7 @@ class ReaderViewModel(
         val allPositions = _positions.value
         val pageIndex = allPositions.findIndexForLocator(locator)
         val displayedPage: Int? = if (activeRendition.value == "read-mode") readModePage(locator)
-        else (if (pageIndex != -1) pageIndex + 1 else null)
+        else if (pageIndex != -1) pageIndex + 1 else null
         val displayedTotal: Int? = if (activeRendition.value == "read-mode") {
             _publication.value?.pageList?.size?.takeIf { count -> count > 0 }
         } else allPositions.size.takeIf { count -> count > 0 }
@@ -397,7 +399,8 @@ class ReaderViewModel(
         }
     }
 
-    fun locatorForProgression(targetProgression: Double): Locator? = _positions.value.findClosestByProgression(targetProgression)
+    fun locatorForProgression(targetProgression: Double): Locator? =
+        _positions.value.findClosestByProgression(targetProgression)
 
     fun getPositionLabel(locator: Locator): String {
         val posIndex =
@@ -437,7 +440,7 @@ class ReaderViewModel(
         val allPositions = _positions.value
         if (allPositions.isEmpty()) return ""
         val linkHref = link.href.toString().substringBefore("#")
-        val posIndex = allPositions.indexOfFirst { (itHref) ->
+        val posIndex = allPositions.indexOfFirst { (itHref, _, _, _, _) ->
             itHref.toString().substringBefore("#") == linkHref
         }
         return if (posIndex != -1) application.resources.getQuantityString(
@@ -626,7 +629,7 @@ class ReaderViewModel(
     fun recordJumpOrigin() {
         val current = _currentLocator.value ?: return
         viewModelScope.launch {
-            val (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, settingsJumpHistoryMode3) = settingsFlow.first()
+            val (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, settingsJumpHistoryMode3, _, _, _, _, _) = settingsFlow.first()
             if (settingsJumpHistoryMode3 != "disabled") {
                 repository.saveJumpOrigin(bookId, current)
                 justJumped = true

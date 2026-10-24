@@ -56,7 +56,7 @@ class PdfReadModeConverter {
             }
         }
         val pages =
-            sources.flatMap { source -> (0 until source.document.pageCount).map { source to it } }
+            sources.flatMap { source -> (0..<source.document.pageCount).map { source to it } }
         require(pages.isNotEmpty())
         val context = currentCoroutineContext()
         val records = File(destination.parentFile, "layout-${UUID.randomUUID()}")

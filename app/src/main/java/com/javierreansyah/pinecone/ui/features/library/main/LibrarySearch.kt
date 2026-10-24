@@ -187,7 +187,7 @@ fun LibrarySearchTopBar(
             // opens never need to re-compose from scratch.
             val showContent by remember {
                 derivedStateOf {
-                    hasEverExpanded || (searchBarState.currentValue == SearchBarValue.Expanded)
+                    hasEverExpanded || searchBarState.currentValue == SearchBarValue.Expanded
                 }
             }
 

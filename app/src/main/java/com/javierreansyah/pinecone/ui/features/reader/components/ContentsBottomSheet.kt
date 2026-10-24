@@ -185,7 +185,7 @@ fun ReaderBottomSheet(
             }
 
             this@ModalBottomSheet.AnimatedVisibility(
-                visible = (pagerState.currentPage == 1) || (pagerState.currentPage == 2),
+                visible = pagerState.currentPage == 1 || pagerState.currentPage == 2,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(end = 16.dp, bottom = 16.dp),
@@ -239,7 +239,7 @@ fun ReaderBottomSheet(
                             SelectableDropdownMenuItem(
                                 selected = sortOption == SortOption.BOOK_ORDER_ASC,
                                 text = {
-                                    Text(stringResource(R.string.reader_sort_book_order_asc))
+                                    Text(stringResource(R.string.reader_sort_reading_order_asc))
                                 },
                                 onClick = {
                                     onSortOptionChange(SortOption.BOOK_ORDER_ASC)
@@ -250,7 +250,7 @@ fun ReaderBottomSheet(
                             SelectableDropdownMenuItem(
                                 selected = sortOption == SortOption.BOOK_ORDER_DESC,
                                 text = {
-                                    Text(stringResource(R.string.reader_sort_book_order_desc))
+                                    Text(stringResource(R.string.reader_sort_reading_order_desc))
                                 },
                                 onClick = {
                                     onSortOptionChange(SortOption.BOOK_ORDER_DESC)

@@ -100,16 +100,16 @@ fun ColorSchemePickerDialog(
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Text(
-                    text = stringResource(R.string.chooseColorScheme),
+                    text = stringResource(R.string.settings_choose_color_scheme),
                     style = MaterialTheme.typography.headlineSmall,
                 )
 
                 Spacer(Modifier.height(16.dp))
 
                 Column(Modifier.align(Alignment.CenterHorizontally)) {
-                    ((0..11) step 4).forEach {
+                    (0..11 step 4).forEach {
                         Row {
-                            colorSchemes.slice(it..(it + 3)).fastForEach { color ->
+                            colorSchemes.slice(it..it + 3).fastForEach { color ->
                                 ColorPickerButton(
                                     color,
                                     color == currentColor,
@@ -136,7 +136,7 @@ fun ColorSchemePickerDialog(
                     onClick = { setShowDialog(false) },
                     modifier = Modifier.align(Alignment.End),
                 ) {
-                    Text(stringResource(R.string.ok))
+                    Text(stringResource(R.string.action_ok))
                 }
             }
         }

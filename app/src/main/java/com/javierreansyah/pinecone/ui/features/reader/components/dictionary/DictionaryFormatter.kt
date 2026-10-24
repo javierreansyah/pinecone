@@ -49,7 +49,7 @@ object DictionaryFormatter {
             sb.append("<div class=\"definition-content\">\n")
             sb.append(prepareHtml(entryDefinition))
             sb.append("\n</div>\n")
-            if (index < (entries.size - 1)) {
+            if (index < entries.size - 1) {
                 sb.append("<hr class=\"definition-divider\">\n")
             }
         }
@@ -98,7 +98,7 @@ object DictionaryFormatter {
             }
 
             val bareLabel = trimmedLine.trimEnd(':', ' ')
-            if (PARTS_OF_SPEECH.contains(bareLabel)) {
+            if (bareLabel in PARTS_OF_SPEECH) {
                 if (inList) {
                     sb.append("</ol>")
                     inList = false

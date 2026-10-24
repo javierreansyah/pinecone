@@ -128,7 +128,7 @@ class MainViewModel(
                     }
                 }
             if (publicationFiles.isEmpty()) {
-                _toastMessage.emit(app.getString(R.string.import_no_books_found))
+                _toastMessage.emit(app.getString(R.string.import_no_files_found))
                 return@launch
             }
             var successCount = 0
@@ -141,7 +141,7 @@ class MainViewModel(
                 if (result != null) {
                     successCount++
                 } else {
-                    failedFiles.add(file.name ?: app.getString(R.string.book_unknown))
+                    failedFiles.add(file.name ?: app.getString(R.string.publication_unknown))
                 }
             }
             if (failedFiles.isEmpty()) {

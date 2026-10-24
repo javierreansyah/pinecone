@@ -18,8 +18,8 @@ fun ReaderSettings.readingThemeIsDark(isSystemDark: Boolean): Boolean {
                 6, 8 -> hex.takeLast(6).toLongOrNull(16)
                 else -> null
             } ?: return appIsDark
-            val red = (rgb shr 16) and 255
-            val green = (rgb shr 8) and 255
+            val red = rgb shr 16 and 255
+            val green = rgb shr 8 and 255
             val blue = rgb and 255
             red * 0.2126 + green * 0.7152 + blue * 0.0722 < 128
         }

@@ -267,7 +267,7 @@ fun AppDrawer(
                             )
                         },
                         label = { Text(stringResource(R.string.action_all)) },
-                        selected = (selectedSpaceId == null) || (selectedSpaceId == "_all_"),
+                        selected = selectedSpaceId == null || selectedSpaceId == "_all_",
                         onClick = {
                             onSpaceSelected("_all_")
                             scope.launch { drawerState.collapse() }
@@ -275,7 +275,7 @@ fun AppDrawer(
                     )
                 }
 
-                allSpaces.filter { it.id != "_all_" }.forEach { (spaceId, spaceName) ->
+                allSpaces.filter { it.id != "_all_" }.forEach { (spaceId, spaceName, _) ->
                     WideNavigationRailItem(
                         railExpanded = true,
                         icon = {

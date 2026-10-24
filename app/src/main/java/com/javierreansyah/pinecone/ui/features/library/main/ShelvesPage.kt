@@ -71,16 +71,14 @@ fun ShelvesPage(
                 AnimatedContent(
                     targetState = layoutMode,
                     transitionSpec = {
-                        (fadeIn(animationSpec = tween(durationMillis = 100, delayMillis = 100)) +
+                        fadeIn(animationSpec = tween(durationMillis = 100, delayMillis = 100)) +
                                 scaleIn(
                                     initialScale = 0.9f,
                                     animationSpec = tween(durationMillis = 100, delayMillis = 100),
-                                )) togetherWith
-                                (fadeOut(animationSpec = tween(durationMillis = 100)) +
-                                        scaleOut(
-                                            targetScale = 0.9f,
-                                            animationSpec = tween(durationMillis = 100),
-                                        ))
+                                ) togetherWith fadeOut(animationSpec = tween(durationMillis = 100)) + scaleOut(
+                            targetScale = 0.9f,
+                            animationSpec = tween(durationMillis = 100),
+                        )
                     },
                     label = "shelvesPageLayoutTransition",
                 ) { targetLayoutMode ->
@@ -93,7 +91,7 @@ fun ShelvesPage(
                             ),
                         contentPadding = PaddingValues(top = 8.dp, bottom = bottomContentPadding),
                     ) {
-                        items(shelves, key = { (itShelf) -> itShelf.id }) { shelfWithCovers ->
+                        items(shelves, key = { (itShelf, _) -> itShelf.id }) { shelfWithCovers ->
                             val visibleBooks = shelfWithCovers.books
                             val booksCount = visibleBooks.size
 
@@ -117,7 +115,7 @@ fun ShelvesPage(
                                         )
                                     },
                                     isInMultiSelectMode = itemInMultiSelectMode,
-                                    isSelected = selectedShelves.contains(shelfWithCovers.shelf.id),
+                                    isSelected = shelfWithCovers.shelf.id in selectedShelves,
                                     onLongClick = if (isItemSelectable) {
                                         { onShelfLongClick?.invoke(shelfWithCovers.shelf.id) }
                                     } else null,
@@ -135,7 +133,7 @@ fun ShelvesPage(
                                     onBookClick = onBookClick,
                                     onBookLongClick = onBookLongClick,
                                     isInMultiSelectMode = itemInMultiSelectMode,
-                                    isSelected = selectedShelves.contains(shelfWithCovers.shelf.id),
+                                    isSelected = shelfWithCovers.shelf.id in selectedShelves,
                                     onLongClick = if (isItemSelectable) {
                                         { onShelfLongClick?.invoke(shelfWithCovers.shelf.id) }
                                     } else null,
@@ -179,7 +177,7 @@ private fun ShelfRowItem(
             .fillMaxWidth()
             .combinedClickable(
                 onClick = {
-                    if (isInMultiSelectMode && (onToggleSelect != null)) {
+                    if (isInMultiSelectMode && onToggleSelect != null) {
                         onToggleSelect()
                     } else {
                         onShelfClick(
@@ -274,14 +272,14 @@ private fun ShelfBooksHorizontalRow(
         val density = LocalDensity.current
         val containerSize = LocalWindowInfo.current.containerSize
         val screenWidth = with(density) { containerSize.width.toDp() }
-        val fitsOnScreen = ((120.dp * visibleBooks.size) + 16.dp) <= screenWidth
+        val fitsOnScreen = 120.dp * visibleBooks.size + 16.dp <= screenWidth
 
         LazyRow(
             userScrollEnabled = !fitsOnScreen,
             contentPadding = PaddingValues(horizontal = 8.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            items(visibleBooks, key = { (itBook) -> itBook.id }) { bookEntity ->
+            items(visibleBooks, key = { (itBook, _, _, _, _, _) -> itBook.id }) { bookEntity ->
                 val book = Book.fromEntity(bookEntity)
                 BookItem(
                     book = book,

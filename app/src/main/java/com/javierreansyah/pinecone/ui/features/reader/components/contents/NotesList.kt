@@ -56,7 +56,7 @@ fun NotesList(
         LazyColumn(
             modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 8.dp),
         ) {
-            items(notes) { (noteId, _, noteLocatorJson, noteChapterTitle, noteNoteText, noteColor, noteCreatedAt) ->
+            items(notes) { (noteId, _, noteLocatorJson, noteChapterTitle, noteNoteText, noteColor, noteCreatedAt, _) ->
                 val locator = try {
                     Locator.fromJSON(org.json.JSONObject(noteLocatorJson))
                 } catch (_: Exception) {
@@ -65,7 +65,7 @@ fun NotesList(
                 if (locator != null) {
                     val inDocument = stringResource(R.string.reader_in_document)
                     val chapterTitle =
-                        noteChapterTitle?.takeIf { it.isNotBlank() && (it != inDocument) }
+                        noteChapterTitle?.takeIf { it.isNotBlank() && it != inDocument }
                             ?: inDocument
 
                     val positionLabel = getPositionLabel(locator)

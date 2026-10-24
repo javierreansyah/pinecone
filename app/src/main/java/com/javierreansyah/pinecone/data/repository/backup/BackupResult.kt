@@ -15,7 +15,7 @@ sealed interface BackupResult {
     data class Failure(val reason: BackupFailure, val cause: Throwable? = null) : BackupResult
 
     val isSuccess: Boolean
-        get() = (this is Success) || (this is Skipped)
+        get() = this is Success || this is Skipped
 }
 
 enum class BackupFailure {

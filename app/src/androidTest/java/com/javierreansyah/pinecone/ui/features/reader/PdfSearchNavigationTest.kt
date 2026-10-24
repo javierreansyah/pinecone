@@ -8,14 +8,11 @@ import android.graphics.Color
 import android.graphics.Rect
 import android.net.Uri
 import android.os.SystemClock
-import timber.log.Timber
-import com.javierreansyah.pinecone.testing.InstrumentationLoggingRule
-import org.junit.Rule
-import androidx.core.graphics.get
 import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.ViewConfiguration
 import android.view.accessibility.AccessibilityNodeInfo
+import androidx.core.graphics.get
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -30,6 +27,7 @@ import com.javierreansyah.pinecone.reader.pdf.MuPdfSettings
 import com.javierreansyah.pinecone.reader.pdf.PdfSearchMatch
 import com.javierreansyah.pinecone.reader.pdf.pdfImageViewport
 import com.javierreansyah.pinecone.reader.pdf.pdfSelectionAnchor
+import com.javierreansyah.pinecone.testing.InstrumentationLoggingRule
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -38,10 +36,12 @@ import kotlinx.coroutines.withTimeout
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.readium.r2.navigator.pdf.PdfNavigatorFragment
 import org.readium.r2.shared.publication.Locator
+import timber.log.Timber
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.Locale
@@ -81,7 +81,7 @@ class PdfSearchNavigationTest {
                 }
                 fun containsText(node: AccessibilityNodeInfo?): Boolean = node != null &&
                         (node.text?.contains("Other content") == true ||
-                                (0 until node.childCount).any { containsText(node.getChild(it)) })
+                                (0..<node.childCount).any { containsText(node.getChild(it)) })
 
                 suspend fun awaitTextLayer() {
                     withTimeout(20_000.milliseconds) {
@@ -101,8 +101,7 @@ class PdfSearchNavigationTest {
                         val viewport =
                             pdfImageViewport(view.width.toFloat(), view.height.toFloat(), 600, 800)
                         result =
-                            (origin[0] + viewport.left + (quad.topLeft.x + quad.bottomRight.x) / 2 * viewport.width) to
-                                    (origin[1] + viewport.top + (quad.topLeft.y + quad.bottomRight.y) / 2 * viewport.height)
+                            origin[0] + viewport.left + (quad.topLeft.x + quad.bottomRight.x) / 2 * viewport.width to origin[1] + viewport.top + (quad.topLeft.y + quad.bottomRight.y) / 2 * viewport.height
                     }
                     return result
                 }
@@ -130,17 +129,18 @@ class PdfSearchNavigationTest {
                 touch(MotionEvent.ACTION_DOWN, down, point)
                 delay((ViewConfiguration.getLongPressTimeout().toLong() + 150).milliseconds)
                 touch(MotionEvent.ACTION_UP, down, point)
-                Timber.tag("PdfSearchNavigationTest").i("PDF_SELECTION: long press sent at %s", point)
+                Timber.tag("PdfSearchNavigationTest")
+                    .i("PDF_SELECTION: long press sent at %s", point)
                 await(scenario) {
                     ViewModelProvider(it)[ReaderNotesViewModel::class.java]
                         .selectionState.value.selectionLocator?.text?.highlight == "Other"
                 }
                 Timber.tag("PdfSearchNavigationTest").i("PDF_SELECTION: word selected")
-                val handleLabel = app.getString(R.string.pdf_selection_end)
+                val handleLabel = app.getString(R.string.reader_pdf_selection_end)
                 fun findHandle(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
                     if (node == null) return null
                     if (node.contentDescription?.toString() == handleLabel && node.isVisibleToUser) return node
-                    return (0 until node.childCount).firstNotNullOfOrNull {
+                    return (0..<node.childCount).firstNotNullOfOrNull {
                         findHandle(
                             node.getChild(
                                 it
@@ -167,8 +167,7 @@ class PdfSearchNavigationTest {
                     val fraction = (step + 1) / 12f
                     touch(
                         MotionEvent.ACTION_MOVE, dragDown,
-                        (handleStart.first + (handleEnd.first - handleStart.first) * fraction) to
-                                (handleStart.second + (handleEnd.second - handleStart.second) * fraction)
+                        handleStart.first + (handleEnd.first - handleStart.first) * fraction to handleStart.second + (handleEnd.second - handleStart.second) * fraction
                     )
                 }
                 touch(MotionEvent.ACTION_UP, dragDown, handleEnd)
@@ -402,7 +401,7 @@ class PdfSearchNavigationTest {
     private fun visiblePage(node: AccessibilityNodeInfo?, label: String): Boolean {
         if (node == null) return false
         if (node.isVisibleToUser && node.contentDescription?.toString() == label) return true
-        return (0 until node.childCount).any { visiblePage(node.getChild(it), label) }
+        return (0..<node.childCount).any { visiblePage(node.getChild(it), label) }
     }
 
     private var markerRegions: List<Rect> = emptyList()
@@ -452,7 +451,7 @@ class PdfSearchNavigationTest {
                     val valid = backgroundReady && markerRegions.mapIndexed { index, region ->
                         var strong = 0
                         var faint = 0
-                        for (y in region.top until region.bottom) for (x in region.left until region.right) {
+                        for (y in region.top..<region.bottom) for (x in region.left..<region.right) {
                             val pixel = image[x, y]
                             if (inverted && Color.blue(pixel) < 20) {
                                 if (Color.red(pixel) in 120..165 && Color.green(pixel) in 120..165) strong++
@@ -489,7 +488,7 @@ class PdfSearchNavigationTest {
         val pages = 8
         val objects = mutableListOf(
             "<< /Type /Catalog /Pages 2 0 R >>",
-            "<< /Type /Pages /Kids [${(0 until pages).joinToString(" ") { "${4 + it * 2} 0 R" }}] /Count $pages >>",
+            "<< /Type /Pages /Kids [${(0..<pages).joinToString(" ") { "${4 + it * 2} 0 R" }}] /Count $pages >>",
             "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
         )
         val unique = UUID.randomUUID().toString()

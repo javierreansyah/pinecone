@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_agpl_title">GNU AGPL v3 or later</string>
+    <string name="about_copyright">Copyright © 2026 Javier Aahmes Reansyah</string>
+    <string name="about_no_libraries">No open source libraries found.</string>
+    <string name="about_open_source_licenses">Open source licenses</string>
+    <string name="about_source_code">Source code (GitHub)</string>
+    <string name="about_title">Pinecone</string>
+    <string name="about_unknown_license">Unknown license</string>
+    <string name="about_view_full_license">View full license</string>
+</resources>

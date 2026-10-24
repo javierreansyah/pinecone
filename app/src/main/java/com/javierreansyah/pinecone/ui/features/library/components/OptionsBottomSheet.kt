@@ -207,7 +207,7 @@ fun <T> MultiToggleGroupSection(
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             options.forEachIndexed { index, option ->
-                val isSelected = selectedOptions.contains(option)
+                val isSelected = option in selectedOptions
                 ToggleButton(
                     modifier = if (singleSelection) Modifier.semantics {
                         role = Role.RadioButton
@@ -309,7 +309,7 @@ fun LibraryFilterBottomSheet(
                         LibraryView.Both -> R.string.library_show_both
                         LibraryView.Books -> if (publicationWording(availableFormats) == PublicationWording.Books) {
                             R.string.content_books_only
-                        } else R.string.library_show_books
+                        } else R.string.library_show_items
 
                         LibraryView.Shelves -> R.string.library_show_shelves
                     }

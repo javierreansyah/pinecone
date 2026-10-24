@@ -143,7 +143,7 @@ private fun DictionariesContent(
     var itemToRename by remember { mutableStateOf<InstalledDictionary?>(null) }
 
     val isLoadingImport = uiState.importState is DictionaryState.Loading
-    val totalCount = uiState.installedDictionaries.size + (if (isLoadingImport) 1 else 0)
+    val totalCount = uiState.installedDictionaries.size + if (isLoadingImport) 1 else 0
     val isEmpty = totalCount == 0
 
     Scaffold(
@@ -174,7 +174,7 @@ private fun DictionariesContent(
         ) {
             val isLoadingImport = uiState.importState is DictionaryState.Loading
             val totalCount = uiState.installedDictionaries.size +
-                    (if (isLoadingImport) 1 else 0)
+                    if (isLoadingImport) 1 else 0
 
             if (totalCount == 0) {
                 EmptyState(
@@ -201,7 +201,7 @@ private fun DictionariesContent(
                 )
             }
 
-            itemToDelete?.let { (dictId2, dictName2) ->
+            itemToDelete?.let { (dictId2, dictName2, _) ->
                 DeleteDictionaryDialog(
                     dictName = dictName2,
                     onDismissRequest = { itemToDelete = null },
@@ -212,7 +212,7 @@ private fun DictionariesContent(
                 }
             }
 
-            itemToRename?.let { (dictId3, dictName3) ->
+            itemToRename?.let { (dictId3, dictName3, _) ->
                 RenameDictionaryDialog(
                     initialName = dictName3,
                     onDismissRequest = { itemToRename = null },

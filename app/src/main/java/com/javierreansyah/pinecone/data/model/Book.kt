@@ -31,7 +31,7 @@ data class Book(
     val isUnsorted: Boolean = false,
     val originalFilename: String = "",
 ) {
-    val spaceIds: List<String> get() = spaces.map { (itId) -> itId }
+    val spaceIds: List<String> get() = spaces.map { (itId, _, _) -> itId }
 
     companion object {
         fun fromEntity(entity: BookWithDetails): Book = Book(

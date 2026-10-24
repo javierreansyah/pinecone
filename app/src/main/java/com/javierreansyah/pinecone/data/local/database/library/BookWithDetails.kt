@@ -40,6 +40,6 @@ data class BookWithDetails(
                 BookAuthorCrossRef::authorId,
                 BookAuthorCrossRef::authorOrder,
             )
-            return authors.sortedBy { (itId) -> orderMap[itId] ?: 0 }
+            return authors.sortedBy { (itId, _) -> orderMap[itId] ?: 0 }
         }
 }

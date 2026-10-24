@@ -54,11 +54,11 @@ fun OpenSourceLicensesScreen(
             val customJson =
                 resources.openRawResource(R.raw.custom_libraries).bufferedReader()
                     .use { it.readText() }
-            val (generatedLibsLibraries) = Libs.Builder().withContext(context).build()
-            val (customLibsLibraries) = Libs.Builder().withJson(customJson).build()
+            val (generatedLibsLibraries, _) = Libs.Builder().withContext(context).build()
+            val (customLibsLibraries, _) = Libs.Builder().withJson(customJson).build()
 
             libraries =
-                (generatedLibsLibraries + customLibsLibraries).sortedBy { (_, _, itName) -> itName.lowercase() }
+                (generatedLibsLibraries + customLibsLibraries).sortedBy { (_, _, itName, _, _, _, _, _, _, _, _, _) -> itName.lowercase() }
         }
     }
 
@@ -74,7 +74,7 @@ fun OpenSourceLicensesScreen(
         },
     ) { innerPadding ->
         val libs = libraries
-        if ((libs != null) && libs.isEmpty()) {
+        if (libs != null && libs.isEmpty()) {
             Text(
                 text = stringResource(R.string.about_no_libraries),
                 modifier = Modifier
@@ -95,7 +95,7 @@ fun OpenSourceLicensesScreen(
             ) {
                 itemsIndexed(
                     libs ?: emptyList(),
-                    key = { _, (itemUniqueId) -> itemUniqueId },
+                    key = { _, (itemUniqueId, _, _, _, _, _, _, _, _, _, _, _) -> itemUniqueId },
                 ) { index, library ->
                     val license = library.licenses.firstOrNull()
                     SegmentedListItem(
@@ -123,13 +123,13 @@ fun OpenSourceLicensesScreen(
             }
         }
 
-        selectedLibrary?.let { (_, _, libraryName, _, _, _, _, _, libraryLicenses) ->
+        selectedLibrary?.let { (_, _, libraryName, _, _, _, _, _, libraryLicenses, _, _, _) ->
             val license = libraryLicenses.firstOrNull()
             AlertDialog(
                 onDismissRequest = { selectedLibrary = null },
                 confirmButton = {
                     TextButton(onClick = { selectedLibrary = null }) {
-                        Text(stringResource(R.string.ok))
+                        Text(stringResource(R.string.action_ok))
                     }
                 },
                 title = {

@@ -53,8 +53,7 @@ internal class PdfBibliographyReconstructor(private val size: Float) {
             val sameLine = lastBox != null && abs(box.top - lastBox.top) <= size * .4f &&
                     box.left - lastBox.right in -size * .3f..size * 3
             val continuation =
-                !numbered && !nextEntry && (sameLine || (sameColumn && lastBox != null &&
-                        box.top - lastBox.bottom in -size * .3f..size * 1.6f))
+                !numbered && !nextEntry && (sameLine || sameColumn && lastBox != null && box.top - lastBox.bottom in -size * .3f..size * 1.6f)
             val continuedPage = !numbered && sameColumn && acrossPage != null &&
                     output.isEmpty() && box.top < page.top + page.height * .25f
             if (continuation) {

@@ -45,16 +45,16 @@ fun List<Locator>.findIndexForLocator(locator: Locator): Int {
 
     var bestIndex = -1
     for (i in indices.reversed()) {
-        val (posHref2, _, _, posLocations) = this[i]
+        val (posHref2, _, _, posLocations, _) = this[i]
         val posHref = posHref2.toString().substringBefore("#")
-        if ((posHref == targetHref) && ((posLocations.progression ?: 0.0) <= targetProgression)) {
+        if (posHref == targetHref && (posLocations.progression ?: 0.0) <= targetProgression) {
             bestIndex = i
             break
         }
     }
     if (bestIndex != -1) return bestIndex
 
-    return indexOfFirst { (itHref) -> itHref.toString().substringBefore("#") == targetHref }
+    return indexOfFirst { (itHref, _, _, _, _) -> itHref.toString().substringBefore("#") == targetHref }
 }
 
 fun List<Locator>.findClosestByProgression(targetProgression: Double): Locator? {
@@ -89,27 +89,27 @@ fun List<Locator>.findClosestByProgression(targetProgression: Double): Locator? 
 }
 
 fun Locator.isSamePosition(other: Locator): Boolean {
-    if (this.href != other.href) return false
+    if (href != other.href) return false
 
-    val thisFragments = this.locations.fragments
+    val thisFragments = locations.fragments
     val otherFragments = other.locations.fragments
     if (thisFragments.isNotEmpty() && otherFragments.isNotEmpty()) {
         return thisFragments == otherFragments
     }
 
-    val thisProg = this.locations.progression
+    val thisProg = locations.progression
     val otherProg = other.locations.progression
-    if ((thisProg != null) && (otherProg != null)) {
+    if (thisProg != null && otherProg != null) {
         return abs(thisProg - otherProg) < 0.0001
     }
 
-    val thisTotalProg = this.locations.totalProgression
+    val thisTotalProg = locations.totalProgression
     val otherTotalProg = other.locations.totalProgression
-    if ((thisTotalProg != null) && (otherTotalProg != null)) {
+    if (thisTotalProg != null && otherTotalProg != null) {
         return abs(thisTotalProg - otherTotalProg) < 0.0001
     }
 
-    val thisPos = this.locations.position
+    val thisPos = locations.position
     val otherPos = other.locations.position
-    return (thisPos != null) && (otherPos != null) && (thisPos == otherPos)
+    return thisPos != null && otherPos != null && thisPos == otherPos
 }

@@ -141,8 +141,8 @@ inline fun SegmentedColumn(
         modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         items.forEachIndexed { index, item ->
-            val isTopDetached = item.selected || (index == 0)
-            val isBottomDetached = item.selected || (index == (count - 1))
+            val isTopDetached = item.selected || index == 0
+            val isBottomDetached = item.selected || index == count - 1
 
             key(item.key ?: index) {
                 item.wrapper {
@@ -187,8 +187,8 @@ inline fun SegmentedLazyColumn(
             count = count, key = { index -> items[index].key ?: index },
         ) { index ->
             val item = items[index]
-            val isTopDetached = item.selected || (index == 0)
-            val isBottomDetached = item.selected || (index == (count - 1))
+            val isTopDetached = item.selected || index == 0
+            val isBottomDetached = item.selected || index == count - 1
 
             key(item.key ?: index) {
                 item.wrapper {
@@ -222,8 +222,8 @@ fun SegmentedListItem(
     onLongClick: (() -> Unit)? = null,
     index: Int = 0,
     count: Int = 1,
-    isTopDetached: Boolean = (selected || (index == 0)),
-    isBottomDetached: Boolean = (selected || (index == (count - 1))),
+    isTopDetached: Boolean = selected || index == 0,
+    isBottomDetached: Boolean = selected || index == count - 1,
     enabled: Boolean = true,
     animated: Boolean = true,
     leadingContent: @Composable (() -> Unit)? = null,
@@ -308,7 +308,7 @@ fun SegmentedListItem(
             .clip(shape)
             .background(if (enabled) containerColor else containerColor.copy(alpha = 0.6f))
             .then(
-                if ((onClick != null) || (onLongClick != null)) {
+                if (onClick != null || onLongClick != null) {
                     Modifier.combinedClickable(
                         onClick = { onClick?.invoke() },
                         onLongClick = onLongClick?.let { { it() } },

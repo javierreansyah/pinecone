@@ -259,7 +259,7 @@ fun ReaderSettingsContent(
             onDelete = if (themeToEdit != null) {
                 {
                     val newThemes =
-                        settings.customThemes.filter { (itName) -> itName != themeToEdit?.name }
+                        settings.customThemes.filter { (itName, _, _, _) -> itName != themeToEdit?.name }
                     val newPreset =
                         if (settings.pineconeThemePreset == themeToEdit?.name) "Auto" else settings.pineconeThemePreset
                     onSettingsChange(
@@ -283,7 +283,7 @@ fun ReaderSettingsContent(
             }
 
             val newPreset =
-                if ((settings.pineconeThemePreset == themeToEdit?.name) || (themeToEdit == null)) name else settings.pineconeThemePreset
+                if (settings.pineconeThemePreset == themeToEdit?.name || themeToEdit == null) name else settings.pineconeThemePreset
 
             onSettingsChange(
                 settings.copy(
@@ -910,7 +910,7 @@ internal fun AdvancedTabContent(
                     style = MaterialTheme.typography.titleMedium,
                 )
                 val activeName =
-                    settings.installedDictionaries.find { (itId) -> itId == settings.activeDictionaryId }?.name
+                    settings.installedDictionaries.find { (itId, _, _) -> itId == settings.activeDictionaryId }?.name
                         ?: stringResource(R.string.reader_settings_image_filter_none)
                 Text(
                     activeName,
@@ -931,7 +931,7 @@ internal fun AdvancedTabContent(
                                     style = MaterialTheme.typography.bodyLarge,
                                 )
                             } else {
-                                settings.installedDictionaries.forEach { (dictId, dictName) ->
+                                settings.installedDictionaries.forEach { (dictId, dictName, _) ->
                                     val isSelected = settings.activeDictionaryId == dictId
                                     Row(
                                         modifier = Modifier

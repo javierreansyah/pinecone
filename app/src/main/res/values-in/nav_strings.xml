@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nav_backup_failed">Cadangan gagal</string>
+    <string name="nav_backup_success">Cadangan berhasil</string>
+    <string name="nav_folder_scan_complete">Pemindaian folder selesai</string>
+    <string name="nav_import_complete">Impor selesai</string>
+    <string name="nav_import_files">Impor file</string>
+    <plurals name="nav_importing_files">
+        <item quantity="other">Mengimpor %d file…</item>
+    </plurals>
+    <string name="nav_restore_backup">Pulihkan cadangan</string>
+    <string name="nav_restore_failed">Gagal memulihkan cadangan</string>
+    <string name="nav_restore_success">Cadangan berhasil dipulihkan!</string>
+    <string name="nav_restoring_backup">Memulihkan cadangan…</string>
+    <string name="nav_scan_folder">Pindai folder</string>
+    <string name="nav_scanning_folder">Memindai folder untuk mencari file yang didukung…</string>
+    <string name="nav_setup_now">Konfigurasi sekarang</string>
+    <string name="nav_starting_backup">Memulai pencadangan…</string>
+</resources>

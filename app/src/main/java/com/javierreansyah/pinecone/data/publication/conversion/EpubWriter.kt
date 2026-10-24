@@ -152,7 +152,7 @@ class EpubWriter(
                 )
             }
             target.appendChild(holder)
-            continuation.childNodes.let { nodes -> (0 until nodes.length).map { nodes.item(it) } }
+            continuation.childNodes.let { nodes -> (0..<nodes.length).map { nodes.item(it) } }
                 .forEach { holder.appendChild(target.ownerDocument.importNode(it, true)) }
             section.removeChild(continuation)
         }
@@ -284,7 +284,7 @@ class EpubWriter(
             }
         }
         val previous = pendingSection
-        val continuation = (0 until section.childNodes.length).map { section.childNodes.item(it) }
+        val continuation = (0..<section.childNodes.length).map { section.childNodes.item(it) }
             .filterIsInstance<Element>()
             .firstOrNull { it.getAttribute("class") == "reference-continuation" }
         val trailing = previous?.lastChild as? Element
@@ -495,7 +495,8 @@ class EpubWriter(
                     child("h1", strings.contents)
                     child("ol").apply {
                         val entries = outline.filter { it.second in 1..pages.size }
-                        (entries.ifEmpty { pages.mapIndexed { index, page -> page.second to index + 1 } }).forEach { (name, page) ->
+                        entries.ifEmpty { pages.mapIndexed { index, page -> page.second to index + 1 } }
+                            .forEach { (name, page) ->
                             val anchor = outlineAnchors[page to outlineKey(name)]
                             child("li").child("a", name).setAttribute(
                                 "href",

@@ -20,7 +20,7 @@ class MuPdfExportTest {
         try {
             val pages = InstrumentationRegistry.getArguments().getString("pages")?.split(',')
                 ?.map { it.trim().toInt() - 1 } ?: listOf(0, 2, 3, 4, 5, 6, 8, 9, 10, 12, 13, 14)
-            pages.filter { it in 0 until pdf.pageCount }.forEach { index ->
+            pages.filter { it in 0..<pdf.pageCount }.forEach { index ->
                 listOf("xhtml", "stext.xml").forEach { format ->
                     File(context.cacheDir, "native-base-${index + 1}.$format").writeText(
                         MuPdfPageExporter.export(

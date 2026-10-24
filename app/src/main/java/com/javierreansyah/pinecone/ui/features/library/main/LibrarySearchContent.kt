@@ -96,8 +96,8 @@ internal fun ExpandedSearchContent(
         SearchResultsContent(
             searchCategory = searchCategory,
             results = searchResults,
-            onBookClick = { (bookId) -> onNavigateToReader(bookId) },
-            onShelfClick = { (shelfId, _, shelfName) -> onNavigateToShelf(shelfId, shelfName, 0) },
+            onBookClick = { (bookId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> onNavigateToReader(bookId) },
+            onShelfClick = { (shelfId, _, shelfName, _) -> onNavigateToShelf(shelfId, shelfName, 0) },
             onAuthorClick = { author -> onNavigateToAuthor(author) },
             onTagClick = { tag -> onNavigateToTag(tag) },
             onAuthorsHeaderClick = onAuthorsHeaderClick,
@@ -132,7 +132,7 @@ private fun SearchResultsContent(
         val maxTags = if (isPreview) 4 else Int.MAX_VALUE
 
         val booksToShow = if (isPreview) {
-            results.books.sortedByDescending { (_, _, _, _, _, itLastOpened) -> itLastOpened ?: 0L }
+            results.books.sortedByDescending { (_, _, _, _, _, itLastOpened, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itLastOpened ?: 0L }
                 .take(maxBooks)
         } else if (isAll) {
             results.books.take(maxBooks)
@@ -141,7 +141,7 @@ private fun SearchResultsContent(
         }
 
         val shelvesToShow = if (isPreview) {
-            results.shelves.sortedBy { (_, _, itName) -> itName }.take(maxShelves)
+            results.shelves.sortedBy { (_, _, itName, _) -> itName }.take(maxShelves)
         } else if (isAll) {
             results.shelves.take(maxShelves)
         } else {
@@ -167,7 +167,7 @@ private fun SearchResultsContent(
         val isEmptyResults =
             !isSearchEmpty && results.books.isEmpty() && results.shelves.isEmpty() && results.authors.isEmpty() && results.tags.isEmpty()
 
-        val showOnlyBooksGrid = !isAll && (searchCategory == SearchCategory.Books)
+        val showOnlyBooksGrid = !isAll && searchCategory == SearchCategory.Books
 
         if (isEmptyResults) {
             Box(
@@ -197,7 +197,7 @@ private fun SearchResultsContent(
             BookCollection(
                 books = booksToShow,
                 onBookClick = { id ->
-                    val book = booksToShow.find { (itId) -> itId == id }
+                    val book = booksToShow.find { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId == id }
                     book?.let(onBookClick)
                 },
                 fastEffectsSpec = fastEffectsSpec,
@@ -235,7 +235,7 @@ private fun SearchResultsContent(
                     }
                 }
 
-                if (shelvesToShow.isNotEmpty() && (isAll || (searchCategory == SearchCategory.Shelves))) {
+                if (shelvesToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Shelves)) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         SectionHeader(
                             title = stringResource(R.string.library_tab_shelves),
@@ -250,7 +250,7 @@ private fun SearchResultsContent(
                     }
                     itemsIndexed(
                         shelvesToShow,
-                        key = { _, (itId2) -> "shelf_${itId2}" },
+                        key = { _, (itId2, _, _, _) -> "shelf_${itId2}" },
                     ) { index, shelf ->
                         SearchFilterItem(
                             text = shelf.name,
@@ -258,8 +258,8 @@ private fun SearchResultsContent(
                             onClick = { onShelfClick(shelf) },
                             modifier = Modifier
                                 .padding(
-                                    start = if ((index % 2) == 0) 16.dp else 0.dp,
-                                    end = if ((index % 2) == 1) 16.dp else 0.dp,
+                                    start = if (index % 2 == 0) 16.dp else 0.dp,
+                                    end = if (index % 2 == 1) 16.dp else 0.dp,
                                 )
                                 .animateItem(
                                     fadeInSpec = fastEffectsSpec,
@@ -270,7 +270,7 @@ private fun SearchResultsContent(
                     }
                 }
 
-                if (authorsToShow.isNotEmpty() && (isAll || (searchCategory == SearchCategory.Authors))) {
+                if (authorsToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Authors)) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         SectionHeader(
                             title = stringResource(R.string.library_authors_title),
@@ -291,8 +291,8 @@ private fun SearchResultsContent(
                             onClick = { onAuthorClick(author) },
                             modifier = Modifier
                                 .padding(
-                                    start = if ((index % 2) == 0) 16.dp else 0.dp,
-                                    end = if ((index % 2) == 1) 16.dp else 0.dp,
+                                    start = if (index % 2 == 0) 16.dp else 0.dp,
+                                    end = if (index % 2 == 1) 16.dp else 0.dp,
                                 )
                                 .animateItem(
                                     fadeInSpec = fastEffectsSpec,
@@ -303,7 +303,7 @@ private fun SearchResultsContent(
                     }
                 }
 
-                if (tagsToShow.isNotEmpty() && (isAll || (searchCategory == SearchCategory.Tags))) {
+                if (tagsToShow.isNotEmpty() && (isAll || searchCategory == SearchCategory.Tags)) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         SectionHeader(
                             title = stringResource(R.string.library_tags_title),
@@ -324,8 +324,8 @@ private fun SearchResultsContent(
                             onClick = { onTagClick(tag) },
                             modifier = Modifier
                                 .padding(
-                                    start = if ((index % 2) == 0) 16.dp else 0.dp,
-                                    end = if ((index % 2) == 1) 16.dp else 0.dp,
+                                    start = if (index % 2 == 0) 16.dp else 0.dp,
+                                    end = if (index % 2 == 1) 16.dp else 0.dp,
                                 )
                                 .animateItem(
                                     fadeInSpec = fastEffectsSpec,
@@ -362,7 +362,7 @@ private fun BooksSection(
             state = listState,
             contentPadding = PaddingValues(horizontal = 8.dp),
         ) {
-            items(books, key = { (itId3) -> itId3 }) { book ->
+            items(books, key = { (itId3, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId3 }) { book ->
                 val animateModifier = if (fastEffectsSpec != null) {
                     Modifier.animateItem(
                         fadeInSpec = fastEffectsSpec,
@@ -476,7 +476,7 @@ private fun BookCollection(
         }
         items(
             items = books,
-            key = { (itId4) -> "${itId4}-Grid" },
+            key = { (itId4, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> "${itId4}-Grid" },
             contentType = { "Grid" },
         ) { book ->
             val animateModifier = if (fastEffectsSpec != null) {

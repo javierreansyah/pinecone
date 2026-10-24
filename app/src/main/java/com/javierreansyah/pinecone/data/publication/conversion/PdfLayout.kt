@@ -210,18 +210,18 @@ internal class PdfLayoutReconstructor(private val profile: PdfDocumentProfile) {
                     number.size,
                     candidate.size
                 ) * .3f && candidate.size / number.size in .7f..1.4f &&
-                        (!twoColumns || (candidate.bounds.left < middle) == (number.bounds.left < middle)) &&
-                        (candidate.bold || candidate.size >= bodySize * 1.08f || "${number.text} ${candidate.text}" in outlineTitles ||
-                                (!number.text.endsWith('.') && candidate.text.length <= 100 && candidate.text.first()
-                                    .isUpperCase() &&
-                                        blocks.asSequence().filter {
-                                            !it.image && it.bounds.top >= candidate.bounds.bottom && overlaps(
-                                                it.bounds,
-                                                candidate.bounds
-                                            ) > 0
-                                        }
-                                            .minOfOrNull { it.bounds.top - candidate.bounds.bottom }
-                                            ?.let { it >= candidate.size * .6f } == true))
+                        (!twoColumns || candidate.bounds.left < middle == number.bounds.left < middle) &&
+                        (candidate.bold || candidate.size >= bodySize * 1.08f || "${number.text} ${candidate.text}" in outlineTitles || !number.text.endsWith(
+                            '.'
+                        ) && candidate.text.length <= 100 && candidate.text.first()
+                            .isUpperCase() && blocks.asSequence().filter {
+                            !it.image && it.bounds.top >= candidate.bounds.bottom && overlaps(
+                                it.bounds,
+                                candidate.bounds
+                            ) > 0
+                        }
+                            .minOfOrNull { it.bounds.top - candidate.bounds.bottom }
+                            ?.let { it >= candidate.size * .6f } == true)
             }.minByOrNull { it.bounds.left - number.bounds.right }
             if (title != null) {
                 headings[number.anchor] = title; consumed += title.anchor
@@ -247,9 +247,9 @@ internal class PdfLayoutReconstructor(private val profile: PdfDocumentProfile) {
                 )
             ) {
                 val pageNumber =
-                    sectionNumber.matches(text) && (block.bounds.top > page.bounds.bottom - page.bounds.height * .08f ||
-                            (block.bounds.bottom < page.bounds.top + page.bounds.height * .04f &&
-                                    abs((block.bounds.left + block.bounds.right) / 2 - (page.bounds.left + page.bounds.right) / 2) < page.bounds.width * .12f))
+                    sectionNumber.matches(text) && (block.bounds.top > page.bounds.bottom - page.bounds.height * .08f || block.bounds.bottom < page.bounds.top + page.bounds.height * .04f && abs(
+                        (block.bounds.left + block.bounds.right) / 2 - (page.bounds.left + page.bounds.right) / 2
+                    ) < page.bounds.width * .12f)
                 if (pageNumber || profile.repeatedMargin(text)) continue
             }
             val figureText = if (block.image) figureMembers[block.anchor].orEmpty() else emptyList()
@@ -302,8 +302,8 @@ internal class PdfLayoutReconstructor(private val profile: PdfDocumentProfile) {
         numberedTitle.matchEntire(text)?.let { match ->
             val title = match.groupValues[3]
             val styled = block.bold || block.size >= bodySize * 1.08f || text in outline
-            if (styled || (match.groupValues[2].isEmpty() && title.first()
-                    .isUpperCase() && title.length <= 100)
+            if (styled || match.groupValues[2].isEmpty() && title.first()
+                    .isUpperCase() && title.length <= 100
             )
                 return (match.groupValues[1].count { it == '.' } + 2).coerceAtMost(6)
         }
@@ -316,8 +316,9 @@ internal class PdfLayoutReconstructor(private val profile: PdfDocumentProfile) {
         }
             .minOfOrNull { it.bounds.top - block.bounds.bottom }?.let { it >= bodySize * .5f }
             ?: true
-        if (separated && (block.size >= bodySize * 1.12f ||
-                    (block.bold && block.size >= bodySize * .95f && profile.recurringBold(block.size)))
+        if (separated && (block.size >= bodySize * 1.12f || block.bold && block.size >= bodySize * .95f && profile.recurringBold(
+                block.size
+            ))
         )
             return if (block.size >= bodySize * 1.5f) 1 else 2
         return null
@@ -387,8 +388,7 @@ internal class PdfLayoutReconstructor(private val profile: PdfDocumentProfile) {
                 else -> 0
             } else 0
             val previous = output.lastOrNull()
-            if (previous != null && (!positioned || previous.bounds == atom.run.bounds) && previous.crop == crop && (crop != null ||
-                        (previous.bold == atom.run.bold && previous.italic == atom.run.italic && previous.script == script))
+            if (previous != null && (!positioned || previous.bounds == atom.run.bounds) && previous.crop == crop && (crop != null || previous.bold == atom.run.bold && previous.italic == atom.run.italic && previous.script == script)
             ) {
                 output[output.lastIndex] = previous.copy(end = index + 1)
             } else output += ReflowRun(
@@ -488,7 +488,7 @@ internal class PdfLayoutReconstructor(private val profile: PdfDocumentProfile) {
             proseBaselines.any { abs(it - run.baseline) <= run.size * .25f }
         for (i in sorted.indices) {
             val a = sorted[i]
-            for (j in i + 1 until min(sorted.size, i + 129)) {
+            for (j in i + 1..<min(sorted.size, i + 129)) {
                 val b = sorted[j]
                 if (b.bounds.top - a.bounds.bottom > max(a.size, b.size) * 2) break
                 val gap = abs(a.baseline - b.baseline)
@@ -546,7 +546,8 @@ internal class PdfLayoutReconstructor(private val profile: PdfDocumentProfile) {
         rules: List<FigureBounds>
     ): List<ReflowBlock> {
         val eligible =
-            output.asSequence().filter { it.headingLevel == null && it.kind in setOf("paragraph", "equation") }
+            output.asSequence()
+                .filter { it.headingLevel == null && it.kind in setOf("paragraph", "equation") }
                 .flatMap { it.sources }.filterNot { it.hidden }.map { it.anchor }.toSet()
         val candidates = original.filter {
             it.anchor in eligible && !it.image && it.text.length < 300 && it.runs.none(::prose)
@@ -556,7 +557,7 @@ internal class PdfLayoutReconstructor(private val profile: PdfDocumentProfile) {
             proseBlocks.minOfOrNull { it.bounds.left } ?: original.minOfOrNull { it.bounds.left }
             ?: 0f
         val displays = candidates.filter { block ->
-            val signal = block.text.contains('=') || block.runs.filter { it.mathFont }
+            val signal = '=' in block.text || block.runs.filter { it.mathFont }
                 .sumOf { it.text.count(Char::isLetter) } >= 6
             signal && block.bounds.left > textLeft + bodySize * 2 &&
                     proseBlocks.none { it.bounds.top < block.bounds.bottom && it.bounds.bottom > block.bounds.top }
@@ -597,7 +598,7 @@ internal class PdfLayoutReconstructor(private val profile: PdfDocumentProfile) {
         var merged = true
         while (merged) {
             merged = false
-            loop@ for (i in groups.indices) for (j in i + 1 until groups.size) {
+            loop@ for (i in groups.indices) for (j in i + 1..<groups.size) {
                 if (groups[i].blocks.any { it in groups[j].blocks }) {
                     groups[i].bounds = groups[i].bounds.union(groups[j].bounds)
                     groups[i].blocks += groups[j].blocks

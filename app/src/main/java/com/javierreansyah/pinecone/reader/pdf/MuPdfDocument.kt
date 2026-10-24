@@ -141,9 +141,9 @@ class MuPdfDocumentFactory : PdfDocumentFactory<MuPdfDocument> {
                         Document.openDocument(bytes, "application/pdf")
                     }
                     require(
-                        !document.needsPassword() || (password != null && document.authenticatePassword(
+                        !document.needsPassword() || password != null && document.authenticatePassword(
                             password
-                        ))
+                        )
                     ) {
                         "Password-protected PDFs must be unlocked before importing"
                     }

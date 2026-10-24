@@ -144,7 +144,7 @@ class PdfFormulaAndListTest {
         assertEquals("paragraph", output.single().kind)
         assertTrue(sources.flatMap { it.runs }.none { it.math != null || it.hidden })
         assertEquals(paragraph.text, sources.single().runs.joinToString("") { it.text })
-        assertTrue(sources.single().text.contains("factor of k. Separable convolutions"))
+        assertTrue("factor of k. Separable convolutions" in sources.single().text)
     }
 
     @Test

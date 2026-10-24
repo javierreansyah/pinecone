@@ -91,7 +91,7 @@ class ReaderNotesViewModel(
                     SortOption.BOOK_ORDER_DESC -> compareLocatorsWithFallback(l2, l1, toc)
                         ?: b2.createdAt.compareTo(b1.createdAt)
                 }
-            }.map { (itFirst) -> itFirst }.toList()
+            }.map { (itFirst, second) -> itFirst }.toList()
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val sortedNotes: StateFlow<List<NoteEntity>> =
@@ -113,7 +113,7 @@ class ReaderNotesViewModel(
                     SortOption.BOOK_ORDER_DESC -> compareLocatorsWithFallback(l2, l1, toc)
                         ?: n2.createdAt.compareTo(n1.createdAt)
                 }
-            }.map { (itFirst2) -> itFirst2 }.toList()
+            }.map { (itFirst2, second) -> itFirst2 }.toList()
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun setSortOption(option: SortOption) {
@@ -121,7 +121,7 @@ class ReaderNotesViewModel(
     }
 
     private fun compareLocatorsWithFallback(loc1: Locator?, loc2: Locator?, toc: List<Link>): Int? {
-        if ((loc1 != null) && (loc2 != null)) {
+        if (loc1 != null && loc2 != null) {
             val comp = compareLocators(loc1, loc2, toc)
             if (comp != 0) return comp
             return null
@@ -134,20 +134,20 @@ class ReaderNotesViewModel(
     private fun compareLocators(loc1: Locator, loc2: Locator, tableOfContents: List<Link>): Int {
         val tp1 = loc1.locations.totalProgression
         val tp2 = loc2.locations.totalProgression
-        if ((tp1 != null) && (tp2 != null)) return tp1.compareTo(tp2)
+        if (tp1 != null && tp2 != null) return tp1.compareTo(tp2)
 
         val href1 = loc1.href.toString().substringBefore("#")
         val href2 = loc2.href.toString().substringBefore("#")
         if (href1 != href2) {
             val idx1 =
-                tableOfContents.indexOfFirst { (itHref) ->
+                tableOfContents.indexOfFirst { (itHref, _, _, _, _, _, _, _, _, _, _, _) ->
                     itHref.toString().substringBefore("#") == href1
                 }
             val idx2 =
-                tableOfContents.indexOfFirst { (itHref2) ->
+                tableOfContents.indexOfFirst { (itHref2, _, _, _, _, _, _, _, _, _, _, _) ->
                     itHref2.toString().substringBefore("#") == href2
                 }
-            if ((idx1 != -1) && (idx2 != -1)) return idx1.compareTo(idx2)
+            if (idx1 != -1 && idx2 != -1) return idx1.compareTo(idx2)
             if (idx1 != -1) return -1
             if (idx2 != -1) return 1
             return href1.compareTo(href2)
@@ -155,21 +155,21 @@ class ReaderNotesViewModel(
 
         val p1 = loc1.locations.progression
         val p2 = loc2.locations.progression
-        if ((p1 != null) && (p2 != null)) return p1.compareTo(p2)
+        if (p1 != null && p2 != null) return p1.compareTo(p2)
 
         val pos1 = loc1.locations.position
         val pos2 = loc2.locations.position
-        if ((pos1 != null) && (pos2 != null)) return pos1.compareTo(pos2)
+        if (pos1 != null && pos2 != null) return pos1.compareTo(pos2)
 
         return 0
     }
 
     fun toggleBookmark(locator: Locator, chapterTitle: String?) {
         viewModelScope.launch {
-            val existing = bookmarks.value.find { (_, _, bookmarkLocatorJson) ->
+            val existing = bookmarks.value.find { (_, _, bookmarkLocatorJson, _, _, _) ->
                 try {
                     val bmLocator = Locator.fromJSON(JSONObject(bookmarkLocatorJson))
-                    (bmLocator != null) && bmLocator.isSamePosition(locator)
+                    bmLocator != null && bmLocator.isSamePosition(locator)
                 } catch (_: Exception) {
                     false
                 }
