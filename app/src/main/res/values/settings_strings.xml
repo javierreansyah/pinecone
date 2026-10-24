@@ -25,7 +25,7 @@
     <string name="settings_language">@string/publication_language</string>
     <string name="settings_last_backup_format">Last: %s</string>
     <string name="settings_library_bottom_navigation">Show library bottom navigation</string>
-    <string name="settings_library_bottom_navigation_summary">Show the items and shelves switcher. When hidden, swipe between pages.</string>
+    <string name="settings_library_bottom_navigation_summary">Show the titles and shelves switcher.</string>
     <string name="settings_no_backups_found">No backups found in the selected folder.</string>
     <string name="settings_option_dark">@string/reader_settings_theme_dark</string>
     <string name="settings_option_dynamic">Dynamic</string>
@@ -46,7 +46,7 @@
     <string name="settings_restore_partial">Restore committed, but final cleanup could not finish. Restart Pinecone to complete recovery.</string>
     <string name="settings_restore_summary">Restore library and dictionaries</string>
     <string name="settings_spaces_enabled">Use spaces</string>
-    <string name="settings_spaces_enabled_summary">Organize items and shelves by space.</string>
+    <string name="settings_spaces_enabled_summary">Organize titles and shelves by space.</string>
     <string name="settings_theme_contrast">Theme contrast</string>
     <string name="settings_theme_mode">Theme mode</string>
     <string name="settings_title">Settings</string>

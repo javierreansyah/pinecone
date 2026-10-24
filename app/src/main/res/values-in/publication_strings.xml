@@ -5,14 +5,14 @@
     <string name="publication_cover_description">Sampul untuk %s</string>
     <string name="publication_create_new">Buat baru: \"%s\"</string>
     <string name="publication_credits">Kontributor</string>
-    <string name="publication_delete_message">Apakah Anda yakin ingin menghapus item ini? Tindakan ini tidak dapat dibatalkan.</string>
-    <string name="publication_delete_title">Hapus item</string>
+    <string name="publication_delete_message">Apakah Anda yakin ingin menghapus judul ini? Tindakan ini tidak dapat dibatalkan.</string>
+    <string name="publication_delete_title">Hapus judul</string>
     <string name="publication_description">Deskripsi</string>
     <string name="publication_duration">Durasi</string>
     <plurals name="publication_duration_minutes">
         <item quantity="other">%1$d menit</item>
     </plurals>
-    <string name="publication_edit_title">Edit item</string>
+    <string name="publication_edit_title">Edit judul</string>
     <string name="publication_format">Format</string>
     <string name="publication_identifier">Pengenal (ISBN/ID)</string>
     <string name="publication_identifier_empty_error">Skema dan nilai pengenal tidak boleh kosong.</string>
@@ -20,7 +20,7 @@
     <string name="publication_identifiers">Pengenal (satu skema=nilai per baris)</string>
     <string name="publication_info_current_position">Posisi sekarang</string>
     <string name="publication_info_furthest_position">Posisi terjauh yang dicapai</string>
-    <string name="publication_info_title">Info item</string>
+    <string name="publication_info_title">Info judul</string>
     <string name="publication_issue">Nomor terbitan</string>
     <item name="publication_label_authors" type="string">@string/library_authors_title</item>
     <string name="publication_label_tags">@string/library_tags_title</string>
@@ -29,7 +29,6 @@
     <string name="publication_left_to_right">Kiri ke kanan</string>
     <string name="publication_mark_as_read">Tandai sebagai selesai dibaca</string>
     <string name="publication_mark_as_unread">Tandai sebagai belum dibaca</string>
-    <string name="publication_not_available">N/A</string>
     <string name="publication_not_found">@string/library_empty_items</string>
     <string name="publication_publication_details">Detail publikasi</string>
     <string name="publication_published">@string/publication_published_date</string>

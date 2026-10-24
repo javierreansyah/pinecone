@@ -26,14 +26,19 @@ abstract class PublicationLicenseAssetsTask : DefaultTask() {
     @TaskAction
     fun generate() {
         val directory = outputDirectory.get().asFile.apply { mkdirs() }
-        licenseFiles.files.forEach { it.copyTo(directory.resolve(it.name), overwrite = true) }
+        val files = licenseFiles.files
+        val names = files.mapTo(mutableSetOf()) { it.name }
+        directory.listFiles()?.filter { it.isFile && it.name !in names }?.forEach {
+            check(it.delete()) { "Cannot remove obsolete generated notice: $it" }
+        }
+        files.forEach { it.copyTo(directory.resolve(it.name), overwrite = true) }
     }
 }
 
 val publicationLicenseAssets: TaskProvider<PublicationLicenseAssetsTask> =
     tasks.register<PublicationLicenseAssetsTask>("publicationLicenseAssets") {
         description = ""
-        licenseFiles.from(rootProject.file("COPYING"), rootProject.file("LICENSE.md"))
+        licenseFiles.from(rootProject.file("COPYING"))
         outputDirectory.set(layout.buildDirectory.dir("generated/publicationLicenseAssets"))
     }
 

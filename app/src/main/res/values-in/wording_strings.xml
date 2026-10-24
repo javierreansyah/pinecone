@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wording_document_tab">Dokumen</string>
+    <string name="wording_document_info">Info dokumen</string>
+    <string name="wording_document_edit">Edit dokumen</string>
+    <string name="wording_document_delete">Hapus dokumen</string>
+    <string name="wording_document_delete_message">Apakah Anda yakin ingin menghapus dokumen ini? Tindakan ini tidak dapat dibatalkan.</string>
+    <string name="wording_document_search">Cari di dalam dokumen…</string>
+    <string name="wording_document_shelf">Apakah Anda yakin ingin menghapus \'%s\'? Dokumen di dalamnya tidak akan dihapus.</string>
+    <string name="wording_document_label">Apakah Anda yakin ingin menghapus \'%s\'? Ini akan menghapusnya dari semua dokumen.</string>
+    <string name="wording_document_merge">Peringatan: Label yang sama sudah ada. Menyimpan akan menggabungkan label ini dan dokumen di dalamnya ke label yang sudah ada.</string>
+    <plurals name="wording_document_count">
+        <item quantity="other">%d dokumen</item>
+    </plurals>
+    <plurals name="wording_document_delete_title">
+        <item quantity="other">Hapus dokumen</item>
+    </plurals>
+    <plurals name="wording_document_delete_selection_message">
+        <item quantity="other">Apakah Anda yakin ingin menghapus %d dokumen? Tindakan ini tidak dapat dibatalkan.</item>
+    </plurals>
+    <plurals name="wording_document_shelves">
+        <item quantity="other">Apakah Anda yakin ingin menghapus %d rak? Dokumen di dalamnya tidak akan dihapus.</item>
+    </plurals>
+    <plurals name="wording_document_labels">
+        <item quantity="other">Apakah Anda yakin ingin menghapus %d label? Ini akan menghapusnya dari semua dokumen.</item>
+    </plurals>
+    <string name="wording_audiobook_tab">Buku audio</string>
+    <string name="wording_audiobook_info">Info buku audio</string>
+    <string name="wording_audiobook_edit">Edit buku audio</string>
+    <string name="wording_audiobook_delete">Hapus buku audio</string>
+    <string name="wording_audiobook_delete_message">Apakah Anda yakin ingin menghapus buku audio ini? Tindakan ini tidak dapat dibatalkan.</string>
+    <string name="wording_audiobook_search">Cari di dalam buku audio…</string>
+    <string name="wording_audiobook_shelf">Apakah Anda yakin ingin menghapus \'%s\'? Buku audio di dalamnya tidak akan dihapus.</string>
+    <string name="wording_audiobook_label">Apakah Anda yakin ingin menghapus \'%s\'? Ini akan menghapusnya dari semua buku audio.</string>
+    <string name="wording_audiobook_merge">Peringatan: Label yang sama sudah ada. Menyimpan akan menggabungkan label ini dan buku audio di dalamnya ke label yang sudah ada.</string>
+    <plurals name="wording_audiobook_count">
+        <item quantity="other">%d buku audio</item>
+    </plurals>
+    <plurals name="wording_audiobook_delete_title">
+        <item quantity="other">Hapus buku audio</item>
+    </plurals>
+    <plurals name="wording_audiobook_delete_selection_message">
+        <item quantity="other">Apakah Anda yakin ingin menghapus %d buku audio? Tindakan ini tidak dapat dibatalkan.</item>
+    </plurals>
+    <plurals name="wording_audiobook_shelves">
+        <item quantity="other">Apakah Anda yakin ingin menghapus %d rak? Buku audio di dalamnya tidak akan dihapus.</item>
+    </plurals>
+    <plurals name="wording_audiobook_labels">
+        <item quantity="other">Apakah Anda yakin ingin menghapus %d label? Ini akan menghapusnya dari semua buku audio.</item>
+    </plurals>
+    <string name="wording_comic_tab">@string/library_format_comics</string>
+    <string name="wording_comic_info">Info komik</string>
+    <string name="wording_comic_edit">Edit komik</string>
+    <string name="wording_comic_delete">Hapus komik</string>
+    <string name="wording_comic_delete_message">Apakah Anda yakin ingin menghapus komik ini? Tindakan ini tidak dapat dibatalkan.</string>
+    <string name="wording_comic_search">Cari di dalam komik…</string>
+    <string name="wording_comic_shelf">Apakah Anda yakin ingin menghapus \'%s\'? Komik di dalamnya tidak akan dihapus.</string>
+    <string name="wording_comic_label">Apakah Anda yakin ingin menghapus \'%s\'? Ini akan menghapusnya dari semua komik.</string>
+    <string name="wording_comic_merge">Peringatan: Label yang sama sudah ada. Menyimpan akan menggabungkan label ini dan komik di dalamnya ke label yang sudah ada.</string>
+    <plurals name="wording_comic_count">
+        <item quantity="other">%d komik</item>
+    </plurals>
+    <plurals name="wording_comic_delete_title">
+        <item quantity="other">Hapus komik</item>
+    </plurals>
+    <plurals name="wording_comic_delete_selection_message">
+        <item quantity="other">Apakah Anda yakin ingin menghapus %d komik? Tindakan ini tidak dapat dibatalkan.</item>
+    </plurals>
+    <plurals name="wording_comic_shelves">
+        <item quantity="other">Apakah Anda yakin ingin menghapus %d rak? Komik di dalamnya tidak akan dihapus.</item>
+    </plurals>
+    <plurals name="wording_comic_labels">
+        <item quantity="other">Apakah Anda yakin ingin menghapus %d label? Ini akan menghapusnya dari semua komik.</item>
+    </plurals>
+</resources>

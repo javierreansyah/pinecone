@@ -63,7 +63,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
-import com.composables.icons.materialsymbols.outlinedfilled.Brightness_auto as FilledBrightnessAuto
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Brightness_medium
 import com.composables.icons.materialsymbols.outlined.Contrast
@@ -73,7 +72,6 @@ import com.composables.icons.materialsymbols.outlined.Format_align_right
 import com.composables.icons.materialsymbols.outlined.Image
 import com.composables.icons.materialsymbols.outlined.Invert_colors
 import com.composables.icons.materialsymbols.outlined.Restart_alt
-
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.CustomPineconeTheme
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
@@ -83,6 +81,7 @@ import com.javierreansyah.pinecone.ui.components.SettingsChoiceDialog
 import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.math.roundToInt
+import com.composables.icons.materialsymbols.outlinedfilled.Brightness_auto as FilledBrightnessAuto
 
 @SuppressLint("DefaultLocale", "ConfigurationScreenWidthHeight", "LogNotTimber")
 @Composable

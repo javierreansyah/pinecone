@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wording_document_tab">Documents</string>
+    <string name="wording_document_info">Document info</string>
+    <string name="wording_document_edit">Edit document</string>
+    <string name="wording_document_delete">Delete document</string>
+    <string name="wording_document_delete_message">Are you sure you want to delete this document? This action cannot be undone.</string>
+    <string name="wording_document_search">Search in document…</string>
+    <string name="wording_document_shelf">Are you sure you want to delete \'%s\'? The documents inside will not be deleted.</string>
+    <string name="wording_document_label">Are you sure you want to delete \'%s\'? This will remove it from all documents.</string>
+    <string name="wording_document_merge">Warning: A matching label already exists. Saving will merge this label and its documents into the existing one.</string>
+    <plurals name="wording_document_count">
+        <item quantity="one">%d document</item>
+        <item quantity="other">%d documents</item>
+    </plurals>
+    <plurals name="wording_document_delete_title">
+        <item quantity="one">Delete document</item>
+        <item quantity="other">Delete documents</item>
+    </plurals>
+    <plurals name="wording_document_delete_selection_message">
+        <item quantity="one">Are you sure you want to delete %d document? This action cannot be undone.</item>
+        <item quantity="other">Are you sure you want to delete %d documents? This action cannot be undone.</item>
+    </plurals>
+    <plurals name="wording_document_shelves">
+        <item quantity="one">Are you sure you want to delete %d shelf? The documents inside will not be deleted.</item>
+        <item quantity="other">Are you sure you want to delete %d shelves? The documents inside will not be deleted.</item>
+    </plurals>
+    <plurals name="wording_document_labels">
+        <item quantity="one">Are you sure you want to delete %d label? This will remove them from all documents.</item>
+        <item quantity="other">Are you sure you want to delete %d labels? This will remove them from all documents.</item>
+    </plurals>
+    <string name="wording_audiobook_tab">Audiobooks</string>
+    <string name="wording_audiobook_info">Audiobook info</string>
+    <string name="wording_audiobook_edit">Edit audiobook</string>
+    <string name="wording_audiobook_delete">Delete audiobook</string>
+    <string name="wording_audiobook_delete_message">Are you sure you want to delete this audiobook? This action cannot be undone.</string>
+    <string name="wording_audiobook_search">Search in audiobook…</string>
+    <string name="wording_audiobook_shelf">Are you sure you want to delete \'%s\'? The audiobooks inside will not be deleted.</string>
+    <string name="wording_audiobook_label">Are you sure you want to delete \'%s\'? This will remove it from all audiobooks.</string>
+    <string name="wording_audiobook_merge">Warning: A matching label already exists. Saving will merge this label and its audiobooks into the existing one.</string>
+    <plurals name="wording_audiobook_count">
+        <item quantity="one">%d audiobook</item>
+        <item quantity="other">%d audiobooks</item>
+    </plurals>
+    <plurals name="wording_audiobook_delete_title">
+        <item quantity="one">Delete audiobook</item>
+        <item quantity="other">Delete audiobooks</item>
+    </plurals>
+    <plurals name="wording_audiobook_delete_selection_message">
+        <item quantity="one">Are you sure you want to delete %d audiobook? This action cannot be undone.</item>
+        <item quantity="other">Are you sure you want to delete %d audiobooks? This action cannot be undone.</item>
+    </plurals>
+    <plurals name="wording_audiobook_shelves">
+        <item quantity="one">Are you sure you want to delete %d shelf? The audiobooks inside will not be deleted.</item>
+        <item quantity="other">Are you sure you want to delete %d shelves? The audiobooks inside will not be deleted.</item>
+    </plurals>
+    <plurals name="wording_audiobook_labels">
+        <item quantity="one">Are you sure you want to delete %d label? This will remove them from all audiobooks.</item>
+        <item quantity="other">Are you sure you want to delete %d labels? This will remove them from all audiobooks.</item>
+    </plurals>
+    <string name="wording_comic_tab">@string/library_format_comics</string>
+    <string name="wording_comic_info">Comic info</string>
+    <string name="wording_comic_edit">Edit comic</string>
+    <string name="wording_comic_delete">Delete comic</string>
+    <string name="wording_comic_delete_message">Are you sure you want to delete this comic? This action cannot be undone.</string>
+    <string name="wording_comic_search">Search in comic…</string>
+    <string name="wording_comic_shelf">Are you sure you want to delete \'%s\'? The comics inside will not be deleted.</string>
+    <string name="wording_comic_label">Are you sure you want to delete \'%s\'? This will remove it from all comics.</string>
+    <string name="wording_comic_merge">Warning: A matching label already exists. Saving will merge this label and its comics into the existing one.</string>
+    <plurals name="wording_comic_count">
+        <item quantity="one">%d comic</item>
+        <item quantity="other">%d comics</item>
+    </plurals>
+    <plurals name="wording_comic_delete_title">
+        <item quantity="one">Delete comic</item>
+        <item quantity="other">Delete comics</item>
+    </plurals>
+    <plurals name="wording_comic_delete_selection_message">
+        <item quantity="one">Are you sure you want to delete %d comic? This action cannot be undone.</item>
+        <item quantity="other">Are you sure you want to delete %d comics? This action cannot be undone.</item>
+    </plurals>
+    <plurals name="wording_comic_shelves">
+        <item quantity="one">Are you sure you want to delete %d shelf? The comics inside will not be deleted.</item>
+        <item quantity="other">Are you sure you want to delete %d shelves? The comics inside will not be deleted.</item>
+    </plurals>
+    <plurals name="wording_comic_labels">
+        <item quantity="one">Are you sure you want to delete %d label? This will remove them from all comics.</item>
+        <item quantity="other">Are you sure you want to delete %d labels? This will remove them from all comics.</item>
+    </plurals>
+</resources>

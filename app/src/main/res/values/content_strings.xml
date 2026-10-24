@@ -25,19 +25,19 @@
         <item quantity="other">Delete books</item>
     </plurals>
     <plurals name="content_delete_items_message">
-        <item quantity="one">Are you sure you want to delete %d item? This action cannot be undone.</item>
-        <item quantity="other">Are you sure you want to delete %d items? This action cannot be undone.</item>
+        <item quantity="one">Are you sure you want to delete %d title? This action cannot be undone.</item>
+        <item quantity="other">Are you sure you want to delete %d titles? This action cannot be undone.</item>
     </plurals>
     <plurals name="content_delete_items_title">
-        <item quantity="one">Delete item</item>
-        <item quantity="other">Delete items</item>
+        <item quantity="one">Delete title</item>
+        <item quantity="other">Delete titles</item>
     </plurals>
     <string name="content_delete_space">Delete space</string>
     <string name="content_delete_tag">Delete tag</string>
     <string name="content_edit_book">Edit book</string>
     <plurals name="content_items_count">
-        <item quantity="one">%d item</item>
-        <item quantity="other">%d items</item>
+        <item quantity="one">%d title</item>
+        <item quantity="other">%d titles</item>
     </plurals>
     <string name="content_merge_book_label">Warning: A matching label already exists. Saving will merge this label and its books into the existing one.</string>
     <string name="content_search_book">Search in book…</string>

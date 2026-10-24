@@ -46,7 +46,15 @@ fun AboutScreen(
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showLicense = false },
             title = { Text(stringResource(R.string.about_agpl_title)) },
-            text = { Text(license, modifier = Modifier.verticalScroll(rememberScrollState())) },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    Text(
+                        stringResource(R.string.about_license_summary),
+                        modifier = Modifier.padding(bottom = 16.dp),
+                    )
+                    Text(license)
+                }
+            },
             confirmButton = {
                 androidx.compose.material3.TextButton(onClick = {
                     showLicense = false

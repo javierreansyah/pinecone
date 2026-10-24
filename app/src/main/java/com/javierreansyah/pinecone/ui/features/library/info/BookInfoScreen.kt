@@ -1464,95 +1464,40 @@ private fun BookMetadata(
             color = MaterialTheme.colorScheme.onSurface,
         )
 
-        val notAvailable = stringResource(R.string.publication_not_available)
-        val extraFields = richMetadataFields(book)
-        SegmentedColumn(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(
-                        text = stringResource(R.string.publication_publisher),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = book.publisher ?: notAvailable,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+        val fields = buildList {
+            addAll(richMetadataFields(book))
+            (metadataValue(book.published) ?: metadataValue(book.metadata.published))
+                ?.let {
+                    add(
+                        stringResource(R.string.publication_published_date) to formatPublishedDate(
+                            it,
+                            it
+                        )
                     )
                 }
+            val languages = cleanMetadataValues(book.metadata.languages)
+                .ifEmpty { cleanMetadataValues(listOfNotNull(book.language)) }
+            if (languages.isNotEmpty()) add(
+                stringResource(R.string.publication_language) to languages.joinToString(
+                    ", "
+                )
+            )
+            metadataValue(book.identifier)?.let { add(stringResource(R.string.publication_identifier) to it) }
+            metadataValue(book.mediaType)?.let {
+                add(stringResource(R.string.publication_format) to parseBookFormat(it, it))
             }
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(
-                        text = stringResource(R.string.publication_published_date),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = formatPublishedDate(book.published, notAvailable),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-            }
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(
-                        text = stringResource(R.string.publication_language),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = book.metadata.languages.takeIf { it.isNotEmpty() }
-                            ?.joinToString(", ")
-                            ?: book.language ?: notAvailable,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-            }
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(
-                        text = stringResource(R.string.publication_identifier),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = book.identifier ?: notAvailable,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-            }
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(
-                        text = stringResource(R.string.publication_format),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = parseBookFormat(
-                            book.mediaType, stringResource(R.string.publication_unknown),
-                        ),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-            }
-            extraFields.forEach { (label, value) ->
+        }.filter { (_, value) -> metadataValue(value) != null }.distinct()
+        SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
+            fields.forEach { (label, value) ->
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(
                             label, style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
                             value, style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                 }

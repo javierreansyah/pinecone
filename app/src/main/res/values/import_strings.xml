@@ -13,8 +13,8 @@
         <item quantity="other">The following %d files could not be imported:</item>
     </plurals>
     <plurals name="import_partial_success_message">
-        <item quantity="one">Successfully imported %d item.</item>
-        <item quantity="other">Successfully imported %d items.</item>
+        <item quantity="one">Successfully imported %d title.</item>
+        <item quantity="other">Successfully imported %d titles.</item>
     </plurals>
     <string name="import_warning_title">Import warning</string>
 </resources>

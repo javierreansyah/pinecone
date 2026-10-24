@@ -92,6 +92,10 @@ object PublicationMetadataImporter {
             subjects = metadata.subjects.map { it.name })
         return if (file.extension.equals("cbz", true) || file.extension.equals("zip", true)) {
             comicInfo(bookId, file, base)
+        } else if (org.readium.r2.shared.publication.Publication.Profile.AUDIOBOOK in metadata.conformsTo) {
+            AudioMetadataImporter.read(
+                bookId, file, base.copy(title = metadata.title?.takeIf { it.isNotBlank() }),
+            )
         } else base
     }
 

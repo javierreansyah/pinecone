@@ -22,8 +22,11 @@ import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 class SegmentedListItemData(
     val key: Any?,
@@ -131,6 +134,7 @@ class SegmentedListBuilder : SegmentedListScope {
 inline fun SegmentedColumn(
     modifier: Modifier = Modifier,
     animated: Boolean = true,
+    topAlignAccessories: Boolean = false,
     content: @Composable SegmentedListScope.() -> Unit,
 ) {
     val builder = SegmentedListBuilder().apply { content() }
@@ -156,6 +160,7 @@ inline fun SegmentedColumn(
                         isBottomDetached = isBottomDetached,
                         enabled = item.enabled,
                         animated = animated,
+                        topAlignAccessories = topAlignAccessories,
                         leadingContent = item.leadingContent,
                         trailingContent = item.trailingContent,
                         supportingContent = item.supportingContent,
@@ -230,6 +235,7 @@ fun SegmentedListItem(
     isBottomDetached: Boolean = selected || index == count - 1,
     enabled: Boolean = true,
     animated: Boolean = true,
+    topAlignAccessories: Boolean = false,
     leadingContent: @Composable (() -> Unit)? = null,
     trailingContent: @Composable (() -> Unit)? = null,
     supportingContent: @Composable (() -> Unit)? = null,
@@ -308,6 +314,19 @@ fun SegmentedListItem(
             alpha = 0.38f,
         )
 
+    // Anchor accessories to the first title/subtitle lines even when text wraps.
+    val accessoryHeight = with(LocalDensity.current) {
+        (MaterialTheme.typography.titleMedium.lineHeight.value +
+                if (supportingContent != null) MaterialTheme.typography.bodyMedium.lineHeight.value else 0f)
+            .sp.toDp()
+    }
+    val accessoryModifier = if (topAlignAccessories) Modifier.layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+        val height = accessoryHeight.roundToPx()
+        layout(placeable.width, height) {
+            placeable.placeRelative(0, (height - placeable.height) / 2)
+        }
+    } else Modifier
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -326,12 +345,12 @@ fun SegmentedListItem(
                 horizontal = 16.dp,
                 vertical = if (supportingContent != null) 12.dp else 16.dp,
             ),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = if (topAlignAccessories) Alignment.Top else Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         if (leadingContent != null) {
             CompositionLocalProvider(LocalContentColor provides leadingIconColor) {
-                Box(contentAlignment = Alignment.Center) {
+                Box(modifier = accessoryModifier, contentAlignment = Alignment.Center) {
                     leadingContent()
                 }
             }
@@ -353,7 +372,7 @@ fun SegmentedListItem(
 
         if (trailingContent != null) {
             CompositionLocalProvider(LocalContentColor provides trailingIconColor) {
-                Box(contentAlignment = Alignment.Center) {
+                Box(modifier = accessoryModifier, contentAlignment = Alignment.Center) {
                     trailingContent()
                 }
             }

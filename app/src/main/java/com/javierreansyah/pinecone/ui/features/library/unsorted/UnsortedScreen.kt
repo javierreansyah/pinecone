@@ -76,9 +76,10 @@ fun UnsortedScreen(
             isInMultiSelectMode = true
         },
         onExitMultiSelect = exitMultiSelect,
-        onSelectAll = { selectedBooks =
-            unsortedBooks.map { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId }
-                .toSet()
+        onSelectAll = {
+            selectedBooks =
+                unsortedBooks.map { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId }
+                    .toSet()
         },
         onClearSelection = { selectedBooks = emptySet() },
         onToggleBookSelection = { bookId ->

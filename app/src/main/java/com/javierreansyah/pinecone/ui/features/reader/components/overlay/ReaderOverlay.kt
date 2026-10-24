@@ -382,9 +382,13 @@ fun ReaderOverlay(
             )
 
             ReaderSheetsLayer(
-                wording = if (profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.EPUB && !bookState.value.sourceIsPdf) {
-                    PublicationWording.Books
-                } else PublicationWording.Items,
+                wording = when {
+                    bookState.value.sourceIsPdf -> PublicationWording.Documents
+                    profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.EPUB -> PublicationWording.Books
+                    profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF -> PublicationWording.Documents
+                    profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO -> PublicationWording.Audiobooks
+                    else -> PublicationWording.Items
+                },
                 showToc = controlsState.value.showToc,
                 contentsInitialTab = controlsState.value.contentsInitialTab,
                 showSettings = controlsState.value.showSettings,

@@ -28,7 +28,6 @@ data class OrganizeUiState(
     val spaces: List<SpaceWithShelvesItemState> = emptyList(),
     val isLoading: Boolean = true,
     val spacesEnabled: Boolean = true,
-    val defaultShelfSpaceId: String? = null,
 )
 
 class OrganizeViewModel(
@@ -43,14 +42,9 @@ class OrganizeViewModel(
         repository.getAllShelvesWithBooks(),
         repository.getAllSpaces(),
         repository.getAllBookSpaceCrossRefs(),
-        combine(
-            (application as PineconeApplication).readerPreferences.readerSettings,
-            com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager(application)
-                .getEffectiveSpaceFlow(),
-        ) { settings, spaceId -> settings to spaceId },
+        (application as PineconeApplication).readerPreferences.readerSettings,
         repository.getAllBooks(),
-    ) { shelvesWithBooks, spaces, spaceCrossRefs, context, books ->
-        val (settings, currentSpaceId) = context
+    ) { shelvesWithBooks, spaces, spaceCrossRefs, settings, books ->
         val validShelves =
             shelvesWithBooks.filter { (itShelf, books1) -> itShelf.id != "unshelved" }
 
@@ -94,7 +88,6 @@ class OrganizeViewModel(
             spaces = spaceItems,
             isLoading = false,
             spacesEnabled = settings.spacesEnabled,
-            defaultShelfSpaceId = if (!settings.spacesEnabled || currentSpaceId == null || currentSpaceId == "_all_") "_all_" else null,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), OrganizeUiState())
 

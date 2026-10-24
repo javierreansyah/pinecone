@@ -500,7 +500,11 @@ private inline fun SettingsSection(
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(bottom = 8.dp),
         )
-        SegmentedColumn(modifier = Modifier.padding(bottom = 16.dp), content = content)
+        SegmentedColumn(
+            topAlignAccessories = true,
+            modifier = Modifier.padding(bottom = 16.dp),
+            content = content
+        )
     }
 }
 
@@ -823,7 +827,10 @@ private fun BackupSettingsSection(
                 modifier = Modifier.padding(bottom = 8.dp),
             )
 
-            SegmentedColumn(modifier = Modifier.padding(bottom = 16.dp)) {
+            SegmentedColumn(
+                topAlignAccessories = true,
+                modifier = Modifier.padding(bottom = 16.dp)
+            ) {
                 val backupLocationLabel = stringResource(R.string.settings_backup_location)
                 item(
                     onClick = onBackupLocationClick,
@@ -1026,7 +1033,7 @@ private fun AboutSettingsSection(
             modifier = Modifier.padding(bottom = 8.dp),
         )
 
-        SegmentedColumn(modifier = Modifier.padding(bottom = 16.dp)) {
+        SegmentedColumn(topAlignAccessories = true, modifier = Modifier.padding(bottom = 16.dp)) {
             item(
                 onClick = onNavigateToAbout,
                 leadingContent = {
@@ -1155,7 +1162,7 @@ private fun RestoreBottomSheet(
                                 style = MaterialTheme.typography.titleSmall,
                                 color = MaterialTheme.colorScheme.primary,
                             )
-                            SegmentedColumn {
+                            SegmentedColumn(topAlignAccessories = true) {
                                 backups.sortedByDescending { (_, _, itTimestamp2, _, _) -> itTimestamp2 }
                                     .forEach { backup ->
                                         item(

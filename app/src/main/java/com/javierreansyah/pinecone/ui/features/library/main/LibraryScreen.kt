@@ -41,8 +41,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.composables.icons.materialsymbols.outlinedfilled.Book as FilledBook
-import com.composables.icons.materialsymbols.outlinedfilled.Folder as FilledFolder
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Book
 import com.composables.icons.materialsymbols.outlined.Folder
@@ -70,6 +68,8 @@ import com.javierreansyah.pinecone.ui.features.library.organize.SelectSpaceForSh
 import com.javierreansyah.pinecone.ui.features.library.publicationWording
 import com.javierreansyah.pinecone.ui.root.AppDrawer
 import kotlinx.coroutines.launch
+import com.composables.icons.materialsymbols.outlinedfilled.Book as FilledBook
+import com.composables.icons.materialsymbols.outlinedfilled.Folder as FilledFolder
 
 @Composable
 fun LibraryRoute(
@@ -172,7 +172,8 @@ fun LibraryScreen(
     onImportFilesClick: () -> Unit,
     onScanFolderClick: () -> Unit,
 ) {
-    val drawerState = rememberWideNavigationRailState(initialValue = WideNavigationRailValue.Collapsed)
+    val drawerState =
+        rememberWideNavigationRailState(initialValue = WideNavigationRailValue.Collapsed)
     val scope = rememberCoroutineScope()
 
     val showFilterSheet = remember { mutableStateOf(value = false) }

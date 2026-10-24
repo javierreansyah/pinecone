@@ -11,7 +11,7 @@
         <item quantity="other">%d file berikut tidak dapat diimpor:</item>
     </plurals>
     <plurals name="import_partial_success_message">
-        <item quantity="other">Berhasil mengimpor %d item.</item>
+        <item quantity="other">Berhasil mengimpor %d judul.</item>
     </plurals>
     <string name="import_warning_title">Peringatan impor</string>
 </resources>
