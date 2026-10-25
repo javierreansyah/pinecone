@@ -41,6 +41,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -81,8 +82,8 @@ import com.composables.icons.materialsymbols.outlined.Edit_note
 import com.composables.icons.materialsymbols.outlined.Forward_10
 import com.composables.icons.materialsymbols.outlined.Headphones
 import com.composables.icons.materialsymbols.outlined.List
-import com.composables.icons.materialsymbols.outlined.Pause
-import com.composables.icons.materialsymbols.outlined.Play_arrow
+import com.composables.icons.materialsymbols.outlinedfilled.Pause
+import com.composables.icons.materialsymbols.outlinedfilled.Play_arrow
 import com.composables.icons.materialsymbols.outlined.Replay_10
 import com.composables.icons.materialsymbols.outlined.Skip_next
 import com.composables.icons.materialsymbols.outlined.Skip_previous
@@ -115,6 +116,7 @@ fun AudioReaderContent(
     onSeek: (Double) -> Unit,
     onOpenBookmarks: () -> Unit,
     onOpenSettings: () -> Unit,
+    onRetry: (() -> Unit)? = null,
 ) {
     CompositionLocalProvider(LocalContentColor provides foreground) {
         BoxWithConstraints(
@@ -139,6 +141,7 @@ fun AudioReaderContent(
                     onSeek = onSeek,
                     onOpenBookmarks = onOpenBookmarks,
                     onOpenSettings = onOpenSettings,
+                    onRetry = onRetry,
                 )
             }
             if (landscape) {
@@ -235,6 +238,7 @@ private fun AudioPlaybackPanel(
     onSeek: (Double) -> Unit,
     onOpenBookmarks: () -> Unit,
     onOpenSettings: () -> Unit,
+    onRetry: (() -> Unit)? = null,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -268,6 +272,9 @@ private fun AudioPlaybackPanel(
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium
             )
+            onRetry?.let { retry ->
+                TextButton(onClick = retry) { Text(stringResource(R.string.reader_audio_retry)) }
+            }
         }
 
         AudioSeekBar(
@@ -397,7 +404,7 @@ private fun AudioTransportButtons(
                                     label = "playPauseTransition",
                                 ) { isPlaying ->
                                     Icon(
-                                        imageVector = if (isPlaying) MaterialSymbols.Outlined.Pause else MaterialSymbols.Outlined.Play_arrow,
+                                        imageVector = if (isPlaying) MaterialSymbols.OutlinedFilled.Pause else MaterialSymbols.OutlinedFilled.Play_arrow,
                                         contentDescription = label,
                                         modifier = Modifier.size(38.dp),
                                     )
@@ -465,7 +472,7 @@ private fun AudioSeekBar(
     }
 
     val density = LocalDensity.current
-    val strokeWidthPx = remember(density) { with(density) { 4.dp.toPx() } }
+    val strokeWidthPx = remember(density) { with(density) { 4.dp.roundToPx().toFloat() } }
     val indicatorStroke =
         remember(strokeWidthPx) { Stroke(width = strokeWidthPx, cap = StrokeCap.Round) }
 
@@ -480,6 +487,14 @@ private fun AudioSeekBar(
         targetValue = if (handleActive) 1f else 0f,
         animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
         label = "audioHandleOpacity",
+    )
+
+    // Keep Material's amplitude stable; its internal animation can miss interrupted targets.
+    // Animate the available wave height with the theme spring instead. At stroke height it is flat.
+    val waveHeight by animateDpAsState(
+        targetValue = if (state.playing) 14.dp else 4.dp,
+        animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+        label = "audioWaveHeight",
     )
 
     val seekLabel = stringResource(R.string.reader_audio_seek)
@@ -549,7 +564,7 @@ private fun AudioSeekBar(
                 progress = { progress },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(14.dp)
+                    .height(waveHeight.coerceAtLeast(4.dp))
                     .clearAndSetSemantics {},
                 color = primaryColor,
                 trackColor = trackColor,
@@ -557,9 +572,10 @@ private fun AudioSeekBar(
                 trackStroke = indicatorStroke,
                 gapSize = 6.dp,
                 stopSize = 3.dp,
-                amplitude = { if (state.playing) 0.4f else 0f },
+                amplitude = { 0.4f },
                 wavelength = 20.dp,
-                waveSpeed = 20.dp,
+                // Keep the wave moving until it has flattened, then stop its phase animation.
+                waveSpeed = if (state.playing || waveHeight > 4.dp) 20.dp else 0.dp,
             )
 
             Canvas(

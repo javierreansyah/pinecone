@@ -29,7 +29,6 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
-import com.javierreansyah.pinecone.data.publication.ReaderProfile
 import com.javierreansyah.pinecone.ui.components.ScreenBackDispatcher
 import com.javierreansyah.pinecone.ui.components.ScreenNavDisplay
 import com.javierreansyah.pinecone.ui.features.dictionary.DictionariesScreen
@@ -110,15 +109,10 @@ fun NavGraph(
         }
     }
     val context = LocalContext.current
-    val app: AppServicesViewModel = hiltViewModel()
     val scope = rememberCoroutineScope()
     val openBook: (String, Locator?) -> Unit = { bookId, locator ->
         scope.launch {
-            if (app.libraryRepository.rendition(
-                    bookId,
-                    "original"
-                )?.profile == ReaderProfile.AUDIO.name
-            ) {
+            if (mainViewModel.isAudiobook(bookId)) {
                 backStack.openAudioPlayer(bookId, locator?.toJSON()?.toString())
             } else {
                 context.startActivity(Intent(context, ReaderActivity::class.java).apply {
@@ -386,7 +380,7 @@ fun NavGraph(
         val organizeViewModel = hiltViewModel<
                 com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel,
                 com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel.Factory,
-                >(key = bookIds, creationCallback = { it.create(bookIds) })
+                >(key = "organize:$bookIds", creationCallback = { it.create(bookIds) })
         com.javierreansyah.pinecone.ui.features.library.organize.OrganizeBottomSheet(
             viewModel = organizeViewModel,
         ) { organizeBookIds = null }

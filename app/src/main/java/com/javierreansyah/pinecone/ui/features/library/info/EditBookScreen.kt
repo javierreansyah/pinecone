@@ -89,7 +89,6 @@ fun EditBookScreen(
 ) {
 
     val viewModel = hiltViewModel<EditBookViewModel, EditBookViewModel.Factory>(
-        key = bookId,
         creationCallback = { it.create(bookId) },
     )
 

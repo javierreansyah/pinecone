@@ -9,9 +9,11 @@ import javax.inject.Inject
 @HiltViewModel
 class UnsortedViewModel @Inject constructor(
     repository: LibraryRepository,
+    deletePublications: com.javierreansyah.pinecone.domain.DeleteBooks,
     preferences: LibraryPreferencesManager,
 ) : LibraryCollectionViewModel(
     bookRepository = repository,
+    deletePublications = deletePublications,
     prefsManager = preferences,
     screenKey = "unsorted",
     source = LibraryRepository::getUnsortedBooks,

@@ -156,7 +156,6 @@ fun BookInfoScreen(
     onNavigateToOrganize: (String) -> Unit,
 ) {
     val viewModel = hiltViewModel<BookInfoViewModel, BookInfoViewModel.Factory>(
-        key = bookId,
         creationCallback = { it.create(bookId) },
     )
 
@@ -273,6 +272,7 @@ private fun BookInfoContent(
         with(density) { (windowInfo.containerSize.height * 0.8f).toDp() }
     }
 
+    val librarySettings by viewModel.settings.collectAsStateWithLifecycle()
     val bookmarks by viewModel.bookmarks.collectAsStateWithLifecycle()
     val notes by viewModel.notes.collectAsStateWithLifecycle()
     val tableOfContents by viewModel.tableOfContents.collectAsStateWithLifecycle()
@@ -351,6 +351,7 @@ private fun BookInfoContent(
         ) {
             BookInfoHeader(
                 book = book,
+                spacesEnabled = librarySettings.spacesEnabled,
                 onNavigateToTag = onNavigateToTag,
                 onReadClick = {
                     onNavigateToReader(book.id, null)
@@ -971,6 +972,7 @@ private fun NotesTabContent(
 @Composable
 private fun BookInfoHeader(
     book: Book,
+    spacesEnabled: Boolean,
     onNavigateToTag: (String) -> Unit,
     onReadClick: () -> Unit,
     onReadFurthestClick: () -> Unit,
@@ -981,8 +983,6 @@ private fun BookInfoHeader(
     onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val librarySettings by hiltViewModel<com.javierreansyah.pinecone.ui.root.AppServicesViewModel>()
-        .readerPreferences.readerSettings.collectAsStateWithLifecycle(initialValue = com.javierreansyah.pinecone.data.local.preferences.ReaderSettings())
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -998,7 +998,7 @@ private fun BookInfoHeader(
         BookHeaderDetails(
             title = book.title,
             authors = book.authors,
-            spaces = if (librarySettings.spacesEnabled) book.spaces.filter { it.id != "_all_" }
+            spaces = if (spacesEnabled) book.spaces.filter { it.id != "_all_" }
                 .map { it.name } else emptyList(),
             tags = book.tags,
             onNavigateToTag = onNavigateToTag,

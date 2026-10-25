@@ -52,12 +52,11 @@ import coil3.compose.AsyncImage
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Forward_10
 import com.composables.icons.materialsymbols.outlined.Headphones
-import com.composables.icons.materialsymbols.outlined.Pause
-import com.composables.icons.materialsymbols.outlined.Play_arrow
+import com.composables.icons.materialsymbols.outlinedfilled.Pause
+import com.composables.icons.materialsymbols.outlinedfilled.Play_arrow
 import com.composables.icons.materialsymbols.outlined.Replay_10
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.reader.audio.AudioPlaybackState
-import kotlinx.coroutines.flow.flowOf
 import java.io.File
 
 /** Extra scroll space, not viewport padding: content can draw behind the floating card. */
@@ -79,11 +78,9 @@ internal val MiniPlayerHeight = MiniPlayerArtworkSize + MiniPlayerArtworkInset *
 /** Floats the mini-player over every screen, keeping the surrounding area transparent. */
 @Composable
 fun AudioMiniPlayerHost(enabled: Boolean = true, content: @Composable () -> Unit) {
-    val app: AppServicesViewModel = hiltViewModel()
-    val session = app.audioSession
-    val state by session.state.collectAsStateWithLifecycle()
-    val navigator by session.navigator.collectAsStateWithLifecycle()
-    val visible = enabled && state.bookId != null && navigator != null
+    val controls: AudioControlsViewModel = hiltViewModel()
+    val state by controls.state.collectAsStateWithLifecycle()
+    val visible = enabled && state.bookId != null && state.ready
     val density = LocalDensity.current
     var handleHeight by remember { mutableIntStateOf(0) }
     val navigationBarHeight = WindowInsets.navigationBars.getBottom(density)
@@ -113,16 +110,10 @@ fun AudioMiniPlayerHost(enabled: Boolean = true, content: @Composable () -> Unit
 /** Reserves the sheet's collapsed bounds outside the screen's navigation bar. */
 @Composable
 fun AudioMiniPlayerBar(includeNavigationBarPadding: Boolean = true, bottomInset: Dp = 0.dp) {
-    val app: AppServicesViewModel = hiltViewModel()
-    val session = app.audioSession
-    val state by session.state.collectAsStateWithLifecycle()
-    val navigator by session.navigator.collectAsStateWithLifecycle()
-    if (state.bookId == null || navigator == null) return
+    val controls: AudioControlsViewModel = hiltViewModel()
+    val state by controls.state.collectAsStateWithLifecycle()
+    if (state.bookId == null || !state.ready) return
 
-    val bookFlow = remember(state.bookId) {
-        state.bookId?.let(app.libraryRepository::getBookFlow) ?: flowOf(null)
-    }
-    val book by bookFlow.collectAsStateWithLifecycle(initialValue = null)
     val reportHandle = LocalAudioPlayerHandle.current
     val density = LocalDensity.current
     var height by remember { mutableIntStateOf(0) }
@@ -145,7 +136,7 @@ fun AudioMiniPlayerBar(includeNavigationBarPadding: Boolean = true, bottomInset:
     ) {
         AudioMiniPlayer(
             state = state,
-            coverPath = book?.book?.coverPath,
+            coverPath = state.coverPath,
             onOpenPlayer = {},
             onPlayPause = {},
             onSkip = {},
@@ -240,7 +231,7 @@ internal fun AudioMiniPlayer(
                     shapes = IconButtonDefaults.shapes(),
                 ) {
                     Icon(
-                        imageVector = if (state.playing) MaterialSymbols.Outlined.Pause else MaterialSymbols.Outlined.Play_arrow,
+                        imageVector = if (state.playing) MaterialSymbols.OutlinedFilled.Pause else MaterialSymbols.OutlinedFilled.Play_arrow,
                         contentDescription = stringResource(if (state.playing) R.string.reader_pause else R.string.reader_play),
                     )
                 }

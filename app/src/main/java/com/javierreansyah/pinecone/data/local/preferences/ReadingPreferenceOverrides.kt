@@ -1,5 +1,13 @@
 package com.javierreansyah.pinecone.data.local.preferences
 
+import kotlinx.serialization.json.Json
+
+private val BookSettingsJson = Json { encodeDefaults = true }
+
+/** An enabled default override must stay distinct from the disabled sentinel, `{}`. */
+internal fun ReaderSettings.encodeReadingOverrides(): String = BookSettingsJson.encodeToString(this)
+
+
 /** Merge reader controls only. A book override must never replace backup/dictionary/app settings. */
 fun ReaderSettings.withReadingPreferencesFrom(value: ReaderSettings): ReaderSettings = copy(
     brightness = value.brightness,

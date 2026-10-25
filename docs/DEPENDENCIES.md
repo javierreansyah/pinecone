@@ -7,17 +7,30 @@ description HTML is parsed and cleaned by jsoup before the app adds its own styl
 ## Ownership and persistence
 
 - Hilt's singleton component owns the database, repositories, preference managers, Readium services,
-  and audio session. ViewModels keep their existing activity/navigation-entry lifetimes. Assisted
+  and the playback client/read-only presentation state. The service component owns the audio engine,
+  publication and navigator. ViewModels keep their activity/navigation-entry lifetimes. Assisted
   factories accept publication IDs and organization selections, not service dependencies.
-- The library repository receives a lazy audio-session dependency so constructing it does not
-  recursively construct the audio session that uses it. Neither class retrieves services from the
-  application.
+- Repositories use constructor injection and do not depend on playback. `DeleteBooks` and
+  `RestoreBackup` coordinate acknowledged playback shutdown before changing assets, excluding new
+  opens for the duration of the operation. There is no lazy dependency cycle or UI service locator.
+- `AudioPlayerViewModel` consumes metadata, locators and contents from the service snapshot; it
+  never opens a second publication. Transport commands use a Media3 controller; Readium locator/link
+  navigation uses two session commands. Opening and stopping use internal service intents, with an
+  acknowledged stop before asset changes. Session generations prevent commands reaching an old book.
+- Entry-scoped ViewModels use their class-derived default keys. Explicit keys must distinguish both
+  model type and instance when multiple instances share an owner. The previous raw `bookId` key
+  collided between reader and notes ViewModels, clearing the reader before it could open audio.
+- Room and Readium builders live in focused modules. Application injections do not construct a native
+  audio player. Typed DataStore construction stays in provider methods to preserve one store per file.
 - WorkManager uses `HiltWorkerFactory` through on-demand initialization. Its default Startup
   initializer is removed from the manifest.
 - Reader and library settings migrate independently into typed JSON DataStores. Migration markers
   are stored with the new data; the original preferences remain read-only for recovery. Migration
   failures propagate, allowing a later initialization to retry. Malformed individual legacy records
   use the documented defaults instead of aborting otherwise valid settings.
+- Enabled per-book reading settings serialize defaults explicitly. `{}` remains the disabled
+  override sentinel; enabling or resetting a default-valued override must not silently select global
+  audio settings. This keeps the existing stored type and backup format.
 - Incremental settings edits use DataStore transforms against the latest value. Complete settings
   replacement is reserved for backup restoration. Backup JSON still contains `ReaderSettings`, not
   the new storage envelope, so storage migration does not change the portable backup format.

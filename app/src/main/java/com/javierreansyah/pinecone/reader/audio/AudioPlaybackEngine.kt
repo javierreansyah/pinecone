@@ -7,17 +7,19 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.withReadingPreferencesFrom
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
+import dagger.hilt.android.scopes.ServiceScoped
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.readium.adapter.exoplayer.audio.ExoPlayerEngineProvider
 import org.readium.adapter.exoplayer.audio.ExoPlayerPreferences
@@ -27,51 +29,36 @@ import org.readium.navigator.media.audio.AudioNavigatorFactory
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
-import kotlin.time.Duration.Companion.seconds
 
-data class AudioPlaybackState(
-    val bookId: String? = null,
-    val title: String = "",
-    val chapter: String = "",
-    val playing: Boolean = false,
-    val loading: Boolean = false,
-    val index: Int = 0,
-    val elapsedSeconds: Long = 0,
-    val durationSeconds: Long? = null,
-    val error: String? = null,
-    val author: String = "",
-    val metadataLoaded: Boolean = false,
-)
-
-/** Application-scoped state; the MediaSessionService owns/relinquishes the native player. */
-class AudioReadingSession(
+/** Constructed in the service component; never injected into application or UI components. */
+@ServiceScoped
+class AudioPlaybackEngine @Inject constructor(
     private val app: Application,
     private val repository: LibraryRepository,
     private val preferences: ReaderPreferences,
-    private val scope: CoroutineScope,
+    private val store: AudioPlaybackStore,
 ) {
-    private val mutex = Mutex()
-    private val _state = MutableStateFlow(AudioPlaybackState())
-    val state: StateFlow<AudioPlaybackState> = _state.asStateFlow()
-    val navigator: MutableStateFlow<AudioNavigator<ExoPlayerSettings, ExoPlayerPreferences>?> =
-        MutableStateFlow(null)
-    val locator: MutableStateFlow<Locator?> = MutableStateFlow(null)
+    private val state get() = store.state
+    private var navigator: AudioNavigator<ExoPlayerSettings, ExoPlayerPreferences>? = null
+    val player get() = navigator?.asMedia3Player()
     private var publication: Publication? = null
     private var jobs = emptyList<Job>()
 
-    suspend fun open(bookId: String): Unit = mutex.withLock {
-        if (_state.value.bookId == bookId && navigator.value != null) return@withLock
+    suspend fun open(bookId: String, initialLocator: Locator?, scope: CoroutineScope) {
         releasePlayer()
-        _state.value = AudioPlaybackState(bookId = bookId, loading = true)
+        store.publish(AudioPlaybackState(bookId = bookId, loading = true))
         try {
             val book = requireNotNull(repository.getBook(bookId))
-            _state.value = _state.value.copy(
+            store.publish(state.value.copy(
                 title = book.book.title,
                 author = book.sortedAuthors.joinToString(", ") { it.name },
                 metadataLoaded = true,
-            )
-            val pub = requireNotNull(repository.openPublication(book))
+                coverPath = book.book.coverPath,
+            ))
+            // Retain ownership before honoring cancellation so an IO result cannot leak a publication.
+            val pub = requireNotNull(withContext(NonCancellable) { repository.openPublication(book) })
             publication = pub
+            currentCoroutineContext().ensureActive()
             val originalRendition = repository.rendition(bookId, "original")
             val override = originalRendition?.preferencesJson?.takeUnless { it == "{}" }?.let {
                 kotlinx.serialization.json.Json.decodeFromString<com.javierreansyah.pinecone.data.local.preferences.ReaderSettings>(
@@ -82,23 +69,30 @@ class AudioReadingSession(
                 (override ?: preferences.readerSettings.first()).formatPreferences
             val factory = AudioNavigatorFactory(pub, ExoPlayerEngineProvider(app))
                 ?: error("Publication is not supported by the audio navigator")
-            val initial =
-                originalRendition?.lastLocatorJson?.let { Locator.fromJSON(JSONObject(it)) }
-            val nav = factory.createNavigator(
+            val initial = initialLocator ?: originalRendition?.lastLocatorJson?.let { Locator.fromJSON(JSONObject(it)) }
+            val nav = withContext(NonCancellable) { factory.createNavigator(
                 initialLocator = initial,
                 initialPreferences = ExoPlayerPreferences(
                     speed = settings.audioSpeed,
                     pitch = settings.audioPitch
                 )
-            ).getOrNull()
+            ).getOrNull() }
                 ?: error("Audio engine could not open this publication")
-            navigator.value = nav
-            _state.value = _state.value.copy(loading = false)
+            navigator = nav
+            currentCoroutineContext().ensureActive()
+            store.publish(state.value.copy(
+                loading = false,
+                tableOfContents = pub.tableOfContents.ifEmpty {
+                    pub.readingOrder.mapIndexed { index, link ->
+                        link.copy(title = link.title ?: app.getString(R.string.reader_track_label, index + 1))
+                    }
+                },
+            ))
             jobs = listOf(
                 scope.launch {
                     nav.playback.collect { playback ->
                         val duration = nav.readingOrder.items.getOrNull(playback.index)?.duration
-                        _state.value = _state.value.copy(
+                        store.publish(state.value.copy(
                             chapter = pub.readingOrder.getOrNull(playback.index)?.title
                                 ?: app.getString(R.string.reader_track_label, playback.index + 1),
                             playing = playback.playWhenReady,
@@ -108,12 +102,12 @@ class AudioReadingSession(
                             error = if (playback.state is AudioNavigator.State.Failure<*>) app.getString(
                                 R.string.reader_audio_playback_failed
                             ) else null,
-                        )
+                        ))
                     }
                 },
                 scope.launch {
                     nav.currentLocator.collect {
-                        locator.value = it
+                        store.update { state -> state.copy(locator = it) }
                         repository.saveReadingPosition(bookId, it)
                     }
                 },
@@ -143,54 +137,33 @@ class AudioReadingSession(
         } catch (error: Exception) {
             releasePlayer()
             timber.log.Timber.e(error, "Could not open audiobook")
-            _state.value = _state.value.copy(
+            store.publish(state.value.copy(
                 loading = false,
                 error = app.getString(R.string.reader_audio_open_failed)
-            )
+            ))
         }
     }
 
-    fun togglePlayback() {
-        navigator.value?.let { if (state.value.playing) it.pause() else it.play() }
-    }
+    fun go(locator: Locator) { navigator?.go(locator) }
+    fun go(link: Link) { navigator?.go(link) }
 
-    fun skip(seconds: Int) {
-        navigator.value?.skip(seconds.seconds)
-    }
-
-    fun seek(seconds: Double) {
-        navigator.value?.skipTo(state.value.index, seconds.seconds)
-    }
-
-    fun track(offset: Int) {
-        navigator.value?.let {
-            it.skipTo(
-                (state.value.index + offset).coerceIn(
-                    0,
-                    it.readingOrder.items.lastIndex
-                ), 0.seconds
-            )
+    suspend fun close() = withContext(NonCancellable) {
+        jobs.forEach(Job::cancel)
+        jobs.joinAll()
+        try {
+            val bookId = state.value.bookId
+            val lastLocator = state.value.locator
+            if (bookId != null && lastLocator != null) repository.saveReadingPosition(bookId, lastLocator)
+        } finally {
+            releasePlayer()
         }
-    }
-
-    fun go(locator: Locator) {
-        navigator.value?.go(locator)
-    }
-
-    fun go(link: Link) {
-        navigator.value?.go(link)
     }
 
     fun releasePlayer() {
         jobs.forEach(Job::cancel); jobs = emptyList()
-        navigator.value?.close(); navigator.value = null
-        publication?.close(); publication = null; locator.value = null
-        _state.value = _state.value.copy(playing = false, loading = false)
+        navigator?.close(); navigator = null
+        publication?.close(); publication = null
+        store.update { it.copy(playing = false, loading = false, ready = false, generation = null, locator = null) }
     }
 
-    /** Serialized with open so a dismissed, still-loading book cannot resurrect playback. */
-    suspend fun stop(): Unit = mutex.withLock {
-        releasePlayer()
-        _state.value = AudioPlaybackState()
-    }
 }

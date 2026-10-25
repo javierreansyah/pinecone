@@ -147,4 +147,5 @@
     <string name="reader_unknown_chapter">Bab tidak diketahui</string>
     <string name="reader_vertical_text">Teks vertikal</string>
     <string name="reader_hide_conversion">Sembunyikan</string>
+    <string name="reader_audio_retry">Coba lagi</string>
 </resources>

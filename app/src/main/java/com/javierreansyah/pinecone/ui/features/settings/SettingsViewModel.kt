@@ -32,6 +32,7 @@ class SettingsViewModel @Inject constructor(
     private val application: Application,
     private val readerPreferences: ReaderPreferences,
     private val backupRepository: BackupRepository,
+    private val restoreBackup: com.javierreansyah.pinecone.domain.RestoreBackup,
 ) : ViewModel() {
     private val _settings = MutableStateFlow(ReaderSettings())
     val settings: StateFlow<ReaderSettings> = _settings.asStateFlow()
@@ -86,7 +87,7 @@ class SettingsViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             _isRestoring.value = true; onStart()
-            when (backupRepository.restoreSnapshot(uri)) {
+            when (restoreBackup(uri)) {
                 is BackupResult.Success, BackupResult.Skipped -> {
                     application.imageLoader.memoryCache?.clear()
                     application.imageLoader.diskCache?.clear()

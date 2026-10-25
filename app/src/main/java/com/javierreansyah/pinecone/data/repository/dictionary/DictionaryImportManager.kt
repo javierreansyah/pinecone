@@ -5,12 +5,16 @@ import android.net.Uri
 import com.javierreansyah.pinecone.data.local.database.dictionary.StardictParser
 import com.javierreansyah.pinecone.data.local.preferences.InstalledDictionary
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class DictionaryImportManager(
-    context: Context, private val preferences: ReaderPreferences,
+@Singleton
+class DictionaryImportManager @Inject constructor(
+    @ApplicationContext context: Context, private val preferences: ReaderPreferences,
 ) {
     private val parser = StardictParser(context)
 

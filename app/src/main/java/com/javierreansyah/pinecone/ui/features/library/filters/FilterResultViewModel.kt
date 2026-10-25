@@ -9,6 +9,7 @@ import com.javierreansyah.pinecone.data.local.database.library.TagEntity
 import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
 import com.javierreansyah.pinecone.data.local.preferences.libraryPreferenceDefaults
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.domain.DeleteBooks
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
@@ -40,6 +41,7 @@ import javax.inject.Inject
 @HiltViewModel
 class FilterResultViewModel @Inject constructor(
     private val bookRepository: LibraryRepository,
+    private val deletePublications: DeleteBooks,
     private val prefsManager: LibraryPreferencesManager,
 ) : ViewModel() {
     private val screenKey = "filter_result"
@@ -176,13 +178,13 @@ class FilterResultViewModel @Inject constructor(
 
     fun deleteBook(bookId: String) {
         viewModelScope.launch {
-            bookRepository.deleteBook(bookId)
+            deletePublications(listOf(bookId))
         }
     }
 
     fun deleteBooks(bookIds: Collection<String>) {
         viewModelScope.launch {
-            bookIds.forEach { bookRepository.deleteBook(it) }
+            deletePublications(bookIds)
         }
     }
 

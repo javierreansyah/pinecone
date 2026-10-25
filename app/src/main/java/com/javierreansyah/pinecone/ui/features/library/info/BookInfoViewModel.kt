@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.domain.DeleteBooks
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -27,8 +28,12 @@ import org.readium.r2.shared.publication.services.positions
 class BookInfoViewModel @AssistedInject constructor(
     @Assisted private val bookId: String,
     private val repository: LibraryRepository,
+    readerPreferences: com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences,
+    private val deletePublications: DeleteBooks,
 ) : ViewModel() {
 
+
+    val settings = readerPreferences.readerSettings.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.javierreansyah.pinecone.data.local.preferences.ReaderSettings())
 
     val uiState: StateFlow<BookInfoUiState> = repository.getBookFlow(bookId)
         .map { entity ->
@@ -98,7 +103,7 @@ class BookInfoViewModel @AssistedInject constructor(
 
     fun deleteBook(onSuccess: () -> Unit) {
         viewModelScope.launch {
-            repository.deleteBook(bookId)
+            deletePublications(listOf(bookId))
             onSuccess()
         }
     }

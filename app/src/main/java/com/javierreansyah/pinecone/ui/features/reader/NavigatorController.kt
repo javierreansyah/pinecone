@@ -161,11 +161,8 @@ class NavigatorController(
                 }
             }
 
-            ReaderProfile.AUDIO -> {
-                // The service owns the AudioNavigator. UI destruction must not close it.
-                viewModel.startAudio()
-                return
-            }
+            // ReaderActivity redirects audiobooks into the service-backed audio screen.
+            ReaderProfile.AUDIO -> return
         }
         val nav = navigator ?: return
         (nav as? OverflowableNavigator)?.addInputListener(
@@ -195,17 +192,11 @@ class NavigatorController(
     }
 
     fun go(locator: Locator) {
-        if (viewModel.profile.value == ReaderProfile.AUDIO) viewModel.audioGo(locator)
-        else {
-            epub?.go(locator); navigator?.go(locator)
-        }
+        epub?.go(locator); navigator?.go(locator)
     }
 
     fun go(link: Link) {
-        if (viewModel.profile.value == ReaderProfile.AUDIO) viewModel.audioGo(link)
-        else {
-            epub?.go(link); navigator?.go(link)
-        }
+        epub?.go(link); navigator?.go(link)
     }
 
     override fun onDestroy(owner: LifecycleOwner) {

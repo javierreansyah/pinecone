@@ -7,6 +7,7 @@ import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
 import com.javierreansyah.pinecone.data.local.preferences.libraryPreferenceDefaults
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.domain.DeleteBooks
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +22,7 @@ import kotlinx.coroutines.launch
 
 abstract class LibraryCollectionViewModel(
     private val bookRepository: LibraryRepository,
+    private val deletePublications: DeleteBooks,
     private val prefsManager: LibraryPreferencesManager,
     private val screenKey: String,
     source: (LibraryRepository) -> Flow<List<BookWithDetails>>,
@@ -92,13 +94,13 @@ abstract class LibraryCollectionViewModel(
 
     fun deleteBook(bookId: String) {
         viewModelScope.launch {
-            bookRepository.deleteBook(bookId)
+            deletePublications(listOf(bookId))
         }
     }
 
     fun deleteBooks(bookIds: Collection<String>) {
         viewModelScope.launch {
-            bookIds.forEach { bookRepository.deleteBook(it) }
+            deletePublications(bookIds)
         }
     }
 

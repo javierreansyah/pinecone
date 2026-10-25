@@ -5,7 +5,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.lifecycle.ViewModelProvider
 import androidx.work.testing.TestListenableWorkerBuilder
 import com.javierreansyah.pinecone.ui.features.library.info.BookInfoViewModel
-import com.javierreansyah.pinecone.ui.root.AppServicesViewModel
+import com.javierreansyah.pinecone.ui.root.AudioControlsViewModel
 import com.javierreansyah.pinecone.worker.BackupWorker
 import dagger.hilt.android.lifecycle.withCreationCallback
 import org.junit.Assert.assertEquals
@@ -19,16 +19,15 @@ class DependencyInjectionTest {
     val compose = createAndroidComposeRule<MainActivity>()
 
     @Test
-    fun appLaunchSharesSingletonsAndRetainsKeyedAssistedViewModelsAcrossRecreation() {
+    fun appLaunchSharesPlaybackStateAndRetainsAssistedViewModelsAcrossRecreation() {
         compose.onRoot().assertExists()
-        lateinit var services: AppServicesViewModel
+        lateinit var services: AudioControlsViewModel
         lateinit var first: BookInfoViewModel
         compose.activityRule.scenario.onActivity { activity ->
-            val app = activity.application as PineconeApplication
-            services = ViewModelProvider(activity)[AppServicesViewModel::class.java]
-            assertSame(app.audioSession, services.audioSession)
-            assertSame(app.libraryRepository, services.libraryRepository)
-            assertSame(app.readerPreferences, services.readerPreferences)
+            services = ViewModelProvider(activity)[AudioControlsViewModel::class.java]
+            val otherControls = ViewModelProvider(activity)["other-controls", AudioControlsViewModel::class.java]
+            assertNotSame(services, otherControls)
+            assertSame(services.state, otherControls.state)
 
             val provider = ViewModelProvider(
                 activity.viewModelStore,
@@ -51,7 +50,7 @@ class DependencyInjectionTest {
 
         compose.activityRule.scenario.recreate()
         compose.activityRule.scenario.onActivity { activity ->
-            assertSame(services, ViewModelProvider(activity)[AppServicesViewModel::class.java])
+            assertSame(services, ViewModelProvider(activity)[AudioControlsViewModel::class.java])
             assertSame(first, ViewModelProvider(activity)["first", BookInfoViewModel::class.java])
         }
         compose.onRoot().assertExists()

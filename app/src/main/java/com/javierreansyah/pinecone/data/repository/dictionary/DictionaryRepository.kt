@@ -4,9 +4,13 @@ import android.content.Context
 import com.javierreansyah.pinecone.data.local.database.dictionary.DictionaryDatabase
 import com.javierreansyah.pinecone.data.local.database.dictionary.DictionaryEntry
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class DictionaryRepository(
-    private val context: Context, private val preferences: ReaderPreferences,
+@Singleton
+class DictionaryRepository @Inject constructor(
+    @ApplicationContext private val context: Context, private val preferences: ReaderPreferences,
 ) {
     suspend fun lookupWord(dictionaryId: String, word: String): List<DictionaryEntry> {
         if (dictionaryId.isEmpty()) return emptyList()

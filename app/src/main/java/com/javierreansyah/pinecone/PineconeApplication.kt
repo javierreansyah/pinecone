@@ -4,13 +4,11 @@ import android.app.Application
 import android.content.pm.ApplicationInfo
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
-import com.javierreansyah.pinecone.data.local.database.library.AppDatabase
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.repository.backup.BackupRepository
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.di.ApplicationScope
 import com.javierreansyah.pinecone.di.IoDispatcher
-import com.javierreansyah.pinecone.reader.audio.AudioReadingSession
 import com.javierreansyah.pinecone.worker.WorkerUtils
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CancellationException
@@ -25,13 +23,9 @@ import javax.inject.Inject
 @HiltAndroidApp
 class PineconeApplication : Application(), Configuration.Provider {
     @Inject
-    lateinit var database: AppDatabase
-    @Inject
     lateinit var libraryRepository: LibraryRepository
     @Inject
     lateinit var readerPreferences: ReaderPreferences
-    @Inject
-    lateinit var audioSession: AudioReadingSession
     @Inject
     lateinit var backupRepository: BackupRepository
     @Inject

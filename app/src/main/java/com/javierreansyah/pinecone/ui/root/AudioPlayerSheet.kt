@@ -2,7 +2,6 @@
 
 package com.javierreansyah.pinecone.ui.root
 
-import android.content.Intent
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.background
@@ -48,7 +47,6 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -70,12 +68,10 @@ import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import com.javierreansyah.pinecone.R
-import com.javierreansyah.pinecone.reader.audio.AudioPlaybackService
 import com.javierreansyah.pinecone.ui.features.reader.AudioPlayerScreen
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.abs
@@ -97,10 +93,8 @@ internal enum class AudioDismissValue { Left, Center, Right }
 /** One draggable surface morphs from the measured mini-player into the full player. */
 @Composable
 fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable () -> Unit) {
-    val context = LocalContext.current
-    val app: AppServicesViewModel = hiltViewModel()
-    val playback by app.audioSession.state.collectAsStateWithLifecycle()
-    val navigator by app.audioSession.navigator.collectAsStateWithLifecycle()
+    val controls: AudioControlsViewModel = hiltViewModel()
+    val playback by controls.state.collectAsStateWithLifecycle()
     val request = backStack.lastOrNull() as? Screen.AudioPlayer
     val underlyingScreen = backStack.lastOrNull { it !is Screen.AudioPlayer }
     val playerStack = rememberNavBackStack()
@@ -112,6 +106,7 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
     var rootHandle by remember { mutableStateOf<AudioPlayerHandle?>(null) }
     var libraryHandle by remember { mutableStateOf<AudioPlayerHandle?>(null) }
     var dismissedBookId by remember { mutableStateOf<String?>(null) }
+    var previousBookId by remember { mutableStateOf(playback.bookId) }
     var predictiveBackInProgress by remember { mutableStateOf(false) }
     var openingNewPlayer by remember { mutableStateOf(false) }
     val reportHandle = remember {
@@ -134,7 +129,7 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
         sheet.offset.takeIf { it.isFinite() }?.coerceIn(0f, collapsedOffset) ?: collapsedOffset
     val fraction = audioSheetExpansion(offset, collapsedOffset)
     val suppressOpeningMiniPlayer = request != null && (
-            openingNewPlayer || navigator == null || playback.bookId != request.bookId
+            openingNewPlayer || !playback.ready || playback.bookId != request.bookId
             )
     val opacity = audioSheetOpacity(fraction, suppressMiniPlayer = suppressOpeningMiniPlayer)
     val horizontalOffset = swipeDismiss.offset.takeIf { it.isFinite() } ?: 0f
@@ -155,11 +150,7 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
             dismissedBookId = playback.bookId
             playerStack.clear()
             backStack.collapseAudioPlayer()
-            context.startService(
-                Intent(context, AudioPlaybackService::class.java).setAction(
-                    AudioPlaybackService.ACTION_STOP
-                )
-            )
+            controls.dismiss()
         }
     }
     val latestDismissPlayer by rememberUpdatedState(dismissPlayer)
@@ -193,7 +184,7 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
     )
     LaunchedEffect(request) {
         if (request != null) {
-            openingNewPlayer = navigator == null || playback.bookId != request.bookId
+            openingNewPlayer = !playback.ready || playback.bookId != request.bookId
             dismissedBookId = null
             swipeDismiss.snapTo(AudioDismissValue.Center)
             if (playerStack.lastOrNull() != request) {
@@ -204,8 +195,8 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
             openingNewPlayer = false
         }
     }
-    LaunchedEffect(playback.bookId, navigator) {
-        if (playerStack.isEmpty() && playback.bookId != null && navigator != null && playback.bookId != dismissedBookId) {
+    LaunchedEffect(playback.bookId, playback.ready) {
+        if (playerStack.isEmpty() && playback.bookId != null && playback.ready && playback.bookId != dismissedBookId) {
             playerStack.add(Screen.AudioPlayer(requireNotNull(playback.bookId)))
         }
     }
@@ -218,6 +209,11 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
         })
     }
     LaunchedEffect(playback.bookId) {
+        if (playback.bookId == null && previousBookId != null) {
+            playerStack.clear()
+            backStack.collapseAudioPlayer()
+        }
+        previousBookId = playback.bookId
         swipeDismiss.snapTo(AudioDismissValue.Center)
     }
     LaunchedEffect(swipeDismiss) {
@@ -296,12 +292,8 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
             }
         }
     }
-    val bookFlow = remember(playback.bookId) {
-        playback.bookId?.let(app.libraryRepository::getBookFlow) ?: flowOf(null)
-    }
-    val book by bookFlow.collectAsStateWithLifecycle(initialValue = null)
     val visible =
-        request != null || playback.bookId != null && navigator != null && playback.bookId != dismissedBookId
+        request != null || playback.bookId != null && playback.ready && playback.bookId != dismissedBookId
     val collapseLabel = stringResource(R.string.reader_collapse_audio_player)
     val expandLabel = stringResource(R.string.reader_open_audio_player)
     val dismissLabel = stringResource(R.string.reader_dismiss_audio_player)
@@ -417,10 +409,10 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
                     ) {
                         AudioMiniPlayer(
                             state = playback,
-                            coverPath = book?.book?.coverPath,
+                            coverPath = playback.coverPath,
                             onOpenPlayer = expand,
-                            onPlayPause = app.audioSession::togglePlayback,
-                            onSkip = app.audioSession::skip,
+                            onPlayPause = controls::togglePlayback,
+                            onSkip = controls::skip,
                             modifier = Modifier
                                 .then(if (handle.navigationBarsPadding) Modifier.navigationBarsPadding() else Modifier)
                                 .padding(

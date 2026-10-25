@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.FormatPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
+import com.javierreansyah.pinecone.data.local.preferences.encodeReadingOverrides
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.data.local.preferences.epubImageFilterCss
 import com.javierreansyah.pinecone.data.local.preferences.readingThemeIsDark
@@ -14,7 +15,6 @@ import com.javierreansyah.pinecone.data.publication.PublicationFormats
 import com.javierreansyah.pinecone.data.publication.ReaderProfile
 import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
-import com.javierreansyah.pinecone.reader.audio.AudioReadingSession
 import com.javierreansyah.pinecone.reader.epub.toEpubPreferences
 import com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -83,7 +83,6 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
     @dagger.assisted.Assisted private val bookId: String,
     private val repository: LibraryRepository,
     private val readerPreferences: ReaderPreferences,
-    val audioSession: AudioReadingSession,
 ) : ViewModel() {
     private val initialSystemDark = application.resources.configuration.uiMode and
             android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
@@ -93,7 +92,6 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
     val profile: MutableStateFlow<ReaderProfile> = MutableStateFlow(ReaderProfile.EPUB)
     val activeRendition: MutableStateFlow<String> = MutableStateFlow("original")
     private var conversionJob: Job? = null
-    private var audioLocatorJob: Job? = null
 
     private val _positions = MutableStateFlow<List<Locator>>(emptyList())
     val positions: StateFlow<List<Locator>> = _positions.asStateFlow()
@@ -554,33 +552,6 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
         _bookState.update { it.copy(conversionError = null) }
     }
 
-    fun startAudio() {
-        application.startService(
-            android.content.Intent(
-                application,
-                com.javierreansyah.pinecone.reader.audio.AudioPlaybackService::class.java
-            )
-                .putExtra("bookId", bookId)
-        )
-        _controlsState.update { it.copy(showControls = true) }
-        audioLocatorJob?.cancel()
-        audioLocatorJob = viewModelScope.launch {
-            audioSession.locator.collect { locator ->
-                if (locator != null && audioSession.state.value.bookId == bookId) onLocatorChanged(
-                    locator
-                )
-            }
-        }
-    }
-
-    fun audioGo(locator: Locator) {
-        audioSession.go(locator)
-    }
-
-    fun audioGo(link: Link) {
-        audioSession.go(link)
-    }
-
     fun recordJumpOrigin() {
         val current = _currentLocator.value ?: return
         viewModelScope.launch {
@@ -662,7 +633,7 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
                     repository.setReadingOverrides(
                         bookId,
                         activeRendition.value,
-                        kotlinx.serialization.json.Json.encodeToString(local),
+                        local.encodeReadingOverrides(),
                     )
                 } else {
                     readerPreferences.updateSettings(transform)
@@ -688,7 +659,7 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
                 repository.setReadingOverrides(
                     bookId,
                     activeRendition.value,
-                    readingOverrides.value?.let { kotlinx.serialization.json.Json.encodeToString(it) }
+                    readingOverrides.value?.let { it.encodeReadingOverrides() }
                         ?: "{}",
                 )
             }

@@ -31,8 +31,16 @@ import com.javierreansyah.pinecone.data.publication.PublicationMetadata
 import com.javierreansyah.pinecone.data.publication.PublicationMetadataImporter
 import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import com.javierreansyah.pinecone.data.publication.conversion.PdfReadModeConverter
+import com.javierreansyah.pinecone.di.IoDispatcher
 import com.javierreansyah.pinecone.reader.pdf.MuPdfDocumentFactory
 import com.javierreansyah.pinecone.ui.features.library.ALL_SPACES_ID
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
+import java.io.FileOutputStream
+import java.security.MessageDigest
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
@@ -48,13 +56,10 @@ import org.readium.r2.shared.publication.services.coverFitting
 import org.readium.r2.shared.util.asset.AssetRetriever
 import org.readium.r2.shared.util.toUrl
 import org.readium.r2.streamer.PublicationOpener
-import java.io.File
-import java.io.FileOutputStream
-import java.security.MessageDigest
-import java.util.UUID
 
-class LibraryRepository(
-    private val context: Context,
+@Singleton
+class LibraryRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val database: AppDatabase,
     private val bookDao: BookDao,
     private val bookmarkDao: BookmarkDao,
@@ -64,9 +69,7 @@ class LibraryRepository(
     private val publicationOpener: PublicationOpener,
     private val assetRetriever: AssetRetriever,
     private val preferences: ReaderPreferences,
-    private val audioSession: dagger.Lazy<com.javierreansyah.pinecone.reader.audio.AudioReadingSession>,
-    private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher,
-    private val mainDispatcher: kotlinx.coroutines.CoroutineDispatcher,
+    @IoDispatcher private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher,
 ) {
 
     private val booksDir: File
@@ -628,11 +631,7 @@ class LibraryRepository(
         withAssetTransaction {
             val book = bookDao.getById(bookId)?.book ?: return@withAssetTransaction
             val renditions = publicationDao.renditions(bookId)
-            withContext(mainDispatcher) {
-                val session =
-                    audioSession.get()
-                if (session.state.value.bookId == bookId) session.releasePlayer()
-            }
+
 
             database.withTransaction {
                 bookDao.delete(book)

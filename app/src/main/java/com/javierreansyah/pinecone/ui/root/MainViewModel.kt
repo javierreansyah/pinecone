@@ -54,6 +54,9 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    suspend fun isAudiobook(bookId: String): Boolean =
+        libraryRepository.rendition(bookId, "original")?.profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO.name
+
     fun importBook(uri: Uri) {
         viewModelScope.launch {
             val app = application

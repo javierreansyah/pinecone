@@ -22,11 +22,8 @@ import com.javierreansyah.pinecone.data.model.VaultObjectKind
 import com.javierreansyah.pinecone.data.model.VaultSnapshot
 import com.javierreansyah.pinecone.data.model.toBackupRecord
 import com.javierreansyah.pinecone.data.model.toEntity
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
+import com.javierreansyah.pinecone.di.IoDispatcher
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -40,6 +37,13 @@ import java.util.zip.Deflater
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 
 data class BackupSnapshotInfo(
     val uri: Uri,
@@ -48,14 +52,13 @@ data class BackupSnapshotInfo(
     val isManual: Boolean,
 )
 
-class BackupRepository(
-    private val context: Context,
+@Singleton
+class BackupRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val preferences: ReaderPreferences,
     private val database: com.javierreansyah.pinecone.data.local.database.library.AppDatabase,
     private val libraryRepository: com.javierreansyah.pinecone.data.repository.library.LibraryRepository,
-    private val audioSession: com.javierreansyah.pinecone.reader.audio.AudioReadingSession,
-    private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher,
-    private val mainDispatcher: kotlinx.coroutines.CoroutineDispatcher,
+    @IoDispatcher private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher,
 ) {
     private val resolver get() = context.contentResolver
     private val json = Json { encodeDefaults = true; ignoreUnknownKeys = false; isLenient = false }
@@ -636,7 +639,6 @@ class BackupRepository(
                 dictionaryStages += DictionaryStage(referenceDictionary, staged)
             }
             val oldBooks = database.bookDao().getAllBooksSync()
-            withContext(mainDispatcher) { audioSession.releasePlayer() }
             val oldRenditions = database.publicationDao().allRenditions()
             val renditionRefs = snapshot.renditions.associateBy { it.bookId to it.key }
             val restoredRenditions = snapshot.library.renditions.map { rendition ->
