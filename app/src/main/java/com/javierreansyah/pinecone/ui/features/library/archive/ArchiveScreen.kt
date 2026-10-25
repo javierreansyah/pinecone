@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.library.archive
 
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,7 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Book
 import com.composables.icons.materialsymbols.outlined.Select
@@ -46,7 +46,7 @@ fun ArchiveScreen(
     onNavigateToReader: (String) -> Unit,
     onNavigateToBookInfo: (String) -> Unit,
     onNavigateToOrganize: (String) -> Unit,
-    viewModel: ArchiveViewModel = viewModel(),
+    viewModel: ArchiveViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val archivedBooks by viewModel.filteredBooks.collectAsStateWithLifecycle()

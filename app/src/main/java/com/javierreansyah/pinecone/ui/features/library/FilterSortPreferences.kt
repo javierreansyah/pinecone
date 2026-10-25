@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library
 
+@kotlinx.serialization.Serializable
 data class FilterSortPreferences(
     val layoutMode: LayoutMode = LayoutMode.Grid,
     val sortType: SortType = SortType.Added,

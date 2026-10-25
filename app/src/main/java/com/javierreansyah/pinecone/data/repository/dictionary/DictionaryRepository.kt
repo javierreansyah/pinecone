@@ -4,7 +4,6 @@ import android.content.Context
 import com.javierreansyah.pinecone.data.local.database.dictionary.DictionaryDatabase
 import com.javierreansyah.pinecone.data.local.database.dictionary.DictionaryEntry
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
-import kotlinx.coroutines.flow.first
 
 class DictionaryRepository(
     private val context: Context, private val preferences: ReaderPreferences,
@@ -33,19 +32,15 @@ class DictionaryRepository(
 
     suspend fun deleteDictionary(dictionaryId: String) {
 
-        val currentSettings = preferences.readerSettings.first()
-        val newInstalled =
-            currentSettings.installedDictionaries.filter { (itId, _, _) -> itId != dictionaryId }
-        val newActiveId = if (currentSettings.activeDictionaryId == dictionaryId) {
-            newInstalled.firstOrNull()?.id ?: ""
-        } else {
-            currentSettings.activeDictionaryId
+        preferences.updateSettings { current ->
+            val installed = current.installedDictionaries.filter { it.id != dictionaryId }
+            current.copy(
+                installedDictionaries = installed,
+                activeDictionaryId = if (current.activeDictionaryId == dictionaryId) {
+                    installed.firstOrNull()?.id.orEmpty()
+                } else current.activeDictionaryId,
+            )
         }
-        preferences.updateSettings(
-            currentSettings.copy(
-                installedDictionaries = newInstalled, activeDictionaryId = newActiveId,
-            ),
-        )
 
         DictionaryDatabase.closeDatabase(dictionaryId)
 
@@ -58,12 +53,10 @@ class DictionaryRepository(
     }
 
     suspend fun renameDictionary(dictionaryId: String, newName: String) {
-        val currentSettings = preferences.readerSettings.first()
-        val newInstalled = currentSettings.installedDictionaries.map {
-            if (it.id == dictionaryId) it.copy(name = newName) else it
+        preferences.updateSettings { current ->
+            current.copy(installedDictionaries = current.installedDictionaries.map {
+                if (it.id == dictionaryId) it.copy(name = newName) else it
+            })
         }
-        preferences.updateSettings(
-            currentSettings.copy(installedDictionaries = newInstalled),
-        )
     }
 }

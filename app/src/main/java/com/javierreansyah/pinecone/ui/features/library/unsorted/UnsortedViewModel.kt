@@ -1,11 +1,18 @@
 package com.javierreansyah.pinecone.ui.features.library.unsorted
 
-import android.app.Application
+import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.ui.features.library.LibraryCollectionViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 
-class UnsortedViewModel(application: Application) : LibraryCollectionViewModel(
-    application = application,
+@HiltViewModel
+class UnsortedViewModel @Inject constructor(
+    repository: LibraryRepository,
+    preferences: LibraryPreferencesManager,
+) : LibraryCollectionViewModel(
+    bookRepository = repository,
+    prefsManager = preferences,
     screenKey = "unsorted",
     source = LibraryRepository::getUnsortedBooks,
 )

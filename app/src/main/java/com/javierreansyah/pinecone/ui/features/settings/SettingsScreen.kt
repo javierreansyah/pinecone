@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.settings
 
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.content.Intent
 import android.net.Uri
 import android.os.Environment
@@ -57,7 +56,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import androidx.core.os.LocaleListCompat
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Contrast
 import com.composables.icons.materialsymbols.outlined.Folder
@@ -74,7 +74,6 @@ import com.composables.icons.materialsymbols.outlined.Swap_horiz
 import com.composables.icons.materialsymbols.outlined.Translate
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.composables.icons.materialsymbols.outlined.Visibility_off
-import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.CoverDisplayMode
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
@@ -85,10 +84,10 @@ import com.javierreansyah.pinecone.ui.features.settings.components.ColorSchemePi
 import com.javierreansyah.pinecone.ui.features.settings.components.SettingsItem
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import com.javierreansyah.pinecone.worker.WorkerUtils
-import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
+import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(
@@ -107,13 +106,7 @@ fun SettingsScreen(
     val errorSetBackupLocationMsg = stringResource(R.string.settings_error_set_backup_location)
 
     val scope = rememberCoroutineScope()
-    val app = context.applicationContext as PineconeApplication
-    val viewModel: SettingsViewModel = viewModel(
-        factory = SettingsViewModel.Factory(
-            application = app,
-            readerPreferences = app.readerPreferences,
-        ),
-    )
+    val viewModel: SettingsViewModel = hiltViewModel()
 
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val isBackingUp by viewModel.isBackingUp.collectAsStateWithLifecycle()
@@ -140,7 +133,7 @@ fun SettingsScreen(
             val takeFlags: Int =
                 Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
             context.contentResolver.takePersistableUriPermission(it, takeFlags)
-            viewModel.updateSettings(settings.copy(backupFolderUri = it.toString()))
+            viewModel.updateSettings { current -> current.copy(backupFolderUri = it.toString()) }
         }
     }
 
@@ -203,30 +196,30 @@ fun SettingsScreen(
         onNavigateToAbout = onNavigateToAbout,
         onRestoreDefaultClick = { showRestoreDefaultWarning = true },
         onThemeModeSelected = { themeMode ->
-            viewModel.updateSettings(settings.copy(themeMode = themeMode))
+            viewModel.updateSettings { current -> current.copy(themeMode = themeMode) }
         },
         onColorPaletteClick = { showColorPicker = true },
         onThemeContrastSelected = { themeContrast ->
-            viewModel.updateSettings(settings.copy(themeContrast = themeContrast))
+            viewModel.updateSettings { current -> current.copy(themeContrast = themeContrast) }
         },
-        onSpacesEnabledChanged = { enabled -> viewModel.updateSettings(settings.copy(spacesEnabled = enabled)) },
-        onShowAllSpacesChanged = { show -> viewModel.updateSettings(settings.copy(showAllSpaces = show)) },
+        onSpacesEnabledChanged = { enabled -> viewModel.updateSettings { current -> current.copy(spacesEnabled = enabled) } },
+        onShowAllSpacesChanged = { show -> viewModel.updateSettings { current -> current.copy(showAllSpaces = show) } },
         onUnsortedEnabledChanged = { enabled ->
-            viewModel.updateSettings(
-                settings.copy(
+            viewModel.updateSettings { current ->
+                current.copy(
                     unsortedEnabled = enabled
                 )
-            )
+            }
         },
         onLibraryBottomNavigationChanged = { enabled ->
-            viewModel.updateSettings(settings.copy(showLibraryBottomNavigation = enabled))
+            viewModel.updateSettings { current -> current.copy(showLibraryBottomNavigation = enabled) }
         },
         onCoverDisplayModeSelected = { mode ->
-            viewModel.updateSettings(settings.copy(coverDisplayMode = mode))
+            viewModel.updateSettings { current -> current.copy(coverDisplayMode = mode) }
         },
         onLanguageSelected = { localeKey ->
             scope.launch {
-                viewModel.updateSettingsSuspended(settings.copy(locale = localeKey))
+                viewModel.updateSettingsSuspended { current -> current.copy(locale = localeKey) }
                 if (localeKey == "System") {
                     AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
                 } else {
@@ -239,7 +232,7 @@ fun SettingsScreen(
             }
         },
         onAutoBackupFrequencySelected = { frequency ->
-            viewModel.updateSettings(settings.copy(autoBackupFrequency = frequency))
+            viewModel.updateSettings { current -> current.copy(autoBackupFrequency = frequency) }
             WorkerUtils.scheduleBackupWork(context, frequency)
         },
         onBackupLocationClick = launchFolderPicker,
@@ -293,7 +286,7 @@ fun SettingsScreen(
             } else {
                 String.format("#%06X", 0xFFFFFF and color.toArgb())
             }
-            viewModel.updateSettings(settings.copy(colorPalette = newPalette))
+            viewModel.updateSettings { current -> current.copy(colorPalette = newPalette) }
         }
     }
 
@@ -331,20 +324,21 @@ fun SettingsScreen(
             onDismiss = { showRestoreDefaultWarning = false },
         ) {
             showRestoreDefaultWarning = false
-            val defaultSettings = settings.copy(
-                themeMode = "System",
-                colorPalette = "Dynamic",
-                themeContrast = "Standard",
-                locale = "System",
-                autoBackupFrequency = "12h",
-                backupFolderUri = "",
-                showAllSpaces = true,
-                spacesEnabled = true,
-                unsortedEnabled = true,
-                showLibraryBottomNavigation = true,
-                coverDisplayMode = CoverDisplayMode.Contain,
-            )
-            viewModel.updateSettings(defaultSettings)
+            viewModel.updateSettings { current ->
+                current.copy(
+                    themeMode = "System",
+                    colorPalette = "Dynamic",
+                    themeContrast = "Standard",
+                    locale = "System",
+                    autoBackupFrequency = "12h",
+                    backupFolderUri = "",
+                    showAllSpaces = true,
+                    spacesEnabled = true,
+                    unsortedEnabled = true,
+                    showLibraryBottomNavigation = true,
+                    coverDisplayMode = CoverDisplayMode.Contain,
+                )
+            }
 
             AppCompatDelegate.setApplicationLocales(
                 LocaleListCompat.getEmptyLocaleList(),

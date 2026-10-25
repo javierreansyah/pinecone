@@ -39,6 +39,14 @@ internal object ImportedHtml {
             }
             br.remove()
         }
+        body.select("p").toList().forEach { paragraph ->
+            if ("\n\n" in paragraph.html()) {
+                paragraph.html().split("\n\n").filter(String::isNotBlank).forEach {
+                    paragraph.before(Element("p").html(it.trim()))
+                }
+                paragraph.remove()
+            }
+        }
         if (body.select("p, div, h1, h2, h3, h4, h5, h6, ul, ol, blockquote, table").isEmpty()) {
             val fragments = body.html().split("\n\n").filter(String::isNotBlank)
             body.empty()

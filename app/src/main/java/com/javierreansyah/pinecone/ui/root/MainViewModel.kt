@@ -3,14 +3,14 @@ package com.javierreansyah.pinecone.ui.root
 import android.app.Application
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -19,11 +19,12 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class MainViewModel(
-    application: Application,
+@HiltViewModel
+class MainViewModel @Inject constructor(
+    private val application: Application,
     private val libraryRepository: LibraryRepository,
     readerPreferences: ReaderPreferences,
-) : AndroidViewModel(application) {
+) : ViewModel() {
 
     private val _isReady = MutableStateFlow(value = false)
     val isReady: StateFlow<Boolean> = _isReady.asStateFlow()
@@ -55,7 +56,7 @@ class MainViewModel(
 
     fun importBook(uri: Uri) {
         viewModelScope.launch {
-            val app = getApplication<Application>()
+            val app = application
             _toastMessage.emit(
                 app.resources.getQuantityString(
                     R.plurals.nav_importing_files,
@@ -80,7 +81,7 @@ class MainViewModel(
     fun importBooks(uris: List<Uri>) {
         if (uris.isEmpty()) return
         viewModelScope.launch {
-            val app = getApplication<Application>()
+            val app = application
             _toastMessage.emit(
                 app.resources.getQuantityString(
                     R.plurals.nav_importing_files,
@@ -113,7 +114,7 @@ class MainViewModel(
 
     fun scanFolder(uri: Uri) {
         viewModelScope.launch {
-            val app = getApplication<Application>()
+            val app = application
             _toastMessage.emit(app.getString(R.string.nav_scanning_folder))
             val root = DocumentFile.fromTreeUri(app, uri)
             val publicationFiles =
@@ -174,7 +175,7 @@ class MainViewModel(
     }
 
     private fun getFileNameFromUri(uri: Uri): String {
-        val context = getApplication<Application>()
+        val context = application
         if (uri.scheme == "content") {
             try {
                 context.contentResolver.query(
@@ -199,15 +200,7 @@ class MainViewModel(
         return uri.lastPathSegment?.substringAfterLast('/') ?: uri.toString()
     }
 
-    class Factory(
-        private val application: Application,
-        private val libraryRepository: LibraryRepository,
-        private val readerPreferences: ReaderPreferences,
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            MainViewModel(application, libraryRepository, readerPreferences) as T
-    }
+
 }
 
 data class ImportErrorReport(

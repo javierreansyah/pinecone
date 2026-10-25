@@ -2,11 +2,8 @@ package com.javierreansyah.pinecone.ui.features.library.info
 
 import android.app.Application
 import android.net.Uri
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.AuthorEntity
 import com.javierreansyah.pinecone.data.local.database.library.PublicationCreditEntity
@@ -15,6 +12,9 @@ import com.javierreansyah.pinecone.data.publication.PublicationMetadata
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.ui.features.library.fileFormat
 import com.javierreansyah.pinecone.ui.features.library.publicationWording
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -23,12 +23,13 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class EditBookViewModel(
-    application: Application, private val bookId: String,
-) : AndroidViewModel(application) {
+@HiltViewModel(assistedFactory = EditBookViewModel.Factory::class)
+class EditBookViewModel @AssistedInject constructor(
+    private val application: Application,
+    @Assisted private val bookId: String,
+    private val repository: LibraryRepository,
+) : ViewModel() {
 
-    private val repository: LibraryRepository =
-        (application as PineconeApplication).libraryRepository
 
     private val _uiState = MutableStateFlow(EditBookUiState())
     val uiState: StateFlow<EditBookUiState> = _uiState.asStateFlow()
@@ -78,7 +79,7 @@ class EditBookViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = getApplication<Application>().getString(R.string.publication_not_found)
+                        error = application.getString(R.string.publication_not_found)
                     )
                 }
             }
@@ -174,7 +175,7 @@ class EditBookViewModel(
                 _uiState.update {
                     it.copy(
                         isSaving = false,
-                        error = getApplication<Application>().getString(R.string.publication_save_failed)
+                        error = application.getString(R.string.publication_save_failed)
                     )
                 }
             }
@@ -185,7 +186,7 @@ class EditBookViewModel(
 
     private fun validate(valid: Boolean, @androidx.annotation.StringRes message: Int) {
         if (!valid) throw MetadataValidationException(
-            getApplication<Application>().getString(
+            application.getString(
                 message
             )
         )
@@ -207,11 +208,9 @@ class EditBookViewModel(
         _uiState.update { it.copy(identifierDraft = text) }
     }
 
-    class Factory(
-        private val application: Application, private val bookId: String,
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            EditBookViewModel(application, bookId) as T
+
+    @dagger.assisted.AssistedFactory
+    interface Factory {
+        fun create(bookId: String): EditBookViewModel
     }
 }

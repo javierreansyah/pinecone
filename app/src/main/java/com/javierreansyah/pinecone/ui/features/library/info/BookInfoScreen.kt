@@ -2,8 +2,6 @@
 
 package com.javierreansyah.pinecone.ui.features.library.info
 
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import android.app.Application
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ScrollState
@@ -107,7 +105,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.text.HtmlCompat
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Archive
@@ -137,16 +136,16 @@ import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.fileFormat
 import com.javierreansyah.pinecone.ui.features.library.publicationWording
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
-import kotlinx.coroutines.launch
-import org.json.JSONObject
-import org.readium.r2.shared.publication.Link
-import org.readium.r2.shared.publication.Locator
-import org.readium.r2.shared.util.mediatype.MediaType
 import java.io.File
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlinx.coroutines.launch
+import org.json.JSONObject
+import org.readium.r2.shared.publication.Link
+import org.readium.r2.shared.publication.Locator
+import org.readium.r2.shared.util.mediatype.MediaType
 
 @Composable
 fun BookInfoScreen(
@@ -158,9 +157,9 @@ fun BookInfoScreen(
     onNavigateToOrganize: (String) -> Unit,
 ) {
     val context = LocalContext.current
-    val application = context.applicationContext as Application
-    val viewModel: BookInfoViewModel = viewModel(
-        key = bookId, factory = BookInfoViewModel.Factory(application, bookId),
+    val viewModel = hiltViewModel<BookInfoViewModel, BookInfoViewModel.Factory>(
+        key = bookId,
+        creationCallback = { it.create(bookId) },
     )
 
     val uiState = viewModel.uiState.collectAsStateWithLifecycle()
@@ -982,7 +981,7 @@ private fun BookInfoHeader(
     onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val librarySettings by (LocalContext.current.applicationContext as com.javierreansyah.pinecone.PineconeApplication)
+    val librarySettings by hiltViewModel<com.javierreansyah.pinecone.ui.root.AppServicesViewModel>()
         .readerPreferences.readerSettings.collectAsStateWithLifecycle(initialValue = com.javierreansyah.pinecone.data.local.preferences.ReaderSettings())
     Column(
         modifier = modifier

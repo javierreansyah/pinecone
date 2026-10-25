@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.ui.root
 
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -24,12 +23,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
-import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.data.publication.ReaderProfile
 import com.javierreansyah.pinecone.ui.components.ScreenBackDispatcher
 import com.javierreansyah.pinecone.ui.components.ScreenNavDisplay
@@ -111,8 +110,7 @@ fun NavGraph(
         }
     }
     val context = LocalContext.current
-    val app = context.applicationContext as PineconeApplication
-    val readerPreferences = app.readerPreferences
+    val app: com.javierreansyah.pinecone.ui.root.AppServicesViewModel = hiltViewModel()
     val scope = rememberCoroutineScope()
     val openBook: (String, Locator?) -> Unit = { bookId, locator ->
         scope.launch {
@@ -354,12 +352,7 @@ fun NavGraph(
                 }
             }
             entry<Screen.Dictionaries> {
-                val factory = DictionariesViewModel.Factory(
-                    app.dictionaryRepository,
-                    app.dictionaryImportManager,
-                    readerPreferences,
-                )
-                val dictViewModel: DictionariesViewModel = viewModel(factory = factory)
+                val dictViewModel: DictionariesViewModel = hiltViewModel()
                 DictionariesScreen(
                     viewModel = dictViewModel,
                     onBack = navigateBack,
@@ -390,22 +383,10 @@ fun NavGraph(
     )
 
     organizeBookIds?.let { bookIds ->
-        val organizeViewModel: com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel =
-            viewModel(
-                key = bookIds,
-                factory = object :
-                    androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory(app) {
-                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                        if (modelClass.isAssignableFrom(com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel::class.java)) {
-                            @Suppress("UNCHECKED_CAST") return com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel(
-                                app,
-                                bookIds,
-                            ) as T
-                        }
-                        throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
-                    }
-                },
-            )
+        val organizeViewModel = hiltViewModel<
+            com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel,
+            com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel.Factory,
+        >(key = bookIds, creationCallback = { it.create(bookIds) })
         com.javierreansyah.pinecone.ui.features.library.organize.OrganizeBottomSheet(
             viewModel = organizeViewModel,
         ) { organizeBookIds = null }

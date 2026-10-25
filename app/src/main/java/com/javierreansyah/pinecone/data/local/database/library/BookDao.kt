@@ -22,6 +22,23 @@ interface BookDao {
     fun getAllBooks(): Flow<List<BookWithDetails>>
 
     @Transaction
+    @Query(
+        """
+        SELECT * FROM books
+        WHERE isArchived = 0 AND isUnsorted = 0
+          AND (:spaceId IS NULL OR :spaceId = '_all_' OR EXISTS (
+            SELECT 1 FROM book_space_cross_ref
+            WHERE bookId = books.id AND spaceId = :spaceId
+          ))
+        ORDER BY lastReadDate DESC, addedDate DESC
+        """,
+    )
+    fun getVisibleBooks(spaceId: String?): Flow<List<BookWithDetails>>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM books WHERE isArchived = 0 AND isUnsorted = 1)")
+    fun hasUnsortedBooks(): Flow<Boolean>
+
+    @Transaction
     @Query("SELECT * FROM books WHERE isArchived = 1 ORDER BY lastReadDate DESC, addedDate DESC")
     fun getArchivedBooks(): Flow<List<BookWithDetails>>
 

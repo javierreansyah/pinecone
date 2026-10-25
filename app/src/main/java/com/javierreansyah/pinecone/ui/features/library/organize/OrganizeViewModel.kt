@@ -1,12 +1,15 @@
 package com.javierreansyah.pinecone.ui.features.library.organize
 
-import android.app.Application
 import androidx.compose.ui.state.ToggleableState
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.data.local.database.library.ShelfEntity
 import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
+import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
+import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -39,11 +42,12 @@ internal fun List<SpaceWithShelvesItemState>.prioritizedShelfGroups(): List<Spac
         }
     }
 
-class OrganizeViewModel(
-    application: Application,
-    bookIdsStr: String,
-) : AndroidViewModel(application) {
-    private val repository = (application as PineconeApplication).libraryRepository
+@HiltViewModel(assistedFactory = OrganizeViewModel.Factory::class)
+class OrganizeViewModel @AssistedInject constructor(
+    @Assisted bookIdsStr: String,
+    private val repository: LibraryRepository,
+    private val readerPreferences: ReaderPreferences,
+) : ViewModel() {
     private val targetBookIds =
         bookIdsStr.splitToSequence(',').map { it.trim() }.filter { it.isNotEmpty() }.toList()
 
@@ -51,7 +55,7 @@ class OrganizeViewModel(
         repository.getAllShelvesWithBooks(),
         repository.getAllSpaces(),
         repository.getAllBookSpaceCrossRefs(),
-        (application as PineconeApplication).readerPreferences.readerSettings,
+        readerPreferences.readerSettings,
         repository.getAllBooks(),
     ) { shelvesWithBooks, spaces, spaceCrossRefs, settings, books ->
         val validShelves =
@@ -146,5 +150,9 @@ class OrganizeViewModel(
             val spaceId = repository.createSpace(name)
             targetBookIds.forEach { bookId -> repository.addBookToSpace(spaceId, bookId) }
         }
+    }
+    @dagger.assisted.AssistedFactory
+    interface Factory {
+        fun create(bookIdsStr: String): OrganizeViewModel
     }
 }

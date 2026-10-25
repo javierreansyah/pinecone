@@ -1,15 +1,17 @@
 package com.javierreansyah.pinecone.ui.features.library.shelf
 
 import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.ShelfEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
+import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
+import com.javierreansyah.pinecone.data.local.preferences.libraryPreferenceDefaults
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.SortType
@@ -19,31 +21,33 @@ import com.javierreansyah.pinecone.ui.features.library.selectSort
 import com.javierreansyah.pinecone.ui.features.library.sortShelfBooks
 import com.javierreansyah.pinecone.ui.features.library.toggleFormat
 import com.javierreansyah.pinecone.ui.features.library.toggleStatus
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class ShelfDetailViewModel(
+@OptIn(ExperimentalCoroutinesApi::class)
+@HiltViewModel
+class ShelfDetailViewModel @Inject constructor(
     application: Application,
-) : AndroidViewModel(application) {
-    private val bookRepository = (application as PineconeApplication).libraryRepository
-    private val prefsManager = LibraryPreferencesManager(application)
+    private val bookRepository: LibraryRepository,
+    private val prefsManager: LibraryPreferencesManager,
+    private val readerPreferences: ReaderPreferences,
+) : ViewModel() {
     private val screenKey = "shelf_detail"
 
-    private val _uiState = MutableStateFlow(
-        ShelfDetailUiState(
-            bookPreferences = prefsManager.getPreferences(
-                screenKey = screenKey, defaultSort = SortType.Custom, defaultAscending = true,
-            ),
-        ),
-    )
+    private val _uiState = MutableStateFlow(ShelfDetailUiState(bookPreferences = libraryPreferenceDefaults(screenKey)))
+
     val uiState: StateFlow<ShelfDetailUiState> = _uiState.asStateFlow()
 
     private val booksFlow: Flow<List<Book>> =
@@ -57,18 +61,8 @@ class ShelfDetailViewModel(
 
     init {
         viewModelScope.launch {
-            globalSpaceId.collect { spaceId ->
-                _uiState.update { state ->
-                    state.copy(
-                        bookPreferences = prefsManager.getPreferences(
-                            spaceId = spaceId,
-                            screenKey = screenKey,
-                            defaultSort = SortType.Custom,
-                            defaultAscending = true,
-                        ),
-                    )
-                }
-            }
+            globalSpaceId.flatMapLatest { spaceId -> prefsManager.preferences(spaceId, screenKey) }
+                .collect { preferences -> _uiState.update { it.copy(bookPreferences = preferences) } }
         }
     }
 
@@ -80,7 +74,7 @@ class ShelfDetailViewModel(
         viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList(),
     )
     val spacesEnabled: StateFlow<Boolean> =
-        (application as PineconeApplication).readerPreferences.readerSettings
+        readerPreferences.readerSettings
             .map { it.spacesEnabled }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
@@ -136,37 +130,30 @@ class ShelfDetailViewModel(
     }
 
     fun onLayoutModeChange(mode: LayoutMode) {
-        _uiState.update { state ->
-            val prefs = state.bookPreferences.copy(layoutMode = mode)
-            prefsManager.savePreferences(globalSpaceId.value, screenKey, prefs)
-            state.copy(bookPreferences = prefs)
+        val spaceId = globalSpaceId.value
+        viewModelScope.launch {
+            prefsManager.updatePreferences(spaceId, screenKey) { it.copy(layoutMode = mode) }
         }
     }
 
     fun onSortTypeChange(sortType: SortType) {
-        _uiState.update { state ->
-            val currentPrefs = state.bookPreferences
-            val newPrefs = currentPrefs.selectSort(sortType)
-            prefsManager.savePreferences(globalSpaceId.value, screenKey, newPrefs)
-            state.copy(bookPreferences = newPrefs)
+        val spaceId = globalSpaceId.value
+        viewModelScope.launch {
+            prefsManager.updatePreferences(spaceId, screenKey) { it.selectSort(sortType) }
         }
     }
 
     fun toggleFileFilter(format: FileFilter) {
-        _uiState.update { state ->
-            val current = state.bookPreferences
-            val prefs = current.toggleFormat(format)
-            prefsManager.savePreferences(globalSpaceId.value, screenKey, prefs)
-            state.copy(bookPreferences = prefs)
+        val spaceId = globalSpaceId.value
+        viewModelScope.launch {
+            prefsManager.updatePreferences(spaceId, screenKey) { it.toggleFormat(format) }
         }
     }
 
     fun toggleStatusFilter(status: StatusFilter) {
-        _uiState.update { state ->
-            val currentPrefs = state.bookPreferences
-            val newPrefs = currentPrefs.toggleStatus(status)
-            prefsManager.savePreferences(globalSpaceId.value, screenKey, newPrefs)
-            state.copy(bookPreferences = newPrefs)
+        val spaceId = globalSpaceId.value
+        viewModelScope.launch {
+            prefsManager.updatePreferences(spaceId, screenKey) { it.toggleStatus(status) }
         }
     }
 
@@ -185,11 +172,8 @@ class ShelfDetailViewModel(
     fun updateShelfOrder(shelfId: String, newBookIdsOrder: List<String>) {
         viewModelScope.launch {
             bookRepository.updateShelfOrder(shelfId, newBookIdsOrder)
-            _uiState.update { state ->
-                val prefs =
-                    state.bookPreferences.copy(sortType = SortType.Custom, isAscending = true)
-                prefsManager.savePreferences(globalSpaceId.value, screenKey, prefs)
-                state.copy(bookPreferences = prefs)
+            prefsManager.updatePreferences(globalSpaceId.value, screenKey) {
+                it.copy(sortType = SortType.Custom, isAscending = true)
             }
         }
     }

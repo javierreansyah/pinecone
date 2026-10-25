@@ -752,7 +752,7 @@ fun ReaderSheetsLayer(
     onDeleteBookmark: (Long) -> Unit,
     onDeleteNote: (Long) -> Unit,
     onHideSettings: () -> Unit,
-    onUpdateSettings: (ReaderSettings) -> Unit,
+    onUpdateSettings: ((ReaderSettings) -> ReaderSettings) -> Unit,
     onUpdateSearchQuery: (String) -> Unit,
     onPerformSearch: (String) -> Unit,
     onSelectSearchResult: (Int) -> Unit,

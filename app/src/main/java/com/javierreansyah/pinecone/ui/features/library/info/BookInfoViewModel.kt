@@ -1,15 +1,14 @@
 package com.javierreansyah.pinecone.ui.features.library.info
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,12 +23,12 @@ import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.services.positions
 
-class BookInfoViewModel(
-    application: Application, private val bookId: String,
-) : AndroidViewModel(application) {
+@HiltViewModel(assistedFactory = BookInfoViewModel.Factory::class)
+class BookInfoViewModel @AssistedInject constructor(
+    @Assisted private val bookId: String,
+    private val repository: LibraryRepository,
+) : ViewModel() {
 
-    private val repository: LibraryRepository =
-        (application as PineconeApplication).libraryRepository
 
     val uiState: StateFlow<BookInfoUiState> = repository.getBookFlow(bookId)
         .map { entity ->
@@ -141,11 +140,9 @@ class BookInfoViewModel(
         }
     }
 
-    class Factory(
-        private val application: Application, private val bookId: String,
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            BookInfoViewModel(application, bookId) as T
+
+    @dagger.assisted.AssistedFactory
+    interface Factory {
+        fun create(bookId: String): BookInfoViewModel
     }
 }

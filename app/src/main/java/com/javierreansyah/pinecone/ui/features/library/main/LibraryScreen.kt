@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.library.main
 
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,15 +34,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Book
 import com.composables.icons.materialsymbols.outlined.Folder
+import com.composables.icons.materialsymbols.outlinedfilled.Book as FilledBook
+import com.composables.icons.materialsymbols.outlinedfilled.Folder as FilledFolder
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
@@ -68,8 +69,6 @@ import com.javierreansyah.pinecone.ui.features.library.organize.SelectSpaceForSh
 import com.javierreansyah.pinecone.ui.features.library.publicationWording
 import com.javierreansyah.pinecone.ui.root.AppDrawer
 import kotlinx.coroutines.launch
-import com.composables.icons.materialsymbols.outlinedfilled.Book as FilledBook
-import com.composables.icons.materialsymbols.outlinedfilled.Folder as FilledFolder
 
 @Composable
 fun LibraryRoute(
@@ -89,11 +88,7 @@ fun LibraryRoute(
     onImportFilesClick: () -> Unit,
     onScanFolderClick: () -> Unit,
 ) {
-    val context = LocalContext.current
-    val application = context.applicationContext as android.app.Application
-    val viewModel: LibraryViewModel = viewModel(
-        factory = LibraryViewModel.provideFactory(application),
-    )
+    val viewModel: LibraryViewModel = hiltViewModel()
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 

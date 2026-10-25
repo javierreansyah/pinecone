@@ -2,9 +2,7 @@ package com.javierreansyah.pinecone.ui.features.reader
 
 import android.app.Application
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.FormatPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
@@ -19,6 +17,7 @@ import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.reader.audio.AudioReadingSession
 import com.javierreansyah.pinecone.reader.epub.toEpubPreferences
 import com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -36,6 +35,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.readium.r2.navigator.epub.EpubPreferences
@@ -76,19 +77,21 @@ data class ExternalLinkState(
     val url: String = "",
 )
 
-class ReaderViewModel(
+@HiltViewModel(assistedFactory = ReaderViewModel.Factory::class)
+class ReaderViewModel @dagger.assisted.AssistedInject constructor(
     private val application: Application,
-    private val bookId: String,
+    @dagger.assisted.Assisted private val bookId: String,
     private val repository: LibraryRepository,
     private val readerPreferences: ReaderPreferences,
-    initialSystemDark: Boolean = false,
+    val audioSession: AudioReadingSession,
 ) : ViewModel() {
+    private val initialSystemDark = application.resources.configuration.uiMode and
+        android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
 
     private val _publication = MutableStateFlow<Publication?>(null)
     val publication: StateFlow<Publication?> = _publication.asStateFlow()
     val profile: MutableStateFlow<ReaderProfile> = MutableStateFlow(ReaderProfile.EPUB)
     val activeRendition: MutableStateFlow<String> = MutableStateFlow("original")
-    val audioSession: AudioReadingSession get() = (application as PineconeApplication).audioSession
     private var conversionJob: Job? = null
     private var audioLocatorJob: Job? = null
 
@@ -129,6 +132,7 @@ class ReaderViewModel(
         }
         .stateIn(viewModelScope, WhileSubscribed(5000), null)
 
+    private val settingsMutex = Mutex()
     private val readingOverrides = MutableStateFlow<ReaderSettings?>(null)
     val useBookSettings: StateFlow<Boolean> =
         readingOverrides.map { it != null }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
@@ -646,17 +650,23 @@ class ReaderViewModel(
         _controlsState.update { it.copy(showSearch = false) }
     }
 
-    fun updateSettings(settings: ReaderSettings) {
+    fun updateSettings(transform: (ReaderSettings) -> ReaderSettings) {
         viewModelScope.launch {
-            if (readingOverrides.value != null) {
-                val local = ReaderSettings().withReadingPreferencesFrom(settings)
-                readingOverrides.value = local
-                repository.setReadingOverrides(
-                    bookId,
-                    activeRendition.value,
-                    kotlinx.serialization.json.Json.encodeToString(local)
-                )
-            } else readerPreferences.updateAllSettings(settings)
+            settingsMutex.withLock {
+                if (readingOverrides.value != null) {
+                    val global = readerPreferences.readerSettings.first()
+                    val current = global.withReadingPreferencesFrom(requireNotNull(readingOverrides.value))
+                    val local = ReaderSettings().withReadingPreferencesFrom(transform(current))
+                    readingOverrides.value = local
+                    repository.setReadingOverrides(
+                        bookId,
+                        activeRendition.value,
+                        kotlinx.serialization.json.Json.encodeToString(local),
+                    )
+                } else {
+                    readerPreferences.updateSettings(transform)
+                }
+            }
         }
     }
 
@@ -668,12 +678,16 @@ class ReaderViewModel(
 
     fun setUseBookSettings(enabled: Boolean) {
         viewModelScope.launch {
-            readingOverrides.value =
-                if (enabled) ReaderSettings().withReadingPreferencesFrom(settingsFlow.first()) else null
-            repository.setReadingOverrides(
-                bookId, activeRendition.value,
-                readingOverrides.value?.let { kotlinx.serialization.json.Json.encodeToString(it) }
-                    ?: "{}")
+            settingsMutex.withLock {
+                val global = readerPreferences.readerSettings.first()
+                val current = readingOverrides.value?.let { global.withReadingPreferencesFrom(it) } ?: global
+                readingOverrides.value = if (enabled) ReaderSettings().withReadingPreferencesFrom(current) else null
+                repository.setReadingOverrides(
+                    bookId,
+                    activeRendition.value,
+                    readingOverrides.value?.let { kotlinx.serialization.json.Json.encodeToString(it) } ?: "{}",
+                )
+            }
         }
     }
 
@@ -687,21 +701,9 @@ class ReaderViewModel(
         closeBook()
     }
 
-    class Factory(
-        private val application: Application,
-        private val bookId: String,
-        private val initialSystemDark: Boolean = false,
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            val app = application as PineconeApplication
-            return ReaderViewModel(
-                application = app,
-                bookId = bookId,
-                repository = app.libraryRepository,
-                readerPreferences = app.readerPreferences,
-                initialSystemDark = initialSystemDark,
-            ) as T
-        }
+
+    @dagger.assisted.AssistedFactory
+    interface Factory {
+        fun create(bookId: String): ReaderViewModel
     }
 }

@@ -2,22 +2,22 @@ package com.javierreansyah.pinecone.ui.features.settings
 
 import android.app.Application
 import android.net.Uri
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import coil3.imageLoader
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.data.repository.backup.BackupRepository
 import com.javierreansyah.pinecone.data.repository.backup.BackupResult
+import dagger.hilt.android.lifecycle.HiltViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 data class BackupFile(
     val uri: Uri,
@@ -27,11 +27,12 @@ data class BackupFile(
     val formattedDate: String,
 )
 
-class SettingsViewModel(
-    application: Application,
+@HiltViewModel
+class SettingsViewModel @Inject constructor(
+    private val application: Application,
     private val readerPreferences: ReaderPreferences,
-) : AndroidViewModel(application) {
-    private val backupRepository = BackupRepository(application)
+    private val backupRepository: BackupRepository,
+) : ViewModel() {
     private val _settings = MutableStateFlow(ReaderSettings())
     val settings: StateFlow<ReaderSettings> = _settings.asStateFlow()
     private val _isBackingUp = MutableStateFlow(value = false)
@@ -45,12 +46,12 @@ class SettingsViewModel(
         viewModelScope.launch { readerPreferences.readerSettings.collect { _settings.value = it } }
     }
 
-    fun updateSettings(settings: ReaderSettings) {
-        viewModelScope.launch { readerPreferences.updateAllSettings(settings) }
+    fun updateSettings(transform: (ReaderSettings) -> ReaderSettings) {
+        viewModelScope.launch { readerPreferences.updateSettings(transform) }
     }
 
-    suspend fun updateSettingsSuspended(settings: ReaderSettings): Unit =
-        readerPreferences.updateAllSettings(settings)
+    suspend fun updateSettingsSuspended(transform: (ReaderSettings) -> ReaderSettings): Unit =
+        readerPreferences.updateSettings(transform)
 
     fun performFullBackup(onStart: () -> Unit, onSuccess: () -> Unit, onFailure: () -> Unit) {
         viewModelScope.launch {
@@ -87,8 +88,8 @@ class SettingsViewModel(
             _isRestoring.value = true; onStart()
             when (backupRepository.restoreSnapshot(uri)) {
                 is BackupResult.Success, BackupResult.Skipped -> {
-                    getApplication<Application>().imageLoader.memoryCache?.clear()
-                    getApplication<Application>().imageLoader.diskCache?.clear()
+                    application.imageLoader.memoryCache?.clear()
+                    application.imageLoader.diskCache?.clear()
                     onSuccess()
                 }
 
@@ -121,16 +122,5 @@ class SettingsViewModel(
         }
     }
 
-    class Factory(
-        private val application: Application,
-        private val readerPreferences: ReaderPreferences,
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
-                return SettingsViewModel(application, readerPreferences) as T
-            }
-            throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
-        }
-    }
+
 }

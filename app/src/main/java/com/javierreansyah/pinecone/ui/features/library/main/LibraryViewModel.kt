@@ -1,20 +1,20 @@
 package com.javierreansyah.pinecone.ui.features.library.main
 
 import android.app.Application
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.size.Scale
-import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.ShelfEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
+import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
+import com.javierreansyah.pinecone.data.local.preferences.libraryPreferenceDefaults
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.LibraryView
@@ -23,13 +23,16 @@ import com.javierreansyah.pinecone.ui.features.library.ShelfFilter
 import com.javierreansyah.pinecone.ui.features.library.SortType
 import com.javierreansyah.pinecone.ui.features.library.StatusFilter
 import com.javierreansyah.pinecone.ui.features.library.filterAndSort
-import com.javierreansyah.pinecone.ui.features.library.inSpace
 import com.javierreansyah.pinecone.ui.features.library.mapAndSortShelves
 import com.javierreansyah.pinecone.ui.features.library.publicationWording
 import com.javierreansyah.pinecone.ui.features.library.selectSort
 import com.javierreansyah.pinecone.ui.features.library.toggleFormat
 import com.javierreansyah.pinecone.ui.features.library.toggleShelf
 import com.javierreansyah.pinecone.ui.features.library.toggleStatus
+import dagger.hilt.android.lifecycle.HiltViewModel
+import java.io.File
+import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -43,59 +46,24 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.File
-import kotlin.time.Duration.Companion.milliseconds
 
-class LibraryViewModel(
-    application: Application, private val screenKey: String = "library_books",
-) : AndroidViewModel(application) {
+@OptIn(ExperimentalCoroutinesApi::class)
+@HiltViewModel
+class LibraryViewModel @Inject constructor(
+    application: Application,
+    private val bookRepository: LibraryRepository,
+    private val prefsManager: LibraryPreferencesManager,
+    private val readerPreferences: ReaderPreferences,
+) : ViewModel() {
+    private val screenKey = "library_books"
 
-    companion object {
-        fun provideFactory(
-            application: Application,
-            screenKey: String = "library_books",
-        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                if (modelClass.isAssignableFrom(LibraryViewModel::class.java)) {
-                    return LibraryViewModel(application, screenKey) as T
-                }
-                throw IllegalArgumentException("Unknown ViewModel class")
-            }
-        }
-    }
+    private val _uiState = MutableStateFlow(LibraryUiState(bookPreferences = libraryPreferenceDefaults(screenKey), shelvesPreferences = libraryPreferenceDefaults("library_shelves")))
 
-    private val bookRepository = (application as PineconeApplication).libraryRepository
-    private val prefsManager = LibraryPreferencesManager(application)
-    private val readerPreferences = (application as PineconeApplication).readerPreferences
-
-    private val _uiState = MutableStateFlow(
-        LibraryUiState(
-            bookPreferences = prefsManager.getPreferences(
-                screenKey = screenKey,
-                defaultSort = when (screenKey) {
-                    "shelf_detail" -> SortType.Custom
-                    "library_books" -> SortType.LastRead
-                    else -> SortType.Added
-                },
-                defaultAscending = screenKey == "shelf_detail",
-            ),
-            shelvesPreferences = prefsManager.getPreferences(
-                "library_shelves",
-                defaultLayout = LayoutMode.BigList,
-                defaultSort = SortType.Title,
-                defaultAscending = true,
-            ),
-        ),
-    )
     private val _isBooksLoading = MutableStateFlow(value = true)
     private val _isShelvesLoading = MutableStateFlow(value = true)
-
-    private val booksFlow: Flow<List<Book>> =
-        bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }
 
     private val globalSpaceId: StateFlow<String?> = prefsManager.getEffectiveSpaceFlow().stateIn(
         scope = viewModelScope,
@@ -104,8 +72,8 @@ class LibraryViewModel(
     )
 
     private val allBooks: StateFlow<List<Book>> =
-        combine(booksFlow, globalSpaceId) { books, spaceId ->
-            books.inSpace(spaceId)
+        globalSpaceId.flatMapLatest { spaceId ->
+            bookRepository.getVisibleBooks(spaceId).map { entities -> entities.map(Book::fromEntity) }
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -131,7 +99,7 @@ class LibraryViewModel(
         // bitmaps are already decoded and cached, so CoverImage renders instantly
         // and nothing competes with the expansion animation on the UI thread.
         viewModelScope.launch {
-            allBooks.take(1).collect { books ->
+            allBooks.first { it.isNotEmpty() }.let { books ->
                 books.take(8)
                     .forEach { book ->
                         if (book.coverPath != null) {
@@ -148,28 +116,13 @@ class LibraryViewModel(
         }
 
         viewModelScope.launch {
-            globalSpaceId.collect { spaceId ->
-                _uiState.update { state ->
-                    state.copy(
-                        bookPreferences = prefsManager.getPreferences(
-                            spaceId = spaceId,
-                            screenKey = screenKey,
-                            defaultSort = when (screenKey) {
-                                "shelf_detail" -> SortType.Custom
-                                "library_books" -> SortType.LastRead
-                                else -> SortType.Added
-                            },
-                            defaultAscending = screenKey == "shelf_detail",
-                        ),
-                        shelvesPreferences = prefsManager.getPreferences(
-                            spaceId = spaceId,
-                            screenKey = "library_shelves",
-                            defaultLayout = LayoutMode.BigList,
-                            defaultSort = SortType.Title,
-                            defaultAscending = true,
-                        ),
-                    )
-                }
+            globalSpaceId.flatMapLatest { spaceId ->
+                combine(
+                    prefsManager.preferences(spaceId, screenKey),
+                    prefsManager.preferences(spaceId, "library_shelves"),
+                ) { books, shelves -> books to shelves }
+            }.collect { (books, shelves) ->
+                _uiState.update { it.copy(bookPreferences = books, shelvesPreferences = shelves) }
             }
         }
     }
@@ -277,9 +230,7 @@ class LibraryViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SearchResults())
 
-    private val hasUnsortedBooks: Flow<Boolean> = booksFlow.map { books ->
-        books.any { it.isUnsorted }
-    }
+    private val hasUnsortedBooks: Flow<Boolean> = bookRepository.hasUnsortedBooks()
 
     private val librarySettings = readerPreferences.readerSettings
 
@@ -398,77 +349,44 @@ class LibraryViewModel(
     }
 
     fun onLayoutModeChange(mode: LayoutMode, isShelvesTab: Boolean = false) {
-        _uiState.update { state ->
-            val prefs =
-                if (isShelvesTab) state.shelvesPreferences.copy(layoutMode = mode) else state.bookPreferences.copy(
-                    layoutMode = mode,
-                )
-            prefsManager.savePreferences(
-                globalSpaceId.value,
-                if (isShelvesTab) "library_shelves" else screenKey,
-                prefs,
-            )
-            if (isShelvesTab) state.copy(shelvesPreferences = prefs) else state.copy(bookPreferences = prefs)
+        val spaceId = globalSpaceId.value
+        viewModelScope.launch {
+            prefsManager.updatePreferences(spaceId, if (isShelvesTab) "library_shelves" else screenKey) { it.copy(layoutMode = mode) }
         }
     }
 
     fun onSortTypeChange(sortType: SortType, isShelvesTab: Boolean = false) {
-        _uiState.update { state ->
-            val currentPrefs = if (isShelvesTab) state.shelvesPreferences else state.bookPreferences
-            val newPrefs = currentPrefs.selectSort(sortType)
-            prefsManager.savePreferences(
-                globalSpaceId.value, if (isShelvesTab) "library_shelves" else screenKey, newPrefs,
-            )
-            if (isShelvesTab) state.copy(shelvesPreferences = newPrefs) else state.copy(
-                bookPreferences = newPrefs,
-            )
+        val spaceId = globalSpaceId.value
+        viewModelScope.launch {
+            prefsManager.updatePreferences(spaceId, if (isShelvesTab) "library_shelves" else screenKey) { it.selectSort(sortType) }
         }
     }
 
     fun toggleStatusFilter(status: StatusFilter, isShelvesTab: Boolean = false) {
-        _uiState.update { state ->
-            val currentPrefs = if (isShelvesTab) state.shelvesPreferences else state.bookPreferences
-            val newPrefs = currentPrefs.toggleStatus(status)
-            prefsManager.savePreferences(
-                globalSpaceId.value, if (isShelvesTab) "library_shelves" else screenKey, newPrefs,
-            )
-            if (isShelvesTab) state.copy(shelvesPreferences = newPrefs) else state.copy(
-                bookPreferences = newPrefs,
-            )
+        val spaceId = globalSpaceId.value
+        viewModelScope.launch {
+            prefsManager.updatePreferences(spaceId, if (isShelvesTab) "library_shelves" else screenKey) { it.toggleStatus(status) }
         }
     }
 
     fun toggleShelfFilter(filter: ShelfFilter, isShelvesTab: Boolean = false) {
-        _uiState.update { state ->
-            val currentPrefs = if (isShelvesTab) state.shelvesPreferences else state.bookPreferences
-            val newPrefs = currentPrefs.toggleShelf(filter)
-            prefsManager.savePreferences(
-                globalSpaceId.value, if (isShelvesTab) "library_shelves" else screenKey, newPrefs,
-            )
-            if (isShelvesTab) state.copy(shelvesPreferences = newPrefs) else state.copy(
-                bookPreferences = newPrefs,
-            )
+        val spaceId = globalSpaceId.value
+        viewModelScope.launch {
+            prefsManager.updatePreferences(spaceId, if (isShelvesTab) "library_shelves" else screenKey) { it.toggleShelf(filter) }
         }
     }
 
     fun toggleFileFilter(format: FileFilter, isShelvesTab: Boolean = false) {
-        _uiState.update { state ->
-            val current = if (isShelvesTab) state.shelvesPreferences else state.bookPreferences
-            val prefs = current.toggleFormat(format)
-            prefsManager.savePreferences(
-                globalSpaceId.value,
-                if (isShelvesTab) "library_shelves" else screenKey,
-                prefs
-            )
-            if (isShelvesTab) state.copy(shelvesPreferences = prefs) else state.copy(bookPreferences = prefs)
+        val spaceId = globalSpaceId.value
+        viewModelScope.launch {
+            prefsManager.updatePreferences(spaceId, if (isShelvesTab) "library_shelves" else screenKey) { it.toggleFormat(format) }
         }
     }
 
     fun onLibraryViewChange(view: LibraryView) {
-        _uiState.update { state ->
-            val prefs = state.bookPreferences.copy(libraryView = view)
-            prefsManager.savePreferences(globalSpaceId.value, screenKey, prefs)
-            state.copy(bookPreferences = prefs)
+        val spaceId = globalSpaceId.value
+        viewModelScope.launch {
+            prefsManager.updatePreferences(spaceId, screenKey) { it.copy(libraryView = view) }
         }
     }
 
@@ -477,7 +395,7 @@ class LibraryViewModel(
     }
 
     fun setGlobalSpace(spaceId: String?) {
-        prefsManager.setGlobalSpace(spaceId)
+        viewModelScope.launch { prefsManager.setGlobalSpace(spaceId) }
     }
 
 }

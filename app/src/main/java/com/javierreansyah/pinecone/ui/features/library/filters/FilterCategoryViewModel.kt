@@ -1,18 +1,19 @@
 package com.javierreansyah.pinecone.ui.features.library.filters
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.data.local.database.library.AuthorEntity
 import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.data.local.database.library.TagEntity
 import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.inNamedCollection
 import com.javierreansyah.pinecone.ui.features.library.inSpace
 import com.javierreansyah.pinecone.ui.features.library.publicationWording
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -29,9 +30,11 @@ data class FilterCollectionSummary(
     val actionWording: PublicationWording = wording,
 )
 
-class FilterCategoryViewModel(application: Application) : AndroidViewModel(application) {
-    private val bookRepository = (application as PineconeApplication).libraryRepository
-    private val prefsManager = LibraryPreferencesManager(application)
+@HiltViewModel
+class FilterCategoryViewModel @Inject constructor(
+    private val bookRepository: LibraryRepository,
+    private val prefsManager: LibraryPreferencesManager,
+) : ViewModel() {
 
     private val unfilteredBooks: Flow<List<Book>> =
         bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }

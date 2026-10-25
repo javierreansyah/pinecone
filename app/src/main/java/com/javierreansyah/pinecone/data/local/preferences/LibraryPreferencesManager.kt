@@ -1,138 +1,84 @@
 package com.javierreansyah.pinecone.data.local.preferences
 
 import android.content.Context
-import android.content.SharedPreferences
-import androidx.core.content.edit
-import com.javierreansyah.pinecone.ui.features.library.FileFilter
+import androidx.datastore.core.DataMigration
+import androidx.datastore.core.DataStore
+import androidx.datastore.dataStore
 import com.javierreansyah.pinecone.ui.features.library.FilterSortPreferences
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
-import com.javierreansyah.pinecone.ui.features.library.LibraryView
-import com.javierreansyah.pinecone.ui.features.library.ShelfFilter
 import com.javierreansyah.pinecone.ui.features.library.SortType
-import com.javierreansyah.pinecone.ui.features.library.StatusFilter
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.serialization.Serializable
 
-class LibraryPreferencesManager(private val context: Context) {
-    private val prefs: SharedPreferences =
-        context.getSharedPreferences("library_prefs", Context.MODE_PRIVATE)
+@Serializable
+internal data class LibraryPreferencesData(
+    val globalSpaceId: String? = null,
+    val screens: Map<String, FilterSortPreferences> = emptyMap(),
+    val legacyMigrationComplete: Boolean = false,
+)
 
-    fun getPreferences(
-        screenKey: String,
-        defaultLayout: LayoutMode = LayoutMode.Grid,
-        defaultSort: SortType = SortType.Added,
-        defaultAscending: Boolean = false,
-    ): FilterSortPreferences =
-        getPreferences(null, screenKey, defaultLayout, defaultSort, defaultAscending)
+internal val Context.libraryPreferencesStore by dataStore(
+    fileName = "library_preferences.json",
+    serializer = JsonPreferenceSerializer(LibraryPreferencesData.serializer(), LibraryPreferencesData()),
+    produceMigrations = { context ->
+        listOf(object : DataMigration<LibraryPreferencesData> {
+            override suspend fun shouldMigrate(currentData: LibraryPreferencesData): Boolean =
+                !currentData.legacyMigrationComplete
 
-    fun getPreferences(
+            override suspend fun migrate(currentData: LibraryPreferencesData): LibraryPreferencesData =
+                LegacyLibraryPreferences.read(
+                    context.getSharedPreferences("library_prefs", Context.MODE_PRIVATE).all,
+                )
+
+            override suspend fun cleanUp() = Unit
+        })
+    },
+)
+
+class LibraryPreferencesManager internal constructor(
+    private val store: DataStore<LibraryPreferencesData>,
+    private val readerPreferences: ReaderPreferences,
+) {
+    constructor(context: Context, readerPreferences: ReaderPreferences = ReaderPreferences(context)) :
+        this(context.libraryPreferencesStore, readerPreferences)
+
+    fun preferences(spaceId: String?, screenKey: String): Flow<FilterSortPreferences> =
+        store.data.map { data ->
+            data.screens[preferenceKey(spaceId, screenKey)] ?: libraryPreferenceDefaults(screenKey)
+        }.distinctUntilChanged()
+
+    suspend fun updatePreferences(
         spaceId: String?,
         screenKey: String,
-        defaultLayout: LayoutMode = LayoutMode.Grid,
-        defaultSort: SortType = SortType.Added,
-        defaultAscending: Boolean = false,
-    ): FilterSortPreferences {
-        val fullKey = preferenceKey(spaceId, screenKey)
-        val layoutModeStr =
-            prefs.getString("${fullKey}_layout", defaultLayout.name) ?: defaultLayout.name
-        val sortTypeStr = prefs.getString("${fullKey}_sort", defaultSort.name) ?: defaultSort.name
-        val isAscending = prefs.getBoolean("${fullKey}_asc", defaultAscending)
-        val statusSetStr = prefs.getStringSet(
-            "${fullKey}_status",
-            setOf(
-                StatusFilter.NotStarted.name, StatusFilter.Reading.name, StatusFilter.Finished.name,
-            ),
-        ) ?: setOf()
-        val shelfFilterSetStr = prefs.getStringSet(
-            "${fullKey}_shelf_filter", setOf(ShelfFilter.Shelves.name, ShelfFilter.Unshelved.name),
-        ) ?: setOf()
-
-        return FilterSortPreferences(
-            selectedFormats = prefs.getStringSet(
-                "${fullKey}_formats",
-                FileFilter.entries.map { it.name }.toSet()
-            )
-                .orEmpty().mapNotNull { name -> FileFilter.entries.find { it.name == name } }
-                .toSet(),
-            libraryView = LibraryView.entries.find {
-                it.name == prefs.getString(
-                    "${fullKey}_show",
-                    LibraryView.Both.name
-                )
-            } ?: LibraryView.Both,
-            layoutMode = try {
-                LayoutMode.valueOf(layoutModeStr)
-            } catch (_: Exception) {
-                defaultLayout
-            },
-            sortType = try {
-                SortType.valueOf(sortTypeStr)
-            } catch (_: Exception) {
-                defaultSort
-            },
-            isAscending = isAscending,
-            selectedStatus = statusSetStr.asSequence().mapNotNull {
-                try {
-                    StatusFilter.valueOf(it)
-                } catch (_: Exception) {
-                    null
-                }
-            }.toSet(),
-            selectedShelfFilter = shelfFilterSetStr.asSequence().mapNotNull {
-                try {
-                    ShelfFilter.valueOf(it)
-                } catch (_: Exception) {
-                    null
-                }
-            }.toSet(),
-        )
-    }
-
-    private fun getGlobalSpaceFlow(): Flow<String?> = callbackFlow {
-        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == "global_space") {
-                trySend(prefs.getString("global_space", null))
-            }
+        transform: (FilterSortPreferences) -> FilterSortPreferences,
+    ) {
+        val key = preferenceKey(spaceId, screenKey)
+        store.updateData { data ->
+            val current = data.screens[key] ?: libraryPreferenceDefaults(screenKey)
+            data.copy(screens = data.screens + (key to transform(current)))
         }
-        prefs.registerOnSharedPreferenceChangeListener(listener)
-        trySend(prefs.getString("global_space", null))
-        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }
 
-    fun setGlobalSpace(spaceId: String?) {
-        prefs.edit { putString("global_space", spaceId) }
+    suspend fun setGlobalSpace(spaceId: String?) {
+        store.updateData { it.copy(globalSpaceId = spaceId) }
     }
 
     fun getEffectiveSpaceFlow(): Flow<String?> = combine(
-        getGlobalSpaceFlow(), ReaderPreferences(context).readerSettings,
+        store.data.map { it.globalSpaceId }.distinctUntilChanged(), readerPreferences.readerSettings,
     ) { spaceId, settings -> if (settings.spacesEnabled) spaceId else "_all_" }.distinctUntilChanged()
 
     private fun preferenceKey(spaceId: String?, screenKey: String): String =
         if (spaceId.isNullOrBlank() || spaceId == "_all_") screenKey else "${spaceId}_$screenKey"
+}
 
-    fun savePreferences(screenKey: String, prefsObj: FilterSortPreferences) {
-        savePreferences(null, screenKey, prefsObj)
-    }
-
-    fun savePreferences(spaceId: String?, screenKey: String, prefsObj: FilterSortPreferences) {
-        val fullKey = preferenceKey(spaceId, screenKey)
-        prefs.edit().apply {
-            putStringSet("${fullKey}_formats", prefsObj.selectedFormats.map { it.name }.toSet())
-            putString("${fullKey}_show", prefsObj.libraryView.name)
-            putString("${fullKey}_layout", prefsObj.layoutMode.name)
-            putString("${fullKey}_sort", prefsObj.sortType.name)
-            putBoolean("${fullKey}_asc", prefsObj.isAscending)
-            putStringSet(
-                "${fullKey}_status",
-                prefsObj.selectedStatus.mapTo(mutableSetOf()) { it.name })
-            putStringSet(
-                "${fullKey}_shelf_filter",
-                prefsObj.selectedShelfFilter.mapTo(mutableSetOf()) { it.name },
-            )
-            apply()
-        }
-    }
+internal fun libraryPreferenceDefaults(key: String): FilterSortPreferences = when {
+    key.endsWith("shelf_detail") -> FilterSortPreferences(sortType = SortType.Custom, isAscending = true)
+    key.endsWith("library_books") -> FilterSortPreferences(sortType = SortType.LastRead)
+    key.endsWith("library_shelves") -> FilterSortPreferences(
+        layoutMode = LayoutMode.BigList, sortType = SortType.Title, isAscending = true,
+    )
+    else -> FilterSortPreferences()
 }

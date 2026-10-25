@@ -71,7 +71,7 @@ internal fun ReaderSettings.toReaderThemeSettings(): ReaderThemeSettings = Reade
     customUiTheme = customThemes.firstOrNull { it.name == pineconeThemePreset }?.uiTheme ?: "Setting",
 )
 
-private fun String.colorOrDefault(fallback: Int): Int = try {
+internal fun String.colorOrDefault(fallback: Int): Int = try {
     toColorInt()
 } catch (_: IllegalArgumentException) {
     fallback

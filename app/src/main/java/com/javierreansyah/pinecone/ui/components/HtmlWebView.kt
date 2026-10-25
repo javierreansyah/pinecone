@@ -3,6 +3,7 @@
 package com.javierreansyah.pinecone.ui.components
 
 import android.annotation.SuppressLint
+import android.graphics.Color as AndroidColor
 import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,7 +16,6 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.viewinterop.AndroidView
-import android.graphics.Color as AndroidColor
 
 enum class HtmlPreset { Definition, Description }
 

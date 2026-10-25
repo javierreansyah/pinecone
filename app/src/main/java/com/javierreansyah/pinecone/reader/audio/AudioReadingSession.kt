@@ -2,14 +2,15 @@
 
 package com.javierreansyah.pinecone.reader.audio
 
-import com.javierreansyah.pinecone.PineconeApplication
+import android.app.Application
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.withReadingPreferencesFrom
+import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,7 +28,6 @@ import org.readium.navigator.media.audio.AudioNavigatorFactory
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
-import kotlin.time.Duration.Companion.seconds
 
 data class AudioPlaybackState(
     val bookId: String? = null,
@@ -44,8 +44,12 @@ data class AudioPlaybackState(
 )
 
 /** Application-scoped state; the MediaSessionService owns/relinquishes the native player. */
-class AudioReadingSession(private val app: PineconeApplication) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+class AudioReadingSession(
+    private val app: Application,
+    private val repository: LibraryRepository,
+    private val preferences: ReaderPreferences,
+    private val scope: CoroutineScope,
+) {
     private val mutex = Mutex()
     private val _state = MutableStateFlow(AudioPlaybackState())
     val state: StateFlow<AudioPlaybackState> = _state.asStateFlow()
@@ -60,22 +64,22 @@ class AudioReadingSession(private val app: PineconeApplication) {
         releasePlayer()
         _state.value = AudioPlaybackState(bookId = bookId, loading = true)
         try {
-            val book = requireNotNull(app.libraryRepository.getBook(bookId))
+            val book = requireNotNull(repository.getBook(bookId))
             _state.value = _state.value.copy(
                 title = book.book.title,
                 author = book.sortedAuthors.joinToString(", ") { it.name },
                 metadataLoaded = true,
             )
-            val pub = requireNotNull(app.libraryRepository.openPublication(book))
+            val pub = requireNotNull(repository.openPublication(book))
             publication = pub
-            val originalRendition = app.libraryRepository.rendition(bookId, "original")
+            val originalRendition = repository.rendition(bookId, "original")
             val override = originalRendition?.preferencesJson?.takeUnless { it == "{}" }?.let {
                 kotlinx.serialization.json.Json.decodeFromString<com.javierreansyah.pinecone.data.local.preferences.ReaderSettings>(
                     it
                 )
             }
             val settings =
-                (override ?: app.readerPreferences.readerSettings.first()).formatPreferences
+                (override ?: preferences.readerSettings.first()).formatPreferences
             val factory = AudioNavigatorFactory(pub, ExoPlayerEngineProvider(app))
                 ?: error("Publication is not supported by the audio navigator")
             val initial =
@@ -110,13 +114,13 @@ class AudioReadingSession(private val app: PineconeApplication) {
                 scope.launch {
                     nav.currentLocator.collect {
                         locator.value = it
-                        app.libraryRepository.saveReadingPosition(bookId, it)
+                        repository.saveReadingPosition(bookId, it)
                     }
                 },
                 scope.launch {
                     combine(
-                        app.readerPreferences.readerSettings,
-                        app.libraryRepository.renditionFlow(bookId, "original")
+                        preferences.readerSettings,
+                        repository.renditionFlow(bookId, "original")
                     ) { global, rendition ->
                         val local = rendition?.preferencesJson?.takeUnless { it == "{}" }?.let {
                             kotlinx.serialization.json.Json.decodeFromString<com.javierreansyah.pinecone.data.local.preferences.ReaderSettings>(

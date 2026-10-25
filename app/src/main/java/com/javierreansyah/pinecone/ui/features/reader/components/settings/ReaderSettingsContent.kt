@@ -87,7 +87,7 @@ import kotlinx.coroutines.launch
 @SuppressLint("DefaultLocale", "ConfigurationScreenWidthHeight", "LogNotTimber")
 @Composable
 fun ReaderSettingsContent(
-    settings: ReaderSettings, onSettingsChange: (ReaderSettings) -> Unit,
+    settings: ReaderSettings, onSettingsChange: ((ReaderSettings) -> ReaderSettings) -> Unit,
     profile: com.javierreansyah.pinecone.data.publication.ReaderProfile = com.javierreansyah.pinecone.data.publication.ReaderProfile.EPUB,
     fixedEpub: Boolean = false,
     publication: org.readium.r2.shared.publication.Publication? = null,
@@ -190,13 +190,13 @@ fun ReaderSettingsContent(
                                     preferences.ligatures.value
                                         ?: preferences.ligatures.effectiveValue,
                                 ) {
-                                    onSettingsChange(
-                                        settings.copy(
-                                            formatPreferences = settings.formatPreferences.copy(
+                                    onSettingsChange { current ->
+                                        current.copy(
+                                            formatPreferences = current.formatPreferences.copy(
                                                 epubLigatures = it
                                             )
                                         )
-                                    )
+                                    }
                                 }
                             }
                         }
@@ -232,13 +232,13 @@ fun ReaderSettingsContent(
                                             preferences.verticalText.value
                                                 ?: preferences.verticalText.effectiveValue,
                                         ) {
-                                            onSettingsChange(
-                                                settings.copy(
-                                                    formatPreferences = settings.formatPreferences.copy(
+                                            onSettingsChange { current ->
+                                                current.copy(
+                                                    formatPreferences = current.formatPreferences.copy(
                                                         epubVerticalText = it
                                                     )
                                                 )
-                                            )
+                                            }
                                         }
                                     }
                                 },
@@ -262,15 +262,15 @@ fun ReaderSettingsContent(
             },
             onDelete = if (themeToEdit != null) {
                 {
-                    val newThemes =
-                        settings.customThemes.filter { it.name != themeToEdit?.name }
-                    val newPreset =
-                        if (settings.pineconeThemePreset == themeToEdit?.name) "Auto" else settings.pineconeThemePreset
-                    onSettingsChange(
-                        settings.copy(
-                            customThemes = newThemes, pineconeThemePreset = newPreset,
-                        ),
-                    )
+                    val editedName = themeToEdit?.name
+                    onSettingsChange { current ->
+                        current.copy(
+                            customThemes = current.customThemes.filter { it.name != editedName },
+                            pineconeThemePreset = if (current.pineconeThemePreset == editedName) {
+                                "Auto"
+                            } else current.pineconeThemePreset,
+                        )
+                    }
                     showColorPicker = false
                     themeToEdit = null
                 }
@@ -278,25 +278,21 @@ fun ReaderSettingsContent(
         ) { name, bgColor, textColor, uiTheme ->
             val newTheme = CustomPineconeTheme(name, bgColor, textColor, uiTheme)
 
-            val updatedThemes = if (themeToEdit != null) {
-
-                settings.customThemes.map { if (it.name == themeToEdit?.name) newTheme else it }
-            } else {
-
-                settings.customThemes + newTheme
+            val editedName = themeToEdit?.name
+            onSettingsChange { current ->
+                val themes = if (editedName == null) current.customThemes + newTheme else {
+                    current.customThemes.map { if (it.name == editedName) newTheme else it }
+                }
+                val preset = if (editedName == null || current.pineconeThemePreset == editedName) {
+                    name
+                } else current.pineconeThemePreset
+                current.copy(
+                    customThemes = themes,
+                    pineconeThemePreset = preset,
+                    customBackgroundColor = if (preset == name) bgColor else current.customBackgroundColor,
+                    customTextColor = if (preset == name) textColor else current.customTextColor,
+                )
             }
-
-            val newPreset =
-                if (settings.pineconeThemePreset == themeToEdit?.name || themeToEdit == null) name else settings.pineconeThemePreset
-
-            onSettingsChange(
-                settings.copy(
-                    customThemes = updatedThemes,
-                    pineconeThemePreset = newPreset,
-                    customBackgroundColor = if (newPreset == name) bgColor else settings.customBackgroundColor,
-                    customTextColor = if (newPreset == name) textColor else settings.customTextColor,
-                ),
-            )
             showColorPicker = false
             themeToEdit = null
         }
@@ -311,44 +307,45 @@ fun ReaderSettingsContent(
                 TextButton(
                     onClick = {
                         showRestoreDefaultWarning = false
-                        val defaultReaderSettings = settings.copy(
-                            brightness = 0.5f,
-                            autoBrightness = true,
-                            forceOrientation = "Auto",
-                            preventScreenTimeout = false,
-                            alwaysShowStatusBar = false,
-                            publisherStyles = true,
-                            fontSize = 1.0,
-                            fontFamily = "Source Serif 4",
-                            textAlign = "Start",
-                            lineHeight = 1.5,
-                            paragraphSpacing = 0.0,
-                            paragraphIndent = 0.0,
-                            wordSpacing = 0.0,
-                            letterSpacing = 0.0,
-                            fontWeights = emptyMap(),
-                            hyphens = false,
-                            scroll = false,
-                            columnCount = "Auto",
-                            pageMargins = 1.0,
-                            imageFilter = "None",
-                            typeScale = 1.0,
-                            verticalMargin = 32.0,
-                            readingProgression = "LTR",
-                            textNormalization = false,
-                            pineconeThemePreset = "Auto",
-                            customBackgroundColor = "#FFFFFF",
-                            customTextColor = "#000000",
-                            customThemes = emptyList(),
-                            jumpHistoryMode = "explicit",
-                            formatPreferences = settings.formatPreferences.copy(
-                                epubSpread = "auto",
-                                epubLigatures = null,
-                                epubVerticalText = null,
-                                epubImageFilterFollowTheme = true
-                            ),
-                        )
-                        onSettingsChange(defaultReaderSettings)
+                        onSettingsChange { current ->
+                            current.copy(
+                                brightness = 0.5f,
+                                autoBrightness = true,
+                                forceOrientation = "Auto",
+                                preventScreenTimeout = false,
+                                alwaysShowStatusBar = false,
+                                publisherStyles = true,
+                                fontSize = 1.0,
+                                fontFamily = "Source Serif 4",
+                                textAlign = "Start",
+                                lineHeight = 1.5,
+                                paragraphSpacing = 0.0,
+                                paragraphIndent = 0.0,
+                                wordSpacing = 0.0,
+                                letterSpacing = 0.0,
+                                fontWeights = emptyMap(),
+                                hyphens = false,
+                                scroll = false,
+                                columnCount = "Auto",
+                                pageMargins = 1.0,
+                                imageFilter = "None",
+                                typeScale = 1.0,
+                                verticalMargin = 32.0,
+                                readingProgression = "LTR",
+                                textNormalization = false,
+                                pineconeThemePreset = "Auto",
+                                customBackgroundColor = "#FFFFFF",
+                                customTextColor = "#000000",
+                                customThemes = emptyList(),
+                                jumpHistoryMode = "explicit",
+                                formatPreferences = current.formatPreferences.copy(
+                                    epubSpread = "auto",
+                                    epubLigatures = null,
+                                    epubVerticalText = null,
+                                    epubImageFilterFollowTheme = true
+                                ),
+                            )
+                        }
                         Toast.makeText(
                             context,
                             restoreDefaultsSuccessMsg,
@@ -370,7 +367,7 @@ fun ReaderSettingsContent(
 
 @Composable
 private fun TextTabContent(
-    settings: ReaderSettings, onSettingsChange: (ReaderSettings) -> Unit, locale: Locale,
+    settings: ReaderSettings, onSettingsChange: ((ReaderSettings) -> ReaderSettings) -> Unit, locale: Locale,
 ) {
 
     Column(
@@ -397,7 +394,7 @@ private fun TextTabContent(
             fonts.forEach { (font, label) ->
                 FontSwatch(
                     isSelected = settings.fontFamily == font,
-                    onClick = { onSettingsChange(settings.copy(fontFamily = font)) },
+                    onClick = { onSettingsChange { current -> current.copy(fontFamily = font) } },
                     fontName = font,
                     label = label,
                 )
@@ -420,22 +417,22 @@ private fun TextTabContent(
                 label = stringResource(R.string.reader_settings_text_size),
                 value = "${(settings.fontSize * 100).roundToInt()}%",
                 onIncrement = {
-                    onSettingsChange(
-                        settings.copy(
-                            fontSize = (((settings.fontSize + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
+                    onSettingsChange { current ->
+                        current.copy(
+                            fontSize = (((current.fontSize + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
                                 0.5, 3.0,
                             ),
-                        ),
-                    )
+                        )
+                    }
                 },
                 onDecrement = {
-                    onSettingsChange(
-                        settings.copy(
-                            fontSize = (((settings.fontSize - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
+                    onSettingsChange { current ->
+                        current.copy(
+                            fontSize = (((current.fontSize - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
                                 0.5, 3.0,
                             ),
-                        ),
-                    )
+                        )
+                    }
                 },
                 modifier = Modifier.weight(1f),
             )
@@ -448,14 +445,14 @@ private fun TextTabContent(
                         (((currentFontWeight + 0.25) * 100.0).roundToInt() / 100.0).coerceIn(
                             0.5, 2.25,
                         )
-                    onSettingsChange(settings.copy(fontWeights = settings.fontWeights + (settings.fontFamily to newWeight)))
+                    onSettingsChange { current -> current.copy(fontWeights = current.fontWeights + (current.fontFamily to newWeight)) }
                 },
                 onDecrement = {
                     val newWeight =
                         (((currentFontWeight - 0.25) * 100.0).roundToInt() / 100.0).coerceIn(
                             0.5, 2.25,
                         )
-                    onSettingsChange(settings.copy(fontWeights = settings.fontWeights + (settings.fontFamily to newWeight)))
+                    onSettingsChange { current -> current.copy(fontWeights = current.fontWeights + (current.fontFamily to newWeight)) }
                 },
                 modifier = Modifier.weight(1f),
             )
@@ -469,22 +466,22 @@ private fun TextTabContent(
                 label = stringResource(R.string.reader_settings_horizontal_margin),
                 value = String.format(locale, "%.1f", settings.pageMargins),
                 onIncrement = {
-                    onSettingsChange(
-                        settings.copy(
-                            pageMargins = (((settings.pageMargins + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
+                    onSettingsChange { current ->
+                        current.copy(
+                            pageMargins = (((current.pageMargins + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
                                 0.0, 3.0,
                             ),
-                        ),
-                    )
+                        )
+                    }
                 },
                 onDecrement = {
-                    onSettingsChange(
-                        settings.copy(
-                            pageMargins = (((settings.pageMargins - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
+                    onSettingsChange { current ->
+                        current.copy(
+                            pageMargins = (((current.pageMargins - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
                                 0.0, 3.0,
                             ),
-                        ),
-                    )
+                        )
+                    }
                 },
                 modifier = Modifier.weight(1f),
             )
@@ -492,22 +489,22 @@ private fun TextTabContent(
                 label = stringResource(R.string.reader_settings_vertical_margin),
                 value = String.format(locale, "%.1f", settings.verticalMargin / 32.0),
                 onIncrement = {
-                    onSettingsChange(
-                        settings.copy(
-                            verticalMargin = (((settings.verticalMargin + 3.2) * 10.0).roundToInt() / 10.0).coerceIn(
+                    onSettingsChange { current ->
+                        current.copy(
+                            verticalMargin = (((current.verticalMargin + 3.2) * 10.0).roundToInt() / 10.0).coerceIn(
                                 0.0, 128.0,
                             ),
-                        ),
-                    )
+                        )
+                    }
                 },
                 onDecrement = {
-                    onSettingsChange(
-                        settings.copy(
-                            verticalMargin = (((settings.verticalMargin - 3.2) * 10.0).roundToInt() / 10.0).coerceIn(
+                    onSettingsChange { current ->
+                        current.copy(
+                            verticalMargin = (((current.verticalMargin - 3.2) * 10.0).roundToInt() / 10.0).coerceIn(
                                 0.0, 128.0,
                             ),
-                        ),
-                    )
+                        )
+                    }
                 },
                 modifier = Modifier.weight(1f),
             )
@@ -516,7 +513,7 @@ private fun TextTabContent(
         SettingsSwitchRow(
             title = stringResource(R.string.reader_settings_publisher_style),
             isChecked = settings.publisherStyles,
-            onCheckedChange = { onSettingsChange(settings.copy(publisherStyles = it)) },
+            onCheckedChange = { onSettingsChange { current -> current.copy(publisherStyles = it) } },
         )
 
         val alignmentOptionsMap = mapOf(
@@ -537,7 +534,7 @@ private fun TextTabContent(
                 val key =
                     alignmentOptionsMap.entries.find { (_, itValue) -> itValue == localizedValue }?.key
                         ?: localizedValue
-                onSettingsChange(settings.copy(textAlign = key))
+                onSettingsChange { current -> current.copy(textAlign = key) }
             },
             enabled = !settings.publisherStyles,
             modifier = Modifier.padding(horizontal = 16.dp),
@@ -551,22 +548,22 @@ private fun TextTabContent(
                 label = stringResource(R.string.reader_settings_line_spacing),
                 value = String.format(locale, "%.1f", settings.lineHeight),
                 onIncrement = {
-                    onSettingsChange(
-                        settings.copy(
-                            lineHeight = (((settings.lineHeight + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
+                    onSettingsChange { current ->
+                        current.copy(
+                            lineHeight = (((current.lineHeight + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
                                 1.0, 2.5,
                             ),
-                        ),
-                    )
+                        )
+                    }
                 },
                 onDecrement = {
-                    onSettingsChange(
-                        settings.copy(
-                            lineHeight = (((settings.lineHeight - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
+                    onSettingsChange { current ->
+                        current.copy(
+                            lineHeight = (((current.lineHeight - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
                                 1.0, 2.5,
                             ),
-                        ),
-                    )
+                        )
+                    }
                 },
                 enabled = !settings.publisherStyles,
                 modifier = Modifier.weight(1f),
@@ -575,22 +572,22 @@ private fun TextTabContent(
                 label = stringResource(R.string.reader_settings_letter_spacing),
                 value = String.format(locale, "%.1f", settings.letterSpacing * 4.0),
                 onIncrement = {
-                    onSettingsChange(
-                        settings.copy(
-                            letterSpacing = (((settings.letterSpacing + 0.025) * 1000.0).roundToInt() / 1000.0).coerceIn(
+                    onSettingsChange { current ->
+                        current.copy(
+                            letterSpacing = (((current.letterSpacing + 0.025) * 1000.0).roundToInt() / 1000.0).coerceIn(
                                 0.0, 0.25,
                             ),
-                        ),
-                    )
+                        )
+                    }
                 },
                 onDecrement = {
-                    onSettingsChange(
-                        settings.copy(
-                            letterSpacing = (((settings.letterSpacing - 0.025) * 1000.0).roundToInt() / 1000.0).coerceIn(
+                    onSettingsChange { current ->
+                        current.copy(
+                            letterSpacing = (((current.letterSpacing - 0.025) * 1000.0).roundToInt() / 1000.0).coerceIn(
                                 0.0, 0.25,
                             ),
-                        ),
-                    )
+                        )
+                    }
                 },
                 enabled = !settings.publisherStyles,
                 modifier = Modifier.weight(1f),
@@ -605,22 +602,22 @@ private fun TextTabContent(
                 label = stringResource(R.string.reader_settings_word_spacing),
                 value = String.format(locale, "%.1f", settings.wordSpacing),
                 onIncrement = {
-                    onSettingsChange(
-                        settings.copy(
-                            wordSpacing = (((settings.wordSpacing + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
+                    onSettingsChange { current ->
+                        current.copy(
+                            wordSpacing = (((current.wordSpacing + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
                                 0.0, 1.0,
                             ),
-                        ),
-                    )
+                        )
+                    }
                 },
                 onDecrement = {
-                    onSettingsChange(
-                        settings.copy(
-                            wordSpacing = (((settings.wordSpacing - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
+                    onSettingsChange { current ->
+                        current.copy(
+                            wordSpacing = (((current.wordSpacing - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
                                 0.0, 1.0,
                             ),
-                        ),
-                    )
+                        )
+                    }
                 },
                 enabled = !settings.publisherStyles,
                 modifier = Modifier.weight(1f),
@@ -629,22 +626,22 @@ private fun TextTabContent(
                 label = stringResource(R.string.reader_settings_paragraph_spacing),
                 value = String.format(locale, "%.1f", settings.paragraphSpacing / 2.0),
                 onIncrement = {
-                    onSettingsChange(
-                        settings.copy(
-                            paragraphSpacing = (((settings.paragraphSpacing + 0.2) * 10.0).roundToInt() / 10.0).coerceIn(
+                    onSettingsChange { current ->
+                        current.copy(
+                            paragraphSpacing = (((current.paragraphSpacing + 0.2) * 10.0).roundToInt() / 10.0).coerceIn(
                                 0.0, 2.0,
                             ),
-                        ),
-                    )
+                        )
+                    }
                 },
                 onDecrement = {
-                    onSettingsChange(
-                        settings.copy(
-                            paragraphSpacing = (((settings.paragraphSpacing - 0.2) * 10.0).roundToInt() / 10.0).coerceIn(
+                    onSettingsChange { current ->
+                        current.copy(
+                            paragraphSpacing = (((current.paragraphSpacing - 0.2) * 10.0).roundToInt() / 10.0).coerceIn(
                                 0.0, 2.0,
                             ),
-                        ),
-                    )
+                        )
+                    }
                 },
                 enabled = !settings.publisherStyles,
                 modifier = Modifier.weight(1f),
@@ -659,22 +656,22 @@ private fun TextTabContent(
                 label = stringResource(R.string.reader_settings_paragraph_indent),
                 value = String.format(locale, "%.1f", settings.paragraphIndent / 2.0),
                 onIncrement = {
-                    onSettingsChange(
-                        settings.copy(
-                            paragraphIndent = (((settings.paragraphIndent + 0.2) * 10.0).roundToInt() / 10.0).coerceIn(
+                    onSettingsChange { current ->
+                        current.copy(
+                            paragraphIndent = (((current.paragraphIndent + 0.2) * 10.0).roundToInt() / 10.0).coerceIn(
                                 0.0, 4.0,
                             ),
-                        ),
-                    )
+                        )
+                    }
                 },
                 onDecrement = {
-                    onSettingsChange(
-                        settings.copy(
-                            paragraphIndent = (((settings.paragraphIndent - 0.2) * 10.0).roundToInt() / 10.0).coerceIn(
+                    onSettingsChange { current ->
+                        current.copy(
+                            paragraphIndent = (((current.paragraphIndent - 0.2) * 10.0).roundToInt() / 10.0).coerceIn(
                                 0.0, 4.0,
                             ),
-                        ),
-                    )
+                        )
+                    }
                 },
                 enabled = !settings.publisherStyles,
                 modifier = Modifier.weight(0.5f),
@@ -687,7 +684,7 @@ private fun TextTabContent(
 @Composable
 private fun LightingTabContent(
     settings: ReaderSettings,
-    onSettingsChange: (ReaderSettings) -> Unit,
+    onSettingsChange: ((ReaderSettings) -> ReaderSettings) -> Unit,
     onAddThemeClick: () -> Unit,
     onThemeLongClick: (CustomPineconeTheme) -> Unit,
 ) {
@@ -709,26 +706,26 @@ private fun LightingTabContent(
         ) {
             ThemeSwatch(
                 isSelected = settings.pineconeThemePreset == "Auto",
-                onClick = { onSettingsChange(settings.copy(pineconeThemePreset = "Auto")) },
+                onClick = { onSettingsChange { current -> current.copy(pineconeThemePreset = "Auto") } },
                 isAuto = true,
                 label = stringResource(R.string.reader_settings_theme_auto),
                 modifier = Modifier.padding(start = 0.dp, end = 4.dp),
             )
             ThemeSwatch(
                 isSelected = settings.pineconeThemePreset == "Light",
-                onClick = { onSettingsChange(settings.copy(pineconeThemePreset = "Light")) },
+                onClick = { onSettingsChange { current -> current.copy(pineconeThemePreset = "Light") } },
                 color = Color.White,
                 label = stringResource(R.string.reader_settings_theme_light),
             )
             ThemeSwatch(
                 isSelected = settings.pineconeThemePreset == "Dark",
-                onClick = { onSettingsChange(settings.copy(pineconeThemePreset = "Dark")) },
+                onClick = { onSettingsChange { current -> current.copy(pineconeThemePreset = "Dark") } },
                 color = Color.Black,
                 label = stringResource(R.string.reader_settings_theme_dark),
             )
             ThemeSwatch(
                 isSelected = settings.pineconeThemePreset == "Warm",
-                onClick = { onSettingsChange(settings.copy(pineconeThemePreset = "Warm")) },
+                onClick = { onSettingsChange { current -> current.copy(pineconeThemePreset = "Warm") } },
                 color = Color(0xFFFAF4E8),
                 label = stringResource(R.string.reader_settings_theme_sepia),
             )
@@ -737,13 +734,13 @@ private fun LightingTabContent(
                 ThemeSwatch(
                     isSelected = settings.pineconeThemePreset == theme.name,
                     onClick = {
-                        onSettingsChange(
-                            settings.copy(
+                        onSettingsChange { current ->
+                            current.copy(
                                 pineconeThemePreset = theme.name,
                                 customBackgroundColor = theme.backgroundColor,
                                 customTextColor = theme.textColor,
-                            ),
-                        )
+                            )
+                        }
                     },
                     onLongClick = { onThemeLongClick(theme) },
                     color = try {
@@ -789,7 +786,7 @@ private fun LightingTabContent(
                 val key =
                     imageFilterOptionsMap.entries.find { (_, itValue2) -> itValue2 == localizedValue }?.key
                         ?: localizedValue
-                onSettingsChange(settings.copy(imageFilter = key))
+                onSettingsChange { current -> current.copy(imageFilter = key) }
             },
         )
     }
@@ -811,13 +808,13 @@ private fun LightingTabContent(
             icons = emptyList(),
             selected = modes.getValue(settings.formatPreferences.epubImageFilterFollowTheme),
             onSelected = { label ->
-                onSettingsChange(
-                    settings.copy(
-                        formatPreferences = settings.formatPreferences.copy(
+                onSettingsChange { current ->
+                    current.copy(
+                        formatPreferences = current.formatPreferences.copy(
                             epubImageFilterFollowTheme = modes.entries.first { it.value == label }.key,
                         )
                     )
-                )
+                }
             },
         )
     }
@@ -827,7 +824,7 @@ private fun LightingTabContent(
 @Composable
 internal fun ReaderBrightnessControl(
     settings: ReaderSettings,
-    onSettingsChange: (ReaderSettings) -> Unit
+    onSettingsChange: ((ReaderSettings) -> ReaderSettings) -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
 
@@ -845,7 +842,7 @@ internal fun ReaderBrightnessControl(
         ) {
             FilledIconToggleButton(
                 checked = settings.autoBrightness,
-                onCheckedChange = { onSettingsChange(settings.copy(autoBrightness = it)) },
+                onCheckedChange = { onSettingsChange { current -> current.copy(autoBrightness = it) } },
                 shapes = IconButtonDefaults.toggleableShapes(),
                 modifier = Modifier.size(48.dp),
             ) {
@@ -861,7 +858,7 @@ internal fun ReaderBrightnessControl(
             brightnessSliderState.value = settings.brightness
             Slider(
                 state = brightnessSliderState,
-                onValueChange = { onSettingsChange(settings.copy(brightness = it)) },
+                onValueChange = { onSettingsChange { current -> current.copy(brightness = it) } },
                 enabled = !settings.autoBrightness,
                 interactionSource = interactionSource,
                 track = { sliderState ->
@@ -890,7 +887,7 @@ internal fun ReaderBrightnessControl(
 @Composable
 internal fun AdvancedTabContent(
     settings: ReaderSettings,
-    onSettingsChange: (ReaderSettings) -> Unit,
+    onSettingsChange: ((ReaderSettings) -> ReaderSettings) -> Unit,
     includeTextPreferences: Boolean = true,
     onRestoreDefaultsClick: () -> Unit,
     content: @Composable () -> Unit = {},
@@ -932,7 +929,7 @@ internal fun AdvancedTabContent(
                     isSelected = { it.id == settings.activeDictionaryId },
                     optionLabel = { it.name },
                     emptyText = stringResource(R.string.dictionaries_none_installed),
-                    onSelected = { onSettingsChange(settings.copy(activeDictionaryId = it.id)) },
+                    onSelected = { onSettingsChange { current -> current.copy(activeDictionaryId = it.id) } },
                     onDismiss = { showDictionaryDialog = false },
                 )
             }
@@ -972,7 +969,7 @@ internal fun AdvancedTabContent(
                 options = orientationOptionsMap.keys.toList(),
                 isSelected = { it == settings.forceOrientation },
                 optionLabel = { orientationOptionsMap.getValue(it) },
-                onSelected = { onSettingsChange(settings.copy(forceOrientation = it)) },
+                onSelected = { onSettingsChange { current -> current.copy(forceOrientation = it) } },
                 onDismiss = { showOrientationDialog = false },
             )
         }
@@ -1011,7 +1008,7 @@ internal fun AdvancedTabContent(
                 options = jumpHistoryOptionsMap.keys.toList(),
                 isSelected = { it == settings.jumpHistoryMode },
                 optionLabel = { jumpHistoryOptionsMap.getValue(it) },
-                onSelected = { onSettingsChange(settings.copy(jumpHistoryMode = it)) },
+                onSelected = { onSettingsChange { current -> current.copy(jumpHistoryMode = it) } },
                 onDismiss = { showJumpHistoryDialog = false },
             )
         }
@@ -1020,13 +1017,13 @@ internal fun AdvancedTabContent(
             SettingsSwitchRow(
                 title = stringResource(R.string.reader_settings_vertical_scroll),
                 isChecked = settings.scroll,
-                onCheckedChange = { onSettingsChange(settings.copy(scroll = it)) },
+                onCheckedChange = { onSettingsChange { current -> current.copy(scroll = it) } },
             )
 
             SettingsSwitchRow(
                 title = stringResource(R.string.reader_settings_hyphens),
                 isChecked = settings.hyphens,
-                onCheckedChange = { onSettingsChange(settings.copy(hyphens = it)) },
+                onCheckedChange = { onSettingsChange { current -> current.copy(hyphens = it) } },
                 enabled = !settings.publisherStyles,
             )
 
@@ -1035,7 +1032,7 @@ internal fun AdvancedTabContent(
             SettingsSwitchRow(
                 title = stringResource(R.string.reader_settings_text_normalization),
                 isChecked = settings.textNormalization,
-                onCheckedChange = { onSettingsChange(settings.copy(textNormalization = it)) },
+                onCheckedChange = { onSettingsChange { current -> current.copy(textNormalization = it) } },
             )
 
         }
@@ -1043,13 +1040,13 @@ internal fun AdvancedTabContent(
         SettingsSwitchRow(
             title = stringResource(R.string.reader_settings_prevent_timeout),
             isChecked = settings.preventScreenTimeout,
-            onCheckedChange = { onSettingsChange(settings.copy(preventScreenTimeout = it)) },
+            onCheckedChange = { onSettingsChange { current -> current.copy(preventScreenTimeout = it) } },
         )
 
         SettingsSwitchRow(
             title = stringResource(R.string.reader_settings_always_status_bar),
             isChecked = settings.alwaysShowStatusBar,
-            onCheckedChange = { onSettingsChange(settings.copy(alwaysShowStatusBar = it)) },
+            onCheckedChange = { onSettingsChange { current -> current.copy(alwaysShowStatusBar = it) } },
         )
 
         Row(

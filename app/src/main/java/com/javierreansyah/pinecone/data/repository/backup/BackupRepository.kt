@@ -6,7 +6,6 @@ import android.net.Uri
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import androidx.room.withTransaction
-import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.data.local.database.dictionary.DictionaryDatabase
 import com.javierreansyah.pinecone.data.local.database.library.BookEntity
 import com.javierreansyah.pinecone.data.local.preferences.InstalledDictionary
@@ -23,12 +22,6 @@ import com.javierreansyah.pinecone.data.model.VaultObjectKind
 import com.javierreansyah.pinecone.data.model.VaultSnapshot
 import com.javierreansyah.pinecone.data.model.toBackupRecord
 import com.javierreansyah.pinecone.data.model.toEntity
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -42,6 +35,11 @@ import java.util.zip.Deflater
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 
 data class BackupSnapshotInfo(
     val uri: Uri,
@@ -50,17 +48,23 @@ data class BackupSnapshotInfo(
     val isManual: Boolean,
 )
 
-class BackupRepository(private val context: Context) {
-    private val preferences = ReaderPreferences(context)
-    private val app get() = context.applicationContext as PineconeApplication
+class BackupRepository(
+    private val context: Context,
+    private val preferences: ReaderPreferences,
+    private val database: com.javierreansyah.pinecone.data.local.database.library.AppDatabase,
+    private val libraryRepository: com.javierreansyah.pinecone.data.repository.library.LibraryRepository,
+    private val audioSession: com.javierreansyah.pinecone.reader.audio.AudioReadingSession,
+    private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher,
+    private val mainDispatcher: kotlinx.coroutines.CoroutineDispatcher,
+) {
     private val resolver get() = context.contentResolver
     private val json = Json { encodeDefaults = true; ignoreUnknownKeys = false; isLenient = false }
 
-    suspend fun createSnapshot(manual: Boolean): BackupResult = withContext(Dispatchers.IO) {
+    suspend fun createSnapshot(manual: Boolean): BackupResult = withContext(ioDispatcher) {
         operationMutex.withLock { createSnapshotLocked(manual) }
     }
 
-    suspend fun listSnapshots(): List<BackupSnapshotInfo> = withContext(Dispatchers.IO) {
+    suspend fun listSnapshots(): List<BackupSnapshotInfo> = withContext(ioDispatcher) {
         operationMutex.withLock {
             runCatching {
                 val dirs = openVault(create = false) ?: return@runCatching emptyList()
@@ -74,7 +78,7 @@ class BackupRepository(private val context: Context) {
         }
     }
 
-    suspend fun restoreSnapshot(uri: Uri): BackupResult = withContext(Dispatchers.IO) {
+    suspend fun restoreSnapshot(uri: Uri): BackupResult = withContext(ioDispatcher) {
         operationMutex.withLock {
             try {
                 completePendingSettingsRestore()
@@ -90,7 +94,7 @@ class BackupRepository(private val context: Context) {
     }
 
     suspend fun exportSnapshot(snapshotUri: Uri, destination: Uri): BackupResult =
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             operationMutex.withLock {
                 try {
                     exportLocked(readSnapshot(snapshotUri), destination)
@@ -102,15 +106,15 @@ class BackupRepository(private val context: Context) {
             }
         }
 
-    suspend fun importPortable(source: Uri): BackupResult = withContext(Dispatchers.IO) {
+    suspend fun importPortable(source: Uri): BackupResult = withContext(ioDispatcher) {
         operationMutex.withLock { importLocked(source) }
     }
 
-    suspend fun completePendingSettingsRestore(): Unit = withContext(Dispatchers.IO) {
+    suspend fun completePendingSettingsRestore(): Unit = withContext(ioDispatcher) {
         recoverInterruptedRestore()
-        val pending = app.database.backupStateDao().pendingSettingsJson() ?: return@withContext
+        val pending = database.backupStateDao().pendingSettingsJson() ?: return@withContext
         applyRestoredSettings(json.decodeFromString(pending))
-        app.database.backupStateDao().setPendingSettingsJson(null)
+        database.backupStateDao().setPendingSettingsJson(null)
     }
 
     private data class VaultDirs(
@@ -264,8 +268,8 @@ class BackupRepository(private val context: Context) {
     }
 
     private suspend fun librarySnapshot(): Pair<Long, LibraryBackupPayload> =
-        app.database.withTransaction {
-            val db = app.database
+        database.withTransaction {
+            val db = database
             db.backupStateDao().revision() to LibraryBackupPayload(
                 books = db.bookDao().getAllBooksSync().map { it.toBackupRecord() },
                 bookmarks = db.bookmarkDao().getAllBookmarksSync().map { it.toBackupRecord() },
@@ -593,7 +597,7 @@ class BackupRepository(private val context: Context) {
     }
 
     private suspend fun restoreLocked(snapshot: VaultSnapshot, dirs: VaultDirs): BackupResult =
-        app.libraryRepository.withAssetTransaction { restoreStaged(snapshot, dirs) }
+        libraryRepository.withAssetTransaction { restoreStaged(snapshot, dirs) }
 
     private suspend fun restoreStaged(snapshot: VaultSnapshot, dirs: VaultDirs): BackupResult {
         val started = System.currentTimeMillis()
@@ -631,9 +635,9 @@ class BackupRepository(private val context: Context) {
                 validateDictionary(staged)
                 dictionaryStages += DictionaryStage(referenceDictionary, staged)
             }
-            val oldBooks = app.database.bookDao().getAllBooksSync()
-            withContext(Dispatchers.Main.immediate) { app.audioSession.releasePlayer() }
-            val oldRenditions = app.database.publicationDao().allRenditions()
+            val oldBooks = database.bookDao().getAllBooksSync()
+            withContext(mainDispatcher) { audioSession.releasePlayer() }
+            val oldRenditions = database.publicationDao().allRenditions()
             val renditionRefs = snapshot.renditions.associateBy { it.bookId to it.key }
             val restoredRenditions = snapshot.library.renditions.map { rendition ->
                 val ref = renditionRefs.getValue(rendition.bookId to rendition.key).objectInfo
@@ -657,12 +661,12 @@ class BackupRepository(private val context: Context) {
             try {
                 val pending = json.encodeToString(snapshot.settings)
                 withContext(kotlinx.coroutines.NonCancellable) {
-                    app.database.withTransaction {
+                    database.withTransaction {
                         replaceLibrary(
                             rebased,
                             snapshot.library.copy(renditions = restoredRenditions)
                         )
-                        app.database.backupStateDao().setPendingSettingsJson(pending)
+                        database.backupStateDao().setPendingSettingsJson(pending)
                     }
                     committed = true
                 }
@@ -673,7 +677,7 @@ class BackupRepository(private val context: Context) {
                     ),
                 )
                 dictionaryRollback.commit()
-                app.database.backupStateDao().setPendingSettingsJson(null)
+                database.backupStateDao().setPendingSettingsJson(null)
                 oldBooks.forEach { book ->
                     deleteOwnedFile(book.filePath); book.coverPath?.let(::deleteOwnedFile)
                 }
@@ -775,7 +779,7 @@ class BackupRepository(private val context: Context) {
         if (!file.isFile) return
         val journal = runCatching { json.decodeFromString<RestoreJournal>(file.readText()) }
             .getOrElse { file.delete(); return }
-        val databaseCommitted = app.database.backupStateDao().pendingSettingsJson() != null
+        val databaseCommitted = database.backupStateDao().pendingSettingsJson() != null
         finishJournal(journal, databaseCommitted)
         file.delete()
     }
@@ -808,7 +812,7 @@ class BackupRepository(private val context: Context) {
     private fun restoreJournalFile() = File(context.filesDir, "backup_restore_journal.json")
 
     private suspend fun replaceLibrary(books: List<BookEntity>, payload: LibraryBackupPayload) {
-        val db = app.database
+        val db = database
         db.shelfDao().deleteAllShelfBookCrossRefs()
         db.spaceDao().deleteAllBookSpaceCrossRefs()
         db.bookDao().deleteAllBookAuthorCrossRefs()
@@ -1163,7 +1167,7 @@ class BackupRepository(private val context: Context) {
                 lastBackupTime = currentSettings.lastBackupTime,
             ),
         )
-        if (!restored.unsortedEnabled) app.libraryRepository.releaseUnsortedBooks()
+        if (!restored.unsortedEnabled) libraryRepository.releaseUnsortedBooks()
     }
 
     private fun recordCounts(payload: LibraryBackupPayload) = mapOf(

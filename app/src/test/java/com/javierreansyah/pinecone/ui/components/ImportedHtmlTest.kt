@@ -38,4 +38,12 @@ class ImportedHtmlTest {
         assertEquals(2, Jsoup.parse(html).select("p").size)
         assertEquals("#note", Jsoup.parse(html).select("a").attr("href"))
     }
+
+    @Test
+    fun doubleBreaksInsideAParagraphRetainTheExistingParagraphSeparation() {
+        val html = ImportedHtml.description("<p><b>First</b><br><br><i>Second</i></p>")
+        assertEquals(listOf("First", "Second"), Jsoup.parse(html).select("p").map { it.text() })
+        assertEquals("First", Jsoup.parse(html).select("b").text())
+        assertEquals("Second", Jsoup.parse(html).select("i").text())
+    }
 }

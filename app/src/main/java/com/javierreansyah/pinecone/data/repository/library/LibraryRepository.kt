@@ -33,8 +33,11 @@ import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLoca
 import com.javierreansyah.pinecone.data.publication.conversion.PdfReadModeConverter
 import com.javierreansyah.pinecone.reader.pdf.MuPdfDocumentFactory
 import com.javierreansyah.pinecone.ui.features.library.ALL_SPACES_ID
+import java.io.File
+import java.io.FileOutputStream
+import java.security.MessageDigest
+import java.util.UUID
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -49,10 +52,6 @@ import org.readium.r2.shared.publication.services.coverFitting
 import org.readium.r2.shared.util.asset.AssetRetriever
 import org.readium.r2.shared.util.toUrl
 import org.readium.r2.streamer.PublicationOpener
-import java.io.File
-import java.io.FileOutputStream
-import java.security.MessageDigest
-import java.util.UUID
 
 class LibraryRepository(
     private val context: Context,
@@ -64,6 +63,10 @@ class LibraryRepository(
     private val spaceDao: SpaceDao,
     private val publicationOpener: PublicationOpener,
     private val assetRetriever: AssetRetriever,
+    private val preferences: ReaderPreferences,
+    private val audioSession: dagger.Lazy<com.javierreansyah.pinecone.reader.audio.AudioReadingSession>,
+    private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher,
+    private val mainDispatcher: kotlinx.coroutines.CoroutineDispatcher,
 ) {
 
     private val booksDir: File
@@ -74,8 +77,12 @@ class LibraryRepository(
 
     fun getAllBooks(): Flow<List<BookWithDetails>> = bookDao.getAllBooks()
 
+    fun getVisibleBooks(spaceId: String?): Flow<List<BookWithDetails>> = bookDao.getVisibleBooks(spaceId)
+
+    fun hasUnsortedBooks(): Flow<Boolean> = bookDao.hasUnsortedBooks()
+
     suspend fun importPublicationFolder(directory: androidx.documentfile.provider.DocumentFile): BookWithDetails? =
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             val staged = File(
                 context.cacheDir,
                 "${
@@ -106,7 +113,7 @@ class LibraryRepository(
 
     private val publicationDao get() = database.publicationDao()
 
-    suspend fun cleanupOrphanedFiles(): Unit = withContext(Dispatchers.IO) {
+    suspend fun cleanupOrphanedFiles(): Unit = withContext(ioDispatcher) {
         storageMutex.withLock {
             val books = bookDao.getAllBooksSync()
             val referencedBooks =
@@ -153,7 +160,7 @@ class LibraryRepository(
 
     fun getBookFlow(id: String): Flow<BookWithDetails?> = bookDao.getByIdFlow(id)
 
-    suspend fun importBook(uri: Uri): BookWithDetails? = withContext(Dispatchers.IO) {
+    suspend fun importBook(uri: Uri): BookWithDetails? = withContext(ioDispatcher) {
         storageMutex.withLock { importPublication(uri) }
     }
 
@@ -221,7 +228,7 @@ class LibraryRepository(
             withContext(kotlinx.coroutines.NonCancellable) {
                 database.withTransaction {
                     ensureAllSpace()
-                    bookDao.insert(entity.copy(isUnsorted = ReaderPreferences(context).readerSettings.first().unsortedEnabled))
+                    bookDao.insert(entity.copy(isUnsorted = preferences.readerSettings.first().unsortedEnabled))
                     spaceDao.insertBookSpaceCrossRef(BookSpaceCrossRef(bookId, ALL_SPACES_ID))
                     publicationDao.putRenditions(
                         listOf(
@@ -325,7 +332,7 @@ class LibraryRepository(
         forceReparse: Boolean = false,
         onConversionStart: () -> Unit = {},
         progress: suspend (Int, Int) -> Unit
-    ): PublicationRenditionEntity = withContext(Dispatchers.IO) {
+    ): PublicationRenditionEntity = withContext(ioDispatcher) {
         storageMutex.withLock {
             val existing = publicationDao.rendition(bookId, "read-mode")
             if (!forceReparse && existing != null && existing.converterVersion == PdfReadModeConverter.VERSION &&
@@ -449,7 +456,7 @@ class LibraryRepository(
         }
     }
 
-    suspend fun openPublication(book: BookWithDetails): Publication? = withContext(Dispatchers.IO) {
+    suspend fun openPublication(book: BookWithDetails): Publication? = withContext(ioDispatcher) {
         val file = File(
             publicationDao.rendition(book.book.id, book.book.activeRendition)?.filePath
                 ?: book.book.filePath
@@ -616,13 +623,13 @@ class LibraryRepository(
         bookmarkDao.deleteById(id)
     }
 
-    suspend fun deleteBook(bookId: String): Unit = withContext(Dispatchers.IO) {
+    suspend fun deleteBook(bookId: String): Unit = withContext(ioDispatcher) {
         withAssetTransaction {
             val book = bookDao.getById(bookId)?.book ?: return@withAssetTransaction
             val renditions = publicationDao.renditions(bookId)
-            withContext(Dispatchers.Main.immediate) {
+            withContext(mainDispatcher) {
                 val session =
-                    (context.applicationContext as com.javierreansyah.pinecone.PineconeApplication).audioSession
+                    audioSession.get()
                 if (session.state.value.bookId == bookId) session.releasePlayer()
             }
 
@@ -656,7 +663,7 @@ class LibraryRepository(
         tags: List<String>,
         metadata: PublicationMetadata? = null,
         credits: List<PublicationCreditEntity>? = null,
-    ): Unit = withContext(Dispatchers.IO) {
+    ): Unit = withContext(ioDispatcher) {
         val bookDetailsBook = bookDao.getById(bookId)?.book ?: return@withContext
 
         var newCoverPath = bookDetailsBook.coverPath
@@ -726,7 +733,7 @@ class LibraryRepository(
 
     fun getAllTags(): Flow<List<TagEntity>> = bookDao.getAllTags()
 
-    suspend fun deleteFilterItem(type: String, name: String): Unit = withContext(Dispatchers.IO) {
+    suspend fun deleteFilterItem(type: String, name: String): Unit = withContext(ioDispatcher) {
         if (type == "author") {
             bookDao.deleteAuthorByName(name)
             publicationDao.deletePrimaryCredit(name)
@@ -743,7 +750,7 @@ class LibraryRepository(
     }
 
     suspend fun renameFilterItem(type: String, oldName: String, newName: String): Unit =
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             val trimmedNewName = newName.trim()
             if (oldName == trimmedNewName) return@withContext
             if (type == "author") {
@@ -874,7 +881,7 @@ class LibraryRepository(
         shelfDao.getAllShelfBookCrossRefs()
 
     suspend fun updateShelfOrder(shelfId: String, newBookIdsOrder: List<String>): Unit =
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             database.withTransaction {
                 newBookIdsOrder.forEachIndexed { index, bookId ->
                     shelfDao.updateShelfBookOrderIndex(shelfId, bookId, index)
@@ -1011,7 +1018,7 @@ class LibraryRepository(
 
             if (coverBitmap != null) {
                 val coverFile = File(coversDir, "$bookId.png")
-                withContext(Dispatchers.IO) {
+                withContext(ioDispatcher) {
                     FileOutputStream(coverFile).use { out ->
                         coverBitmap.compress(Bitmap.CompressFormat.PNG, 90, out)
                     }

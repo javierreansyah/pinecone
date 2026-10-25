@@ -1,7 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.library.filters
 
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import android.app.Application
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -32,9 +30,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Delete
 import com.composables.icons.materialsymbols.outlined.Edit
@@ -64,19 +61,7 @@ fun AllFilterItemsScreen(
     onNavigateBack: () -> Unit, onNavigateToDetail: (String) -> Unit,
 ) {
     val context = LocalContext.current
-    val viewModel: FilterCategoryViewModel = viewModel(
-        factory = object :
-            ViewModelProvider.AndroidViewModelFactory(context.applicationContext as Application) {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                if (modelClass.isAssignableFrom(FilterCategoryViewModel::class.java)) {
-                    @Suppress("UNCHECKED_CAST") return FilterCategoryViewModel(
-                        context.applicationContext as Application,
-                    ) as T
-                }
-                throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
-            }
-        },
-    )
+    val viewModel: FilterCategoryViewModel = hiltViewModel()
 
     val itemsWithCounts by when (filterType) {
         "author" -> viewModel.authorsWithCounts.collectAsStateWithLifecycle()

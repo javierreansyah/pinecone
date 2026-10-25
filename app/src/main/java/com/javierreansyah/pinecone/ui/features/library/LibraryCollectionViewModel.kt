@@ -1,12 +1,11 @@
 package com.javierreansyah.pinecone.ui.features.library
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.data.local.database.library.BookWithDetails
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
+import com.javierreansyah.pinecone.data.local.preferences.libraryPreferenceDefaults
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import kotlinx.coroutines.flow.Flow
@@ -21,21 +20,23 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 abstract class LibraryCollectionViewModel(
-    application: Application,
+    private val bookRepository: LibraryRepository,
+    private val prefsManager: LibraryPreferencesManager,
     private val screenKey: String,
     source: (LibraryRepository) -> Flow<List<BookWithDetails>>,
-) : AndroidViewModel(application) {
-    private val bookRepository = (application as PineconeApplication).libraryRepository
-    private val prefsManager = LibraryPreferencesManager(application)
+) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(
-        LibraryCollectionUiState(
-            bookPreferences = prefsManager.getPreferences(
-                screenKey = screenKey, defaultSort = SortType.Added,
-            ),
-        ),
-    )
+    private val _uiState = MutableStateFlow(LibraryCollectionUiState(bookPreferences = libraryPreferenceDefaults(screenKey)))
+
     val uiState: StateFlow<LibraryCollectionUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            prefsManager.preferences(null, screenKey).collect { preferences ->
+                _uiState.update { it.copy(bookPreferences = preferences) }
+            }
+        }
+    }
 
     private val booksFlow: Flow<List<Book>> =
         source(bookRepository).map { entities -> entities.map { Book.fromEntity(it) } }
@@ -58,37 +59,30 @@ abstract class LibraryCollectionViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun onLayoutModeChange(mode: LayoutMode) {
-        _uiState.update { state ->
-            val prefs = state.bookPreferences.copy(layoutMode = mode)
-            prefsManager.savePreferences(screenKey, prefs)
-            state.copy(bookPreferences = prefs)
+        val spaceId = null
+        viewModelScope.launch {
+            prefsManager.updatePreferences(spaceId, screenKey) { it.copy(layoutMode = mode) }
         }
     }
 
     fun onSortTypeChange(sortType: SortType) {
-        _uiState.update { state ->
-            val currentPrefs = state.bookPreferences
-            val newPrefs = currentPrefs.selectSort(sortType)
-            prefsManager.savePreferences(screenKey, newPrefs)
-            state.copy(bookPreferences = newPrefs)
+        val spaceId = null
+        viewModelScope.launch {
+            prefsManager.updatePreferences(spaceId, screenKey) { it.selectSort(sortType) }
         }
     }
 
     fun toggleFileFilter(format: FileFilter) {
-        _uiState.update { state ->
-            val current = state.bookPreferences
-            val prefs = current.toggleFormat(format)
-            prefsManager.savePreferences(screenKey, prefs)
-            state.copy(bookPreferences = prefs)
+        val spaceId = null
+        viewModelScope.launch {
+            prefsManager.updatePreferences(spaceId, screenKey) { it.toggleFormat(format) }
         }
     }
 
     fun toggleStatusFilter(status: StatusFilter) {
-        _uiState.update { state ->
-            val currentPrefs = state.bookPreferences
-            val newPrefs = currentPrefs.toggleStatus(status)
-            prefsManager.savePreferences(screenKey, newPrefs)
-            state.copy(bookPreferences = newPrefs)
+        val spaceId = null
+        viewModelScope.launch {
+            prefsManager.updatePreferences(spaceId, screenKey) { it.toggleStatus(status) }
         }
     }
 

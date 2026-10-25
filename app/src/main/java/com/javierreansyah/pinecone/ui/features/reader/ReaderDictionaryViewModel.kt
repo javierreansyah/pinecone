@@ -1,13 +1,12 @@
 package com.javierreansyah.pinecone.ui.features.reader
 
-import android.app.Application
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.data.local.database.dictionary.DictionaryEntry
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.repository.dictionary.DictionaryRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,7 +21,8 @@ data class DefinitionState(
     val wordHistory: List<Pair<String, List<DictionaryEntry>>> = emptyList(),
 )
 
-class ReaderDictionaryViewModel(
+@HiltViewModel
+class ReaderDictionaryViewModel @Inject constructor(
     private val dictionaryRepository: DictionaryRepository,
     private val readerPreferences: ReaderPreferences,
 ) : ViewModel() {
@@ -75,16 +75,5 @@ class ReaderDictionaryViewModel(
         _definitionState.update { it.copy(showDefinition = false, wordHistory = emptyList()) }
     }
 
-    class Factory(
-        private val application: Application,
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            val app = application as PineconeApplication
-            return ReaderDictionaryViewModel(
-                dictionaryRepository = app.dictionaryRepository,
-                readerPreferences = app.readerPreferences,
-            ) as T
-        }
-    }
+
 }

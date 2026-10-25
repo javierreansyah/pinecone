@@ -1,8 +1,5 @@
 package com.javierreansyah.pinecone.ui.root
 
-import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Error
-import com.composables.icons.materialsymbols.outlined.Warning
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,6 +26,9 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Error
+import com.composables.icons.materialsymbols.outlined.Warning
 import com.javierreansyah.pinecone.R
 
 @Composable

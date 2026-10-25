@@ -1,15 +1,15 @@
 package com.javierreansyah.pinecone.ui.features.library.filters
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.data.local.database.library.AuthorEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.data.local.database.library.TagEntity
 import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
+import com.javierreansyah.pinecone.data.local.preferences.libraryPreferenceDefaults
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.SortType
@@ -20,32 +20,32 @@ import com.javierreansyah.pinecone.ui.features.library.selectSort
 import com.javierreansyah.pinecone.ui.features.library.sortShelfBooks
 import com.javierreansyah.pinecone.ui.features.library.toggleFormat
 import com.javierreansyah.pinecone.ui.features.library.toggleStatus
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class FilterResultViewModel(
-    application: Application,
-) : AndroidViewModel(application) {
-    private val bookRepository = (application as PineconeApplication).libraryRepository
-    private val prefsManager = LibraryPreferencesManager(application)
+@OptIn(ExperimentalCoroutinesApi::class)
+@HiltViewModel
+class FilterResultViewModel @Inject constructor(
+    private val bookRepository: LibraryRepository,
+    private val prefsManager: LibraryPreferencesManager,
+) : ViewModel() {
     private val screenKey = "filter_result"
 
-    private val _uiState = MutableStateFlow(
-        FilterResultUiState(
-            bookPreferences = prefsManager.getPreferences(
-                screenKey = screenKey, defaultSort = SortType.Added,
-            ),
-        ),
-    )
+    private val _uiState = MutableStateFlow(FilterResultUiState(bookPreferences = libraryPreferenceDefaults(screenKey)))
+
     val uiState: StateFlow<FilterResultUiState> = _uiState.asStateFlow()
 
     private val booksFlow: Flow<List<Book>> =
@@ -70,11 +70,8 @@ class FilterResultViewModel(
 
     init {
         viewModelScope.launch {
-            globalSpaceId.collect { spaceId ->
-                _uiState.update { state ->
-                    state.copy(bookPreferences = prefsManager.getPreferences(spaceId, screenKey))
-                }
-            }
+            globalSpaceId.flatMapLatest { spaceId -> prefsManager.preferences(spaceId, screenKey) }
+                .collect { preferences -> _uiState.update { it.copy(bookPreferences = preferences) } }
         }
     }
 
@@ -133,37 +130,30 @@ class FilterResultViewModel(
     }
 
     fun onLayoutModeChange(mode: LayoutMode) {
-        _uiState.update { state ->
-            val prefs = state.bookPreferences.copy(layoutMode = mode)
-            prefsManager.savePreferences(globalSpaceId.value, screenKey, prefs)
-            state.copy(bookPreferences = prefs)
+        val spaceId = globalSpaceId.value
+        viewModelScope.launch {
+            prefsManager.updatePreferences(spaceId, screenKey) { it.copy(layoutMode = mode) }
         }
     }
 
     fun onSortTypeChange(sortType: SortType) {
-        _uiState.update { state ->
-            val currentPrefs = state.bookPreferences
-            val newPrefs = currentPrefs.selectSort(sortType)
-            prefsManager.savePreferences(globalSpaceId.value, screenKey, newPrefs)
-            state.copy(bookPreferences = newPrefs)
+        val spaceId = globalSpaceId.value
+        viewModelScope.launch {
+            prefsManager.updatePreferences(spaceId, screenKey) { it.selectSort(sortType) }
         }
     }
 
     fun toggleFileFilter(format: FileFilter) {
-        _uiState.update { state ->
-            val current = state.bookPreferences
-            val prefs = current.toggleFormat(format)
-            prefsManager.savePreferences(globalSpaceId.value, screenKey, prefs)
-            state.copy(bookPreferences = prefs)
+        val spaceId = globalSpaceId.value
+        viewModelScope.launch {
+            prefsManager.updatePreferences(spaceId, screenKey) { it.toggleFormat(format) }
         }
     }
 
     fun toggleStatusFilter(status: StatusFilter) {
-        _uiState.update { state ->
-            val currentPrefs = state.bookPreferences
-            val newPrefs = currentPrefs.toggleStatus(status)
-            prefsManager.savePreferences(globalSpaceId.value, screenKey, newPrefs)
-            state.copy(bookPreferences = newPrefs)
+        val spaceId = globalSpaceId.value
+        viewModelScope.launch {
+            prefsManager.updatePreferences(spaceId, screenKey) { it.toggleStatus(status) }
         }
     }
 

@@ -2,10 +2,11 @@ package com.javierreansyah.pinecone.ui.features.reader
 
 import android.app.Application
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.reader.pdf.PdfSearchMatch
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -30,7 +31,8 @@ data class SearchState(
     val activeIndex: Int? = null,
 )
 
-class ReaderSearchViewModel(
+@HiltViewModel
+class ReaderSearchViewModel @Inject constructor(
     private val application: Application,
 ) : ViewModel() {
 
@@ -231,11 +233,5 @@ class ReaderSearchViewModel(
         searchJob?.cancel()
     }
 
-    class Factory(
-        private val application: Application,
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            ReaderSearchViewModel(application) as T
-    }
+
 }

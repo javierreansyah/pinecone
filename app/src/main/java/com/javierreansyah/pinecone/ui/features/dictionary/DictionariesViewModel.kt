@@ -2,20 +2,22 @@ package com.javierreansyah.pinecone.ui.features.dictionary
 
 import android.net.Uri
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.javierreansyah.pinecone.data.local.preferences.InstalledDictionary
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.repository.dictionary.DictionaryImportManager
 import com.javierreansyah.pinecone.data.repository.dictionary.DictionaryRepository
 import com.javierreansyah.pinecone.data.repository.dictionary.DictionaryState
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class DictionariesViewModel(
+@HiltViewModel
+class DictionariesViewModel @Inject constructor(
     private val repository: DictionaryRepository,
     private val importManager: DictionaryImportManager,
     preferences: ReaderPreferences,
@@ -49,13 +51,5 @@ class DictionariesViewModel(
         }
     }
 
-    class Factory(
-        private val repository: DictionaryRepository,
-        private val importManager: DictionaryImportManager,
-        private val preferences: ReaderPreferences,
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            DictionariesViewModel(repository, importManager, preferences) as T
-    }
+
 }

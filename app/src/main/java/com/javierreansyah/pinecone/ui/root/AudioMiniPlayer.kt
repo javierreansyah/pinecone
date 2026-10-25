@@ -2,12 +2,6 @@
 
 package com.javierreansyah.pinecone.ui.root
 
-import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Forward_10
-import com.composables.icons.materialsymbols.outlined.Headphones
-import com.composables.icons.materialsymbols.outlined.Pause
-import com.composables.icons.materialsymbols.outlined.Play_arrow
-import com.composables.icons.materialsymbols.outlined.Replay_10
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,13 +47,19 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import com.javierreansyah.pinecone.PineconeApplication
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Forward_10
+import com.composables.icons.materialsymbols.outlined.Headphones
+import com.composables.icons.materialsymbols.outlined.Pause
+import com.composables.icons.materialsymbols.outlined.Play_arrow
+import com.composables.icons.materialsymbols.outlined.Replay_10
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.reader.audio.AudioPlaybackState
-import kotlinx.coroutines.flow.flowOf
 import java.io.File
+import kotlinx.coroutines.flow.flowOf
 
 /** Extra scroll space, not viewport padding: content can draw behind the floating card. */
 val LocalAudioPlayerBottomPadding: ProvidableCompositionLocal<Dp> =
@@ -81,7 +81,7 @@ internal val MiniPlayerHeight = MiniPlayerArtworkSize + MiniPlayerArtworkInset *
 @Composable
 fun AudioMiniPlayerHost(enabled: Boolean = true, content: @Composable () -> Unit) {
     val context = LocalContext.current
-    val app = context.applicationContext as PineconeApplication
+    val app: com.javierreansyah.pinecone.ui.root.AppServicesViewModel = hiltViewModel()
     val session = app.audioSession
     val state by session.state.collectAsStateWithLifecycle()
     val navigator by session.navigator.collectAsStateWithLifecycle()
@@ -116,7 +116,7 @@ fun AudioMiniPlayerHost(enabled: Boolean = true, content: @Composable () -> Unit
 @Composable
 fun AudioMiniPlayerBar(includeNavigationBarPadding: Boolean = true, bottomInset: Dp = 0.dp) {
     val context = LocalContext.current
-    val app = context.applicationContext as PineconeApplication
+    val app: com.javierreansyah.pinecone.ui.root.AppServicesViewModel = hiltViewModel()
     val session = app.audioSession
     val state by session.state.collectAsStateWithLifecycle()
     val navigator by session.navigator.collectAsStateWithLifecycle()

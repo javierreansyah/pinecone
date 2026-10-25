@@ -13,10 +13,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.data.publication.ReaderProfile
 import com.javierreansyah.pinecone.reader.audio.AudioPlaybackState
 import com.javierreansyah.pinecone.ui.features.reader.components.overlay.ReaderOverlay
@@ -34,14 +32,16 @@ fun AudioPlayerScreen(
     artworkAlpha: Float = 1f,
     topBarAlpha: Float = 1f,
 ) {
-    val app = LocalContext.current.applicationContext as PineconeApplication
+    val app: com.javierreansyah.pinecone.ui.root.AppServicesViewModel = hiltViewModel()
     val darkTheme = isSystemInDarkTheme()
-    val reader: ReaderViewModel =
-        viewModel(factory = ReaderViewModel.Factory(app, bookId, darkTheme))
-    val search: ReaderSearchViewModel = viewModel(factory = ReaderSearchViewModel.Factory(app))
-    val notes: ReaderNotesViewModel = viewModel(factory = ReaderNotesViewModel.Factory(app, bookId))
-    val dictionary: ReaderDictionaryViewModel =
-        viewModel(factory = ReaderDictionaryViewModel.Factory(app))
+    val reader = hiltViewModel<ReaderViewModel, ReaderViewModel.Factory>(
+        key = bookId, creationCallback = { it.create(bookId) },
+    )
+    val search: ReaderSearchViewModel = hiltViewModel()
+    val notes = hiltViewModel<ReaderNotesViewModel, ReaderNotesViewModel.Factory>(
+        key = bookId, creationCallback = { it.create(bookId) },
+    )
+    val dictionary: ReaderDictionaryViewModel = hiltViewModel()
     val publication by reader.publication.collectAsStateWithLifecycle()
     val bookState by reader.bookState.collectAsStateWithLifecycle()
     val audioState by app.audioSession.state.collectAsStateWithLifecycle()

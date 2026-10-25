@@ -2,6 +2,7 @@
 
 package com.javierreansyah.pinecone.ui.root
 
+import androidx.compose.ui.platform.LocalContext
 import android.content.Intent
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.MutatePriority
@@ -48,7 +49,6 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntryDecorator
@@ -68,18 +69,17 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
-import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.reader.audio.AudioPlaybackService
 import com.javierreansyah.pinecone.ui.features.reader.AudioPlayerScreen
+import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.math.abs
-import kotlin.math.roundToInt
 
 internal data class AudioPlayerHandle(
     val height: Int,
@@ -97,7 +97,8 @@ internal enum class AudioDismissValue { Left, Center, Right }
 /** One draggable surface morphs from the measured mini-player into the full player. */
 @Composable
 fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable () -> Unit) {
-    val app = LocalContext.current.applicationContext as PineconeApplication
+    val context = LocalContext.current
+    val app: com.javierreansyah.pinecone.ui.root.AppServicesViewModel = hiltViewModel()
     val playback by app.audioSession.state.collectAsStateWithLifecycle()
     val navigator by app.audioSession.navigator.collectAsStateWithLifecycle()
     val request = backStack.lastOrNull() as? Screen.AudioPlayer
@@ -154,8 +155,8 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
             dismissedBookId = playback.bookId
             playerStack.clear()
             backStack.collapseAudioPlayer()
-            app.startService(
-                Intent(app, AudioPlaybackService::class.java).setAction(
+            context.startService(
+                Intent(context, AudioPlaybackService::class.java).setAction(
                     AudioPlaybackService.ACTION_STOP
                 )
             )

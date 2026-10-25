@@ -468,6 +468,10 @@ class PdfReadModeConverterTest {
                 db.spaceDao(),
                 opener,
                 retriever,
+                (context.applicationContext as com.javierreansyah.pinecone.PineconeApplication).readerPreferences,
+                dagger.Lazy { (context.applicationContext as com.javierreansyah.pinecone.PineconeApplication).audioSession },
+                kotlinx.coroutines.Dispatchers.IO,
+                kotlinx.coroutines.Dispatchers.Main.immediate,
             )
             val source = File.createTempFile("migration-source-", ".pdf", context.cacheDir)
                 .apply { writeBytes(vectorPdf()) }

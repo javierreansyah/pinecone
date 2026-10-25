@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.reader
 
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
@@ -13,40 +12,38 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentContainerView
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.features.reader.components.overlay.ReaderOverlay
 import com.javierreansyah.pinecone.ui.theme.PineconeTheme
+import dagger.hilt.android.lifecycle.withCreationCallback
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
+@dagger.hilt.android.AndroidEntryPoint
 class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
 
     companion object {
         const val EXTRA_BOOK_ID: String = "bookId"
     }
 
-    private val viewModel: ReaderViewModel by viewModels {
-        val bookId = intent.getStringExtra(EXTRA_BOOK_ID) ?: ""
-        ReaderViewModel.Factory(application, bookId, isNightMode(resources.configuration))
-    }
-
-    private val searchViewModel: ReaderSearchViewModel by viewModels {
-        ReaderSearchViewModel.Factory(application)
-    }
-
-    private val notesViewModel: ReaderNotesViewModel by viewModels {
-        val bookId = intent.getStringExtra(EXTRA_BOOK_ID) ?: ""
-        ReaderNotesViewModel.Factory(application, bookId)
-    }
-
-    private val dictionaryViewModel: ReaderDictionaryViewModel by viewModels {
-        ReaderDictionaryViewModel.Factory(application)
-    }
+    private val viewModel: ReaderViewModel by viewModels(extrasProducer = {
+        defaultViewModelCreationExtras.withCreationCallback<ReaderViewModel.Factory> {
+            it.create(intent.getStringExtra(EXTRA_BOOK_ID).orEmpty())
+        }
+    })
+    private val searchViewModel: ReaderSearchViewModel by viewModels()
+    private val notesViewModel: ReaderNotesViewModel by viewModels(extrasProducer = {
+        defaultViewModelCreationExtras.withCreationCallback<ReaderNotesViewModel.Factory> {
+            it.create(intent.getStringExtra(EXTRA_BOOK_ID).orEmpty())
+        }
+    })
+    private val dictionaryViewModel: ReaderDictionaryViewModel by viewModels()
 
     private lateinit var navigatorController: NavigatorController
     private var navigatorContainer: FragmentContainerView? = null

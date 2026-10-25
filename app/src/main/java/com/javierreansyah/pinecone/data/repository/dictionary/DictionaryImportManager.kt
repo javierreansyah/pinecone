@@ -8,7 +8,6 @@ import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 
 class DictionaryImportManager(
     context: Context, private val preferences: ReaderPreferences,
@@ -25,20 +24,18 @@ class DictionaryImportManager(
                 _importState.value = DictionaryState.Loading(progress)
             }
 
-            val currentSettings = preferences.readerSettings.first()
-            val newInstalled = currentSettings.installedDictionaries + InstalledDictionary(
-                id = dictId, name = info.name, wordCount = info.wordCount,
-            )
-
-            val newActiveId = currentSettings.activeDictionaryId.ifEmpty { dictId }
-
-            preferences.updateSettings(
-                currentSettings.copy(
-                    installedDictionaries = newInstalled, activeDictionaryId = newActiveId,
-                ),
-            )
+            preferences.updateSettings { current ->
+                current.copy(
+                    installedDictionaries = current.installedDictionaries + InstalledDictionary(
+                        id = dictId, name = info.name, wordCount = info.wordCount,
+                    ),
+                    activeDictionaryId = current.activeDictionaryId.ifEmpty { dictId },
+                )
+            }
 
             _importState.value = DictionaryState.Success
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
         } catch (e: Exception) {
             timber.log.Timber.e(e)
             _importState.value = DictionaryState.Error(e.message ?: "Unknown error occurred")

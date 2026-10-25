@@ -6,13 +6,16 @@ import androidx.work.WorkerParameters
 import com.javierreansyah.pinecone.data.repository.backup.BackupRepository
 import com.javierreansyah.pinecone.data.repository.backup.BackupResult
 
-class BackupWorker(
-    appContext: Context, workerParams: WorkerParameters,
+@androidx.hilt.work.HiltWorker
+class BackupWorker @dagger.assisted.AssistedInject constructor(
+    @dagger.assisted.Assisted appContext: Context,
+    @dagger.assisted.Assisted workerParams: WorkerParameters,
+    private val backupRepository: BackupRepository,
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
         return when (val result =
-            BackupRepository(applicationContext).createSnapshot(manual = false)) {
+            backupRepository.createSnapshot(manual = false)) {
             is BackupResult.Success, BackupResult.Skipped -> Result.success()
             is BackupResult.Partial -> Result.success()
             is BackupResult.Failure -> retryOrFail(result)

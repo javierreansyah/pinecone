@@ -40,14 +40,14 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.data.publication.ReaderProfile
 import com.javierreansyah.pinecone.ui.components.SegmentedButtonGroup
-import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
 /** Image/comic settings share one scrolling panel; other formats retain their settings pages. */
 @Composable
 fun FormatReaderSettings(
     settings: ReaderSettings,
-    onChange: (ReaderSettings) -> Unit,
+    onChange: ((ReaderSettings) -> ReaderSettings) -> Unit,
     profile: ReaderProfile,
     fixedEpub: Boolean,
     useBookSettings: Boolean,
@@ -135,50 +135,46 @@ fun FormatReaderSettings(
                         page == 0 -> when {
                             profile == ReaderProfile.PDF -> {
                                 val pdf = settings.formatPreferences.pdf
-                                fun update(value: com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences) =
-                                    onChange(
-                                        settings.copy(
-                                            formatPreferences = settings.formatPreferences.copy(pdf = value)
+                                fun update(transform: (com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences) -> com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences) =
+                                    onChange { current ->
+                                        current.copy(
+                                            formatPreferences = current.formatPreferences.copy(pdf = transform(current.formatPreferences.pdf))
                                         )
-                                    )
+                                    }
                                 SettingsGroup(verticalArrangement = Arrangement.Top) {
                                     PreferenceSwitch(
                                         stringResource(R.string.reader_continuous_scroll),
                                         pdf.scroll
-                                    ) { update(pdf.copy(scroll = it)) }
+                                    ) { update { latest -> latest.copy(scroll = it) } }
                                     PreferenceSwitch(
                                         stringResource(R.string.reader_horizontal),
                                         pdf.horizontal
-                                    ) { update(pdf.copy(horizontal = it)) }
+                                    ) { update { latest -> latest.copy(horizontal = it) } }
                                     PreferenceSwitch(
                                         stringResource(R.string.reader_right_to_left),
                                         pdf.rightToLeft
-                                    ) { update(pdf.copy(rightToLeft = it)) }
+                                    ) { update { latest -> latest.copy(rightToLeft = it) } }
                                     if (!pdf.scroll || pdf.horizontal) PreferenceSwitch(
                                         stringResource(R.string.reader_fit_width),
                                         pdf.fitWidth
-                                    ) { update(pdf.copy(fitWidth = it)) }
+                                    ) { update { latest -> latest.copy(fitWidth = it) } }
                                     IncrementDecrementControl(
                                         label = stringResource(R.string.reader_page_spacing),
                                         inline = true,
                                         value = pdf.pageSpacing.roundToInt().toString(),
                                         onIncrement = {
-                                            update(
-                                                pdf.copy(
-                                                    pageSpacing = (pdf.pageSpacing + 1).coerceAtMost(
+                                            update { latest -> latest.copy(
+                                                    pageSpacing = (latest.pageSpacing + 1).coerceAtMost(
                                                         64.0
                                                     )
-                                                )
-                                            )
+                                                ) }
                                         },
                                         onDecrement = {
-                                            update(
-                                                pdf.copy(
-                                                    pageSpacing = (pdf.pageSpacing - 1).coerceAtLeast(
+                                            update { latest -> latest.copy(
+                                                    pageSpacing = (latest.pageSpacing - 1).coerceAtLeast(
                                                         0.0
                                                     )
-                                                )
-                                            )
+                                                ) }
                                         },
                                         modifier = Modifier.padding(
                                             horizontal = 16.dp,
@@ -199,26 +195,26 @@ fun FormatReaderSettings(
                                     presets = listOf(.5f, 1f, 1.5f, 2f),
                                     topPadding = 0.dp,
                                 ) {
-                                    onChange(
-                                        settings.copy(
-                                            formatPreferences = settings.formatPreferences.copy(
+                                    onChange { current ->
+                                        current.copy(
+                                            formatPreferences = current.formatPreferences.copy(
                                                 audioSpeed = it.toDouble()
                                             )
                                         )
-                                    )
+                                    }
                                 }
                                 PreferenceSlider(
                                     stringResource(R.string.reader_playback_pitch),
                                     settings.formatPreferences.audioPitch.toFloat(),
                                     .5f..2f
                                 ) {
-                                    onChange(
-                                        settings.copy(
-                                            formatPreferences = settings.formatPreferences.copy(
+                                    onChange { current ->
+                                        current.copy(
+                                            formatPreferences = current.formatPreferences.copy(
                                                 audioPitch = it.toDouble()
                                             )
                                         )
-                                    )
+                                    }
                                 }
                             }
 
@@ -239,13 +235,13 @@ fun FormatReaderSettings(
                                     selected = values.entries.firstOrNull { it.value == settings.formatPreferences.epubSpread }?.key
                                         ?: values.keys.first(),
                                     onSelected = {
-                                        onChange(
-                                            settings.copy(
-                                                formatPreferences = settings.formatPreferences.copy(
+                                        onChange { current ->
+                                            current.copy(
+                                                formatPreferences = current.formatPreferences.copy(
                                                     epubSpread = values.getValue(it)
                                                 )
                                             )
-                                        )
+                                        }
                                     },
                                     modifier = Modifier.padding(horizontal = 16.dp)
                                 )
@@ -253,7 +249,7 @@ fun FormatReaderSettings(
                                     stringResource(R.string.reader_right_to_left),
                                     settings.readingProgression == "RTL"
                                 ) {
-                                    onChange(settings.copy(readingProgression = if (it) "RTL" else "LTR"))
+                                    onChange { current -> current.copy(readingProgression = if (it) "RTL" else "LTR") }
                                 }
                             }
 
@@ -283,7 +279,7 @@ fun FormatReaderSettings(
 @Composable
 private fun FormatAdvancedSettings(
     settings: ReaderSettings,
-    onChange: (ReaderSettings) -> Unit,
+    onChange: ((ReaderSettings) -> ReaderSettings) -> Unit,
     profile: ReaderProfile,
     fixedEpub: Boolean,
     useBookSettings: Boolean,
@@ -294,30 +290,30 @@ private fun FormatAdvancedSettings(
     AdvancedTabContent(
         settings, onChange, includeTextPreferences = false,
         onRestoreDefaultsClick = {
-            val format = when {
-                profile == ReaderProfile.PDF -> settings.formatPreferences.copy(
-                    pdf = com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences()
-                )
+            onChange { current ->
+                val format = when {
+                    profile == ReaderProfile.PDF -> current.formatPreferences.copy(
+                        pdf = com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences()
+                    )
 
-                profile == ReaderProfile.AUDIO -> settings.formatPreferences.copy(
-                    audioSpeed = 1.0,
-                    audioPitch = 1.0
-                )
+                    profile == ReaderProfile.AUDIO -> current.formatPreferences.copy(
+                        audioSpeed = 1.0,
+                        audioPitch = 1.0
+                    )
 
-                fixedEpub -> settings.formatPreferences.copy(epubSpread = "auto")
-                else -> settings.formatPreferences
-            }
-            onChange(
-                settings.copy(
+                    fixedEpub -> current.formatPreferences.copy(epubSpread = "auto")
+                    else -> current.formatPreferences
+                }
+                current.copy(
                     formatPreferences = format,
                     brightness = .5f,
                     autoBrightness = true,
                     forceOrientation = "Auto",
                     preventScreenTimeout = false,
                     alwaysShowStatusBar = false,
-                    pineconeThemePreset = "Auto"
+                    pineconeThemePreset = "Auto",
                 )
-            )
+            }
         },
         content = {
             PreferenceSwitch(
@@ -360,7 +356,7 @@ private fun FormatAdvancedSettings(
 }
 
 @Composable
-private fun PdfInversionControl(settings: ReaderSettings, onChange: (ReaderSettings) -> Unit) {
+private fun PdfInversionControl(settings: ReaderSettings, onChange: ((ReaderSettings) -> ReaderSettings) -> Unit) {
     Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             stringResource(R.string.reader_invert_pages),
@@ -377,13 +373,13 @@ private fun PdfInversionControl(settings: ReaderSettings, onChange: (ReaderSetti
             selected = options.getValue(settings.formatPreferences.pdf.invert),
             onSelected = { label ->
                 val invert = options.entries.first { it.value == label }.key
-                onChange(
-                    settings.copy(
-                        formatPreferences = settings.formatPreferences.copy(
-                            pdf = settings.formatPreferences.pdf.copy(invert = invert),
+                onChange { current ->
+                    current.copy(
+                        formatPreferences = current.formatPreferences.copy(
+                            pdf = current.formatPreferences.pdf.copy(invert = invert),
                         )
                     )
-                )
+                }
             },
         )
     }
@@ -392,7 +388,7 @@ private fun PdfInversionControl(settings: ReaderSettings, onChange: (ReaderSetti
 @Composable
 private fun FormatLighting(
     settings: ReaderSettings,
-    onChange: (ReaderSettings) -> Unit,
+    onChange: ((ReaderSettings) -> ReaderSettings) -> Unit,
     showChromeHint: Boolean,
 ) {
     ReaderBrightnessControl(settings, onChange)
@@ -420,7 +416,7 @@ private fun FormatLighting(
             themes.forEach { (theme, label, color) ->
                 ThemeSwatch(
                     isSelected = settings.pineconeThemePreset == theme,
-                    onClick = { onChange(settings.copy(pineconeThemePreset = theme)) },
+                    onClick = { onChange { current -> current.copy(pineconeThemePreset = theme) } },
                     isAuto = theme == "Auto", color = color, label = stringResource(label),
                     modifier = if (theme == "Auto") Modifier.padding(
                         start = 0.dp,

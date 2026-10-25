@@ -1,7 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.library.info
 
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import android.app.Application
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -72,7 +70,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Add
@@ -90,11 +89,10 @@ fun EditBookScreen(
     bookId: String, onNavigateBack: () -> Unit,
 ) {
     val context = LocalContext.current
-    val application = context.applicationContext as Application
 
-    val viewModel: EditBookViewModel = viewModel(
+    val viewModel = hiltViewModel<EditBookViewModel, EditBookViewModel.Factory>(
         key = bookId,
-        factory = EditBookViewModel.Factory(application, bookId),
+        creationCallback = { it.create(bookId) },
     )
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()

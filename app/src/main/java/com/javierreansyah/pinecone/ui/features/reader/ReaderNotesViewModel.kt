@@ -1,15 +1,13 @@
 package com.javierreansyah.pinecone.ui.features.reader
 
-import android.app.Application
 import androidx.core.graphics.toColorInt
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.ui.features.reader.components.SortOption
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -31,8 +29,9 @@ data class SelectionState(
     val viewingHighlight: NoteEntity? = null,
 )
 
-class ReaderNotesViewModel(
-    private val bookId: String,
+@HiltViewModel(assistedFactory = ReaderNotesViewModel.Factory::class)
+class ReaderNotesViewModel @dagger.assisted.AssistedInject constructor(
+    @dagger.assisted.Assisted private val bookId: String,
     private val repository: LibraryRepository,
 ) : ViewModel() {
 
@@ -273,14 +272,9 @@ class ReaderNotesViewModel(
         _selectionState.update { it.copy(viewingHighlight = null) }
     }
 
-    class Factory(
-        private val application: Application,
-        private val bookId: String,
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            val app = application as PineconeApplication
-            return ReaderNotesViewModel(bookId, app.libraryRepository) as T
-        }
+
+    @dagger.assisted.AssistedFactory
+    interface Factory {
+        fun create(bookId: String): ReaderNotesViewModel
     }
 }
