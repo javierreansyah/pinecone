@@ -1,5 +1,13 @@
 package com.javierreansyah.pinecone.ui.features.reader.components
 
+import com.composables.icons.materialsymbols.outlined.Forward_10
+import com.composables.icons.materialsymbols.outlined.Headphones
+import com.composables.icons.materialsymbols.outlined.Pause
+import com.composables.icons.materialsymbols.outlined.Play_arrow
+import com.composables.icons.materialsymbols.outlined.Replay_10
+import com.composables.icons.materialsymbols.outlined.Skip_next
+import com.composables.icons.materialsymbols.outlined.Skip_previous
+import com.composables.icons.materialsymbols.outlined.Tune
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -32,15 +40,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Forward10
-import androidx.compose.material.icons.rounded.Headphones
-import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Replay10
-import androidx.compose.material.icons.rounded.SkipNext
-import androidx.compose.material.icons.rounded.SkipPrevious
-import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.ButtonGroup
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -213,7 +212,7 @@ private fun AudioArtwork(
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.Headphones,
+                    imageVector = MaterialSymbols.Outlined.Headphones,
                     contentDescription = null,
                     modifier = Modifier.size(72.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
@@ -398,14 +397,14 @@ private fun AudioTransportButtons(
                                     label = "playPauseTransition",
                                 ) { isPlaying ->
                                     Icon(
-                                        imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                                        imageVector = if (isPlaying) MaterialSymbols.Outlined.Pause else MaterialSymbols.Outlined.Play_arrow,
                                         contentDescription = label,
                                         modifier = Modifier.size(38.dp),
                                     )
                                 }
                             } else {
                                 Icon(
-                                    imageVector = if (index == 0) Icons.Rounded.SkipPrevious else Icons.Rounded.SkipNext,
+                                    imageVector = if (index == 0) MaterialSymbols.Outlined.Skip_previous else MaterialSymbols.Outlined.Skip_next,
                                     contentDescription = label,
                                     modifier = Modifier.size(32.dp),
                                 )
@@ -674,7 +673,7 @@ private fun AudioActionsStrip(
             ExpressiveConnectedActionButton(
                 onClick = { onSkip(-10) },
                 modifier = Modifier.weight(1f),
-                icon = Icons.Rounded.Replay10,
+                icon = MaterialSymbols.Outlined.Replay_10,
                 contentDescription = stringResource(R.string.reader_rewind),
                 shape = ButtonGroupDefaults.connectedLeadingButtonShape,
                 pressedShape = ButtonGroupDefaults.connectedLeadingButtonPressShape,
@@ -712,7 +711,7 @@ private fun AudioActionsStrip(
             ExpressiveConnectedActionButton(
                 onClick = onOpenSettings,
                 modifier = Modifier.weight(1f),
-                icon = Icons.Rounded.Tune,
+                icon = MaterialSymbols.Outlined.Tune,
                 contentDescription = stringResource(R.string.settings_title),
                 shape = RoundedCornerShape(4.dp),
                 pressedShape = ButtonGroupDefaults.connectedMiddleButtonPressShape,
@@ -720,7 +719,7 @@ private fun AudioActionsStrip(
             ExpressiveConnectedActionButton(
                 onClick = { onSkip(10) },
                 modifier = Modifier.weight(1f),
-                icon = Icons.Rounded.Forward10,
+                icon = MaterialSymbols.Outlined.Forward_10,
                 contentDescription = stringResource(R.string.reader_forward),
                 shape = ButtonGroupDefaults.connectedTrailingButtonShape,
                 pressedShape = ButtonGroupDefaults.connectedTrailingButtonPressShape,

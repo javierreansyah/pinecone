@@ -1,13 +1,9 @@
 package com.javierreansyah.pinecone.ui.features.reader.components.dictionary
 
 import com.javierreansyah.pinecone.data.local.database.dictionary.DictionaryEntry
+import com.javierreansyah.pinecone.ui.components.ImportedHtml
 
 object DictionaryFormatter {
-
-    private val HTML_TAG_REGEX = Regex(
-        "<(?:p|div|span|ol|ul|li|table|br|h[1-6]|a |dl|dt|dd|blockquote|em|strong)[ >/]",
-        RegexOption.IGNORE_CASE,
-    )
 
     private val PARTS_OF_SPEECH = setOf(
         "Noun",
@@ -67,20 +63,9 @@ object DictionaryFormatter {
         }
     }
 
-    private fun isHtml(content: String): Boolean = HTML_TAG_REGEX.containsMatchIn(content)
+    private fun isHtml(content: String): Boolean = ImportedHtml.containsMarkup(content)
 
-    private fun cleanHtml(html: String): String {
-        var cleaned = html
-
-        cleaned = cleaned.replace(Regex("<!DOCTYPE[^>]*>", RegexOption.IGNORE_CASE), "")
-
-        cleaned = cleaned.replace(Regex("</?html[^>]*>", RegexOption.IGNORE_CASE), "")
-        cleaned = cleaned.replace(Regex("<head[\\s\\S]*?</head>", RegexOption.IGNORE_CASE), "")
-        cleaned = cleaned.replace(Regex("</?body[^>]*>", RegexOption.IGNORE_CASE), "")
-
-        cleaned = cleaned.replace(Regex("<style[\\s\\S]*?</style>", RegexOption.IGNORE_CASE), "")
-        return cleaned.trim()
-    }
+    private fun cleanHtml(html: String): String = ImportedHtml.clean(html)
 
     private fun plainTextToHtml(text: String): String {
         val lines = text.split("\n")

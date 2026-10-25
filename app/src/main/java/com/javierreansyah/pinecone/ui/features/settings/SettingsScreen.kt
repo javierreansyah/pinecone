@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.settings
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.content.Intent
 import android.net.Uri
 import android.os.Environment
@@ -39,7 +40,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -115,10 +115,10 @@ fun SettingsScreen(
         ),
     )
 
-    val settings by viewModel.settings.collectAsState()
-    val isBackingUp by viewModel.isBackingUp.collectAsState()
-    val isRestoring by viewModel.isRestoring.collectAsState()
-    val availableBackups by viewModel.availableBackups.collectAsState()
+    val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val isBackingUp by viewModel.isBackingUp.collectAsStateWithLifecycle()
+    val isRestoring by viewModel.isRestoring.collectAsStateWithLifecycle()
+    val availableBackups by viewModel.availableBackups.collectAsStateWithLifecycle()
 
     var showColorPicker by remember { mutableStateOf(value = false) }
     var showRestoreDefaultWarning by remember { mutableStateOf(value = false) }

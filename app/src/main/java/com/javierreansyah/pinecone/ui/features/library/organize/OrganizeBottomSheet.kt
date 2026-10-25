@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library.organize
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
@@ -35,7 +36,6 @@ import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.rememberContainedSearchBarState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -69,7 +69,7 @@ fun OrganizeBottomSheet(
     viewModel: OrganizeViewModel,
     onNavigateBack: () -> Unit,
 ) {
-    val uiState = viewModel.uiState.collectAsState()
+    val uiState = viewModel.uiState.collectAsStateWithLifecycle()
 
     val textFieldState = remember { TextFieldState() }
     val searchBarState = rememberContainedSearchBarState(initialValue = SearchBarValue.Expanded)

@@ -40,7 +40,7 @@ class DictionaryImportManager(
 
             _importState.value = DictionaryState.Success
         } catch (e: Exception) {
-            e.printStackTrace()
+            timber.log.Timber.e(e)
             _importState.value = DictionaryState.Error(e.message ?: "Unknown error occurred")
         }
     }

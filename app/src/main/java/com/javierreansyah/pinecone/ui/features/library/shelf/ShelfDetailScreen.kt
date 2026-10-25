@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library.shelf
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateDpAsState
@@ -44,7 +45,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -112,9 +112,9 @@ fun ShelfDetailScreen(
     onNavigateToOrganize: (String) -> Unit,
     viewModel: ShelfDetailViewModel = viewModel(),
 ) {
-    val uiState = viewModel.uiState.collectAsState()
-    val spaces by viewModel.allSpaces.collectAsState()
-    val spacesEnabled by viewModel.spacesEnabled.collectAsState()
+    val uiState = viewModel.uiState.collectAsStateWithLifecycle()
+    val spaces by viewModel.allSpaces.collectAsStateWithLifecycle()
+    val spacesEnabled by viewModel.spacesEnabled.collectAsStateWithLifecycle()
     var transferCopy by remember { mutableStateOf<Boolean?>(null) }
     var showFilterSheet by remember { mutableStateOf(value = false) }
     var isReordering by remember { mutableStateOf(value = false) }
@@ -125,8 +125,8 @@ fun ShelfDetailScreen(
     var selectedBooks by remember { mutableStateOf(emptySet<String>()) }
     var isInMultiSelectMode by remember { mutableStateOf(value = false) }
 
-    val shelves by viewModel.shelves.collectAsState()
-    val allBooks by viewModel.allBooks.collectAsState()
+    val shelves by viewModel.shelves.collectAsStateWithLifecycle()
+    val allBooks by viewModel.allBooks.collectAsStateWithLifecycle()
     val shelfWithCovers = shelves.find { (itShelf, _) -> itShelf.id == shelfId }
 
     val baseBooksFlow = remember(shelfWithCovers) {
@@ -134,7 +134,7 @@ fun ShelfDetailScreen(
     }
 
     val books by viewModel.getFilteredAndSortedBooks(baseBooksFlow)
-        .collectAsState(initial = emptyList())
+        .collectAsStateWithLifecycle(initialValue = emptyList())
 
     var reorderBooks by remember { mutableStateOf(emptyList<Book>()) }
 

@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.root
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -12,7 +13,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -411,7 +411,7 @@ fun NavGraph(
         ) { organizeBookIds = null }
     }
 
-    val importErrorReport by mainViewModel.importErrorReport.collectAsState()
+    val importErrorReport by mainViewModel.importErrorReport.collectAsStateWithLifecycle()
     importErrorReport?.let { report ->
         ImportErrorDialog(
             report = report,

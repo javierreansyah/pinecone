@@ -1,5 +1,7 @@
 package com.javierreansyah.pinecone.ui.features.reader.components.overlay
 
+import com.composables.icons.materialsymbols.outlined.Menu_book
+import com.composables.icons.materialsymbols.outlined.Tune
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -20,9 +22,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.MenuBook
-import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuGroup
@@ -244,7 +243,7 @@ fun ReaderTopBar(
                             if (showReadMode && !converting) {
                                 IconButton(onClick = onToggleReadMode) {
                                     Icon(
-                                        imageVector = if (readMode) MaterialSymbols.Outlined.Description else Icons.AutoMirrored.Rounded.MenuBook,
+                                        imageVector = if (readMode) MaterialSymbols.Outlined.Description else MaterialSymbols.Outlined.Menu_book,
                                         contentDescription = stringResource(if (readMode) R.string.reader_original_pdf else R.string.reader_read_mode),
                                         tint = readerTextColor,
                                     )
@@ -285,7 +284,7 @@ fun ReaderTopBar(
 
                                 IconButton(onClick = onSettingsClick) {
                                     Icon(
-                                        if (typographySettings) MaterialSymbols.Outlined.Match_case else Icons.Rounded.Tune,
+                                        if (typographySettings) MaterialSymbols.Outlined.Match_case else MaterialSymbols.Outlined.Tune,
                                         contentDescription = stringResource(if (typographySettings) R.string.reader_settings_typography else R.string.reader_format_settings),
                                         modifier = Modifier.size(28.dp),
                                         tint = readerTextColor,

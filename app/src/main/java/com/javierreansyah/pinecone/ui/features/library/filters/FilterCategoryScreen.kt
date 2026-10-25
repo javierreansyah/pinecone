@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library.filters
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.app.Application
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -22,7 +23,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -79,14 +79,14 @@ fun AllFilterItemsScreen(
     )
 
     val itemsWithCounts by when (filterType) {
-        "author" -> viewModel.authorsWithCounts.collectAsState()
-        "space" -> viewModel.spacesWithCounts.collectAsState()
-        else -> viewModel.tagsWithCounts.collectAsState()
+        "author" -> viewModel.authorsWithCounts.collectAsStateWithLifecycle()
+        "space" -> viewModel.spacesWithCounts.collectAsStateWithLifecycle()
+        else -> viewModel.tagsWithCounts.collectAsStateWithLifecycle()
     }
 
-    val allAuthors by viewModel.allAuthors.collectAsState()
-    val allTags by viewModel.allTags.collectAsState()
-    val allSpaces by viewModel.allSpaces.collectAsState()
+    val allAuthors by viewModel.allAuthors.collectAsStateWithLifecycle()
+    val allTags by viewModel.allTags.collectAsStateWithLifecycle()
+    val allSpaces by viewModel.allSpaces.collectAsStateWithLifecycle()
 
     val suggestionList = remember(filterType, allAuthors, allTags, allSpaces) {
         when (filterType) {

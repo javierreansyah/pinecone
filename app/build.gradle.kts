@@ -89,7 +89,6 @@ android {
     }
     buildFeatures {
         compose = true
-        viewBinding = true
     }
 
     lint {
@@ -143,7 +142,6 @@ dependencies {
     implementation(libs.materialKolor)
     implementation(libs.androidx.documentfile)
     implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.composables.icons.material.symbols.outlined)
     implementation(libs.composables.icons.material.symbols.outlined.filled)
     implementation(libs.androidx.compose.ui)
@@ -176,6 +174,13 @@ dependencies {
     implementation(libs.androidx.compose.ui.text.google.fonts)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.aboutlibraries.compose)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.jsoup)
+    testImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.junit)

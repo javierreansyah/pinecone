@@ -2,6 +2,7 @@
 
 package com.javierreansyah.pinecone.reader.pdf
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.graphics.PointF
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -32,7 +33,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -99,7 +99,7 @@ class MuPdfDocumentFragment(
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 PineconeTheme(readerBackgroundColor = Color(0xFFE8E8E8)) {
-                    val prefs by settings.collectAsState()
+                    val prefs by settings.collectAsStateWithLifecycle()
                     val pdf by produceState<LoadedPdf?>(null) {
                         val resource = input.publication.get(input.href) ?: return@produceState
                         val opened = MuPdfDocumentFactory().open(resource, null)
@@ -157,13 +157,13 @@ class MuPdfDocumentFragment(
         preferences: MuPdfPreferences,
         aspectRatios: List<Float>
     ) {
-        val request by requestedPage.collectAsState()
-        val highlights by searchHighlights.collectAsState()
+        val request by requestedPage.collectAsStateWithLifecycle()
+        val highlights by searchHighlights.collectAsStateWithLifecycle()
         val matchesByPage = remember(highlights.matches) {
             highlights.matches.filter { it.href == input.href.toString() }.groupBy { it.pageIndex }
         }
         val initial =
-            currentPage.collectAsState().value.coerceIn(0, (pdf.pageCount - 1).coerceAtLeast(0))
+            currentPage.collectAsStateWithLifecycle().value.coerceIn(0, (pdf.pageCount - 1).coerceAtLeast(0))
         val pager = rememberPagerState(initialPage = initial) { pdf.pageCount }
         val list = rememberLazyListState(initialFirstVisibleItemIndex = initial)
         LaunchedEffect(

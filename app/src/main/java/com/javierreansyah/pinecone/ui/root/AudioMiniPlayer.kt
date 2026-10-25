@@ -2,6 +2,12 @@
 
 package com.javierreansyah.pinecone.ui.root
 
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Forward_10
+import com.composables.icons.materialsymbols.outlined.Headphones
+import com.composables.icons.materialsymbols.outlined.Pause
+import com.composables.icons.materialsymbols.outlined.Play_arrow
+import com.composables.icons.materialsymbols.outlined.Replay_10
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,12 +22,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Forward10
-import androidx.compose.material.icons.rounded.Headphones
-import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Replay10
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -208,7 +208,7 @@ internal fun AudioMiniPlayer(
                         )
                     } else {
                         Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Rounded.Headphones, contentDescription = null)
+                            Icon(MaterialSymbols.Outlined.Headphones, contentDescription = null)
                         }
                     }
                 }
@@ -236,19 +236,19 @@ internal fun AudioMiniPlayer(
                     }
                 }
                 IconButton(onClick = { onSkip(-10) }) {
-                    Icon(Icons.Rounded.Replay10, stringResource(R.string.reader_rewind))
+                    Icon(MaterialSymbols.Outlined.Replay_10, stringResource(R.string.reader_rewind))
                 }
                 FilledIconButton(
                     onClick = onPlayPause,
                     shapes = IconButtonDefaults.shapes(),
                 ) {
                     Icon(
-                        imageVector = if (state.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                        imageVector = if (state.playing) MaterialSymbols.Outlined.Pause else MaterialSymbols.Outlined.Play_arrow,
                         contentDescription = stringResource(if (state.playing) R.string.reader_pause else R.string.reader_play),
                     )
                 }
                 IconButton(onClick = { onSkip(10) }) {
-                    Icon(Icons.Rounded.Forward10, stringResource(R.string.reader_forward))
+                    Icon(MaterialSymbols.Outlined.Forward_10, stringResource(R.string.reader_forward))
                 }
             }
             if (state.loading) {

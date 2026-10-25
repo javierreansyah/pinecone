@@ -41,6 +41,9 @@ class PineconeApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        if (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0) {
+            timber.log.Timber.plant(timber.log.Timber.DebugTree())
+        }
 
         database = Room.databaseBuilder(
             applicationContext,
@@ -95,7 +98,7 @@ class PineconeApplication : Application() {
             try {
                 BackupRepository(applicationContext).completePendingSettingsRestore()
             } catch (error: Exception) {
-                error.printStackTrace()
+                timber.log.Timber.e(error)
             }
             libraryRepository.cleanupOrphanedFiles()
             val initialFrequency = readerPreferences.readerSettings.first().autoBackupFrequency

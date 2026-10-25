@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library.unsorted
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,7 +13,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,9 +48,9 @@ fun UnsortedScreen(
     onNavigateToOrganize: (String) -> Unit,
     viewModel: UnsortedViewModel = viewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val unsortedBooks by viewModel.filteredBooks.collectAsState()
-    val allBooks by viewModel.allBooks.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val unsortedBooks by viewModel.filteredBooks.collectAsStateWithLifecycle()
+    val allBooks by viewModel.allBooks.collectAsStateWithLifecycle()
 
     var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
     var showFilterSheet by remember { mutableStateOf(value = false) }

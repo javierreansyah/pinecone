@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.reader.pdf
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
@@ -9,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -89,8 +89,8 @@ internal fun PdfTextOverlay(
             timber.log.Timber.w(error, "Could not load PDF selection text")
         }
     }
-    val selectedLocator by controller.selection.collectAsState()
-    val annotations by controller.annotations.collectAsState()
+    val selectedLocator by controller.selection.collectAsStateWithLifecycle()
+    val annotations by controller.annotations.collectAsStateWithLifecycle()
     val selected = remember(selectedLocator, href, pageIndex) {
         selectedLocator?.takeIf { samePdfResource(it.href.toString(), href) }
             ?.let(::pdfSelectionAnchor)

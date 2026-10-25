@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library.info
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.app.Application
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -51,7 +52,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -97,9 +97,9 @@ fun EditBookScreen(
         factory = EditBookViewModel.Factory(application, bookId),
     )
 
-    val uiState by viewModel.uiState.collectAsState()
-    val allAuthors by viewModel.allAuthors.collectAsState()
-    val allTags by viewModel.allTags.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val allAuthors by viewModel.allAuthors.collectAsStateWithLifecycle()
+    val allTags by viewModel.allTags.collectAsStateWithLifecycle()
 
     LaunchedEffect(uiState.saveSuccess) {
         if (uiState.saveSuccess) {

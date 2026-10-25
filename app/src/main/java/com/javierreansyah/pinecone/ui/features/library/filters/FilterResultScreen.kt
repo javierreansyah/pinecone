@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library.filters
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
@@ -36,7 +37,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -94,15 +94,15 @@ fun FilterResultScreen(
     onNavigateToOrganize: (String) -> Unit,
     viewModel: FilterResultViewModel = viewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val spaceScopedBooks by viewModel.allBooks.collectAsState()
-    val allBooksAcrossSpaces by viewModel.allBooksAcrossSpaces.collectAsState()
-    val actionBooks by viewModel.actionBooks.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val spaceScopedBooks by viewModel.allBooks.collectAsStateWithLifecycle()
+    val allBooksAcrossSpaces by viewModel.allBooksAcrossSpaces.collectAsStateWithLifecycle()
+    val actionBooks by viewModel.actionBooks.collectAsStateWithLifecycle()
     val allBooks = if (filterType == "space") allBooksAcrossSpaces else spaceScopedBooks
 
-    val allAuthors by viewModel.allAuthors.collectAsState()
-    val allTags by viewModel.allTags.collectAsState()
-    val allSpaces by viewModel.allSpaces.collectAsState()
+    val allAuthors by viewModel.allAuthors.collectAsStateWithLifecycle()
+    val allTags by viewModel.allTags.collectAsStateWithLifecycle()
+    val allSpaces by viewModel.allSpaces.collectAsStateWithLifecycle()
 
     val suggestionList = remember(filterType, allAuthors, allTags, allSpaces) {
         when (filterType) {
@@ -119,9 +119,9 @@ fun FilterResultScreen(
             else -> viewModel.getBooksByTag(filterValue)
         }
     }
-    val unfilteredBooks by baseBooksFlow.collectAsState(initial = emptyList())
+    val unfilteredBooks by baseBooksFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val books by viewModel.getFilteredAndSortedBooks(baseBooksFlow)
-        .collectAsState(initial = emptyList())
+        .collectAsStateWithLifecycle(initialValue = emptyList())
 
     FilterResultContent(
         filterType = filterType,

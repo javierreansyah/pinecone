@@ -1,5 +1,8 @@
 package com.javierreansyah.pinecone.ui.root
 
+import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Error
+import com.composables.icons.materialsymbols.outlined.Warning
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,9 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ErrorOutline
-import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -44,9 +44,9 @@ fun ImportErrorDialog(
     }
 
     val icon = if (isPartialSuccess) {
-        Icons.Outlined.Warning
+        MaterialSymbols.Outlined.Warning
     } else {
-        Icons.Outlined.ErrorOutline
+        MaterialSymbols.Outlined.Error
     }
 
     val iconTint = if (isPartialSuccess) {

@@ -118,25 +118,9 @@ fun HtmlWebView(
     )
 }
 
-private fun normaliseHtml(html: String, preset: HtmlPreset): String {
-    if (preset != HtmlPreset.Description) return html
-
-    var result = html
-        .replace(Regex("<[Bb][Rr]\\s*/?>"), "<br>")
-        .replace(Regex("(<br>\\s*){2,}"), "</p><p>")
-        .replace(Regex("\\s*<br>\\s*"), " ")
-        .replace(Regex("<p>\\s+"), "<p>")
-        .replace(Regex("\\s+</p>"), "</p>")
-        .replace(Regex("(<p>\\s*</p>\\s*)+"), "")
-        .trim()
-
-    val hasBlock = Regex("<(p|div|h[1-6]|ul|ol|blockquote)[\\s>]", RegexOption.IGNORE_CASE)
-        .containsMatchIn(result)
-    if (!hasBlock) {
-        result = "<p>$result</p>"
-    }
-
-    return result
+private fun normaliseHtml(html: String, preset: HtmlPreset): String = when (preset) {
+    HtmlPreset.Definition -> ImportedHtml.clean(html)
+    HtmlPreset.Description -> ImportedHtml.description(html)
 }
 
 private fun buildHtml(

@@ -1,12 +1,12 @@
 package com.javierreansyah.pinecone.ui.features.reader
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
@@ -114,7 +114,7 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
 
         val composeView = findViewById<ComposeView>(R.id.compose_overlay)
         composeView.setContent {
-            val themeColorsState = viewModel.themeColors.collectAsState()
+            val themeColorsState = viewModel.themeColors.collectAsStateWithLifecycle()
             val readerBgColor = themeColorsState.value.backgroundColor
 
             PineconeTheme(readerBackgroundColor = readerBgColor) {

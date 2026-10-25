@@ -2,6 +2,7 @@
 
 package com.javierreansyah.pinecone.ui.features.library.info
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.app.Application
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
@@ -72,7 +73,6 @@ import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -163,7 +163,7 @@ fun BookInfoScreen(
         key = bookId, factory = BookInfoViewModel.Factory(application, bookId),
     )
 
-    val uiState = viewModel.uiState.collectAsState()
+    val uiState = viewModel.uiState.collectAsStateWithLifecycle()
     val book = uiState.value.book
     val isLoading = uiState.value.isLoading
 
@@ -276,10 +276,10 @@ private fun BookInfoContent(
         with(density) { (windowInfo.containerSize.height * 0.8f).toDp() }
     }
 
-    val bookmarks by viewModel.bookmarks.collectAsState()
-    val notes by viewModel.notes.collectAsState()
-    val tableOfContents by viewModel.tableOfContents.collectAsState()
-    val positions by viewModel.positions.collectAsState()
+    val bookmarks by viewModel.bookmarks.collectAsStateWithLifecycle()
+    val notes by viewModel.notes.collectAsStateWithLifecycle()
+    val tableOfContents by viewModel.tableOfContents.collectAsStateWithLifecycle()
+    val positions by viewModel.positions.collectAsStateWithLifecycle()
 
     val currentLocator = remember(book.lastLocatorJson) {
         book.lastLocatorJson?.let {
@@ -983,7 +983,7 @@ private fun BookInfoHeader(
     modifier: Modifier = Modifier,
 ) {
     val librarySettings by (LocalContext.current.applicationContext as com.javierreansyah.pinecone.PineconeApplication)
-        .readerPreferences.readerSettings.collectAsState(initial = com.javierreansyah.pinecone.data.local.preferences.ReaderSettings())
+        .readerPreferences.readerSettings.collectAsStateWithLifecycle(initialValue = com.javierreansyah.pinecone.data.local.preferences.ReaderSettings())
     Column(
         modifier = modifier
             .fillMaxWidth()

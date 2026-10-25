@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.SystemBarStyle
@@ -9,7 +10,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.ViewModelProvider
@@ -54,12 +54,12 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            val isReady by viewModel.isReady.collectAsState()
+            val isReady by viewModel.isReady.collectAsStateWithLifecycle()
             if (!isReady) {
                 return@setContent
             }
 
-            val settings = viewModel.settings.collectAsState()
+            val settings = viewModel.settings.collectAsStateWithLifecycle()
             val darkTheme = when (settings.value.themeMode) {
                 "Light" -> false
                 "Dark" -> true

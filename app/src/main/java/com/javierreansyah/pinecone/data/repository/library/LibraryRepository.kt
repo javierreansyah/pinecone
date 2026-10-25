@@ -92,7 +92,7 @@ class LibraryRepository(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (failure: Exception) {
-                failure.printStackTrace(); null
+                timber.log.Timber.e(failure); null
             } finally {
                 staged.delete()
             }
@@ -270,7 +270,7 @@ class LibraryRepository(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (e: Exception) {
-            e.printStackTrace()
+            timber.log.Timber.e(e)
             return null
         } finally {
             publication?.close()
@@ -675,7 +675,7 @@ class LibraryRepository(
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                timber.log.Timber.e(e)
             }
         }
 
