@@ -92,18 +92,10 @@ class PdfSearchNavigationTest {
                 }
 
                 fun pointOnWord(quad: com.javierreansyah.pinecone.reader.pdf.PdfSearchQuad = glyph): Pair<Float, Float> {
-                    var result = 0f to 0f
-                    scenario.onActivity { activity ->
-                        val fragment = navigator(activity).childFragmentManager.fragments
-                            .filterIsInstance<MuPdfDocumentFragment>().first()
-                        val view = fragment.requireView()
-                        val origin = IntArray(2).also { view.getLocationOnScreen(it) }
-                        val viewport =
-                            pdfImageViewport(view.width.toFloat(), view.height.toFloat(), 600, 800)
-                        result =
-                            origin[0] + viewport.left + (quad.topLeft.x + quad.bottomRight.x) / 2 * viewport.width to origin[1] + viewport.top + (quad.topLeft.y + quad.bottomRight.y) / 2 * viewport.height
-                    }
-                    return result
+                    val bounds = pageBounds(1)
+                    val viewport = pdfImageViewport(bounds.width().toFloat(), bounds.height().toFloat(), 600, 800)
+                    return bounds.left + viewport.left + (quad.topLeft.x + quad.bottomRight.x) / 2 * viewport.width to
+                        bounds.top + viewport.top + (quad.topLeft.y + quad.bottomRight.y) / 2 * viewport.height
                 }
 
                 fun touch(action: Int, down: Long, point: Pair<Float, Float>) {
@@ -404,6 +396,22 @@ class PdfSearchNavigationTest {
         return (0..<node.childCount).any { visiblePage(node.getChild(it), label) }
     }
 
+    /** Continuous pages have their own aspect-ratio bounds, independent of the reader window. */
+    private fun pageBounds(page: Int): Rect {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val label = instrumentation.targetContext.getString(R.string.reader_page_label, page)
+        fun find(node: AccessibilityNodeInfo?): Rect? {
+            if (node == null) return null
+            if (node.isVisibleToUser && node.contentDescription?.toString() == label) {
+                return Rect().also(node::getBoundsInScreen)
+            }
+            return (0..<node.childCount).firstNotNullOfOrNull { find(node.getChild(it)) }
+        }
+        return requireNotNull(find(instrumentation.uiAutomation.rootInActiveWindow)) {
+            "No visible page bounds for $label"
+        }
+    }
+
     private var markerRegions: List<Rect> = emptyList()
     private var backgroundPixel = 0 to 0
 
@@ -412,18 +420,16 @@ class PdfSearchNavigationTest {
         inverted: Boolean = false, screenshot: String? = null,
     ) {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
-        if (!cleared) scenario.onActivity { activity ->
-            val fragment = requireNotNull(
-                navigator(activity).childFragmentManager.fragments.filterIsInstance<MuPdfDocumentFragment>()
-                    .firstOrNull()
-            )
-            val view = fragment.requireView()
-            val origin = IntArray(2).also { view.getLocationOnScreen(it) }
-            val viewport = pdfImageViewport(view.width.toFloat(), view.height.toFloat(), 600, 800)
-            backgroundPixel = (origin[0] + viewport.left + viewport.width * .8f).toInt() to
-                    (origin[1] + viewport.top + viewport.height * .8f).toInt()
-            markerRegions = searchModel(activity).searchState.value.results.take(2).map { result ->
-                val match: PdfSearchMatch = requireNotNull(result.pdfMatch)
+        if (!cleared) {
+            var matches: List<PdfSearchMatch> = emptyList()
+            scenario.onActivity { activity ->
+                matches = searchModel(activity).searchState.value.results.map { requireNotNull(it.pdfMatch) }
+            }
+            val bounds = pageBounds(matches.first().pageIndex + 1)
+            val viewport = pdfImageViewport(bounds.width().toFloat(), bounds.height().toFloat(), 600, 800)
+            backgroundPixel = (bounds.left + viewport.left + viewport.width * .8f).toInt() to
+                    (bounds.top + viewport.top + viewport.height * .8f).toInt()
+            markerRegions = matches.take(2).map { match ->
                 val points = match.quads.flatMap {
                     listOf(
                         it.topLeft,
@@ -433,10 +439,10 @@ class PdfSearchNavigationTest {
                     )
                 }
                 Rect(
-                    (origin[0] + viewport.left + points.minOf { it.x } * viewport.width).toInt() + 2,
-                    (origin[1] + viewport.top + points.minOf { it.y } * viewport.height).toInt() + 2,
-                    (origin[0] + viewport.left + points.maxOf { it.x } * viewport.width).toInt() - 2,
-                    (origin[1] + viewport.top + points.maxOf { it.y } * viewport.height).toInt() - 2,
+                    (bounds.left + viewport.left + points.minOf { it.x } * viewport.width).toInt() + 2,
+                    (bounds.top + viewport.top + points.minOf { it.y } * viewport.height).toInt() + 2,
+                    (bounds.left + viewport.left + points.maxOf { it.x } * viewport.width).toInt() - 2,
+                    (bounds.top + viewport.top + points.maxOf { it.y } * viewport.height).toInt() - 2,
                 )
             }
         }
