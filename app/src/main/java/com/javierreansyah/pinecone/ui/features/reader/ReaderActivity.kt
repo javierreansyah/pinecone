@@ -19,7 +19,9 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.features.reader.components.overlay.ReaderOverlay
 import com.javierreansyah.pinecone.ui.theme.PineconeTheme
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
@@ -153,11 +155,14 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
     private fun observeWindowBackground() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.themeColors.collect { (_, _, colorsBackgroundColorInt, _) ->
-                    if (viewModel.profile.value != com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO) {
-                        window.decorView.setBackgroundColor(colorsBackgroundColorInt)
+                viewModel.themeColors
+                    .map { it.backgroundColorInt }
+                    .distinctUntilChanged()
+                    .collect { background ->
+                        if (viewModel.profile.value != com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO) {
+                            window.decorView.setBackgroundColor(background)
+                        }
                     }
-                }
             }
         }
     }
@@ -209,13 +214,16 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
     private fun observeOrientation() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.settingsFlow.collect { (_, _, _, _, _, _, settingsForceOrientation, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) ->
-                    requestedOrientation = when (settingsForceOrientation) {
-                        "Portrait" -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-                        "Landscape" -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-                        else -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                viewModel.settingsFlow
+                    .map { it.forceOrientation }
+                    .distinctUntilChanged()
+                    .collect { orientation ->
+                        requestedOrientation = when (orientation) {
+                            "Portrait" -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+                            "Landscape" -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                            else -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                        }
                     }
-                }
             }
         }
     }
@@ -223,13 +231,16 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
     private fun observeScreenTimeout() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.settingsFlow.collect { (_, _, _, _, _, _, _, settingsPreventScreenTimeout, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) ->
-                    if (settingsPreventScreenTimeout) {
-                        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                    } else {
-                        window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                viewModel.settingsFlow
+                    .map { it.preventScreenTimeout }
+                    .distinctUntilChanged()
+                    .collect { preventTimeout ->
+                        if (preventTimeout) {
+                            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        } else {
+                            window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        }
                     }
-                }
             }
         }
     }
@@ -239,14 +250,14 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
 
                 combine(
-                    viewModel.controlsState,
-                    viewModel.settingsFlow,
-                ) { controls, settings ->
-                    controls to settings
-                }.collect { (controls, settings) ->
+                    viewModel.controlsState.map { it.showControls }.distinctUntilChanged(),
+                    viewModel.settingsFlow.map { it.alwaysShowStatusBar }.distinctUntilChanged(),
+                ) { showControls, alwaysShowStatusBar ->
+                    showControls || alwaysShowStatusBar
+                }.distinctUntilChanged().collect { showSystemBars ->
                     val windowInsetsController =
                         WindowCompat.getInsetsController(window, window.decorView)
-                    if (controls.showControls || settings.alwaysShowStatusBar) {
+                    if (showSystemBars) {
                         windowInsetsController.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
                     } else {
                         windowInsetsController.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())

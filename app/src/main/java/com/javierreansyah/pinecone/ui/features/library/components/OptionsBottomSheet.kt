@@ -101,7 +101,6 @@ fun <T> SortRadioGroup(
     isAscending: Boolean,
     onOptionSelected: (T) -> Unit,
     modifier: Modifier = Modifier,
-    isAscendingVisualModifier: ((T, Boolean) -> Boolean) = { _, asc -> asc },
     optionLabel: @Composable (T) -> String,
 ) {
     FlowRow(
@@ -128,9 +127,8 @@ fun <T> SortRadioGroup(
                     ) {
                         Text(optionLabel(type))
                         if (isSelected) {
-                            val visualAscending = isAscendingVisualModifier(type, isAscending)
                             Icon(
-                                imageVector = if (visualAscending) MaterialSymbols.Outlined.Arrow_drop_up else MaterialSymbols.Outlined.Arrow_drop_down,
+                                imageVector = if (isAscending) MaterialSymbols.Outlined.Arrow_drop_up else MaterialSymbols.Outlined.Arrow_drop_down,
                                 contentDescription = null,
                             )
                         }
@@ -147,7 +145,6 @@ fun <T> SortSection(
     selectedOption: T,
     isAscending: Boolean,
     onOptionSelected: (T) -> Unit,
-    isAscendingVisualModifier: ((T, Boolean) -> Boolean) = { _, asc -> asc },
     optionLabel: @Composable (T) -> String,
 ) {
     OptionsBottomSheetSection(title = stringResource(R.string.action_sort)) {
@@ -157,7 +154,6 @@ fun <T> SortSection(
             isAscending = isAscending,
             onOptionSelected = onOptionSelected,
             optionLabel = optionLabel,
-            isAscendingVisualModifier = isAscendingVisualModifier,
         )
     }
 }
@@ -274,7 +270,6 @@ fun LibraryFilterBottomSheet(
             isAscending = preferences.isAscending,
             onOptionSelected = onSortTypeChange,
             optionLabel = { stringResource(sortTypeLabelRes(it)) },
-            isAscendingVisualModifier = { type, asc -> if (type == SortType.LastRead) !asc else asc },
         )
 
         if (!isShelvesTab) {
@@ -358,7 +353,6 @@ fun ShelfDetailFilterBottomSheet(
             isAscending = preferences.isAscending,
             onOptionSelected = onSortTypeChange,
             optionLabel = { stringResource(sortTypeLabelRes(it)) },
-            isAscendingVisualModifier = { type, asc -> if (type == SortType.LastRead) !asc else asc },
         )
 
         MultiToggleGroupSection(
@@ -406,7 +400,6 @@ fun FilterResultBottomSheet(
             isAscending = preferences.isAscending,
             onOptionSelected = onSortTypeChange,
             optionLabel = { stringResource(sortTypeLabelRes(it)) },
-            isAscendingVisualModifier = { type, asc -> if (type == SortType.LastRead) !asc else asc },
         )
 
         MultiToggleGroupSection(

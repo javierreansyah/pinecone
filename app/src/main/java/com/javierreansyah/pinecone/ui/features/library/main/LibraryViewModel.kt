@@ -125,12 +125,6 @@ class LibraryViewModel(
             initialValue = emptyList(),
         )
 
-    private val allCrossRefs = bookRepository.getAllShelfBookCrossRefs().stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList(),
-    )
-
     init {
         // Pre-warm Coil's memory cache with the first 8 book covers as soon as
         // the ViewModel is created. By the time the user taps the search bar the
@@ -139,13 +133,13 @@ class LibraryViewModel(
         viewModelScope.launch {
             allBooks.take(1).collect { books ->
                 books.take(8)
-                    .forEach { (_, _, _, bookCoverPath, progress, lastOpened, language, addedDate, isArchived, description, publisher, published, tags, identifier, mediaType, filePath, isRead, furthestProgression, lastLocatorJson, furthestLocatorJson, spaces, metadata, credits, activeRendition, isUnsorted, originalFilename) ->
-                        if (bookCoverPath != null) {
+                    .forEach { book ->
+                        if (book.coverPath != null) {
                             val request = ImageRequest.Builder(application)
-                                .data(File(bookCoverPath))
+                                .data(File(book.coverPath))
                                 .size(400, 600)
                                 .scale(Scale.FILL)
-                                .memoryCacheKey(bookCoverPath)
+                                .memoryCacheKey(book.coverPath)
                                 .build()
                             application.imageLoader.enqueue(request)
                         }
@@ -180,35 +174,29 @@ class LibraryViewModel(
         }
     }
 
-    private fun getFilteredAndSortedBooks(baseFlow: Flow<List<Book>>): Flow<List<Book>> {
-        return combine(
-            baseFlow,
-            _uiState,
-            allCrossRefs
-        ) { books, (_, _, _, stateBookPreferences, _), _ ->
-            books.filterAndSort(stateBookPreferences)
-        }
-    }
-
-    private val filteredBooks: StateFlow<List<Book>> =
-        getFilteredAndSortedBooks(allBooks).onEach { _isBooksLoading.value = false }.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList(),
-        )
+    private val filteredBooks: StateFlow<List<Book>> = combine(
+        allBooks,
+        _uiState.map { it.bookPreferences }.distinctUntilChanged(),
+    ) { books, preferences ->
+        books.filterAndSort(preferences)
+    }.onEach { _isBooksLoading.value = false }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList(),
+    )
 
     private val shelves: StateFlow<List<ShelfWithCovers>> = combine(
         bookRepository.getAllShelvesWithBooks(),
         bookRepository.getAllShelfBookCrossRefs(),
         bookRepository.getAllBooks(),
-        _uiState,
+        _uiState.map { it.shelvesPreferences }.distinctUntilChanged(),
         globalSpaceId,
-    ) { shelvesList, crossRefs, allBooksEntities, (_, _, _, _, stateShelvesPreferences), spaceId ->
+    ) { shelvesList, crossRefs, allBooksEntities, preferences, spaceId ->
         mapAndSortShelves(
             shelvesList = shelvesList,
             crossRefs = crossRefs,
             allBooksEntities = allBooksEntities,
-            prefs = stateShelvesPreferences,
+            prefs = preferences,
             unshelvedLabel = application.getString(R.string.library_label_unshelved),
             globalSpaceId = spaceId,
         )
@@ -217,14 +205,14 @@ class LibraryViewModel(
 
     @OptIn(FlowPreview::class)
     private val debouncedSearchQuery: Flow<String> = _uiState
-        .map { (itSearchQuery, searchCategory, isImporting, bookPreferences, shelvesPreferences) -> itSearchQuery }
-        .debounce(300L.milliseconds)
+        .map { state -> state.searchQuery }
         .distinctUntilChanged()
+        .debounce(300L.milliseconds)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val searchResults: StateFlow<SearchResults> = combine(
         debouncedSearchQuery,
-        _uiState.map { (_, itSearchCategory, isImporting, bookPreferences, shelvesPreferences) -> itSearchCategory }
+        _uiState.map { state -> state.searchCategory }
             .distinctUntilChanged(),
     ) { query, category ->
         query to category

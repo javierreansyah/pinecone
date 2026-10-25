@@ -51,8 +51,8 @@ fun TocList(
             )?.let { index ->
                 return@remember index
             }
-            val index = tableOfContents.indexOfFirst { (itHref, _, _, _, _, _, _, _, _, _, _, _) ->
-                itHref.toString().substringBefore("#") == currentHref
+            val index = tableOfContents.indexOfFirst { link ->
+                link.href.toString().substringBefore("#") == currentHref
             }
             if (index >= 0) index else 0
         }

@@ -50,6 +50,9 @@ interface ShelfDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertShelfBookCrossRef(crossRef: ShelfBookCrossRefEntity)
 
+    @Query("SELECT COALESCE(MAX(orderIndex), -1) + 1 FROM shelf_book_cross_ref WHERE shelfId = :shelfId")
+    suspend fun getNextBookOrderIndex(shelfId: String): Int
+
     @Query("DELETE FROM shelf_book_cross_ref WHERE shelfId = :shelfId AND bookId = :bookId")
     suspend fun deleteShelfBookCrossRef(shelfId: String, bookId: String)
 

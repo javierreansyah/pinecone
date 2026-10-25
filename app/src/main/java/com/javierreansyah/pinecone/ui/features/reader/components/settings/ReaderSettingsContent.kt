@@ -72,16 +72,17 @@ import com.composables.icons.materialsymbols.outlined.Format_align_right
 import com.composables.icons.materialsymbols.outlined.Image
 import com.composables.icons.materialsymbols.outlined.Invert_colors
 import com.composables.icons.materialsymbols.outlined.Restart_alt
+import com.composables.icons.materialsymbols.outlinedfilled.Brightness_auto as FilledBrightnessAuto
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.CustomPineconeTheme
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
+import com.javierreansyah.pinecone.reader.epub.toEpubPreferences
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
 import com.javierreansyah.pinecone.ui.components.SegmentedButtonGroup
 import com.javierreansyah.pinecone.ui.components.SettingsChoiceDialog
-import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.math.roundToInt
-import com.composables.icons.materialsymbols.outlinedfilled.Brightness_auto as FilledBrightnessAuto
+import kotlinx.coroutines.launch
 
 @SuppressLint("DefaultLocale", "ConfigurationScreenWidthHeight", "LogNotTimber")
 @Composable
@@ -262,7 +263,7 @@ fun ReaderSettingsContent(
             onDelete = if (themeToEdit != null) {
                 {
                     val newThemes =
-                        settings.customThemes.filter { (itName, _, _, _) -> itName != themeToEdit?.name }
+                        settings.customThemes.filter { it.name != themeToEdit?.name }
                     val newPreset =
                         if (settings.pineconeThemePreset == themeToEdit?.name) "Auto" else settings.pineconeThemePreset
                     onSettingsChange(

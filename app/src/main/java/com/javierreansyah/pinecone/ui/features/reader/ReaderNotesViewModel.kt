@@ -140,12 +140,12 @@ class ReaderNotesViewModel(
         val href2 = loc2.href.toString().substringBefore("#")
         if (href1 != href2) {
             val idx1 =
-                tableOfContents.indexOfFirst { (itHref, _, _, _, _, _, _, _, _, _, _, _) ->
-                    itHref.toString().substringBefore("#") == href1
+                tableOfContents.indexOfFirst { link ->
+                    link.href.toString().substringBefore("#") == href1
                 }
             val idx2 =
-                tableOfContents.indexOfFirst { (itHref2, _, _, _, _, _, _, _, _, _, _, _) ->
-                    itHref2.toString().substringBefore("#") == href2
+                tableOfContents.indexOfFirst { link ->
+                    link.href.toString().substringBefore("#") == href2
                 }
             if (idx1 != -1 && idx2 != -1) return idx1.compareTo(idx2)
             if (idx1 != -1) return -1
@@ -166,9 +166,9 @@ class ReaderNotesViewModel(
 
     fun toggleBookmark(locator: Locator, chapterTitle: String?) {
         viewModelScope.launch {
-            val existing = bookmarks.value.find { (_, _, bookmarkLocatorJson, _, _, _) ->
+            val existing = bookmarks.value.find { bookmark ->
                 try {
-                    val bmLocator = Locator.fromJSON(JSONObject(bookmarkLocatorJson))
+                    val bmLocator = Locator.fromJSON(JSONObject(bookmark.locatorJson))
                     bmLocator != null && bmLocator.isSamePosition(locator)
                 } catch (_: Exception) {
                     false

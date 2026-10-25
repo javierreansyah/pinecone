@@ -58,7 +58,7 @@ fun OpenSourceLicensesScreen(
             val (customLibsLibraries, _) = Libs.Builder().withJson(customJson).build()
 
             libraries =
-                (generatedLibsLibraries + customLibsLibraries).sortedBy { (_, _, itName, _, _, _, _, _, _, _, _, _) -> itName.lowercase() }
+                (generatedLibsLibraries + customLibsLibraries).sortedBy { library -> library.name.lowercase() }
         }
     }
 
@@ -95,7 +95,7 @@ fun OpenSourceLicensesScreen(
             ) {
                 itemsIndexed(
                     libs ?: emptyList(),
-                    key = { _, (itemUniqueId, _, _, _, _, _, _, _, _, _, _, _) -> itemUniqueId },
+                    key = { _, library -> library.uniqueId },
                 ) { index, library ->
                     val license = library.licenses.firstOrNull()
                     SegmentedListItem(
@@ -123,8 +123,8 @@ fun OpenSourceLicensesScreen(
             }
         }
 
-        selectedLibrary?.let { (_, _, libraryName, _, _, _, _, _, libraryLicenses, _, _, _) ->
-            val license = libraryLicenses.firstOrNull()
+        selectedLibrary?.let { library ->
+            val license = library.licenses.firstOrNull()
             AlertDialog(
                 onDismissRequest = { selectedLibrary = null },
                 confirmButton = {
@@ -133,7 +133,7 @@ fun OpenSourceLicensesScreen(
                     }
                 },
                 title = {
-                    Text(text = libraryName)
+                    Text(text = library.name)
                 },
                 text = {
                     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {

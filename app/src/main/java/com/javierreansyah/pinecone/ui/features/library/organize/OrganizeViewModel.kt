@@ -30,6 +30,15 @@ data class OrganizeUiState(
     val spacesEnabled: Boolean = true,
 )
 
+internal fun List<SpaceWithShelvesItemState>.prioritizedShelfGroups(): List<SpaceWithShelvesItemState> =
+    filter { it.shelves.isNotEmpty() }.sortedBy {
+        when (it.state) {
+            ToggleableState.On -> 0
+            ToggleableState.Indeterminate -> 1
+            ToggleableState.Off -> 2
+        }
+    }
+
 class OrganizeViewModel(
     application: Application,
     bookIdsStr: String,
@@ -67,7 +76,7 @@ class OrganizeViewModel(
                     .filter { (itShelf2, books1) -> !settings.spacesEnabled || itShelf2.spaceId == spaceId }
                     .map { (shelfWithBooksShelf, shelfWithBooksBooks) ->
                         val booksInShelf =
-                            shelfWithBooksBooks.map { (itBook, authors, authorCrossRefs, tags, spaces1, credits) -> itBook.id }
+                            shelfWithBooksBooks.map { details -> details.book.id }
                         val countInShelf = targetBookIds.count { it in booksInShelf }
                         val shelfState = when (countInShelf) {
                             0 -> ToggleableState.Off

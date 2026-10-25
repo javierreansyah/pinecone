@@ -43,21 +43,21 @@ fun BookmarksList(
         LazyColumn(
             modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 8.dp),
         ) {
-            items(bookmarks) { (bookmarkId, _, bookmarkLocatorJson, bookmarkChapterTitle, bookmarkCreatedAt, _) ->
+            items(bookmarks) { bookmark ->
                 val locator = try {
-                    Locator.fromJSON(org.json.JSONObject(bookmarkLocatorJson))
+                    Locator.fromJSON(org.json.JSONObject(bookmark.locatorJson))
                 } catch (_: Exception) {
                     null
                 }
                 if (locator != null) {
                     val inDocument = stringResource(R.string.reader_in_document)
                     val chapterTitle =
-                        bookmarkChapterTitle?.takeIf { it.isNotBlank() && it != inDocument }
+                        bookmark.chapterTitle?.takeIf { it.isNotBlank() && it != inDocument }
                             ?: inDocument
 
                     val positionLabel = getPositionLabel(locator)
-                    val formattedDate = remember(bookmarkCreatedAt, context) {
-                        val date = Date(bookmarkCreatedAt)
+                    val formattedDate = remember(bookmark.createdAt, context) {
+                        val date = Date(bookmark.createdAt)
                         val locale = Locale.getDefault()
                         val dateStr = if (locale.language == "en") {
                             SimpleDateFormat("MM/dd/yyyy", locale).format(date)
@@ -83,7 +83,7 @@ fun BookmarksList(
                         EntryHeader(
                             title = chapterTitle,
                             positionLabel = subtitle,
-                            onDelete = { onDeleteBookmark(bookmarkId) },
+                            onDelete = { onDeleteBookmark(bookmark.id) },
                         )
                     }
                 }

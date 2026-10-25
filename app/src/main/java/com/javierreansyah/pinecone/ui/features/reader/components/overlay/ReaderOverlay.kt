@@ -140,9 +140,9 @@ fun ReaderOverlay(
 
     val isBookmarked = remember(sortedBookmarks, currentLocator) {
         val locator = currentLocator
-        locator != null && sortedBookmarks.any { (_, _, itLocatorJson, _, _, _) ->
+        locator != null && sortedBookmarks.any { bookmark ->
             val loc = try {
-                Locator.fromJSON(JSONObject(itLocatorJson))
+                Locator.fromJSON(JSONObject(bookmark.locatorJson))
             } catch (_: Exception) {
                 null
             }
@@ -360,8 +360,8 @@ fun ReaderOverlay(
                     notesViewModel.hideViewHighlight()
                 },
                 onDelete = {
-                    selectionState.value.viewingHighlight?.let { (noteId, _, _, _, _, _, _, _) ->
-                        notesViewModel.deleteNote(noteId)
+                    selectionState.value.viewingHighlight?.let { note ->
+                        notesViewModel.deleteNote(note.id)
                         notesViewModel.hideViewHighlight()
                     }
                 },

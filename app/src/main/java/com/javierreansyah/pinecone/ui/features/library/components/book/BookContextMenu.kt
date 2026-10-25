@@ -67,7 +67,7 @@ fun BookContextMenu(
     )
 
     val book =
-        allBooks.find { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId == bookId }
+        allBooks.find { book -> book.id == bookId }
     val wording = book?.publicationWording ?: PublicationWording.Items
 
     ModalBottomSheet(

@@ -28,7 +28,7 @@ class DictionaryRepository(
             results.addAll(dao.getPrefixDefinitions(word))
         }
 
-        return results.distinctBy { (_, _, _, itDefinition) -> itDefinition }
+        return results.distinctBy { it.definition }
     }
 
     suspend fun deleteDictionary(dictionaryId: String) {

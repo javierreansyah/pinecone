@@ -11,3 +11,8 @@ does not run lint or IDE inspections; no additional validation guide is needed. 
 broader validation, read `docs/VALIDATION.md` and follow **Complete**. IDE recommendations are
 handled manually by the user in JetBrains tools, not by agents. Never claim Quick means all warnings
 are cleared. Preserve unrelated user changes.
+
+# Device testing
+
+When emulator or device-based UI testing is needed, use the **Resizable (Experimental)** emulator
+profile. Do not use **Medium Phone**.

@@ -110,7 +110,7 @@ private fun BookGrid(
     ) {
         items(
             items = books,
-            key = { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> "$itId-${layoutMode.name}" },
+            key = { book -> "${book.id}-${layoutMode.name}" },
             contentType = { layoutMode },
         ) { book ->
             BookItem(
@@ -150,7 +150,7 @@ private fun BookList(
     ) {
         items(
             books,
-            key = { (itId2, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId2 }) { book ->
+            key = { book -> book.id }) { book ->
             BookItem(
                 book = book,
                 onClick = { onBookClick(book.id) },

@@ -53,13 +53,13 @@ class FilterCategoryViewModel(application: Application) : AndroidViewModel(appli
     val allAuthors: StateFlow<List<AuthorEntity>> =
         combine(bookRepository.getAllAuthors(), booksFlow) { authors, books ->
             val namesInSpace =
-                books.flatMapTo(mutableSetOf()) { (_, _, itAuthors, coverPath, progress, lastOpened, language, addedDate, isArchived, description, publisher, published, tags, identifier, mediaType, filePath, isRead, furthestProgression, lastLocatorJson, furthestLocatorJson, spaces, metadata, credits, activeRendition, isUnsorted, originalFilename) -> itAuthors }
+                books.flatMapTo(mutableSetOf()) { book -> book.authors }
             authors.filter { (_, itName) -> itName in namesInSpace }
         }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val allTags: StateFlow<List<TagEntity>> =
         combine(bookRepository.getAllTags(), booksFlow) { tags, books ->
             val namesInSpace =
-                books.flatMapTo(mutableSetOf()) { (_, _, _, _, _, _, _, _, _, _, _, _, itTags, identifier, mediaType, filePath, isRead, furthestProgression, lastLocatorJson, furthestLocatorJson, spaces, metadata, credits, activeRendition, isUnsorted, originalFilename) -> itTags }
+                books.flatMapTo(mutableSetOf()) { book -> book.tags }
             tags.filter { (_, itName2) -> itName2 in namesInSpace }
         }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val allSpaces: StateFlow<List<SpaceEntity>> =

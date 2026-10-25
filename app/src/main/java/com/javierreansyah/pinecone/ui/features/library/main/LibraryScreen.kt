@@ -290,7 +290,7 @@ fun LibraryScreen(
                             onClearBooksSelection = { selectedBooks = emptySet() },
                             onSelectAllBooks = {
                                 selectedBooks =
-                                    uiState.filteredBooks.map { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId }
+                                    uiState.filteredBooks.map { book -> book.id }
                                         .toSet()
                             },
                             onMarkBooksReadStatus = { showMarkAsRead ->
@@ -518,8 +518,8 @@ private fun LibraryTopBar(
                 )
             } else {
                 val showMarkAsRead = allBooks
-                    .filter { (itId2, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId2 in selectedBooks }
-                    .any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itIsRead, _, _, _, _, _, _, _, _, _) -> !itIsRead }
+                    .filter { book -> book.id in selectedBooks }
+                    .any { book -> !book.isRead }
                 MultiSelectAppBar(
                     wording = allBooks.filter { it.id in selectedBooks }.publicationWording(),
                     selectedCount = selectedBooks.size,

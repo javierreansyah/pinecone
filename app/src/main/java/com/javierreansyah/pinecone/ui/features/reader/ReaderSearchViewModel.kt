@@ -198,19 +198,19 @@ class ReaderSearchViewModel(
     }
 
     fun nextSearchResult() {
-        val (_, stateResults, _, _, _, stateActiveIndex) = _searchState.value
-        if (stateResults.isEmpty()) return
-        val next = ((stateActiveIndex ?: -1) + 1).coerceAtMost(stateResults.size - 1)
+        val state = _searchState.value
+        if (state.results.isEmpty()) return
+        val next = ((state.activeIndex ?: -1) + 1).coerceAtMost(state.results.size - 1)
         _searchState.update { it.copy(activeIndex = next) }
-        _navigateToLocator.tryEmit(stateResults[next].locator)
+        _navigateToLocator.tryEmit(state.results[next].locator)
     }
 
     fun prevSearchResult() {
-        val (_, stateResults2, _, _, _, stateActiveIndex2) = _searchState.value
-        if (stateResults2.isEmpty()) return
-        val prev = ((stateActiveIndex2 ?: 1) - 1).coerceAtLeast(0)
+        val state = _searchState.value
+        if (state.results.isEmpty()) return
+        val prev = ((state.activeIndex ?: 1) - 1).coerceAtLeast(0)
         _searchState.update { it.copy(activeIndex = prev) }
-        _navigateToLocator.tryEmit(stateResults2[prev].locator)
+        _navigateToLocator.tryEmit(state.results[prev].locator)
     }
 
     fun exitSearchNavigation() {

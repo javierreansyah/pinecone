@@ -206,7 +206,7 @@ class EpubNavigatorController(
                     val noteIdStr = event.decoration.id.removePrefix("note_")
                     val noteId = noteIdStr.toLongOrNull() ?: return false
                     val note =
-                        notesViewModel.allNotesAndHighlights.value.find { (itId, _, _, _, _, _, _, _) -> itId == noteId }
+                        notesViewModel.allNotesAndHighlights.value.find { note -> note.id == noteId }
                             ?: return false
 
                     if (note.noteText.isBlank()) {
@@ -330,18 +330,18 @@ class EpubNavigatorController(
                     nav to notes
                 }.collectLatest { (nav, notes) ->
                     val decorations =
-                        notes.mapNotNull { (noteId2, _, noteLocatorJson, _, noteNoteText, noteColor, _, _) ->
+                        notes.mapNotNull { note ->
                             try {
                                 val locator = Locator.fromJSON(
-                                    org.json.JSONObject(noteLocatorJson),
+                                    org.json.JSONObject(note.locatorJson),
                                 )
                                 if (locator != null) {
-                                    val isHighlight = noteNoteText.isEmpty()
-                                    val tintColor = if (noteColor != -1) noteColor else {
+                                    val isHighlight = note.noteText.isEmpty()
+                                    val tintColor = if (note.color != -1) note.color else {
                                         if (isHighlight) "#4003A9F4".toColorInt() else "#40FFEB3B".toColorInt()
                                     }
                                     Decoration(
-                                        id = "note_${noteId2}",
+                                        id = "note_${note.id}",
                                         locator = viewModel.publication.value?.resolveGeneratedLocator(
                                             locator
                                         ) ?: locator,
@@ -373,7 +373,7 @@ class EpubNavigatorController(
         lifecycleScope.launch {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 searchViewModel.searchState
-                    .map { (_, _, _, _, itIsInNavMode, _) -> itIsInNavMode }
+                    .map { state -> state.isInNavMode }
                     .distinctUntilChanged()
                     .collect { isInNavMode ->
                         if (!isInNavMode) clearSearchHighlight()

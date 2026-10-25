@@ -258,7 +258,7 @@ private fun FilterResultContent(
                 onClearSelection = { selectedBooks = emptySet() },
                 onSelectAll = {
                     selectedBooks =
-                        books.map { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId }
+                        books.map { book -> book.id }
                             .toSet()
                 },
                 onMarkAsReadUnread = { showMarkAsRead ->
@@ -404,8 +404,8 @@ private fun FilterResultTopBar(
     modifier: Modifier = Modifier,
 ) {
     val showMarkAsRead = remember(allBooks, selectedBooks) {
-        allBooks.filter { (itId2, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId2 in selectedBooks }
-            .any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itIsRead, _, _, _, _, _, _, _, _, _) -> !itIsRead }
+        allBooks.filter { book -> book.id in selectedBooks }
+            .any { book -> !book.isRead }
     }
 
     MultiSelectTopBarTransition(

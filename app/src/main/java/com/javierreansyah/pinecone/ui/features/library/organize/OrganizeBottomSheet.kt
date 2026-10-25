@@ -10,14 +10,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,11 +37,13 @@ import androidx.compose.material3.rememberContainedSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -97,8 +102,12 @@ fun OrganizeBottomSheet(
 
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current
-    val sheetHeight = remember(windowInfo.containerSize, density) {
-        with(density) { (windowInfo.containerSize.height * 0.9f).toDp() }
+    var dragHandleHeight by remember { mutableIntStateOf(0) }
+    val bottomInset = WindowInsets.navigationBars.getBottom(density)
+    // Include the native handle and bottom inset in the sheet's 80% height.
+    val sheetHeight = with(density) {
+        (windowInfo.containerSize.height * 0.8f - dragHandleHeight - bottomInset)
+            .coerceAtLeast(0f).toDp()
     }
     val sheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
@@ -108,6 +117,11 @@ fun OrganizeBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onNavigateBack,
         sheetState = sheetState,
+        dragHandle = {
+            BottomSheetDefaults.DragHandle(
+                modifier = Modifier.onSizeChanged { dragHandleHeight = it.height },
+            )
+        },
     ) {
         Column(
             modifier = Modifier
@@ -188,7 +202,7 @@ private fun OrganizeSearchInputField(
         onSearch = { onSearch() },
         placeholder = {
             Text(
-                stringResource(R.string.action_search),
+                stringResource(R.string.library_organize_search_placeholder),
                 style = MaterialTheme.typography.bodyLarge,
             )
         },
@@ -318,89 +332,113 @@ private fun OrganizeContent(
                     }
                 }
 
-                items(
-                    spaces,
-                    key = { (itSpace3, _, _) -> itSpace3.id }) { (spaceItemSpace, spaceItemState, spaceItemShelves) ->
-                    val (spaceId2, spaceName, _) = spaceItemSpace
-                    val spaceShelves = spaceItemShelves
-                    val isSpaceSelected = spaceItemState == ToggleableState.On
-
-                    SegmentedColumn(
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        // Space header (top of this segmented list)
-                        item(
-                            key = "space_${spaceId2}",
-                            selected = isSpaceSelected,
-                            onClick = if (spaceId2 == "_all_" && isSpaceSelected) null else ({
-                                onToggleSpace(
-                                    spaceId2,
-                                    spaceItemState
-                                )
-                            }),
-                            leadingContent = {
-                                AnimatedSelectionIcon(
-                                    selected = isSpaceSelected,
-                                    outlinedIcon = if (spacesEnabled) MaterialSymbols.Outlined.Forest else MaterialSymbols.Outlined.Folder,
-                                    filledIcon = if (spacesEnabled) MaterialSymbols.OutlinedFilled.FilledForest else MaterialSymbols.OutlinedFilled.FilledFolder,
-                                    contentDescription = null,
-                                    tint = if (isSpaceSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.primary,
-                                )
-                            },
-                            content = {
-                                Text(
-                                    text = if (spacesEnabled) spaceName else stringResource(R.string.library_add_to_library),
-                                    style = MaterialTheme.typography.titleMedium,
-                                )
-                            },
-                            trailingContent = {
-                                TriStateCheckbox(
-                                    state = spaceItemState,
-                                    enabled = spaceId2 != "_all_" || !isSpaceSelected,
-                                    onClick = null,
-                                )
-                            },
-                        )
-
-                        // Shelves in this space (below the space in this segmented list)
-                        spaceShelves.forEach { (shelfItemShelf, shelfItemState) ->
-                            val isShelfSelected = shelfItemState == ToggleableState.On
-                            item(
-                                key = "shelf_${shelfItemShelf.id}",
-                                selected = isShelfSelected,
-                                onClick = { onToggleShelf(shelfItemShelf.id, shelfItemState) },
-                                leadingContent = {
-                                    AnimatedSelectionIcon(
-                                        selected = isShelfSelected,
-                                        outlinedIcon = MaterialSymbols.Outlined.Folder,
-                                        filledIcon = MaterialSymbols.OutlinedFilled.FilledFolder,
-                                        contentDescription = null,
-                                        tint = if (isShelfSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.secondary,
-                                    )
-                                },
-                                content = {
-                                    Text(
-                                        text = shelfItemShelf.name,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                    )
-                                },
-                                trailingContent = {
-                                    TriStateCheckbox(
-                                        state = shelfItemState,
-                                        onClick = null,
-                                    )
-                                },
+                if (spaces.isNotEmpty()) {
+                    item(key = "spaces_section") {
+                        Column {
+                            OrganizeSectionLabel(
+                                stringResource(
+                                    if (spacesEnabled) R.string.library_spaces_title
+                                    else R.string.settings_library,
+                                ),
                             )
+                            SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
+                                spaces.forEach { (space, state, _) ->
+                                    val selected = state == ToggleableState.On
+                                    item(
+                                        key = "space_${space.id}",
+                                        selected = selected,
+                                        onClick = if (space.id == "_all_" && selected) null else ({
+                                            onToggleSpace(space.id, state)
+                                        }),
+                                        leadingContent = {
+                                            AnimatedSelectionIcon(
+                                                selected = selected,
+                                                outlinedIcon = if (spacesEnabled) MaterialSymbols.Outlined.Forest else MaterialSymbols.Outlined.Folder,
+                                                filledIcon = if (spacesEnabled) MaterialSymbols.OutlinedFilled.FilledForest else MaterialSymbols.OutlinedFilled.FilledFolder,
+                                                contentDescription = null,
+                                                tint = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.primary,
+                                            )
+                                        },
+                                        content = {
+                                            Text(
+                                                text = if (spacesEnabled) space.name else stringResource(
+                                                    R.string.library_add_to_library
+                                                ),
+                                                style = MaterialTheme.typography.titleMedium,
+                                            )
+                                        },
+                                        trailingContent = {
+                                            TriStateCheckbox(
+                                                state = state,
+                                                enabled = space.id != "_all_" || !selected,
+                                                onClick = null,
+                                            )
+                                        },
+                                    )
+                                }
+                            }
                         }
                     }
                 }
 
+                items(
+                    spaces.prioritizedShelfGroups(),
+                    key = { "shelves_${it.space.id}" },
+                ) { (space, _, shelves) ->
+                    Column(modifier = Modifier.animateItem()) {
+                        OrganizeSectionLabel(
+                            if (spacesEnabled) stringResource(
+                                R.string.library_shelves_in_space,
+                                space.name
+                            )
+                            else stringResource(R.string.library_tab_shelves),
+                        )
+                        SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
+                            shelves.forEach { (shelf, state) ->
+                                val selected = state == ToggleableState.On
+                                item(
+                                    key = "shelf_${shelf.id}",
+                                    selected = selected,
+                                    onClick = { onToggleShelf(shelf.id, state) },
+                                    leadingContent = {
+                                        AnimatedSelectionIcon(
+                                            selected = selected,
+                                            outlinedIcon = MaterialSymbols.Outlined.Folder,
+                                            filledIcon = MaterialSymbols.OutlinedFilled.FilledFolder,
+                                            contentDescription = null,
+                                            tint = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.secondary,
+                                        )
+                                    },
+                                    content = {
+                                        Text(
+                                            text = shelf.name,
+                                            style = MaterialTheme.typography.titleMedium,
+                                        )
+                                    },
+                                    trailingContent = {
+                                        TriStateCheckbox(state = state, onClick = null)
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
                 item(key = "bottom_spacer") {
                     Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         }
     }
+}
+
+@Composable
+private fun OrganizeSectionLabel(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(bottom = 8.dp),
+    )
 }
 
 @Composable

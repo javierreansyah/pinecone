@@ -1145,9 +1145,9 @@ private fun RestoreBottomSheet(
                 )
             } else {
                 val groupedBackups =
-                    availableBackups.groupBy { (_, _, _, itIsManual, _) -> itIsManual }
+                    availableBackups.groupBy { backup -> backup.isManual }
                 val groups = groupedBackups.entries.sortedByDescending { (_, entryValue) ->
-                    entryValue.maxOfOrNull { (_, _, itTimestamp, _, _) -> itTimestamp } ?: 0L
+                    entryValue.maxOfOrNull { backup -> backup.timestamp } ?: 0L
                 }
 
                 Column(
@@ -1163,7 +1163,7 @@ private fun RestoreBottomSheet(
                                 color = MaterialTheme.colorScheme.primary,
                             )
                             SegmentedColumn(topAlignAccessories = true) {
-                                backups.sortedByDescending { (_, _, itTimestamp2, _, _) -> itTimestamp2 }
+                                backups.sortedByDescending { backup -> backup.timestamp }
                                     .forEach { backup ->
                                         item(
                                             onClick = {

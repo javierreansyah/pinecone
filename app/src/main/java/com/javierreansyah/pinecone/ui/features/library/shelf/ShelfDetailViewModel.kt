@@ -107,13 +107,13 @@ class ShelfDetailViewModel(
             crossRefs.filter { (itShelfId, bookId, addedAt, orderIndex) -> itShelfId in currentSpaceShelfIds }
                 .map { (_, itBookId, addedAt, orderIndex) -> itBookId }.toSet()
 
-        val unshelvedBooks = allBooksEntities.filter { (itBook, _, _, _, itSpaces, credits) ->
+        val unshelvedBooks = allBooksEntities.filter { details ->
             val inSpace = if (isSpaceSelected) {
-                itSpaces.any { (spaceId2, name, createdAt) -> spaceId2 == spaceId }
+                details.spaces.any { (spaceId2, name, createdAt) -> spaceId2 == spaceId }
             } else {
-                itSpaces.isNotEmpty()
+                details.spaces.isNotEmpty()
             }
-            inSpace && !itBook.isUnsorted && itBook.id !in shelvedBookIds
+            inSpace && !details.book.isUnsorted && details.book.id !in shelvedBookIds
         }
 
         val unshelvedShelf = ShelfWithCovers(
@@ -185,6 +185,12 @@ class ShelfDetailViewModel(
     fun updateShelfOrder(shelfId: String, newBookIdsOrder: List<String>) {
         viewModelScope.launch {
             bookRepository.updateShelfOrder(shelfId, newBookIdsOrder)
+            _uiState.update { state ->
+                val prefs =
+                    state.bookPreferences.copy(sortType = SortType.Custom, isAscending = true)
+                prefsManager.savePreferences(globalSpaceId.value, screenKey, prefs)
+                state.copy(bookPreferences = prefs)
+            }
         }
     }
 

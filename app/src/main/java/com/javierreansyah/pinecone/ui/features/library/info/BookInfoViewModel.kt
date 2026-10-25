@@ -54,7 +54,7 @@ class BookInfoViewModel(
         combine(repository.getNotes(bookId), repository.getBookFlow(bookId)) { items, item ->
             items.filter { it.renditionKey == item?.book?.activeRendition }
         }
-            .map { list -> list.filter { (_, _, _, _, itNoteText, color, createdAt, renditionKey) -> itNoteText.isNotBlank() } }
+            .map { list -> list.filter { note -> note.noteText.isNotBlank() } }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _tableOfContents = MutableStateFlow<List<Link>>(emptyList())

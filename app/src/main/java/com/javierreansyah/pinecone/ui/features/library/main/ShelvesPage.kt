@@ -279,7 +279,7 @@ private fun ShelfBooksHorizontalRow(
             contentPadding = PaddingValues(horizontal = 8.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            items(visibleBooks, key = { (itBook, _, _, _, _, _) -> itBook.id }) { bookEntity ->
+            items(visibleBooks, key = { details -> details.book.id }) { bookEntity ->
                 val book = Book.fromEntity(bookEntity)
                 BookItem(
                     book = book,

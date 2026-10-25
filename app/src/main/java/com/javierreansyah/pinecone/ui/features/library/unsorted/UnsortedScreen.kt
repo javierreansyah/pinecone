@@ -78,7 +78,7 @@ fun UnsortedScreen(
         onExitMultiSelect = exitMultiSelect,
         onSelectAll = {
             selectedBooks =
-                unsortedBooks.map { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId }
+                unsortedBooks.map { book -> book.id }
                     .toSet()
         },
         onClearSelection = { selectedBooks = emptySet() },
@@ -166,8 +166,8 @@ fun UnsortedContent(
 
     val showMarkAsRead = remember(allBooks, selectedBooks) {
         allBooks
-            .filter { (itId2, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId2 in selectedBooks }
-            .any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itIsRead, _, _, _, _, _, _, _, _, _) -> !itIsRead }
+            .filter { book -> book.id in selectedBooks }
+            .any { book -> !book.isRead }
     }
 
     Scaffold(

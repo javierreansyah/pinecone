@@ -56,21 +56,21 @@ fun NotesList(
         LazyColumn(
             modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 8.dp),
         ) {
-            items(notes) { (noteId, _, noteLocatorJson, noteChapterTitle, noteNoteText, noteColor, noteCreatedAt, _) ->
+            items(notes) { note ->
                 val locator = try {
-                    Locator.fromJSON(org.json.JSONObject(noteLocatorJson))
+                    Locator.fromJSON(org.json.JSONObject(note.locatorJson))
                 } catch (_: Exception) {
                     null
                 }
                 if (locator != null) {
                     val inDocument = stringResource(R.string.reader_in_document)
                     val chapterTitle =
-                        noteChapterTitle?.takeIf { it.isNotBlank() && it != inDocument }
+                        note.chapterTitle?.takeIf { it.isNotBlank() && it != inDocument }
                             ?: inDocument
 
                     val positionLabel = getPositionLabel(locator)
-                    val formattedDate = remember(noteCreatedAt, context) {
-                        val date = Date(noteCreatedAt)
+                    val formattedDate = remember(note.createdAt, context) {
+                        val date = Date(note.createdAt)
                         val locale = Locale.getDefault()
                         val dateStr = if (locale.language == "en") {
                             SimpleDateFormat("MM/dd/yyyy", locale).format(date)
@@ -96,7 +96,7 @@ fun NotesList(
                         EntryHeader(
                             title = chapterTitle,
                             positionLabel = subtitle,
-                            onDelete = { onDeleteNote(noteId) },
+                            onDelete = { onDeleteNote(note.id) },
                         )
 
                         Column(
@@ -118,7 +118,7 @@ fun NotesList(
                                             .width(4.dp)
                                             .fillMaxHeight()
                                             .clip(RoundedCornerShape(2.dp))
-                                            .background(Color(noteColor).copy(alpha = 1.0f)),
+                                            .background(Color(note.color).copy(alpha = 1.0f)),
                                     )
                                     Text(
                                         text = quote,
@@ -128,9 +128,9 @@ fun NotesList(
                                         modifier = Modifier.padding(start = 12.dp),
                                     )
                                 }
-                                if (noteNoteText.isNotBlank()) {
+                                if (note.noteText.isNotBlank()) {
                                     Text(
-                                        text = noteNoteText,
+                                        text = note.noteText,
                                         style = MaterialTheme.typography.bodyLarge,
                                         color = MaterialTheme.colorScheme.onSurface,
                                     )
@@ -147,10 +147,10 @@ fun NotesList(
                                             .width(4.dp)
                                             .fillMaxHeight()
                                             .clip(RoundedCornerShape(2.dp))
-                                            .background(Color(noteColor).copy(alpha = 1.0f)),
+                                            .background(Color(note.color).copy(alpha = 1.0f)),
                                     )
                                     Text(
-                                        text = noteNoteText,
+                                        text = note.noteText,
                                         style = MaterialTheme.typography.bodyLarge,
                                         color = MaterialTheme.colorScheme.onSurface,
                                         modifier = Modifier.padding(start = 12.dp),

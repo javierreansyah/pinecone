@@ -96,8 +96,8 @@ fun List<Book>.filterAndSort(
                     keySelector = { (_, itValue) -> itValue.id },
                     valueTransform = IndexedValue<Book>::index,
                 )
-                compareBy<Book> { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) ->
-                    indexMap[itId] ?: 0
+                compareBy<Book> { book ->
+                    indexMap[book.id] ?: 0
                 }
             }
         }
@@ -120,7 +120,7 @@ fun sortShelfBooks(
     crossRefs: List<ShelfBookCrossRefEntity>,
     globalSpaceId: String? = null,
 ): List<ShelfWithCovers> {
-    val crossRefsByShelf = crossRefs.groupBy { (itShelfId, _, _, _) -> itShelfId }
+    val crossRefsByShelf = crossRefs.groupBy { it.shelfId }
     val filteredShelves = if (globalSpaceId != null && globalSpaceId != ALL_SPACES_ID) {
         shelvesList.filter { (itShelf, _) -> itShelf.spaceId == globalSpaceId }
     } else {
@@ -130,16 +130,16 @@ fun sortShelfBooks(
     return filteredShelves.map { shelfWithCovers ->
         val shelfId = shelfWithCovers.shelf.id
         val shelfCrossRefs = crossRefsByShelf[shelfId].orEmpty()
-        val orderMap = shelfCrossRefs.associateBy(
-            ShelfBookCrossRefEntity::bookId,
-            ShelfBookCrossRefEntity::orderIndex,
-        )
+        val refsByBook = shelfCrossRefs.associateBy(ShelfBookCrossRefEntity::bookId)
         val filteredBooks = shelfWithCovers.books.filter { details ->
             !details.book.isUnsorted && (globalSpaceId == null || globalSpaceId == ALL_SPACES_ID || details.spaces.any { it.id == globalSpaceId })
         }
-        val sortedBooks = filteredBooks.sortedBy { (bookBook, _, _, _, _, _) ->
-            orderMap[bookBook.id] ?: 0
-        }
+        // Older entries can share position zero; their shelf-added time preserves insertion order.
+        val sortedBooks = filteredBooks.sortedWith(
+            compareBy<BookWithDetails> { refsByBook[it.book.id]?.orderIndex ?: 0 }
+                .thenBy { refsByBook[it.book.id]?.addedAt ?: 0L }
+                .thenBy { it.book.id },
+        )
         shelfWithCovers.copy(books = sortedBooks)
     }
 }
@@ -160,14 +160,14 @@ fun mapAndSortShelves(
         val baseComparator = when (prefs.sortType) {
             SortType.Title -> compareBy { (itShelf2, _) -> itShelf2.name.lowercase() }
             SortType.LastRead -> compareBy { shelf: ShelfWithCovers ->
-                shelf.books.maxOfOrNull { (itBook, _, _, _, _, _) ->
-                    itBook.lastReadDate ?: 0L
+                shelf.books.maxOfOrNull { details ->
+                    details.book.lastReadDate ?: 0L
                 } ?: 0L
             }
 
             SortType.Progress -> compareBy { shelf: ShelfWithCovers ->
                 if (shelf.books.isEmpty()) 0.0 else shelf.books.asSequence()
-                    .map { (itBook2, _, _, _, _, _) -> itBook2.progression }
+                    .map { details -> details.book.progression }
                     .average()
             }
 
@@ -194,7 +194,7 @@ fun mapAndSortShelves(
         currentSpaceShelves.asSequence().map { (itShelf7, _) -> itShelf7.id }.toSet()
     val shelvedBookIdsInCurrentSpace =
         crossRefs.asSequence()
-            .filter { (itShelfId2, _, _, _) -> itShelfId2 in currentSpaceShelfIds }
+            .filter { it.shelfId in currentSpaceShelfIds }
             .map { (_, itBookId2, _, _) -> itBookId2 }.toSet()
 
     val unshelvedBooks = allBooksEntities.filter { details ->

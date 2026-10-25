@@ -42,6 +42,7 @@
     <string name="library_move_shelves">Move to space</string>
     <string name="library_new_shelf">New shelf</string>
     <string name="library_new_space">New space</string>
+    <string name="library_organize_search_placeholder">Search or create</string>
     <string name="library_rename_author_title">Rename author</string>
     <string name="library_rename_shelf_title">Rename shelf</string>
     <string name="library_rename_space_title">Rename space</string>
@@ -62,6 +63,7 @@
     <string name="library_sort_title">Title</string>
     <string name="library_space_name_label">Space name</string>
     <string name="library_spaces_title">Spaces</string>
+    <string name="library_shelves_in_space">Shelves in %1$s</string>
     <string name="library_status_finished">Finished</string>
     <string name="library_status_not_started">Not started</string>
     <string name="library_status_reading">Currently reading</string>

@@ -7,6 +7,7 @@ import com.javierreansyah.pinecone.data.local.database.library.ShelfEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.ui.features.library.shelf.ShelfDetailUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -190,6 +191,52 @@ class LibraryCommonTest {
         )
         assertEquals("unshelved", result.single().shelf.id)
         assertEquals(listOf("organized"), result.single().books.map { it.book.id })
+    }
+
+    @Test
+    fun `default shelf order shows earlier additions first when legacy positions are equal`() {
+        val first = details("z-first", "application/pdf")
+        val second = details("a-second", "application/pdf")
+        val shelf = ShelfWithCovers(ShelfEntity("shelf", work.id, "Shelf"), listOf(second, first))
+        val refs = listOf(
+            ShelfBookCrossRefEntity("shelf", second.book.id, addedAt = 200L),
+            ShelfBookCrossRefEntity("shelf", first.book.id, addedAt = 100L),
+        )
+        val sorted = sortShelfBooks(listOf(shelf), refs).single().books.map { Book.fromEntity(it) }
+        val prefs = ShelfDetailUiState().bookPreferences
+
+        assertEquals(
+            listOf(first.book.id, second.book.id),
+            sorted.filterAndSort(prefs).map { it.id })
+        assertEquals(
+            listOf(second.book.id, first.book.id),
+            sorted.filterAndSort(prefs.selectSort(SortType.Custom)).map { it.id },
+        )
+    }
+
+    @Test
+    fun `appended book follows custom positions even when imported earlier`() {
+        val first = details("first", "application/pdf").let {
+            it.copy(book = it.book.copy(addedDate = 300L))
+        }
+        val second = details("second", "application/pdf")
+        val appended = details("appended", "application/pdf").let {
+            it.copy(book = it.book.copy(addedDate = 1L))
+        }
+        val shelf = ShelfWithCovers(
+            ShelfEntity("shelf", work.id, "Shelf"), listOf(appended, first, second),
+        )
+        val refs = listOf(
+            ShelfBookCrossRefEntity("shelf", first.book.id, addedAt = 100L, orderIndex = 5),
+            ShelfBookCrossRefEntity("shelf", second.book.id, addedAt = 50L, orderIndex = 2),
+            ShelfBookCrossRefEntity("shelf", appended.book.id, addedAt = 200L, orderIndex = 6),
+        )
+        val sorted = sortShelfBooks(listOf(shelf), refs).single().books.map { Book.fromEntity(it) }
+
+        assertEquals(
+            listOf("second", "first", "appended"),
+            sorted.filterAndSort(ShelfDetailUiState().bookPreferences).map { it.id },
+        )
     }
 
     private fun details(id: String, mime: String) = BookWithDetails(

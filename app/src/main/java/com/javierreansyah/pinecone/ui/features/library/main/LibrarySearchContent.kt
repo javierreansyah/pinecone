@@ -96,9 +96,9 @@ internal fun ExpandedSearchContent(
         SearchResultsContent(
             searchCategory = searchCategory,
             results = searchResults,
-            onBookClick = { (bookId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) ->
+            onBookClick = { book ->
                 onNavigateToReader(
-                    bookId
+                    book.id
                 )
             },
             onShelfClick = { (shelfId, _, shelfName, _) ->
@@ -142,8 +142,8 @@ private fun SearchResultsContent(
         val maxTags = if (isPreview) 4 else Int.MAX_VALUE
 
         val booksToShow = if (isPreview) {
-            results.books.sortedByDescending { (_, _, _, _, _, itLastOpened, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) ->
-                itLastOpened ?: 0L
+            results.books.sortedByDescending { book ->
+                book.lastOpened ?: 0L
             }
                 .take(maxBooks)
         } else if (isAll) {
@@ -210,7 +210,7 @@ private fun SearchResultsContent(
                 books = booksToShow,
                 onBookClick = { id ->
                     val book =
-                        booksToShow.find { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId == id }
+                        booksToShow.find { book -> book.id == id }
                     book?.let(onBookClick)
                 },
                 fastEffectsSpec = fastEffectsSpec,
@@ -263,7 +263,7 @@ private fun SearchResultsContent(
                     }
                     itemsIndexed(
                         shelvesToShow,
-                        key = { _, (itId2, _, _, _) -> "shelf_${itId2}" },
+                        key = { _, shelf -> "shelf_${shelf.id}" },
                     ) { index, shelf ->
                         SearchFilterItem(
                             text = shelf.name,
@@ -377,7 +377,7 @@ private fun BooksSection(
         ) {
             items(
                 books,
-                key = { (itId3, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId3 }) { book ->
+                key = { book -> book.id }) { book ->
                 val animateModifier = if (fastEffectsSpec != null) {
                     Modifier.animateItem(
                         fadeInSpec = fastEffectsSpec,
@@ -491,7 +491,7 @@ private fun BookCollection(
         }
         items(
             items = books,
-            key = { (itId4, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> "${itId4}-Grid" },
+            key = { book -> "${book.id}-Grid" },
             contentType = { "Grid" },
         ) { book ->
             val animateModifier = if (fastEffectsSpec != null) {

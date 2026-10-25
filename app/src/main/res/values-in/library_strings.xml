@@ -39,6 +39,7 @@
     <string name="library_move_shelves">Pindahkan ke ruang</string>
     <string name="library_new_shelf">Rak baru</string>
     <string name="library_new_space">Ruang baru</string>
+    <string name="library_organize_search_placeholder">Cari atau buat</string>
     <string name="library_rename_author_title">Ubah nama penulis</string>
     <string name="library_rename_shelf_title">Ubah nama rak</string>
     <string name="library_rename_space_title">Ubah nama ruang</string>
@@ -63,6 +64,7 @@
     <string name="library_sort_title" tools:ignore="DuplicateStrings">Judul</string>
     <string name="library_space_name_label">Nama ruang</string>
     <string name="library_spaces_title">Ruang</string>
+    <string name="library_shelves_in_space">Rak di %1$s</string>
     <string name="library_status_finished">Selesai</string>
     <string name="library_status_not_started">Belum dimulai</string>
     <string name="library_status_reading">Sedang dibaca</string>

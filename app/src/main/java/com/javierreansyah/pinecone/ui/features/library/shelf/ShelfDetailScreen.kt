@@ -86,7 +86,6 @@ import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
-import com.javierreansyah.pinecone.ui.features.library.SortType
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectAppBar
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectTopBarTransition
 import com.javierreansyah.pinecone.ui.features.library.components.ShelfDetailFilterBottomSheet
@@ -176,7 +175,7 @@ fun ShelfDetailScreen(
         onExitMultiSelect = exitMultiSelect,
         onSelectAll = {
             selectedBooks =
-                books.map { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId }
+                books.map { book -> book.id }
                     .toSet()
         },
         onClearSelection = { selectedBooks = emptySet() },
@@ -227,10 +226,7 @@ fun ShelfDetailScreen(
         onSaveReorder = {
             viewModel.updateShelfOrder(
                 shelfId,
-                reorderBooks.map { (itId2, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId2 })
-            if (uiState.value.bookPreferences.sortType != SortType.Custom) {
-                viewModel.onSortTypeChange(SortType.Custom)
-            }
+                reorderBooks.map { book -> book.id })
             isReordering = false
         },
         onReorderBooksChange = { reorderBooks = it },
@@ -445,8 +441,8 @@ private fun ShelfDetailTopBar(
     modifier: Modifier = Modifier,
 ) {
     val showMarkAsRead = remember(allBooks, selectedBooks) {
-        allBooks.filter { (itId3, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId3 in selectedBooks }
-            .any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itIsRead, _, _, _, _, _, _, _, _, _) -> !itIsRead }
+        allBooks.filter { book -> book.id in selectedBooks }
+            .any { book -> !book.isRead }
     }
 
     MultiSelectTopBarTransition(
@@ -865,7 +861,7 @@ private fun ShelfDetailBookListContent(
                     ) {
                         items(
                             reorderBooks,
-                            { (itId4, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId4 }) { item ->
+                            { book -> book.id }) { item ->
                             ReorderableItem(reorderState, key = item.id) { isDragging ->
                                 val elevation by animateDpAsState(
                                     targetValue = if (isDragging) 8.dp else 0.dp,

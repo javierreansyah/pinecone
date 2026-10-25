@@ -613,8 +613,8 @@ private fun ChaptersTabContent(
                                         )
                                     ),
                                 )
-                            } else positions.firstOrNull { (itHref, _, _, _, _) ->
-                                itHref.toString().substringBefore("#") == link.href.toString()
+                            } else positions.firstOrNull { position ->
+                                position.href.toString().substringBefore("#") == link.href.toString()
                                     .substringBefore("#")
                             } ?: Locator(
                                 href = link.url(),
@@ -781,18 +781,18 @@ private fun BookmarksTabContent(
                     )
                 }
 
-                items(bookmarks) { (bookmarkId, _, bookmarkLocatorJson, bookmarkChapterTitle, _, _) ->
+                items(bookmarks) { bookmark ->
                     val locator = try {
-                        Locator.fromJSON(JSONObject(bookmarkLocatorJson))
+                        Locator.fromJSON(JSONObject(bookmark.locatorJson))
                     } catch (_: Exception) {
                         null
                     }
                     if (locator != null) {
                         val inDocument = stringResource(R.string.reader_in_document)
                         val chapterTitle =
-                            bookmarkChapterTitle?.takeIf { it.isNotBlank() && it != inDocument }
-                                ?: tableOfContents.find { (itHref2, _, _, _, _, _, _, _, _, _, _, _) ->
-                                    itHref2.toString()
+                            bookmark.chapterTitle?.takeIf { it.isNotBlank() && it != inDocument }
+                                ?: tableOfContents.find { link ->
+                                    link.href.toString()
                                         .substringBefore("#") == locator.href.toString()
                                         .substringBefore("#")
                                 }?.title ?: inDocument
@@ -804,7 +804,7 @@ private fun BookmarksTabContent(
                             leadingContent = null,
                             trailingContent = {
                                 androidx.compose.material3.IconButton(
-                                    onClick = { onDeleteBookmark(bookmarkId) },
+                                    onClick = { onDeleteBookmark(bookmark.id) },
                                 ) {
                                     Icon(
                                         imageVector = MaterialSymbols.Outlined.Delete,
@@ -870,18 +870,18 @@ private fun NotesTabContent(
                 .height(maxTabHeight),
             contentPadding = PaddingValues(vertical = 8.dp),
         ) {
-            items(notes) { (noteId, _, noteLocatorJson, noteChapterTitle, noteNoteText, noteColor, _, _) ->
+            items(notes) { note ->
                 val locator = try {
-                    Locator.fromJSON(JSONObject(noteLocatorJson))
+                    Locator.fromJSON(JSONObject(note.locatorJson))
                 } catch (_: Exception) {
                     null
                 }
                 if (locator != null) {
                     val inDocument = stringResource(R.string.reader_in_document)
                     val chapterTitle =
-                        noteChapterTitle?.takeIf { it.isNotBlank() && it != inDocument }
-                            ?: tableOfContents.find { (itHref3, _, _, _, _, _, _, _, _, _, _, _) ->
-                                itHref3.toString().substringBefore("#") == locator.href.toString()
+                        note.chapterTitle?.takeIf { it.isNotBlank() && it != inDocument }
+                            ?: tableOfContents.find { link ->
+                                link.href.toString().substringBefore("#") == locator.href.toString()
                                     .substringBefore("#")
                             }?.title ?: inDocument
 
@@ -919,7 +919,7 @@ private fun NotesTabContent(
                                 }
                             }
                             androidx.compose.material3.IconButton(
-                                onClick = { onDeleteNote(noteId) }, modifier = Modifier.size(24.dp),
+                                onClick = { onDeleteNote(note.id) }, modifier = Modifier.size(24.dp),
                             ) {
                                 Icon(
                                     imageVector = MaterialSymbols.Outlined.Delete,
@@ -941,7 +941,7 @@ private fun NotesTabContent(
                                         .fillMaxHeight()
                                         .clip(CircleShape)
                                         .background(
-                                            Color(noteColor).copy(
+                                            Color(note.color).copy(
                                                 alpha = 1f,
                                             ),
                                         ),
@@ -955,9 +955,9 @@ private fun NotesTabContent(
                             }
                         }
 
-                        if (noteNoteText.isNotBlank()) {
+                        if (note.noteText.isNotBlank()) {
                             Text(
-                                text = noteNoteText,
+                                text = note.noteText,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
@@ -1609,11 +1609,11 @@ private fun parseBookFormat(mediaType: String?, defaultUnknown: String): String 
 @Composable
 private fun getPositionLabel(locator: Locator, positions: List<Locator>): String {
     val posIndex = locator.locations.totalProgression?.let { target ->
-        positions.indexOfLast { (_, _, _, itLocations, _) ->
-            (itLocations.totalProgression ?: -1.0) <= target
+        positions.indexOfLast { position ->
+            (position.locations.totalProgression ?: -1.0) <= target
         }
-    }?.takeIf { it != -1 } ?: positions.indexOfLast { (posHref, _, _, posLocations, _) ->
-        (((posHref == locator.href) && (posLocations.progression
+    }?.takeIf { it != -1 } ?: positions.indexOfLast { position ->
+        (((position.href == locator.href) && (position.locations.progression
             ?: 0.0) <= (locator.locations.progression ?: 0.0)))
     }.takeIf { it != -1 }
 
@@ -1637,8 +1637,8 @@ private fun getChapterPageLabel(link: Link, positions: List<Locator>): String {
     }
     if (positions.isEmpty()) return ""
     val linkHref = link.href.toString().substringBefore("#")
-    val posIndex = positions.indexOfFirst { (itHref4, _, _, _, _) ->
-        itHref4.toString().substringBefore("#") == linkHref
+    val posIndex = positions.indexOfFirst { position ->
+        position.href.toString().substringBefore("#") == linkHref
     }
     return if (posIndex != -1) {
         pluralStringResource(

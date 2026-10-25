@@ -78,7 +78,7 @@ fun ArchiveScreen(
         onExitMultiSelect = exitMultiSelect,
         onSelectAll = {
             selectedBooks =
-                archivedBooks.map { (itId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId }
+                archivedBooks.map { book -> book.id }
                     .toSet()
         },
         onClearSelection = { selectedBooks = emptySet() },
@@ -166,8 +166,8 @@ fun ArchiveContent(
 
     val showMarkAsRead = remember(allBooks, selectedBooks) {
         allBooks
-            .filter { (itId2, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) -> itId2 in selectedBooks }
-            .any { (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, itIsRead, _, _, _, _, _, _, _, _, _) -> !itIsRead }
+            .filter { book -> book.id in selectedBooks }
+            .any { book -> !book.isRead }
     }
 
     Scaffold(

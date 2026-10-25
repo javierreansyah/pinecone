@@ -45,17 +45,17 @@ fun List<Locator>.findIndexForLocator(locator: Locator): Int {
 
     var bestIndex = -1
     for (i in indices.reversed()) {
-        val (posHref2, _, _, posLocations, _) = this[i]
-        val posHref = posHref2.toString().substringBefore("#")
-        if (posHref == targetHref && (posLocations.progression ?: 0.0) <= targetProgression) {
+        val position = this[i]
+        val posHref = position.href.toString().substringBefore("#")
+        if (posHref == targetHref && (position.locations.progression ?: 0.0) <= targetProgression) {
             bestIndex = i
             break
         }
     }
     if (bestIndex != -1) return bestIndex
 
-    return indexOfFirst { (itHref, _, _, _, _) ->
-        itHref.toString().substringBefore("#") == targetHref
+    return indexOfFirst { position ->
+        position.href.toString().substringBefore("#") == targetHref
     }
 }
 

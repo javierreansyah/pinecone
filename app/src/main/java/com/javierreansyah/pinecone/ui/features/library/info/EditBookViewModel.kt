@@ -9,7 +9,9 @@ import androidx.lifecycle.viewModelScope
 import com.javierreansyah.pinecone.PineconeApplication
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.AuthorEntity
+import com.javierreansyah.pinecone.data.local.database.library.PublicationCreditEntity
 import com.javierreansyah.pinecone.data.local.database.library.TagEntity
+import com.javierreansyah.pinecone.data.publication.PublicationMetadata
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.ui.features.library.fileFormat
 import com.javierreansyah.pinecone.ui.features.library.publicationWording
@@ -46,33 +48,30 @@ class EditBookViewModel(
             _uiState.update { it.copy(isLoading = true, error = null) }
             val bookDetails = repository.getBook(bookId)
             if (bookDetails != null) {
-                val (_, bookTitle, bookCoverPath, _, _, _, _, _, _, _, _, _, bookDescription, _, _, _, _, _, _, _, _, _, _, _) = bookDetails.book
+                val book = bookDetails.book
+                val metadata = PublicationMetadata.decode(book.metadataJson)
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         loaded = true,
-                        wording = publicationWording(listOf(bookDetails.book.fileFormat())),
-                        title = bookTitle,
-                        description = bookDescription ?: "",
-                        existingCoverPath = bookCoverPath,
-                        tags = bookDetails.tags.map { (_, tagName) -> tagName },
-                        authors = bookDetails.credits.filter { it -> it.role == "author" }
-                            .sortedBy { it -> it.position }.map { it -> it.name },
-                        metadata = com.javierreansyah.pinecone.data.publication.PublicationMetadata.decode(
-                            bookDetails.book.metadataJson
-                        ),
+                        wording = publicationWording(listOf(book.fileFormat())),
+                        title = book.title,
+                        description = book.description ?: "",
+                        existingCoverPath = book.coverPath,
+                        tags = bookDetails.tags.map { it.name },
+                        authors = bookDetails.credits.filter { it.role == "author" }
+                            .sortedBy { it.position }.map { it.name },
+                        metadata = metadata,
                         credits = bookDetails.credits,
-                        creditDrafts = bookDetails.credits.groupBy { it -> it.role }
+                        creditDrafts = bookDetails.credits.groupBy { it.role }
                             .mapValues { (_, values) ->
-                                values.sortedBy { it -> it.position }
-                                    .joinToString("\n") { it -> it.name }
+                                values.sortedBy { it.position }
+                                    .joinToString("\n") { it.name }
                             },
-                        languageDraft = com.javierreansyah.pinecone.data.publication.PublicationMetadata.decode(
-                            bookDetails.book.metadataJson
-                        ).languages.joinToString(", "),
-                        identifierDraft = com.javierreansyah.pinecone.data.publication.PublicationMetadata.decode(
-                            bookDetails.book.metadataJson
-                        ).identifiers.entries.joinToString("\n") { entry -> "${entry.key}=${entry.value}" },
+                        languageDraft = metadata.languages.joinToString(", "),
+                        identifierDraft = metadata.identifiers.entries.joinToString("\n") { entry ->
+                            "${entry.key}=${entry.value}"
+                        },
                     )
                 }
             } else {
@@ -124,16 +123,15 @@ class EditBookViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, error = null) }
             try {
-                val (_, stateTitle, stateDescription, stateCoverUri, _, stateTags, stateAuthors, _, _, _, _, _, _, _, _, _, _) = _uiState.value
                 val state = _uiState.value
-                validate(stateTitle.isNotBlank(), R.string.publication_title_required)
-                val drafts = state.creditDrafts + ("author" to stateAuthors.joinToString("\n"))
+                validate(state.title.isNotBlank(), R.string.publication_title_required)
+                val drafts = state.creditDrafts + ("author" to state.authors.joinToString("\n"))
                 val credits = drafts.flatMap { (role, text) ->
                     text.lines().map(String::trim).filter(String::isNotBlank)
                         .mapIndexed { index, name ->
                             state.credits.firstOrNull { it.role == role && it.name == name }
                                 ?.copy(position = index)
-                                ?: com.javierreansyah.pinecone.data.local.database.library.PublicationCreditEntity(
+                                ?: PublicationCreditEntity(
                                     bookId,
                                     role,
                                     index,
@@ -154,12 +152,12 @@ class EditBookViewModel(
                     }
                 repository.updateBookMetadata(
                     bookId = bookId,
-                    title = stateTitle,
-                    description = stateDescription.ifBlank { null },
-                    coverUri = stateCoverUri,
-                    authors = (stateAuthors + credits.filter { it.role == "writer" }
+                    title = state.title,
+                    description = state.description.ifBlank { null },
+                    coverUri = state.coverUri,
+                    authors = (state.authors + credits.filter { it.role == "writer" }
                         .map { it.name }).distinct(),
-                    tags = stateTags,
+                    tags = state.tags,
                     metadata = state.metadata.copy(
                         languages = state.languageDraft.split(',').map(String::trim)
                             .filter(String::isNotBlank), identifiers = identifiers
