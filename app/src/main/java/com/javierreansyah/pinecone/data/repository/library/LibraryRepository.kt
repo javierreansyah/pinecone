@@ -33,10 +33,6 @@ import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLoca
 import com.javierreansyah.pinecone.data.publication.conversion.PdfReadModeConverter
 import com.javierreansyah.pinecone.reader.pdf.MuPdfDocumentFactory
 import com.javierreansyah.pinecone.ui.features.library.ALL_SPACES_ID
-import java.io.File
-import java.io.FileOutputStream
-import java.security.MessageDigest
-import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
@@ -52,6 +48,10 @@ import org.readium.r2.shared.publication.services.coverFitting
 import org.readium.r2.shared.util.asset.AssetRetriever
 import org.readium.r2.shared.util.toUrl
 import org.readium.r2.streamer.PublicationOpener
+import java.io.File
+import java.io.FileOutputStream
+import java.security.MessageDigest
+import java.util.UUID
 
 class LibraryRepository(
     private val context: Context,
@@ -77,7 +77,8 @@ class LibraryRepository(
 
     fun getAllBooks(): Flow<List<BookWithDetails>> = bookDao.getAllBooks()
 
-    fun getVisibleBooks(spaceId: String?): Flow<List<BookWithDetails>> = bookDao.getVisibleBooks(spaceId)
+    fun getVisibleBooks(spaceId: String?): Flow<List<BookWithDetails>> =
+        bookDao.getVisibleBooks(spaceId)
 
     fun hasUnsortedBooks(): Flow<Boolean> = bookDao.hasUnsortedBooks()
 

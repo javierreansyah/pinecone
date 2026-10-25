@@ -11,7 +11,8 @@ import com.javierreansyah.pinecone.ui.features.library.StatusFilter
 /** Read-only decoder for the original SharedPreferences keys. */
 internal object LegacyLibraryPreferences {
     fun read(values: Map<String, *>): LibraryPreferencesData {
-        val suffixes = listOf("_layout", "_sort", "_asc", "_status", "_shelf_filter", "_formats", "_show")
+        val suffixes =
+            listOf("_layout", "_sort", "_asc", "_status", "_shelf_filter", "_formats", "_show")
         val keys = values.keys.mapNotNull { key ->
             suffixes.firstOrNull(key::endsWith)?.let { key.removeSuffix(it) }
         }.toSet()
@@ -31,6 +32,7 @@ internal object LegacyLibraryPreferences {
         fun boolean(key: String, default: Boolean): Boolean = values[key] as? Boolean ?: default
         fun strings(key: String, default: Set<String>): Set<String> =
             (values[key] as? Set<*>)?.filterIsInstance<String>()?.toSet() ?: default
+
         val layoutModeStr =
             string("${fullKey}_layout", defaultLayout.name)
         val sortTypeStr = string("${fullKey}_sort", defaultSort.name)

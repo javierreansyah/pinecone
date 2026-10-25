@@ -22,7 +22,6 @@ import com.javierreansyah.pinecone.ui.features.library.sortShelfBooks
 import com.javierreansyah.pinecone.ui.features.library.toggleFormat
 import com.javierreansyah.pinecone.ui.features.library.toggleStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +34,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -46,7 +46,8 @@ class ShelfDetailViewModel @Inject constructor(
 ) : ViewModel() {
     private val screenKey = "shelf_detail"
 
-    private val _uiState = MutableStateFlow(ShelfDetailUiState(bookPreferences = libraryPreferenceDefaults(screenKey)))
+    private val _uiState =
+        MutableStateFlow(ShelfDetailUiState(bookPreferences = libraryPreferenceDefaults(screenKey)))
 
     val uiState: StateFlow<ShelfDetailUiState> = _uiState.asStateFlow()
 

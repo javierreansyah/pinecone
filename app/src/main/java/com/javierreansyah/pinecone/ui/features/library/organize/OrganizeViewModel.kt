@@ -151,6 +151,7 @@ class OrganizeViewModel @AssistedInject constructor(
             targetBookIds.forEach { bookId -> repository.addBookToSpace(spaceId, bookId) }
         }
     }
+
     @dagger.assisted.AssistedFactory
     interface Factory {
         fun create(bookIdsStr: String): OrganizeViewModel

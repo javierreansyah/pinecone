@@ -72,7 +72,6 @@ import com.composables.icons.materialsymbols.outlined.Format_align_right
 import com.composables.icons.materialsymbols.outlined.Image
 import com.composables.icons.materialsymbols.outlined.Invert_colors
 import com.composables.icons.materialsymbols.outlined.Restart_alt
-import com.composables.icons.materialsymbols.outlinedfilled.Brightness_auto as FilledBrightnessAuto
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.CustomPineconeTheme
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
@@ -80,9 +79,10 @@ import com.javierreansyah.pinecone.reader.epub.toEpubPreferences
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
 import com.javierreansyah.pinecone.ui.components.SegmentedButtonGroup
 import com.javierreansyah.pinecone.ui.components.SettingsChoiceDialog
+import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.math.roundToInt
-import kotlinx.coroutines.launch
+import com.composables.icons.materialsymbols.outlinedfilled.Brightness_auto as FilledBrightnessAuto
 
 @SuppressLint("DefaultLocale", "ConfigurationScreenWidthHeight", "LogNotTimber")
 @Composable
@@ -367,7 +367,9 @@ fun ReaderSettingsContent(
 
 @Composable
 private fun TextTabContent(
-    settings: ReaderSettings, onSettingsChange: ((ReaderSettings) -> ReaderSettings) -> Unit, locale: Locale,
+    settings: ReaderSettings,
+    onSettingsChange: ((ReaderSettings) -> ReaderSettings) -> Unit,
+    locale: Locale,
 ) {
 
     Column(

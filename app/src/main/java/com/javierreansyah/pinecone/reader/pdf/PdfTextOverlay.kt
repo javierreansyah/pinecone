@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.reader.pdf
 
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
@@ -37,6 +36,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.javierreansyah.pinecone.R
 import kotlinx.coroutines.CancellationException
 import org.readium.r2.shared.publication.Locator

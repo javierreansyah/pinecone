@@ -17,12 +17,12 @@ class ImportedHtmlTest {
             """.trimIndent(),
         )
         val document = Jsoup.parse(html)
-        assertTrue(document.select("b").text().contains("Meaning"))
+        assertTrue("Meaning" in document.select("b").text())
         assertEquals("Word", document.select("h2.word-title").text())
         assertEquals("cell", document.select("td").text())
-        assertEquals("https://example.com", document.select("a").last()!!.attr("href"))
+        assertEquals("https://example.com", (document.select("a").last() ?: return).attr("href"))
         assertTrue(document.select("script, style, [onclick], [href^=javascript]").isEmpty())
-        assertFalse(html.contains("<html"))
+        assertFalse("<html" in html)
     }
 
     @Test

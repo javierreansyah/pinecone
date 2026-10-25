@@ -469,7 +469,7 @@ class PdfReadModeConverterTest {
                 opener,
                 retriever,
                 (context.applicationContext as com.javierreansyah.pinecone.PineconeApplication).readerPreferences,
-                dagger.Lazy { (context.applicationContext as com.javierreansyah.pinecone.PineconeApplication).audioSession },
+                { (context.applicationContext as com.javierreansyah.pinecone.PineconeApplication).audioSession },
                 kotlinx.coroutines.Dispatchers.IO,
                 kotlinx.coroutines.Dispatchers.Main.immediate,
             )

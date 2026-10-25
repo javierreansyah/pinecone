@@ -21,7 +21,6 @@ import com.javierreansyah.pinecone.ui.features.library.sortShelfBooks
 import com.javierreansyah.pinecone.ui.features.library.toggleFormat
 import com.javierreansyah.pinecone.ui.features.library.toggleStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -35,6 +34,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -44,7 +44,8 @@ class FilterResultViewModel @Inject constructor(
 ) : ViewModel() {
     private val screenKey = "filter_result"
 
-    private val _uiState = MutableStateFlow(FilterResultUiState(bookPreferences = libraryPreferenceDefaults(screenKey)))
+    private val _uiState =
+        MutableStateFlow(FilterResultUiState(bookPreferences = libraryPreferenceDefaults(screenKey)))
 
     val uiState: StateFlow<FilterResultUiState> = _uiState.asStateFlow()
 

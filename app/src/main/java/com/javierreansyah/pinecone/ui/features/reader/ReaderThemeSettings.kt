@@ -58,8 +58,8 @@ internal data class ReaderThemeSettings(
     private companion object {
         const val WHITE: Int = -1
         const val BLACK: Int = -16777216
-        val WARM_BACKGROUND: Int = 0xFFFAF4E8.toInt()
-        val WARM_TEXT: Int = 0xFF121212.toInt()
+        const val WARM_BACKGROUND: Int = 0xFFFAF4E8.toInt()
+        const val WARM_TEXT: Int = 0xFF121212.toInt()
     }
 }
 
@@ -68,7 +68,8 @@ internal fun ReaderSettings.toReaderThemeSettings(): ReaderThemeSettings = Reade
     preset = pineconeThemePreset,
     customBackgroundColor = customBackgroundColor,
     customTextColor = customTextColor,
-    customUiTheme = customThemes.firstOrNull { it.name == pineconeThemePreset }?.uiTheme ?: "Setting",
+    customUiTheme = customThemes.firstOrNull { it.name == pineconeThemePreset }?.uiTheme
+        ?: "Setting",
 )
 
 internal fun String.colorOrDefault(fallback: Int): Int = try {

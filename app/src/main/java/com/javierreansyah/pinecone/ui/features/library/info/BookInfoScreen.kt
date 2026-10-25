@@ -92,7 +92,6 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -136,16 +135,16 @@ import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.fileFormat
 import com.javierreansyah.pinecone.ui.features.library.publicationWording
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
-import java.io.File
-import java.time.LocalDate
-import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.util.mediatype.MediaType
+import java.io.File
+import java.time.LocalDate
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun BookInfoScreen(
@@ -156,7 +155,6 @@ fun BookInfoScreen(
     onNavigateToTag: (String) -> Unit,
     onNavigateToOrganize: (String) -> Unit,
 ) {
-    val context = LocalContext.current
     val viewModel = hiltViewModel<BookInfoViewModel, BookInfoViewModel.Factory>(
         key = bookId,
         creationCallback = { it.create(bookId) },
@@ -613,7 +611,8 @@ private fun ChaptersTabContent(
                                     ),
                                 )
                             } else positions.firstOrNull { position ->
-                                position.href.toString().substringBefore("#") == link.href.toString()
+                                position.href.toString()
+                                    .substringBefore("#") == link.href.toString()
                                     .substringBefore("#")
                             } ?: Locator(
                                 href = link.url(),
@@ -918,7 +917,8 @@ private fun NotesTabContent(
                                 }
                             }
                             androidx.compose.material3.IconButton(
-                                onClick = { onDeleteNote(note.id) }, modifier = Modifier.size(24.dp),
+                                onClick = { onDeleteNote(note.id) },
+                                modifier = Modifier.size(24.dp),
                             ) {
                                 Icon(
                                     imageVector = MaterialSymbols.Outlined.Delete,

@@ -59,15 +59,15 @@ class EditBookViewModel @AssistedInject constructor(
                         title = book.title,
                         description = book.description ?: "",
                         existingCoverPath = book.coverPath,
-                        tags = bookDetails.tags.map { it.name },
-                        authors = bookDetails.credits.filter { it.role == "author" }
-                            .sortedBy { it.position }.map { it.name },
+                        tags = bookDetails.tags.map { it -> it.name },
+                        authors = bookDetails.credits.filter { it -> it.role == "author" }
+                            .sortedBy { it -> it.position }.map { it -> it.name },
                         metadata = metadata,
                         credits = bookDetails.credits,
-                        creditDrafts = bookDetails.credits.groupBy { it.role }
+                        creditDrafts = bookDetails.credits.groupBy { it -> it.role }
                             .mapValues { (_, values) ->
-                                values.sortedBy { it.position }
-                                    .joinToString("\n") { it.name }
+                                values.sortedBy { it -> it.position }
+                                    .joinToString("\n") { it -> it.name }
                             },
                         languageDraft = metadata.languages.joinToString(", "),
                         identifierDraft = metadata.identifiers.entries.joinToString("\n") { entry ->
@@ -192,7 +192,7 @@ class EditBookViewModel @AssistedInject constructor(
         )
     }
 
-    fun updateRichMetadata(metadata: com.javierreansyah.pinecone.data.publication.PublicationMetadata) {
+    fun updateRichMetadata(metadata: PublicationMetadata) {
         _uiState.update { it.copy(metadata = metadata) }
     }
 

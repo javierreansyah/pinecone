@@ -35,9 +35,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.readium.r2.navigator.epub.EpubPreferences
 import org.readium.r2.shared.publication.Link
@@ -86,7 +86,7 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
     val audioSession: AudioReadingSession,
 ) : ViewModel() {
     private val initialSystemDark = application.resources.configuration.uiMode and
-        android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
+            android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
 
     private val _publication = MutableStateFlow<Publication?>(null)
     val publication: StateFlow<Publication?> = _publication.asStateFlow()
@@ -292,11 +292,11 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
     }
 
     private fun findTitleInLinks(href: String, links: List<Link>): String? {
-        for (link in links) {
-            if (link.href.toString().substringBefore("#") == href) {
-                return link.title
+        for ((href1, _, title, _, _, _, _, _, _, _, _, children) in links) {
+            if (href1.toString().substringBefore("#") == href) {
+                return title
             }
-            val childTitle = findTitleInLinks(href, link.children)
+            val childTitle = findTitleInLinks(href, children)
             childTitle?.let { return it }
         }
         return null
@@ -655,7 +655,8 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
             settingsMutex.withLock {
                 if (readingOverrides.value != null) {
                     val global = readerPreferences.readerSettings.first()
-                    val current = global.withReadingPreferencesFrom(requireNotNull(readingOverrides.value))
+                    val current =
+                        global.withReadingPreferencesFrom(requireNotNull(readingOverrides.value))
                     val local = ReaderSettings().withReadingPreferencesFrom(transform(current))
                     readingOverrides.value = local
                     repository.setReadingOverrides(
@@ -680,12 +681,15 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
         viewModelScope.launch {
             settingsMutex.withLock {
                 val global = readerPreferences.readerSettings.first()
-                val current = readingOverrides.value?.let { global.withReadingPreferencesFrom(it) } ?: global
-                readingOverrides.value = if (enabled) ReaderSettings().withReadingPreferencesFrom(current) else null
+                val current =
+                    readingOverrides.value?.let { global.withReadingPreferencesFrom(it) } ?: global
+                readingOverrides.value =
+                    if (enabled) ReaderSettings().withReadingPreferencesFrom(current) else null
                 repository.setReadingOverrides(
                     bookId,
                     activeRendition.value,
-                    readingOverrides.value?.let { kotlinx.serialization.json.Json.encodeToString(it) } ?: "{}",
+                    readingOverrides.value?.let { kotlinx.serialization.json.Json.encodeToString(it) }
+                        ?: "{}",
                 )
             }
         }

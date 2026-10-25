@@ -93,9 +93,14 @@ class PdfSearchNavigationTest {
 
                 fun pointOnWord(quad: com.javierreansyah.pinecone.reader.pdf.PdfSearchQuad = glyph): Pair<Float, Float> {
                     val bounds = pageBounds(1)
-                    val viewport = pdfImageViewport(bounds.width().toFloat(), bounds.height().toFloat(), 600, 800)
+                    val viewport = pdfImageViewport(
+                        bounds.width().toFloat(),
+                        bounds.height().toFloat(),
+                        600,
+                        800
+                    )
                     return bounds.left + viewport.left + (quad.topLeft.x + quad.bottomRight.x) / 2 * viewport.width to
-                        bounds.top + viewport.top + (quad.topLeft.y + quad.bottomRight.y) / 2 * viewport.height
+                            bounds.top + viewport.top + (quad.topLeft.y + quad.bottomRight.y) / 2 * viewport.height
                 }
 
                 fun touch(action: Int, down: Long, point: Pair<Float, Float>) {
@@ -423,10 +428,12 @@ class PdfSearchNavigationTest {
         if (!cleared) {
             var matches: List<PdfSearchMatch> = emptyList()
             scenario.onActivity { activity ->
-                matches = searchModel(activity).searchState.value.results.map { requireNotNull(it.pdfMatch) }
+                matches =
+                    searchModel(activity).searchState.value.results.map { requireNotNull(it.pdfMatch) }
             }
             val bounds = pageBounds(matches.first().pageIndex + 1)
-            val viewport = pdfImageViewport(bounds.width().toFloat(), bounds.height().toFloat(), 600, 800)
+            val viewport =
+                pdfImageViewport(bounds.width().toFloat(), bounds.height().toFloat(), 600, 800)
             backgroundPixel = (bounds.left + viewport.left + viewport.width * .8f).toInt() to
                     (bounds.top + viewport.top + viewport.height * .8f).toInt()
             markerRegions = matches.take(2).map { match ->

@@ -18,10 +18,8 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import javax.inject.Qualifier
-import javax.inject.Singleton
-import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -30,6 +28,8 @@ import org.readium.r2.shared.util.http.DefaultHttpClient
 import org.readium.r2.streamer.PublicationOpener
 import org.readium.r2.streamer.parser.DefaultPublicationParser
 import timber.log.Timber
+import javax.inject.Qualifier
+import javax.inject.Singleton
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
@@ -64,7 +64,8 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun readerPreferences(@ApplicationContext context: Context): ReaderPreferences = ReaderPreferences(context)
+    fun readerPreferences(@ApplicationContext context: Context): ReaderPreferences =
+        ReaderPreferences(context)
 
     @Provides
     @Singleton
@@ -79,7 +80,10 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun assetRetriever(@ApplicationContext context: Context, httpClient: DefaultHttpClient): AssetRetriever =
+    fun assetRetriever(
+        @ApplicationContext context: Context,
+        httpClient: DefaultHttpClient
+    ): AssetRetriever =
         AssetRetriever(contentResolver = context.contentResolver, httpClient = httpClient)
 
     @Provides
@@ -109,19 +113,35 @@ object AppModule {
         @IoDispatcher ioDispatcher: CoroutineDispatcher,
         @MainDispatcher mainDispatcher: CoroutineDispatcher,
     ): LibraryRepository = LibraryRepository(
-        context, database, database.bookDao(), database.bookmarkDao(), database.shelfDao(),
-        database.noteDao(), database.spaceDao(), publicationOpener, assetRetriever, preferences, audioSession,
-        ioDispatcher, mainDispatcher,
+        context,
+        database,
+        database.bookDao(),
+        database.bookmarkDao(),
+        database.shelfDao(),
+        database.noteDao(),
+        database.spaceDao(),
+        publicationOpener,
+        assetRetriever,
+        preferences,
+        audioSession,
+        ioDispatcher,
+        mainDispatcher,
     )
 
     @Provides
     @Singleton
-    fun dictionaryRepository(@ApplicationContext context: Context, preferences: ReaderPreferences): DictionaryRepository =
+    fun dictionaryRepository(
+        @ApplicationContext context: Context,
+        preferences: ReaderPreferences
+    ): DictionaryRepository =
         DictionaryRepository(context, preferences)
 
     @Provides
     @Singleton
-    fun dictionaryImportManager(@ApplicationContext context: Context, preferences: ReaderPreferences): DictionaryImportManager =
+    fun dictionaryImportManager(
+        @ApplicationContext context: Context,
+        preferences: ReaderPreferences
+    ): DictionaryImportManager =
         DictionaryImportManager(context, preferences)
 
     @Provides
@@ -135,17 +155,24 @@ object AppModule {
         @IoDispatcher ioDispatcher: CoroutineDispatcher,
         @MainDispatcher mainDispatcher: CoroutineDispatcher,
     ): BackupRepository = BackupRepository(
-        context, preferences, database, libraryRepository, audioSession, ioDispatcher, mainDispatcher,
+        context,
+        preferences,
+        database,
+        libraryRepository,
+        audioSession,
+        ioDispatcher,
+        mainDispatcher,
     )
 
     @Provides
     @Singleton
     @ApplicationScope
-    fun applicationScope(@MainDispatcher dispatcher: CoroutineDispatcher): CoroutineScope = CoroutineScope(
-        SupervisorJob() + dispatcher + CoroutineExceptionHandler { _, error ->
-            Timber.e(error, "Application background operation failed")
-        },
-    )
+    fun applicationScope(@MainDispatcher dispatcher: CoroutineDispatcher): CoroutineScope =
+        CoroutineScope(
+            SupervisorJob() + dispatcher + CoroutineExceptionHandler { _, error ->
+                Timber.e(error, "Application background operation failed")
+            },
+        )
 
     @Provides
     @Singleton

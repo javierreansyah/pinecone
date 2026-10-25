@@ -110,7 +110,7 @@ fun NavGraph(
         }
     }
     val context = LocalContext.current
-    val app: com.javierreansyah.pinecone.ui.root.AppServicesViewModel = hiltViewModel()
+    val app: AppServicesViewModel = hiltViewModel()
     val scope = rememberCoroutineScope()
     val openBook: (String, Locator?) -> Unit = { bookId, locator ->
         scope.launch {
@@ -384,9 +384,9 @@ fun NavGraph(
 
     organizeBookIds?.let { bookIds ->
         val organizeViewModel = hiltViewModel<
-            com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel,
-            com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel.Factory,
-        >(key = bookIds, creationCallback = { it.create(bookIds) })
+                com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel,
+                com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel.Factory,
+                >(key = bookIds, creationCallback = { it.create(bookIds) })
         com.javierreansyah.pinecone.ui.features.library.organize.OrganizeBottomSheet(
             viewModel = organizeViewModel,
         ) { organizeBookIds = null }

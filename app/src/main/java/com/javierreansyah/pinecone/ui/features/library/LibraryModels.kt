@@ -2,10 +2,13 @@ package com.javierreansyah.pinecone.ui.features.library
 
 @kotlinx.serialization.Serializable
 enum class LayoutMode { Grid, BigGrid, List, BigList }
+
 @kotlinx.serialization.Serializable
 enum class SortType { Title, Author, LastRead, Added, Progress, Custom }
+
 @kotlinx.serialization.Serializable
 enum class StatusFilter { NotStarted, Reading, Finished }
+
 @kotlinx.serialization.Serializable
 enum class ShelfFilter { Shelves, Unshelved }
 

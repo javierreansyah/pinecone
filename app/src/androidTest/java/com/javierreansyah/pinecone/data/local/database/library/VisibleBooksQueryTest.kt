@@ -20,12 +20,17 @@ class VisibleBooksQueryTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
         try {
-            database.spaceDao().insertAllSpaces(listOf(SpaceEntity("_all_", "All"), SpaceEntity("work", "Work")))
+            database.spaceDao()
+                .insertAllSpaces(listOf(SpaceEntity("_all_", "All"), SpaceEntity("work", "Work")))
             val books = List(5_000) { index ->
                 BookEntity(
-                    id = "book-$index", title = "Title ${index % 37}", filePath = "/book-$index.epub",
-                    addedDate = index.toLong(), lastReadDate = (index % 100).toLong(),
-                    isArchived = index % 13 == 0, isUnsorted = index % 17 == 0,
+                    id = "book-$index",
+                    title = "Title ${index % 37}",
+                    filePath = "/book-$index.epub",
+                    addedDate = index.toLong(),
+                    lastReadDate = (index % 100).toLong(),
+                    isArchived = index % 13 == 0,
+                    isUnsorted = index % 17 == 0,
                     metadataJson = """{"sortTitle":"Sort ${index % 23}"}""",
                 )
             }
@@ -49,11 +54,18 @@ class VisibleBooksQueryTest {
                 assertEquals(expected, optimized.value)
                 for (sort in SortType.entries) {
                     val preferences = FilterSortPreferences(sortType = sort)
-                    assertEquals(expected.filterAndSort(preferences), optimized.value.filterAndSort(preferences))
+                    assertEquals(
+                        expected.filterAndSort(preferences),
+                        optimized.value.filterAndSort(preferences)
+                    )
                 }
                 Timber.i(
                     "VisibleBooksQuery: space=%s, baseline=%s (%d rows), query=%s (%d rows)",
-                    space, baseline.duration, baseline.value.size, optimized.duration, optimized.value.size,
+                    space,
+                    baseline.duration,
+                    baseline.value.size,
+                    optimized.duration,
+                    optimized.value.size,
                 )
             }
         } finally {

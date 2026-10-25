@@ -63,7 +63,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -88,7 +87,6 @@ import java.io.File
 fun EditBookScreen(
     bookId: String, onNavigateBack: () -> Unit,
 ) {
-    val context = LocalContext.current
 
     val viewModel = hiltViewModel<EditBookViewModel, EditBookViewModel.Factory>(
         key = bookId,

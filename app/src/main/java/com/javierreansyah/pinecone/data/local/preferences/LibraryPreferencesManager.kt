@@ -22,7 +22,10 @@ internal data class LibraryPreferencesData(
 
 internal val Context.libraryPreferencesStore by dataStore(
     fileName = "library_preferences.json",
-    serializer = JsonPreferenceSerializer(LibraryPreferencesData.serializer(), LibraryPreferencesData()),
+    serializer = JsonPreferenceSerializer(
+        LibraryPreferencesData.serializer(),
+        LibraryPreferencesData()
+    ),
     produceMigrations = { context ->
         listOf(object : DataMigration<LibraryPreferencesData> {
             override suspend fun shouldMigrate(currentData: LibraryPreferencesData): Boolean =
@@ -42,8 +45,11 @@ class LibraryPreferencesManager internal constructor(
     private val store: DataStore<LibraryPreferencesData>,
     private val readerPreferences: ReaderPreferences,
 ) {
-    constructor(context: Context, readerPreferences: ReaderPreferences = ReaderPreferences(context)) :
-        this(context.libraryPreferencesStore, readerPreferences)
+    constructor(
+        context: Context,
+        readerPreferences: ReaderPreferences = ReaderPreferences(context)
+    ) :
+            this(context.libraryPreferencesStore, readerPreferences)
 
     fun preferences(spaceId: String?, screenKey: String): Flow<FilterSortPreferences> =
         store.data.map { data ->
@@ -67,7 +73,8 @@ class LibraryPreferencesManager internal constructor(
     }
 
     fun getEffectiveSpaceFlow(): Flow<String?> = combine(
-        store.data.map { it.globalSpaceId }.distinctUntilChanged(), readerPreferences.readerSettings,
+        store.data.map { it.globalSpaceId }.distinctUntilChanged(),
+        readerPreferences.readerSettings,
     ) { spaceId, settings -> if (settings.spacesEnabled) spaceId else "_all_" }.distinctUntilChanged()
 
     private fun preferenceKey(spaceId: String?, screenKey: String): String =
@@ -75,10 +82,15 @@ class LibraryPreferencesManager internal constructor(
 }
 
 internal fun libraryPreferenceDefaults(key: String): FilterSortPreferences = when {
-    key.endsWith("shelf_detail") -> FilterSortPreferences(sortType = SortType.Custom, isAscending = true)
+    key.endsWith("shelf_detail") -> FilterSortPreferences(
+        sortType = SortType.Custom,
+        isAscending = true
+    )
+
     key.endsWith("library_books") -> FilterSortPreferences(sortType = SortType.LastRead)
     key.endsWith("library_shelves") -> FilterSortPreferences(
         layoutMode = LayoutMode.BigList, sortType = SortType.Title, isAscending = true,
     )
+
     else -> FilterSortPreferences()
 }

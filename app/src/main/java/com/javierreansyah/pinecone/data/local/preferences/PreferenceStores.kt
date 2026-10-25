@@ -6,13 +6,13 @@ import androidx.datastore.core.DataMigration
 import androidx.datastore.core.Serializer
 import androidx.datastore.dataStore
 import androidx.datastore.preferences.preferencesDataStore
-import java.io.InputStream
-import java.io.OutputStream
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import java.io.InputStream
+import java.io.OutputStream
 
 internal val PreferenceJson = Json { encodeDefaults = true; ignoreUnknownKeys = true }
 
@@ -27,7 +27,10 @@ private val Context.legacyReaderPreferences by preferencesDataStore(name = "read
 
 internal val Context.readerPreferencesStore by dataStore(
     fileName = "reader_preferences.json",
-    serializer = JsonPreferenceSerializer(ReaderPreferencesData.serializer(), ReaderPreferencesData()),
+    serializer = JsonPreferenceSerializer(
+        ReaderPreferencesData.serializer(),
+        ReaderPreferencesData()
+    ),
     produceMigrations = { context ->
         listOf(ReaderPreferencesMigration { context.legacyReaderPreferences.data.first() })
     },
@@ -40,7 +43,10 @@ internal class ReaderPreferencesMigration(
         !currentData.legacyMigrationComplete
 
     override suspend fun migrate(currentData: ReaderPreferencesData): ReaderPreferencesData =
-        currentData.copy(settings = LegacyReaderSettings.read(readLegacy()), legacyMigrationComplete = true)
+        currentData.copy(
+            settings = LegacyReaderSettings.read(readLegacy()),
+            legacyMigrationComplete = true
+        )
 
     // Keep the original file for recovery; the durable marker prevents reimporting it.
     override suspend fun cleanUp() = Unit

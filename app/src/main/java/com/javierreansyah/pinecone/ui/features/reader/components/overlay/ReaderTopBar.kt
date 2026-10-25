@@ -1,7 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.reader.components.overlay
 
-import com.composables.icons.materialsymbols.outlined.Menu_book
-import com.composables.icons.materialsymbols.outlined.Tune
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -69,9 +67,11 @@ import com.composables.icons.materialsymbols.outlined.Info
 import com.composables.icons.materialsymbols.outlined.Keyboard_arrow_down
 import com.composables.icons.materialsymbols.outlined.List
 import com.composables.icons.materialsymbols.outlined.Match_case
+import com.composables.icons.materialsymbols.outlined.Menu_book
 import com.composables.icons.materialsymbols.outlined.More_vert
 import com.composables.icons.materialsymbols.outlined.Restart_alt
 import com.composables.icons.materialsymbols.outlined.Search
+import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
 import org.readium.r2.shared.publication.Locator

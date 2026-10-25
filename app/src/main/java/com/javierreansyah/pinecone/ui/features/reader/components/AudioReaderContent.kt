@@ -1,13 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.reader.components
 
-import com.composables.icons.materialsymbols.outlined.Forward_10
-import com.composables.icons.materialsymbols.outlined.Headphones
-import com.composables.icons.materialsymbols.outlined.Pause
-import com.composables.icons.materialsymbols.outlined.Play_arrow
-import com.composables.icons.materialsymbols.outlined.Replay_10
-import com.composables.icons.materialsymbols.outlined.Skip_next
-import com.composables.icons.materialsymbols.outlined.Skip_previous
-import com.composables.icons.materialsymbols.outlined.Tune
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -86,7 +78,15 @@ import coil3.compose.AsyncImage
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Bookmark
 import com.composables.icons.materialsymbols.outlined.Edit_note
+import com.composables.icons.materialsymbols.outlined.Forward_10
+import com.composables.icons.materialsymbols.outlined.Headphones
 import com.composables.icons.materialsymbols.outlined.List
+import com.composables.icons.materialsymbols.outlined.Pause
+import com.composables.icons.materialsymbols.outlined.Play_arrow
+import com.composables.icons.materialsymbols.outlined.Replay_10
+import com.composables.icons.materialsymbols.outlined.Skip_next
+import com.composables.icons.materialsymbols.outlined.Skip_previous
+import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.reader.audio.AudioPlaybackState
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon

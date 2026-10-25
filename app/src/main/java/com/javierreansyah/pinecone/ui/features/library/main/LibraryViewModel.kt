@@ -30,9 +30,6 @@ import com.javierreansyah.pinecone.ui.features.library.toggleFormat
 import com.javierreansyah.pinecone.ui.features.library.toggleShelf
 import com.javierreansyah.pinecone.ui.features.library.toggleStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.io.File
-import javax.inject.Inject
-import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -42,13 +39,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
+import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -60,7 +60,12 @@ class LibraryViewModel @Inject constructor(
 ) : ViewModel() {
     private val screenKey = "library_books"
 
-    private val _uiState = MutableStateFlow(LibraryUiState(bookPreferences = libraryPreferenceDefaults(screenKey), shelvesPreferences = libraryPreferenceDefaults("library_shelves")))
+    private val _uiState = MutableStateFlow(
+        LibraryUiState(
+            bookPreferences = libraryPreferenceDefaults(screenKey),
+            shelvesPreferences = libraryPreferenceDefaults("library_shelves")
+        )
+    )
 
     private val _isBooksLoading = MutableStateFlow(value = true)
     private val _isShelvesLoading = MutableStateFlow(value = true)
@@ -73,7 +78,8 @@ class LibraryViewModel @Inject constructor(
 
     private val allBooks: StateFlow<List<Book>> =
         globalSpaceId.flatMapLatest { spaceId ->
-            bookRepository.getVisibleBooks(spaceId).map { entities -> entities.map(Book::fromEntity) }
+            bookRepository.getVisibleBooks(spaceId)
+                .map { entities -> entities.map(Book::fromEntity) }
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -351,35 +357,50 @@ class LibraryViewModel @Inject constructor(
     fun onLayoutModeChange(mode: LayoutMode, isShelvesTab: Boolean = false) {
         val spaceId = globalSpaceId.value
         viewModelScope.launch {
-            prefsManager.updatePreferences(spaceId, if (isShelvesTab) "library_shelves" else screenKey) { it.copy(layoutMode = mode) }
+            prefsManager.updatePreferences(
+                spaceId,
+                if (isShelvesTab) "library_shelves" else screenKey
+            ) { it.copy(layoutMode = mode) }
         }
     }
 
     fun onSortTypeChange(sortType: SortType, isShelvesTab: Boolean = false) {
         val spaceId = globalSpaceId.value
         viewModelScope.launch {
-            prefsManager.updatePreferences(spaceId, if (isShelvesTab) "library_shelves" else screenKey) { it.selectSort(sortType) }
+            prefsManager.updatePreferences(
+                spaceId,
+                if (isShelvesTab) "library_shelves" else screenKey
+            ) { it.selectSort(sortType) }
         }
     }
 
     fun toggleStatusFilter(status: StatusFilter, isShelvesTab: Boolean = false) {
         val spaceId = globalSpaceId.value
         viewModelScope.launch {
-            prefsManager.updatePreferences(spaceId, if (isShelvesTab) "library_shelves" else screenKey) { it.toggleStatus(status) }
+            prefsManager.updatePreferences(
+                spaceId,
+                if (isShelvesTab) "library_shelves" else screenKey
+            ) { it.toggleStatus(status) }
         }
     }
 
     fun toggleShelfFilter(filter: ShelfFilter, isShelvesTab: Boolean = false) {
         val spaceId = globalSpaceId.value
         viewModelScope.launch {
-            prefsManager.updatePreferences(spaceId, if (isShelvesTab) "library_shelves" else screenKey) { it.toggleShelf(filter) }
+            prefsManager.updatePreferences(
+                spaceId,
+                if (isShelvesTab) "library_shelves" else screenKey
+            ) { it.toggleShelf(filter) }
         }
     }
 
     fun toggleFileFilter(format: FileFilter, isShelvesTab: Boolean = false) {
         val spaceId = globalSpaceId.value
         viewModelScope.launch {
-            prefsManager.updatePreferences(spaceId, if (isShelvesTab) "library_shelves" else screenKey) { it.toggleFormat(format) }
+            prefsManager.updatePreferences(
+                spaceId,
+                if (isShelvesTab) "library_shelves" else screenKey
+            ) { it.toggleFormat(format) }
         }
     }
 

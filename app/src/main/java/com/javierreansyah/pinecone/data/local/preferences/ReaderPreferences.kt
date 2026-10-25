@@ -2,10 +2,10 @@ package com.javierreansyah.pinecone.data.local.preferences
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlin.math.roundToInt
 
 class ReaderPreferences internal constructor(private val store: DataStore<ReaderPreferencesData>) {
     constructor(context: Context) : this(context.readerPreferencesStore)

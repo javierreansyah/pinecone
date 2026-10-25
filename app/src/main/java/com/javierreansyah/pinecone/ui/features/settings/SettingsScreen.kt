@@ -84,10 +84,10 @@ import com.javierreansyah.pinecone.ui.features.settings.components.ColorSchemePi
 import com.javierreansyah.pinecone.ui.features.settings.components.SettingsItem
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import com.javierreansyah.pinecone.worker.WorkerUtils
+import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
-import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(
@@ -202,8 +202,20 @@ fun SettingsScreen(
         onThemeContrastSelected = { themeContrast ->
             viewModel.updateSettings { current -> current.copy(themeContrast = themeContrast) }
         },
-        onSpacesEnabledChanged = { enabled -> viewModel.updateSettings { current -> current.copy(spacesEnabled = enabled) } },
-        onShowAllSpacesChanged = { show -> viewModel.updateSettings { current -> current.copy(showAllSpaces = show) } },
+        onSpacesEnabledChanged = { enabled ->
+            viewModel.updateSettings { current ->
+                current.copy(
+                    spacesEnabled = enabled
+                )
+            }
+        },
+        onShowAllSpacesChanged = { show ->
+            viewModel.updateSettings { current ->
+                current.copy(
+                    showAllSpaces = show
+                )
+            }
+        },
         onUnsortedEnabledChanged = { enabled ->
             viewModel.updateSettings { current ->
                 current.copy(

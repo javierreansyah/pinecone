@@ -2,7 +2,6 @@
 
 package com.javierreansyah.pinecone.reader.pdf
 
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.graphics.PointF
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -56,6 +55,7 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.theme.PineconeTheme
 import kotlinx.coroutines.CancellationException
@@ -163,7 +163,10 @@ class MuPdfDocumentFragment(
             highlights.matches.filter { it.href == input.href.toString() }.groupBy { it.pageIndex }
         }
         val initial =
-            currentPage.collectAsStateWithLifecycle().value.coerceIn(0, (pdf.pageCount - 1).coerceAtLeast(0))
+            currentPage.collectAsStateWithLifecycle().value.coerceIn(
+                0,
+                (pdf.pageCount - 1).coerceAtLeast(0)
+            )
         val pager = rememberPagerState(initialPage = initial) { pdf.pageCount }
         val list = rememberLazyListState(initialFirstVisibleItemIndex = initial)
         LaunchedEffect(

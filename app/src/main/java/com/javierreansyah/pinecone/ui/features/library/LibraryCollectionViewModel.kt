@@ -26,7 +26,11 @@ abstract class LibraryCollectionViewModel(
     source: (LibraryRepository) -> Flow<List<BookWithDetails>>,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(LibraryCollectionUiState(bookPreferences = libraryPreferenceDefaults(screenKey)))
+    private val _uiState = MutableStateFlow(
+        LibraryCollectionUiState(
+            bookPreferences = libraryPreferenceDefaults(screenKey)
+        )
+    )
 
     val uiState: StateFlow<LibraryCollectionUiState> = _uiState.asStateFlow()
 

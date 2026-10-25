@@ -9,29 +9,39 @@ import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.repository.backup.BackupRepository
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.di.ApplicationScope
+import com.javierreansyah.pinecone.di.IoDispatcher
 import com.javierreansyah.pinecone.reader.audio.AudioReadingSession
 import com.javierreansyah.pinecone.worker.WorkerUtils
 import dagger.hilt.android.HiltAndroidApp
-import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineDispatcher
-import com.javierreansyah.pinecone.di.IoDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import javax.inject.Inject
 
 @HiltAndroidApp
 class PineconeApplication : Application(), Configuration.Provider {
-    @Inject lateinit var database: AppDatabase
-    @Inject lateinit var libraryRepository: LibraryRepository
-    @Inject lateinit var readerPreferences: ReaderPreferences
-    @Inject lateinit var audioSession: AudioReadingSession
-    @Inject lateinit var backupRepository: BackupRepository
-    @Inject lateinit var workerFactory: HiltWorkerFactory
-    @Inject @ApplicationScope lateinit var applicationScope: CoroutineScope
-    @Inject @IoDispatcher lateinit var ioDispatcher: CoroutineDispatcher
+    @Inject
+    lateinit var database: AppDatabase
+    @Inject
+    lateinit var libraryRepository: LibraryRepository
+    @Inject
+    lateinit var readerPreferences: ReaderPreferences
+    @Inject
+    lateinit var audioSession: AudioReadingSession
+    @Inject
+    lateinit var backupRepository: BackupRepository
+    @Inject
+    lateinit var workerFactory: HiltWorkerFactory
+    @Inject
+    @ApplicationScope
+    lateinit var applicationScope: CoroutineScope
+    @Inject
+    @IoDispatcher
+    lateinit var ioDispatcher: CoroutineDispatcher
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
@@ -52,7 +62,8 @@ class PineconeApplication : Application(), Configuration.Provider {
                 }
                 libraryRepository.cleanupOrphanedFiles()
                 WorkerUtils.scheduleBackupWork(
-                    applicationContext, readerPreferences.readerSettings.first().autoBackupFrequency,
+                    applicationContext,
+                    readerPreferences.readerSettings.first().autoBackupFrequency,
                 )
                 readerPreferences.readerSettings.collect { settings ->
                     if (!settings.unsortedEnabled) libraryRepository.releaseUnsortedBooks()

@@ -43,8 +43,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Book
 import com.composables.icons.materialsymbols.outlined.Folder
-import com.composables.icons.materialsymbols.outlinedfilled.Book as FilledBook
-import com.composables.icons.materialsymbols.outlinedfilled.Folder as FilledFolder
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
@@ -69,6 +67,8 @@ import com.javierreansyah.pinecone.ui.features.library.organize.SelectSpaceForSh
 import com.javierreansyah.pinecone.ui.features.library.publicationWording
 import com.javierreansyah.pinecone.ui.root.AppDrawer
 import kotlinx.coroutines.launch
+import com.composables.icons.materialsymbols.outlinedfilled.Book as FilledBook
+import com.composables.icons.materialsymbols.outlinedfilled.Folder as FilledFolder
 
 @Composable
 fun LibraryRoute(

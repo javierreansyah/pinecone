@@ -2,7 +2,6 @@
 
 package com.javierreansyah.pinecone.ui.root
 
-import androidx.compose.ui.platform.LocalContext
 import android.content.Intent
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.MutatePriority
@@ -49,6 +48,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -72,14 +72,14 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.reader.audio.AudioPlaybackService
 import com.javierreansyah.pinecone.ui.features.reader.AudioPlayerScreen
-import kotlin.math.abs
-import kotlin.math.roundToInt
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 internal data class AudioPlayerHandle(
     val height: Int,
@@ -98,7 +98,7 @@ internal enum class AudioDismissValue { Left, Center, Right }
 @Composable
 fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable () -> Unit) {
     val context = LocalContext.current
-    val app: com.javierreansyah.pinecone.ui.root.AppServicesViewModel = hiltViewModel()
+    val app: AppServicesViewModel = hiltViewModel()
     val playback by app.audioSession.state.collectAsStateWithLifecycle()
     val navigator by app.audioSession.navigator.collectAsStateWithLifecycle()
     val request = backStack.lastOrNull() as? Screen.AudioPlayer

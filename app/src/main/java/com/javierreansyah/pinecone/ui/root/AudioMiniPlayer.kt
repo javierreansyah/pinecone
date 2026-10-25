@@ -38,7 +38,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -58,8 +57,8 @@ import com.composables.icons.materialsymbols.outlined.Play_arrow
 import com.composables.icons.materialsymbols.outlined.Replay_10
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.reader.audio.AudioPlaybackState
-import java.io.File
 import kotlinx.coroutines.flow.flowOf
+import java.io.File
 
 /** Extra scroll space, not viewport padding: content can draw behind the floating card. */
 val LocalAudioPlayerBottomPadding: ProvidableCompositionLocal<Dp> =
@@ -80,8 +79,7 @@ internal val MiniPlayerHeight = MiniPlayerArtworkSize + MiniPlayerArtworkInset *
 /** Floats the mini-player over every screen, keeping the surrounding area transparent. */
 @Composable
 fun AudioMiniPlayerHost(enabled: Boolean = true, content: @Composable () -> Unit) {
-    val context = LocalContext.current
-    val app: com.javierreansyah.pinecone.ui.root.AppServicesViewModel = hiltViewModel()
+    val app: AppServicesViewModel = hiltViewModel()
     val session = app.audioSession
     val state by session.state.collectAsStateWithLifecycle()
     val navigator by session.navigator.collectAsStateWithLifecycle()
@@ -115,8 +113,7 @@ fun AudioMiniPlayerHost(enabled: Boolean = true, content: @Composable () -> Unit
 /** Reserves the sheet's collapsed bounds outside the screen's navigation bar. */
 @Composable
 fun AudioMiniPlayerBar(includeNavigationBarPadding: Boolean = true, bottomInset: Dp = 0.dp) {
-    val context = LocalContext.current
-    val app: com.javierreansyah.pinecone.ui.root.AppServicesViewModel = hiltViewModel()
+    val app: AppServicesViewModel = hiltViewModel()
     val session = app.audioSession
     val state by session.state.collectAsStateWithLifecycle()
     val navigator by session.navigator.collectAsStateWithLifecycle()
@@ -248,7 +245,10 @@ internal fun AudioMiniPlayer(
                     )
                 }
                 IconButton(onClick = { onSkip(10) }) {
-                    Icon(MaterialSymbols.Outlined.Forward_10, stringResource(R.string.reader_forward))
+                    Icon(
+                        MaterialSymbols.Outlined.Forward_10,
+                        stringResource(R.string.reader_forward)
+                    )
                 }
             }
             if (state.loading) {

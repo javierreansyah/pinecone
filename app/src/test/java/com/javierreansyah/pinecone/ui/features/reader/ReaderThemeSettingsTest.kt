@@ -69,8 +69,17 @@ class ReaderThemeSettingsTest {
     @Test
     fun `both persisted setting aliases inherit app appearance`() {
         for (alias in listOf("Setting", "setting")) {
-            assertTrue(ReaderThemeSettings(themeMode = "Dark", customUiTheme = alias).isUiDark(false))
-            assertFalse(ReaderThemeSettings(themeMode = "Light", customUiTheme = alias).isUiDark(true))
+            assertTrue(
+                ReaderThemeSettings(
+                    themeMode = "Dark",
+                    customUiTheme = alias
+                ).isUiDark(false)
+            )
+            assertFalse(
+                ReaderThemeSettings(themeMode = "Light", customUiTheme = alias).isUiDark(
+                    true
+                )
+            )
         }
     }
 
@@ -82,24 +91,27 @@ class ReaderThemeSettingsTest {
     }
 
     @Test
-    fun `unrelated settings and unselected custom themes do not invalidate theme inputs`() = runBlocking {
-        val original = ReaderSettings(customThemes = listOf(CustomPineconeTheme("Paper", "#FFF", "#000")))
-        val unrelatedChanges = original.copy(
-            fontSize = 2.0,
-            brightness = 0.2f,
-            jumpHistoryMode = "disabled",
-            lastBackupTime = 123L,
-            customThemes = emptyList(),
-        )
-        val emitted = flowOf(original, unrelatedChanges, unrelatedChanges.copy(themeMode = "Dark"))
-            .map(ReaderSettings::toReaderThemeSettings)
-            .distinctUntilChanged()
-            .toList()
+    fun `unrelated settings and unselected custom themes do not invalidate theme inputs`() =
+        runBlocking {
+            val original =
+                ReaderSettings(customThemes = listOf(CustomPineconeTheme("Paper", "#FFF", "#000")))
+            val unrelatedChanges = original.copy(
+                fontSize = 2.0,
+                brightness = 0.2f,
+                jumpHistoryMode = "disabled",
+                lastBackupTime = 123L,
+                customThemes = emptyList(),
+            )
+            val emitted =
+                flowOf(original, unrelatedChanges, unrelatedChanges.copy(themeMode = "Dark"))
+                    .map(ReaderSettings::toReaderThemeSettings)
+                    .distinctUntilChanged()
+                    .toList()
 
-        assertEquals(2, emitted.size)
-        assertEquals("System", emitted[0].themeMode)
-        assertEquals("Dark", emitted[1].themeMode)
-    }
+            assertEquals(2, emitted.size)
+            assertEquals("System", emitted[0].themeMode)
+            assertEquals("Dark", emitted[1].themeMode)
+        }
 
     @Test
     fun `editing the selected custom toolbar theme invalidates theme inputs`() {

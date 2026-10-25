@@ -40,8 +40,8 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.data.publication.ReaderProfile
 import com.javierreansyah.pinecone.ui.components.SegmentedButtonGroup
-import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 /** Image/comic settings share one scrolling panel; other formats retain their settings pages. */
 @Composable
@@ -138,7 +138,11 @@ fun FormatReaderSettings(
                                 fun update(transform: (com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences) -> com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences) =
                                     onChange { current ->
                                         current.copy(
-                                            formatPreferences = current.formatPreferences.copy(pdf = transform(current.formatPreferences.pdf))
+                                            formatPreferences = current.formatPreferences.copy(
+                                                pdf = transform(
+                                                    current.formatPreferences.pdf
+                                                )
+                                            )
                                         )
                                     }
                                 SettingsGroup(verticalArrangement = Arrangement.Top) {
@@ -163,18 +167,22 @@ fun FormatReaderSettings(
                                         inline = true,
                                         value = pdf.pageSpacing.roundToInt().toString(),
                                         onIncrement = {
-                                            update { latest -> latest.copy(
+                                            update { latest ->
+                                                latest.copy(
                                                     pageSpacing = (latest.pageSpacing + 1).coerceAtMost(
                                                         64.0
                                                     )
-                                                ) }
+                                                )
+                                            }
                                         },
                                         onDecrement = {
-                                            update { latest -> latest.copy(
+                                            update { latest ->
+                                                latest.copy(
                                                     pageSpacing = (latest.pageSpacing - 1).coerceAtLeast(
                                                         0.0
                                                     )
-                                                ) }
+                                                )
+                                            }
                                         },
                                         modifier = Modifier.padding(
                                             horizontal = 16.dp,
@@ -356,7 +364,10 @@ private fun FormatAdvancedSettings(
 }
 
 @Composable
-private fun PdfInversionControl(settings: ReaderSettings, onChange: ((ReaderSettings) -> ReaderSettings) -> Unit) {
+private fun PdfInversionControl(
+    settings: ReaderSettings,
+    onChange: ((ReaderSettings) -> ReaderSettings) -> Unit
+) {
     Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             stringResource(R.string.reader_invert_pages),

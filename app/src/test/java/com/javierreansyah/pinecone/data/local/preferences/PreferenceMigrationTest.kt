@@ -4,10 +4,6 @@ import androidx.datastore.core.DataStoreFactory
 import androidx.datastore.core.Serializer
 import androidx.datastore.core.okio.OkioSerializer
 import androidx.datastore.core.okio.OkioStorage
-import okio.BufferedSink
-import okio.BufferedSource
-import okio.FileSystem
-import okio.Path.Companion.toPath
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.SortType
@@ -16,6 +12,10 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import okio.BufferedSink
+import okio.BufferedSource
+import okio.FileSystem
+import okio.Path.Companion.toPath
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -83,7 +83,10 @@ class PreferenceMigrationTest {
         assertEquals(7L, actual.lastBackupRevision)
         assertEquals(1.5, actual.fontSize, 0.0)
         assertEquals("A|B,C:D", actual.installedDictionaries.single().name)
-        assertEquals(actual, PreferenceJson.decodeFromString<ReaderSettings>(PreferenceJson.encodeToString(actual)))
+        assertEquals(
+            actual,
+            PreferenceJson.decodeFromString<ReaderSettings>(PreferenceJson.encodeToString(actual))
+        )
     }
 
     @Test
@@ -126,28 +129,51 @@ class PreferenceMigrationTest {
         assertTrue(migrated.screens.getValue("archive").selectedFormats.isEmpty())
         assertEquals(ReaderSettings(), LegacyReaderSettings.read(mutablePreferencesOf()))
     }
+
     @Test
     fun libraryEditsPreserveOtherScreensAndFollowTheSpacesSetting() = runTest {
-        val reader = ReaderPreferences(DataStoreFactory.create(
-            storage = storage("reader.json"), scope = backgroundScope,
-        ))
+        val reader = ReaderPreferences(
+            DataStoreFactory.create(
+                storage = storage("reader.json"), scope = backgroundScope,
+            )
+        )
         val store = DataStoreFactory.create(
-            storage = storage("library.json", JsonPreferenceSerializer(
-                LibraryPreferencesData.serializer(), LibraryPreferencesData(),
-            )),
+            storage = storage(
+                "library.json", JsonPreferenceSerializer(
+                    LibraryPreferencesData.serializer(), LibraryPreferencesData(),
+                )
+            ),
             scope = backgroundScope,
         )
         val preferences = LibraryPreferencesManager(store, reader)
         preferences.setGlobalSpace("work")
         listOf(
-            async { preferences.updatePreferences("work", "library_books") { it.copy(layoutMode = LayoutMode.List) } },
-            async { preferences.updatePreferences("work", "library_books") { it.copy(sortType = SortType.Author) } },
-            async { preferences.updatePreferences(null, "shelf_detail") { it.copy(layoutMode = LayoutMode.BigGrid) } },
+            async {
+                preferences.updatePreferences(
+                    "work",
+                    "library_books"
+                ) { it.copy(layoutMode = LayoutMode.List) }
+            },
+            async {
+                preferences.updatePreferences(
+                    "work",
+                    "library_books"
+                ) { it.copy(sortType = SortType.Author) }
+            },
+            async {
+                preferences.updatePreferences(
+                    null,
+                    "shelf_detail"
+                ) { it.copy(layoutMode = LayoutMode.BigGrid) }
+            },
         ).awaitAll()
         val books = preferences.preferences("work", "library_books").first()
         assertEquals(LayoutMode.List, books.layoutMode)
         assertEquals(SortType.Author, books.sortType)
-        assertEquals(LayoutMode.BigGrid, preferences.preferences(null, "shelf_detail").first().layoutMode)
+        assertEquals(
+            LayoutMode.BigGrid,
+            preferences.preferences(null, "shelf_detail").first().layoutMode
+        )
         assertEquals("work", preferences.getEffectiveSpaceFlow().first())
         reader.updateSettings { it.copy(spacesEnabled = false) }
         assertEquals("_all_", preferences.getEffectiveSpaceFlow().first())
@@ -155,17 +181,25 @@ class PreferenceMigrationTest {
 
     @Test
     fun backupSettingsJsonRemainsIndependentOfTheStorageEnvelope() = runTest {
-        val preferences = ReaderPreferences(DataStoreFactory.create(
-            storage = storage("backup.json"), scope = backgroundScope,
-        ))
+        val preferences = ReaderPreferences(
+            DataStoreFactory.create(
+                storage = storage("backup.json"), scope = backgroundScope,
+            )
+        )
         val original = ReaderSettings(
             themeMode = "Dark", backupFolderUri = "content://vault",
             customThemes = listOf(CustomPineconeTheme("A|B,C:D", "#ffffff", "#000000")),
-            installedDictionaries = listOf(InstalledDictionary("dictionary", "Name|with,delimiters", 2)),
+            installedDictionaries = listOf(
+                InstalledDictionary(
+                    "dictionary",
+                    "Name|with,delimiters",
+                    2
+                )
+            ),
             lastBackupTime = 123L, lastBackupRevision = 7L,
         )
         val portableJson = kotlinx.serialization.json.Json.encodeToString(original)
-        assertFalse(portableJson.contains("legacyMigrationComplete"))
+        assertFalse("legacyMigrationComplete" in portableJson)
         preferences.updateAllSettings(kotlinx.serialization.json.Json.decodeFromString(portableJson))
         assertEquals(original, preferences.readerSettings.first())
         preferences.updateSettings { it.copy(themeMode = "Light") }
@@ -182,7 +216,9 @@ class PreferenceMigrationTest {
         fileSystem = FileSystem.SYSTEM,
         serializer = object : OkioSerializer<T> {
             override val defaultValue = delegate.defaultValue
-            override suspend fun readFrom(source: BufferedSource) = delegate.readFrom(source.inputStream())
+            override suspend fun readFrom(source: BufferedSource) =
+                delegate.readFrom(source.inputStream())
+
             override suspend fun writeTo(t: T, sink: BufferedSink) =
                 delegate.writeTo(t, sink.outputStream())
         },

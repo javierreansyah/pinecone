@@ -21,7 +21,8 @@ internal object ImportedHtml {
 
     fun clean(html: String): String = document(html).body().html()
 
-    fun containsMarkup(content: String): Boolean = Jsoup.parse(content).body().children().isNotEmpty()
+    fun containsMarkup(content: String): Boolean =
+        Jsoup.parse(content).body().children().isNotEmpty()
 
     fun description(html: String): String {
         val document = document(html)
@@ -52,7 +53,8 @@ internal object ImportedHtml {
             body.empty()
             fragments.forEach { body.appendElement("p").html(it.trim()) }
         }
-        body.select("p").filter { it.text().isBlank() && it.children().isEmpty() }.forEach(Element::remove)
+        body.select("p").filter { it.text().isBlank() && it.children().isEmpty() }
+            .forEach(Element::remove)
         return body.html()
     }
 

@@ -6,13 +6,13 @@ import android.content.Intent
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel as cancelScope
 import kotlinx.coroutines.launch
+import javax.inject.Inject
+import kotlinx.coroutines.cancel as cancelScope
 
 @AndroidEntryPoint
 class AudioPlaybackService : MediaSessionService() {
@@ -21,7 +21,8 @@ class AudioPlaybackService : MediaSessionService() {
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    @Inject lateinit var readingSession: AudioReadingSession
+    @Inject
+    lateinit var readingSession: AudioReadingSession
     private var session: MediaSession? = null
     private var openJob: Job? = null
 
