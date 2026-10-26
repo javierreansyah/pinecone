@@ -5,39 +5,16 @@ import org.readium.r2.shared.publication.Publication
 enum class ReaderProfile { EPUB, PDF, IMAGE, AUDIO }
 
 object PublicationFormats {
-    val extensions: Set<String> = setOf(
-        "epub",
-        "pdf",
-        "cbz",
-        "zip",
-        "webpub",
-        "divina",
-        "audiobook",
-        "zab",
-        "mp3",
-        "m4a",
-        "m4b",
-        "aac",
-        "ogg",
-        "oga",
-        "opus",
-        "flac",
-        "wav",
-        "mp4",
-        "aif",
-        "aiff",
-        "webm",
-        "jpg",
-        "jpeg",
-        "png",
-        "webp",
-        "gif",
-        "bmp",
-        "avif",
-        "tif",
-        "tiff",
-        "jxl",
+    val audioFileExtensions: Set<String> = setOf(
+        "mp3", "m4a", "m4b", "aac", "ogg", "oga", "opus", "flac", "wav",
+        "mp4", "aif", "aiff", "webm",
     )
+    val audioExtensions: Set<String> = audioFileExtensions + setOf("audiobook", "zab")
+    val imageExtensions: Set<String> = setOf(
+        "jpg", "jpeg", "png", "webp", "gif", "bmp", "avif", "tif", "tiff", "jxl",
+    )
+    val extensions: Set<String> = setOf("epub", "pdf", "cbz", "zip", "webpub", "divina") +
+            audioExtensions + imageExtensions
     val pickerMimeTypes: Array<String> = arrayOf(
         "application/epub+zip",
         "application/pdf",

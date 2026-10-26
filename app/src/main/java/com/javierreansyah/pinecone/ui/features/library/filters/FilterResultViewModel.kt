@@ -45,7 +45,7 @@ class FilterResultViewModel @Inject constructor(
 ) : ViewModel() {
     val bookActions = BookActions(viewModelScope, bookRepository, deletePublications)
 
-    val mutationErrors = com.javierreansyah.pinecone.ui.components.MutationErrorState()
+    val mutationErrors = bookActions.mutationErrors
 
     private val screenKey = "filter_result"
 

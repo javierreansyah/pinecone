@@ -51,10 +51,11 @@ class StardictParser @Inject constructor(
         zipUri: Uri, onProgress: (Int) -> Unit = {},
     ): Pair<String, DictionaryInfo> {
         // Retain ownership if cancellation discards the result at the dispatcher hand-off.
+        var acquiredId: String? = null
         try {
-            return parseOnIo(zipUri, onProgress) { }
+            return parseOnIo(zipUri, onProgress) { acquiredId = it }
         } catch (cancelled: kotlinx.coroutines.CancellationException) {
-            null?.let { id ->
+            acquiredId?.let { id ->
                 withContext(kotlinx.coroutines.NonCancellable) { dictionaries.delete(id) }
             }
             throw cancelled
@@ -175,6 +176,7 @@ class StardictParser @Inject constructor(
                     var lastProgressUpdate = 0L
 
                     val buffer = mutableListOf<DictionaryEntry>()
+                    var bufferedBytes = 0L
 
                     db.withTransaction {
                         while (idxOffset < totalBytes) {
@@ -220,10 +222,12 @@ class StardictParser @Inject constructor(
                                 ),
                             )
                             wordIndexCounter++
+                            bufferedBytes += dataSize
 
-                            if (buffer.size >= 3000) {
+                            if (buffer.size >= 3000 || bufferedBytes >= MAX_BATCH_BYTES) {
                                 dao.insertAll(buffer)
                                 buffer.clear()
+                                bufferedBytes = 0L
                             }
 
                             val now = System.currentTimeMillis()
@@ -321,6 +325,7 @@ class StardictParser @Inject constructor(
 
     private companion object {
         const val MAX_EXTRACTED_BYTES = 2L * 1024 * 1024 * 1024
+        const val MAX_BATCH_BYTES = 4L * 1024 * 1024
     }
 
     private fun parseIfo(ifoFile: File): DictionaryInfo {

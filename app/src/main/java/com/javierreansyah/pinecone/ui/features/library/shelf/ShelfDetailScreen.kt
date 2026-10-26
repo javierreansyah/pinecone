@@ -112,6 +112,7 @@ fun ShelfDetailScreen(
     viewModel: ShelfDetailViewModel = hiltViewModel(),
 ) {
     val preferences by viewModel.preferences.collectAsStateWithLifecycle()
+    com.javierreansyah.pinecone.ui.components.MutationErrorDialog(viewModel.bookActions.mutationErrors)
     val spaces by viewModel.allSpaces.collectAsStateWithLifecycle()
     val spacesEnabled by viewModel.spacesEnabled.collectAsStateWithLifecycle()
     var transferCopy by remember { mutableStateOf<Boolean?>(null) }
@@ -275,9 +276,10 @@ fun ShelfDetailScreen(
             shelfName = shelfWithCovers.shelf.name,
             wording = publicationWording(shelfWithCovers.books.map { it.book.fileFormat() }),
             onConfirm = {
-                viewModel.deleteShelf(shelfId)
-                showDeleteDialog = false
-                onNavigateBack()
+                viewModel.deleteShelf(shelfId) {
+                    showDeleteDialog = false
+                    onNavigateBack()
+                }
             },
         ) { showDeleteDialog = false }
     }

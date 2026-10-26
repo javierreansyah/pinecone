@@ -223,6 +223,54 @@ class LibraryProcessingTest {
         }
     }
 
+    @Test
+    fun mergingSpacesPreservesShelvesAndTheirOrderedMemberships() = runBlocking {
+        fixture { db, library ->
+            db.bookDao()
+                .insertAll(listOf("one", "two").map { BookEntity(it, it, filePath = "/$it") })
+            val source = library.createSpaceWithBooks("Source", listOf("one", "two"))
+            val destination = library.createSpaceWithBooks("Destination", listOf("two"))
+            val shelf = library.createShelfWithBooks(source, "Same name", listOf("two", "one"))
+            val other = library.createShelfWithBooks(destination, "Same name", listOf("two"))
+            val members = db.shelfDao().getShelfRefsSync(shelf)
+
+            library.renameFilterItem("space", "Source", "Destination")
+
+            assertEquals(null, db.spaceDao().getSpaceByName("Source"))
+            assertEquals(destination, db.shelfDao().getShelfById(shelf)?.spaceId)
+            assertEquals(destination, db.shelfDao().getShelfById(other)?.spaceId)
+            assertEquals(members, db.shelfDao().getShelfRefsSync(shelf))
+            assertEquals(2, db.spaceDao().getBookCountForSpace(destination))
+        }
+    }
+
+    @Test
+    fun failedAuthorChangesRollBackCreditsAndMemberships() = runBlocking {
+        fixture { db, library ->
+            db.bookDao().insert(BookEntity("book", "Book", filePath = "/book"))
+            val author = db.bookDao().insertAuthor(AuthorEntity(name = "Before"))
+            db.bookDao().insertBookAuthorCrossRef(BookAuthorCrossRef("book", author))
+            val credit = PublicationCreditEntity("book", "author", 0, "Before")
+            db.publicationDao().putCredits(listOf(credit))
+            val sql = db.openHelper.writableDatabase
+            sql.execSQL("CREATE TRIGGER reject_author_rename BEFORE UPDATE ON authors BEGIN SELECT RAISE(ABORT, 'test write failure'); END")
+            sql.execSQL("CREATE TRIGGER reject_credit_delete BEFORE DELETE ON publication_credits BEGIN SELECT RAISE(ABORT, 'test write failure'); END")
+
+            assertTrue(runCatching {
+                library.renameFilterItem(
+                    "author",
+                    "Before",
+                    "After"
+                )
+            }.isFailure)
+            assertEquals(listOf(credit), db.publicationDao().allCredits())
+            assertEquals("Before", db.bookDao().getById("book")?.authors?.single()?.name)
+            assertTrue(runCatching { library.deleteFilterItem("author", "Before") }.isFailure)
+            assertEquals(listOf(credit), db.publicationDao().allCredits())
+            assertEquals("Before", db.bookDao().getById("book")?.authors?.single()?.name)
+        }
+    }
+
     private suspend fun fixture(block: suspend (AppDatabase, LibraryRepository) -> Unit) {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)

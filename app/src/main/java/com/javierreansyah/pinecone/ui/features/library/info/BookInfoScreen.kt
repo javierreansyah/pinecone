@@ -137,6 +137,9 @@ import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.components.ShelvesPage
 import com.javierreansyah.pinecone.ui.features.library.fileFormat
 import com.javierreansyah.pinecone.ui.features.library.publicationWording
+import com.javierreansyah.pinecone.ui.features.reader.chapterLocator
+import com.javierreansyah.pinecone.ui.features.reader.chapterPageNumber
+import com.javierreansyah.pinecone.ui.features.reader.pageNumber
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -164,6 +167,7 @@ fun BookInfoScreen(
     )
 
     val uiState = viewModel.uiState.collectAsStateWithLifecycle()
+    com.javierreansyah.pinecone.ui.components.MutationErrorDialog(viewModel.mutationErrors)
     val book = uiState.value.book
     val isLoading = uiState.value.isLoading
 
@@ -452,6 +456,7 @@ private fun BookInfoContent(
                         currentLocator = currentLocator,
                         furthestLocator = furthestLocator,
                         positions = positions,
+                        readMode = book.activeRendition == "read-mode",
                         tableOfContents = tableOfContents,
                         onNavigateToLocator = navigateToLocator,
                         onJumpToLocator = jumpToLocator,
@@ -464,6 +469,7 @@ private fun BookInfoContent(
                         notes = notes,
                         tableOfContents = tableOfContents,
                         positions = positions,
+                        readMode = book.activeRendition == "read-mode",
                         onNoteClick = jumpToLocator,
                         onDeleteNote = { viewModel.deleteNote(it) },
                         maxTabHeight = maxTabHeight,
@@ -643,28 +649,7 @@ private fun ChaptersTabContent(
                 val pageLabel = getChapterPageLabel(link, positions)
                 ListItem(
                     modifier = Modifier.clickable {
-                        val targetLocator =
-                            if (GeneratedEpubLocations.page(link.href.toString()) != null) {
-                                Locator(
-                                    href = positions.firstOrNull()?.href ?: link.url(),
-                                    mediaType = link.mediaType ?: MediaType.XHTML,
-                                    title = link.title,
-                                    locations = Locator.Locations(
-                                        fragments = listOf(
-                                            link.href.toString().substringAfter('#')
-                                        )
-                                    ),
-                                )
-                            } else positions.firstOrNull { position ->
-                                position.href.toString()
-                                    .substringBefore("#") == link.href.toString()
-                                    .substringBefore("#")
-                            } ?: Locator(
-                                href = link.url(),
-                                mediaType = link.mediaType ?: positions.firstOrNull()?.mediaType
-                                ?: MediaType.XHTML,
-                                title = link.title,
-                            )
+                        val targetLocator = positions.chapterLocator(link)
                         onChapterClick(targetLocator)
                     },
                     leadingContent = null,
@@ -700,6 +685,7 @@ private fun BookmarksTabContent(
     currentLocator: Locator?,
     furthestLocator: Locator?,
     positions: List<Locator>,
+    readMode: Boolean,
     tableOfContents: List<Link>,
     onNavigateToLocator: (Locator) -> Unit,
     onJumpToLocator: (Locator) -> Unit,
@@ -748,7 +734,7 @@ private fun BookmarksTabContent(
                         trailingContent = null,
                         overlineContent = null,
                         supportingContent = {
-                            val label = getPositionLabel(locator, positions)
+                            val label = getPositionLabel(locator, positions, readMode)
                             Text(
                                 text = label.ifBlank { stringResource(R.string.reader_in_document) },
                                 style = MaterialTheme.typography.bodySmall,
@@ -793,7 +779,7 @@ private fun BookmarksTabContent(
                         },
                         overlineContent = null,
                         supportingContent = {
-                            val label = getPositionLabel(locator, positions)
+                            val label = getPositionLabel(locator, positions, readMode)
                             Text(
                                 text = label.ifBlank { stringResource(R.string.reader_in_document) },
                                 style = MaterialTheme.typography.bodySmall,
@@ -858,7 +844,7 @@ private fun BookmarksTabContent(
                             },
                             overlineContent = null,
                             supportingContent = {
-                                val label = getPositionLabel(locator, positions)
+                                val label = getPositionLabel(locator, positions, readMode)
                                 Text(
                                     text = label.ifBlank { inDocument },
                                     style = MaterialTheme.typography.bodySmall,
@@ -886,6 +872,7 @@ private fun NotesTabContent(
     notes: List<NoteEntity>,
     tableOfContents: List<Link>,
     positions: List<Locator>,
+    readMode: Boolean,
     onNoteClick: (Locator) -> Unit,
     onDeleteNote: (Long) -> Unit,
     maxTabHeight: Dp,
@@ -952,7 +939,7 @@ private fun NotesTabContent(
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis,
                                 )
-                                val label = getPositionLabel(locator, positions)
+                                val label = getPositionLabel(locator, positions, readMode)
                                 if (label.isNotBlank()) {
                                     Text(
                                         text = label,
@@ -1650,19 +1637,16 @@ private fun parseBookFormat(mediaType: String?, defaultUnknown: String): String 
 }
 
 @Composable
-private fun getPositionLabel(locator: Locator, positions: List<Locator>): String {
-    val posIndex = locator.locations.totalProgression?.let { target ->
-        positions.indexOfLast { position ->
-            (position.locations.totalProgression ?: -1.0) <= target
-        }
-    }?.takeIf { it != -1 } ?: positions.indexOfLast { position ->
-        (((position.href == locator.href) && (position.locations.progression
-            ?: 0.0) <= (locator.locations.progression ?: 0.0)))
-    }.takeIf { it != -1 }
+private fun getPositionLabel(
+    locator: Locator,
+    positions: List<Locator>,
+    readMode: Boolean
+): String {
+    val page = positions.pageNumber(locator, readMode)
 
     return when {
-        posIndex != null -> pluralStringResource(
-            R.plurals.reader_page_num, posIndex + 1, posIndex + 1,
+        page != null -> pluralStringResource(
+            R.plurals.reader_page_num, page, page,
         )
 
         locator.locations.totalProgression != null -> stringResource(
@@ -1675,17 +1659,6 @@ private fun getPositionLabel(locator: Locator, positions: List<Locator>): String
 
 @Composable
 private fun getChapterPageLabel(link: Link, positions: List<Locator>): String {
-    GeneratedEpubLocations.page(link.href.toString())?.let { page ->
-        return pluralStringResource(R.plurals.reader_page_num, page, page)
-    }
-    if (positions.isEmpty()) return ""
-    val linkHref = link.href.toString().substringBefore("#")
-    val posIndex = positions.indexOfFirst { position ->
-        position.href.toString().substringBefore("#") == linkHref
-    }
-    return if (posIndex != -1) {
-        pluralStringResource(
-            R.plurals.reader_page_num, posIndex + 1, posIndex + 1,
-        )
-    } else ""
+    val page = positions.chapterPageNumber(link) ?: return ""
+    return pluralStringResource(R.plurals.reader_page_num, page, page)
 }

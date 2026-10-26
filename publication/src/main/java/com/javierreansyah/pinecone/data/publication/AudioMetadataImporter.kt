@@ -8,7 +8,7 @@ import java.io.File
 internal object AudioMetadataImporter {
     fun read(bookId: String, file: File, base: ImportedMetadata): ImportedMetadata {
         // Packaged audiobooks carry a manifest; do not pass their ZIP container to the media reader.
-        if (file.extension.lowercase() !in extensions) return base
+        if (file.extension.lowercase() !in PublicationFormats.audioFileExtensions) return base
         return try {
             MediaMetadataRetriever().use { retriever ->
                 retriever.setDataSource(file.absolutePath)
@@ -30,10 +30,7 @@ internal object AudioMetadataImporter {
         }
     }
 
-    private val extensions = setOf(
-        "mp3", "m4a", "m4b", "aac", "ogg", "oga", "opus", "flac", "wav",
-        "mp4", "aif", "aiff", "webm",
-    )
+
 }
 
 internal data class AudioTags(

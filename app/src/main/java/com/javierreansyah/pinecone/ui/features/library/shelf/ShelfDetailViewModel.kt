@@ -71,7 +71,15 @@ class ShelfDetailViewModel @Inject constructor(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     fun transferShelf(id: String, destinationId: String, copy: Boolean) {
-        viewModelScope.launch { bookRepository.transferShelves(listOf(id), destinationId, copy) }
+        viewModelScope.launch {
+            bookActions.mutationErrors.run {
+                bookRepository.transferShelves(
+                    listOf(id),
+                    destinationId,
+                    copy
+                )
+            }
+        }
     }
 
     private val selectedShelfId = MutableStateFlow<String?>(null)
@@ -131,23 +139,28 @@ class ShelfDetailViewModel @Inject constructor(
 
     fun toggleStatusFilter(status: StatusFilter) = updatePreferences { it.toggleStatus(status) }
 
-    fun deleteShelf(shelfId: String) {
+    fun deleteShelf(shelfId: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
-            bookRepository.deleteShelf(shelfId)
+            bookActions.mutationErrors.run {
+                bookRepository.deleteShelf(shelfId)
+                onSuccess()
+            }
         }
     }
 
     fun renameShelf(shelfId: String, newName: String) {
         viewModelScope.launch {
-            bookRepository.renameShelf(shelfId, newName)
+            bookActions.mutationErrors.run { bookRepository.renameShelf(shelfId, newName) }
         }
     }
 
     fun updateShelfOrder(shelfId: String, newBookIdsOrder: List<String>) {
         viewModelScope.launch {
-            bookRepository.updateShelfOrder(shelfId, newBookIdsOrder)
-            prefsManager.updatePreferences(globalSpaceId.value, screenKey) {
-                it.copy(sortType = SortType.Custom, isAscending = true)
+            bookActions.mutationErrors.run {
+                bookRepository.updateShelfOrder(shelfId, newBookIdsOrder)
+                prefsManager.updatePreferences(globalSpaceId.value, screenKey) {
+                    it.copy(sortType = SortType.Custom, isAscending = true)
+                }
             }
         }
     }

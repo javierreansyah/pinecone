@@ -90,6 +90,7 @@ fun LibraryRoute(
     onDismissImportReport: (String) -> Unit = {},
 ) {
     val viewModel: LibraryViewModel = hiltViewModel()
+    com.javierreansyah.pinecone.ui.components.MutationErrorDialog(viewModel.bookActions.mutationErrors)
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 

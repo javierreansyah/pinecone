@@ -3,6 +3,7 @@ package com.javierreansyah.pinecone.data.repository.backup
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.net.Uri
+import android.provider.DocumentsContract
 import androidx.documentfile.provider.DocumentFile
 import androidx.room.withTransaction
 import com.javierreansyah.pinecone.data.local.database.dictionary.DictionaryStore
@@ -473,9 +474,48 @@ class BackupRepository @Inject constructor(
         }
     }
 
-    private fun readSnapshots(dirs: VaultDirs): List<Pair<DocumentFile, VaultSnapshot>> =
-        dirs.snapshots.listFiles().filter { it.name?.endsWith(".pinesnapshot") == true }
-            .mapNotNull { file -> runCatching { file to readSnapshot(file.uri) }.getOrNull() }
+    private fun readSnapshots(
+        dirs: VaultDirs,
+        requireAll: Boolean = false
+    ): List<Pair<DocumentFile, VaultSnapshot>> {
+        val files = if (requireAll) {
+            // DocumentFile.listFiles swallows provider errors; deletion needs a complete listing.
+            val uri = dirs.snapshots.uri
+            resolver.query(
+                DocumentsContract.buildChildDocumentsUriUsingTree(
+                    uri,
+                    DocumentsContract.getDocumentId(uri)
+                ),
+                arrayOf(
+                    DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+                    DocumentsContract.Document.COLUMN_DISPLAY_NAME
+                ),
+                null, null, null,
+            )?.use { cursor ->
+                buildList {
+                    while (cursor.moveToNext()) {
+                        val name = requireNotNull(cursor.getString(1)) { "Snapshot has no name" }
+                        if (name.endsWith(".pinesnapshot")) add(
+                            requireNotNull(
+                                DocumentFile.fromSingleUri(
+                                    context,
+                                    DocumentsContract.buildDocumentUriUsingTree(
+                                        uri,
+                                        cursor.getString(0)
+                                    ),
+                                )
+                            )
+                        )
+                    }
+                }
+            }?.also { check(it.isNotEmpty()) { "No retained snapshots; refusing cleanup" } }
+                ?: error("Cannot list backup snapshots")
+        } else dirs.snapshots.listFiles().filter { it.name?.endsWith(".pinesnapshot") == true }
+        return files.mapNotNull { file ->
+            if (requireAll) file to readSnapshot(file.uri)
+            else runCatching { file to readSnapshot(file.uri) }.getOrNull()
+        }
+    }
 
     private fun validateSnapshot(snapshot: VaultSnapshot) {
         require(snapshot.format == SNAPSHOT_FORMAT)
@@ -549,7 +589,10 @@ class BackupRepository @Inject constructor(
     }
 
     private fun enforceRetention(dirs: VaultDirs): Boolean = runCatching {
-        readSnapshots(dirs).groupBy { (_, itSecond2) -> itSecond2.backupKind }.values.forEach { group ->
+        readSnapshots(
+            dirs,
+            requireAll = true
+        ).groupBy { (_, itSecond2) -> itSecond2.backupKind }.values.forEach { group ->
             group.sortedByDescending { (_, itSecond3) -> itSecond3.createdAt }.drop(RETENTION)
                 .forEach { (itFirst, _) ->
                     check(itFirst.delete())
@@ -558,7 +601,7 @@ class BackupRepository @Inject constructor(
     }.isSuccess
 
     private fun pruneObjects(dirs: VaultDirs): Boolean = runCatching {
-        val retained = readSnapshots(dirs).map { (_, itSecond4) -> itSecond4 }
+        val retained = readSnapshots(dirs, requireAll = true).map { (_, itSecond4) -> itSecond4 }
         val keepBooks = (retained.flatMap { it.books }
             .map { it.book.fileName } + retained.flatMap { it.renditions }
             .map { it.objectInfo.fileName }).toSet()

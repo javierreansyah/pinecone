@@ -425,13 +425,12 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
         _positions.value.findClosestByProgression(targetProgression)
 
     fun getPositionLabel(locator: Locator): String {
-        val posIndex =
-            if (activeRendition.value == "read-mode") readModePage(locator)?.minus(1) ?: -1
-            else _positions.value.findIndexForLocator(locator)
+        val page = if (activeRendition.value == "read-mode") readModePage(locator)
+        else _positions.value.pageNumber(locator)
 
         return when {
-            posIndex != -1 -> application.resources.getQuantityString(
-                R.plurals.reader_page_num, posIndex + 1, posIndex + 1,
+            page != null -> application.resources.getQuantityString(
+                R.plurals.reader_page_num, page, page,
             )
 
             locator.locations.totalProgression != null -> application.getString(
@@ -448,26 +447,13 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
     private fun readModePage(locator: Locator): Int? {
         if (activeRendition.value != "read-mode") return null
         val pageCount = _publication.value?.pageList?.size?.takeIf { it > 0 }
-        return GeneratedEpubLocations.page(
-            locator.href.toString(),
-            locator.locations["cssSelector"] as? String,
-            locator.locations.fragments,
-        )?.takeIf { page -> page >= 1 && (pageCount == null || page <= pageCount) }
+        return _positions.value.pageNumber(locator, readMode = true)
+            ?.takeIf { page -> pageCount == null || page <= pageCount }
     }
 
     fun getChapterPageLabel(link: Link): String {
-        GeneratedEpubLocations.page(link.href.toString())?.let { page ->
-            return application.resources.getQuantityString(R.plurals.reader_page_num, page, page)
-        }
-        val allPositions = _positions.value
-        if (allPositions.isEmpty()) return ""
-        val linkHref = link.href.toString().substringBefore("#")
-        val posIndex = allPositions.indexOfFirst { position ->
-            position.href.toString().substringBefore("#") == linkHref
-        }
-        return if (posIndex != -1) application.resources.getQuantityString(
-            R.plurals.reader_page_num, posIndex + 1, posIndex + 1,
-        ) else ""
+        val page = _positions.value.chapterPageNumber(link) ?: return ""
+        return application.resources.getQuantityString(R.plurals.reader_page_num, page, page)
     }
 
     fun savePosition(

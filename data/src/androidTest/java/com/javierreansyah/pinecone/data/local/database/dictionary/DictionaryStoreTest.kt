@@ -4,6 +4,7 @@ import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -13,6 +14,51 @@ import org.junit.Test
 import java.util.UUID
 
 class DictionaryStoreTest {
+    @Test
+    fun cancellationOnReturnFromIoDiscardsTheCompletedDatabase() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val store = DictionaryStore(context, Dispatchers.IO)
+        val archive = java.io.File.createTempFile("dictionary-return-", ".zip", context.cacheDir)
+        val before = context.databaseList().toSet()
+        val returns = java.util.concurrent.LinkedBlockingQueue<Runnable>()
+        val returning = object : kotlinx.coroutines.CoroutineDispatcher() {
+            override fun dispatch(context: kotlin.coroutines.CoroutineContext, block: Runnable) {
+                returns.add(block)
+            }
+        }
+        val worker =
+            java.util.concurrent.Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+        val completed = java.util.concurrent.CountDownLatch(1)
+        val scope =
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + returning)
+        try {
+            writeDictionary(archive, false)
+            val job = scope.async {
+                StardictParser(context, store, worker).parseDictionary(
+                    android.net.Uri.fromFile(
+                        archive
+                    )
+                ) {
+                    if (it == 100) completed.countDown()
+                }
+            }
+            returns.remove().run()
+            org.junit.Assert.assertTrue(completed.await(10, java.util.concurrent.TimeUnit.SECONDS))
+            // A barrier on the same worker ensures IO completed while its return remains queued.
+            kotlinx.coroutines.withContext(worker) { }
+            job.cancel()
+            while (!job.isCompleted) {
+                requireNotNull(returns.poll(10, java.util.concurrent.TimeUnit.SECONDS)).run()
+            }
+            job.join()
+            assertEquals(before, context.databaseList().toSet())
+        } finally {
+            scope.coroutineContext[kotlinx.coroutines.Job]?.cancel()
+            worker.close()
+            archive.delete()
+        }
+    }
+
     @Test
     fun parserFailureAndCancellationDiscardUnpublishedDatabases() = runBlocking {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
@@ -66,19 +112,48 @@ class DictionaryStoreTest {
         }
     }
 
-    private fun writeDictionary(file: java.io.File, invalidOffset: Boolean) {
+    @Test
+    fun largeDefinitionsFlushBeforeTheRowLimitAndRemainReadable() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val store = DictionaryStore(context, Dispatchers.IO)
+        val archive = java.io.File.createTempFile("dictionary-large-", ".zip", context.cacheDir)
+        var id: String? = null
+        try {
+            val definition = ByteArray(1024 * 1024) { 'a'.code.toByte() }
+            writeDictionary(archive, false, count = 192, definition = definition)
+            val parsed = StardictParser(context, store, Dispatchers.IO)
+                .parseDictionary(android.net.Uri.fromFile(archive))
+            id = parsed.first
+            for (word in listOf("word-0", "word-191")) {
+                val result =
+                    requireNotNull(store.withDictionary(parsed.first) { it.getDefinitions(word) }).single()
+                assertEquals(definition.size, result.definition.length)
+                org.junit.Assert.assertTrue(result.definition.all { it == 'a' })
+            }
+        } finally {
+            archive.delete()
+            id?.let { store.delete(it) }
+        }
+    }
+
+    private fun writeDictionary(
+        file: java.io.File, invalidOffset: Boolean, count: Int = 1,
+        definition: ByteArray = "one".toByteArray(),
+    ) {
         val index = java.io.ByteArrayOutputStream()
         java.io.DataOutputStream(index).use {
-            it.write("hello".toByteArray())
-            it.writeByte(0)
-            it.writeInt(if (invalidOffset) 100 else 0)
-            it.writeInt(3)
+            repeat(count) { index ->
+                it.write((if (count == 1) "hello" else "word-$index").toByteArray())
+                it.writeByte(0)
+                it.writeInt(if (invalidOffset) 100 else 0)
+                it.writeInt(definition.size)
+            }
         }
         java.util.zip.ZipOutputStream(file.outputStream()).use { zip ->
             for ((name, bytes) in mapOf(
-                "test.ifo" to "bookname=A=B dictionary\nwordcount=1\nidxoffsetbits=32".toByteArray(),
+                "test.ifo" to "bookname=A=B dictionary\nwordcount=$count\nidxoffsetbits=32".toByteArray(),
                 "test.idx" to index.toByteArray(),
-                "test.dict" to "one".toByteArray(),
+                "test.dict" to definition,
             )) {
                 zip.putNextEntry(java.util.zip.ZipEntry(name))
                 zip.write(bytes)

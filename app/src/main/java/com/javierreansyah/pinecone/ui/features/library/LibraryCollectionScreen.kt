@@ -47,6 +47,7 @@ internal fun LibraryCollectionScreen(
     archived: Boolean,
 ) {
     val preferences by viewModel.preferences.collectAsStateWithLifecycle()
+    com.javierreansyah.pinecone.ui.components.MutationErrorDialog(viewModel.bookActions.mutationErrors)
     val books by viewModel.filteredBooks.collectAsStateWithLifecycle()
     val allBooks by viewModel.allBooks.collectAsStateWithLifecycle()
 

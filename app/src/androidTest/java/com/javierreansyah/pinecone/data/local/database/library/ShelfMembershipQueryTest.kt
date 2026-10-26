@@ -10,6 +10,7 @@ import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.time.Duration.Companion.milliseconds
 
 class ShelfMembershipQueryTest {
     @Test
@@ -56,28 +57,28 @@ class ShelfMembershipQueryTest {
                 dao.getShelvesForBook("title", "work").collect { changes.send(it) }
             }
             try {
-                val initial = withTimeout(5_000) { changes.receive() }.single()
+                val initial = withTimeout(5_000.milliseconds) { changes.receive() }.single()
                 assertEquals(work.id, initial.shelf.id)
                 assertEquals(setOf("title", "other"), initial.books.map { it.book.id }.toSet())
                 dao.updateShelf(work.copy(name = "Renamed"))
-                withTimeout(5_000) {
+                withTimeout(5_000.milliseconds) {
                     while (changes.receive()
                             .single().shelf.name != "Renamed"
                     ) { /* Await invalidation. */
                     }
                 }
                 dao.removeShelfMembers(work.id, listOf("title"))
-                withTimeout(5_000) {
+                withTimeout(5_000.milliseconds) {
                     while (changes.receive().isNotEmpty()) { /* Await membership removal. */
                     }
                 }
                 dao.addShelfRefs(listOf(ShelfBookCrossRefEntity(work.id, "title")))
-                withTimeout(5_000) {
+                withTimeout(5_000.milliseconds) {
                     while (changes.receive().isEmpty()) { /* Await membership addition. */
                     }
                 }
                 dao.deleteShelf(work)
-                withTimeout(5_000) {
+                withTimeout(5_000.milliseconds) {
                     while (changes.receive().isNotEmpty()) { /* Await shelf deletion. */
                     }
                 }

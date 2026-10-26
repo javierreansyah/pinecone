@@ -18,20 +18,12 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.viewinterop.AndroidView
 import android.graphics.Color as AndroidColor
 
-enum class HtmlPreset { Definition, Description }
-
-data class HtmlWebViewConfig(
-    val preset: HtmlPreset = HtmlPreset.Definition,
-    val onWordClick: ((String) -> Unit)? = null,
-    val extraCss: String = "",
-)
-
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun HtmlWebView(
     htmlContent: String,
     modifier: Modifier = Modifier,
-    config: HtmlWebViewConfig = HtmlWebViewConfig(),
+    onWordClick: ((String) -> Unit)? = null,
     baseFontSize: TextUnit = MaterialTheme.typography.bodyMedium.fontSize,
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -49,23 +41,19 @@ fun HtmlWebView(
     val secondary = colorScheme.secondary
     val tertiary = colorScheme.tertiary
 
-    val wordClick = rememberUpdatedState(config.onWordClick)
-    val wordClickEnabled = config.onWordClick != null
+    val wordClick = rememberUpdatedState(onWordClick)
+    val wordClickEnabled = onWordClick != null
     val fullHtml = remember(
         wordClickEnabled,
         htmlContent,
-        config.preset,
-        config.extraCss,
         onSurface, onSurfaceVariant, primary, primaryContainer, onPrimaryContainer,
         surfaceContainerHigh, outline, outlineVariant, secondary, tertiary,
         fontSizeCss,
     ) {
         buildHtml(
-            body = normaliseHtml(htmlContent, config.preset),
-            preset = config.preset,
+            body = ImportedHtml.clean(htmlContent),
             fontSizeCss = fontSizeCss,
-            extraCss = config.extraCss,
-            includeWordClickJs = config.onWordClick != null,
+            includeWordClickJs = onWordClick != null,
             onSurface = onSurface,
             onSurfaceVariant = onSurfaceVariant,
             primary = primary,
@@ -93,7 +81,7 @@ fun HtmlWebView(
                 isHorizontalScrollBarEnabled = false
                 overScrollMode = WebView.OVER_SCROLL_NEVER
                 settings.apply {
-                    javaScriptEnabled = config.onWordClick != null
+                    javaScriptEnabled = onWordClick != null
                     loadWithOverviewMode = false
                     useWideViewPort = false
                     setSupportZoom(false)
@@ -124,16 +112,9 @@ fun HtmlWebView(
     )
 }
 
-private fun normaliseHtml(html: String, preset: HtmlPreset): String = when (preset) {
-    HtmlPreset.Definition -> ImportedHtml.clean(html)
-    HtmlPreset.Description -> ImportedHtml.description(html)
-}
-
 private fun buildHtml(
     body: String,
-    preset: HtmlPreset,
     fontSizeCss: Float,
-    extraCss: String,
     includeWordClickJs: Boolean,
     onSurface: Color,
     onSurfaceVariant: Color,
@@ -146,11 +127,6 @@ private fun buildHtml(
     secondary: Color,
     tertiary: Color,
 ): String {
-    val presetCss = when (preset) {
-        HtmlPreset.Definition -> definitionCss()
-        HtmlPreset.Description -> descriptionCss()
-    }
-
     val wordClickJs = if (includeWordClickJs) wordClickScript() else ""
 
     return """
@@ -180,9 +156,7 @@ body {
     padding: 0 24px;
 }
 
-$presetCss
-
-$extraCss
+${definitionCss()}
 </style>
 </head>
 <body>
@@ -387,47 +361,6 @@ hr.definition-divider {
     border: none;
     border-top: 1px solid var(--outline-variant);
     margin: 16px 0;
-}
-"""
-
-private fun descriptionCss() = """
-body {
-    padding: 0;
-}
-
-/* Tighten up paragraph spacing for blurb prose */
-p {
-    margin-bottom: 0.55em;
-    line-height: 1.65;
-}
-
-p:last-child { margin-bottom: 0; }
-
-/* Many descriptions start with a bold-italic marketing hook.
-   Keep it on-surface but soften to surface-variant so it reads
-   as a teaser rather than a heading. */
-p:first-child > b > i,
-p:first-child > i > b,
-p:first-child > b,
-p:first-child > strong {
-    color: var(--on-surface);
-    font-style: italic;
-}
-
-/* Inline italic inside body prose → on-surface-variant */
-i, em { color: var(--on-surface-variant); }
-
-/* Reset: description content uses <b> for in-line character dialogue /
-   chat-transcript style.  Keep it on-surface, not primary. */
-b, strong {
-    color: var(--on-surface);
-    font-weight: 600;
-}
-
-/* Strip any div wrapper margins publishers sometimes add */
-div {
-    margin: 0;
-    padding: 0;
 }
 """
 

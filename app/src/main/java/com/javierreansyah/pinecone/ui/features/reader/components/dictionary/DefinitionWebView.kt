@@ -4,9 +4,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.TextUnit
-import com.javierreansyah.pinecone.ui.components.HtmlPreset
 import com.javierreansyah.pinecone.ui.components.HtmlWebView
-import com.javierreansyah.pinecone.ui.components.HtmlWebViewConfig
 
 @Composable
 fun DefinitionWebView(
@@ -19,9 +17,6 @@ fun DefinitionWebView(
         htmlContent = htmlContent,
         modifier = modifier,
         baseFontSize = baseFontSize,
-        config = HtmlWebViewConfig(
-            preset = HtmlPreset.Definition,
-            onWordClick = onWordClick,
-        ),
+        onWordClick = onWordClick,
     )
 }

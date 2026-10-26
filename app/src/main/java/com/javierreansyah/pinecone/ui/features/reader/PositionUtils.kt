@@ -1,7 +1,45 @@
 package com.javierreansyah.pinecone.ui.features.reader
 
+import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
+import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
+import org.readium.r2.shared.util.mediatype.MediaType
 import kotlin.math.abs
+
+fun List<Locator>.pageNumber(locator: Locator, readMode: Boolean = false): Int? =
+    if (readMode) GeneratedEpubLocations.page(
+        locator.href.toString(),
+        locator.locations["cssSelector"] as? String,
+        locator.locations.fragments,
+    )?.takeIf { it >= 1 }
+    else findIndexForLocator(locator).takeIf { it >= 0 }?.plus(1)
+
+fun List<Locator>.chapterPageNumber(link: Link): Int? =
+    GeneratedEpubLocations.page(link.href.toString()) ?: indexOfFirst {
+        it.href.toString().substringBefore('#') == link.href.toString().substringBefore('#')
+    }.takeIf { it >= 0 }?.plus(1)
+
+fun List<Locator>.chapterLocator(link: Link): Locator {
+    if (GeneratedEpubLocations.page(link.href.toString()) != null) return Locator(
+        href = firstOrNull {
+            GeneratedEpubLocations.sameContentResource(it.href.toString(), link.href.toString())
+        }?.href ?: link.url(),
+        mediaType = link.mediaType ?: MediaType.XHTML,
+        title = link.title,
+        locations = Locator.Locations(
+            fragments = listOfNotNull(
+                link.href.toString().substringAfter('#', "").takeIf(String::isNotBlank),
+            )
+        ),
+    )
+    return firstOrNull {
+        it.href.toString().substringBefore('#') == link.href.toString().substringBefore('#')
+    } ?: Locator(
+        href = link.url(),
+        mediaType = link.mediaType ?: firstOrNull()?.mediaType ?: MediaType.XHTML,
+        title = link.title,
+    )
+}
 
 fun List<Locator>.findIndexForLocator(locator: Locator): Int {
     if (isEmpty()) return -1

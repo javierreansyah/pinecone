@@ -252,7 +252,11 @@ class LibraryRepository @Inject constructor(
                     }
                     committed = true
                     if (published != null) previousCover?.let { oldPath ->
-                        if (bookDao.coverReferenceCount(oldPath) == 0) File(oldPath).delete()
+                        if (bookDao.coverReferenceCount(oldPath) == 0) assets.deleteIfUnleased(
+                            File(
+                                oldPath
+                            )
+                        )
                     }
                 }
             }
@@ -266,7 +270,7 @@ class LibraryRepository @Inject constructor(
 
     fun getAllTags(): Flow<List<TagEntity>> = bookDao.getAllTags()
 
-    suspend fun deleteFilterItem(type: String, name: String): Unit = withContext(ioDispatcher) {
+    suspend fun deleteFilterItem(type: String, name: String): Unit = database.withTransaction {
         if (type == "author") {
             bookDao.deleteAuthorByName(name)
             publicationDao.deletePrimaryCredit(name)
@@ -275,17 +279,15 @@ class LibraryRepository @Inject constructor(
         } else if (type == "space") {
             val space = spaceDao.getSpaceByName(name)
             if (space != null && space.id != ALL_SPACES_ID) {
-                database.withTransaction {
-                    spaceDao.deleteSpace(space)
-                }
+                spaceDao.deleteSpace(space)
             }
         }
     }
 
     suspend fun renameFilterItem(type: String, oldName: String, newName: String): Unit =
-        withContext(ioDispatcher) {
+        database.withTransaction {
             val trimmedNewName = newName.trim()
-            if (oldName == trimmedNewName) return@withContext
+            if (oldName == trimmedNewName) return@withTransaction
             if (type == "author") {
                 publicationDao.renamePrimaryCredit(oldName, trimmedNewName)
                 val existingDest = bookDao.getAuthorByName(trimmedNewName)
@@ -308,12 +310,11 @@ class LibraryRepository @Inject constructor(
             } else if (type == "space") {
                 val existingDest = spaceDao.getSpaceByName(trimmedNewName)
                 val source = spaceDao.getSpaceByName(oldName)
-                if (source?.id == ALL_SPACES_ID || existingDest?.id == ALL_SPACES_ID) return@withContext
+                if (source?.id == ALL_SPACES_ID || existingDest?.id == ALL_SPACES_ID) return@withTransaction
                 if (existingDest != null && source != null) {
-                    database.withTransaction {
-                        spaceDao.mergeBookSpaceCrossRef(source.id, existingDest.id)
-                        spaceDao.deleteSpace(source)
-                    }
+                    spaceDao.mergeBookSpaceCrossRef(source.id, existingDest.id)
+                    shelfDao.moveSpaceShelves(source.id, existingDest.id)
+                    spaceDao.deleteSpace(source)
                 } else {
                     source?.let { (itId, _, _) -> spaceDao.renameSpace(itId, trimmedNewName) }
                 }

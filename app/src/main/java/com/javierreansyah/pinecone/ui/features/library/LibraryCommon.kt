@@ -6,6 +6,7 @@ import com.javierreansyah.pinecone.data.local.database.library.ShelfBookCrossRef
 import com.javierreansyah.pinecone.data.local.database.library.ShelfEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.data.publication.PublicationFormats
 
 const val ALL_SPACES_ID: String = com.javierreansyah.pinecone.data.model.library.ALL_SPACES_ID
 
@@ -32,36 +33,9 @@ private fun publicationFileFormat(
             "divina"
         ) || "divina" in mime -> FileFilter.Comics
 
-        mime.startsWith("audio/") || "audiobook" in mime || extension in setOf(
-            "audiobook",
-            "zab",
-            "mp3",
-            "m4a",
-            "m4b",
-            "aac",
-            "ogg",
-            "oga",
-            "opus",
-            "flac",
-            "wav",
-            "mp4",
-            "aif",
-            "aiff",
-            "webm"
-        ) -> FileFilter.Audio
+        mime.startsWith("audio/") || "audiobook" in mime || extension in PublicationFormats.audioExtensions -> FileFilter.Audio
 
-        mime.startsWith("image/") || extension in setOf(
-            "jpg",
-            "jpeg",
-            "png",
-            "webp",
-            "gif",
-            "bmp",
-            "avif",
-            "tif",
-            "tiff",
-            "jxl"
-        ) -> FileFilter.Images
+        mime.startsWith("image/") || extension in PublicationFormats.imageExtensions -> FileFilter.Images
 
         "webpub" in mime || extension == "webpub" -> FileFilter.WebPublication
         mime == "application/zip" || extension == "zip" -> FileFilter.Comics

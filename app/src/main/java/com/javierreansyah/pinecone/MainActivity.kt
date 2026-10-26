@@ -33,7 +33,7 @@ class MainActivity : AppCompatActivity() {
             !viewModel.isReady.value && viewModel.startupState.value !is com.javierreansyah.pinecone.data.StartupState.Failed
         }
 
-        handleIntent(intent)
+        if (savedInstanceState == null) handleIntent(intent)
 
         enableEdgeToEdge()
         setContent {

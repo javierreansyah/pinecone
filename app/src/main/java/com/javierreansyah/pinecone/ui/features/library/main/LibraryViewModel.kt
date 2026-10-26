@@ -235,13 +235,13 @@ class LibraryViewModel @Inject constructor(
 
     fun deleteShelves(shelfIds: Collection<String>) {
         viewModelScope.launch {
-            shelfIds.forEach { bookRepository.deleteShelf(it) }
+            bookActions.mutationErrors.run { shelfIds.forEach { bookRepository.deleteShelf(it) } }
         }
     }
 
     fun renameShelf(shelfId: String, newName: String) {
         viewModelScope.launch {
-            bookRepository.renameShelf(shelfId, newName)
+            bookActions.mutationErrors.run { bookRepository.renameShelf(shelfId, newName) }
         }
     }
 
@@ -281,11 +281,19 @@ class LibraryViewModel @Inject constructor(
         updatePreferences(false) { it.copy(libraryView = view) }
 
     fun transferShelves(ids: Collection<String>, destinationId: String, copy: Boolean) {
-        viewModelScope.launch { bookRepository.transferShelves(ids, destinationId, copy) }
+        viewModelScope.launch {
+            bookActions.mutationErrors.run {
+                bookRepository.transferShelves(
+                    ids,
+                    destinationId,
+                    copy
+                )
+            }
+        }
     }
 
     fun setGlobalSpace(spaceId: String?) {
-        viewModelScope.launch { prefsManager.setGlobalSpace(spaceId) }
+        viewModelScope.launch { bookActions.mutationErrors.run { prefsManager.setGlobalSpace(spaceId) } }
     }
 
 }

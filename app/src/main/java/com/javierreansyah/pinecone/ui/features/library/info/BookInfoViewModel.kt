@@ -46,7 +46,7 @@ class BookInfoViewModel @AssistedInject constructor(
     libraryPreferences: LibraryPreferencesManager,
     @com.javierreansyah.pinecone.di.DefaultDispatcher computation: kotlinx.coroutines.CoroutineDispatcher,
 ) : ViewModel() {
-
+    val mutationErrors = com.javierreansyah.pinecone.ui.components.MutationErrorState()
 
     val settings = readerPreferences.readerSettings.stateIn(
         viewModelScope,
@@ -137,57 +137,73 @@ class BookInfoViewModel @AssistedInject constructor(
 
     fun toggleReadStatus() {
         viewModelScope.launch {
-            repository.toggleReadStatus(bookId)
+            mutationErrors.run {
+                repository.toggleReadStatus(bookId)
+            }
         }
     }
 
     fun toggleArchive() {
         viewModelScope.launch {
-            repository.toggleArchive(bookId)
+            mutationErrors.run {
+                repository.toggleArchive(bookId)
+            }
         }
     }
 
     fun deleteBook(onSuccess: () -> Unit) {
         viewModelScope.launch {
-            deletePublications(listOf(bookId))
-            onSuccess()
+            mutationErrors.run {
+                deletePublications(listOf(bookId))
+                onSuccess()
+            }
         }
     }
 
 
     fun deleteFurthestPosition() {
         viewModelScope.launch {
-            reading.resetFurthestToCurrent(bookId)
+            mutationErrors.run {
+                reading.resetFurthestToCurrent(bookId)
+            }
         }
     }
 
     fun deleteBookmark(bookmarkId: Long) {
         viewModelScope.launch {
-            reading.removeBookmark(bookmarkId)
+            mutationErrors.run {
+                reading.removeBookmark(bookmarkId)
+            }
         }
     }
 
     fun deleteNote(noteId: Long) {
         viewModelScope.launch {
-            reading.removeNote(noteId)
+            mutationErrors.run {
+                reading.removeNote(noteId)
+            }
         }
     }
 
     fun saveReadingPosition(locator: Locator, onSaved: () -> Unit) {
         viewModelScope.launch {
-            reading.saveReadingPosition(
-                bookId,
-                locator,
-                repository.getBook(bookId)?.book?.activeRendition ?: "original"
-            )
-            onSaved()
+            mutationErrors.run {
+                reading.saveReadingPosition(
+                    bookId,
+                    locator,
+                    repository.getBook(bookId)?.book?.activeRendition ?: "original"
+                )
+                onSaved()
+            }
         }
     }
 
     fun saveJumpReadingPosition(locator: Locator, onSaved: () -> Unit) {
         viewModelScope.launch {
-            reading.saveJumpReadingPosition(bookId, locator)
-            onSaved()
+            mutationErrors.run {
+                reading.saveJumpReadingPosition(bookId, locator)
+                onSaved()
+            }
         }
     }
 

@@ -9,6 +9,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.javierreansyah.pinecone.R
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import timber.log.Timber
@@ -25,6 +28,10 @@ class MutationErrorState {
     suspend fun run(block: suspend () -> Unit) {
         try {
             block()
+        } catch (timeout: TimeoutCancellationException) {
+            currentCoroutineContext().ensureActive()
+            Timber.e(timeout, "Could not update collection")
+            mutableFailed.value = true
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {

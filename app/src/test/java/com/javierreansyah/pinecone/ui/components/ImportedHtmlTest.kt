@@ -25,25 +25,4 @@ class ImportedHtmlTest {
         assertFalse("<html" in html)
     }
 
-    @Test
-    fun descriptionsUseParagraphsForDoubleBreaksAndSpacesForSingleBreaks() {
-        val html = ImportedHtml.description("First<br>line<BR /> <br>Second &amp; last")
-        val paragraphs = Jsoup.parse(html).select("p")
-        assertEquals(listOf("First line", "Second & last"), paragraphs.map { it.text() })
-    }
-
-    @Test
-    fun existingParagraphsAndRelativeLinksSurviveCleaning() {
-        val html = ImportedHtml.description("<p><i>First</i></p><p><a href='#note'>Second</a></p>")
-        assertEquals(2, Jsoup.parse(html).select("p").size)
-        assertEquals("#note", Jsoup.parse(html).select("a").attr("href"))
-    }
-
-    @Test
-    fun doubleBreaksInsideAParagraphRetainTheExistingParagraphSeparation() {
-        val html = ImportedHtml.description("<p><b>First</b><br><br><i>Second</i></p>")
-        assertEquals(listOf("First", "Second"), Jsoup.parse(html).select("p").map { it.text() })
-        assertEquals("First", Jsoup.parse(html).select("b").text())
-        assertEquals("Second", Jsoup.parse(html).select("i").text())
-    }
 }

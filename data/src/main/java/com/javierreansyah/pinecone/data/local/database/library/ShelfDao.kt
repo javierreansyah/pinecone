@@ -28,6 +28,9 @@ data class ShelfWithCovers(
 
 @Dao
 interface ShelfDao {
+    @Query("UPDATE shelves SET spaceId = :destinationId WHERE spaceId = :sourceId")
+    suspend fun moveSpaceShelves(sourceId: String, destinationId: String)
+
     @Query("SELECT * FROM shelf_book_cross_ref WHERE shelfId = :id")
     suspend fun getShelfRefsSync(id: String): List<ShelfBookCrossRefEntity>
 
