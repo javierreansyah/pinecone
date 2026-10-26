@@ -42,15 +42,15 @@ fun UnsortedScreen(
             emptyText = stringResource(R.string.library_empty_unsorted),
             emptyIcon = MaterialSymbols.Outlined.Inbox,
             archived = false,
-            longPressSelects = true,
         )
         if (importFeedbackEnabled) {
             ImportFeedback(
                 state = importFeedbackState,
                 onCancel = onCancelImport,
                 onDismissReport = onDismissImportReport,
-                idleFabMenu = { UnsortedImportFabMenu(onImportFiles, onScanFolder) },
-                modifier = Modifier.align(Alignment.BottomEnd)
+                content = { UnsortedImportFabMenu(onImportFiles, onScanFolder) },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
                     .navigationBarsPadding()
                     .padding(bottom = LocalAudioPlayerBottomPadding.current),
             )

@@ -2,7 +2,6 @@
 <resources>
     <string name="nav_backup_failed">Cadangan gagal</string>
     <string name="nav_backup_success">Cadangan berhasil</string>
-    <string name="nav_import_complete">Impor selesai</string>
     <string name="nav_import_files">Impor file</string>
     <string name="nav_restore_backup">Pulihkan cadangan</string>
     <string name="nav_restore_failed">Gagal memulihkan cadangan</string>

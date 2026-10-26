@@ -247,8 +247,12 @@ class PublicationRepository @Inject constructor(
     ): Boolean = withContext(ioDispatcher) {
         storageMutex.withLock {
             database.withTransaction {
-                check(!database.operationDao().runtime().maintenance) { "Library restore in progress" }
-                if (database.operationDao().activeConversion(bookId) != null) return@withTransaction false
+                check(
+                    !database.operationDao().runtime().maintenance
+                ) { "Library restore in progress" }
+                if (database.operationDao()
+                        .activeConversion(bookId) != null
+                ) return@withTransaction false
                 val existing = publicationDao.rendition(bookId, "read-mode")
                     ?.takeIf { it.isReusableReadMode() } ?: return@withTransaction false
                 commit(existing)

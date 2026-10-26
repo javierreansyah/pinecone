@@ -1,16 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="import_failed_files">Tidak dapat mengimpor:\n%1$s</string>
-    <plurals name="import_all_failed_message">
-        <item quantity="other">Gagal mengimpor %d file:</item>
-    </plurals>
     <string name="import_failed_reason_note">File-file ini mungkin rusak atau dalam format yang tidak didukung.</string>
-    <string name="import_failed_single_message">Gagal mengimpor \"%1$s\". File mungkin rusak atau dalam format yang tidak didukung.</string>
     <string name="import_failed_title">Gagal mengimpor</string>
-    <string name="import_no_files_found">Tidak ada file yang didukung di folder yang dipilih</string>
-    <plurals name="import_partial_failed_message">
-        <item quantity="other">%d file berikut tidak dapat diimpor:</item>
-    </plurals>
     <plurals name="import_partial_success_message">
         <item quantity="other">Berhasil mengimpor %d judul.</item>
     </plurals>

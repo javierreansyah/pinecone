@@ -241,30 +241,7 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
 
     val velocityThreshold = with(density) { 125.dp.toPx() }
     val scrollConnection = remember(sheet, collapsedOffset, velocityThreshold) {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (source == NestedScrollSource.UserInput && available.y < 0 && sheet.requireOffset() > 0) {
-                    return Offset(0f, sheet.dispatchRawDelta(available.y))
-                }
-                return Offset.Zero
-            }
-
-            override suspend fun onPreFling(available: Velocity): Velocity {
-                if (sheet.requireOffset() > 0f) {
-                    sheet.animateTo(
-                        audioSheetTarget(
-                            sheet.requireOffset(),
-                            collapsedOffset,
-                            available.y,
-                            velocityThreshold
-                        )
-                    )
-                    return available
-                }
-                return Velocity.Zero
-            }
-
-        }
+        AudioSheetNestedScrollConnection(sheet, collapsedOffset, velocityThreshold)
     }
     val visible =
         request != null || playback.bookId != null && playback.ready && playback.bookId != dismissedBookId
@@ -398,6 +375,47 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
                 }
             }
         }
+    }
+}
+
+/** Let content scroll first on the way down, then move and settle the sheet at its scroll boundary. */
+internal class AudioSheetNestedScrollConnection(
+    private val sheet: AnchoredDraggableState<AudioSheetValue>,
+    private val collapsedOffset: Float,
+    private val velocityThreshold: Float,
+) : NestedScrollConnection {
+    override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+        if (source == NestedScrollSource.UserInput && available.y < 0f && sheet.requireOffset() > 0f) {
+            return Offset(0f, sheet.dispatchRawDelta(available.y))
+        }
+        return Offset.Zero
+    }
+
+    override fun onPostScroll(
+        consumed: Offset,
+        available: Offset,
+        source: NestedScrollSource
+    ): Offset =
+        if (source == NestedScrollSource.UserInput) {
+            Offset(0f, sheet.dispatchRawDelta(available.y))
+        } else Offset.Zero
+
+    override suspend fun onPreFling(available: Velocity): Velocity =
+        if (sheet.requireOffset() > 0f) settle(available) else Velocity.Zero
+
+    override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity =
+        settle(available)
+
+    private suspend fun settle(available: Velocity): Velocity {
+        sheet.animateTo(
+            audioSheetTarget(
+                sheet.requireOffset(),
+                collapsedOffset,
+                available.y,
+                velocityThreshold
+            ),
+        )
+        return Velocity(0f, available.y)
     }
 }
 

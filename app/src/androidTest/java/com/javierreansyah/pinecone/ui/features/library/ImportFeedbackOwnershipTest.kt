@@ -1,7 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library
 
 import android.content.Intent
-import android.net.Uri
 import androidx.activity.BackEventCompat
 import androidx.activity.compose.setContent
 import androidx.compose.material3.Text
@@ -12,6 +11,7 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.core.net.toUri
 import androidx.core.util.Consumer
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
@@ -50,7 +50,10 @@ class ImportFeedbackOwnershipTest {
         installNavigation(stack) { key ->
             if (key == Screen.Unsorted) {
                 UnsortedScreen(
-                    onNavigateBack = {}, onNavigateToReader = {}, onNavigateToBookInfo = {}, onNavigateToOrganize = {},
+                    onNavigateBack = {},
+                    onNavigateToReader = {},
+                    onNavigateToBookInfo = {},
+                    onNavigateToOrganize = {},
                     importFeedbackState = feedback.value,
                     onDismissImportReport = { feedback.value = feedback.value.copy(report = null) },
                 )
@@ -67,7 +70,13 @@ class ImportFeedbackOwnershipTest {
         val preview = compose.onNodeWithContentDescription(add).fetchSemanticsNode().boundsInRoot
         assertTrue("The FAB must transform with the Unsorted page", preview.width < initial.width)
         compose.runOnUiThread {
-            feedback.value = feedback.value.copy(report = ImportReport(id = "report", failedFiles = listOf("failed.pdf"), successCount = 0))
+            feedback.value = feedback.value.copy(
+                report = ImportReport(
+                    id = "report",
+                    failedFiles = listOf("failed.pdf"),
+                    successCount = 0
+                )
+            )
         }
         compose.mainClock.advanceTimeByFrame()
         compose.onNodeWithText(context.getString(R.string.import_failed_title)).assertDoesNotExist()
@@ -83,16 +92,32 @@ class ImportFeedbackOwnershipTest {
     @Test
     fun mainLibraryOwnsTheLoaderWhenUnsortedIsDisabledAndOtherPagesHaveNoLoader() {
         val stack = mutableStateListOf<NavKey>(Screen.Library, Screen.Settings)
-        val feedback = ImportFeedbackState(operation = OperationSnapshot(
-            "import", OperationKind.IMPORT, OperationState.RUNNING, null, 1, 2, emptyList(), null,
-        ))
+        val feedback = ImportFeedbackState(
+            operation = OperationSnapshot(
+                "import",
+                OperationKind.IMPORT,
+                OperationState.RUNNING,
+                null,
+                1,
+                2,
+                emptyList(),
+                null,
+            )
+        )
         installNavigation(stack) { key ->
             if (key == Screen.Library) {
                 LibraryRoute(
-                    onNavigateToReader = {}, onNavigateToShelf = { _, _, _ -> }, onNavigateToBookInfo = {},
-                    onNavigateToOrganize = {}, onNavigateToArchives = {}, onNavigateToSettings = {},
-                    onNavigateToDictionaries = {}, onImportFilesClick = {}, onScanFolderClick = {},
-                    importFeedbackState = feedback, importFeedbackEnabled = true,
+                    onNavigateToReader = {},
+                    onNavigateToShelf = { _, _, _ -> },
+                    onNavigateToBookInfo = {},
+                    onNavigateToOrganize = {},
+                    onNavigateToArchives = {},
+                    onNavigateToSettings = {},
+                    onNavigateToDictionaries = {},
+                    onImportFilesClick = {},
+                    onScanFolderClick = {},
+                    importFeedbackState = feedback,
+                    importFeedbackEnabled = true,
                 )
             } else Text("Other page")
         }
@@ -100,15 +125,20 @@ class ImportFeedbackOwnershipTest {
         compose.onNodeWithContentDescription(importing).assertDoesNotExist()
         compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
         compose.onNodeWithContentDescription(importing).assertExists()
-        compose.onNodeWithContentDescription(context.getString(R.string.action_add)).assertDoesNotExist()
+        compose.onNodeWithContentDescription(context.getString(R.string.action_add))
+            .assertDoesNotExist()
         compose.onNodeWithContentDescription(importing).performClick()
-        compose.onNodeWithText(context.getString(R.string.publication_work_processing, 1, 2)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.publication_work_processing, 1, 2))
+            .assertExists()
     }
 
     @Test
     fun coldAndWarmFileImportsFollowTheLatestUnsortedPreference() {
-        val first = Intent(Intent.ACTION_VIEW, Uri.parse("content://test/first.epub"))
-        assertEquals(listOf(Screen.Library, Screen.Unsorted), getInitialBackStackFromIntent(first, true))
+        val first = Intent(Intent.ACTION_VIEW, "content://test/first.epub".toUri())
+        assertEquals(
+            listOf(Screen.Library, Screen.Unsorted),
+            getInitialBackStackFromIntent(first)
+        )
         assertEquals(listOf(Screen.Library), getInitialBackStackFromIntent(first, false))
         val enabled = mutableStateOf(true)
         val stack = mutableStateListOf<NavKey>(Screen.Library, Screen.Settings)
@@ -116,8 +146,10 @@ class ImportFeedbackOwnershipTest {
         compose.runOnUiThread {
             compose.activity.setContent {
                 HandleDeepLinks(
-                    backStack = stack, unsortedEnabled = enabled.value,
-                    addOnNewIntentListener = { listener = it }, removeOnNewIntentListener = { listener = null },
+                    backStack = stack,
+                    unsortedEnabled = enabled.value,
+                    addOnNewIntentListener = { listener = it },
+                    removeOnNewIntentListener = { listener = null },
                 )
                 Text("Import routing")
             }
@@ -129,13 +161,21 @@ class ImportFeedbackOwnershipTest {
         compose.runOnUiThread { enabled.value = false }
         compose.waitForIdle()
         compose.runOnUiThread {
-            requireNotNull(listener).accept(Intent(Intent.ACTION_VIEW, Uri.parse("content://test/second.epub")))
+            requireNotNull(listener).accept(
+                Intent(
+                    Intent.ACTION_VIEW,
+                    "content://test/second.epub".toUri()
+                )
+            )
         }
         compose.waitForIdle()
         assertEquals(listOf(Screen.Library), stack.toList())
     }
 
-    private fun installNavigation(stack: MutableList<NavKey>, content: @Composable (NavKey) -> Unit) {
+    private fun installNavigation(
+        stack: MutableList<NavKey>,
+        content: @Composable (NavKey) -> Unit
+    ) {
         compose.runOnUiThread {
             compose.activity.setContent {
                 AppTheme {
@@ -153,5 +193,6 @@ class ImportFeedbackOwnershipTest {
         }
     }
 
-    private fun backEvent(progress: Float) = BackEventCompat(0f, 500f, progress, BackEventCompat.EDGE_LEFT)
+    private fun backEvent(progress: Float) =
+        BackEventCompat(0f, 500f, progress, BackEventCompat.EDGE_LEFT)
 }

@@ -2,7 +2,6 @@
 <resources>
     <string name="nav_backup_failed">Backup failed</string>
     <string name="nav_backup_success">Backup successful</string>
-    <string name="nav_import_complete">Import complete</string>
     <string name="nav_import_files">Import files</string>
     <string name="nav_restore_backup">Restore backup</string>
     <string name="nav_restore_failed">Failed to restore backup</string>

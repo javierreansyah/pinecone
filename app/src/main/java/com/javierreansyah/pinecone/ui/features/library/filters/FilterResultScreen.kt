@@ -255,6 +255,12 @@ private fun FilterResultContent(
                 },
                 onEnterMultiSelect = { isInMultiSelectMode = true },
                 onExitMultiSelect = exitMultiSelect,
+                onInfo = selectedBooks.singleOrNull()?.let { bookId ->
+                    {
+                        exitMultiSelect()
+                        onNavigateToBookInfo(bookId)
+                    }
+                },
                 onClearSelection = { selectedBooks = emptySet() },
                 onSelectAll = {
                     selectedBooks =
@@ -395,6 +401,7 @@ private fun FilterResultTopBar(
     onDeleteClick: () -> Unit,
     onEnterMultiSelect: () -> Unit,
     onExitMultiSelect: () -> Unit,
+    onInfo: (() -> Unit)?,
     onClearSelection: () -> Unit,
     onSelectAll: () -> Unit,
     onMarkAsReadUnread: (Boolean) -> Unit,
@@ -423,6 +430,7 @@ private fun FilterResultTopBar(
                 onOrganize = onOrganize,
                 onArchive = onArchive,
                 onDelete = onDelete,
+                onInfo = onInfo,
             )
         },
     ) {

@@ -1,4 +1,4 @@
-package com.javierreansyah.pinecone.ui.features.library.main
+package com.javierreansyah.pinecone.ui.features.library.components
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -42,7 +42,6 @@ import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.features.library.ALL_SPACES_ID
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
-import com.javierreansyah.pinecone.ui.features.library.components.ShelfListItem
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookItem
 import com.javierreansyah.pinecone.ui.features.library.fileFormat
 import com.javierreansyah.pinecone.ui.features.library.publicationCountLabel

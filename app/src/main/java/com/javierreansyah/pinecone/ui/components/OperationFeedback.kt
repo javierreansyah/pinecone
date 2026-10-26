@@ -1,9 +1,9 @@
 package com.javierreansyah.pinecone.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -63,17 +63,18 @@ internal fun OperationFeedback(
     showFab: Boolean = true,
     fabContainerColor: Color = MaterialTheme.colorScheme.secondaryContainer,
     fabContentColor: Color = MaterialTheme.colorScheme.onSecondaryContainer,
-    idleFabMenu: (@Composable () -> Unit)? = null,
+    content: (@Composable () -> Unit)? = null,
 ) {
     var openedOperation by rememberSaveable { mutableStateOf<String?>(null) }
     val edgeSpacing = 16.dp
     val edgeSpacingPx = with(LocalDensity.current) { edgeSpacing.roundToPx() }
-    val fabVisible = showFab && (operationId != null || idleFabMenu != null)
+    val fabVisible = showFab && (operationId != null || content != null)
     // Retain the outgoing mode while the host slides away after navigation or completion.
     val lastFabMenu = remember { IdleFabMenuContent() }
-    val menuContent = if (fabVisible) idleFabMenu.takeIf { operationId == null } else lastFabMenu.content
+    val menuContent =
+        if (fabVisible) content.takeIf { operationId == null } else lastFabMenu.content
     SideEffect {
-        if (fabVisible) lastFabMenu.content = idleFabMenu.takeIf { operationId == null }
+        if (fabVisible) lastFabMenu.content = content.takeIf { operationId == null }
     }
     val progressSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
     val animatedProgress by key(operationId) {
@@ -87,12 +88,26 @@ internal fun OperationFeedback(
         visible = fabVisible,
         // Material's FAB menu already supplies the same horizontal and bottom edge spacing.
         modifier = modifier.then(
-            if (menuContent == null) Modifier.padding(start = edgeSpacing, end = edgeSpacing, bottom = edgeSpacing)
+            if (menuContent == null) Modifier.padding(
+                start = edgeSpacing,
+                end = edgeSpacing,
+                bottom = edgeSpacing
+            )
             else Modifier,
         ),
         // Own the edge spacing so the entire button clears the window in the same flight.
-        enter = slideInHorizontally(tween(220, easing = LinearOutSlowInEasing)) { it + edgeSpacingPx },
-        exit = slideOutHorizontally(tween(200, easing = FastOutLinearInEasing)) { it + edgeSpacingPx },
+        enter = slideInHorizontally(
+            tween(
+                220,
+                easing = LinearOutSlowInEasing
+            )
+        ) { it + edgeSpacingPx },
+        exit = slideOutHorizontally(
+            tween(
+                200,
+                easing = FastOutLinearInEasing
+            )
+        ) { it + edgeSpacingPx },
     ) {
         if (menuContent != null) {
             menuContent()
@@ -128,7 +143,8 @@ internal fun OperationFeedback(
                 ),
             ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
                         .verticalScroll(rememberScrollState())
                         .padding(start = 24.dp, end = 24.dp, bottom = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -153,7 +169,9 @@ internal fun OperationFeedback(
                         OperationProgressIndicator(
                             progress = progress?.let { animatedProgress },
                             color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(vertical = 8.dp).size(48.dp),
+                            modifier = Modifier
+                                .padding(vertical = 8.dp)
+                                .size(48.dp),
                         )
                     }
                     FilledTonalButton(
@@ -174,7 +192,11 @@ internal fun OperationFeedback(
 @Composable
 private fun OperationProgressIndicator(progress: Float?, color: Color, modifier: Modifier) {
     if (progress == null) {
-        CircularWavyProgressIndicator(modifier = modifier, color = color, trackColor = color.copy(alpha = 0.18f))
+        CircularWavyProgressIndicator(
+            modifier = modifier,
+            color = color,
+            trackColor = color.copy(alpha = 0.18f)
+        )
     } else {
         CircularWavyProgressIndicator(
             progress = { progress.coerceIn(0f, 1f) },

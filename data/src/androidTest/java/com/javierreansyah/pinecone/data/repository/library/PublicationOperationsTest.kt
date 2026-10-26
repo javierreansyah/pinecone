@@ -306,18 +306,34 @@ class PublicationOperationsTest {
                 assertTrue(f.publications.tryReuseReadMode(book.book.id) {
                     f.reading.activateMappedRendition(book.book.id, "read-mode", session)
                 })
-                assertEquals("read-mode", f.db.bookDao().getById(book.book.id)?.book?.activeRendition)
-                assertEquals(cached.filePath, f.reading.rendition(book.book.id, "read-mode")?.filePath)
+                assertEquals(
+                    "read-mode",
+                    f.db.bookDao().getById(book.book.id)?.book?.activeRendition
+                )
+                assertEquals(
+                    cached.filePath,
+                    f.reading.rendition(book.book.id, "read-mode")?.filePath
+                )
                 assertEquals(cachedBytes, cachedFile.readBytes().toList())
                 assertEquals(id, operations.conversion(book.book.id).first()?.id)
-                assertTrue("source-page-2" in f.db.bookDao().getById(book.book.id)?.book?.lastLocatorJson.orEmpty())
+                assertTrue(
+                    "source-page-2" in f.db.bookDao()
+                        .getById(book.book.id)?.book?.lastLocatorJson.orEmpty()
+                )
 
                 // An invalidated reader cannot activate a cached rendition.
                 f.reading.activateMappedRendition(book.book.id, "original")
                 f.publications.tryReuseReadMode(book.book.id) {
-                    f.reading.activateMappedRendition(book.book.id, "read-mode", session?.copy(generation = -1))
+                    f.reading.activateMappedRendition(
+                        book.book.id,
+                        "read-mode",
+                        session?.copy(generation = -1)
+                    )
                 }
-                assertEquals("original", f.db.bookDao().getById(book.book.id)?.book?.activeRendition)
+                assertEquals(
+                    "original",
+                    f.db.bookDao().getById(book.book.id)?.book?.activeRendition
+                )
 
                 f.db.publicationDao().putRenditions(listOf(cached.copy(converterVersion = -1)))
                 assertFalse(f.publications.tryReuseReadMode(book.book.id) { error("Outdated cache reused") })

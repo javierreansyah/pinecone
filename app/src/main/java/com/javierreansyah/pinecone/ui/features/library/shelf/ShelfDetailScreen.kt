@@ -166,6 +166,12 @@ fun ShelfDetailScreen(
             isInMultiSelectMode = true
         },
         onExitMultiSelect = exitMultiSelect,
+        onInfo = selectedBooks.singleOrNull()?.let { bookId ->
+            {
+                exitMultiSelect()
+                onNavigateToBookInfo(bookId)
+            }
+        },
         onSelectAll = {
             selectedBooks =
                 books.map { book -> book.id }
@@ -313,6 +319,7 @@ private fun ShelfDetailContent(
     onNavigateBack: () -> Unit,
     onEnterMultiSelect: (String?) -> Unit,
     onExitMultiSelect: () -> Unit,
+    onInfo: (() -> Unit)?,
     onSelectAll: () -> Unit,
     onClearSelection: () -> Unit,
     onToggleBookSelection: (String) -> Unit,
@@ -356,6 +363,7 @@ private fun ShelfDetailContent(
                 onNavigateBack = onNavigateBack,
                 onEnterMultiSelect = { onEnterMultiSelect(null) },
                 onExitMultiSelect = onExitMultiSelect,
+                onInfo = onInfo,
                 onSelectAll = onSelectAll,
                 onClearSelection = onClearSelection,
                 onMarkAsReadUnread = onMarkAsReadUnread,
@@ -415,6 +423,7 @@ private fun ShelfDetailTopBar(
     onNavigateBack: () -> Unit,
     onEnterMultiSelect: () -> Unit,
     onExitMultiSelect: () -> Unit,
+    onInfo: (() -> Unit)?,
     onSelectAll: () -> Unit,
     onClearSelection: () -> Unit,
     onMarkAsReadUnread: (Boolean) -> Unit,
@@ -453,6 +462,7 @@ private fun ShelfDetailTopBar(
                 onOrganize = onOrganizeSelected,
                 onArchive = onArchiveSelected,
                 onDelete = onDeleteSelected,
+                onInfo = onInfo,
             )
         },
     ) {

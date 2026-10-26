@@ -1,18 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="import_failed_files">Could not import:\n%1$s</string>
-    <plurals name="import_all_failed_message">
-        <item quantity="one">Failed to import %d file:</item>
-        <item quantity="other">Failed to import %d files:</item>
-    </plurals>
     <string name="import_failed_reason_note">These files may be damaged, corrupted, or in an unsupported format.</string>
-    <string name="import_failed_single_message">Failed to import \"%1$s\". The file may be damaged, corrupted, or in an unsupported format.</string>
     <string name="import_failed_title">Import failed</string>
-    <string name="import_no_files_found">No supported files found in the selected folder</string>
-    <plurals name="import_partial_failed_message">
-        <item quantity="one">The following %d file could not be imported:</item>
-        <item quantity="other">The following %d files could not be imported:</item>
-    </plurals>
     <plurals name="import_partial_success_message">
         <item quantity="one">Successfully imported %d title.</item>
         <item quantity="other">Successfully imported %d titles.</item>

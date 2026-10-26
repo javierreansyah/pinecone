@@ -88,8 +88,18 @@ class ScreenNavDisplayTest {
             assertFalse(model.cleared)
 
             scenario.onActivity {
-                it.onBackPressedDispatcher.dispatchOnBackStarted(backEvent(0f, BackEventCompat.EDGE_RIGHT))
-                it.onBackPressedDispatcher.dispatchOnBackProgressed(backEvent(0.6f, BackEventCompat.EDGE_RIGHT))
+                it.onBackPressedDispatcher.dispatchOnBackStarted(
+                    backEvent(
+                        0f,
+                        BackEventCompat.EDGE_RIGHT
+                    )
+                )
+                it.onBackPressedDispatcher.dispatchOnBackProgressed(
+                    backEvent(
+                        0.6f,
+                        BackEventCompat.EDGE_RIGHT
+                    )
+                )
             }
             await { "first" in probe.composed }
             scenario.onActivity {

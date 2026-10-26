@@ -37,7 +37,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -254,10 +253,12 @@ fun ReaderOverlay(
             )
 
             ReaderBottomBarSection(
-                modifier = Modifier.align(Alignment.BottomCenter).onSizeChanged {
-                    // Retain the anchor while both controls and the FAB are exiting.
-                    if (it.height > 0) bottomBarHeight = it.height
-                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .onSizeChanged {
+                        // Retain the anchor while both controls and the FAB are exiting.
+                        if (it.height > 0) bottomBarHeight = it.height
+                    },
                 showControls = controlsState.value.showControls && profile != com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO,
                 showSearch = controlsState.value.showSearch,
                 isInSearchNavigationMode = searchState.value.isInNavMode,
@@ -437,7 +438,7 @@ fun ReaderOverlay(
 
             val conversionMessage = if (bookState.value.conversionTotal > 0) {
                 stringResource(
-                    R.string.reader_conversion_progress,
+                    R.string.publication_work_processing,
                     bookState.value.conversionPage / 2,
                     bookState.value.conversionTotal / 2,
                 )
@@ -448,7 +449,8 @@ fun ReaderOverlay(
                     it.conversionPage.toFloat() / it.conversionTotal
                 },
                 showFab = controlsState.value.showControls && !controlsState.value.showSearch,
-                fabContainerColor = readerTextColor.copy(alpha = 0.18f).compositeOver(readerBgColor),
+                fabContainerColor = readerTextColor.copy(alpha = 0.18f)
+                    .compositeOver(readerBgColor),
                 fabContentColor = readerTextColor,
                 title = stringResource(R.string.reader_preparing_read_mode),
                 progressMessage = conversionMessage,

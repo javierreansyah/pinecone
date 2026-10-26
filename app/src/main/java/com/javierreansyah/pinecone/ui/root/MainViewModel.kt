@@ -10,7 +10,6 @@ import com.javierreansyah.pinecone.data.repository.library.PublicationOperations
 import com.javierreansyah.pinecone.data.repository.library.ReadingRepository
 import com.javierreansyah.pinecone.ui.features.library.components.ImportReport
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,6 +17,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
@@ -88,6 +88,7 @@ class MainViewModel @Inject constructor(
         kotlinx.coroutines.flow.SharingStarted.Eagerly,
         null
     )
+
     init {
         viewModelScope.launch {
             startup.awaitReady()

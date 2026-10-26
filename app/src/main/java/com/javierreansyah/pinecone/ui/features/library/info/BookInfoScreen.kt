@@ -134,8 +134,8 @@ import com.javierreansyah.pinecone.ui.components.SegmentedColumn
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
+import com.javierreansyah.pinecone.ui.features.library.components.ShelvesPage
 import com.javierreansyah.pinecone.ui.features.library.fileFormat
-import com.javierreansyah.pinecone.ui.features.library.main.ShelvesPage
 import com.javierreansyah.pinecone.ui.features.library.publicationWording
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import kotlinx.coroutines.launch
@@ -384,17 +384,18 @@ private fun BookInfoContent(
                 onDeleteClick = showDeleteConfirm,
             )
 
-            var hasShelvesTab by remember { mutableStateOf(false) }
-            val tabs = listOf(
-                stringResource(book.publicationWording.infoTitle),
-                stringResource(R.string.reader_chapters_title),
-                stringResource(R.string.reader_bookmarks_title),
-                stringResource(R.string.reader_notes_title),
-            ) + if (hasShelvesTab) listOf(stringResource(R.string.library_tab_shelves)) else emptyList()
+            var hasShelvesTab by remember { mutableStateOf(shelves.isNotEmpty()) }
+            val tabs = BookInfoTab.entries.filter { it != BookInfoTab.Shelves || hasShelvesTab }
             val pagerState = rememberPagerState { tabs.size }
             LaunchedEffect(shelves.isNotEmpty()) {
-                if (shelves.isEmpty() && pagerState.currentPage == 4) {
-                    pagerState.scrollToPage(0)
+                if (shelves.isEmpty() && hasShelvesTab) {
+                    val shelvesPage = tabs.indexOf(BookInfoTab.Shelves)
+                    val destination =
+                        if (pagerState.currentPage == shelvesPage || pagerState.targetPage == shelvesPage) {
+                            tabs.indexOf(BookInfoTab.About)
+                        } else pagerState.currentPage
+                    // Cancel any swipe/tab animation before shrinking the pager's page count.
+                    pagerState.scrollToPage(destination)
                 }
                 hasShelvesTab = shelves.isNotEmpty()
             }
@@ -406,7 +407,7 @@ private fun BookInfoContent(
                 edgePadding = 16.dp,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                tabs.forEachIndexed { index, title ->
+                tabs.forEachIndexed { index, tab ->
                     Tab(
                         selected = pagerState.currentPage == index,
                         onClick = {
@@ -416,7 +417,8 @@ private fun BookInfoContent(
                         },
                         text = {
                             Text(
-                                text = title, style = MaterialTheme.typography.titleMedium,
+                                text = stringResource(tab.title(book.publicationWording)),
+                                style = MaterialTheme.typography.titleMedium,
                             )
                         },
                     )
@@ -430,13 +432,14 @@ private fun BookInfoContent(
                     .wrapContentHeight()
                     .animateContentSize(animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()),
                 verticalAlignment = Alignment.Top,
+                key = { tabs[it] },
             ) { page ->
-                when (page) {
-                    0 -> AboutTabContent(
+                when (tabs[page]) {
+                    BookInfoTab.About -> AboutTabContent(
                         book = book, maxTabHeight = maxTabHeight,
                     )
 
-                    1 -> ChaptersTabContent(
+                    BookInfoTab.Chapters -> ChaptersTabContent(
                         tableOfContents = tableOfContents,
                         currentLocator = currentLocator,
                         positions = positions,
@@ -444,7 +447,7 @@ private fun BookInfoContent(
                         maxTabHeight = maxTabHeight,
                     )
 
-                    2 -> BookmarksTabContent(
+                    BookInfoTab.Bookmarks -> BookmarksTabContent(
                         bookmarks = bookmarks,
                         currentLocator = currentLocator,
                         furthestLocator = furthestLocator,
@@ -457,7 +460,7 @@ private fun BookInfoContent(
                         maxTabHeight = maxTabHeight,
                     )
 
-                    3 -> NotesTabContent(
+                    BookInfoTab.Notes -> NotesTabContent(
                         notes = notes,
                         tableOfContents = tableOfContents,
                         positions = positions,
@@ -466,13 +469,15 @@ private fun BookInfoContent(
                         maxTabHeight = maxTabHeight,
                     )
 
-                    4 -> ShelvesPage(
+                    BookInfoTab.Shelves -> ShelvesPage(
                         shelves = shelves,
                         spaceNames = if (librarySettings.spacesEnabled) spaceNames else emptyMap(),
                         onShelfClick = onNavigateToShelf,
                         onBookClick = { onNavigateToReader(it, null) },
                         layoutMode = LayoutMode.BigList,
-                        modifier = Modifier.fillMaxWidth().height(maxTabHeight),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(maxTabHeight),
                     )
                 }
             }
@@ -484,6 +489,19 @@ private fun BookInfoContent(
             onNavigateToEdit = onNavigateToEdit,
             modifier = Modifier.statusBarsPadding(),
         )
+    }
+}
+
+private enum class BookInfoTab {
+    About, Chapters, Bookmarks, Notes, Shelves;
+
+    @androidx.annotation.StringRes
+    fun title(wording: PublicationWording): Int = when (this) {
+        About -> wording.infoTitle
+        Chapters -> R.string.reader_chapters_title
+        Bookmarks -> R.string.reader_bookmarks_title
+        Notes -> R.string.reader_notes_title
+        Shelves -> R.string.library_tab_shelves
     }
 }
 

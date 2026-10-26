@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
@@ -43,6 +44,7 @@ class BookInfoViewModel @AssistedInject constructor(
     readerPreferences: com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences,
     private val deletePublications: DeleteBooks,
     libraryPreferences: LibraryPreferencesManager,
+    @com.javierreansyah.pinecone.di.DefaultDispatcher computation: kotlinx.coroutines.CoroutineDispatcher,
 ) : ViewModel() {
 
 
@@ -78,7 +80,8 @@ class BookInfoViewModel @AssistedInject constructor(
             ) { memberships, refs, preferences ->
                 sortShelves(sortShelfBooks(memberships, refs, spaceId), preferences)
             }
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        }.flowOn(computation)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val spaceNames = repository.getAllSpaces()
         .map { spaces -> spaces.associate { it.id to it.name } }

@@ -56,6 +56,7 @@ import com.javierreansyah.pinecone.ui.features.library.components.LibraryFilterB
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectAppBar
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectTopBarTransition
 import com.javierreansyah.pinecone.ui.features.library.components.ShelvesMultiSelectAppBar
+import com.javierreansyah.pinecone.ui.features.library.components.ShelvesPage
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookCollection
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookContextMenu
 import com.javierreansyah.pinecone.ui.features.library.fileFormat
@@ -271,6 +272,12 @@ fun LibraryScreen(
                             onAuthorsHeaderClick = onNavigateToAllAuthors,
                             onTagsHeaderClick = onNavigateToAllTags,
                             onExitMultiSelect = exitMultiSelect,
+                            onInfo = selectedBooks.singleOrNull()?.let { bookId ->
+                                {
+                                    exitMultiSelect()
+                                    onNavigateToBookInfo(bookId)
+                                }
+                            },
                             onClearShelvesSelection = { selectedShelves = emptySet() },
                             onSelectAllShelves = {
                                 selectedShelves = uiState.shelves
@@ -410,7 +417,9 @@ fun LibraryScreen(
                                 state = importFeedbackState,
                                 onCancel = onCancelImport,
                                 onDismissReport = onDismissImportReport,
-                                modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = miniPlayerPadding),
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(bottom = miniPlayerPadding),
                             )
                         }
                     }
@@ -492,6 +501,7 @@ private fun LibraryTopBar(
     onAuthorsHeaderClick: () -> Unit,
     onTagsHeaderClick: () -> Unit,
     onExitMultiSelect: () -> Unit,
+    onInfo: (() -> Unit)?,
     onClearShelvesSelection: () -> Unit,
     onSelectAllShelves: () -> Unit,
     onRenameShelf: (String) -> Unit,
@@ -542,6 +552,7 @@ private fun LibraryTopBar(
                     onOrganize = onOrganizeBooks,
                     onArchive = onArchiveBooks,
                     onDelete = onDeleteBooks,
+                    onInfo = onInfo,
                 )
             }
         },

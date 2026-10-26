@@ -12,7 +12,6 @@
     <string name="reader_collapse_audio_player">Collapse audiobook player</string>
     <string name="reader_continuous_scroll">Continuous scrolling</string>
     <string name="reader_conversion_failed">Could not convert this PDF. The original is still available.</string>
-    <string name="reader_conversion_progress">Processing %1$d of %2$d</string>
     <string name="reader_copy_link">Copy link</string>
     <string name="reader_dismiss_audio_player">Dismiss audiobook player and stop playback</string>
     <string name="reader_enter_note_placeholder">Enter your note here…</string>

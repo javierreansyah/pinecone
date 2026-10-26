@@ -12,7 +12,6 @@
     <string name="reader_collapse_audio_player">Ciutkan pemutar buku audio</string>
     <string name="reader_continuous_scroll">Gulir berkelanjutan</string>
     <string name="reader_conversion_failed">PDF ini tidak dapat dikonversi. Berkas asli tetap tersedia.</string>
-    <string name="reader_conversion_progress">Memproses %1$d dari %2$d</string>
     <string name="reader_copy_link">Salin tautan</string>
     <string name="reader_dismiss_audio_player">Tutup pemutar buku audio dan hentikan pemutaran</string>
     <string name="reader_enter_note_placeholder">Masukkan catatan Anda di sini…</string>

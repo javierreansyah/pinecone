@@ -4,6 +4,7 @@ import android.view.KeyEvent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -11,8 +12,8 @@ import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
@@ -43,7 +44,8 @@ class OperationFeedbackTest {
             }
         }
         compose.waitForIdle()
-        val initial = compose.onNodeWithContentDescription("Importing").fetchSemanticsNode().boundsInRoot
+        val initial =
+            compose.onNodeWithContentDescription("Importing").fetchSemanticsNode().boundsInRoot
         compose.mainClock.autoAdvance = false
         compose.runOnIdle { visible.value = false }
         compose.mainClock.advanceTimeByFrame()
@@ -54,7 +56,10 @@ class OperationFeedbackTest {
             val bounds = compose.onAllNodesWithContentDescription("Importing").fetchSemanticsNodes()
                 .firstOrNull()?.boundsInRoot
             if (bounds != null && bounds.width > 0f) {
-                assertTrue("The exit must not reverse direction", bounds.left >= previousLeft - 0.5f)
+                assertTrue(
+                    "The exit must not reverse direction",
+                    bounds.left >= previousLeft - 0.5f
+                )
                 assertEquals("The vertical anchor must stay fixed", initial.top, bounds.top, 0.5f)
                 if (bounds.left > previousLeft + 0.5f) movingFrames++
                 previousLeft = bounds.left
@@ -67,25 +72,37 @@ class OperationFeedbackTest {
 
     @Test
     fun discreteProgressUpdatesAnimateThroughIntermediateValues() {
-        val progress = mutableStateOf(0.1f)
+        val progress = mutableFloatStateOf(0.1f)
         compose.setContent {
             MaterialTheme {
-                OperationFeedback("import", "Importing", "Processing", onCancel = {}, progress = progress.value)
+                OperationFeedback(
+                    "import",
+                    "Importing",
+                    "Processing",
+                    onCancel = {},
+                    progress = progress.floatValue
+                )
             }
         }
         compose.waitForIdle()
         compose.mainClock.autoAdvance = false
-        compose.runOnIdle { progress.value = 0.9f }
+        compose.runOnIdle { progress.floatValue = 0.9f }
         compose.mainClock.advanceTimeByFrame()
         compose.mainClock.advanceTimeBy(32)
         val displayed = compose.onNode(
             SemanticsMatcher.keyIsDefined(SemanticsProperties.ProgressBarRangeInfo),
             useUnmergedTree = true,
         ).fetchSemanticsNode().config[SemanticsProperties.ProgressBarRangeInfo].current
-        assertTrue("Progress should interpolate between worker updates: $displayed", displayed > 0.1f && displayed < 0.9f)
+        assertTrue(
+            "Progress should interpolate between worker updates: $displayed",
+            displayed > 0.1f && displayed < 0.9f
+        )
         compose.mainClock.autoAdvance = true
         compose.onNode(
-            SemanticsMatcher.expectValue(SemanticsProperties.ProgressBarRangeInfo, ProgressBarRangeInfo(0.9f, 0f..1f)),
+            SemanticsMatcher.expectValue(
+                SemanticsProperties.ProgressBarRangeInfo,
+                ProgressBarRangeInfo(0.9f, 0f..1f)
+            ),
             useUnmergedTree = true,
         ).assertExists()
     }
@@ -93,15 +110,24 @@ class OperationFeedbackTest {
     @Test
     fun fabOpensLiveProgressAndDismissalDoesNotCancelWork() {
         val message = mutableStateOf("Processing 1 of 10")
-        val progress = mutableStateOf(0.1f)
+        val progress = mutableFloatStateOf(0.1f)
         var cancelled = 0
         compose.setContent {
             MaterialTheme {
-                OperationFeedback("import", "Importing", message.value, onCancel = { cancelled++ }, progress = progress.value)
+                OperationFeedback(
+                    "import",
+                    "Importing",
+                    message.value,
+                    onCancel = { cancelled++ },
+                    progress = progress.floatValue
+                )
             }
         }
         compose.onNode(
-            SemanticsMatcher.expectValue(SemanticsProperties.ProgressBarRangeInfo, ProgressBarRangeInfo(0.1f, 0f..1f)),
+            SemanticsMatcher.expectValue(
+                SemanticsProperties.ProgressBarRangeInfo,
+                ProgressBarRangeInfo(0.1f, 0f..1f)
+            ),
             useUnmergedTree = true,
         ).assertExists()
         compose.onNodeWithText(message.value).assertDoesNotExist()
@@ -109,14 +135,17 @@ class OperationFeedbackTest {
         compose.onNodeWithText(message.value).assertExists()
         compose.runOnIdle {
             message.value = "Processing 2 of 10"
-            progress.value = 0.2f
+            progress.floatValue = 0.2f
         }
         compose.onNodeWithText(message.value).assertExists()
         InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
         compose.onNodeWithText(message.value).assertDoesNotExist()
         compose.runOnIdle { assertEquals(0, cancelled) }
         compose.onNode(
-            SemanticsMatcher.expectValue(SemanticsProperties.ProgressBarRangeInfo, ProgressBarRangeInfo(0.2f, 0f..1f)),
+            SemanticsMatcher.expectValue(
+                SemanticsProperties.ProgressBarRangeInfo,
+                ProgressBarRangeInfo(0.2f, 0f..1f)
+            ),
             useUnmergedTree = true,
         ).assertExists()
         compose.onNodeWithContentDescription("Importing").performClick()
@@ -150,7 +179,8 @@ class OperationFeedbackTest {
         compose.onNodeWithText("Processing 1 of 2").assertDoesNotExist()
         compose.onNodeWithContentDescription("Preparing read mode").assertDoesNotExist()
         compose.runOnIdle {
-            report.value = OperationReport("failure", "Read mode failed", "Could not convert this PDF.")
+            report.value =
+                OperationReport("failure", "Read mode failed", "Could not convert this PDF.")
         }
         compose.onNodeWithText("Read mode failed").assertExists()
         compose.onNodeWithText("Could not convert this PDF.").assertExists()
@@ -160,20 +190,35 @@ class OperationFeedbackTest {
 
     @Test
     fun importFailureReportsOpenAutomaticallyAndAdvanceWithoutDroppingTheNextResult() {
-        val reports = mutableStateOf(listOf(
-            ImportReport(id = "partial", failedFiles = listOf("first.pdf"), successCount = 2),
-            ImportReport(id = "failure", failedFiles = listOf("broken.pdf"), successCount = 0, inputRequired = true),
-        ))
+        val reports = mutableStateOf(
+            listOf(
+                ImportReport(id = "partial", failedFiles = listOf("first.pdf"), successCount = 2),
+                ImportReport(
+                    id = "failure",
+                    failedFiles = listOf("broken.pdf"),
+                    successCount = 0,
+                    inputRequired = true
+                ),
+            )
+        )
         compose.setContent {
             MaterialTheme {
                 OperationFeedback(
-                    null, "Importing", "", onCancel = {}, report = reports.value.firstOrNull()?.toFeedbackReport(),
+                    null,
+                    "Importing",
+                    "",
+                    onCancel = {},
+                    report = reports.value.firstOrNull()?.toFeedbackReport(),
                     onDismissReport = { reports.value = reports.value.drop(1) },
                 )
             }
         }
         compose.onNodeWithText(
-            context.resources.getQuantityString(R.plurals.import_partial_success_message, 2, 2) + "\n\n" +
+            context.resources.getQuantityString(
+                R.plurals.import_partial_success_message,
+                2,
+                2
+            ) + "\n\n" +
                     context.getString(R.string.import_failed_files, "first.pdf"),
         ).assertExists()
         compose.onNodeWithText(context.getString(R.string.action_close)).performClick()

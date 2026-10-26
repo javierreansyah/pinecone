@@ -33,7 +33,6 @@ import com.javierreansyah.pinecone.ui.features.library.components.FilterResultBo
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectAppBar
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectTopBarTransition
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookCollection
-import com.javierreansyah.pinecone.ui.features.library.components.book.BookContextMenu
 
 @Composable
 internal fun LibraryCollectionScreen(
@@ -46,13 +45,11 @@ internal fun LibraryCollectionScreen(
     emptyText: String,
     emptyIcon: ImageVector,
     archived: Boolean,
-    longPressSelects: Boolean = false,
 ) {
     val preferences by viewModel.preferences.collectAsStateWithLifecycle()
     val books by viewModel.filteredBooks.collectAsStateWithLifecycle()
     val allBooks by viewModel.allBooks.collectAsStateWithLifecycle()
 
-    var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
     var showFilterSheet by remember { mutableStateOf(value = false) }
     var selectedBooks by remember { mutableStateOf(emptySet<String>()) }
     var isInMultiSelectMode by remember { mutableStateOf(value = false) }
@@ -75,11 +72,17 @@ internal fun LibraryCollectionScreen(
         selectedBooks = selectedBooks,
         isInMultiSelectMode = isInMultiSelectMode,
         onNavigateBack = onNavigateBack,
-        onEnterMultiSelect = { bookId ->
-            selectedBooks = bookId?.let(::setOf) ?: emptySet()
+        onEnterMultiSelect = {
+            selectedBooks = emptySet()
             isInMultiSelectMode = true
         },
         onExitMultiSelect = exitMultiSelect,
+        onInfo = selectedBooks.singleOrNull()?.let { bookId ->
+            {
+                exitMultiSelect()
+                onNavigateToBookInfo(bookId)
+            }
+        },
         onSelectAll = {
             selectedBooks =
                 books.map { book -> book.id }
@@ -113,30 +116,10 @@ internal fun LibraryCollectionScreen(
         onOpenFilter = { showFilterSheet = true },
         onBookClick = onNavigateToReader,
         onBookLongClick = { bookId ->
-            if (longPressSelects) {
-                selectedBooks = selectedBooks + bookId
-                isInMultiSelectMode = true
-            } else {
-                selectedBookForMenu = bookId
-            }
+            selectedBooks = setOf(bookId)
+            isInMultiSelectMode = true
         },
     )
-
-    selectedBookForMenu?.let { bookId ->
-        BookContextMenu(
-            bookId = bookId,
-            allBooks = allBooks,
-            onNavigateToBookInfo = onNavigateToBookInfo,
-            onToggleArchive = { viewModel.bookActions.toggleArchive(bookId) },
-            onToggleReadStatus = { viewModel.bookActions.toggleReadStatus(bookId) },
-            onOrganize = { onNavigateToOrganize(setOf(it)) },
-            onDeleteBook = { viewModel.bookActions.deleteBook(bookId) },
-            onEnterMultiSelect = {
-                selectedBooks = setOf(bookId)
-                isInMultiSelectMode = true
-            },
-        ) { selectedBookForMenu = null }
-    }
 
     if (showFilterSheet) {
         FilterResultBottomSheet(
@@ -162,8 +145,9 @@ private fun CollectionContent(
     selectedBooks: Set<String>,
     isInMultiSelectMode: Boolean,
     onNavigateBack: () -> Unit,
-    onEnterMultiSelect: (String?) -> Unit,
+    onEnterMultiSelect: () -> Unit,
     onExitMultiSelect: () -> Unit,
+    onInfo: (() -> Unit)?,
     onSelectAll: () -> Unit,
     onClearSelection: () -> Unit,
     onToggleBookSelection: (String) -> Unit,
@@ -203,8 +187,9 @@ private fun CollectionContent(
                 showMarkAsRead = showMarkAsRead,
                 scrollBehavior = scrollBehavior,
                 onNavigateBack = onNavigateBack,
-                onEnterMultiSelect = { onEnterMultiSelect(null) },
+                onEnterMultiSelect = onEnterMultiSelect,
                 onExitMultiSelect = onExitMultiSelect,
+                onInfo = onInfo,
                 onSelectAll = onSelectAll,
                 onClearSelection = onClearSelection,
                 onMarkAsReadUnread = { onMarkAsReadUnread(showMarkAsRead) },
@@ -256,7 +241,8 @@ private fun CollectionContent(
 @Composable
 private fun CollectionTopBar(
     title: String,
-    archived: Boolean, wording: PublicationWording,
+    archived: Boolean,
+    wording: PublicationWording,
     isInMultiSelectMode: Boolean,
     isEmpty: Boolean,
     selectedCount: Int,
@@ -266,6 +252,7 @@ private fun CollectionTopBar(
     onNavigateBack: () -> Unit,
     onEnterMultiSelect: () -> Unit,
     onExitMultiSelect: () -> Unit,
+    onInfo: (() -> Unit)?,
     onSelectAll: () -> Unit,
     onClearSelection: () -> Unit,
     onMarkAsReadUnread: () -> Unit,
@@ -289,6 +276,7 @@ private fun CollectionTopBar(
                 onOrganize = onOrganize,
                 onArchive = onArchive,
                 onDelete = onDelete,
+                onInfo = onInfo,
                 isUnarchive = archived,
             )
         },

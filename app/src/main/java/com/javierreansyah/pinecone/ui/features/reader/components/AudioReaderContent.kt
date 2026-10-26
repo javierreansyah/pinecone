@@ -10,7 +10,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -535,13 +535,13 @@ private fun AudioSeekBar(
                 }
                 .pointerInput(duration, state.bookId, state.index, rtl) {
                     if (duration != null) {
-                        detectDragGestures(
+                        detectHorizontalDragGestures(
                             onDragStart = { offset ->
                                 isDragging = true
                                 previewFraction =
                                     audioSeekFraction(offset.x, size.width.toFloat(), rtl)
                             },
-                            onDrag = { change, _ ->
+                            onHorizontalDrag = { change, _ ->
                                 change.consume()
                                 previewFraction =
                                     audioSeekFraction(change.position.x, size.width.toFloat(), rtl)

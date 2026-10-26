@@ -32,9 +32,10 @@ internal fun ImportFeedback(
     onCancel: (String) -> Unit,
     onDismissReport: (String) -> Unit,
     modifier: Modifier = Modifier,
-    idleFabMenu: (@Composable () -> Unit)? = null,
+    content: (@Composable () -> Unit)? = null,
 ) {
-    val resumed = LocalLifecycleOwner.current.lifecycle.currentStateAsState().value == Lifecycle.State.RESUMED
+    val resumed =
+        LocalLifecycleOwner.current.lifecycle.currentStateAsState().value == Lifecycle.State.RESUMED
     val operation = state.operation
     val report = state.report.takeIf { resumed }
     OperationFeedback(
@@ -42,31 +43,41 @@ internal fun ImportFeedback(
         progress = operation?.takeIf { it.total > 0 }?.let { it.completed.toFloat() / it.total },
         title = stringResource(R.string.publication_work_importing),
         progressMessage = operation?.let {
-            if (it.total > 0) stringResource(R.string.publication_work_processing, it.completed, it.total)
+            if (it.total > 0) stringResource(
+                R.string.publication_work_processing,
+                it.completed,
+                it.total
+            )
             else stringResource(R.string.publication_work_preparing)
         }.orEmpty(),
         onCancel = { operation?.let { onCancel(it.id) } },
         report = report?.toFeedbackReport(),
         onDismissReport = { report?.let { onDismissReport(it.id) } },
-        idleFabMenu = idleFabMenu,
+        content = content,
         modifier = modifier,
     )
 }
 
 @Composable
 internal fun ImportReport.toFeedbackReport(): OperationReport {
-    val title = stringResource(when {
-        successCount > 0 -> R.string.import_warning_title
-        else -> R.string.import_failed_title
-    })
+    val title = stringResource(
+        when {
+            successCount > 0 -> R.string.import_warning_title
+            else -> R.string.import_failed_title
+        }
+    )
     val messages = mutableListOf<String>()
     if (successCount > 0) {
-        messages += pluralStringResource(R.plurals.import_partial_success_message, successCount, successCount)
+        messages += pluralStringResource(
+            R.plurals.import_partial_success_message,
+            successCount,
+            successCount
+        )
     }
-    if (failedFiles.isNotEmpty()) {
-        messages += stringResource(R.string.import_failed_files, failedFiles.joinToString("\n"))
+    messages += if (failedFiles.isNotEmpty()) {
+        stringResource(R.string.import_failed_files, failedFiles.joinToString("\n"))
     } else {
-        messages += stringResource(R.string.import_failed_reason_note)
+        stringResource(R.string.import_failed_reason_note)
     }
     if (inputRequired) messages += stringResource(R.string.publication_input_required)
     return OperationReport(id, title, messages.joinToString("\n\n"))

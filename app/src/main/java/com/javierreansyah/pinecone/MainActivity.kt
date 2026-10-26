@@ -84,7 +84,10 @@ class MainActivity : AppCompatActivity() {
                 themeContrast = settings.value.themeContrast,
             ) {
                 val initialBackStack = androidx.compose.runtime.remember {
-                    com.javierreansyah.pinecone.ui.root.getInitialBackStackFromIntent(intent, settings.value.unsortedEnabled)
+                    com.javierreansyah.pinecone.ui.root.getInitialBackStackFromIntent(
+                        intent,
+                        settings.value.unsortedEnabled
+                    )
                 }
 
                 val backStack =
