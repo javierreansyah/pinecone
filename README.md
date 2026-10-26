@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="Screenshots/AppIcon.jpg" width="160" alt="Pinecone Icon" />
+  <img src="docs/images/AppIcon.jpg" width="160" alt="Pinecone Icon" />
   <h1>Pinecone</h1>
   <p>
     Pinecone is an Android reader for books, documents, comics, and audiobooks, with Material 3 Expressive design and customizable reading and listening.
@@ -9,13 +9,13 @@
 ## Screenshots
 
 <div align="center">
-  <img src="Screenshots/Library.png" width="32%" alt="Library screen" />
-  <img src="Screenshots/Shelves.png" width="32%" alt="Shelves screen" />
-  <img src="Screenshots/BookInfo.png" width="32%" alt="Book info screen" />
-  <img src="Screenshots/Reader.png" width="32%" alt="Reader screen" />
-  <img src="Screenshots/ReaderSettings.png" width="32%" alt="Reader settings screen" />
-  <img src="Screenshots/LibrarySearch.png" width="32%" alt="Library search screen" />
-  <img src="Screenshots/Settings.png" width="32%" alt="Settings screen" />
+  <img src="docs/images/Library.png" width="32%" alt="Library screen" />
+  <img src="docs/images/Shelves.png" width="32%" alt="Shelves screen" />
+  <img src="docs/images/BookInfo.png" width="32%" alt="Book info screen" />
+  <img src="docs/images/Reader.png" width="32%" alt="Reader screen" />
+  <img src="docs/images/ReaderSettings.png" width="32%" alt="Reader settings screen" />
+  <img src="docs/images/LibrarySearch.png" width="32%" alt="Library search screen" />
+  <img src="docs/images/Settings.png" width="32%" alt="Settings screen" />
 </div>
 
 ## Features
