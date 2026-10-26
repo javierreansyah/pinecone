@@ -10,11 +10,11 @@ import com.javierreansyah.pinecone.data.local.database.library.NoteDao
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.data.local.database.library.PublicationRenditionEntity
 import com.javierreansyah.pinecone.data.model.ReadingSessionToken
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import org.json.JSONObject
 import org.readium.r2.shared.publication.Locator
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /** Atomic reading state and annotations for every publication rendition. */
 @Singleton
@@ -159,7 +159,8 @@ class ReadingRepository @Inject constructor(
 
         val newFurthestProgression =
             if (!hasJumpOrigin && isNewProgressionFurther) progression else rendition.furthestProgression
-        val newFurthestLocatorJson = if (!hasJumpOrigin && isNewProgressionFurther) encoded else rendition.furthestLocatorJson
+        val newFurthestLocatorJson =
+            if (!hasJumpOrigin && isNewProgressionFurther) encoded else rendition.furthestLocatorJson
 
         publicationDao.putRenditions(
             listOf(
@@ -206,7 +207,8 @@ class ReadingRepository @Inject constructor(
         val book = permittedBook(bookId, session) ?: return@withTransaction
         val progression = locator.locations.totalProgression ?: 0.0
         val encoded = locator.toJSON().toString()
-        val origin = book.jumpOriginLocatorJson.takeUnless { it.isNullOrBlank() } ?: book.lastLocatorJson
+        val origin =
+            book.jumpOriginLocatorJson.takeUnless { it.isNullOrBlank() } ?: book.lastLocatorJson
         updateBookAndRendition(
             book.copy(
                 progression = progression,
@@ -214,7 +216,13 @@ class ReadingRepository @Inject constructor(
                 lastReadDate = System.currentTimeMillis(),
                 jumpOriginLocatorJson = origin,
             ),
-        ) { it.copy(lastLocatorJson = encoded, progression = progression, jumpOriginLocatorJson = origin) }
+        ) {
+            it.copy(
+                lastLocatorJson = encoded,
+                progression = progression,
+                jumpOriginLocatorJson = origin
+            )
+        }
     }
 
     suspend fun clearJumpOrigin(bookId: String, session: ReadingSessionToken? = null): Unit =
@@ -231,8 +239,16 @@ class ReadingRepository @Inject constructor(
         database.withTransaction {
             val book = permittedBook(bookId, session) ?: return@withTransaction
             updateBookAndRendition(
-                book.copy(furthestProgression = book.progression, furthestLocatorJson = book.lastLocatorJson),
-            ) { it.copy(furthestProgression = it.progression, furthestLocatorJson = it.lastLocatorJson) }
+                book.copy(
+                    furthestProgression = book.progression,
+                    furthestLocatorJson = book.lastLocatorJson
+                ),
+            ) {
+                it.copy(
+                    furthestProgression = it.progression,
+                    furthestLocatorJson = it.lastLocatorJson
+                )
+            }
         }
 
     suspend fun getLastLocator(bookId: String): Locator? {

@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -36,11 +35,11 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Add
 import com.composables.icons.materialsymbols.outlined.Book
 import com.javierreansyah.pinecone.R
-import com.javierreansyah.pinecone.ui.components.RenameDeleteMenu
 import com.javierreansyah.pinecone.data.local.preferences.InstalledDictionary
 import com.javierreansyah.pinecone.data.repository.dictionary.DictionaryState
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
+import com.javierreansyah.pinecone.ui.components.RenameDeleteMenu
 import com.javierreansyah.pinecone.ui.components.SegmentedLazyColumn
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 

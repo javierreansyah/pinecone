@@ -80,11 +80,19 @@ internal fun DeleteSelectionDialog(
             TextButton(
                 onClick = onConfirm,
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-            ) { Text(stringResource(R.string.action_delete), style = MaterialTheme.typography.labelLarge) }
+            ) {
+                Text(
+                    stringResource(R.string.action_delete),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
         },
         dismissButton = {
             TextButton(onClick = onDismissRequest) {
-                Text(stringResource(R.string.action_cancel), style = MaterialTheme.typography.labelLarge)
+                Text(
+                    stringResource(R.string.action_cancel),
+                    style = MaterialTheme.typography.labelLarge
+                )
             }
         },
     )

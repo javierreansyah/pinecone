@@ -29,14 +29,11 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
-import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.components.FilterResultBottomSheet
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectAppBar
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectTopBarTransition
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookCollection
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookContextMenu
-import com.javierreansyah.pinecone.ui.features.library.fileFormat
-import com.javierreansyah.pinecone.ui.features.library.publicationWording
 
 @Composable
 internal fun LibraryCollectionScreen(
@@ -189,7 +186,8 @@ private fun CollectionContent(
         topBar = {
             CollectionTopBar(
                 title = title,
-                archived = archived,                wording = allBooks.filter { it.id in selectedBooks }.publicationWording(),
+                archived = archived,
+                wording = allBooks.filter { it.id in selectedBooks }.publicationWording(),
                 isInMultiSelectMode = isInMultiSelectMode,
                 isEmpty = isEmpty,
                 selectedCount = selectedBooks.size,
@@ -250,7 +248,7 @@ private fun CollectionContent(
 @Composable
 private fun CollectionTopBar(
     title: String,
-    archived: Boolean,    wording: PublicationWording,
+    archived: Boolean, wording: PublicationWording,
     isInMultiSelectMode: Boolean,
     isEmpty: Boolean,
     selectedCount: Int,

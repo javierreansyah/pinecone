@@ -153,7 +153,11 @@ fun ShelvesMultiSelectAppBar(
     if (showDeleteConfirmation) {
         DeleteSelectionDialog(
             title = stringResource(R.string.library_delete_shelf_title),
-            message = pluralStringResource(wording.deleteShelvesMessage, selectedCount, selectedCount),
+            message = pluralStringResource(
+                wording.deleteShelvesMessage,
+                selectedCount,
+                selectedCount
+            ),
             onDismissRequest = { showDeleteConfirmation = false },
             onConfirm = {
                 onDelete()

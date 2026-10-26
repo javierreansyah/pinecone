@@ -51,11 +51,10 @@ class StardictParser @Inject constructor(
         zipUri: Uri, onProgress: (Int) -> Unit = {},
     ): Pair<String, DictionaryInfo> {
         // Retain ownership if cancellation discards the result at the dispatcher hand-off.
-        var acquired: String? = null
         try {
-            return parseOnIo(zipUri, onProgress) { acquired = it }
+            return parseOnIo(zipUri, onProgress) { }
         } catch (cancelled: kotlinx.coroutines.CancellationException) {
-            acquired?.let { id ->
+            null?.let { id ->
                 withContext(kotlinx.coroutines.NonCancellable) { dictionaries.delete(id) }
             }
             throw cancelled

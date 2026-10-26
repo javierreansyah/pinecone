@@ -71,7 +71,9 @@ internal fun searchLibrary(
         shelves = if (includes(SearchCategory.Shelves)) {
             if (blank) shelves else shelves.filter { it.name.contains(query, ignoreCase = true) }
         } else emptyList(),
-        authors = if (includes(SearchCategory.Authors)) names(books.asSequence().flatMap { it.authors }) else emptyList(),
-        tags = if (includes(SearchCategory.Tags)) names(books.asSequence().flatMap { it.tags }) else emptyList(),
+        authors = if (includes(SearchCategory.Authors)) names(
+            books.asSequence().flatMap { it.authors }) else emptyList(),
+        tags = if (includes(SearchCategory.Tags)) names(
+            books.asSequence().flatMap { it.tags }) else emptyList(),
     )
 }

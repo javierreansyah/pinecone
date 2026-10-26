@@ -31,8 +31,6 @@ import com.javierreansyah.pinecone.ui.features.library.toggleFormat
 import com.javierreansyah.pinecone.ui.features.library.toggleShelf
 import com.javierreansyah.pinecone.ui.features.library.toggleStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -50,6 +48,8 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel

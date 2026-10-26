@@ -50,8 +50,14 @@ class LibrarySearchTest {
             assertEquals(category == SearchCategory.Authors, result.authors.isNotEmpty())
             assertEquals(category == SearchCategory.Tags, result.tags.isNotEmpty())
         }
-        assertEquals(listOf("Ana"), searchLibrary(books, shelves, "ana", SearchCategory.Authors).authors)
-        assertEquals(listOf("History"), searchLibrary(books, shelves, "HIST", SearchCategory.Tags).tags)
+        assertEquals(
+            listOf("Ana"),
+            searchLibrary(books, shelves, "ana", SearchCategory.Authors).authors
+        )
+        assertEquals(
+            listOf("History"),
+            searchLibrary(books, shelves, "HIST", SearchCategory.Tags).tags
+        )
     }
 
     private fun book(id: String, title: String) = Book(

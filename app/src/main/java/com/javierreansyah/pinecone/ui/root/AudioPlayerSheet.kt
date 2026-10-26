@@ -249,16 +249,6 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
                 return Offset.Zero
             }
 
-            override fun onPostScroll(
-                consumed: Offset,
-                available: Offset,
-                source: NestedScrollSource
-            ): Offset {
-                return if (source == NestedScrollSource.UserInput) {
-                    Offset(0f, sheet.dispatchRawDelta(available.y))
-                } else Offset.Zero
-            }
-
             override suspend fun onPreFling(available: Velocity): Velocity {
                 if (sheet.requireOffset() > 0f) {
                     sheet.animateTo(
@@ -274,20 +264,6 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
                 return Velocity.Zero
             }
 
-            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-                if (sheet.requireOffset() > 0f && sheet.requireOffset() < collapsedOffset) {
-                    sheet.animateTo(
-                        audioSheetTarget(
-                            sheet.requireOffset(),
-                            collapsedOffset,
-                            available.y,
-                            velocityThreshold
-                        )
-                    )
-                    return available
-                }
-                return Velocity.Zero
-            }
         }
     }
     val visible =

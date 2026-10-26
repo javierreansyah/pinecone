@@ -19,7 +19,8 @@ abstract class BuildTimestampVersionCode : ValueSource<Int, ValueSourceParameter
 }
 
 val buildVersionCode: Provider<Int> = providers.of(BuildTimestampVersionCode::class) {}
-val appVersionName: String = "1.0"
+// MAJOR.MINOR.PATCH, shared by app metadata and APK filenames for every variant.
+val appVersionName: String = "1.0.0"
 
 abstract class PublicationLicenseAssetsTask : DefaultTask() {
     @get:InputFiles

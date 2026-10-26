@@ -1,7 +1,6 @@
 package com.javierreansyah.pinecone.data.local.database.library
 
 import androidx.room.Room
-import androidx.room.RoomDatabase
 import androidx.test.platform.app.InstrumentationRegistry
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.model.fromEntity
@@ -11,15 +10,14 @@ import com.javierreansyah.pinecone.data.repository.library.ReadingRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.json.JSONObject
 import org.readium.r2.shared.publication.Locator
 import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.Executor
 
 class LibraryProcessingTest {
     @Test
@@ -28,21 +26,34 @@ class LibraryProcessingTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
             .addCallback(AppDatabase.BACKUP_REVISION_CALLBACK)
-            .setQueryCallback(RoomDatabase.QueryCallback { sql, _ ->
+            .setQueryCallback({ sql, _ ->
                 if (sql.startsWith("SELECT", ignoreCase = true)) reads += sql
-            }, Executor { it.run() })
+            }, { it.run() })
             .build()
         try {
             val book = BookEntity("reading", "Reading", filePath = "/fixture/reading.epub")
             db.bookDao().insert(book)
-            db.publicationDao().putRenditions(listOf(PublicationRenditionEntity(
-                book.id, "original", book.filePath, "application/epub+zip", "EPUB", "source-hash",
-            )))
+            db.publicationDao().putRenditions(
+                listOf(
+                    PublicationRenditionEntity(
+                        book.id,
+                        "original",
+                        book.filePath,
+                        "application/epub+zip",
+                        "EPUB",
+                        "source-hash",
+                    )
+                )
+            )
             val reading = ReadingRepository(db, db.bookDao(), db.bookmarkDao(), db.noteDao())
             val session = requireNotNull(reading.currentSession(book.id))
-            fun locator(progression: Double) = requireNotNull(Locator.fromJSON(JSONObject(
-                """{"href":"chapter.xhtml","type":"application/xhtml+xml","locations":{"totalProgression":$progression}}""",
-            )))
+            fun locator(progression: Double) = requireNotNull(
+                Locator.fromJSON(
+                    JSONObject(
+                        """{"href":"chapter.xhtml","type":"application/xhtml+xml","locations":{"totalProgression":$progression}}""",
+                    )
+                )
+            )
             reads.clear()
             db.bookDao().getById(book.id)
             val relationReads = reads.size
@@ -50,8 +61,12 @@ class LibraryProcessingTest {
             val origin = locator(.2)
             reading.saveReadingPosition(book.id, origin, session = session)
             val writeReads = reads.toList()
-            assertTrue("Reading writes should load fewer rows: $writeReads", writeReads.size < relationReads)
-            val relations = Regex("\\b(authors|tags|spaces|publication_credits|book_author_cross_ref|book_tag_cross_ref|book_space_cross_ref)\\b")
+            assertTrue(
+                "Reading writes should load fewer rows: $writeReads",
+                writeReads.size < relationReads
+            )
+            val relations =
+                Regex("\\b(authors|tags|spaces|publication_credits|book_author_cross_ref|book_tag_cross_ref|book_space_cross_ref)\\b")
             assertTrue(writeReads.none { relations.containsMatchIn(it) })
             println("PINECONE_BENCHMARK bookDetailsSelects=$relationReads readingWriteSelects=${writeReads.size}")
 

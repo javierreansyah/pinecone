@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
@@ -31,9 +30,9 @@ import com.composables.icons.materialsymbols.outlined.Label
 import com.composables.icons.materialsymbols.outlined.Person
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
-import com.javierreansyah.pinecone.ui.components.RenameDeleteMenu
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
+import com.javierreansyah.pinecone.ui.components.RenameDeleteMenu
 import com.javierreansyah.pinecone.ui.components.SegmentedLazyColumn
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.combinedWording

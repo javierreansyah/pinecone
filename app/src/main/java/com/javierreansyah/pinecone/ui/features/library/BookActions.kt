@@ -15,16 +15,20 @@ class BookActions(
     fun deleteBooks(bookIds: Collection<String>) {
         scope.launch { deletePublications(bookIds) }
     }
+
     fun toggleArchive(bookId: String) {
         scope.launch { repository.toggleArchive(bookId) }
     }
+
     fun archiveBooks(bookIds: Collection<String>) = setArchived(bookIds, true)
     fun setArchived(bookIds: Collection<String>, value: Boolean) {
         scope.launch { repository.setArchived(bookIds, value) }
     }
+
     fun toggleReadStatus(bookId: String) {
         scope.launch { repository.toggleReadStatus(bookId) }
     }
+
     fun markBooksReadStatus(bookIds: Collection<String>, markAsRead: Boolean) {
         scope.launch { repository.setReadStatus(bookIds, markAsRead) }
     }

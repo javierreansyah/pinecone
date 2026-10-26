@@ -167,7 +167,7 @@ class LibraryRepository @Inject constructor(
         var committed = false
         try {
             if (staged != null) {
-                requireNotNull(context.contentResolver.openInputStream(requireNotNull(coverUri))) {
+                requireNotNull(context.contentResolver.openInputStream(coverUri)) {
                     "Cannot read replacement cover"
                 }.use { input ->
                     staged.outputStream().use { output ->

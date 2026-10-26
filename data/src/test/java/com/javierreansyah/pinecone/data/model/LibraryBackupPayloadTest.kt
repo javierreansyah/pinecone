@@ -35,7 +35,7 @@ class LibraryBackupPayloadTest {
             id = "20260805_120000_000",
             createdAt = 1,
             backupKind = "manual",
-            appVersion = "1.0",
+            appVersion = "1.0.0",
             databaseRevision = 2,
             stateFingerprint = "b".repeat(64),
             recordCounts = mapOf("books" to 1),

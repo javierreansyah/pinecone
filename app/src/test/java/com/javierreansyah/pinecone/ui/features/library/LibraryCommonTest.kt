@@ -6,9 +6,9 @@ import com.javierreansyah.pinecone.data.local.database.library.ShelfBookCrossRef
 import com.javierreansyah.pinecone.data.local.database.library.ShelfEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
+import com.javierreansyah.pinecone.data.local.preferences.libraryPreferenceDefaults
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.model.fromEntity
-import com.javierreansyah.pinecone.data.local.preferences.libraryPreferenceDefaults
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -250,10 +250,14 @@ class LibraryCommonTest {
 
     @Test
     fun `custom sort preserves incoming order through filters and reverses matching items`() {
-        val ordered = listOf(book("z").copy(isRead = true), book("a"), book("m").copy(isRead = true))
-        val prefs = libraryPreferenceDefaults("shelf_detail").copy(selectedStatus = setOf(StatusFilter.Finished))
+        val ordered =
+            listOf(book("z").copy(isRead = true), book("a"), book("m").copy(isRead = true))
+        val prefs =
+            libraryPreferenceDefaults("shelf_detail").copy(selectedStatus = setOf(StatusFilter.Finished))
         assertEquals(listOf("z", "m"), ordered.filterAndSort(prefs).map { it.id })
-        assertEquals(listOf("m", "z"), ordered.filterAndSort(prefs.copy(isAscending = false)).map { it.id })
+        assertEquals(
+            listOf("m", "z"),
+            ordered.filterAndSort(prefs.copy(isAscending = false)).map { it.id })
     }
 
     private fun details(id: String, mime: String) = BookWithDetails(

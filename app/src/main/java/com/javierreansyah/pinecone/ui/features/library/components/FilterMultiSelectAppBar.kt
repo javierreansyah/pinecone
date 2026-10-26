@@ -69,7 +69,11 @@ fun FilterMultiSelectAppBar(
     if (showDeleteConfirmation) {
         DeleteSelectionDialog(
             title = stringResource(R.string.action_delete),
-            message = pluralStringResource(wording.deleteLabelsMessage, selectedCount, selectedCount),
+            message = pluralStringResource(
+                wording.deleteLabelsMessage,
+                selectedCount,
+                selectedCount
+            ),
             onDismissRequest = { showDeleteConfirmation = false },
             onConfirm = {
                 onDelete()
