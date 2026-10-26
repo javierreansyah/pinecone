@@ -145,9 +145,6 @@ interface OperationDao {
     @Query("UPDATE publication_operations SET state = 'CANCELLED', error = 'library_replaced', attempt = NULL WHERE state IN ('PREPARING','QUEUED','RUNNING')")
     suspend fun invalidateAll()
 
-    @Query("UPDATE publication_operations SET state = 'CANCELLED', error = 'book_deleted', attempt = NULL WHERE bookId = :bookId AND state IN ('QUEUED','RUNNING')")
-    suspend fun invalidateBook(bookId: String)
-
     @Query("UPDATE publication_operations SET state = 'CANCELLED', error = 'book_deleted', attempt = NULL WHERE bookId IN (:ids) AND state IN ('QUEUED','RUNNING')")
     suspend fun invalidateBooks(ids: List<String>)
 

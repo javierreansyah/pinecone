@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.readium.r2.shared.publication.Link
@@ -44,7 +45,10 @@ class BookInfoViewModel @AssistedInject constructor(
         com.javierreansyah.pinecone.data.local.preferences.ReaderSettings()
     )
 
-    val uiState: StateFlow<BookInfoUiState> = repository.getBookFlow(bookId)
+    private val bookDetails = repository.getBookFlow(bookId)
+        .shareIn(viewModelScope, SharingStarted.WhileSubscribed(), replay = 1)
+
+    val uiState: StateFlow<BookInfoUiState> = bookDetails
         .map { entity ->
             BookInfoUiState(
                 book = entity?.let { Book.fromEntity(it) },
@@ -58,13 +62,13 @@ class BookInfoViewModel @AssistedInject constructor(
         )
 
     val bookmarks: StateFlow<List<BookmarkEntity>> =
-        combine(reading.getBookmarks(bookId), repository.getBookFlow(bookId)) { items, item ->
+        combine(reading.getBookmarks(bookId), bookDetails) { items, item ->
             items.filter { it.renditionKey == item?.book?.activeRendition }
         }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val notes: StateFlow<List<NoteEntity>> =
-        combine(reading.getNotes(bookId), repository.getBookFlow(bookId)) { items, item ->
+        combine(reading.getNotes(bookId), bookDetails) { items, item ->
             items.filter { it.renditionKey == item?.book?.activeRendition }
         }
             .map { list -> list.filter { note -> note.noteText.isNotBlank() } }

@@ -15,7 +15,9 @@ import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.model.fromEntity
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.domain.DeleteBooks
+import com.javierreansyah.pinecone.ui.features.library.BookActions
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
+import com.javierreansyah.pinecone.ui.features.library.FilterSortPreferences
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.LibraryView
 import com.javierreansyah.pinecone.ui.features.library.SearchCategory
@@ -24,12 +26,13 @@ import com.javierreansyah.pinecone.ui.features.library.SortType
 import com.javierreansyah.pinecone.ui.features.library.StatusFilter
 import com.javierreansyah.pinecone.ui.features.library.filterAndSort
 import com.javierreansyah.pinecone.ui.features.library.mapAndSortShelves
-import com.javierreansyah.pinecone.ui.features.library.publicationWording
 import com.javierreansyah.pinecone.ui.features.library.selectSort
 import com.javierreansyah.pinecone.ui.features.library.toggleFormat
 import com.javierreansyah.pinecone.ui.features.library.toggleShelf
 import com.javierreansyah.pinecone.ui.features.library.toggleStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -47,19 +50,19 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
-import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
     application: Application,
     private val bookRepository: LibraryRepository,
-    private val deletePublications: DeleteBooks,
+    deletePublications: DeleteBooks,
     private val prefsManager: LibraryPreferencesManager,
     private val readerPreferences: ReaderPreferences,
     @com.javierreansyah.pinecone.di.DefaultDispatcher private val computation: kotlinx.coroutines.CoroutineDispatcher,
 ) : ViewModel() {
+    val bookActions = BookActions(viewModelScope, bookRepository, deletePublications)
+
     private val screenKey = "library_books"
 
     private val _uiState = MutableStateFlow(
@@ -171,72 +174,13 @@ class LibraryViewModel @Inject constructor(
         .distinctUntilChanged()
         .debounce(300L.milliseconds)
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     private val searchResults: StateFlow<SearchResults> = combine(
         debouncedSearchQuery,
-        _uiState.map { state -> state.searchCategory }
-            .distinctUntilChanged(),
-    ) { query, category ->
-        query to category
-    }.flatMapLatest { (query, category) ->
-        if (query.isBlank()) {
-            combine(allBooks, shelves) { books, shelfList ->
-                val matchedBooks =
-                    if (category == SearchCategory.All || category == SearchCategory.Books) books else emptyList()
-                val matchedShelves =
-                    if (category == SearchCategory.All || category == SearchCategory.Shelves) shelfList.map { (itShelf, books1) -> itShelf } else emptyList()
-                val matchedAuthors =
-                    if (category == SearchCategory.All || category == SearchCategory.Authors) books.asSequence()
-                        .flatMap { it.authors }
-                        .distinct().toList() else emptyList()
-                val matchedTags =
-                    if (category == SearchCategory.All || category == SearchCategory.Tags) books.asSequence()
-                        .flatMap { it.tags }
-                        .distinct().toList() else emptyList()
-                SearchResults(
-                    contentWording = books.publicationWording(),
-                    query = query,
-                    books = matchedBooks,
-                    shelves = matchedShelves,
-                    authors = matchedAuthors,
-                    tags = matchedTags,
-                )
-            }
-        } else {
-            combine(
-                allBooks,
-                shelves,
-            ) { books, shelvesList ->
-                val filteredBooks = books.filter { it.matchesLibraryQuery(query) }
-                val matchedBooks =
-                    if (category == SearchCategory.All || category == SearchCategory.Books) filteredBooks else emptyList()
-                val matchedShelves =
-                    if (category == SearchCategory.All || category == SearchCategory.Shelves) shelvesList.filter { (itShelf2, books1) ->
-                        itShelf2.name.contains(
-                            query,
-                            ignoreCase = true,
-                        )
-                    }.map { (itShelf3, books1) -> itShelf3 } else emptyList()
-                val matchedAuthors =
-                    if (category == SearchCategory.All || category == SearchCategory.Authors) books
-                        .flatMap { it.authors }
-                        .distinct()
-                        .filter { it.contains(query, ignoreCase = true) } else emptyList()
-                val matchedTags =
-                    if (category == SearchCategory.All || category == SearchCategory.Tags) books
-                        .flatMap { it.tags }
-                        .distinct()
-                        .filter { it.contains(query, ignoreCase = true) } else emptyList()
-                SearchResults(
-                    contentWording = books.publicationWording(),
-                    query = query,
-                    books = matchedBooks,
-                    shelves = matchedShelves,
-                    authors = matchedAuthors,
-                    tags = matchedTags,
-                )
-            }
-        }
+        _uiState.map { it.searchCategory }.distinctUntilChanged(),
+        allBooks,
+        shelves,
+    ) { query, category, books, shelfList ->
+        searchLibrary(books, shelfList.map { it.shelf }, query, category)
     }.flowOn(computation)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SearchResults())
 
@@ -275,7 +219,6 @@ class LibraryViewModel @Inject constructor(
         content.copy(
             searchQuery = state.searchQuery,
             searchCategory = state.searchCategory,
-            isImporting = state.isImporting,
             bookPreferences = state.bookPreferences,
             shelvesPreferences = state.shelvesPreferences,
             isBooksLoading = booksLoading,
@@ -290,18 +233,6 @@ class LibraryViewModel @Inject constructor(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LibraryScreenUiState())
 
-    fun deleteBook(bookId: String) {
-        viewModelScope.launch {
-            deletePublications(listOf(bookId))
-        }
-    }
-
-    fun deleteBooks(bookIds: Collection<String>) {
-        viewModelScope.launch {
-            deletePublications(bookIds)
-        }
-    }
-
     fun deleteShelves(shelfIds: Collection<String>) {
         viewModelScope.launch {
             shelfIds.forEach { bookRepository.deleteShelf(it) }
@@ -314,26 +245,6 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
-    fun toggleArchive(bookId: String) {
-        viewModelScope.launch {
-            bookRepository.toggleArchive(bookId)
-        }
-    }
-
-    fun archiveBooks(bookIds: Collection<String>) {
-        viewModelScope.launch { bookRepository.setArchived(bookIds, true) }
-    }
-
-    fun toggleReadStatus(bookId: String) {
-        viewModelScope.launch {
-            bookRepository.toggleReadStatus(bookId)
-        }
-    }
-
-    fun markBooksReadStatus(bookIds: Collection<String>, markAsRead: Boolean) {
-        viewModelScope.launch { bookRepository.setReadStatus(bookIds, markAsRead) }
-    }
-
     fun onSearchQueryChange(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
     }
@@ -342,62 +253,32 @@ class LibraryViewModel @Inject constructor(
         _uiState.update { it.copy(searchCategory = category) }
     }
 
-    fun onLayoutModeChange(mode: LayoutMode, isShelvesTab: Boolean = false) {
+    private fun updatePreferences(
+        isShelvesTab: Boolean,
+        transform: (FilterSortPreferences) -> FilterSortPreferences,
+    ) {
         val spaceId = globalSpaceId.value
-        viewModelScope.launch {
-            prefsManager.updatePreferences(
-                spaceId,
-                if (isShelvesTab) "library_shelves" else screenKey
-            ) { it.copy(layoutMode = mode) }
-        }
+        val key = if (isShelvesTab) "library_shelves" else screenKey
+        viewModelScope.launch { prefsManager.updatePreferences(spaceId, key, transform) }
     }
 
-    fun onSortTypeChange(sortType: SortType, isShelvesTab: Boolean = false) {
-        val spaceId = globalSpaceId.value
-        viewModelScope.launch {
-            prefsManager.updatePreferences(
-                spaceId,
-                if (isShelvesTab) "library_shelves" else screenKey
-            ) { it.selectSort(sortType) }
-        }
-    }
+    fun onLayoutModeChange(mode: LayoutMode, isShelvesTab: Boolean = false) =
+        updatePreferences(isShelvesTab) { it.copy(layoutMode = mode) }
 
-    fun toggleStatusFilter(status: StatusFilter, isShelvesTab: Boolean = false) {
-        val spaceId = globalSpaceId.value
-        viewModelScope.launch {
-            prefsManager.updatePreferences(
-                spaceId,
-                if (isShelvesTab) "library_shelves" else screenKey
-            ) { it.toggleStatus(status) }
-        }
-    }
+    fun onSortTypeChange(sortType: SortType, isShelvesTab: Boolean = false) =
+        updatePreferences(isShelvesTab) { it.selectSort(sortType) }
 
-    fun toggleShelfFilter(filter: ShelfFilter, isShelvesTab: Boolean = false) {
-        val spaceId = globalSpaceId.value
-        viewModelScope.launch {
-            prefsManager.updatePreferences(
-                spaceId,
-                if (isShelvesTab) "library_shelves" else screenKey
-            ) { it.toggleShelf(filter) }
-        }
-    }
+    fun toggleStatusFilter(status: StatusFilter, isShelvesTab: Boolean = false) =
+        updatePreferences(isShelvesTab) { it.toggleStatus(status) }
 
-    fun toggleFileFilter(format: FileFilter, isShelvesTab: Boolean = false) {
-        val spaceId = globalSpaceId.value
-        viewModelScope.launch {
-            prefsManager.updatePreferences(
-                spaceId,
-                if (isShelvesTab) "library_shelves" else screenKey
-            ) { it.toggleFormat(format) }
-        }
-    }
+    fun toggleShelfFilter(filter: ShelfFilter, isShelvesTab: Boolean = false) =
+        updatePreferences(isShelvesTab) { it.toggleShelf(filter) }
 
-    fun onLibraryViewChange(view: LibraryView) {
-        val spaceId = globalSpaceId.value
-        viewModelScope.launch {
-            prefsManager.updatePreferences(spaceId, screenKey) { it.copy(libraryView = view) }
-        }
-    }
+    fun toggleFileFilter(format: FileFilter, isShelvesTab: Boolean = false) =
+        updatePreferences(isShelvesTab) { it.toggleFormat(format) }
+
+    fun onLibraryViewChange(view: LibraryView) =
+        updatePreferences(false) { it.copy(libraryView = view) }
 
     fun transferShelves(ids: Collection<String>, destinationId: String, copy: Boolean) {
         viewModelScope.launch { bookRepository.transferShelves(ids, destinationId, copy) }

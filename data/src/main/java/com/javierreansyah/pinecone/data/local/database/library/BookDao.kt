@@ -66,6 +66,9 @@ interface BookDao {
     @Query("SELECT * FROM books WHERE isArchived = 1 ORDER BY lastReadDate DESC, addedDate DESC")
     fun getArchivedBooks(): Flow<List<BookWithDetails>>
 
+    @Query("SELECT * FROM books WHERE id = :id")
+    suspend fun getEntity(id: String): BookEntity?
+
     @Transaction
     @Query("SELECT * FROM books WHERE id = :id")
     suspend fun getById(id: String): BookWithDetails?

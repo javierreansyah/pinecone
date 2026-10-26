@@ -70,7 +70,6 @@ class ReaderNotesViewModel @dagger.assisted.AssistedInject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val notes: StateFlow<List<NoteEntity>> = allNotesAndHighlights
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _tableOfContents = MutableStateFlow<List<Link>>(emptyList())
 

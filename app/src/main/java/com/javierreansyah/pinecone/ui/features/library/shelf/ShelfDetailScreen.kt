@@ -111,7 +111,7 @@ fun ShelfDetailScreen(
     onNavigateToOrganize: (Set<String>) -> Unit,
     viewModel: ShelfDetailViewModel = hiltViewModel(),
 ) {
-    val uiState = viewModel.uiState.collectAsStateWithLifecycle()
+    val preferences by viewModel.preferences.collectAsStateWithLifecycle()
     val spaces by viewModel.allSpaces.collectAsStateWithLifecycle()
     val spacesEnabled by viewModel.spacesEnabled.collectAsStateWithLifecycle()
     var transferCopy by remember { mutableStateOf<Boolean?>(null) }
@@ -157,7 +157,7 @@ fun ShelfDetailScreen(
         isReordering = isReordering,
         isRenaming = isRenaming,
         renameName = renameName,
-        layoutMode = uiState.value.bookPreferences.layoutMode,
+        layoutMode = preferences.layoutMode,
         selectedBooks = selectedBooks,
         isInMultiSelectMode = isInMultiSelectMode,
         onNavigateBack = onNavigateBack,
@@ -180,15 +180,15 @@ fun ShelfDetailScreen(
             }
         },
         onMarkAsReadUnread = { showMarkAsRead ->
-            viewModel.markBooksReadStatus(selectedBooks, showMarkAsRead)
+            viewModel.bookActions.markBooksReadStatus(selectedBooks, showMarkAsRead)
             exitMultiSelect()
         },
         onArchiveSelected = {
-            viewModel.archiveBooks(selectedBooks)
+            viewModel.bookActions.archiveBooks(selectedBooks)
             exitMultiSelect()
         },
         onDeleteSelected = {
-            viewModel.deleteBooks(selectedBooks)
+            viewModel.bookActions.deleteBooks(selectedBooks)
             exitMultiSelect()
         },
         onOrganizeSelected = {
@@ -231,9 +231,9 @@ fun ShelfDetailScreen(
         onBookClick = onNavigateToReader,
         onBookLongClick = { selectedBookForMenu = it },
         scrollKey = Triple(
-            uiState.value.bookPreferences.sortType,
-            uiState.value.bookPreferences.isAscending,
-            uiState.value.bookPreferences.selectedStatus,
+            preferences.sortType,
+            preferences.isAscending,
+            preferences.selectedStatus,
         ),
     )
 
@@ -254,7 +254,7 @@ fun ShelfDetailScreen(
     if (showFilterSheet) {
         ShelfDetailFilterBottomSheet(
             shelfId = shelfId,
-            preferences = uiState.value.bookPreferences,
+            preferences = preferences,
             availableFormats = shelfWithCovers?.books.orEmpty()
                 .mapTo(mutableSetOf()) { it.book.fileFormat() },
             onLayoutModeChange = viewModel::onLayoutModeChange,
@@ -281,10 +281,10 @@ fun ShelfDetailScreen(
             bookId = bookId,
             allBooks = allBooks,
             onNavigateToBookInfo = onNavigateToBookInfo,
-            onToggleArchive = { viewModel.toggleArchive(bookId) },
-            onToggleReadStatus = { viewModel.toggleReadStatus(bookId) },
+            onToggleArchive = { viewModel.bookActions.toggleArchive(bookId) },
+            onToggleReadStatus = { viewModel.bookActions.toggleReadStatus(bookId) },
             onOrganize = { onNavigateToOrganize(setOf(it)) },
-            onDeleteBook = { viewModel.deleteBook(bookId) },
+            onDeleteBook = { viewModel.bookActions.deleteBook(bookId) },
             onEnterMultiSelect = {
                 selectedBooks = setOf(bookId)
                 isInMultiSelectMode = true

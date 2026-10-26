@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.FormatPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
+import com.javierreansyah.pinecone.data.local.preferences.decodeReadingOverrides
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.data.local.preferences.encodeReadingOverrides
 import com.javierreansyah.pinecone.data.local.preferences.epubImageFilterCss
@@ -605,8 +606,7 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
 
     private suspend fun loadReadingOverrides(key: String) {
         val encoded = reading.rendition(bookId, key)?.preferencesJson
-        readingOverrides.value = encoded?.takeUnless { it == "{}" }
-            ?.let { kotlinx.serialization.json.Json.decodeFromString<ReaderSettings>(it) }
+        readingOverrides.value = decodeReadingOverrides(encoded)
     }
 
     fun setUseBookSettings(enabled: Boolean) {

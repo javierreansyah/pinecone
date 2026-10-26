@@ -69,12 +69,6 @@ interface ShelfDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertShelfBookCrossRef(crossRef: ShelfBookCrossRefEntity)
 
-    @Query("SELECT COALESCE(MAX(orderIndex), -1) + 1 FROM shelf_book_cross_ref WHERE shelfId = :shelfId")
-    suspend fun getNextBookOrderIndex(shelfId: String): Int
-
-    @Query("DELETE FROM shelf_book_cross_ref WHERE shelfId = :shelfId AND bookId = :bookId")
-    suspend fun deleteShelfBookCrossRef(shelfId: String, bookId: String)
-
     @Query("SELECT * FROM shelf_book_cross_ref")
     fun getAllShelfBookCrossRefs(): Flow<List<ShelfBookCrossRefEntity>>
 
@@ -83,9 +77,6 @@ interface ShelfDao {
 
     @Query("SELECT * FROM shelves")
     suspend fun getAllShelvesSync(): List<ShelfEntity>
-
-    @Query("SELECT * FROM shelves WHERE spaceId = :spaceId")
-    suspend fun getShelvesBySpaceSync(spaceId: String): List<ShelfEntity>
 
     @Query("SELECT * FROM shelf_book_cross_ref")
     suspend fun getAllShelfBookCrossRefsSync(): List<ShelfBookCrossRefEntity>
@@ -101,9 +92,6 @@ interface ShelfDao {
 
     @Query("DELETE FROM shelf_book_cross_ref")
     suspend fun deleteAllShelfBookCrossRefs()
-
-    @Query("SELECT COUNT(*) FROM shelf_book_cross_ref WHERE shelfId = :shelfId")
-    suspend fun getBookCountForShelf(shelfId: String): Int
 
     @Query("DELETE FROM shelves WHERE id NOT IN (SELECT DISTINCT shelfId FROM shelf_book_cross_ref) AND id != 'unshelved'")
     suspend fun deleteEmptyShelves()

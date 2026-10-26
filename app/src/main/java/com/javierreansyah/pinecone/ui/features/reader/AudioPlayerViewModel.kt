@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
+import com.javierreansyah.pinecone.data.local.preferences.decodeReadingOverrides
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.data.local.preferences.encodeReadingOverrides
 import com.javierreansyah.pinecone.data.local.preferences.withReadingPreferencesFrom
@@ -29,7 +30,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.serialization.json.Json
 import org.json.JSONObject
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
@@ -65,7 +65,7 @@ class AudioPlayerViewModel @AssistedInject constructor(
         reading.renditionFlow(bookId, "original").map { it?.preferencesJson }.distinctUntilChanged()
             .map {
                 try {
-                    val local = decodeLocalSettings(it)
+                    val local = decodeReadingOverrides(it)
                     settingsError.value = null
                     local
                 } catch (error: IllegalArgumentException) {
@@ -151,15 +151,12 @@ class AudioPlayerViewModel @AssistedInject constructor(
         viewModelScope.launch { reading.clearJumpOrigin(bookId) }
     }
 
-    private fun decodeLocalSettings(encoded: String?): ReaderSettings? =
-        encoded?.takeUnless { it == "{}" }?.let { Json.decodeFromString<ReaderSettings>(it) }
-
     fun updateSettings(transform: (ReaderSettings) -> ReaderSettings) {
         if (settingsError.value != null) return
         viewModelScope.launch {
             settingsMutex.withLock {
                 val encoded = reading.rendition(bookId, "original")?.preferencesJson
-                val local = decodeLocalSettings(encoded)
+                val local = decodeReadingOverrides(encoded)
                 if (local == null) preferences.updateSettings(transform)
                 else {
                     val current =
@@ -183,7 +180,7 @@ class AudioPlayerViewModel @AssistedInject constructor(
                     return@withLock
                 }
                 val encoded = reading.rendition(bookId, "original")?.preferencesJson
-                val local = decodeLocalSettings(encoded)
+                val local = decodeReadingOverrides(encoded)
                 val global = preferences.readerSettings.first()
                 val current =
                     if (local == null) global else global.withReadingPreferencesFrom(local)

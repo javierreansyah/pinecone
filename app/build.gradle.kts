@@ -186,7 +186,6 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.fragment)
     implementation(libs.room.runtime)
-    ksp(libs.room.compiler)
     implementation(libs.work.runtime)
     coreLibraryDesugaring(libs.desugar.jdk)
     debugImplementation(libs.androidx.compose.ui.tooling)
@@ -251,10 +250,6 @@ tasks.matching {
 
 tasks.withType<JavaCompile>().configureEach {
     options.compilerArgs.add("-Werror")
-}
-
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 aboutLibraries {

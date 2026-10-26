@@ -30,7 +30,6 @@
     <string name="library_format_comics">Komik</string>
     <string name="library_format_images">Gambar</string>
     <string name="library_format_other">@string/action_more</string>
-    <string name="library_importing">Mengimpor…</string>
     <string name="library_label_formats">Format file</string>
     <string name="library_label_layout">Tata letak</string>
     <string name="library_label_show">Tampilkan</string>

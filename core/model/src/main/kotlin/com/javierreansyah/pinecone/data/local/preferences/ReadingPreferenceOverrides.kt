@@ -7,6 +7,9 @@ private val BookSettingsJson = Json { encodeDefaults = true }
 /** An enabled default override must stay distinct from the disabled sentinel, `{}`. */
 fun ReaderSettings.encodeReadingOverrides(): String = BookSettingsJson.encodeToString(this)
 
+/** Null and the disabled sentinel are distinct from an enabled default override. */
+fun decodeReadingOverrides(encoded: String?): ReaderSettings? =
+    encoded?.takeUnless { it == "{}" }?.let { BookSettingsJson.decodeFromString<ReaderSettings>(it) }
 
 /** Merge reader controls only. A book override must never replace backup/dictionary/app settings. */
 fun ReaderSettings.withReadingPreferencesFrom(value: ReaderSettings): ReaderSettings = copy(

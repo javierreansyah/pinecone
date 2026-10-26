@@ -86,9 +86,6 @@ interface PublicationDao {
     @Query("SELECT * FROM publication_credits ORDER BY role, position")
     suspend fun allCredits(): List<PublicationCreditEntity>
 
-    @Query("SELECT DISTINCT name FROM publication_credits WHERE role = :role ORDER BY name")
-    fun contributorNames(role: String): Flow<List<String>>
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun putCredits(items: List<PublicationCreditEntity>)
 

@@ -1,23 +1,18 @@
 package com.javierreansyah.pinecone.ui.features.library.main
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarScrollBehavior
 import androidx.compose.material3.ShortNavigationBar
 import androidx.compose.material3.ShortNavigationBarItem
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.WideNavigationRailValue
 import androidx.compose.material3.rememberWideNavigationRailState
@@ -103,14 +98,14 @@ fun LibraryRoute(
         toggleFileFilter = viewModel::toggleFileFilter,
         onLibraryViewChange = viewModel::onLibraryViewChange,
         transferShelves = viewModel::transferShelves,
-        toggleArchive = viewModel::toggleArchive,
-        toggleReadStatus = viewModel::toggleReadStatus,
+        toggleArchive = viewModel.bookActions::toggleArchive,
+        toggleReadStatus = viewModel.bookActions::toggleReadStatus,
         setGlobalSpace = viewModel::setGlobalSpace,
-        deleteBook = viewModel::deleteBook,
+        deleteBook = viewModel.bookActions::deleteBook,
         renameShelf = viewModel::renameShelf,
-        markBooksReadStatus = viewModel::markBooksReadStatus,
-        archiveBooks = viewModel::archiveBooks,
-        deleteBooks = viewModel::deleteBooks,
+        markBooksReadStatus = viewModel.bookActions::markBooksReadStatus,
+        archiveBooks = viewModel.bookActions::archiveBooks,
+        deleteBooks = viewModel.bookActions::deleteBooks,
         deleteShelves = viewModel::deleteShelves,
         onNavigateToReader = onNavigateToReader,
         onNavigateToShelf = onNavigateToShelf,
@@ -336,7 +331,6 @@ fun LibraryScreen(
                                         books = uiState.filteredBooks,
                                         bottomContentPadding = miniPlayerPadding,
                                         layoutMode = uiState.bookPreferences.layoutMode,
-                                        isImporting = uiState.isImporting,
                                         selectedBooks = selectedBooks,
                                         onBookClick = { bookId ->
                                             if (isInMultiSelectMode) {
@@ -591,7 +585,6 @@ private fun LibraryBooksTabContent(
     showEmptyState: Boolean,
     books: List<Book>,
     layoutMode: LayoutMode,
-    isImporting: Boolean,
     selectedBooks: Set<String>,
     isInMultiSelectMode: Boolean,
     onBookClick: (String) -> Unit,
@@ -626,39 +619,5 @@ private fun LibraryBooksTabContent(
             )
         }
 
-        LibraryImportProgressOverlay(isImporting = isImporting)
-    }
-}
-
-@Composable
-private fun LibraryImportProgressOverlay(
-    isImporting: Boolean,
-) {
-    if (isImporting) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Surface(
-                modifier = Modifier.size(150.dp),
-                shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                tonalElevation = 8.dp,
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(
-                        16.dp, Alignment.CenterVertically,
-                    ),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    CircularProgressIndicator()
-                    Text(
-                        stringResource(R.string.library_importing),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                }
-            }
-        }
     }
 }

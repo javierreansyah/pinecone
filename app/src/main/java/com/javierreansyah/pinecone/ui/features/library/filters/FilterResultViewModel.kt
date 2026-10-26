@@ -3,7 +3,6 @@ package com.javierreansyah.pinecone.ui.features.library.filters
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.javierreansyah.pinecone.data.local.database.library.AuthorEntity
-import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.data.local.database.library.TagEntity
 import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
@@ -12,48 +11,43 @@ import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.model.fromEntity
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.domain.DeleteBooks
+import com.javierreansyah.pinecone.ui.features.library.BookActions
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
+import com.javierreansyah.pinecone.ui.features.library.FilterSortPreferences
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.SortType
 import com.javierreansyah.pinecone.ui.features.library.StatusFilter
 import com.javierreansyah.pinecone.ui.features.library.filterAndSort
 import com.javierreansyah.pinecone.ui.features.library.inSpace
 import com.javierreansyah.pinecone.ui.features.library.selectSort
-import com.javierreansyah.pinecone.ui.features.library.sortShelfBooks
 import com.javierreansyah.pinecone.ui.features.library.toggleFormat
 import com.javierreansyah.pinecone.ui.features.library.toggleStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class FilterResultViewModel @Inject constructor(
     private val bookRepository: LibraryRepository,
-    private val deletePublications: DeleteBooks,
+    deletePublications: DeleteBooks,
     private val prefsManager: LibraryPreferencesManager,
     @com.javierreansyah.pinecone.di.DefaultDispatcher private val computation: kotlinx.coroutines.CoroutineDispatcher,
 ) : ViewModel() {
+    val bookActions = BookActions(viewModelScope, bookRepository, deletePublications)
+
     val mutationErrors = com.javierreansyah.pinecone.ui.components.MutationErrorState()
 
     private val screenKey = "filter_result"
-
-    private val _uiState =
-        MutableStateFlow(FilterResultUiState(bookPreferences = libraryPreferenceDefaults(screenKey)))
-
-    val uiState: StateFlow<FilterResultUiState> = _uiState.asStateFlow()
 
     private val booksFlow: StateFlow<List<Book>> =
         bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }
@@ -65,11 +59,7 @@ class FilterResultViewModel @Inject constructor(
     ) { books, archived -> books + archived.map { Book.fromEntity(it) } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val allBooksAcrossSpaces: StateFlow<List<Book>> = booksFlow.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList(),
-    )
+    val allBooksAcrossSpaces: StateFlow<List<Book>> = booksFlow
 
     private val globalSpaceId: StateFlow<String?> = prefsManager.getEffectiveSpaceFlow().stateIn(
         scope = viewModelScope,
@@ -77,12 +67,9 @@ class FilterResultViewModel @Inject constructor(
         initialValue = null,
     )
 
-    init {
-        viewModelScope.launch {
-            globalSpaceId.flatMapLatest { spaceId -> prefsManager.preferences(spaceId, screenKey) }
-                .collect { preferences -> _uiState.update { it.copy(bookPreferences = preferences) } }
-        }
-    }
+    val preferences: StateFlow<FilterSortPreferences> = globalSpaceId
+        .flatMapLatest { spaceId -> prefsManager.preferences(spaceId, screenKey) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, libraryPreferenceDefaults(screenKey))
 
     val allBooks: StateFlow<List<Book>> = combine(booksFlow, globalSpaceId) { books, spaceId ->
         books.inSpace(spaceId)
@@ -91,14 +78,6 @@ class FilterResultViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList(),
     )
-
-    val shelves: StateFlow<List<ShelfWithCovers>> = combine(
-        bookRepository.getAllShelvesWithBooks(),
-        bookRepository.getAllShelfBookCrossRefs(),
-        globalSpaceId,
-    ) { shelvesList, crossRefs, spaceId ->
-        sortShelfBooks(shelvesList, crossRefs, spaceId)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val allAuthors: StateFlow<List<AuthorEntity>> =
         combine(bookRepository.getAllAuthors(), allBooks) { authors, books ->
@@ -135,38 +114,23 @@ class FilterResultViewModel @Inject constructor(
 
     val filteredBooks: StateFlow<List<Book>> = combine(
         unfilteredBooks,
-        _uiState.map { it.bookPreferences }.distinctUntilChanged()
+        preferences
     ) { books, prefs ->
         books.filterAndSort(prefs)
     }.flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun onLayoutModeChange(mode: LayoutMode) {
+    private fun updatePreferences(transform: (FilterSortPreferences) -> FilterSortPreferences) {
         val spaceId = globalSpaceId.value
-        viewModelScope.launch {
-            prefsManager.updatePreferences(spaceId, screenKey) { it.copy(layoutMode = mode) }
-        }
+        viewModelScope.launch { prefsManager.updatePreferences(spaceId, screenKey, transform) }
     }
 
-    fun onSortTypeChange(sortType: SortType) {
-        val spaceId = globalSpaceId.value
-        viewModelScope.launch {
-            prefsManager.updatePreferences(spaceId, screenKey) { it.selectSort(sortType) }
-        }
-    }
+    fun onLayoutModeChange(mode: LayoutMode) = updatePreferences { it.copy(layoutMode = mode) }
 
-    fun toggleFileFilter(format: FileFilter) {
-        val spaceId = globalSpaceId.value
-        viewModelScope.launch {
-            prefsManager.updatePreferences(spaceId, screenKey) { it.toggleFormat(format) }
-        }
-    }
+    fun onSortTypeChange(sortType: SortType) = updatePreferences { it.selectSort(sortType) }
 
-    fun toggleStatusFilter(status: StatusFilter) {
-        val spaceId = globalSpaceId.value
-        viewModelScope.launch {
-            prefsManager.updatePreferences(spaceId, screenKey) { it.toggleStatus(status) }
-        }
-    }
+    fun toggleFileFilter(format: FileFilter) = updatePreferences { it.toggleFormat(format) }
+
+    fun toggleStatusFilter(status: StatusFilter) = updatePreferences { it.toggleStatus(status) }
 
     fun deleteFilterItem(type: String, name: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
@@ -186,38 +150,6 @@ class FilterResultViewModel @Inject constructor(
                 onSuccess(newName.trim())
             }
         }
-    }
-
-    fun deleteBook(bookId: String) {
-        viewModelScope.launch {
-            deletePublications(listOf(bookId))
-        }
-    }
-
-    fun deleteBooks(bookIds: Collection<String>) {
-        viewModelScope.launch {
-            deletePublications(bookIds)
-        }
-    }
-
-    fun toggleArchive(bookId: String) {
-        viewModelScope.launch {
-            bookRepository.toggleArchive(bookId)
-        }
-    }
-
-    fun archiveBooks(bookIds: Collection<String>) {
-        viewModelScope.launch { bookRepository.setArchived(bookIds, true) }
-    }
-
-    fun toggleReadStatus(bookId: String) {
-        viewModelScope.launch {
-            bookRepository.toggleReadStatus(bookId)
-        }
-    }
-
-    fun markBooksReadStatus(bookIds: Collection<String>, markAsRead: Boolean) {
-        viewModelScope.launch { bookRepository.setReadStatus(bookIds, markAsRead) }
     }
 
 }

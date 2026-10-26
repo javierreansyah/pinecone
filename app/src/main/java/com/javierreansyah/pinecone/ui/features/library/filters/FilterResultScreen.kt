@@ -67,6 +67,7 @@ import com.composables.icons.materialsymbols.outlined.More_vert
 import com.composables.icons.materialsymbols.outlined.Select
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.features.library.FilterSortPreferences
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
@@ -94,7 +95,7 @@ fun FilterResultScreen(
     onNavigateToOrganize: (Set<String>) -> Unit,
     viewModel: FilterResultViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val preferences by viewModel.preferences.collectAsStateWithLifecycle()
     com.javierreansyah.pinecone.ui.components.MutationErrorDialog(viewModel.mutationErrors)
     val spaceScopedBooks by viewModel.allBooks.collectAsStateWithLifecycle()
     val allBooksAcrossSpaces by viewModel.allBooksAcrossSpaces.collectAsStateWithLifecycle()
@@ -125,7 +126,7 @@ fun FilterResultScreen(
     FilterResultContent(
         filterType = filterType,
         filterValue = filterValue,
-        uiState = uiState,
+        preferences = preferences,
         allBooks = allBooks,
         globalBooks = actionBooks,
         availableFormats = unfilteredBooks.mapTo(mutableSetOf()) { it.fileFormat() },
@@ -148,13 +149,13 @@ fun FilterResultScreen(
                 onNavigateToMerged(confirmedName)
             }
         },
-        onToggleArchive = viewModel::toggleArchive,
-        onToggleReadStatus = viewModel::toggleReadStatus,
-        onMarkBooksReadStatus = viewModel::markBooksReadStatus,
-        onArchiveBooks = viewModel::archiveBooks,
-        onDeleteBooks = viewModel::deleteBooks,
+        onToggleArchive = viewModel.bookActions::toggleArchive,
+        onToggleReadStatus = viewModel.bookActions::toggleReadStatus,
+        onMarkBooksReadStatus = viewModel.bookActions::markBooksReadStatus,
+        onArchiveBooks = viewModel.bookActions::archiveBooks,
+        onDeleteBooks = viewModel.bookActions::deleteBooks,
         onNavigateToOrganize = onNavigateToOrganize,
-        onDeleteBook = viewModel::deleteBook,
+        onDeleteBook = viewModel.bookActions::deleteBook,
     )
 }
 
@@ -162,7 +163,7 @@ fun FilterResultScreen(
 private fun FilterResultContent(
     filterType: String,
     filterValue: String,
-    uiState: FilterResultUiState,
+    preferences: FilterSortPreferences,
     allBooks: List<Book>,
     globalBooks: List<Book>,
     availableFormats: Set<FileFilter>,
@@ -282,7 +283,7 @@ private fun FilterResultContent(
     ) { innerPadding ->
         FilterResultBookContent(
             books = books,
-            layoutMode = uiState.bookPreferences.layoutMode,
+            layoutMode = preferences.layoutMode,
             innerPadding = innerPadding,
             selectedBooks = selectedBooks,
             isInMultiSelectMode = isInMultiSelectMode,
@@ -299,9 +300,9 @@ private fun FilterResultContent(
             },
             onBookLongClick = { selectedBookContext = it to null },
             scrollKey = Triple(
-                uiState.bookPreferences.sortType,
-                uiState.bookPreferences.isAscending,
-                uiState.bookPreferences.selectedStatus,
+                preferences.sortType,
+                preferences.isAscending,
+                preferences.selectedStatus,
             ),
         )
     }
@@ -310,7 +311,7 @@ private fun FilterResultContent(
         actionWording = globalBooks.inNamedCollection(filterType, filterValue).publicationWording(),
         filterType = filterType,
         filterValue = filterValue,
-        uiState = uiState,
+        preferences = preferences,
         allBooks = allBooks,
         availableFormats = availableFormats,
         selectedBookContext = selectedBookContext,
@@ -776,7 +777,7 @@ private fun FilterResultDialogsAndSheets(
     actionWording: com.javierreansyah.pinecone.ui.features.library.PublicationWording,
     filterType: String,
     filterValue: String,
-    uiState: FilterResultUiState,
+    preferences: FilterSortPreferences,
     allBooks: List<Book>,
     availableFormats: Set<FileFilter>,
     selectedBookContext: Pair<String, String?>?,
@@ -799,7 +800,7 @@ private fun FilterResultDialogsAndSheets(
 ) {
     if (showFilterSheet) {
         FilterResultBottomSheet(
-            preferences = uiState.bookPreferences,
+            preferences = preferences,
             availableFormats = availableFormats,
             onLayoutModeChange = onLayoutModeChange,
             onSortTypeChange = onSortTypeChange,

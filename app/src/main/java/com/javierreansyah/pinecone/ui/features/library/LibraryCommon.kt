@@ -85,25 +85,20 @@ fun List<Book>.filterAndSort(
         statusMatch && book.fileFormat() in prefs.selectedFormats
 
     }.let { filtered ->
-        val baseComparator = when (prefs.sortType) {
+        if (prefs.sortType == SortType.Custom) {
+            return if (prefs.isAscending) filtered else filtered.reversed()
+        }
+        val baseComparator: Comparator<Book> = when (prefs.sortType) {
             SortType.Title -> compareBy { it.metadata.sortTitle.ifBlank { it.title }.lowercase() }
             SortType.Author -> compareBy { it.authors.firstOrNull()?.lowercase().orEmpty() }
             SortType.LastRead -> compareBy { it.lastOpened ?: 0L }
             SortType.Added -> compareBy { it.addedDate }
             SortType.Progress -> compareBy { it.progress }
-            SortType.Custom -> {
-                val indexMap = asSequence().withIndex().associateBy(
-                    keySelector = { (_, itValue) -> itValue.id },
-                    valueTransform = IndexedValue<Book>::index,
-                )
-                compareBy<Book> { book ->
-                    indexMap[book.id] ?: 0
-                }
-            }
+            SortType.Custom -> error("Custom order is handled before sorting")
         }
 
         val finalComparator =
-            if (prefs.sortType == SortType.Title || prefs.sortType == SortType.Custom) {
+            if (prefs.sortType == SortType.Title) {
                 if (prefs.isAscending) baseComparator else baseComparator.reversed()
             } else {
                 val mainComp =

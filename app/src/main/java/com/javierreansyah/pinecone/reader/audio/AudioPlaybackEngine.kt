@@ -5,6 +5,7 @@ package com.javierreansyah.pinecone.reader.audio
 import android.app.Application
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
+import com.javierreansyah.pinecone.data.local.preferences.decodeReadingOverrides
 import com.javierreansyah.pinecone.data.local.preferences.withReadingPreferencesFrom
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.data.repository.library.PublicationRepository
@@ -73,11 +74,7 @@ class AudioPlaybackEngine @Inject constructor(
             publication = pub
             currentCoroutineContext().ensureActive()
             val originalRendition = reading.rendition(bookId, "original")
-            val override = originalRendition?.preferencesJson?.takeUnless { it == "{}" }?.let {
-                kotlinx.serialization.json.Json.decodeFromString<com.javierreansyah.pinecone.data.local.preferences.ReaderSettings>(
-                    it
-                )
-            }
+            val override = decodeReadingOverrides(originalRendition?.preferencesJson)
             val settings =
                 (override ?: preferences.readerSettings.first()).formatPreferences
             val factory = AudioNavigatorFactory(pub, ExoPlayerEngineProvider(app))
@@ -147,11 +144,7 @@ class AudioPlaybackEngine @Inject constructor(
                         reading.renditionFlow(bookId, "original").map { it?.preferencesJson }
                             .distinctUntilChanged()
                     ) { global, encoded ->
-                        val local = encoded?.takeUnless { it == "{}" }?.let {
-                            kotlinx.serialization.json.Json.decodeFromString<com.javierreansyah.pinecone.data.local.preferences.ReaderSettings>(
-                                it
-                            )
-                        }
+                        val local = decodeReadingOverrides(encoded)
                         if (local == null) global else global.withReadingPreferencesFrom(local)
                     }.map { it.formatPreferences.audioSpeed to it.formatPreferences.audioPitch }
                         .distinctUntilChanged().collect { (speed, pitch) ->

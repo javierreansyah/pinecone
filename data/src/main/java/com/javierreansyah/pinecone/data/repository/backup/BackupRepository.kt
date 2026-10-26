@@ -747,14 +747,8 @@ class BackupRepository @Inject constructor(
         db.bookDao().insertAllBookTagCrossRefs(payload.bookTagCrossRefs.map { it.toEntity() })
     }
 
-    private fun copyRawObject(folder: DocumentFile, info: VaultObject, target: File) {
-        val source = folder.findFile(info.fileName) ?: error("Missing object")
-        val (digestSize, digestSha256, digestCrc32) = resolver.openInputStream(source.uri)
-            ?.use { input ->
-                FileOutputStream(target).use { BackupArchiveIO.copyAndDigest(input, it) }
-            } ?: error("Cannot read object")
-        require(digestSize == info.size && digestSha256 == info.sha256 && digestCrc32 == info.crc32)
-    }
+    private fun copyRawObject(folder: DocumentFile, info: VaultObject, target: File) =
+        verifyRaw(folder, info, target)
 
     private fun verifyDictionaryObject(file: DocumentFile, info: VaultObject, output: File?) {
         val input = resolver.openInputStream(file.uri) ?: error("Cannot read dictionary")
@@ -949,12 +943,13 @@ class BackupRepository @Inject constructor(
         }
     }
 
-    private fun verifyRaw(folder: DocumentFile, info: VaultObject) {
+    private fun verifyRaw(folder: DocumentFile, info: VaultObject, target: File? = null) {
         val file = folder.findFile(info.fileName) ?: error("Missing object")
-        val (digestSize3, digestSha2563, digestCrc323) = resolver.openInputStream(file.uri)
-            ?.use(BackupArchiveIO::copyAndDigest)
-            ?: error("Cannot verify object")
-        require(digestSize3 == info.size && digestSha2563 == info.sha256 && digestCrc323 == info.crc32)
+        val digest = resolver.openInputStream(file.uri)?.use { input ->
+            if (target == null) BackupArchiveIO.copyAndDigest(input)
+            else FileOutputStream(target).use { BackupArchiveIO.copyAndDigest(input, it) }
+        } ?: error("Cannot read object")
+        require(digest.size == info.size && digest.sha256 == info.sha256 && digest.crc32 == info.crc32)
     }
 
     private fun allObjects(snapshot: VaultSnapshot): List<VaultObject> =

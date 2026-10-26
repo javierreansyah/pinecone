@@ -1,22 +1,16 @@
 package com.javierreansyah.pinecone.ui.features.library.filters
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -32,14 +26,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Delete
-import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Forest
 import com.composables.icons.materialsymbols.outlined.Label
-import com.composables.icons.materialsymbols.outlined.More_vert
 import com.composables.icons.materialsymbols.outlined.Person
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.components.RenameDeleteMenu
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.components.SegmentedLazyColumn
@@ -383,7 +375,7 @@ private fun AllFilterItemsList(
                             onCheckedChange = { onToggleSelect(itemFirst) },
                         )
                     } else {
-                        AllFilterItemsItemActions(
+                        RenameDeleteMenu(
                             isMenuExpanded = selectedItemForMenu == itemFirst,
                             onMoreClick = { onMoreClick(itemFirst) },
                             onMenuDismiss = onMenuDismiss,
@@ -393,68 +385,6 @@ private fun AllFilterItemsList(
                     }
                 },
             )
-        }
-    }
-}
-
-@Composable
-private fun AllFilterItemsItemActions(
-    isMenuExpanded: Boolean,
-    onMoreClick: () -> Unit,
-    onMenuDismiss: () -> Unit,
-    onRenameClick: () -> Unit,
-    onDeleteClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(modifier = modifier) {
-        IconButton(onClick = onMoreClick) {
-            Icon(
-                MaterialSymbols.Outlined.More_vert,
-                contentDescription = stringResource(R.string.action_more),
-            )
-        }
-        DropdownMenuPopup(
-            expanded = isMenuExpanded,
-            onDismissRequest = onMenuDismiss,
-        ) {
-            val groupInteractionSource = remember { MutableInteractionSource() }
-            DropdownMenuGroup(
-                shapes = MenuDefaults.groupShape(0, 1),
-                interactionSource = groupInteractionSource,
-            ) {
-                SelectableDropdownMenuItem(
-                    selected = false,
-                    text = { Text(stringResource(R.string.action_rename)) },
-                    shapes = MenuDefaults.itemShape(0, 2),
-                    leadingIcon = {
-                        Icon(
-                            MaterialSymbols.Outlined.Edit,
-                            modifier = Modifier.size(MenuDefaults.LeadingIconSize),
-                            contentDescription = null,
-                        )
-                    },
-                    onClick = onRenameClick,
-                )
-                SelectableDropdownMenuItem(
-                    selected = false,
-                    text = {
-                        Text(
-                            stringResource(R.string.action_delete),
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                    },
-                    shapes = MenuDefaults.itemShape(1, 2),
-                    leadingIcon = {
-                        Icon(
-                            MaterialSymbols.Outlined.Delete,
-                            modifier = Modifier.size(MenuDefaults.LeadingIconSize),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                        )
-                    },
-                    onClick = onDeleteClick,
-                )
-            }
         }
     }
 }

@@ -188,7 +188,7 @@ class LibraryRepository @Inject constructor(
                 withContext(kotlinx.coroutines.NonCancellable) {
                     var previousCover: String? = null
                     database.withTransaction {
-                        val current = requireNotNull(bookDao.getById(bookId)?.book) {
+                        val current = requireNotNull(bookDao.getEntity(bookId)) {
                             "Publication no longer exists"
                         }
                         previousCover = current.coverPath

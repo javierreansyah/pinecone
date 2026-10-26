@@ -33,9 +33,6 @@ interface SpaceDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertBookSpaceCrossRef(crossRef: BookSpaceCrossRef)
 
-    @Query("DELETE FROM book_space_cross_ref WHERE spaceId = :spaceId AND bookId = :bookId")
-    suspend fun deleteBookSpaceCrossRef(spaceId: String, bookId: String)
-
     @Query("SELECT * FROM book_space_cross_ref")
     fun getAllBookSpaceCrossRefs(): Flow<List<BookSpaceCrossRef>>
 
@@ -59,9 +56,6 @@ interface SpaceDao {
 
     @Query("SELECT COUNT(*) FROM book_space_cross_ref WHERE spaceId = :spaceId")
     suspend fun getBookCountForSpace(spaceId: String): Int
-
-    @Query("DELETE FROM spaces WHERE id NOT IN (SELECT DISTINCT spaceId FROM book_space_cross_ref) AND id != '_all_'")
-    suspend fun deleteEmptySpaces()
 
     @Query("UPDATE OR IGNORE book_space_cross_ref SET spaceId = :newId WHERE spaceId = :oldId")
     suspend fun mergeBookSpaceCrossRef(oldId: String, newId: String)
