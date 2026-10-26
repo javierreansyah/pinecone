@@ -9,6 +9,12 @@ import com.javierreansyah.pinecone.data.local.preferences.CoverDisplayMode
 import java.io.File
 
 /** Share decode/cache/scale policy between visible covers and bounded prefetches. */
-internal fun coverRequest(context: Context, path: String, size: SizeResolver, mode: CoverDisplayMode): ImageRequest =
+internal fun coverRequest(
+    context: Context,
+    path: String,
+    size: SizeResolver,
+    mode: CoverDisplayMode
+): ImageRequest =
     ImageRequest.Builder(context).data(File(path)).size(size).precision(Precision.INEXACT)
-        .scale(if (mode == CoverDisplayMode.Cover) Scale.FILL else Scale.FIT).memoryCacheKey(path).build()
+        .scale(if (mode == CoverDisplayMode.Cover) Scale.FILL else Scale.FIT).memoryCacheKey(path)
+        .build()

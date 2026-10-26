@@ -11,11 +11,12 @@ import com.javierreansyah.pinecone.data.local.database.library.BookEntity
 import com.javierreansyah.pinecone.data.local.database.library.BookSpaceCrossRef
 import com.javierreansyah.pinecone.data.local.database.library.BookTagCrossRef
 import com.javierreansyah.pinecone.data.local.database.library.BookWithDetails
-import com.javierreansyah.pinecone.data.model.toEntity
-import com.javierreansyah.pinecone.data.model.ReadingSessionToken
 import com.javierreansyah.pinecone.data.local.database.library.PublicationRenditionEntity
 import com.javierreansyah.pinecone.data.local.database.library.TagEntity
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
+import com.javierreansyah.pinecone.data.model.ReadingSessionToken
+import com.javierreansyah.pinecone.data.model.library.ALL_SPACES_ID
+import com.javierreansyah.pinecone.data.model.toEntity
 import com.javierreansyah.pinecone.data.publication.PublicationFormats
 import com.javierreansyah.pinecone.data.publication.PublicationMetadata
 import com.javierreansyah.pinecone.data.publication.PublicationMetadataImporter
@@ -23,14 +24,7 @@ import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLoca
 import com.javierreansyah.pinecone.data.publication.conversion.PdfReadModeConverter
 import com.javierreansyah.pinecone.di.IoDispatcher
 import com.javierreansyah.pinecone.reader.pdf.MuPdfDocumentFactory
-import com.javierreansyah.pinecone.data.model.library.ALL_SPACES_ID
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
-import java.io.FileOutputStream
-import java.security.MessageDigest
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.first
@@ -41,6 +35,12 @@ import org.readium.r2.shared.publication.services.coverFitting
 import org.readium.r2.shared.util.asset.AssetRetriever
 import org.readium.r2.shared.util.toUrl
 import org.readium.r2.streamer.PublicationOpener
+import java.io.File
+import java.io.FileOutputStream
+import java.security.MessageDigest
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class PublicationRepository @Inject constructor(
@@ -62,7 +62,10 @@ class PublicationRepository @Inject constructor(
     private val storageMutex get() = assets.mutationMutex
     private val conversionMutex = kotlinx.coroutines.sync.Mutex()
 
-    suspend fun importPublicationFolder(directory: androidx.documentfile.provider.DocumentFile, commit: suspend (BookWithDetails) -> Unit = {}): BookWithDetails =
+    suspend fun importPublicationFolder(
+        directory: androidx.documentfile.provider.DocumentFile,
+        commit: suspend (BookWithDetails) -> Unit = {}
+    ): BookWithDetails =
         withContext(ioDispatcher) {
             val staged = File(
                 context.cacheDir,
@@ -108,7 +111,8 @@ class PublicationRepository @Inject constructor(
             val hints = org.readium.r2.shared.util.format.FormatHints(
                 fileExtension = filename.substringAfterLast('.', "").takeIf(String::isNotBlank)
                     ?.let { org.readium.r2.shared.util.FileExtension(it) },
-                mediaType = context.contentResolver.getType(uri)?.let { org.readium.r2.shared.util.mediatype.MediaType(it) },
+                mediaType = context.contentResolver.getType(uri)
+                    ?.let { org.readium.r2.shared.util.mediatype.MediaType(it) },
             )
             val format = assetRetriever.sniffFormat(source, hints).getOrNull()
                 ?: error("Unsupported publication: $filename")
@@ -116,7 +120,8 @@ class PublicationRepository @Inject constructor(
             val renamed = File(stage.directory, "source.${format.fileExtension}")
             check(source.renameTo(renamed))
             source = renamed
-            val publication = requireNotNull(openPublicationFromFile(source)) { "Cannot open publication" }
+            val publication =
+                requireNotNull(openPublicationFromFile(source)) { "Cannot open publication" }
             var finalFile: File? = null
             var finalCover: File? = null
             var committed = false
@@ -124,50 +129,82 @@ class PublicationRepository @Inject constructor(
                 PublicationFormats.requireLocalResources(publication)
                 val profile = PublicationFormats.profile(publication)
                 val metadata = PublicationMetadataImporter.read(hash, source, publication.metadata)
-                val prepared = createBookEntity(hash, source, publication, format.mediaType.toString(), stage.directory).copy(
-                    title = metadata.title ?: publication.metadata.title ?: filename.substringBeforeLast('.'),
+                val prepared = createBookEntity(
+                    hash,
+                    source,
+                    publication,
+                    format.mediaType.toString(),
+                    stage.directory
+                ).copy(
+                    title = metadata.title ?: publication.metadata.title
+                    ?: filename.substringBeforeLast('.'),
                     description = metadata.description ?: publication.metadata.description,
-                    metadataJson = metadata.metadata.encode(), sourceMetadataJson = metadata.metadata.encode(),
-                    language = metadata.metadata.languages.firstOrNull(), originalFilename = filename,
+                    metadataJson = metadata.metadata.encode(),
+                    sourceMetadataJson = metadata.metadata.encode(),
+                    language = metadata.metadata.languages.firstOrNull(),
+                    originalFilename = filename,
                     published = metadata.metadata.published.ifBlank { null },
-                    publisher = metadata.credits.filter { it.role == "publisher" }.joinToString(", ") { it.name }.ifBlank { null },
+                    publisher = metadata.credits.filter { it.role == "publisher" }
+                        .joinToString(", ") { it.name }.ifBlank { null },
                 )
                 val unsorted = preferences.readerSettings.first().unsortedEnabled
                 kotlinx.coroutines.currentCoroutineContext().ensureActive()
                 storageMutex.withLock {
                     withContext(kotlinx.coroutines.NonCancellable) {
                         database.withTransaction {
-                            check(database.operationDao().runtime().let { !it.maintenance && it.generation == generation }) { "Library changed during import" }
+                            check(
+                                database.operationDao().runtime()
+                                    .let { !it.maintenance && it.generation == generation }) { "Library changed during import" }
                             val duplicate = bookDao.getById(hash)
                             if (duplicate != null) {
                                 commit(duplicate)
                                 committed = true
                                 return@withTransaction duplicate
                             }
-                            finalFile = File(booksDir, "${hash}_${UUID.randomUUID()}.${format.fileExtension}")
-                            check(source.renameTo(requireNotNull(finalFile)))
+                            finalFile = File(
+                                booksDir,
+                                "${hash}_${UUID.randomUUID()}.${format.fileExtension}"
+                            )
+                            check(source.renameTo(finalFile))
                             prepared.coverPath?.let { path ->
                                 finalCover = File(coversDir, "${hash}_${UUID.randomUUID()}.png")
-                                check(File(path).renameTo(requireNotNull(finalCover)))
+                                check(File(path).renameTo(finalCover))
                             }
                             spaceDao.ensureAllSpace(context)
-                            bookDao.insert(prepared.copy(filePath = requireNotNull(finalFile).absolutePath,
-                                coverPath = finalCover?.absolutePath, isUnsorted = unsorted))
+                            bookDao.insert(
+                                prepared.copy(
+                                    filePath = finalFile.absolutePath,
+                                    coverPath = finalCover?.absolutePath, isUnsorted = unsorted
+                                )
+                            )
                             spaceDao.insertBookSpaceCrossRef(BookSpaceCrossRef(hash, ALL_SPACES_ID))
-                            publicationDao.putRenditions(listOf(PublicationRenditionEntity(
-                                hash, "original", requireNotNull(finalFile).absolutePath,
-                                prepared.mediaType.orEmpty(), profile.name, hash,
-                            )))
+                            publicationDao.putRenditions(
+                                listOf(
+                                    PublicationRenditionEntity(
+                                        hash, "original", finalFile.absolutePath,
+                                        prepared.mediaType.orEmpty(), profile.name, hash,
+                                    )
+                                )
+                            )
                             publicationDao.putCredits(metadata.credits.map { it.toEntity() })
                             metadata.credits.filter { it.role == "author" || it.role == "writer" }
                                 .map { it.name }.distinct().forEachIndexed { index, name ->
                                     val inserted = bookDao.insertAuthor(AuthorEntity(name = name))
-                                    val id = if (inserted == -1L) requireNotNull(bookDao.getAuthorByName(name)).id else inserted
-                                    bookDao.insertBookAuthorCrossRef(BookAuthorCrossRef(hash, id, index))
+                                    val id = if (inserted == -1L) requireNotNull(
+                                        bookDao.getAuthorByName(name)
+                                    ).id else inserted
+                                    bookDao.insertBookAuthorCrossRef(
+                                        BookAuthorCrossRef(
+                                            hash,
+                                            id,
+                                            index
+                                        )
+                                    )
                                 }
                             metadata.subjects.distinct().forEach { name ->
                                 val inserted = bookDao.insertTag(TagEntity(name = name))
-                                val id = if (inserted == -1L) requireNotNull(bookDao.getTagByName(name)).id else inserted
+                                val id =
+                                    if (inserted == -1L) requireNotNull(bookDao.getTagByName(name)).id else inserted
                                 bookDao.insertBookTagCrossRef(BookTagCrossRef(hash, id))
                             }
                             val result = requireNotNull(bookDao.getById(hash))
@@ -178,7 +215,9 @@ class PublicationRepository @Inject constructor(
                 }
             } finally {
                 publication.close()
-                if (!committed) { finalFile?.delete(); finalCover?.delete() }
+                if (!committed) {
+                    finalFile?.delete(); finalCover?.delete()
+                }
             }
         }
     }
@@ -211,8 +250,15 @@ class PublicationRepository @Inject constructor(
                 File(existing.filePath).isFile
             ) return@withLock storageMutex.withLock {
                 database.withTransaction {
-                    check(!database.operationDao().runtime().maintenance) { "Library restore in progress" }
-                    check(publicationDao.rendition(bookId, "read-mode") == existing && File(existing.filePath).isFile) {
+                    check(
+                        !database.operationDao().runtime().maintenance
+                    ) { "Library restore in progress" }
+                    check(
+                        publicationDao.rendition(
+                            bookId,
+                            "read-mode"
+                        ) == existing && File(existing.filePath).isFile
+                    ) {
                         "Rendition changed"
                     }
                     commit(existing)
@@ -221,128 +267,149 @@ class PublicationRepository @Inject constructor(
             }
             onConversionStart()
             val item = requireNotNull(bookDao.getById(bookId)).book
-            val original = requireNotNull(openPublication(requireNotNull(bookDao.getById(bookId)), "original"))
+            val original =
+                requireNotNull(openPublication(requireNotNull(bookDao.getById(bookId)), "original"))
             try {
-            val token = requireNotNull(original.readingSessionToken())
-            require(PublicationFormats.profile(original) == com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF)
-            val stage = assets.stage()
-            val temp = File(stage.directory, "converted.epub")
-            var generated: Publication? = null
-            var final: File? = null
-            var committed = false
-            var ownsFinalFile = false
-            try {
-                val sources =
-                    mutableListOf<com.javierreansyah.pinecone.data.publication.conversion.PdfSource>()
-                val mapping = try {
-                    for (link in original.readingOrder) {
-                        val resource = requireNotNull(original.get(link))
-                        val pdf = MuPdfDocumentFactory().open(resource, null).getOrNull()
-                            ?: error("Cannot extract PDF")
-                        sources += com.javierreansyah.pinecone.data.publication.conversion.PdfSource(
-                            pdf,
-                            link.href.toString()
+                val token = requireNotNull(original.readingSessionToken())
+                require(PublicationFormats.profile(original) == com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF)
+                val stage = assets.stage()
+                val temp = File(stage.directory, "converted.epub")
+                var generated: Publication? = null
+                var final: File? = null
+                var committed = false
+                var ownsFinalFile = false
+                try {
+                    val sources =
+                        mutableListOf<com.javierreansyah.pinecone.data.publication.conversion.PdfSource>()
+                    val mapping = try {
+                        for (link in original.readingOrder) {
+                            val resource = requireNotNull(original.get(link))
+                            val pdf = MuPdfDocumentFactory().open(resource, null).getOrNull()
+                                ?: error("Cannot extract PDF")
+                            sources += com.javierreansyah.pinecone.data.publication.conversion.PdfSource(
+                                pdf,
+                                link.href.toString()
+                            )
+                        }
+                        PdfReadModeConverter().convert(
+                            sources,
+                            temp,
+                            "urn:pinecone:$bookId:read-mode",
+                            item.title,
+                            item.language ?: "und",
+                            com.javierreansyah.pinecone.data.publication.conversion.generatedPublicationStrings(
+                                context.resources
+                            ),
+                            previousSourceMap = existing?.sourceMapJson?.let {
+                                kotlinx.serialization.json.Json.decodeFromString<List<com.javierreansyah.pinecone.data.publication.conversion.SourcePage>>(
+                                    it
+                                )
+                            }.orEmpty(),
+                            progress = progress,
                         )
+                    } finally {
+                        sources.forEach { it.document.close() }
                     }
-                    PdfReadModeConverter().convert(
-                        sources,
-                        temp,
-                        "urn:pinecone:$bookId:read-mode",
-                        item.title,
-                        item.language ?: "und",
-                        com.javierreansyah.pinecone.data.publication.conversion.generatedPublicationStrings(
-                            context.resources
-                        ),
-                        previousSourceMap = existing?.sourceMapJson?.let {
-                            kotlinx.serialization.json.Json.decodeFromString<List<com.javierreansyah.pinecone.data.publication.conversion.SourcePage>>(
-                                it
-                            )
-                        }.orEmpty(),
-                        progress = progress,
-                    )
+                    generated =
+                        requireNotNull(openPublicationFromFile(temp)) { "Generated EPUB failed to open" }
+                    require(PublicationFormats.profile(generated) == com.javierreansyah.pinecone.data.publication.ReaderProfile.EPUB)
+                    generated.close(); generated = null
+                    val hash = generateFileHash(temp)
+                    final =
+                        File(booksDir, "${bookId}_read-mode_${UUID.randomUUID()}.epub")
+                    kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                    val rendition = storageMutex.withLock {
+                        withContext(kotlinx.coroutines.NonCancellable) {
+                            database.withTransaction {
+                                check(
+                                    database.operationDao().runtime()
+                                        .let { !it.maintenance && it.generation == token.generation }) { "Library changed" }
+                                check(
+                                    publicationDao.rendition(
+                                        bookId,
+                                        "original"
+                                    )?.sha256 == token.sha256
+                                ) { "Source changed" }
+                                // Each attempt publishes a new immutable path. Hashing was completed in staging.
+                                check(temp.renameTo(final))
+                                ownsFinalFile = true
+                                // Migrate only read-mode locators. IDs, labels, notes and PDF locations stay intact.
+                                val latest =
+                                    publicationDao.rendition(bookId, "read-mode") ?: existing
+                                val before = latest?.sourceMapJson?.let {
+                                    kotlinx.serialization.json.Json.decodeFromString<List<com.javierreansyah.pinecone.data.publication.conversion.SourcePage>>(
+                                        it
+                                    )
+                                }.orEmpty()
+                                val after =
+                                    kotlinx.serialization.json.Json.decodeFromString<List<com.javierreansyah.pinecone.data.publication.conversion.SourcePage>>(
+                                        mapping
+                                    )
+
+                                fun rebase(locator: String?) =
+                                    GeneratedEpubLocations.remap(locator, before, after)
+
+                                val updated = (latest ?: PublicationRenditionEntity(
+                                    bookId,
+                                    "read-mode",
+                                    final.absolutePath,
+                                    "application/epub+zip",
+                                    "EPUB",
+                                    hash
+                                )).copy(
+                                    filePath = final.absolutePath,
+                                    sha256 = hash,
+                                    converterVersion = PdfReadModeConverter.VERSION,
+                                    sourceMapJson = mapping,
+                                    lastLocatorJson = rebase(latest?.lastLocatorJson),
+                                    furthestLocatorJson = rebase(latest?.furthestLocatorJson),
+                                    jumpOriginLocatorJson = rebase(latest?.jumpOriginLocatorJson),
+                                )
+                                bookmarkDao.getByRendition(bookId, "read-mode")
+                                    .forEach { bookmark ->
+                                        val locator = requireNotNull(rebase(bookmark.locatorJson))
+                                        if (locator != bookmark.locatorJson) bookmarkDao.updateLocator(
+                                            bookmark.id,
+                                            locator
+                                        )
+                                    }
+                                noteDao.getByRendition(bookId, "read-mode").forEach { note ->
+                                    val locator = requireNotNull(rebase(note.locatorJson))
+                                    if (locator != note.locatorJson) noteDao.updateLocator(
+                                        note.id,
+                                        locator
+                                    )
+                                }
+                                publicationDao.putRenditions(listOf(updated))
+                                val book = requireNotNull(bookDao.getById(bookId)).book
+                                if (book.activeRendition == "read-mode") bookDao.update(
+                                    book.copy(
+                                        lastLocatorJson = updated.lastLocatorJson,
+                                        furthestLocatorJson = updated.furthestLocatorJson,
+                                        jumpOriginLocatorJson = updated.jumpOriginLocatorJson,
+                                    )
+                                )
+                                commit(updated)
+                                updated
+                            }.also { committed = true }
+                        }
+                    }
+                    rendition
                 } finally {
-                    sources.forEach { it.document.close() }
+                    generated?.close(); temp.delete()
+                    if (!committed && ownsFinalFile) final?.delete()
+                    stage.close()
                 }
-                generated =
-                    requireNotNull(openPublicationFromFile(temp)) { "Generated EPUB failed to open" }
-                require(PublicationFormats.profile(generated) == com.javierreansyah.pinecone.data.publication.ReaderProfile.EPUB)
-                generated.close(); generated = null
-                val hash = generateFileHash(temp)
-                final = File(booksDir, "${bookId}_read-mode_${java.util.UUID.randomUUID()}.epub")
-                kotlinx.coroutines.currentCoroutineContext().ensureActive()
-                val rendition = storageMutex.withLock { withContext(kotlinx.coroutines.NonCancellable) {
-                    database.withTransaction {
-                        check(database.operationDao().runtime().let { !it.maintenance && it.generation == token.generation }) { "Library changed" }
-                        check(publicationDao.rendition(bookId, "original")?.sha256 == token.sha256) { "Source changed" }
-                        // Each attempt publishes a new immutable path. Hashing was completed in staging.
-                        check(temp.renameTo(final))
-                        ownsFinalFile = true
-                        // Migrate only read-mode locators. IDs, labels, notes and PDF locations stay intact.
-                        val latest = publicationDao.rendition(bookId, "read-mode") ?: existing
-                        val before = latest?.sourceMapJson?.let {
-                            kotlinx.serialization.json.Json.decodeFromString<List<com.javierreansyah.pinecone.data.publication.conversion.SourcePage>>(
-                                it
-                            )
-                        }.orEmpty()
-                        val after =
-                            kotlinx.serialization.json.Json.decodeFromString<List<com.javierreansyah.pinecone.data.publication.conversion.SourcePage>>(
-                                mapping
-                            )
-
-                        fun rebase(locator: String?) =
-                            GeneratedEpubLocations.remap(locator, before, after)
-
-                        val updated = (latest ?: PublicationRenditionEntity(
-                            bookId,
-                            "read-mode",
-                            final.absolutePath,
-                            "application/epub+zip",
-                            "EPUB",
-                            hash
-                        )).copy(
-                            filePath = final.absolutePath,
-                            sha256 = hash,
-                            converterVersion = PdfReadModeConverter.VERSION,
-                            sourceMapJson = mapping,
-                            lastLocatorJson = rebase(latest?.lastLocatorJson),
-                            furthestLocatorJson = rebase(latest?.furthestLocatorJson),
-                            jumpOriginLocatorJson = rebase(latest?.jumpOriginLocatorJson),
-                        )
-                        bookmarkDao.getByRendition(bookId, "read-mode").forEach { bookmark ->
-                            val locator = requireNotNull(rebase(bookmark.locatorJson))
-                            if (locator != bookmark.locatorJson) bookmarkDao.updateLocator(
-                                bookmark.id,
-                                locator
-                            )
-                        }
-                        noteDao.getByRendition(bookId, "read-mode").forEach { note ->
-                            val locator = requireNotNull(rebase(note.locatorJson))
-                            if (locator != note.locatorJson) noteDao.updateLocator(note.id, locator)
-                        }
-                        publicationDao.putRenditions(listOf(updated))
-                        val book = requireNotNull(bookDao.getById(bookId)).book
-                        if (book.activeRendition == "read-mode") bookDao.update(
-                            book.copy(
-                                lastLocatorJson = updated.lastLocatorJson,
-                                furthestLocatorJson = updated.furthestLocatorJson,
-                                jumpOriginLocatorJson = updated.jumpOriginLocatorJson,
-                            )
-                        )
-                        commit(updated)
-                        updated
-                    }.also { committed = true }
-                } }
-                rendition
             } finally {
-                generated?.close(); temp.delete()
-                if (!committed && ownsFinalFile) final?.delete()
-                stage.close()
+                original.close()
             }
-            } finally { original.close() }
         }
     }
 
-    suspend fun openPublication(book: BookWithDetails, renditionKey: String = book.book.activeRendition): Publication? {
+    suspend fun openPublication(
+        book: BookWithDetails,
+        renditionKey: String = book.book.activeRendition
+    ): Publication? {
         var acquired: Publication? = null
         try {
             return withContext(ioDispatcher) {
@@ -350,14 +417,26 @@ class PublicationRepository @Inject constructor(
                     val current = bookDao.getById(book.book.id) ?: return@withLock null
                     val runtime = database.operationDao().runtime()
                     if (runtime.maintenance) return@withLock null
-                    val rendition = publicationDao.rendition(book.book.id, renditionKey) ?: return@withLock null
+                    val rendition =
+                        publicationDao.rendition(book.book.id, renditionKey) ?: return@withLock null
                     val file = File(rendition.filePath)
                     if (!file.isFile) return@withLock null
-                    OpenAccess(current.copy(book = current.book.copy(activeRendition = renditionKey)), file,
-                        ReadingSessionToken(runtime.generation, book.book.id, renditionKey, rendition.sha256), assets.lease(file))
+                    OpenAccess(
+                        current.copy(book = current.book.copy(activeRendition = renditionKey)),
+                        file,
+                        ReadingSessionToken(
+                            runtime.generation,
+                            book.book.id,
+                            renditionKey,
+                            rendition.sha256
+                        ),
+                        assets.lease(file)
+                    )
                 } ?: return@withContext null
                 try {
-                    openPublicationFromFile(access.file, access.book, access)?.also { acquired = it }
+                    openPublicationFromFile(access.file, access.book, access)?.also {
+                        acquired = it
+                    }
                 } finally {
                     if (acquired == null) access.lease.close()
                 }
@@ -368,7 +447,12 @@ class PublicationRepository @Inject constructor(
         }
     }
 
-    private data class OpenAccess(val book: BookWithDetails, val file: File, val token: ReadingSessionToken, val lease: AutoCloseable)
+    private data class OpenAccess(
+        val book: BookWithDetails,
+        val file: File,
+        val token: ReadingSessionToken,
+        val lease: AutoCloseable
+    )
 
 
     private suspend fun openPublicationFromFile(
@@ -380,7 +464,8 @@ class PublicationRepository @Inject constructor(
             val url = file.toUrl(isDirectory = false)
             val asset = assetRetriever.retrieve(url).getOrNull() ?: return null
             publicationOpener.open(asset, allowUserInteraction = false, onCreatePublication = {
-                if (access != null) servicesBuilder[LeasedPublication::class] = { LeasedPublication(access.lease, access.token) }
+                if (access != null) servicesBuilder[LeasedPublication::class] =
+                    { LeasedPublication(access.lease, access.token) }
                 if (book != null) {
                     val details = PublicationMetadata.decode(book.book.metadataJson)
                     manifest = manifest.copy(

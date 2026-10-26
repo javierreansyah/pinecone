@@ -45,7 +45,10 @@ class ReaderNotesViewModel @dagger.assisted.AssistedInject constructor(
     private val renditionKey = MutableStateFlow("original")
     private var session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null
 
-    fun setRendition(key: String, token: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null) {
+    fun setRendition(
+        key: String,
+        token: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null
+    ) {
         if (token != null) session = token
         if (session == null) viewModelScope.launch { session = repository.currentSession(bookId) }
         renditionKey.value = key
@@ -198,7 +201,15 @@ class ReaderNotesViewModel @dagger.assisted.AssistedInject constructor(
         chapterTitle: String?,
     ) {
         viewModelScope.launch {
-            repository.addNote(bookId, locator, noteText, color, chapterTitle, renditionKey.value, session)
+            repository.addNote(
+                bookId,
+                locator,
+                noteText,
+                color,
+                chapterTitle,
+                renditionKey.value,
+                session
+            )
         }
     }
 
@@ -208,7 +219,15 @@ class ReaderNotesViewModel @dagger.assisted.AssistedInject constructor(
         chapterTitle: String?,
     ) {
         viewModelScope.launch {
-            repository.addNote(bookId, locator, "", color, chapterTitle, renditionKey.value, session)
+            repository.addNote(
+                bookId,
+                locator,
+                "",
+                color,
+                chapterTitle,
+                renditionKey.value,
+                session
+            )
         }
     }
 

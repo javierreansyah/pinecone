@@ -6,7 +6,9 @@ import androidx.datastore.core.DataMigration
 import androidx.datastore.core.Serializer
 import androidx.datastore.dataStore
 import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
@@ -65,6 +67,8 @@ internal class JsonPreferenceSerializer<T>(
     }
 
     override suspend fun writeTo(t: T, output: OutputStream) {
-        output.write(PreferenceJson.encodeToString(serializer, t).encodeToByteArray())
+        withContext(Dispatchers.IO) {
+            output.write(PreferenceJson.encodeToString(serializer, t).encodeToByteArray())
+        }
     }
 }

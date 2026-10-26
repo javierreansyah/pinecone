@@ -30,18 +30,23 @@ data class ShelfWithCovers(
 interface ShelfDao {
     @Query("SELECT * FROM shelf_book_cross_ref WHERE shelfId = :id")
     suspend fun getShelfRefsSync(id: String): List<ShelfBookCrossRefEntity>
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun addShelfRefs(refs: List<ShelfBookCrossRefEntity>)
+
     @Query("DELETE FROM shelf_book_cross_ref WHERE shelfId = :shelfId AND bookId IN (:ids)")
     suspend fun removeShelfMembers(shelfId: String, ids: List<String>)
+
     @Query("DELETE FROM shelf_book_cross_ref WHERE bookId IN (:ids) AND shelfId IN (SELECT id FROM shelves WHERE spaceId = :spaceId)")
     suspend fun removeSpaceMembers(spaceId: String, ids: List<String>)
+
     @Transaction
     @Query("SELECT * FROM shelves WHERE id = :id")
     fun getShelfWithBooks(id: String): Flow<ShelfWithCovers?>
 
     @Query("SELECT * FROM shelf_book_cross_ref WHERE shelfId = :id")
     fun getShelfRefs(id: String): Flow<List<ShelfBookCrossRefEntity>>
+
     @Transaction
     @Query("SELECT * FROM shelves ORDER BY createdAt DESC")
     fun getAllShelvesWithBooks(): Flow<List<ShelfWithCovers>>

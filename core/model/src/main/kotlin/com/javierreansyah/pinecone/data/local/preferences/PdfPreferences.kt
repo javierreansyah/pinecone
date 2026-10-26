@@ -12,6 +12,8 @@ data class PdfPreferences(
     val pageSpacing: Double = 12.0,
     val invert: Boolean? = null,
 ) {
-    init { require(pageSpacing.isFinite() && pageSpacing in 0.0..64.0) }
-    fun resolveTheme(isDark: Boolean): PdfPreferences = copy(invert = invert ?: isDark)
+    init {
+        require(pageSpacing.isFinite() && pageSpacing in 0.0..64.0)
+    }
+
 }

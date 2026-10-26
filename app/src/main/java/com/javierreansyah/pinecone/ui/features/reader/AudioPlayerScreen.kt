@@ -43,8 +43,14 @@ fun AudioPlayerScreen(
     topBarAlpha: Float = 1f,
 ) {
     // Use the class-derived default keys: both models share this entry's store.
-    val player = hiltViewModel<AudioPlayerViewModel, AudioPlayerViewModel.Factory>(creationCallback = { it.create(bookId) })
-    val notes = hiltViewModel<ReaderNotesViewModel, ReaderNotesViewModel.Factory>(creationCallback = { it.create(bookId) })
+    val player =
+        hiltViewModel<AudioPlayerViewModel, AudioPlayerViewModel.Factory>(creationCallback = {
+            it.create(bookId)
+        })
+    val notes =
+        hiltViewModel<ReaderNotesViewModel, ReaderNotesViewModel.Factory>(creationCallback = {
+            it.create(bookId)
+        })
     val state by player.state.collectAsStateWithLifecycle()
     val settings by player.settings.collectAsStateWithLifecycle()
     val useBookSettings by player.useBookSettings.collectAsStateWithLifecycle()
@@ -58,49 +64,106 @@ fun AudioPlayerScreen(
     var showSettings by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(player) { player.open(initialLocatorJson) }
     LaunchedEffect(state.tableOfContents) { notes.updateTableOfContents(state.tableOfContents) }
-    val bookmarked = state.locator?.let { current -> bookmarks.any {
-        Locator.fromJSON(JSONObject(it.locatorJson))?.isSamePosition(current) == true
-    } } == true
-    val toggleBookmark = { state.locator?.let { notes.toggleBookmark(it, it.title ?: state.chapter) }; Unit }
-    PineconeThemedContent(settings.toReaderThemeSettings().isUiDark(isSystemInDarkTheme()), settings) {
+    val bookmarked = state.locator?.let { current ->
+        bookmarks.any {
+            Locator.fromJSON(JSONObject(it.locatorJson))?.isSamePosition(current) == true
+        }
+    } == true
+    val toggleBookmark =
+        { state.locator?.let { notes.toggleBookmark(it, it.title ?: state.chapter) }; Unit }
+    PineconeThemedContent(
+        settings.toReaderThemeSettings().isUiDark(isSystemInDarkTheme()),
+        settings
+    ) {
         Box(Modifier.fillMaxSize()) {
             if (audioPlayerMetadataReady(bookId, state)) {
                 AudioReaderContent(
-                    state = state, coverPath = state.coverPath, background = Color.Transparent,
-                    foreground = MaterialTheme.colorScheme.onBackground, artworkAlpha = artworkAlpha,
-                    isBookmarked = bookmarked, onToggleBookmark = toggleBookmark,
-                    onAddNote = { state.locator?.let { notes.addNoteAndEdit(it, it.title ?: state.chapter) } },
+                    state = state,
+                    coverPath = state.coverPath,
+                    background = Color.Transparent,
+                    foreground = MaterialTheme.colorScheme.onBackground,
+                    artworkAlpha = artworkAlpha,
+                    isBookmarked = bookmarked,
+                    onToggleBookmark = toggleBookmark,
+                    onAddNote = {
+                        state.locator?.let {
+                            notes.addNoteAndEdit(
+                                it,
+                                it.title ?: state.chapter
+                            )
+                        }
+                    },
                     canAddNote = state.locator != null,
-                    onPlayPause = player::togglePlayback, onSkip = player::skip, onSeek = player::seek, onTrack = player::track,
-                    onOpenBookmarks = { contentsTab = 1; showContents = true }, onOpenSettings = { showSettings = true }, onRetry = { player.open(retry = true) },
+                    onPlayPause = player::togglePlayback,
+                    onSkip = player::skip,
+                    onSeek = player::seek,
+                    onTrack = player::track,
+                    onOpenBookmarks = { contentsTab = 1; showContents = true },
+                    onOpenSettings = { showSettings = true },
+                    onRetry = { player.open(retry = true) },
                 )
             } else CircularProgressIndicator(Modifier.align(Alignment.Center))
             ReaderTopBar(
                 modifier = Modifier.graphicsLayer { alpha = topBarAlpha },
-                isBookmarked = bookmarked, isInSearchMode = false, searchQuery = "", onSearchTextClick = {},
-                onCloseSearch = {}, onSearchClick = {}, onBack = onBack,
-                onTocClick = { contentsTab = 0; showContents = true }, onSettingsClick = { showSettings = true },
-                onToggleBookmark = toggleBookmark, onInfoClick = { onBookInfo(bookId) },
-                readerBgColor = Color.Transparent, readerTextColor = MaterialTheme.colorScheme.onBackground,
-                jumpOrigin = jumpOrigin, onGoBackToOriginClick = player::returnToOrigin, onClearJumpOriginClick = player::clearJumpOrigin,
-                canSearch = false, typographySettings = false, audioPlayer = true,
+                isBookmarked = bookmarked,
+                isInSearchMode = false,
+                searchQuery = "",
+                onSearchTextClick = {},
+                onCloseSearch = {},
+                onSearchClick = {},
+                onBack = onBack,
+                onTocClick = { contentsTab = 0; showContents = true },
+                onSettingsClick = { showSettings = true },
+                onToggleBookmark = toggleBookmark,
+                onInfoClick = { onBookInfo(bookId) },
+                readerBgColor = Color.Transparent,
+                readerTextColor = MaterialTheme.colorScheme.onBackground,
+                jumpOrigin = jumpOrigin,
+                onGoBackToOriginClick = player::returnToOrigin,
+                onClearJumpOriginClick = player::clearJumpOrigin,
+                canSearch = false,
+                typographySettings = false,
+                audioPlayer = true,
             )
         }
         if (showContents) ReaderBottomSheet(
-            tableOfContents = state.tableOfContents, sortedBookmarks = bookmarks, sortedNotes = noteItems,
-            sortOption = sort, onSortOptionChange = notes::setSortOption, currentLocator = state.locator,
+            tableOfContents = state.tableOfContents,
+            sortedBookmarks = bookmarks,
+            sortedNotes = noteItems,
+            sortOption = sort,
+            onSortOptionChange = notes::setSortOption,
+            currentLocator = state.locator,
             onChapterClick = { player.go(it); showContents = false },
-            onBookmarkClick = { player.go(it); showContents = false }, onNoteClick = { player.go(it); showContents = false },
-            onAddNote = { text -> state.locator?.let { notes.addNote(it, text, chapterTitle = it.title ?: state.chapter) } },
-            onDeleteBookmark = notes::deleteBookmark, onDeleteNote = notes::deleteNote,
-            onDismiss = { showContents = false }, getPositionLabel = player::getPositionLabel, getChapterPageLabel = { "" }, initialTab = contentsTab,
+            onBookmarkClick = { player.go(it); showContents = false },
+            onNoteClick = { player.go(it); showContents = false },
+            onAddNote = { text ->
+                state.locator?.let {
+                    notes.addNote(
+                        it,
+                        text,
+                        chapterTitle = it.title ?: state.chapter
+                    )
+                }
+            },
+            onDeleteBookmark = notes::deleteBookmark,
+            onDeleteNote = notes::deleteNote,
+            onDismiss = { showContents = false },
+            getPositionLabel = player::getPositionLabel,
+            getChapterPageLabel = { "" },
+            initialTab = contentsTab,
         )
         if (showSettings) ModalBottomSheet(onDismissRequest = { showSettings = false }) {
-            ReaderSettingsContent(settings, player::updateSettings, profile = ReaderProfile.AUDIO,
-                useBookSettings = useBookSettings, onUseBookSettings = player::setUseBookSettings)
+            ReaderSettingsContent(
+                settings, player::updateSettings, profile = ReaderProfile.AUDIO,
+                useBookSettings = useBookSettings, onUseBookSettings = player::setUseBookSettings
+            )
         }
-        selection.editingNote?.let { note -> NoteBottomSheet(note = note, onUpdateNote = notes::updateNote,
-            onDeleteNote = notes::deleteNote, onDismiss = notes::hideEditNote) }
+        selection.editingNote?.let { note ->
+            NoteBottomSheet(
+                note = note, onUpdateNote = notes::updateNote,
+                onDeleteNote = notes::deleteNote, onDismiss = notes::hideEditNote
+            )
+        }
     }
 }
 

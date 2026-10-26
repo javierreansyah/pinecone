@@ -80,7 +80,6 @@
     <string name="reader_result_num_of">%1$s of %2$s</string>
     <string name="reader_rewind">Rewind 10 seconds</string>
     <string name="reader_right_to_left">Right to left</string>
-    <string name="reader_scanned_page_notice">This page has no extractable text. Its original appearance is preserved below; OCR is not enabled.</string>
     <string name="reader_search_placeholder">Search in title…</string>
     <string name="reader_search_no_results_for">No results for \"%s\"</string>
     <plurals name="reader_search_results_count">

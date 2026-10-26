@@ -12,4 +12,8 @@ data class PublicationCredit(
     val metadataJson: String = "{}",
 )
 
-data class LibrarySpace(val id: String, val name: String, val createdAt: Long = System.currentTimeMillis())
+data class LibrarySpace(
+    val id: String,
+    val name: String,
+    val createdAt: Long = System.currentTimeMillis()
+)

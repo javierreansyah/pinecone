@@ -2,8 +2,6 @@
 
 package com.javierreansyah.pinecone.ui.features.reader
 
-import com.javierreansyah.pinecone.data.repository.library.readingSessionToken
-
 import android.os.Bundle
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -14,6 +12,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.publication.PublicationFormats
 import com.javierreansyah.pinecone.data.publication.ReaderProfile
+import com.javierreansyah.pinecone.data.repository.library.readingSessionToken
 import com.javierreansyah.pinecone.reader.pdf.MuPdfEngineProvider
 import com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences
 import com.javierreansyah.pinecone.reader.pdf.MuPdfSettings
@@ -75,9 +74,10 @@ class NavigatorController(
         pdfAnnotationsJob?.cancel(); pdfClearSelectionJob?.cancel()
         epub?.close(); epub = null
         navigator = null
-        if (!fragmentManager.isDestroyed) fragmentManager.fragments.filter { it.id == R.id.navigator_container }.forEach {
-            fragmentManager.beginTransaction().remove(it).commitNowAllowingStateLoss()
-        }
+        if (!fragmentManager.isDestroyed) fragmentManager.fragments.filter { it.id == R.id.navigator_container }
+            .forEach {
+                fragmentManager.beginTransaction().remove(it).commitNowAllowingStateLoss()
+            }
         publication = null
         viewModel.onNavigatorDetached()
     }
@@ -86,7 +86,10 @@ class NavigatorController(
         if (this.publication === publication) return
         detachNavigator()
         this.publication = publication
-        notesViewModel.setRendition(viewModel.activeRendition.value, publication.readingSessionToken())
+        notesViewModel.setRendition(
+            viewModel.activeRendition.value,
+            publication.readingSessionToken()
+        )
         searchViewModel.exitSearchNavigation()
         val rendition = viewModel.activeRendition.value
         val session = publication.readingSessionToken()

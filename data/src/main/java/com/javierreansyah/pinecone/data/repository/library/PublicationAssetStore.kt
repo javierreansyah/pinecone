@@ -2,13 +2,13 @@ package com.javierreansyah.pinecone.data.repository.library
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.io.File
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /** One process-wide owner for publication asset paths and reference mutations. */
 @Singleton
@@ -32,7 +32,7 @@ class PublicationAssetStore @Inject constructor(@ApplicationContext private val 
     /** Caller holds mutationMutex and has checked that no durable reference remains. */
     internal fun deleteIfUnleased(file: File): Boolean = synchronized(leases) {
         val path = file.canonicalPath
-        if (leases.keys.any { it == path || it.startsWith(path + File.separator) }) false else file.delete()
+        !leases.keys.any { it == path || it.startsWith(path + File.separator) } && file.delete()
     }
 
     internal suspend fun stage(): Stage = mutationMutex.withLock {
@@ -53,6 +53,7 @@ class PublicationAssetStore @Inject constructor(@ApplicationContext private val 
             if (directory.canonicalPath !in leases) directory.deleteRecursively()
         }
     }
+
     internal val booksDirectory: File
         get() = File(context.filesDir, "publication-assets").also { it.mkdirs() }
     internal val coversDirectory: File

@@ -24,7 +24,11 @@ class EpubTableViewportTest {
         EpubWriter(
             output, "test:viewport", "Viewport", "en",
             GeneratedPublicationStrings("Contents", "Scanned") { "Page $it" }).use {
-            it.nativePage(1, MuPdfStructure.parse("<body xmlns=\"http://www.w3.org/1999/xhtml\"><p>Synthetic content</p></body>"), false)
+            it.nativePage(
+                1,
+                MuPdfStructure.parse("<body xmlns=\"http://www.w3.org/1999/xhtml\"><p>Synthetic content</p></body>"),
+                false
+            )
             it.finish()
         }
         var css = ""

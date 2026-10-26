@@ -77,8 +77,8 @@ android {
         }
 
         create("staging") {
-            matchingFallbacks += "release"
             initWith(getByName("release"))
+            matchingFallbacks += "release"
             applicationIdSuffix = ".dev"
             manifestPlaceholders["appName"] = "Pinecone Dev"
             proguardFiles(
@@ -233,9 +233,20 @@ kotlin {
     }
 }
 
-// Keep the documented Quick command inclusive as implementation moves into libraries.
-tasks.matching { it.name == "testDebugUnitTest" }.configureEach {
-    dependsOn(":core:model:test", ":publication:testDebugUnitTest", ":data:testDebugUnitTest")
+// Include module tests in Quick and Complete; staging consumes release library variants.
+tasks.matching {
+    it.name in setOf(
+        "testDebugUnitTest",
+        "testReleaseUnitTest",
+        "testStagingUnitTest"
+    )
+}.configureEach {
+    val libraryBuildType = if (name == "testDebugUnitTest") "Debug" else "Release"
+    dependsOn(
+        ":core:model:test",
+        ":publication:test${libraryBuildType}UnitTest",
+        ":data:test${libraryBuildType}UnitTest"
+    )
 }
 
 tasks.withType<JavaCompile>().configureEach {

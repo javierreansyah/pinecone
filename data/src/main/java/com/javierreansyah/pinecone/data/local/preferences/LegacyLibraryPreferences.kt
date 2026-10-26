@@ -51,8 +51,7 @@ internal object LegacyLibraryPreferences {
             selectedFormats = strings(
                 "${fullKey}_formats",
                 FileFilter.entries.map { it.name }.toSet()
-            )
-                .orEmpty().mapNotNull { name -> FileFilter.entries.find { it.name == name } }
+            ).mapNotNull { name -> FileFilter.entries.find { it.name == name } }
                 .toSet(),
             libraryView = LibraryView.entries.find {
                 it.name == string(

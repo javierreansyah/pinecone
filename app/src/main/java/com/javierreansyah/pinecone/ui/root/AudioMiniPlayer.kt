@@ -1,5 +1,3 @@
-@file:OptIn(org.readium.r2.shared.ExperimentalReadiumApi::class)
-
 package com.javierreansyah.pinecone.ui.root
 
 import androidx.compose.foundation.background
@@ -52,9 +50,9 @@ import coil3.compose.AsyncImage
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Forward_10
 import com.composables.icons.materialsymbols.outlined.Headphones
+import com.composables.icons.materialsymbols.outlined.Replay_10
 import com.composables.icons.materialsymbols.outlinedfilled.Pause
 import com.composables.icons.materialsymbols.outlinedfilled.Play_arrow
-import com.composables.icons.materialsymbols.outlined.Replay_10
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.reader.audio.AudioPlaybackState
 import java.io.File

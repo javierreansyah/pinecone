@@ -7,7 +7,6 @@ import androidx.documentfile.provider.DocumentFile
 import androidx.room.withTransaction
 import com.javierreansyah.pinecone.data.local.database.dictionary.DictionaryStore
 import com.javierreansyah.pinecone.data.local.database.library.BookEntity
-import com.javierreansyah.pinecone.data.local.preferences.InstalledDictionary
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.data.model.BookObjectReference
@@ -22,6 +21,12 @@ import com.javierreansyah.pinecone.data.model.toBackupRecord
 import com.javierreansyah.pinecone.data.model.toEntity
 import com.javierreansyah.pinecone.di.IoDispatcher
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -37,11 +42,6 @@ import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 
 data class BackupSnapshotInfo(
     val uri: Uri,
@@ -124,15 +124,16 @@ class BackupRepository @Inject constructor(
         operationMutex.withLock { completePendingSettingsRestoreLocked() }
     }
 
-    private suspend fun completePendingSettingsRestoreLocked(): Unit = dictionaries.withExclusiveFiles {
-        dictionaryJournal.recover(database.backupStateDao().pendingSettingsJson() != null)
-        val pending = database.backupStateDao().pendingSettingsJson()
-        if (pending != null) {
-            applyRestoredSettings(json.decodeFromString(pending))
-            database.backupStateDao().setPendingSettingsJson(null)
+    private suspend fun completePendingSettingsRestoreLocked(): Unit =
+        dictionaries.withExclusiveFiles {
+            dictionaryJournal.recover(database.backupStateDao().pendingSettingsJson() != null)
+            val pending = database.backupStateDao().pendingSettingsJson()
+            if (pending != null) {
+                applyRestoredSettings(json.decodeFromString(pending))
+                database.backupStateDao().setPendingSettingsJson(null)
+            }
+            database.operationDao().finishRestore()
         }
-        database.operationDao().finishRestore()
-    }
 
 
     private data class CreatedObject(
@@ -155,7 +156,12 @@ class BackupRepository @Inject constructor(
             var phaseStarted = System.currentTimeMillis()
             val (revision, payload) = libraryRepository.withAssetTransaction {
                 librarySnapshot().also { (_, content) ->
-                    (content.books.flatMap { listOfNotNull(it.filePath, it.coverPath) } + content.renditions.map { it.filePath })
+                    (content.books.flatMap {
+                        listOfNotNull(
+                            it.filePath,
+                            it.coverPath
+                        )
+                    } + content.renditions.map { it.filePath })
                         .distinct().forEach { leases += assets.lease(File(it)) }
                 }
             }
@@ -218,7 +224,7 @@ class BackupRepository @Inject constructor(
                         dirs.dictionaries.findFile(prior.objectInfo.fileName)!!,
                         prior.objectInfo, reused = true,
                     )
-                    else writeDictionaryObject(dictionary, source, dirs.dictionaries)
+                    else writeDictionaryObject(source, dirs.dictionaries)
                     if (objectResultReused) bytesReused += objectResultInfo.storedSize
                     else bytesWritten += objectResultInfo.storedSize
                     DictionaryObjectReference(dictionary, objectResultInfo)
@@ -370,16 +376,19 @@ class BackupRepository @Inject constructor(
     }
 
     private suspend fun writeDictionaryObject(
-        dictionary: InstalledDictionary,
         live: File,
         folder: DocumentFile,
     ): CreatedObject {
-        val temp = File.createTempFile("dictionary", ".db", context.cacheDir)
+        val temp = withContext(Dispatchers.IO) {
+            File.createTempFile("dictionary", ".db", context.cacheDir)
+        }
         val (sourceSize, sourceModified) = try {
             dictionaries.withExclusiveFiles {
-                SQLiteDatabase.openDatabase(live.path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
-                    db.rawQuery("PRAGMA wal_checkpoint(TRUNCATE)", null).use { require(it.moveToFirst()) }
-                }
+                SQLiteDatabase.openDatabase(live.path, null, SQLiteDatabase.OPEN_READWRITE)
+                    .use { db ->
+                        db.rawQuery("PRAGMA wal_checkpoint(TRUNCATE)", null)
+                            .use { require(it.moveToFirst()) }
+                    }
                 FileInputStream(live).use { input -> FileOutputStream(temp).use { input.copyTo(it) } }
                 live.length() to live.lastModified()
             }
@@ -573,7 +582,9 @@ class BackupRepository @Inject constructor(
 
     private suspend fun restoreLocked(snapshot: VaultSnapshot, dirs: VaultDirs): BackupResult {
         libraryRepository.withAssetTransaction {
-            database.withTransaction { database.operationDao().beginRestore(); database.operationDao().invalidateAll() }
+            database.withTransaction {
+                database.operationDao().beginRestore(); database.operationDao().invalidateAll()
+            }
         }
         return try {
             dictionaries.withExclusiveFiles {
@@ -581,7 +592,8 @@ class BackupRepository @Inject constructor(
             }
         } finally {
             withContext(kotlinx.coroutines.NonCancellable) {
-                if (database.backupStateDao().pendingSettingsJson() == null) database.operationDao().finishRestore()
+                if (database.backupStateDao().pendingSettingsJson() == null) database.operationDao()
+                    .finishRestore()
             }
         }
     }

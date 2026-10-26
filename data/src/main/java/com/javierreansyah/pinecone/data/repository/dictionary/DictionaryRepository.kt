@@ -1,8 +1,8 @@
 package com.javierreansyah.pinecone.data.repository.dictionary
 
 import android.content.Context
-import com.javierreansyah.pinecone.data.local.database.dictionary.DictionaryStore
 import com.javierreansyah.pinecone.data.local.database.dictionary.DictionaryEntry
+import com.javierreansyah.pinecone.data.local.database.dictionary.DictionaryStore
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject

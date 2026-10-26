@@ -4,12 +4,12 @@ import android.content.Context
 import androidx.room.Room
 import com.javierreansyah.pinecone.di.IoDispatcher
 import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /** A DAO is usable only inside its lease. File replacement waits for every current lease. */
 @Singleton

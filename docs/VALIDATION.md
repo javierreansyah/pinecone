@@ -11,6 +11,11 @@ Run Gradle directly from the repository root using Windows PowerShell. Default t
 Neither mode runs IDE inspections or requires Android Studio or Android CLI. IDE recommendations are
 handled manually by the user in JetBrains tools. Complete does not include device/UI tests.
 
+The app's unit-test tasks also run `:core:model:test` and the matching `:data`/`:publication`
+unit tests. Staging consumes the release library variants and shares their release tests. Library
+release unit tests are explicitly enabled. Dependency lint includes the JVM model sources through
+the standalone `com.android.lint` plugin; it must not silently skip that module.
+
 ## Commands
 
 ```powershell
@@ -29,6 +34,9 @@ handled manually by the user in JetBrains tools. Complete does not include devic
 - Keep compiler warnings-as-errors and strict lint settings. Do not weaken checks, introduce
   baselines, or blanket-suppress findings. Verified false positives need narrow, documented
   exceptions with evidence.
+- The manifest's local `RemoveWorkManagerInitializer` exception covers an IDE false positive:
+  retain the WorkManager metadata removal rule and the installed-manifest assertion in
+  `DependencyInjectionTest`. Removing that merge rule would re-enable the default initializer.
 - Proofreading/spelling/grammar and README-only HTML layout recommendations are outside this
   validation scope. Preserve the documented jsoup false-positive exception in `lint.xml`; recheck it
   on dependency upgrades.

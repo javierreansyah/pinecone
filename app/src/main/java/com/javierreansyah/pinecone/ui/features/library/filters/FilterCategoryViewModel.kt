@@ -10,11 +10,9 @@ import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.model.fromEntity
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
-import com.javierreansyah.pinecone.ui.features.library.inNamedCollection
 import com.javierreansyah.pinecone.ui.features.library.inSpace
 import com.javierreansyah.pinecone.ui.features.library.publicationWording
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -34,7 +32,7 @@ data class FilterCollectionSummary(
 @HiltViewModel
 class FilterCategoryViewModel @Inject constructor(
     private val bookRepository: LibraryRepository,
-    private val prefsManager: LibraryPreferencesManager,
+    prefsManager: LibraryPreferencesManager,
     @com.javierreansyah.pinecone.di.DefaultDispatcher private val computation: kotlinx.coroutines.CoroutineDispatcher,
 ) : ViewModel() {
     val mutationErrors = com.javierreansyah.pinecone.ui.components.MutationErrorState()
@@ -42,13 +40,15 @@ class FilterCategoryViewModel @Inject constructor(
 
     private val unfilteredBooks: StateFlow<List<Book>> =
         bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }
-            .flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+            .flowOn(computation)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Label edits affect archived items too, even though visible counts exclude them.
     private val actionBooks: StateFlow<List<Book>> = combine(
         unfilteredBooks, bookRepository.getArchivedBooks(),
     ) { books, archived -> books + archived.map { Book.fromEntity(it) } }
-        .flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .flowOn(computation)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val globalSpaceId = prefsManager.getEffectiveSpaceFlow().stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), null,
@@ -57,23 +57,38 @@ class FilterCategoryViewModel @Inject constructor(
     private val booksFlow: StateFlow<List<Book>> =
         combine(unfilteredBooks, globalSpaceId) { books, spaceId ->
             books.inSpace(spaceId)
-        }.flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        }.flowOn(computation)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val visibleIndex = booksFlow.map(::LibraryCategoryIndex).flowOn(computation)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LibraryCategoryIndex(emptyList()))
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            LibraryCategoryIndex(emptyList())
+        )
     private val actionIndex = actionBooks.map(::LibraryCategoryIndex).flowOn(computation)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LibraryCategoryIndex(emptyList()))
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            LibraryCategoryIndex(emptyList())
+        )
     private val spaceIndex = unfilteredBooks.map(::LibraryCategoryIndex).flowOn(computation)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LibraryCategoryIndex(emptyList()))
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            LibraryCategoryIndex(emptyList())
+        )
 
     val allAuthors: StateFlow<List<AuthorEntity>> =
         combine(bookRepository.getAllAuthors(), visibleIndex) { authors, index ->
             authors.filter { it.name in index.authors }
-        }.flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        }.flowOn(computation)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val allTags: StateFlow<List<TagEntity>> =
         combine(bookRepository.getAllTags(), visibleIndex) { tags, index ->
             tags.filter { it.name in index.tags }
-        }.flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        }.flowOn(computation)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val allSpaces: StateFlow<List<SpaceEntity>> =
         bookRepository.getAllSpaces().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 

@@ -5,7 +5,9 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.artifex.mupdf.fitz.Document
 import com.javierreansyah.pinecone.reader.pdf.MuPdfDocument
 import com.javierreansyah.pinecone.testing.InstrumentationLoggingRule
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
@@ -29,7 +31,9 @@ class PdfConversionBenchmarkTest {
         try {
             source.writeBytes(com.javierreansyah.pinecone.testing.syntheticPdf(100))
             benchmark(source.absolutePath, 3, "synthetic-100-pages")
-        } finally { source.delete() }
+        } finally {
+            source.delete()
+        }
     }
 
     @Test
@@ -47,13 +51,16 @@ class PdfConversionBenchmarkTest {
                     val renderStart = System.nanoTime()
                     for (page in listOf(0, 99, 49, 0)) {
                         val bitmap = pdf.render(page, 600)
-                        try { bitmapBytes = maxOf(bitmapBytes, bitmap.allocationByteCount) }
-                        finally { bitmap.recycle() }
+                        try {
+                            bitmapBytes = maxOf(bitmapBytes, bitmap.allocationByteCount)
+                        } finally {
+                            bitmap.recycle()
+                        }
                     }
                     val renderMs = (System.nanoTime() - renderStart) / 1_000_000.0
                     val textStart = System.nanoTime()
                     for (page in listOf(0, 99, 49, 0)) {
-                        org.junit.Assert.assertTrue(pdf.textPage(page).text.contains("readable"))
+                        org.junit.Assert.assertTrue("readable" in pdf.textPage(page).text)
                     }
                     val textMs = (System.nanoTime() - textStart) / 1_000_000.0
                     val searchStart = System.nanoTime()
@@ -65,9 +72,13 @@ class PdfConversionBenchmarkTest {
                         "PDF_READER_BENCHMARK pass=%d pages=100 openMs=%.3f renderFourMs=%.3f textFourMs=%.3f searchAllMs=%.3f bitmapBytes=%d",
                         pass, openMs, renderMs, textMs, searchMs, bitmapBytes,
                     )
-                } finally { pdf.close() }
+                } finally {
+                    pdf.close()
+                }
             }
-        } finally { source.delete() }
+        } finally {
+            source.delete()
+        }
     }
 
     @Test
@@ -83,12 +94,14 @@ class PdfConversionBenchmarkTest {
     private suspend fun benchmark(path: String, passes: Int, label: String) {
         require(passes > 0)
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val output = File.createTempFile("conversion-benchmark-", ".epub", context.cacheDir)
+        val output = withContext(Dispatchers.IO) {
+            File.createTempFile("conversion-benchmark-", ".epub", context.cacheDir)
+        }
         var expected: Map<String, String>? = null
         try {
             // The first conversion warms the VM/native caches; subsequent passes are measured.
             repeat(passes + 1) { pass ->
-                val pdf = MuPdfDocument(Document.openDocument(requireNotNull(path)))
+                val pdf = MuPdfDocument(Document.openDocument(path))
                 try {
                     val started = System.nanoTime()
                     var extractionMs = 0L

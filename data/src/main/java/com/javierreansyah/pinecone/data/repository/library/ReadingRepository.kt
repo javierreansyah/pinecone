@@ -8,11 +8,11 @@ import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.data.local.database.library.NoteDao
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.data.local.database.library.PublicationRenditionEntity
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import org.json.JSONObject
 import org.readium.r2.shared.publication.Locator
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /** Atomic reading state and annotations for every publication rendition. */
 @Singleton
@@ -24,13 +24,20 @@ class ReadingRepository @Inject constructor(
 ) {
     private val publicationDao get() = database.publicationDao()
 
-    suspend fun currentSession(bookId: String): com.javierreansyah.pinecone.data.model.ReadingSessionToken? = database.withTransaction {
-        val runtime = database.operationDao().runtime()
-        if (runtime.maintenance) return@withTransaction null
-        val book = bookDao.getById(bookId)?.book ?: return@withTransaction null
-        val rendition = publicationDao.rendition(bookId, book.activeRendition) ?: return@withTransaction null
-        com.javierreansyah.pinecone.data.model.ReadingSessionToken(runtime.generation, bookId, rendition.key, rendition.sha256)
-    }
+    suspend fun currentSession(bookId: String): com.javierreansyah.pinecone.data.model.ReadingSessionToken? =
+        database.withTransaction {
+            val runtime = database.operationDao().runtime()
+            if (runtime.maintenance) return@withTransaction null
+            val book = bookDao.getById(bookId)?.book ?: return@withTransaction null
+            val rendition = publicationDao.rendition(bookId, book.activeRendition)
+                ?: return@withTransaction null
+            com.javierreansyah.pinecone.data.model.ReadingSessionToken(
+                runtime.generation,
+                bookId,
+                rendition.key,
+                rendition.sha256
+            )
+        }
 
     private suspend fun permits(session: com.javierreansyah.pinecone.data.model.ReadingSessionToken?): Boolean {
         val runtime = database.operationDao().runtime()
@@ -38,22 +45,46 @@ class ReadingRepository @Inject constructor(
         if (session == null) return true
         val book = bookDao.getById(session.bookId)?.book ?: return false
         return runtime.generation == session.generation && book.activeRendition == session.rendition &&
-            publicationDao.rendition(session.bookId, session.rendition)?.sha256 == session.sha256
+                publicationDao.rendition(
+                    session.bookId,
+                    session.rendition
+                )?.sha256 == session.sha256
     }
 
     /** Maps the latest durable source location, then activates the destination in the caller's transaction. */
-    suspend fun activateMappedRendition(bookId: String, key: String, session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null): Unit = database.withTransaction {
+    suspend fun activateMappedRendition(
+        bookId: String,
+        key: String,
+        session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null
+    ): Unit = database.withTransaction {
         if (!permits(session)) return@withTransaction
         val book = bookDao.getById(bookId)?.book ?: return@withTransaction
-        val source = publicationDao.rendition(bookId, book.activeRendition) ?: return@withTransaction
+        val source =
+            publicationDao.rendition(bookId, book.activeRendition) ?: return@withTransaction
         val target = publicationDao.rendition(bookId, key) ?: return@withTransaction
         if (source.key != key && source.lastLocatorJson != null) {
             val readMode = publicationDao.rendition(bookId, "read-mode")
             val pages = readMode?.sourceMapJson?.let {
-                kotlinx.serialization.json.Json.decodeFromString<List<com.javierreansyah.pinecone.data.publication.conversion.SourcePage>>(it)
+                kotlinx.serialization.json.Json.decodeFromString<List<com.javierreansyah.pinecone.data.publication.conversion.SourcePage>>(
+                    it
+                )
             }.orEmpty()
-            val mapped = RenditionLocations.map(source.lastLocatorJson, target.lastLocatorJson, source.key, key, pages, source.progression)
-            publicationDao.putRenditions(listOf(target.copy(lastLocatorJson = mapped, progression = source.progression)))
+            val mapped = RenditionLocations.map(
+                source.lastLocatorJson,
+                target.lastLocatorJson,
+                source.key,
+                key,
+                pages,
+                source.progression
+            )
+            publicationDao.putRenditions(
+                listOf(
+                    target.copy(
+                        lastLocatorJson = mapped,
+                        progression = source.progression
+                    )
+                )
+            )
         }
         activateRendition(bookId, key)
     }
@@ -64,7 +95,12 @@ class ReadingRepository @Inject constructor(
     fun renditionFlow(bookId: String, key: String): Flow<PublicationRenditionEntity?> =
         publicationDao.renditionFlow(bookId, key)
 
-    suspend fun setReadingOverrides(bookId: String, key: String, json: String, session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null): Unit? =
+    suspend fun setReadingOverrides(
+        bookId: String,
+        key: String,
+        json: String,
+        session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null
+    ): Unit? =
         database.withTransaction {
             if (!permits(session)) return@withTransaction
             publicationDao.rendition(bookId, key)
@@ -97,7 +133,8 @@ class ReadingRepository @Inject constructor(
         val rendition = publicationDao.rendition(bookId, renditionKey) ?: return@withTransaction
         val detailsBook = bookDao.getById(bookId)?.book ?: return@withTransaction
         if (session != null && (session.bookId != bookId || session.rendition != renditionKey || runtime.generation != session.generation ||
-                detailsBook.activeRendition != session.rendition || rendition.sha256 != session.sha256)) return@withTransaction
+                    detailsBook.activeRendition != session.rendition || rendition.sha256 != session.sha256)
+        ) return@withTransaction
         val progression = locator.locations.totalProgression ?: 0.0
 
         val hasJumpOrigin = !rendition.jumpOriginLocatorJson.isNullOrBlank()
@@ -131,7 +168,11 @@ class ReadingRepository @Inject constructor(
         )
     }
 
-    suspend fun saveJumpOrigin(bookId: String, locator: Locator, session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null): Unit = database.withTransaction {
+    suspend fun saveJumpOrigin(
+        bookId: String,
+        locator: Locator,
+        session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null
+    ): Unit = database.withTransaction {
         if (!permits(session)) return@withTransaction
         val detailsBook2 = bookDao.getById(bookId)?.book ?: return@withTransaction
         if (detailsBook2.jumpOriginLocatorJson.isNullOrBlank()) {
@@ -152,7 +193,11 @@ class ReadingRepository @Inject constructor(
         }
     }
 
-    suspend fun saveJumpReadingPosition(bookId: String, locator: Locator, session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null): Unit? =
+    suspend fun saveJumpReadingPosition(
+        bookId: String,
+        locator: Locator,
+        session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null
+    ): Unit? =
         database.withTransaction {
             if (!permits(session)) return@withTransaction
             val detailsBook3 = bookDao.getById(bookId)?.book ?: return@withTransaction
@@ -186,7 +231,10 @@ class ReadingRepository @Inject constructor(
             }
         }
 
-    suspend fun clearJumpOrigin(bookId: String, session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null): Unit = database.withTransaction {
+    suspend fun clearJumpOrigin(
+        bookId: String,
+        session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null
+    ): Unit = database.withTransaction {
         if (!permits(session)) return@withTransaction
         val detailsBook4 = bookDao.getById(bookId)?.book ?: return@withTransaction
         if (detailsBook4.jumpOriginLocatorJson != null) {
@@ -201,7 +249,10 @@ class ReadingRepository @Inject constructor(
         }
     }
 
-    suspend fun resetFurthestToCurrent(bookId: String, session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null): Unit? = database.withTransaction {
+    suspend fun resetFurthestToCurrent(
+        bookId: String,
+        session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null
+    ): Unit? = database.withTransaction {
         if (!permits(session)) return@withTransaction
         val detailsBook5 = bookDao.getById(bookId)?.book ?: return@withTransaction
         bookDao.update(
@@ -251,7 +302,10 @@ class ReadingRepository @Inject constructor(
 
     fun getBookmarks(bookId: String): Flow<List<BookmarkEntity>> = bookmarkDao.getByBookId(bookId)
 
-    suspend fun removeBookmark(id: Long, session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null): Unit = database.withTransaction {
+    suspend fun removeBookmark(
+        id: Long,
+        session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null
+    ): Unit = database.withTransaction {
         if (!permits(session)) return@withTransaction
         bookmarkDao.deleteById(id)
     }
@@ -278,14 +332,20 @@ class ReadingRepository @Inject constructor(
         )
     }
 
-    suspend fun updateNote(note: NoteEntity, session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null): Unit = database.withTransaction {
+    suspend fun updateNote(
+        note: NoteEntity,
+        session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null
+    ): Unit = database.withTransaction {
         if (!permits(session)) return@withTransaction
         noteDao.update(note)
     }
 
     fun getNotes(bookId: String): Flow<List<NoteEntity>> = noteDao.getByBookId(bookId)
 
-    suspend fun removeNote(id: Long, session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null): Unit = database.withTransaction {
+    suspend fun removeNote(
+        id: Long,
+        session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null
+    ): Unit = database.withTransaction {
         if (!permits(session)) return@withTransaction
         noteDao.deleteById(id)
     }

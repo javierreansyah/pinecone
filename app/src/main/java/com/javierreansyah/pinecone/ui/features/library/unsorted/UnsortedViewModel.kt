@@ -18,5 +18,5 @@ class UnsortedViewModel @Inject constructor(
     prefsManager = preferences,
     screenKey = "unsorted",
     computation = computation,
-    source = LibraryRepository::getUnsortedBooks,
+    source = repository.getUnsortedBooks(),
 )

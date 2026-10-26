@@ -6,8 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.FormatPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
-import com.javierreansyah.pinecone.data.local.preferences.encodeReadingOverrides
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
+import com.javierreansyah.pinecone.data.local.preferences.encodeReadingOverrides
 import com.javierreansyah.pinecone.data.local.preferences.epubImageFilterCss
 import com.javierreansyah.pinecone.data.local.preferences.readingThemeIsDark
 import com.javierreansyah.pinecone.data.local.preferences.withReadingPreferencesFrom
@@ -16,8 +16,8 @@ import com.javierreansyah.pinecone.data.publication.ReaderProfile
 import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.data.repository.library.PublicationRepository
-import com.javierreansyah.pinecone.data.repository.library.readingSessionToken
 import com.javierreansyah.pinecone.data.repository.library.ReadingRepository
+import com.javierreansyah.pinecone.data.repository.library.readingSessionToken
 import com.javierreansyah.pinecone.reader.epub.toEpubPreferences
 import com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences
 import com.javierreansyah.pinecone.reader.pdf.toMuPdfPreferences
@@ -216,9 +216,15 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
             startup.awaitReady()
             var observed = false
             var restoring = false
-            combine(repository.getBookFlow(bookId), operations.libraryState, reading.renditionFlow(bookId, "read-mode")) { details, runtime, readMode ->
-                ReaderIdentity(runtime.first, runtime.second, details?.book?.activeRendition,
-                    if (details?.book?.activeRendition == "read-mode") readMode?.sha256 else details?.book?.filePath)
+            combine(
+                repository.getBookFlow(bookId),
+                operations.libraryState,
+                reading.renditionFlow(bookId, "read-mode")
+            ) { details, runtime, readMode ->
+                ReaderIdentity(
+                    runtime.first, runtime.second, details?.book?.activeRendition,
+                    if (details?.book?.activeRendition == "read-mode") readMode?.sha256 else details?.book?.filePath
+                )
             }.distinctUntilChanged().collect { identity ->
                 if (identity.maintenance) {
                     openJob?.cancel()
@@ -237,12 +243,18 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
             startup.awaitReady()
             operations.conversion(bookId).distinctUntilChanged().collect { operation ->
                 currentConversionId = operation?.id
-                _bookState.update { state -> state.copy(
-                    converting = operation != null && !operation.state.terminal,
-                    conversionPage = operation?.completed ?: 0, conversionTotal = operation?.total ?: 0,
-                    conversionError = if (operation?.state in listOf(com.javierreansyah.pinecone.data.model.OperationState.FAILED,
-                            com.javierreansyah.pinecone.data.model.OperationState.INPUT_REQUIRED)) application.getString(R.string.reader_conversion_failed) else state.conversionError,
-                ) }
+                _bookState.update { state ->
+                    state.copy(
+                        converting = operation != null && !operation.state.terminal,
+                        conversionPage = operation?.completed ?: 0,
+                        conversionTotal = operation?.total ?: 0,
+                        conversionError = if (operation?.state in listOf(
+                                com.javierreansyah.pinecone.data.model.OperationState.FAILED,
+                                com.javierreansyah.pinecone.data.model.OperationState.INPUT_REQUIRED
+                            )
+                        ) application.getString(R.string.reader_conversion_failed) else state.conversionError,
+                    )
+                }
             }
         }
         viewModelScope.launch {
@@ -297,7 +309,8 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
                 }
 
                 profile.value = PublicationFormats.profile(pub)
-                _positions.value = if (profile.value == ReaderProfile.AUDIO) emptyList() else pub.positions()
+                _positions.value =
+                    if (profile.value == ReaderProfile.AUDIO) emptyList() else pub.positions()
                 _publication.value = pub
                 acquired = null
 
@@ -320,7 +333,9 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
                         error = application.getString(R.string.reader_open_failed)
                     )
                 }
-            } finally { acquired?.close() }
+            } finally {
+                acquired?.close()
+            }
         }
     }
 
@@ -369,7 +384,10 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
                                     oldLocator,
                                 )
                             ) {
-                                reading.clearJumpOrigin(bookId, _publication.value?.readingSessionToken())
+                                reading.clearJumpOrigin(
+                                    bookId,
+                                    _publication.value?.readingSessionToken()
+                                )
                             }
                         }
                     }
@@ -449,8 +467,10 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
         ) else ""
     }
 
-    fun savePosition(locator: Locator, renditionKey: String = activeRendition.value,
-        session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = _publication.value?.readingSessionToken()) {
+    fun savePosition(
+        locator: Locator, renditionKey: String = activeRendition.value,
+        session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = _publication.value?.readingSessionToken()
+    ) {
         viewModelScope.launch {
             reading.saveReadingPosition(bookId, locator, renditionKey, session)
         }
@@ -469,26 +489,25 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
             try {
                 _bookState.update { it.copy(conversionError = null) }
                 val session = _publication.value?.readingSessionToken()
-                _currentLocator.value?.let { reading.saveReadingPosition(bookId, it, activeRendition.value, session) }
+                _currentLocator.value?.let {
+                    reading.saveReadingPosition(
+                        bookId,
+                        it,
+                        activeRendition.value,
+                        session
+                    )
+                }
                 if (!forceReparse && activeRendition.value == "read-mode") {
                     reading.activateMappedRendition(bookId, "original", session)
                 } else currentConversionId = operations.enqueueReadMode(bookId, forceReparse)
-            } catch (cancelled: CancellationException) { throw cancelled
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (error: Exception) {
                 timber.log.Timber.e(error, "Could not request PDF mode")
                 _bookState.update { it.copy(conversionError = application.getString(R.string.reader_conversion_failed)) }
             }
         }
     }
-
-    private fun sourcePage(locator: Locator): Int =
-        GeneratedEpubLocations.page(
-            locator.href.toString(), locator.locations["cssSelector"] as? String,
-            locator.locations.fragments
-        )
-            ?: locator.locations.fragments.firstNotNullOfOrNull {
-                it.removePrefix("page=").toIntOrNull()
-            } ?: locator.locations.position ?: 1
 
     internal fun withReadModeChapter(locator: Locator): Locator =
         if (activeRendition.value == "read-mode" && GeneratedEpubLocations.isContent(locator.href.toString())) {
@@ -538,16 +557,6 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
                 showToc = true,
                 showSettings = false,
                 contentsInitialTab = 0
-            )
-        }
-    }
-
-    fun showBookmarks() {
-        _controlsState.update {
-            it.copy(
-                showToc = true,
-                showSettings = false,
-                contentsInitialTab = 1
             )
         }
     }
@@ -611,7 +620,7 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
                 reading.setReadingOverrides(
                     bookId,
                     activeRendition.value,
-                    readingOverrides.value?.let { it.encodeReadingOverrides() }
+                    readingOverrides.value?.encodeReadingOverrides()
                         ?: "{}",
                     _publication.value?.readingSessionToken(),
                 )
@@ -636,5 +645,10 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
         fun create(bookId: String): ReaderViewModel
     }
 
-    private data class ReaderIdentity(val generation: Long, val maintenance: Boolean, val rendition: String?, val asset: String?)
+    private data class ReaderIdentity(
+        val generation: Long,
+        val maintenance: Boolean,
+        val rendition: String?,
+        val asset: String?
+    )
 }

@@ -8,7 +8,8 @@ class DeleteBooks @Inject constructor(
     private val repository: LibraryRepository,
     private val playback: AudioPlaybackClient,
 ) {
-    suspend operator fun invoke(bookIds: Collection<String>) = playback.withPlaybackStopped(bookIds) {
-        repository.deleteBooks(bookIds)
-    }
+    suspend operator fun invoke(bookIds: Collection<String>) =
+        playback.withPlaybackStopped(bookIds) {
+            repository.deleteBooks(bookIds)
+        }
 }

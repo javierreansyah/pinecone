@@ -114,6 +114,7 @@ composables-icons-material-symbols-outlined-filled = { module = "com.composables
 junit = { module = "junit:junit", version.ref = "junit" }
 
 [plugins]
+android-lint = { id = "com.android.lint", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 dependency-analysis = { id = "com.autonomousapps.dependency-analysis", version.ref = "dependencyAnalysis" }

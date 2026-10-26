@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 sealed interface Screen : NavKey {
     @Serializable
     data class Organize(val bookIds: List<String>) : Screen
+
     @Serializable
     data object Library : Screen
 

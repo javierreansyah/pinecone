@@ -82,12 +82,12 @@ import com.composables.icons.materialsymbols.outlined.Edit_note
 import com.composables.icons.materialsymbols.outlined.Forward_10
 import com.composables.icons.materialsymbols.outlined.Headphones
 import com.composables.icons.materialsymbols.outlined.List
-import com.composables.icons.materialsymbols.outlinedfilled.Pause
-import com.composables.icons.materialsymbols.outlinedfilled.Play_arrow
 import com.composables.icons.materialsymbols.outlined.Replay_10
 import com.composables.icons.materialsymbols.outlined.Skip_next
 import com.composables.icons.materialsymbols.outlined.Skip_previous
 import com.composables.icons.materialsymbols.outlined.Tune
+import com.composables.icons.materialsymbols.outlinedfilled.Pause
+import com.composables.icons.materialsymbols.outlinedfilled.Play_arrow
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.reader.audio.AudioPlaybackState
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon

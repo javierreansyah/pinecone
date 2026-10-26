@@ -2,7 +2,6 @@ package com.javierreansyah.pinecone.data.local.database.dictionary
 
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
-import java.util.UUID
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -11,6 +10,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Test
+import java.util.UUID
 
 class DictionaryStoreTest {
     @Test
@@ -25,7 +25,9 @@ class DictionaryStoreTest {
                 writeDictionary(archive, invalidOffset)
                 try {
                     parser.parseDictionary(android.net.Uri.fromFile(archive)) { progress ->
-                        if (!invalidOffset && progress == 95) throw kotlinx.coroutines.CancellationException("Cancelled import")
+                        if (!invalidOffset && progress == 95) throw kotlinx.coroutines.CancellationException(
+                            "Cancelled import"
+                        )
                     }
                     throw AssertionError("Import should fail or be cancelled")
                 } catch (_: kotlinx.coroutines.CancellationException) {
@@ -47,10 +49,17 @@ class DictionaryStoreTest {
         var id: String? = null
         try {
             writeDictionary(archive, false)
-            val parsed = StardictParser(context, store, Dispatchers.IO).parseDictionary(android.net.Uri.fromFile(archive))
+            val parsed = StardictParser(
+                context,
+                store,
+                Dispatchers.IO
+            ).parseDictionary(android.net.Uri.fromFile(archive))
             id = parsed.first
             assertEquals("A=B dictionary", parsed.second.name)
-            assertEquals("one", requireNotNull(store.withDictionary(parsed.first) { it.getDefinitions("hello") }).single().definition)
+            assertEquals(
+                "one",
+                requireNotNull(store.withDictionary(parsed.first) { it.getDefinitions("hello") }).single().definition
+            )
         } finally {
             archive.delete()
             id?.let { store.delete(it) }
@@ -84,7 +93,10 @@ class DictionaryStoreTest {
         val store = DictionaryStore(context, Dispatchers.IO)
         val id = UUID.randomUUID().toString()
         try {
-            store.create(id) { it.dictionaryDao().insertAll(listOf(DictionaryEntry(word = "hello", definition = "definition"))) }
+            store.create(id) {
+                it.dictionaryDao()
+                    .insertAll(listOf(DictionaryEntry(word = "hello", definition = "definition")))
+            }
             val entered = CompletableDeferred<Unit>()
             val release = CompletableDeferred<Unit>()
             val lookup = async {
@@ -124,10 +136,14 @@ class DictionaryStoreTest {
             val db = Room.databaseBuilder(context, DictionaryDatabase::class.java, name)
                 .addMigrations(DictionaryDatabase.MIGRATION_1_2).build()
             try {
-                assertEquals("retained definition", db.dictionaryDao().getDefinitionsByIndex(42).single().definition)
-                db.openHelper.readableDatabase.query("SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'index_dictionary_entries_wordIndex'").use {
-                    assertEquals(1, it.count)
-                }
+                assertEquals(
+                    "retained definition",
+                    db.dictionaryDao().getDefinitionsByIndex(42).single().definition
+                )
+                db.openHelper.readableDatabase.query("SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'index_dictionary_entries_wordIndex'")
+                    .use {
+                        assertEquals(1, it.count)
+                    }
             } finally {
                 db.close()
             }

@@ -1,5 +1,3 @@
-@file:OptIn(org.readium.r2.shared.ExperimentalReadiumApi::class)
-
 package com.javierreansyah.pinecone.ui.root
 
 import androidx.activity.compose.PredictiveBackHandler

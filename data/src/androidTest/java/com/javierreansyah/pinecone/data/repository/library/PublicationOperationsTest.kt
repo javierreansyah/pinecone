@@ -9,13 +9,9 @@ import com.javierreansyah.pinecone.data.local.preferences.JsonPreferenceSerializ
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferencesData
 import com.javierreansyah.pinecone.data.model.OperationState
-import com.javierreansyah.pinecone.data.publication.ReaderProfile
 import com.javierreansyah.pinecone.data.publication.PublicationFormats
+import com.javierreansyah.pinecone.data.publication.ReaderProfile
 import com.javierreansyah.pinecone.reader.pdf.MuPdfDocumentFactory
-import java.io.File
-import java.util.UUID
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,53 +20,87 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.job
 import kotlinx.coroutines.runBlocking
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.readium.r2.shared.util.asset.AssetRetriever
 import org.readium.r2.shared.util.http.DefaultHttpClient
 import org.readium.r2.streamer.PublicationOpener
 import org.readium.r2.streamer.parser.DefaultPublicationParser
+import java.io.File
+import java.util.UUID
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 class PublicationOperationsTest {
-    @Test fun folderRequestsShareOwnedGrantsAndPreservePreexistingGrants() = runBlocking {
+    @Test
+    fun folderRequestsShareOwnedGrantsAndPreservePreexistingGrants() = runBlocking {
         fixture { f ->
             val context = InstrumentationRegistry.getInstrumentation().targetContext
             val authority = "${context.packageName}.backupdocs"
             val root = android.provider.DocumentsContract.buildTreeDocumentUri(authority, "root")
-            val flags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
-                android.content.Intent.FLAG_GRANT_PREFIX_URI_PERMISSION or android.content.Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+            val flags =
+                android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                        android.content.Intent.FLAG_GRANT_PREFIX_URI_PERMISSION or android.content.Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
             context.grantUriPermission(context.packageName, root, flags)
-            val directory = requireNotNull(androidx.documentfile.provider.DocumentFile.fromTreeUri(context, root)?.createDirectory(UUID.randomUUID().toString()))
-            val tree = android.provider.DocumentsContract.buildTreeDocumentUri(authority,
-                android.provider.DocumentsContract.getDocumentId(directory.uri))
+            val directory = requireNotNull(
+                androidx.documentfile.provider.DocumentFile.fromTreeUri(
+                    context,
+                    root
+                )?.createDirectory(UUID.randomUUID().toString())
+            )
+            val tree = android.provider.DocumentsContract.buildTreeDocumentUri(
+                authority,
+                android.provider.DocumentsContract.getDocumentId(directory.uri)
+            )
             context.grantUriPermission(context.packageName, tree, flags)
             try {
                 val nested = requireNotNull(directory.createDirectory("Nested"))
-                val document = requireNotNull(nested.createFile("application/epub+zip", "Nested.epub"))
+                val document =
+                    requireNotNull(nested.createFile("application/epub+zip", "Nested.epub"))
                 requireNotNull(context.contentResolver.openOutputStream(document.uri)).use { output ->
                     epub(f, "Nested").inputStream().use { it.copyTo(output) }
                 }
                 val operations = f.operations()
                 val first = operations.enqueueScan(tree)
                 val second = operations.enqueueScan(tree)
-                fun retained() = context.contentResolver.persistedUriPermissions.any { it.uri == tree && it.isReadPermission }
+                fun retained() =
+                    context.contentResolver.persistedUriPermissions.any { it.uri == tree && it.isReadPermission }
                 assertTrue(retained())
                 operations.execute(first, true) {}
-                assertEquals(OperationState.SUCCEEDED, operations.observe(first).first()!!.state)
+                assertEquals(
+                    OperationState.SUCCEEDED, (operations.observe(first).first()
+                        ?: return@fixture).state
+                )
                 assertTrue("The second request still owns access", retained())
                 operations.execute(second, true) {}
-                assertEquals(OperationState.SUCCEEDED, operations.observe(second).first()!!.state)
+                assertEquals(
+                    OperationState.SUCCEEDED, (operations.observe(second).first()
+                        ?: return@fixture).state
+                )
                 assertEquals(1, f.db.bookDao().getAllBooksSync().size)
                 assertFalse("Last terminal request releases the job-acquired grant", retained())
 
-                context.contentResolver.takePersistableUriPermission(tree, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                context.contentResolver.takePersistableUriPermission(
+                    tree,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
                 val preexisting = operations.enqueueScan(tree)
                 operations.execute(preexisting, true) {}
-                assertEquals(OperationState.SUCCEEDED, operations.observe(preexisting).first()!!.state)
+                assertEquals(
+                    OperationState.SUCCEEDED,
+                    (operations.observe(preexisting).first() ?: return@fixture).state
+                )
                 assertTrue("An existing user grant is not owned by the job", retained())
             } finally {
-                context.contentResolver.persistedUriPermissions.filter { it.uri == tree }.forEach {
-                    context.contentResolver.releasePersistableUriPermission(tree, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                repeat(context.contentResolver.persistedUriPermissions.filter { it.uri == tree }.size) {
+                    context.contentResolver.releasePersistableUriPermission(
+                        tree,
+                        android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
                 }
                 directory.delete()
                 context.revokeUriPermission(tree, flags)
@@ -79,10 +109,12 @@ class PublicationOperationsTest {
         }
     }
 
-    @Test fun unavailableInputRetainsItsNameAndRequiresReselection() = runBlocking {
+    @Test
+    fun unavailableInputRetainsItsNameAndRequiresReselection() = runBlocking {
         fixture { f ->
             val operations = f.operations()
-            val id = operations.enqueueImports(listOf(Uri.fromFile(File(f.directory, "missing.epub"))))
+            val id =
+                operations.enqueueImports(listOf(Uri.fromFile(File(f.directory, "missing.epub"))))
             val result = requireNotNull(operations.observe(id).first())
             assertEquals(OperationState.INPUT_REQUIRED, result.state)
             assertEquals(listOf("missing.epub"), result.failures)
@@ -91,7 +123,8 @@ class PublicationOperationsTest {
         }
     }
 
-    @Test fun supersededAttemptCannotCommitAfterANewerAttemptCompletes() = runBlocking {
+    @Test
+    fun supersededAttemptCannotCommitAfterANewerAttemptCompletes() = runBlocking {
         fixture { f ->
             val operations = f.operations()
             val id = operations.enqueueImports(listOf(Uri.fromFile(epub(f, "Superseded"))))
@@ -103,34 +136,54 @@ class PublicationOperationsTest {
                     f.operations().execute(id, true) {}
                 }
             }
-            assertEquals(OperationState.SUCCEEDED, operations.observe(id).first()!!.state)
+            assertEquals(
+                OperationState.SUCCEEDED, (operations.observe(id).first()
+                    ?: return@fixture).state
+            )
             assertEquals(1, f.db.bookDao().getAllBooksSync().size)
         }
     }
-    @Test fun transientInputIsStagedAndAnInterruptedBatchSkipsCommittedItems() = runBlocking {
+
+    @Test
+    fun transientInputIsStagedAndAnInterruptedBatchSkipsCommittedItems() = runBlocking {
         fixture { f ->
             val first = epub(f, "First")
             val second = epub(f, "Second")
-            val id = f.operations().enqueueImports(listOf(Uri.fromFile(first), Uri.fromFile(second)))
+            val id =
+                f.operations().enqueueImports(listOf(Uri.fromFile(first), Uri.fromFile(second)))
             first.delete(); second.delete()
-            assertTrue(f.db.operationDao().inputs(id).all { File(requireNotNull(it.stagedPath)).isFile })
+            assertTrue(
+                f.db.operationDao().inputs(id).all { File(requireNotNull(it.stagedPath)).isFile })
             val interrupted = runCatching {
-                f.operations().execute(id, false) { if (it.completed == 1) throw CancellationException("Simulated process interruption") }
+                f.operations().execute(
+                    id,
+                    false
+                ) { if (it.completed == 1) throw CancellationException("Simulated process interruption") }
             }.exceptionOrNull()
             assertTrue(interrupted is CancellationException)
             assertEquals(1, f.db.bookDao().getAllBooksSync().size)
             val restarted = f.operations()
             restarted.reconcile()
             restarted.execute(id, false) {}
-            assertEquals("${f.db.operationDao().get(id)} ${f.db.operationDao().inputs(id)}", 2, f.db.bookDao().getAllBooksSync().size)
-            assertEquals(OperationState.SUCCEEDED, restarted.observe(id).first()!!.state)
-            assertTrue(f.db.operationDao().inputs(id).all { it.stagedPath == null && it.state == "SUCCESS" })
+            assertEquals(
+                "${f.db.operationDao().get(id)} ${f.db.operationDao().inputs(id)}",
+                2,
+                f.db.bookDao().getAllBooksSync().size
+            )
+            assertEquals(
+                OperationState.SUCCEEDED,
+                (restarted.observe(id).first() ?: return@fixture).state
+            )
+            assertTrue(
+                f.db.operationDao().inputs(id)
+                    .all { it.stagedPath == null && it.state == "SUCCESS" })
             restarted.execute(id, false) { error("A completed operation ran again") }
             assertEquals(2, f.db.bookDao().getAllBooksSync().size)
         }
     }
 
-    @Test fun cancellationAndLibraryReplacementCannotPublishQueuedImports() = runBlocking {
+    @Test
+    fun cancellationAndLibraryReplacementCannotPublishQueuedImports() = runBlocking {
         fixture { f ->
             val source = epub(f, "Cancelled")
             val operations = f.operations()
@@ -143,13 +196,17 @@ class PublicationOperationsTest {
             f.db.operationDao().invalidateAll()
             f.db.operationDao().finishRestore()
             operations.execute(replaced, false) {}
-            assertEquals(OperationState.CANCELLED, operations.observe(replaced).first()!!.state)
+            assertEquals(
+                OperationState.CANCELLED, (operations.observe(replaced).first()
+                    ?: return@fixture).state
+            )
             assertTrue(f.db.bookDao().getAllBooksSync().isEmpty())
             assertTrue(f.db.operationDao().inputs(replaced).all { it.stagedPath == null })
         }
     }
 
-    @Test fun aPendingOldImportCannotResurrectADeletedBookButANewRequestCan() = runBlocking {
+    @Test
+    fun aPendingOldImportCannotResurrectADeletedBookButANewRequestCan() = runBlocking {
         fixture { f ->
             val source = epub(f, "Deleted")
             val book = f.publications.importBook(Uri.fromFile(source))
@@ -158,14 +215,18 @@ class PublicationOperationsTest {
             f.library.deleteBook(book.book.id)
             operations.execute(pending, false) {}
             assertNull(f.db.bookDao().getById(book.book.id))
-            assertEquals(OperationState.FAILED, operations.observe(pending).first()!!.state)
+            assertEquals(
+                OperationState.FAILED, (operations.observe(pending).first()
+                    ?: return@fixture).state
+            )
             val fresh = operations.enqueueImports(listOf(Uri.fromFile(source)))
             operations.execute(fresh, false) {}
             assertNotNull(f.db.bookDao().getById(book.book.id))
         }
     }
 
-    @Test fun openPublicationsKeepDeletedAssetsUntilTheirLeaseCloses() = runBlocking {
+    @Test
+    fun openPublicationsKeepDeletedAssetsUntilTheirLeaseCloses() = runBlocking {
         fixture { f ->
             val book = f.publications.importBook(Uri.fromFile(epub(f, "Leased")))
             val publication = requireNotNull(f.publications.openPublication(book))
@@ -174,22 +235,33 @@ class PublicationOperationsTest {
                 f.library.deleteBook(book.book.id)
                 f.library.cleanupOrphanedFiles()
                 assertTrue(file.exists())
-            } finally { publication.close() }
+            } finally {
+                publication.close()
+            }
             f.library.cleanupOrphanedFiles()
             assertFalse(file.exists())
         }
     }
 
-    @Test fun backgroundConversionActivatesReadModeAndRejectsRetiredReaderWrites() = runBlocking {
+    @Test
+    fun backgroundConversionActivatesReadModeAndRejectsRetiredReaderWrites() = runBlocking {
         fixture { f ->
-            val source = File(f.directory, "source.pdf").apply { writeBytes(com.javierreansyah.pinecone.testing.syntheticPdf(2)) }
+            val source = File(
+                f.directory,
+                "source.pdf"
+            ).apply { writeBytes(com.javierreansyah.pinecone.testing.syntheticPdf(2)) }
             val book = f.publications.importBook(Uri.fromFile(source))
             val original = requireNotNull(f.publications.openPublication(book))
             try {
-                val locator = requireNotNull(original.locatorFromLink(original.readingOrder.first())).copyWithLocations(
-                    fragments = listOf("page=1"), totalProgression = .4,
+                val locator =
+                    requireNotNull(original.locatorFromLink(original.readingOrder.first())).copyWithLocations(
+                        fragments = listOf("page=1"), totalProgression = .4,
+                    )
+                f.reading.saveReadingPosition(
+                    book.book.id,
+                    locator,
+                    session = original.readingSessionToken()
                 )
-                f.reading.saveReadingPosition(book.book.id, locator, session = original.readingSessionToken())
                 val operations = f.operations()
                 val id = operations.enqueueReadMode(book.book.id, false)
                 assertEquals(id, operations.enqueueReadMode(book.book.id, true))
@@ -197,52 +269,114 @@ class PublicationOperationsTest {
                 operations.execute(id, true) { report ->
                     if (report.completed > 0 && !advanced) {
                         advanced = true
-                        f.reading.saveReadingPosition(book.book.id, locator.copyWithLocations(
-                            fragments = listOf("page=2"), totalProgression = .8,
-                        ), session = original.readingSessionToken())
+                        f.reading.saveReadingPosition(
+                            book.book.id, locator.copyWithLocations(
+                                fragments = listOf("page=2"), totalProgression = .8,
+                            ), session = original.readingSessionToken()
+                        )
                     }
                 }
                 assertTrue(advanced)
-                assertEquals(OperationState.SUCCEEDED, operations.observe(id).first()!!.state)
+                assertEquals(
+                    OperationState.SUCCEEDED, (operations.observe(id).first()
+                        ?: return@fixture).state
+                )
                 val converted = requireNotNull(f.db.bookDao().getById(book.book.id))
                 assertEquals("read-mode", converted.book.activeRendition)
-                assertTrue(converted.book.lastLocatorJson.orEmpty().contains("source-page-2"))
+                assertTrue("source-page-2" in converted.book.lastLocatorJson.orEmpty())
                 val reopened = requireNotNull(f.publications.openPublication(converted))
-                try { assertEquals(ReaderProfile.EPUB, PublicationFormats.profile(reopened)) } finally { reopened.close() }
+                try {
+                    assertEquals(ReaderProfile.EPUB, PublicationFormats.profile(reopened))
+                } finally {
+                    reopened.close()
+                }
                 val originalState = f.reading.rendition(book.book.id, "original")
-                f.reading.saveReadingPosition(book.book.id, locator.copyWithLocations(totalProgression = .9), session = original.readingSessionToken())
+                f.reading.saveReadingPosition(
+                    book.book.id,
+                    locator.copyWithLocations(totalProgression = .9),
+                    session = original.readingSessionToken()
+                )
                 assertEquals(originalState, f.reading.rendition(book.book.id, "original"))
-            } finally { original.close() }
+            } finally {
+                original.close()
+            }
         }
     }
 
-    private class Fixture(val directory: File, val db: AppDatabase, val preferences: ReaderPreferences,
-        val publications: PublicationRepository, val library: LibraryRepository, val reading: ReadingRepository) {
+    private class Fixture(
+        val directory: File,
+        val db: AppDatabase,
+        val preferences: ReaderPreferences,
+        val publications: PublicationRepository,
+        val library: LibraryRepository,
+        val reading: ReadingRepository
+    ) {
         private val scheduler = object : OperationScheduler {
             override suspend fun enqueue(operationId: String) {}
             override suspend fun cancel(operationId: String) {}
         }
-        fun operations() = PublicationOperations(InstrumentationRegistry.getInstrumentation().targetContext,
-            db, publications, reading, scheduler, preferences, Dispatchers.IO)
+
+        fun operations() = PublicationOperations(
+            InstrumentationRegistry.getInstrumentation().targetContext,
+            db, publications, reading, scheduler, preferences, Dispatchers.IO
+        )
     }
 
     private suspend fun fixture(block: suspend (Fixture) -> Unit) {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val directory = File(context.cacheDir, UUID.randomUUID().toString()).apply { mkdirs() }
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        val preferences = ReaderPreferences(DataStoreFactory.create(
-            serializer = JsonPreferenceSerializer(ReaderPreferencesData.serializer(), ReaderPreferencesData()),
-            scope = scope, produceFile = { File(directory, "preferences.json") },
-        ))
-        val db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).addCallback(AppDatabase.BACKUP_REVISION_CALLBACK).build()
+        val preferences = ReaderPreferences(
+            DataStoreFactory.create(
+                serializer = JsonPreferenceSerializer(
+                    ReaderPreferencesData.serializer(),
+                    ReaderPreferencesData()
+                ),
+                scope = scope, produceFile = { File(directory, "preferences.json") },
+            )
+        )
+        val db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
+            .addCallback(AppDatabase.BACKUP_REVISION_CALLBACK).build()
         val assets = PublicationAssetStore(context)
         val http = DefaultHttpClient()
         val retriever = AssetRetriever(context.contentResolver, http)
-        val opener = PublicationOpener(DefaultPublicationParser(context, http, retriever, pdfFactory = MuPdfDocumentFactory()))
-        val publications = PublicationRepository(context, db, opener, retriever, preferences, Dispatchers.IO, assets)
-        val library = LibraryRepository(context, db, db.bookDao(), db.shelfDao(), db.spaceDao(), assets, Dispatchers.IO)
-        val f = Fixture(directory, db, preferences, publications, library, ReadingRepository(db, db.bookDao(), db.bookmarkDao(), db.noteDao()))
-        try { block(f) } finally {
+        val opener = PublicationOpener(
+            DefaultPublicationParser(
+                context,
+                http,
+                retriever,
+                pdfFactory = MuPdfDocumentFactory()
+            )
+        )
+        val publications = PublicationRepository(
+            context,
+            db,
+            opener,
+            retriever,
+            preferences,
+            Dispatchers.IO,
+            assets
+        )
+        val library = LibraryRepository(
+            context,
+            db,
+            db.bookDao(),
+            db.shelfDao(),
+            db.spaceDao(),
+            assets,
+            Dispatchers.IO
+        )
+        val f = Fixture(
+            directory,
+            db,
+            preferences,
+            publications,
+            library,
+            ReadingRepository(db, db.bookDao(), db.bookmarkDao(), db.noteDao())
+        )
+        try {
+            block(f)
+        } finally {
             db.operationDao().resumable().forEach { f.operations().cancel(it.id) }
             db.bookDao().getAllBooksSync().forEach { library.deleteBook(it.id) }
             library.cleanupOrphanedFiles()
@@ -264,19 +398,4 @@ class PublicationOperationsTest {
         }
     }
 
-    private fun pdf(): ByteArray {
-        val content = "BT /F1 14 Tf 72 720 Td (A readable PDF publication.) Tj ET"
-        val objects = listOf("<< /Type /Catalog /Pages 2 0 R >>", "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
-            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>", "<< /Length ${content.length} >>\nstream\n$content\nendstream")
-        val out = java.io.ByteArrayOutputStream()
-        fun write(s: String) { out.write(s.toByteArray(Charsets.US_ASCII)) }
-        write("%PDF-1.4\n")
-        val offsets = objects.mapIndexed { i, obj -> out.size().also { write("${i + 1} 0 obj\n$obj\nendobj\n") } }
-        val xref = out.size()
-        write("xref\n0 ${objects.size + 1}\n0000000000 65535 f \n")
-        offsets.forEach { write("%010d 00000 n \n".format(java.util.Locale.ROOT, it)) }
-        write("trailer\n<< /Size ${objects.size + 1} /Root 1 0 R >>\nstartxref\n$xref\n%%EOF")
-        return out.toByteArray()
-    }
 }

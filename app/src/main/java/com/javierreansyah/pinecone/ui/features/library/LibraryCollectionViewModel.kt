@@ -8,16 +8,16 @@ import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesMana
 import com.javierreansyah.pinecone.data.local.preferences.libraryPreferenceDefaults
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.model.fromEntity
-import com.javierreansyah.pinecone.domain.DeleteBooks
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
+import com.javierreansyah.pinecone.domain.DeleteBooks
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -28,7 +28,7 @@ abstract class LibraryCollectionViewModel(
     private val prefsManager: LibraryPreferencesManager,
     private val screenKey: String,
     computation: kotlinx.coroutines.CoroutineDispatcher,
-    source: (LibraryRepository) -> Flow<List<BookWithDetails>>,
+    source: Flow<List<BookWithDetails>>,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -48,7 +48,8 @@ abstract class LibraryCollectionViewModel(
     }
 
     private val booksFlow: Flow<List<Book>> =
-        source(bookRepository).map { entities -> entities.map { Book.fromEntity(it) } }.flowOn(computation)
+        source.map { entities -> entities.map { Book.fromEntity(it) } }
+            .flowOn(computation)
 
     val allBooks: StateFlow<List<Book>> = booksFlow.stateIn(
         scope = viewModelScope,
@@ -59,7 +60,8 @@ abstract class LibraryCollectionViewModel(
     val filteredBooks: StateFlow<List<Book>> =
         combine(allBooks, _uiState) { books, state ->
             books.filterAndSort(state.bookPreferences)
-        }.flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        }.flowOn(computation)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val shelves: StateFlow<List<ShelfWithCovers>> = combine(
         bookRepository.getAllShelvesWithBooks(), bookRepository.getAllShelfBookCrossRefs(),

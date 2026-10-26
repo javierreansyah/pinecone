@@ -260,7 +260,6 @@ class EpubWriter(
 
     companion object {
         private const val XHTML = "http://www.w3.org/1999/xhtml"
-        private const val SVG = "http://www.w3.org/2000/svg"
         private const val EPUB = "http://www.idpf.org/2007/ops"
         private const val OPF = "http://www.idpf.org/2007/opf"
         private const val DC = "http://purl.org/dc/elements/1.1/"

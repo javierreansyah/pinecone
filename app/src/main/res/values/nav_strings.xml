@@ -2,19 +2,13 @@
 <resources>
     <string name="nav_backup_failed">Backup failed</string>
     <string name="nav_backup_success">Backup successful</string>
-    <string name="nav_folder_scan_complete">Folder scan complete</string>
     <string name="nav_import_complete">Import complete</string>
     <string name="nav_import_files">Import files</string>
-    <plurals name="nav_importing_files">
-        <item quantity="one">Importing %d file…</item>
-        <item quantity="other">Importing %d files…</item>
-    </plurals>
     <string name="nav_restore_backup">Restore backup</string>
     <string name="nav_restore_failed">Failed to restore backup</string>
     <string name="nav_restore_success">Backup restored successfully!</string>
     <string name="nav_restoring_backup">Restoring backup…</string>
     <string name="nav_scan_folder">Scan folder</string>
-    <string name="nav_scanning_folder">Scanning folder for supported files…</string>
     <string name="nav_setup_now">Setup now</string>
     <string name="nav_starting_backup">Starting backup…</string>
 </resources>

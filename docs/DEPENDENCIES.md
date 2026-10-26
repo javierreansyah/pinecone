@@ -6,15 +6,20 @@ description HTML is parsed and cleaned by jsoup before the app adds its own styl
 
 ## Ownership and persistence
 
+- Hilt discovers `PublicationWorkModule` through its annotations; preserve its scheduler binding
+  even when IDE unused-code inspection finds no direct callers. Serialization models use public
+  `@Serializable`; repeated `@InternalSerializationApi` annotations on package declarations are
+  invalid and must not be introduced by automatic inspection fixes.
 - Production module ownership is `:core:model` for neutral models/settings, `:publication` for
   engines and conversion, `:data` for persistence/repositories, and `:app` for Android UI, playback,
   workers and composition. Shared services use constructor injection; builder providers remain in
   focused Hilt modules. `OperationScheduler` is the small execution boundary from data to app.
-- Book imports, folder scans and PDF read-mode generation persist in Room and execute through
-  Hilt WorkManager workers. Attempt/generation/deletion guards fence late commits; immutable assets
-  use leases while open. Portable backup format remains 2; library database schema is now 2.
+- Book imports, folder scans and PDF read-mode generation persist in Room and execute through Hilt
+  WorkManager workers. Attempt/generation/deletion guards fence late commits; immutable assets use
+  leases while open. Portable backup format remains 2; library database schema is now 2.
   See [the implementation log](ARCHITECTURE_REFACTOR_PLAN.md) and
-  [measurement/validation notes](ARCHITECTURE_PERFORMANCE.md) for recovery rules and remaining checks.
+  [measurement/validation notes](ARCHITECTURE_PERFORMANCE.md) for recovery rules and remaining
+  checks.
 
 - Hilt's singleton component owns the database, repositories, preference managers, Readium services,
   and the playback client/read-only presentation state. The service component owns the audio engine,
@@ -30,8 +35,9 @@ description HTML is parsed and cleaned by jsoup before the app adds its own styl
 - Entry-scoped ViewModels use their class-derived default keys. Explicit keys must distinguish both
   model type and instance when multiple instances share an owner. The previous raw `bookId` key
   collided between reader and notes ViewModels, clearing the reader before it could open audio.
-- Room and Readium builders live in focused modules. Application injections do not construct a native
-  audio player. Typed DataStore construction stays in provider methods to preserve one store per file.
+- Room and Readium builders live in focused modules. Application injections do not construct a
+  native audio player. Typed DataStore construction stays in provider methods to preserve one store
+  per file.
 - WorkManager uses `HiltWorkerFactory` through on-demand initialization. Its default Startup
   initializer is removed from the manifest.
 - Reader and library settings migrate independently into typed JSON DataStores. Migration markers

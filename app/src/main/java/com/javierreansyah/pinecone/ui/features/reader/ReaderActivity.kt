@@ -21,7 +21,6 @@ import com.javierreansyah.pinecone.ui.theme.PineconeTheme
 import dagger.hilt.android.lifecycle.withCreationCallback
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
@@ -119,8 +118,6 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
             val readerBgColor = themeColorsState.value.backgroundColor
 
             PineconeTheme(readerBackgroundColor = readerBgColor) {
-                val bookState = viewModel.bookState.collectAsStateWithLifecycle()
-                com.javierreansyah.pinecone.ui.components.WorkNotificationPermission(bookState.value.converting)
                 ReaderOverlay(
                     viewModel = viewModel,
                     searchViewModel = searchViewModel,

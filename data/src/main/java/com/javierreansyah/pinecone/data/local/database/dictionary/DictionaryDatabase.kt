@@ -14,7 +14,8 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Entity(
-    tableName = "dictionary_entries", indices = [Index(value = ["word"]), Index(value = ["wordIndex"])],
+    tableName = "dictionary_entries",
+    indices = [Index(value = ["word"]), Index(value = ["wordIndex"])],
 )
 data class DictionaryEntry(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,

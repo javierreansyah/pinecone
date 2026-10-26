@@ -5,9 +5,9 @@ import com.javierreansyah.pinecone.data.repository.backup.BackupFailure
 import com.javierreansyah.pinecone.data.repository.backup.BackupRepository
 import com.javierreansyah.pinecone.data.repository.backup.BackupResult
 import com.javierreansyah.pinecone.reader.audio.AudioPlaybackClient
-import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
+import javax.inject.Inject
 
 class RestoreBackup @Inject constructor(
     private val repository: BackupRepository,

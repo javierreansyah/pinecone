@@ -67,6 +67,7 @@ data class PublicationCreditEntity(
 interface PublicationDao {
     @Query("SELECT * FROM publication_renditions WHERE bookId IN (:ids)")
     suspend fun renditionsForBooks(ids: List<String>): List<PublicationRenditionEntity>
+
     @Query("SELECT * FROM publication_renditions WHERE bookId = :bookId AND `key` = :key")
     suspend fun rendition(bookId: String, key: String): PublicationRenditionEntity?
 

@@ -78,7 +78,6 @@
     <string name="reader_result_num_of">%1$s dari %2$s</string>
     <string name="reader_rewind">Mundur 10 detik</string>
     <string name="reader_right_to_left">Kanan ke kiri</string>
-    <string name="reader_scanned_page_notice">Tidak ada teks yang dapat diekstrak dari halaman ini. Tampilan aslinya dipertahankan di bawah ini; OCR tidak diaktifkan.</string>
     <string name="reader_search_placeholder">Cari di dalam judul…</string>
     <string name="reader_search_no_results_for">Tidak ada hasil untuk \"%s\"</string>
     <plurals name="reader_search_results_count">

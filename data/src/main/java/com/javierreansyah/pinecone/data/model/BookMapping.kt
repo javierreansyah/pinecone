@@ -28,7 +28,8 @@ fun Book.Companion.fromEntity(entity: BookWithDetails): Book = with(entity.book)
         furthestLocatorJson = furthestLocatorJson,
         spaces = entity.spaces.map { LibrarySpace(it.id, it.name, it.createdAt) },
         metadata = PublicationMetadata.decode(metadataJson),
-        credits = entity.credits.sortedWith(compareBy({ it.role }, { it.position })).map { it.toModel() },
+        credits = entity.credits.sortedWith(compareBy({ it.role }, { it.position }))
+            .map { it.toModel() },
         activeRendition = activeRendition,
         isUnsorted = isUnsorted,
         originalFilename = originalFilename,

@@ -82,7 +82,6 @@ import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
-import com.javierreansyah.pinecone.data.model.fromEntity
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
@@ -98,7 +97,6 @@ import com.javierreansyah.pinecone.ui.features.library.organize.SelectSpaceForSh
 import com.javierreansyah.pinecone.ui.features.library.publicationCountLabel
 import com.javierreansyah.pinecone.ui.features.library.publicationWording
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
-import kotlinx.coroutines.flow.flowOf
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 

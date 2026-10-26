@@ -18,7 +18,9 @@ class MutationErrorState {
     private val mutableFailed = MutableStateFlow(false)
     val failed = mutableFailed.asStateFlow()
 
-    fun dismiss() { mutableFailed.value = false }
+    fun dismiss() {
+        mutableFailed.value = false
+    }
 
     suspend fun run(block: suspend () -> Unit) {
         try {

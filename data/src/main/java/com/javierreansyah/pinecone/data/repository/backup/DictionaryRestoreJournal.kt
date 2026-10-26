@@ -4,12 +4,12 @@ import android.content.Context
 import com.javierreansyah.pinecone.data.local.database.dictionary.validDictionaryId
 import com.javierreansyah.pinecone.data.local.preferences.InstalledDictionary
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.FileOutputStream
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.serialization.json.Json
 
 internal data class DictionaryStage(val dictionary: InstalledDictionary, val file: File)
 
@@ -20,7 +20,8 @@ class DictionaryRestoreJournal internal constructor(
     private val stagingDirectory: File,
     private val databasePath: (String) -> File,
 ) {
-    @Inject constructor(@ApplicationContext context: Context) : this(
+    @Inject
+    constructor(@ApplicationContext context: Context) : this(
         context.filesDir, context.cacheDir, context::getDatabasePath,
     )
 

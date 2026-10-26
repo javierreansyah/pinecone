@@ -17,11 +17,19 @@ android {
     }
 }
 
-androidComponents.onVariants { variant ->
-    variant.deviceTests.values.forEach { test ->
-        test.sources.java?.addStaticSourceDirectory(
-            rootProject.file("test-support/src/androidTest/java").absolutePath,
-        )
+@Suppress("UnstableApiUsage")
+androidComponents {
+    beforeVariants { variant ->
+        (variant as com.android.build.api.variant.HasHostTestsBuilder)
+            .hostTests.getValue(com.android.build.api.variant.HostTestBuilder.UNIT_TEST_TYPE).enable =
+            true
+    }
+    onVariants { variant ->
+        variant.deviceTests.values.forEach { test ->
+            test.sources.java?.addStaticSourceDirectory(
+                rootProject.file("test-support/src/androidTest/java").absolutePath,
+            )
+        }
     }
 }
 

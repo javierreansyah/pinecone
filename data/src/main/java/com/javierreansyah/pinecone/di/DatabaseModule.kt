@@ -21,9 +21,18 @@ object DatabaseModule {
             .addCallback(AppDatabase.BACKUP_REVISION_CALLBACK)
             .build()
 
-    @Provides fun bookDao(database: AppDatabase) = database.bookDao()
-    @Provides fun bookmarkDao(database: AppDatabase) = database.bookmarkDao()
-    @Provides fun shelfDao(database: AppDatabase) = database.shelfDao()
-    @Provides fun noteDao(database: AppDatabase) = database.noteDao()
-    @Provides fun spaceDao(database: AppDatabase) = database.spaceDao()
+    @Provides
+    fun bookDao(database: AppDatabase) = database.bookDao()
+
+    @Provides
+    fun bookmarkDao(database: AppDatabase) = database.bookmarkDao()
+
+    @Provides
+    fun shelfDao(database: AppDatabase) = database.shelfDao()
+
+    @Provides
+    fun noteDao(database: AppDatabase) = database.noteDao()
+
+    @Provides
+    fun spaceDao(database: AppDatabase) = database.spaceDao()
 }

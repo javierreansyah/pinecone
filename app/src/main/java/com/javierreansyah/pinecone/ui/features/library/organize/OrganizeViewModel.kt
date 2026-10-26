@@ -47,7 +47,7 @@ internal fun List<SpaceWithShelvesItemState>.prioritizedShelfGroups(): List<Spac
 class OrganizeViewModel @AssistedInject constructor(
     @Assisted bookIds: List<String>,
     private val repository: LibraryRepository,
-    private val readerPreferences: ReaderPreferences,
+    readerPreferences: ReaderPreferences,
     @com.javierreansyah.pinecone.di.DefaultDispatcher computation: kotlinx.coroutines.CoroutineDispatcher,
 ) : ViewModel() {
     private val targetBookIds = bookIds.toSet()
@@ -61,8 +61,10 @@ class OrganizeViewModel @AssistedInject constructor(
     ) { shelvesWithBooks, spaces, spaceCrossRefs, settings, books ->
         val validShelves =
             shelvesWithBooks.filter { (itShelf, books1) -> itShelf.id != "unshelved" }
-        val organized = books.asSequence().filterNot { it.book.isUnsorted }.map { it.book.id }.toSet()
-        val membersBySpace = spaceCrossRefs.groupBy({ it.spaceId }, { it.bookId }).mapValues { it.value.toSet() }
+        val organized =
+            books.asSequence().filterNot { it.book.isUnsorted }.map { it.book.id }.toSet()
+        val membersBySpace =
+            spaceCrossRefs.groupBy({ it.spaceId }, { it.bookId }).mapValues { it.value.toSet() }
 
         val spaceItems =
             spaces.asSequence().filter { settings.spacesEnabled || it.id == "_all_" }.map { space ->
@@ -103,24 +105,56 @@ class OrganizeViewModel @AssistedInject constructor(
             isLoading = false,
             spacesEnabled = settings.spacesEnabled,
         )
-    }.flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), OrganizeUiState())
+    }.flowOn(computation)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), OrganizeUiState())
 
     val mutationErrors = com.javierreansyah.pinecone.ui.components.MutationErrorState()
 
     fun toggleShelf(shelfId: String, currentState: ToggleableState) {
-        viewModelScope.launch { mutationErrors.run { repository.setBooksInShelf(shelfId, targetBookIds, currentState != ToggleableState.On) } }
+        viewModelScope.launch {
+            mutationErrors.run {
+                repository.setBooksInShelf(
+                    shelfId,
+                    targetBookIds,
+                    currentState != ToggleableState.On
+                )
+            }
+        }
     }
 
     fun toggleSpace(spaceId: String, currentState: ToggleableState) {
-        viewModelScope.launch { mutationErrors.run { repository.setBooksInSpace(spaceId, targetBookIds, currentState != ToggleableState.On) } }
+        viewModelScope.launch {
+            mutationErrors.run {
+                repository.setBooksInSpace(
+                    spaceId,
+                    targetBookIds,
+                    currentState != ToggleableState.On
+                )
+            }
+        }
     }
 
     fun createShelf(spaceId: String, name: String) {
-        viewModelScope.launch { mutationErrors.run { repository.createShelfWithBooks(spaceId, name, targetBookIds) } }
+        viewModelScope.launch {
+            mutationErrors.run {
+                repository.createShelfWithBooks(
+                    spaceId,
+                    name,
+                    targetBookIds
+                )
+            }
+        }
     }
 
     fun createSpace(name: String) {
-        viewModelScope.launch { mutationErrors.run { repository.createSpaceWithBooks(name, targetBookIds) } }
+        viewModelScope.launch {
+            mutationErrors.run {
+                repository.createSpaceWithBooks(
+                    name,
+                    targetBookIds
+                )
+            }
+        }
     }
 
     @dagger.assisted.AssistedFactory

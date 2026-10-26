@@ -79,10 +79,21 @@ class MainViewModel @Inject constructor(
     }
 
     suspend fun isAudiobook(bookId: String): Boolean =
-        reading.rendition(bookId, "original")?.profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO.name
+        reading.rendition(
+            bookId,
+            "original"
+        )?.profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO.name
 
-    val importOperations = operations.imports.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, emptyList())
-    val libraryState = operations.libraryState.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, null)
+    val importOperations = operations.imports.stateIn(
+        viewModelScope,
+        kotlinx.coroutines.flow.SharingStarted.Eagerly,
+        emptyList()
+    )
+    val libraryState = operations.libraryState.stateIn(
+        viewModelScope,
+        kotlinx.coroutines.flow.SharingStarted.Eagerly,
+        null
+    )
     private var errorOperation: String? = null
 
     init {
@@ -99,7 +110,8 @@ class MainViewModel @Inject constructor(
                         errorOperation = row.id
                         _importErrorReport.value = ImportErrorReport(
                             row.failures.ifEmpty { listOf(application.getString(R.string.publication_unknown)) },
-                            row.total.coerceAtLeast(1), (row.completed - row.failures.size).coerceAtLeast(0),
+                            row.total.coerceAtLeast(1),
+                            (row.completed - row.failures.size).coerceAtLeast(0),
                             inputRequired = row.state == com.javierreansyah.pinecone.data.model.OperationState.INPUT_REQUIRED || row.error == "input_required",
                         )
                     }
@@ -130,12 +142,17 @@ class MainViewModel @Inject constructor(
                 throw cancelled
             } catch (error: Exception) {
                 timber.log.Timber.w(error, "Publication request could not be accepted")
-                errors.compareAndSet(null, ImportErrorReport(names, names.size, 0, inputRequired = true))
+                errors.compareAndSet(
+                    null,
+                    ImportErrorReport(names, names.size, 0, inputRequired = true)
+                )
             }
         }
     }
 
-    fun cancelImport(id: String) { viewModelScope.launch { operations.cancel(id) } }
+    fun cancelImport(id: String) {
+        viewModelScope.launch { operations.cancel(id) }
+    }
 }
 
 data class ImportErrorReport(

@@ -79,6 +79,7 @@ internal fun PdfTextOverlay(
                     href
                 ) && "page=${pageIndex + 1}" in it.locations.fragments
             } ?: link?.let(publication::locatorFromLink) ?: Locator(
+                // Url(...) is a nullable companion factory, not a non-null constructor.
                 requireNotNull(Url(href)) { "Invalid PDF resource URL: $href" },
                 MediaType.PDF
             )

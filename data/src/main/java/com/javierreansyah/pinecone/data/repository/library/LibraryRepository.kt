@@ -19,19 +19,19 @@ import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.local.database.library.SpaceDao
 import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.data.local.database.library.TagEntity
+import com.javierreansyah.pinecone.data.model.library.ALL_SPACES_ID
 import com.javierreansyah.pinecone.data.publication.PublicationMetadata
 import com.javierreansyah.pinecone.di.IoDispatcher
-import com.javierreansyah.pinecone.data.model.library.ALL_SPACES_ID
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class LibraryRepository @Inject constructor(
@@ -106,7 +106,6 @@ class LibraryRepository @Inject constructor(
     fun getBookFlow(id: String): Flow<BookWithDetails?> = bookDao.getByIdFlow(id)
 
 
-
     suspend fun deleteBook(bookId: String) = deleteBooks(listOf(bookId))
 
     suspend fun deleteBooks(bookIds: Collection<String>): Unit = withContext(ioDispatcher) {
@@ -120,8 +119,14 @@ class LibraryRepository @Inject constructor(
                 operations.runtime()
                 operations.advanceSequence()
                 val sequence = operations.runtime().sequence
-                books.forEach { operations.recordDeletion(
-                    com.javierreansyah.pinecone.data.local.database.library.PublicationDeletionEntity(it.id, sequence)) }
+                books.forEach {
+                    operations.recordDeletion(
+                        com.javierreansyah.pinecone.data.local.database.library.PublicationDeletionEntity(
+                            it.id,
+                            sequence
+                        )
+                    )
+                }
                 batches.forEach { operations.invalidateBooks(it); bookDao.deleteIds(it) }
                 shelfDao.deleteEmptyShelves()
                 bookDao.deleteOrphanAuthors()
@@ -129,8 +134,18 @@ class LibraryRepository @Inject constructor(
             }
             val remaining = bookDao.getAllBooksSync()
             val referenced = (publicationDao.allRenditions().map { it.filePath } +
-                remaining.flatMap { listOfNotNull(it.filePath, it.coverPath) }).map { File(it).canonicalPath }.toSet()
-            (renditions.map { it.filePath } + books.flatMap { listOfNotNull(it.filePath, it.coverPath) }).distinct().forEach {
+                    remaining.flatMap {
+                        listOfNotNull(
+                            it.filePath,
+                            it.coverPath
+                        )
+                    }).map { File(it).canonicalPath }.toSet()
+            (renditions.map { it.filePath } + books.flatMap {
+                listOfNotNull(
+                    it.filePath,
+                    it.coverPath
+                )
+            }).distinct().forEach {
                 val file = File(it)
                 if (file.canonicalPath !in referenced) assets.deleteIfUnleased(file)
             }
@@ -178,25 +193,27 @@ class LibraryRepository @Inject constructor(
                         }
                         previousCover = current.coverPath
                         if (staged != null) {
-                            val target = File(coversDir, "${bookId}_custom_${UUID.randomUUID()}.png")
+                            val target =
+                                File(coversDir, "${bookId}_custom_${UUID.randomUUID()}.png")
                             check(staged.renameTo(target)) { "Cannot publish replacement cover" }
                             published = target
                         }
-                        check(bookDao.updateMetadata(
-                            BookMetadataUpdate(
-                                id = bookId,
-                                title = title,
-                                description = description,
-                                coverPath = published?.absolutePath ?: current.coverPath,
-                                metadataJson = metadata?.encode() ?: current.metadataJson,
-                                language = if (metadata != null) metadata.languages.firstOrNull() else current.language,
-                                identifier = if (metadata != null) metadata.identifiers["identifier"]
-                                    ?: metadata.identifiers.values.firstOrNull() else current.identifier,
-                                publisher = credits?.filter { it.role == "publisher" }
-                                    ?.joinToString(", ") { it.name } ?: current.publisher,
-                                published = metadata?.published ?: current.published,
-                            ),
-                        ) == 1)
+                        check(
+                            bookDao.updateMetadata(
+                                BookMetadataUpdate(
+                                    id = bookId,
+                                    title = title,
+                                    description = description,
+                                    coverPath = published?.absolutePath ?: current.coverPath,
+                                    metadataJson = metadata?.encode() ?: current.metadataJson,
+                                    language = if (metadata != null) metadata.languages.firstOrNull() else current.language,
+                                    identifier = if (metadata != null) metadata.identifiers["identifier"]
+                                        ?: metadata.identifiers.values.firstOrNull() else current.identifier,
+                                    publisher = credits?.filter { it.role == "publisher" }
+                                        ?.joinToString(", ") { it.name } ?: current.publisher,
+                                    published = metadata?.published ?: current.published,
+                                ),
+                            ) == 1)
 
                         if (credits != null) {
                             publicationDao.deleteCredits(bookId)
@@ -205,12 +222,20 @@ class LibraryRepository @Inject constructor(
 
                         bookDao.deleteBookAuthorCrossRefs(bookId)
                         authors.forEachIndexed { index, authorName ->
-                            var authorId = bookDao.insertAuthor(AuthorEntity(name = authorName.trim()))
+                            var authorId =
+                                bookDao.insertAuthor(AuthorEntity(name = authorName.trim()))
                             if (authorId == -1L) {
                                 authorId =
-                                    bookDao.getAuthorByName(authorName.trim())?.id ?: return@forEachIndexed
+                                    bookDao.getAuthorByName(authorName.trim())?.id
+                                        ?: return@forEachIndexed
                             }
-                            bookDao.insertBookAuthorCrossRef(BookAuthorCrossRef(bookId, authorId, index))
+                            bookDao.insertBookAuthorCrossRef(
+                                BookAuthorCrossRef(
+                                    bookId,
+                                    authorId,
+                                    index
+                                )
+                            )
                         }
 
                         bookDao.deleteBookTagCrossRefs(bookId)
@@ -303,13 +328,15 @@ class LibraryRepository @Inject constructor(
         bookDao.toggleReadStatus(bookId)
     }
 
-    suspend fun setArchived(bookIds: Collection<String>, value: Boolean): Unit = database.withTransaction {
-        bookIds.distinct().chunked(900).forEach { bookDao.setArchived(it, value) }
-    }
+    suspend fun setArchived(bookIds: Collection<String>, value: Boolean): Unit =
+        database.withTransaction {
+            bookIds.distinct().chunked(900).forEach { bookDao.setArchived(it, value) }
+        }
 
-    suspend fun setReadStatus(bookIds: Collection<String>, value: Boolean): Unit = database.withTransaction {
-        bookIds.distinct().chunked(900).forEach { bookDao.setReadStatus(it, value) }
-    }
+    suspend fun setReadStatus(bookIds: Collection<String>, value: Boolean): Unit =
+        database.withTransaction {
+            bookIds.distinct().chunked(900).forEach { bookDao.setReadStatus(it, value) }
+        }
 
     fun getAllShelvesWithBooks(): Flow<List<ShelfWithCovers>> =
         shelfDao.getAllShelvesWithBooks().map { shelves ->
@@ -363,7 +390,11 @@ class LibraryRepository @Inject constructor(
         shelf?.let { shelfDao.updateShelf(it.copy(name = newName)) }
     }
 
-    suspend fun setBooksInShelf(shelfId: String, bookIds: Collection<String>, selected: Boolean): Unit = database.withTransaction {
+    suspend fun setBooksInShelf(
+        shelfId: String,
+        bookIds: Collection<String>,
+        selected: Boolean
+    ): Unit = database.withTransaction {
         val ids = bookIds.distinct()
         if (!selected) {
             ids.chunked(900).forEach { shelfDao.removeShelfMembers(shelfId, it) }
@@ -375,58 +406,60 @@ class LibraryRepository @Inject constructor(
             val members = existing.mapTo(mutableSetOf()) { it.bookId }
             val first = (existing.maxOfOrNull { it.orderIndex } ?: -1) + 1
             ids.chunked(900).forEach { bookDao.markOrganized(it) }
-            spaceDao.addMembers(ids.flatMap { listOf(BookSpaceCrossRef(it, ALL_SPACES_ID), BookSpaceCrossRef(it, shelf.spaceId)) }.distinct())
-            shelfDao.addShelfRefs(ids.filterNot { it in members }.mapIndexed { index, id -> ShelfBookCrossRefEntity(shelfId, id, orderIndex = first + index) })
+            spaceDao.addMembers(ids.flatMap {
+                listOf(
+                    BookSpaceCrossRef(it, ALL_SPACES_ID),
+                    BookSpaceCrossRef(it, shelf.spaceId)
+                )
+            }.distinct())
+            shelfDao.addShelfRefs(ids.filterNot { it in members }.mapIndexed { index, id ->
+                ShelfBookCrossRefEntity(
+                    shelfId,
+                    id,
+                    orderIndex = first + index
+                )
+            })
         }
     }
 
-    suspend fun setBooksInSpace(spaceId: String, bookIds: Collection<String>, selected: Boolean): Unit = database.withTransaction {
+    suspend fun setBooksInSpace(
+        spaceId: String,
+        bookIds: Collection<String>,
+        selected: Boolean
+    ): Unit = database.withTransaction {
         val ids = bookIds.distinct()
         if (selected) {
             spaceDao.ensureAllSpace(context)
             ids.chunked(900).forEach { bookDao.markOrganized(it) }
-            spaceDao.addMembers(ids.flatMap { listOf(BookSpaceCrossRef(it, ALL_SPACES_ID), BookSpaceCrossRef(it, spaceId)) }.distinct())
+            spaceDao.addMembers(ids.flatMap {
+                listOf(
+                    BookSpaceCrossRef(it, ALL_SPACES_ID),
+                    BookSpaceCrossRef(it, spaceId)
+                )
+            }.distinct())
         } else if (spaceId != ALL_SPACES_ID) {
-            ids.chunked(900).forEach { spaceDao.removeMembers(spaceId, it); shelfDao.removeSpaceMembers(spaceId, it) }
+            ids.chunked(900).forEach {
+                spaceDao.removeMembers(spaceId, it); shelfDao.removeSpaceMembers(
+                spaceId,
+                it
+            )
+            }
             shelfDao.deleteEmptyShelves()
         }
     }
 
-    suspend fun createShelfWithBooks(spaceId: String, name: String, ids: Collection<String>): String = database.withTransaction {
+    suspend fun createShelfWithBooks(
+        spaceId: String,
+        name: String,
+        ids: Collection<String>
+    ): String = database.withTransaction {
         createShelf(spaceId, name).also { setBooksInShelf(it, ids, true) }
     }
 
-    suspend fun createSpaceWithBooks(name: String, ids: Collection<String>): String = database.withTransaction {
-        createSpace(name).also { setBooksInSpace(it, ids, true) }
-    }
-
-    suspend fun addBookToShelf(shelfId: String, bookId: String) {
+    suspend fun createSpaceWithBooks(name: String, ids: Collection<String>): String =
         database.withTransaction {
-            val (_, shelfSpaceId, _, _) = shelfDao.getShelfById(shelfId) ?: return@withTransaction
-            spaceDao.ensureAllSpace(context)
-            bookDao.markOrganized(bookId)
-            spaceDao.insertBookSpaceCrossRef(BookSpaceCrossRef(bookId, ALL_SPACES_ID))
-            shelfDao.insertShelfBookCrossRef(
-                ShelfBookCrossRefEntity(
-                    shelfId = shelfId, bookId = bookId,
-                    orderIndex = shelfDao.getNextBookOrderIndex(shelfId),
-                ),
-            )
-            spaceDao.insertBookSpaceCrossRef(
-                BookSpaceCrossRef(
-                    bookId = bookId,
-                    spaceId = shelfSpaceId,
-                ),
-            )
+            createSpace(name).also { setBooksInSpace(it, ids, true) }
         }
-    }
-
-    suspend fun removeBookFromShelf(shelfId: String, bookId: String) {
-        database.withTransaction {
-            shelfDao.deleteShelfBookCrossRef(shelfId = shelfId, bookId = bookId)
-            shelfDao.deleteEmptyShelves()
-        }
-    }
 
     fun getAllShelfBookCrossRefs(): Flow<List<ShelfBookCrossRefEntity>> =
         shelfDao.getAllShelfBookCrossRefs()
@@ -446,32 +479,6 @@ class LibraryRepository @Inject constructor(
         val id = UUID.randomUUID().toString()
         spaceDao.insertSpace(SpaceEntity(id = id, name = name))
         return id
-    }
-
-    suspend fun addBookToSpace(spaceId: String, bookId: String) {
-        database.withTransaction {
-            spaceDao.ensureAllSpace(context)
-            bookDao.markOrganized(bookId)
-            spaceDao.insertBookSpaceCrossRef(BookSpaceCrossRef(bookId, ALL_SPACES_ID))
-            spaceDao.insertBookSpaceCrossRef(
-                BookSpaceCrossRef(
-                    bookId = bookId,
-                    spaceId = spaceId,
-                ),
-            )
-        }
-    }
-
-    suspend fun removeBookFromSpace(spaceId: String, bookId: String) {
-        if (spaceId == ALL_SPACES_ID) return
-        database.withTransaction {
-            spaceDao.deleteBookSpaceCrossRef(spaceId = spaceId, bookId = bookId)
-            val spaceShelves = shelfDao.getShelvesBySpaceSync(spaceId)
-            spaceShelves.forEach { shelf ->
-                shelfDao.deleteShelfBookCrossRef(shelfId = shelf.id, bookId = bookId)
-            }
-            shelfDao.deleteEmptyShelves()
-        }
     }
 
     fun getAllBookSpaceCrossRefs(): Flow<List<BookSpaceCrossRef>> =

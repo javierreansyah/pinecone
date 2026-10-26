@@ -281,7 +281,8 @@ private fun ShelfBooksHorizontalRow(
             modifier = Modifier.fillMaxWidth(),
         ) {
             items(visibleBooks, key = { details -> details.book.id }) { bookEntity ->
-                val book = androidx.compose.runtime.remember(bookEntity) { Book.fromEntity(bookEntity) }
+                val book =
+                    androidx.compose.runtime.remember(bookEntity) { Book.fromEntity(bookEntity) }
                 BookItem(
                     book = book,
                     onClick = { onBookClick(book.id) },

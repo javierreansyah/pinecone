@@ -2,8 +2,6 @@ package com.javierreansyah.pinecone.data
 
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.repository.backup.BackupRepository
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,6 +9,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
+import javax.inject.Inject
+import javax.inject.Singleton
 
 sealed interface StartupState {
     data object Loading : StartupState
@@ -24,10 +24,12 @@ class StartupCoordinator internal constructor(
     private val recover: suspend () -> Unit,
     private val loadSettings: suspend () -> Unit,
 ) {
-    @Inject constructor(backups: BackupRepository, preferences: ReaderPreferences) : this(
+    @Inject
+    constructor(backups: BackupRepository, preferences: ReaderPreferences) : this(
         recover = { backups.completePendingSettingsRestore() },
         loadSettings = { preferences.readerSettings.first(); Unit },
     )
+
     private val mutex = Mutex()
     private val mutableState = MutableStateFlow<StartupState>(StartupState.Loading)
     val state = mutableState.asStateFlow()

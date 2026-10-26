@@ -4,8 +4,6 @@ import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil3.imageLoader
-import coil3.request.ImageRequest
-import coil3.size.Scale
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.ShelfEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
@@ -15,8 +13,8 @@ import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.libraryPreferenceDefaults
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.model.fromEntity
-import com.javierreansyah.pinecone.domain.DeleteBooks
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
+import com.javierreansyah.pinecone.domain.DeleteBooks
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.LibraryView
@@ -39,17 +37,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.File
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -114,9 +111,13 @@ class LibraryViewModel @Inject constructor(
                     .forEach { book ->
                         val coverPath = book.coverPath
                         if (coverPath != null) {
-                            val request = com.javierreansyah.pinecone.ui.features.library.components.book.coverRequest(
-                                application, coverPath, coil3.size.SizeResolver(coil3.size.Size(400, 600)), coverMode,
-                            )
+                            val request =
+                                com.javierreansyah.pinecone.ui.features.library.components.book.coverRequest(
+                                    application,
+                                    coverPath,
+                                    coil3.size.SizeResolver(coil3.size.Size(400, 600)),
+                                    coverMode,
+                                )
                             application.imageLoader.enqueue(request)
                         }
                     }
@@ -236,7 +237,8 @@ class LibraryViewModel @Inject constructor(
                 )
             }
         }
-    }.flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SearchResults())
+    }.flowOn(computation)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SearchResults())
 
     private val hasUnsortedBooks: Flow<Boolean> = bookRepository.hasUnsortedBooks()
 

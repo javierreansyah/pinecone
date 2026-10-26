@@ -6,10 +6,10 @@ import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.model.fromEntity
-import com.javierreansyah.pinecone.domain.DeleteBooks
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.data.repository.library.PublicationRepository
 import com.javierreansyah.pinecone.data.repository.library.ReadingRepository
+import com.javierreansyah.pinecone.domain.DeleteBooks
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -38,7 +38,11 @@ class BookInfoViewModel @AssistedInject constructor(
 ) : ViewModel() {
 
 
-    val settings = readerPreferences.readerSettings.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.javierreansyah.pinecone.data.local.preferences.ReaderSettings())
+    val settings = readerPreferences.readerSettings.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        com.javierreansyah.pinecone.data.local.preferences.ReaderSettings()
+    )
 
     val uiState: StateFlow<BookInfoUiState> = repository.getBookFlow(bookId)
         .map { entity ->

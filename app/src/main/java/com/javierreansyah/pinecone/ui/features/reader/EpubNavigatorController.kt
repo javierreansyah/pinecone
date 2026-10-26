@@ -1,8 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.reader
 
-import com.javierreansyah.pinecone.data.publication.resolveGeneratedLocator
-import com.javierreansyah.pinecone.data.repository.library.readingSessionToken
-
 import android.graphics.Color.colorToHSV
 import android.os.Bundle
 import android.view.ActionMode
@@ -16,6 +13,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
+import com.javierreansyah.pinecone.data.publication.resolveGeneratedLocator
+import com.javierreansyah.pinecone.data.repository.library.readingSessionToken
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest

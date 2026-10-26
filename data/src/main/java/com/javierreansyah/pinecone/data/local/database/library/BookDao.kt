@@ -13,21 +13,28 @@ import kotlinx.coroutines.flow.Flow
 interface BookDao {
     @Query("UPDATE books SET isUnsorted = 0 WHERE id IN (:ids) AND isUnsorted = 1")
     suspend fun markOrganized(ids: List<String>)
+
     @Transaction
     @Query("SELECT * FROM books WHERE isUnsorted = 1 AND isArchived = 0 ORDER BY addedDate DESC")
     fun getUnsortedBooks(): Flow<List<BookWithDetails>>
 
     @Transaction
-    @Query("""SELECT * FROM books WHERE isArchived = 0 AND isUnsorted = 0
+    @Query(
+        """SELECT * FROM books WHERE isArchived = 0 AND isUnsorted = 0
         AND EXISTS (SELECT 1 FROM book_space_cross_ref b WHERE b.bookId = books.id)
         AND (:spaceId IS NULL OR :spaceId = '_all_' OR EXISTS (SELECT 1 FROM book_space_cross_ref b WHERE b.bookId = books.id AND b.spaceId = :spaceId))
         AND NOT EXISTS (SELECT 1 FROM shelf_book_cross_ref r INNER JOIN shelves s ON s.id = r.shelfId
             WHERE r.bookId = books.id AND (:spaceId IS NULL OR :spaceId = '_all_' OR s.spaceId = :spaceId))
-        ORDER BY lastReadDate DESC, addedDate DESC""")
+        ORDER BY lastReadDate DESC, addedDate DESC"""
+    )
     fun getUnshelvedBooks(spaceId: String?): Flow<List<BookWithDetails>>
 
-    @Query("SELECT * FROM books WHERE id IN (:ids)") suspend fun entities(ids: List<String>): List<BookEntity>
-    @Query("DELETE FROM books WHERE id IN (:ids)") suspend fun deleteIds(ids: List<String>)
+    @Query("SELECT * FROM books WHERE id IN (:ids)")
+    suspend fun entities(ids: List<String>): List<BookEntity>
+
+    @Query("DELETE FROM books WHERE id IN (:ids)")
+    suspend fun deleteIds(ids: List<String>)
+
     @Query("UPDATE books SET isUnsorted = 0 WHERE id = :bookId")
     suspend fun markOrganized(bookId: String)
 

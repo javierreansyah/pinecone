@@ -2,7 +2,9 @@ package com.javierreansyah.pinecone.data.model
 
 enum class OperationKind { IMPORT, SCAN, READ_MODE }
 enum class OperationState(val terminal: Boolean = false) {
-    PREPARING, QUEUED, RUNNING, SUCCEEDED(true), PARTIAL(true), FAILED(true), CANCELLED(true), INPUT_REQUIRED(true);
+    PREPARING, QUEUED, RUNNING, SUCCEEDED(true), PARTIAL(true), FAILED(true), CANCELLED(true), INPUT_REQUIRED(
+        true
+    );
 }
 
 data class OperationSnapshot(
@@ -17,4 +19,9 @@ data class OperationSnapshot(
 )
 
 /** Identifies the immutable publication and library that produced a reader callback. */
-data class ReadingSessionToken(val generation: Long, val bookId: String, val rendition: String, val sha256: String)
+data class ReadingSessionToken(
+    val generation: Long,
+    val bookId: String,
+    val rendition: String,
+    val sha256: String
+)

@@ -5,8 +5,8 @@ import android.net.Uri
 import androidx.room.withTransaction
 import com.javierreansyah.pinecone.di.IoDispatcher
 import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
@@ -19,6 +19,7 @@ import java.nio.channels.FileChannel
 import java.util.UUID
 import java.util.zip.GZIPInputStream
 import java.util.zip.ZipInputStream
+import javax.inject.Inject
 
 class StardictParser @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -49,6 +50,7 @@ class StardictParser @Inject constructor(
     suspend fun parseDictionary(
         zipUri: Uri, onProgress: (Int) -> Unit = {},
     ): Pair<String, DictionaryInfo> {
+        // Retain ownership if cancellation discards the result at the dispatcher hand-off.
         var acquired: String? = null
         try {
             return parseOnIo(zipUri, onProgress) { acquired = it }
@@ -80,11 +82,20 @@ class StardictParser @Inject constructor(
                         if (!entry.isDirectory) {
                             currentCoroutineContext().ensureActive()
                             val fileName = entry.name.substringAfterLast("/")
-                            require(fileName.isNotBlank() && fileName !in setOf(".", "..") && '\\' !in fileName) { "Invalid dictionary entry name" }
+                            require(
+                                fileName.isNotBlank() && fileName !in setOf(
+                                    ".",
+                                    ".."
+                                ) && '\\' !in fileName
+                            ) { "Invalid dictionary entry name" }
                             val file = File(tempDir, fileName)
                             require(!file.exists()) { "Duplicate dictionary entry" }
                             FileOutputStream(file).use { fos ->
-                                extractedBytes += copyFile(zis, fos, MAX_EXTRACTED_BYTES - extractedBytes)
+                                extractedBytes += copyFile(
+                                    zis,
+                                    fos,
+                                    MAX_EXTRACTED_BYTES - extractedBytes
+                                )
                             }
                         }
                         zis.closeEntry()
@@ -110,7 +121,11 @@ class StardictParser @Inject constructor(
                     FileInputStream(dzFile).use { fis ->
                         GZIPInputStream(BufferedInputStream(fis, 65536)).use { gis ->
                             FileOutputStream(dictFile).use { fos ->
-                                extractedBytes += copyFile(gis, fos, MAX_EXTRACTED_BYTES - extractedBytes)
+                                extractedBytes += copyFile(
+                                    gis,
+                                    fos,
+                                    MAX_EXTRACTED_BYTES - extractedBytes
+                                )
                             }
                         }
                     }
@@ -127,7 +142,11 @@ class StardictParser @Inject constructor(
                     FileInputStream(synDzFile).use { fis ->
                         GZIPInputStream(BufferedInputStream(fis, 65536)).use { gis ->
                             FileOutputStream(synFile).use { fos ->
-                                extractedBytes += copyFile(gis, fos, MAX_EXTRACTED_BYTES - extractedBytes)
+                                copyFile(
+                                    gis,
+                                    fos,
+                                    MAX_EXTRACTED_BYTES - extractedBytes
+                                )
                             }
                         }
                     }
@@ -166,7 +185,8 @@ class StardictParser @Inject constructor(
                                 idxOffset++
                             }
                             require(idxOffset < totalBytes) { "Unterminated dictionary word" }
-                            val word = String(idxBytes, wordStart, idxOffset - wordStart, Charsets.UTF_8)
+                            val word =
+                                String(idxBytes, wordStart, idxOffset - wordStart, Charsets.UTF_8)
                             idxOffset++
 
                             require(idxOffset + (if (info.idxOffsetBits == 64) 12 else 8) <= totalBytes) { "Truncated dictionary index" }
@@ -195,7 +215,9 @@ class StardictParser @Inject constructor(
 
                             buffer.add(
                                 DictionaryEntry(
-                                    wordIndex = wordIndexCounter, word = word, definition = definition,
+                                    wordIndex = wordIndexCounter,
+                                    word = word,
+                                    definition = definition,
                                 ),
                             )
                             wordIndexCounter++
@@ -232,7 +254,12 @@ class StardictParser @Inject constructor(
                                 }
                                 if (synOffset >= synTotalBytes) break
                                 val synonym =
-                                    String(synBytes, synWordStart, synOffset - synWordStart, Charsets.UTF_8)
+                                    String(
+                                        synBytes,
+                                        synWordStart,
+                                        synOffset - synWordStart,
+                                        Charsets.UTF_8
+                                    )
                                 synOffset++
 
                                 if (synOffset + 4 > synTotalBytes) break
@@ -264,20 +291,32 @@ class StardictParser @Inject constructor(
             dictId to info
         } finally {
             tempDir.deleteRecursively()
-            if (!completed) withContext(kotlinx.coroutines.NonCancellable) { dictionaries.delete(dictId) }
+            if (!completed) withContext(kotlinx.coroutines.NonCancellable) {
+                dictionaries.delete(
+                    dictId
+                )
+            }
         }
     }
 
-    private suspend fun copyFile(input: java.io.InputStream, output: java.io.OutputStream, limit: Long): Long {
+    private suspend fun copyFile(
+        input: java.io.InputStream,
+        output: java.io.OutputStream,
+        limit: Long
+    ): Long {
         val buffer = ByteArray(65536)
         var count = 0L
         while (true) {
             currentCoroutineContext().ensureActive()
-            val read = input.read(buffer)
+            val read = withContext(Dispatchers.IO) {
+                input.read(buffer)
+            }
             if (read < 0) return count
             count += read
             require(count <= limit) { "Extracted dictionary is too large" }
-            output.write(buffer, 0, read)
+            withContext(Dispatchers.IO) {
+                output.write(buffer, 0, read)
+            }
         }
     }
 

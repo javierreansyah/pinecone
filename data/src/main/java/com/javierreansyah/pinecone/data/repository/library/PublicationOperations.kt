@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
+import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import androidx.room.withTransaction
 import com.javierreansyah.pinecone.data.local.database.library.AppDatabase
@@ -18,12 +19,6 @@ import com.javierreansyah.pinecone.data.publication.PublicationFormats
 import com.javierreansyah.pinecone.data.publication.conversion.PdfReadModeConverter
 import com.javierreansyah.pinecone.di.IoDispatcher
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
-import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.NonCancellable
@@ -35,6 +30,12 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /** Room is authoritative; WorkManager owns execution, never a screen's coroutine scope. */
 @Singleton
@@ -52,13 +53,22 @@ class PublicationOperations @Inject constructor(
     private val processToken = UUID.randomUUID().toString()
     private val inputsRoot get() = File(context.filesDir, "operation-inputs").also { it.mkdirs() }
     val generation: Flow<Long> get() = dao.generation()
-    val libraryState: Flow<Pair<Long, Boolean>> = dao.runtimeFlow().map { (it?.generation ?: 0L) to (it?.maintenance ?: false) }
-    val imports: Flow<List<OperationSnapshot>> = dao.imports().map { rows -> rows.map { snapshot(it) } }
-    fun observe(id: String): Flow<OperationSnapshot?> = dao.observe(id).map { it?.let { row -> snapshot(row) } }
-    fun conversion(bookId: String): Flow<OperationSnapshot?> = dao.conversion(bookId).map { it?.let { row -> snapshot(row) } }
+    val libraryState: Flow<Pair<Long, Boolean>> =
+        dao.runtimeFlow().map { (it?.generation ?: 0L) to (it?.maintenance ?: false) }
+    val imports: Flow<List<OperationSnapshot>> =
+        dao.imports().map { rows -> rows.map { snapshot(it) } }
+
+    fun observe(id: String): Flow<OperationSnapshot?> =
+        dao.observe(id).map { it?.let { row -> snapshot(row) } }
+
+    fun conversion(bookId: String): Flow<OperationSnapshot?> =
+        dao.conversion(bookId).map { it?.let { row -> snapshot(row) } }
+
     suspend fun acknowledge(id: String) = dao.acknowledge(id)
 
-    suspend fun enqueueImports(uris: List<Uri>): String = prepare(OperationKind.IMPORT, uris.distinct())
+    suspend fun enqueueImports(uris: List<Uri>): String =
+        prepare(OperationKind.IMPORT, uris.distinct())
+
     suspend fun enqueueScan(uri: Uri): String = prepare(OperationKind.SCAN, listOf(uri))
 
     private suspend fun prepare(kind: OperationKind, uris: List<Uri>): String = withContext(io) {
@@ -66,15 +76,27 @@ class PublicationOperations @Inject constructor(
         val id = UUID.randomUUID().toString()
         val runtime = dao.runtime()
         check(!runtime.maintenance) { "Library restore in progress" }
-        dao.insert(OperationEntity(id, kind.name, "PREPARING", runtime.generation, runtime.sequence, System.currentTimeMillis(), attempt = processToken))
+        dao.insert(
+            OperationEntity(
+                id,
+                kind.name,
+                "PREPARING",
+                runtime.generation,
+                runtime.sequence,
+                System.currentTimeMillis(),
+                attempt = processToken
+            )
+        )
         try {
             inputMutex.withLock {
                 uris.forEachIndexed { index, uri ->
                     currentCoroutineContext().ensureActive()
                     val name = displayName(uri)
                     val grant = retainGrant(uri)
-                    val input = OperationInputEntity(id, index, uri.toString(), name,
-                        folder = kind == OperationKind.SCAN, grantUri = grant)
+                    val input = OperationInputEntity(
+                        id, index, uri.toString(), name,
+                        folder = kind == OperationKind.SCAN, grantUri = grant
+                    )
                     dao.insertInputs(listOf(input))
                     if (grant == null) {
                         if (kind == OperationKind.SCAN) throw SecurityException("Reselect a folder with persistent read access")
@@ -104,7 +126,12 @@ class PublicationOperations @Inject constructor(
                 database.withTransaction {
                     val current = requireNotNull(dao.get(id))
                     if (current.state != "PREPARING" || dao.runtime().generation != current.generation) throw Invalidated()
-                    dao.update(current.copy(state = "QUEUED", total = if (kind == OperationKind.SCAN) 0 else uris.size))
+                    dao.update(
+                        current.copy(
+                            state = "QUEUED",
+                            total = if (kind == OperationKind.SCAN) 0 else uris.size
+                        )
+                    )
                 }
             }
             scheduler.enqueue(id)
@@ -129,8 +156,18 @@ class PublicationOperations @Inject constructor(
             check(!runtime.maintenance)
             val source = requireNotNull(database.publicationDao().rendition(bookId, "original"))
             require(source.profile == "PDF")
-            OperationEntity(UUID.randomUUID().toString(), "READ_MODE", "QUEUED", runtime.generation,
-                runtime.sequence, System.currentTimeMillis(), bookId, source.sha256, PdfReadModeConverter.VERSION, forceReparse)
+            OperationEntity(
+                UUID.randomUUID().toString(),
+                "READ_MODE",
+                "QUEUED",
+                runtime.generation,
+                runtime.sequence,
+                System.currentTimeMillis(),
+                bookId,
+                source.sha256,
+                PdfReadModeConverter.VERSION,
+                forceReparse
+            )
                 .also { dao.insert(it) }
         }
         scheduler.enqueue(operation.id)
@@ -149,7 +186,8 @@ class PublicationOperations @Inject constructor(
 
     suspend fun fail(id: String, error: String) {
         database.withTransaction {
-            dao.get(id)?.takeUnless { OperationState.valueOf(it.state).terminal }?.let { dao.update(it.copy(state = "FAILED", error = error)) }
+            dao.get(id)?.takeUnless { OperationState.valueOf(it.state).terminal }
+                ?.let { dao.update(it.copy(state = "FAILED", error = error)) }
         }
         cleanup(id)
     }
@@ -173,29 +211,44 @@ class PublicationOperations @Inject constructor(
 
     enum class Execution { COMPLETE, RETRY }
 
-    suspend fun execute(id: String, lastAttempt: Boolean, progress: suspend (OperationSnapshot) -> Unit): Execution = withContext(io) {
+    suspend fun execute(
+        id: String,
+        lastAttempt: Boolean,
+        progress: suspend (OperationSnapshot) -> Unit
+    ): Execution = withContext(io) {
         val attempt = UUID.randomUUID().toString()
         val claimed = database.withTransaction {
             val row = dao.get(id) ?: return@withTransaction null
             if (row.state !in listOf("QUEUED", "RUNNING")) return@withTransaction null
             if (dao.runtime().let { it.maintenance || it.generation != row.generation }) {
                 dao.update(row.copy(state = "CANCELLED", error = "library_replaced")); null
-            } else row.copy(state = "RUNNING", attempt = attempt, error = null).also { dao.update(it) }
+            } else row.copy(state = "RUNNING", attempt = attempt, error = null)
+                .also { dao.update(it) }
         }
-        if (claimed == null) { cleanup(id); return@withContext Execution.COMPLETE }
+        if (claimed == null) {
+            cleanup(id); return@withContext Execution.COMPLETE
+        }
         try {
             progress(snapshot(claimed))
             if (claimed.kind == "READ_MODE") {
                 val bookId = requireNotNull(claimed.bookId)
                 require(claimed.converterVersion == PdfReadModeConverter.VERSION) { "Converter changed; request conversion again" }
-                require(database.publicationDao().rendition(bookId, "original")?.sha256 == claimed.sourceHash) { "Original source changed" }
+                require(
+                    database.publicationDao()
+                        .rendition(bookId, "original")?.sha256 == claimed.sourceHash
+                ) { "Original source changed" }
                 var lastProgress = 0L
                 publications.createReadMode(bookId, claimed.forceReparse, commit = {
                     checked(id, attempt, bookId)
                     reading.activateMappedRendition(bookId, "read-mode")
-                    dao.update(requireNotNull(dao.get(id)).copy(state = "SUCCEEDED", completed = it.sourceMapJson?.let { map ->
-                        kotlinx.serialization.json.Json.decodeFromString<List<com.javierreansyah.pinecone.data.publication.conversion.SourcePage>>(map).size
-                    } ?: 0))
+                    dao.update(
+                        requireNotNull(dao.get(id)).copy(
+                            state = "SUCCEEDED",
+                            completed = it.sourceMapJson?.let { map ->
+                                kotlinx.serialization.json.Json.decodeFromString<List<com.javierreansyah.pinecone.data.publication.conversion.SourcePage>>(
+                                    map
+                                ).size
+                            } ?: 0))
                 }) { completed, total ->
                     var report = false
                     database.withTransaction {
@@ -216,27 +269,48 @@ class PublicationOperations @Inject constructor(
                     if (input.state != "PENDING") continue
                     checked(id, attempt)
                     try {
-                        val commit: suspend (com.javierreansyah.pinecone.data.local.database.library.BookWithDetails) -> Unit = { book ->
-                            val current = checked(id, attempt, book.book.id)
-                            dao.updateInput(input.copy(state = "SUCCESS", bookId = book.book.id))
-                            dao.update(current.copy(completed = current.completed + 1))
-                        }
+                        val commit: suspend (com.javierreansyah.pinecone.data.local.database.library.BookWithDetails) -> Unit =
+                            { book ->
+                                val current = checked(id, attempt, book.book.id)
+                                dao.updateInput(
+                                    input.copy(
+                                        state = "SUCCESS",
+                                        bookId = book.book.id
+                                    )
+                                )
+                                dao.update(current.copy(completed = current.completed + 1))
+                            }
                         if (input.folder) {
-                            var folder = requireNotNull(DocumentFile.fromTreeUri(context, Uri.parse(requireNotNull(input.grantUri))))
-                            kotlinx.serialization.json.Json.decodeFromString<List<String>>(input.folderPathJson ?: "[]").forEach { name ->
-                                folder = requireNotNull(folder.findFile(name)) { "Publication folder no longer exists" }
+                            var folder = requireNotNull(
+                                DocumentFile.fromTreeUri(
+                                    context,
+                                    requireNotNull(input.grantUri).toUri()
+                                )
+                            )
+                            kotlinx.serialization.json.Json.decodeFromString<List<String>>(
+                                input.folderPathJson ?: "[]"
+                            ).forEach { name ->
+                                folder =
+                                    requireNotNull(folder.findFile(name)) { "Publication folder no longer exists" }
                             }
                             publications.importPublicationFolder(folder, commit)
                         } else {
-                            publications.importBook(input.stagedPath?.let { Uri.fromFile(File(it)) } ?: Uri.parse(input.uri), input.displayName, commit)
+                            publications.importBook(input.stagedPath?.let { Uri.fromFile(File(it)) }
+                                ?: input.uri.toUri(), input.displayName, commit)
                         }
-                    } catch (cancelled: CancellationException) { throw cancelled
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
                     } catch (error: Exception) {
                         timber.log.Timber.w(error, "Import input failed for operation %s", id)
                         if (retryable(error) && !lastAttempt) throw error
                         database.withTransaction {
                             val current = checked(id, attempt)
-                            dao.updateInput(input.copy(state = if (error is SecurityException || error is java.io.FileNotFoundException) "INPUT_REQUIRED" else "FAILED", error = errorCode(error)))
+                            dao.updateInput(
+                                input.copy(
+                                    state = if (error is SecurityException || error is java.io.FileNotFoundException) "INPUT_REQUIRED" else "FAILED",
+                                    error = errorCode(error)
+                                )
+                            )
                             dao.update(current.copy(completed = current.completed + 1))
                         }
                     }
@@ -258,7 +332,8 @@ class PublicationOperations @Inject constructor(
             Execution.COMPLETE
         } catch (_: Invalidated) {
             database.withTransaction {
-                dao.get(id)?.takeIf { it.attempt == attempt && it.state == "RUNNING" }?.let { dao.update(it.copy(state = "CANCELLED", error = "superseded")) }
+                dao.get(id)?.takeIf { it.attempt == attempt && it.state == "RUNNING" }
+                    ?.let { dao.update(it.copy(state = "CANCELLED", error = "superseded")) }
             }
             Execution.COMPLETE
         } catch (cancelled: CancellationException) {
@@ -270,7 +345,12 @@ class PublicationOperations @Inject constructor(
                 val current = dao.get(id)
                 if (current?.attempt == attempt && current.state == "RUNNING") {
                     retry = retryable(error) && !lastAttempt
-                    dao.update(current.copy(state = if (retry) "QUEUED" else if (error is SecurityException || error is java.io.FileNotFoundException) "INPUT_REQUIRED" else "FAILED", error = errorCode(error)))
+                    dao.update(
+                        current.copy(
+                            state = if (retry) "QUEUED" else if (error is SecurityException || error is java.io.FileNotFoundException) "INPUT_REQUIRED" else "FAILED",
+                            error = errorCode(error)
+                        )
+                    )
                 }
             }
             if (retry) Execution.RETRY else Execution.COMPLETE
@@ -279,12 +359,18 @@ class PublicationOperations @Inject constructor(
         }
     }
 
-    private suspend fun checked(id: String, attempt: String, bookId: String? = null): OperationEntity {
+    private suspend fun checked(
+        id: String,
+        attempt: String,
+        bookId: String? = null
+    ): OperationEntity {
         currentCoroutineContext().ensureActive()
         val row = dao.get(id) ?: throw Invalidated()
         val runtime = dao.runtime()
         if (row.state != "RUNNING" || row.attempt != attempt || runtime.maintenance || runtime.generation != row.generation) throw Invalidated()
-        if (bookId != null && (dao.deletionSequence(bookId) ?: -1L) > row.sequence) throw DeletedInput()
+        if (bookId != null && (dao.deletionSequence(bookId)
+                ?: -1L) > row.sequence
+        ) throw DeletedInput()
         return row
     }
 
@@ -297,13 +383,29 @@ class PublicationOperations @Inject constructor(
             checked(operation.id, attempt)
             require(depth <= 32 && visited.size < MAX_ITEMS) { "Folder scan limit exceeded" }
             if (!visited.add(file.uri.toString())) return
-            if (file.isDirectory && file.findFile("manifest.json") == null) file.listFiles().forEach { visit(it, depth + 1, path + it.name.orEmpty()) }
-            else if (file.isDirectory || file.name.orEmpty().substringAfterLast('.').lowercase() in PublicationFormats.extensions) {
-                found += OperationInputEntity(operation.id, found.size + 1, file.uri.toString(), file.name.orEmpty(), file.isDirectory, grantUri = root.grantUri,
-                    folderPathJson = if (file.isDirectory) kotlinx.serialization.json.Json.encodeToString(path) else null)
+            if (file.isDirectory && file.findFile("manifest.json") == null) file.listFiles()
+                .forEach { visit(it, depth + 1, path + it.name.orEmpty()) }
+            else if (file.isDirectory || file.name.orEmpty().substringAfterLast('.')
+                    .lowercase() in PublicationFormats.extensions
+            ) {
+                found += OperationInputEntity(
+                    operation.id,
+                    found.size + 1,
+                    file.uri.toString(),
+                    file.name.orEmpty(),
+                    file.isDirectory,
+                    grantUri = root.grantUri,
+                    folderPathJson = if (file.isDirectory) kotlinx.serialization.json.Json.encodeToString(
+                        path
+                    ) else null
+                )
             }
         }
-        visit(requireNotNull(DocumentFile.fromTreeUri(context, Uri.parse(root.uri))), 0, emptyList())
+        visit(
+            requireNotNull(DocumentFile.fromTreeUri(context, root.uri.toUri())),
+            0,
+            emptyList()
+        )
         database.withTransaction {
             val current = checked(operation.id, attempt)
             dao.insertInputs(found)
@@ -332,49 +434,72 @@ class PublicationOperations @Inject constructor(
 
     private suspend fun retainGrant(uri: Uri): String? {
         if (uri.scheme != "content") return null
-        val existing = context.contentResolver.persistedUriPermissions.any { it.uri == uri && it.isReadPermission }
+        val existing =
+            context.contentResolver.persistedUriPermissions.any { it.uri == uri && it.isReadPermission }
         if (existing) return uri.toString()
         return try {
-            context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
             dao.ownGrant(OperationUriGrantEntity(uri.toString()))
             uri.toString()
-        } catch (_: SecurityException) { null }
+        } catch (_: SecurityException) {
+            null
+        }
     }
 
     private fun displayName(uri: Uri): String = try {
-        context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use {
-            if (it.moveToFirst()) it.getString(0) else null
-        } ?: uri.lastPathSegment.orEmpty()
-    } catch (_: Exception) { uri.lastPathSegment.orEmpty() }
+        context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+            ?.use {
+                if (it.moveToFirst()) it.getString(0) else null
+            } ?: uri.lastPathSegment.orEmpty()
+    } catch (_: Exception) {
+        uri.lastPathSegment.orEmpty()
+    }
 
     private suspend fun cleanup(id: String) = inputMutex.withLock {
         val row = dao.get(id) ?: return@withLock
         if (!OperationState.valueOf(row.state).terminal) return@withLock
-        dao.inputs(id).forEach { input -> input.stagedPath?.let { path ->
-            val file = File(path).canonicalFile
-            if (file.parentFile == inputsRoot.canonicalFile) file.delete()
-            dao.updateInput(input.copy(stagedPath = null))
-        } }
+        dao.inputs(id).forEach { input ->
+            input.stagedPath?.let { path ->
+                val file = File(path).canonicalFile
+                if (file.parentFile == inputsRoot.canonicalFile) file.delete()
+                dao.updateInput(input.copy(stagedPath = null))
+            }
+        }
         releaseGrants()
     }
 
     private suspend fun releaseGrants() {
         val backup = preferences.readerSettings.first().backupFolderUri
         dao.unusedGrants().filter { it != backup }.forEach { uri ->
-            try { context.contentResolver.releasePersistableUriPermission(Uri.parse(uri), Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            } catch (_: SecurityException) { /* Already revoked by the user/provider. */ }
+            try {
+                context.contentResolver.releasePersistableUriPermission(
+                    uri.toUri(),
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (_: SecurityException) { /* Already revoked by the user/provider. */
+            }
             dao.forgetGrant(uri)
         }
     }
 
     private class Invalidated : CancellationException("Operation superseded")
-    private class DeletedInput : IllegalStateException("Publication deleted after request was accepted")
-    private fun retryable(error: Exception): Boolean = error is IOException && error !is java.io.FileNotFoundException
+    private class DeletedInput :
+        IllegalStateException("Publication deleted after request was accepted")
+
+    private fun retryable(error: Exception): Boolean =
+        error is IOException && error !is java.io.FileNotFoundException
+
     private fun errorCode(error: Exception): String = when (error) {
         is SecurityException -> "permission_denied"
         is IOException -> "io_error"
         is DeletedInput -> "book_deleted"
         else -> "invalid_input"
     }
-    private companion object { const val MAX_ITEMS = 10_000 }
+
+    private companion object {
+        const val MAX_ITEMS = 10_000
+    }
 }

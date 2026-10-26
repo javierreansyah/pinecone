@@ -6,11 +6,14 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class LibraryCategoryIndexTest {
-    @Test fun duplicateLabelsCountEachBookOnceAndSpaceActionsRetainInboxMembership() {
+    @Test
+    fun duplicateLabelsCountEachBookOnceAndSpaceActionsRetainInboxMembership() {
         val work = LibrarySpace("work", "Same name")
         val other = LibrarySpace("other", "Same name")
-        val book = Book("book", "Title", listOf("Author", "Author"), null, 0.0, null, null, 0L, false,
-            tags = listOf("Tag", "Tag"), spaces = listOf(work, other))
+        val book = Book(
+            "book", "Title", listOf("Author", "Author"), null, 0.0, null, null, 0L, false,
+            tags = listOf("Tag", "Tag"), spaces = listOf(work, other)
+        )
         val inbox = book.copy(id = "inbox", isUnsorted = true)
         val index = LibraryCategoryIndex(listOf(book, inbox))
         assertEquals(listOf(book, inbox), index.authors["Author"])

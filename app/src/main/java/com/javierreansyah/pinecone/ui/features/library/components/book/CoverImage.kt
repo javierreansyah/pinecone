@@ -18,13 +18,11 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import coil3.compose.rememberConstraintsSizeResolver
 import coil3.compose.rememberAsyncImagePainter
-import coil3.request.ImageRequest
+import coil3.compose.rememberConstraintsSizeResolver
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.CoverDisplayMode
 import com.javierreansyah.pinecone.data.model.Book
-import java.io.File
 
 val LocalCoverDisplayMode = staticCompositionLocalOf { CoverDisplayMode.Contain }
 
@@ -59,7 +57,9 @@ fun CoverImage(
         }
 
         Box(
-            modifier = modifier.then(sizeResolver).clip(MaterialTheme.shapes.small),
+            modifier = modifier
+                .then(sizeResolver)
+                .clip(MaterialTheme.shapes.small),
             contentAlignment = Alignment.TopCenter,
         ) {
 
@@ -116,7 +116,9 @@ fun AutoWidthCoverImage(
         Image(
             painter = painter,
             contentDescription = stringResource(R.string.publication_cover_description, book.title),
-            modifier = modifier.then(sizeResolver).clip(MaterialTheme.shapes.small),
+            modifier = modifier
+                .then(sizeResolver)
+                .clip(MaterialTheme.shapes.small),
             contentScale = ContentScale.Fit,
         )
     } else {

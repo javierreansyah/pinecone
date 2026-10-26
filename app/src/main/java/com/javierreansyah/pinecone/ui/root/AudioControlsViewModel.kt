@@ -4,13 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.javierreansyah.pinecone.reader.audio.AudioPlaybackClient
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @HiltViewModel
-class AudioControlsViewModel @Inject constructor(private val playback: AudioPlaybackClient) : ViewModel() {
+class AudioControlsViewModel @Inject constructor(private val playback: AudioPlaybackClient) :
+    ViewModel() {
     val state = playback.state
     fun togglePlayback() = playback.togglePlayback()
     fun skip(seconds: Int) = playback.skip(seconds)
-    fun dismiss() { viewModelScope.launch { playback.stop() } }
+    fun dismiss() {
+        viewModelScope.launch { playback.stop() }
+    }
 }

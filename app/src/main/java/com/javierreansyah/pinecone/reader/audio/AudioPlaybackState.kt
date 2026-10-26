@@ -1,11 +1,11 @@
 package com.javierreansyah.pinecone.reader.audio
 
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
+import javax.inject.Inject
+import javax.inject.Singleton
 
 data class AudioPlaybackState(
     val bookId: String? = null,
@@ -32,7 +32,10 @@ class AudioPlaybackStore @Inject constructor() {
     private val mutableState = MutableStateFlow(AudioPlaybackState())
     val state = mutableState.asStateFlow()
 
-    internal fun publish(state: AudioPlaybackState) { mutableState.value = state }
+    internal fun publish(state: AudioPlaybackState) {
+        mutableState.value = state
+    }
+
     internal fun update(transform: (AudioPlaybackState) -> AudioPlaybackState) {
         mutableState.value = transform(mutableState.value)
     }

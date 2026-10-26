@@ -1,7 +1,7 @@
 package com.javierreansyah.pinecone.ui.features.library.info
 
-import com.javierreansyah.pinecone.data.model.PublicationCredit
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.data.model.PublicationCredit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

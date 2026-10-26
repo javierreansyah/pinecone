@@ -113,7 +113,12 @@ fun FilterResultScreen(
         }
     }
 
-    androidx.compose.runtime.LaunchedEffect(filterType, filterValue) { viewModel.selectCollection(filterType, filterValue) }
+    androidx.compose.runtime.LaunchedEffect(filterType, filterValue) {
+        viewModel.selectCollection(
+            filterType,
+            filterValue
+        )
+    }
     val unfilteredBooks by viewModel.unfilteredBooks.collectAsStateWithLifecycle()
     val books by viewModel.filteredBooks.collectAsStateWithLifecycle()
 

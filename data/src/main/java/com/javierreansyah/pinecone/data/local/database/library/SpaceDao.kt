@@ -11,8 +11,10 @@ import kotlinx.coroutines.flow.Flow
 interface SpaceDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun addMembers(refs: List<BookSpaceCrossRef>)
+
     @Query("DELETE FROM book_space_cross_ref WHERE spaceId = :spaceId AND bookId IN (:ids)")
     suspend fun removeMembers(spaceId: String, ids: List<String>)
+
     @Query("SELECT * FROM spaces ORDER BY name ASC")
     fun getAllSpaces(): Flow<List<SpaceEntity>>
 

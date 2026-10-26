@@ -4,10 +4,10 @@ import android.annotation.SuppressLint
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.artifex.mupdf.fitz.Document
+import com.javierreansyah.pinecone.data.publication.resolveGeneratedLocator
 import com.javierreansyah.pinecone.reader.pdf.MuPdfDocument
 import com.javierreansyah.pinecone.testing.FixtureWebViewClient
 import com.javierreansyah.pinecone.testing.InstrumentationLoggingRule
-import com.javierreansyah.pinecone.data.publication.resolveGeneratedLocator
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -196,9 +196,21 @@ class PdfReadModeConverterTest {
             output, "test:unicode", "Math $symbol", "en",
             GeneratedPublicationStrings("Contents", "Scanned") { "Page $it" }, content
         ).use {
-            it.nativePage(1, MuPdfStructure.parse("<body xmlns=\"http://www.w3.org/1999/xhtml\"><p>Probability $symbol</p></body>"), false)
-            it.nativePage(2, MuPdfStructure.parse("<body xmlns=\"http://www.w3.org/1999/xhtml\"><svg xmlns=\"http://www.w3.org/2000/svg\" aria-label=\"$symbol\"><text>$symbol</text></svg></body>"), false)
-            it.nativePage(3, MuPdfStructure.parse("<body xmlns=\"http://www.w3.org/1999/xhtml\"><p>The final page is still readable.</p></body>"), false)
+            it.nativePage(
+                1,
+                MuPdfStructure.parse("<body xmlns=\"http://www.w3.org/1999/xhtml\"><p>Probability $symbol</p></body>"),
+                false
+            )
+            it.nativePage(
+                2,
+                MuPdfStructure.parse("<body xmlns=\"http://www.w3.org/1999/xhtml\"><svg xmlns=\"http://www.w3.org/2000/svg\" aria-label=\"$symbol\"><text>$symbol</text></svg></body>"),
+                false
+            )
+            it.nativePage(
+                3,
+                MuPdfStructure.parse("<body xmlns=\"http://www.w3.org/1999/xhtml\"><p>The final page is still readable.</p></body>"),
+                false
+            )
             it.finish()
         }
         ZipInputStream(output.toByteArray().inputStream()).use { zip ->
@@ -443,15 +455,18 @@ class PdfReadModeConverterTest {
                     pdfFactory = com.javierreansyah.pinecone.reader.pdf.MuPdfDocumentFactory(),
                 ),
             )
-            val repository = com.javierreansyah.pinecone.data.repository.library.PublicationRepository(
-                context,
-                db,
-                opener,
-                retriever,
-                com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences(context),
-                kotlinx.coroutines.Dispatchers.IO,
-                com.javierreansyah.pinecone.data.repository.library.PublicationAssetStore(context),
-            )
+            val repository =
+                com.javierreansyah.pinecone.data.repository.library.PublicationRepository(
+                    context,
+                    db,
+                    opener,
+                    retriever,
+                    com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences(context),
+                    kotlinx.coroutines.Dispatchers.IO,
+                    com.javierreansyah.pinecone.data.repository.library.PublicationAssetStore(
+                        context
+                    ),
+                )
             val source = File.createTempFile("migration-source-", ".pdf", context.cacheDir)
                 .apply { writeBytes(vectorPdf()) }
             val oldFile = File.createTempFile("migration-legacy-", ".epub", context.cacheDir)
@@ -548,7 +563,13 @@ class PdfReadModeConverterTest {
                     db, db.bookDao(), db.bookmarkDao(), db.noteDao(),
                 ).activateRendition(id, "read-mode")
                 val publication =
-                    requireNotNull(repository.openPublication(requireNotNull(db.bookDao().getById(id))))
+                    requireNotNull(
+                        repository.openPublication(
+                            requireNotNull(
+                                db.bookDao().getById(id)
+                            )
+                        )
+                    )
                 try {
                     assertEquals(1, publication.readingOrder.size)
                     val migrated = requireNotNull(

@@ -10,8 +10,8 @@ import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesMana
 import com.javierreansyah.pinecone.data.local.preferences.libraryPreferenceDefaults
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.model.fromEntity
-import com.javierreansyah.pinecone.domain.DeleteBooks
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
+import com.javierreansyah.pinecone.domain.DeleteBooks
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.SortType
@@ -24,15 +24,14 @@ import com.javierreansyah.pinecone.ui.features.library.toggleFormat
 import com.javierreansyah.pinecone.ui.features.library.toggleStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -58,7 +57,8 @@ class FilterResultViewModel @Inject constructor(
 
     private val booksFlow: StateFlow<List<Book>> =
         bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }
-            .flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+            .flowOn(computation)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val actionBooks: StateFlow<List<Book>> = combine(
         booksFlow, bookRepository.getArchivedBooks(),
@@ -115,9 +115,16 @@ class FilterResultViewModel @Inject constructor(
         bookRepository.getAllSpaces().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     private val selection = MutableStateFlow("" to "")
-    fun selectCollection(type: String, value: String) { selection.value = type to value }
+    fun selectCollection(type: String, value: String) {
+        selection.value = type to value
+    }
 
-    val unfilteredBooks: StateFlow<List<Book>> = combine(selection, allBooks, allBooksAcrossSpaces, allSpaces) { (type, value), visible, all, spaces ->
+    val unfilteredBooks: StateFlow<List<Book>> = combine(
+        selection,
+        allBooks,
+        allBooksAcrossSpaces,
+        allSpaces
+    ) { (type, value), visible, all, spaces ->
         when (type) {
             "author" -> visible.filter { value in it.authors }
             "tag" -> visible.filter { value in it.tags }
@@ -126,7 +133,10 @@ class FilterResultViewModel @Inject constructor(
         }
     }.flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val filteredBooks: StateFlow<List<Book>> = combine(unfilteredBooks, _uiState.map { it.bookPreferences }.distinctUntilChanged()) { books, prefs ->
+    val filteredBooks: StateFlow<List<Book>> = combine(
+        unfilteredBooks,
+        _uiState.map { it.bookPreferences }.distinctUntilChanged()
+    ) { books, prefs ->
         books.filterAndSort(prefs)
     }.flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

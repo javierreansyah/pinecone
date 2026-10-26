@@ -18,5 +18,5 @@ class ArchiveViewModel @Inject constructor(
     prefsManager = preferences,
     screenKey = "archive",
     computation = computation,
-    source = LibraryRepository::getArchivedBooks,
+    source = repository.getArchivedBooks(),
 )

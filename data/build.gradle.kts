@@ -21,12 +21,20 @@ android {
 
 kotlin { compilerOptions { allWarningsAsErrors.set(true) } }
 
-androidComponents.onVariants { variant ->
-    variant.deviceTests.values.forEach { test ->
-        test.sources.assets?.addStaticSourceDirectory(layout.projectDirectory.dir("schemas").asFile.absolutePath)
-        test.sources.java?.addStaticSourceDirectory(
-            rootProject.file("test-support/src/androidTest/java").absolutePath,
-        )
+@Suppress("UnstableApiUsage")
+androidComponents {
+    beforeVariants { variant ->
+        (variant as com.android.build.api.variant.HasHostTestsBuilder)
+            .hostTests.getValue(com.android.build.api.variant.HostTestBuilder.UNIT_TEST_TYPE).enable =
+            true
+    }
+    onVariants { variant ->
+        variant.deviceTests.values.forEach { test ->
+            test.sources.assets?.addStaticSourceDirectory(layout.projectDirectory.dir("schemas").asFile.absolutePath)
+            test.sources.java?.addStaticSourceDirectory(
+                rootProject.file("test-support/src/androidTest/java").absolutePath,
+            )
+        }
     }
 }
 ksp { arg("room.schemaLocation", "$projectDir/schemas") }
@@ -35,6 +43,7 @@ dependencies {
     coreLibraryDesugaring(libs.desugar.jdk)
     api(project(":core:model"))
     implementation(project(":publication"))
+    implementation(libs.androidx.core)
     api(libs.room.runtime)
     ksp(libs.room.compiler)
     implementation(libs.hilt.android)

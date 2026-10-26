@@ -59,7 +59,12 @@ class PdfSearchNavigationTest {
         val app = instrumentation.targetContext.applicationContext as PineconeApplication
         val source = File.createTempFile("pdf-selection-", ".pdf", app.cacheDir)
         source.writeBytes(searchablePdf())
-        val book = requireNotNull(dagger.hilt.android.EntryPointAccessors.fromApplication(app, com.javierreansyah.pinecone.testing.ReadingTestEntryPoint::class.java).publications().importBook(Uri.fromFile(source)))
+        val book = requireNotNull(
+            dagger.hilt.android.EntryPointAccessors.fromApplication(
+                app,
+                com.javierreansyah.pinecone.testing.ReadingTestEntryPoint::class.java
+            ).publications().importBook(Uri.fromFile(source))
+        )
         try {
             val native = MuPdfDocument(Document.openDocument(source.absolutePath))
             val glyphs = try {
@@ -214,7 +219,12 @@ class PdfSearchNavigationTest {
         val app = instrumentation.targetContext.applicationContext as PineconeApplication
         val source = File.createTempFile("pdf-search-highlights-", ".pdf", app.cacheDir)
         source.writeBytes(searchablePdf(repeatedMatches = true))
-        val book = requireNotNull(dagger.hilt.android.EntryPointAccessors.fromApplication(app, com.javierreansyah.pinecone.testing.ReadingTestEntryPoint::class.java).publications().importBook(Uri.fromFile(source)))
+        val book = requireNotNull(
+            dagger.hilt.android.EntryPointAccessors.fromApplication(
+                app,
+                com.javierreansyah.pinecone.testing.ReadingTestEntryPoint::class.java
+            ).publications().importBook(Uri.fromFile(source))
+        )
         try {
             ActivityScenario.launch<ReaderActivity>(
                 Intent(app, ReaderActivity::class.java)
@@ -276,7 +286,12 @@ class PdfSearchNavigationTest {
         val app = instrumentation.targetContext.applicationContext as PineconeApplication
         val source = File.createTempFile("pdf-search-navigation-", ".pdf", app.cacheDir)
         source.writeBytes(searchablePdf())
-        val book = requireNotNull(dagger.hilt.android.EntryPointAccessors.fromApplication(app, com.javierreansyah.pinecone.testing.ReadingTestEntryPoint::class.java).publications().importBook(Uri.fromFile(source)))
+        val book = requireNotNull(
+            dagger.hilt.android.EntryPointAccessors.fromApplication(
+                app,
+                com.javierreansyah.pinecone.testing.ReadingTestEntryPoint::class.java
+            ).publications().importBook(Uri.fromFile(source))
+        )
         try {
             val intent = Intent(app, ReaderActivity::class.java)
                 .putExtra(ReaderActivity.EXTRA_BOOK_ID, book.book.id)

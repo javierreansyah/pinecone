@@ -4,11 +4,11 @@ import android.net.Uri
 import com.javierreansyah.pinecone.data.local.database.dictionary.StardictParser
 import com.javierreansyah.pinecone.data.local.preferences.InstalledDictionary
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class DictionaryImportManager @Inject constructor(
@@ -53,7 +53,11 @@ class DictionaryImportManager @Inject constructor(
         } finally {
             try {
                 if (!installed) importedId?.let { id ->
-                    kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) { dictionaries.delete(id) }
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                        dictionaries.delete(
+                            id
+                        )
+                    }
                 }
             } finally {
                 importMutex.unlock()

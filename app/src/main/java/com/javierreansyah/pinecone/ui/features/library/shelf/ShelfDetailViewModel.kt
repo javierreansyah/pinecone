@@ -12,8 +12,8 @@ import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.libraryPreferenceDefaults
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.model.fromEntity
-import com.javierreansyah.pinecone.domain.DeleteBooks
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
+import com.javierreansyah.pinecone.domain.DeleteBooks
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.SortType
@@ -25,15 +25,14 @@ import com.javierreansyah.pinecone.ui.features.library.toggleFormat
 import com.javierreansyah.pinecone.ui.features.library.toggleStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -47,7 +46,7 @@ class ShelfDetailViewModel @Inject constructor(
     private val bookRepository: LibraryRepository,
     private val deletePublications: DeleteBooks,
     private val prefsManager: LibraryPreferencesManager,
-    private val readerPreferences: ReaderPreferences,
+    readerPreferences: ReaderPreferences,
     @com.javierreansyah.pinecone.di.DefaultDispatcher private val computation: kotlinx.coroutines.CoroutineDispatcher,
 ) : ViewModel() {
     private val screenKey = "shelf_detail"
@@ -85,28 +84,46 @@ class ShelfDetailViewModel @Inject constructor(
     }
 
     private val selectedShelfId = MutableStateFlow<String?>(null)
-    fun selectShelf(id: String) { selectedShelfId.value = id }
+    fun selectShelf(id: String) {
+        selectedShelfId.value = id
+    }
 
-    val selectedShelf: StateFlow<ShelfWithCovers?> = combine(selectedShelfId, globalSpaceId) { id, space -> id to space }
-        .flatMapLatest { (id, space) ->
-            when (id) {
-                null -> kotlinx.coroutines.flow.flowOf(null)
-                "unshelved" -> bookRepository.getUnshelvedBooks(space).map { books ->
-                    ShelfWithCovers(ShelfEntity("unshelved", space ?: "_all_", application.getString(R.string.library_label_unshelved), 0L), books)
-                }
-                else -> combine(bookRepository.getShelfWithBooks(id), bookRepository.getShelfRefs(id)) { shelf, refs ->
-                    shelf?.copy(books = shelf.books.filter { !it.book.isArchived })?.let {
-                        sortShelfBooks(listOf(it), refs, space).firstOrNull()
+    val selectedShelf: StateFlow<ShelfWithCovers?> =
+        combine(selectedShelfId, globalSpaceId) { id, space -> id to space }
+            .flatMapLatest { (id, space) ->
+                when (id) {
+                    null -> kotlinx.coroutines.flow.flowOf(null)
+                    "unshelved" -> bookRepository.getUnshelvedBooks(space).map { books ->
+                        ShelfWithCovers(
+                            ShelfEntity(
+                                "unshelved",
+                                space ?: "_all_",
+                                application.getString(R.string.library_label_unshelved),
+                                0L
+                            ), books
+                        )
+                    }
+
+                    else -> combine(
+                        bookRepository.getShelfWithBooks(id),
+                        bookRepository.getShelfRefs(id)
+                    ) { shelf, refs ->
+                        shelf?.copy(books = shelf.books.filter { !it.book.isArchived })?.let {
+                            sortShelfBooks(listOf(it), refs, space).firstOrNull()
+                        }
                     }
                 }
-            }
-        }.flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+            }.flowOn(computation)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val allBooks: StateFlow<List<Book>> = selectedShelf.map { shelf ->
         shelf?.books.orEmpty().map(Book::fromEntity)
     }.flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val filteredBooks: StateFlow<List<Book>> = combine(allBooks, _uiState.map { it.bookPreferences }.distinctUntilChanged()) { books, prefs ->
+    val filteredBooks: StateFlow<List<Book>> = combine(
+        allBooks,
+        _uiState.map { it.bookPreferences }.distinctUntilChanged()
+    ) { books, prefs ->
         books.filterAndSort(prefs)
     }.flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
