@@ -7,6 +7,7 @@ import com.javierreansyah.pinecone.data.local.database.library.ShelfEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.data.model.fromEntity
 import com.javierreansyah.pinecone.ui.features.library.shelf.ShelfDetailUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -37,7 +38,9 @@ class LibraryCommonTest {
 
     @Test
     fun `removing the last custom space does not return an organized book to the inbox`() {
-        val removedFromWork = books.first().copy(spaces = listOf(all))
+        val removedFromWork = books.first().copy(spaces = listOf(
+            com.javierreansyah.pinecone.data.model.LibrarySpace(all.id, all.name, all.createdAt),
+        ))
         assertEquals(listOf(removedFromWork), listOf(removedFromWork).inSpace(ALL_SPACES_ID))
         assertTrue(listOf(removedFromWork).inSpace(work.id).isEmpty())
     }
@@ -246,6 +249,7 @@ class LibraryCommonTest {
 
     private fun book(id: String, spaces: List<SpaceEntity> = emptyList()) = Book(
         id = id, title = id, authors = emptyList(), coverPath = null, progress = 0.0,
-        lastOpened = null, language = null, addedDate = 0L, isArchived = false, spaces = spaces,
+        lastOpened = null, language = null, addedDate = 0L, isArchived = false,
+        spaces = spaces.map { com.javierreansyah.pinecone.data.model.LibrarySpace(it.id, it.name, it.createdAt) },
     )
 }

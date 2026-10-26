@@ -91,10 +91,11 @@ fun FilterResultScreen(
     onNavigateToReader: (String) -> Unit,
     onNavigateToMerged: (String) -> Unit = {},
     onNavigateToBookInfo: (String) -> Unit,
-    onNavigateToOrganize: (String) -> Unit,
+    onNavigateToOrganize: (Set<String>) -> Unit,
     viewModel: FilterResultViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    com.javierreansyah.pinecone.ui.components.MutationErrorDialog(viewModel.mutationErrors)
     val spaceScopedBooks by viewModel.allBooks.collectAsStateWithLifecycle()
     val allBooksAcrossSpaces by viewModel.allBooksAcrossSpaces.collectAsStateWithLifecycle()
     val actionBooks by viewModel.actionBooks.collectAsStateWithLifecycle()
@@ -112,16 +113,9 @@ fun FilterResultScreen(
         }
     }
 
-    val baseBooksFlow = remember(filterType, filterValue) {
-        when (filterType) {
-            "author" -> viewModel.getBooksByAuthor(filterValue)
-            "space" -> viewModel.getBooksBySpace(filterValue)
-            else -> viewModel.getBooksByTag(filterValue)
-        }
-    }
-    val unfilteredBooks by baseBooksFlow.collectAsStateWithLifecycle(initialValue = emptyList())
-    val books by viewModel.getFilteredAndSortedBooks(baseBooksFlow)
-        .collectAsStateWithLifecycle(initialValue = emptyList())
+    androidx.compose.runtime.LaunchedEffect(filterType, filterValue) { viewModel.selectCollection(filterType, filterValue) }
+    val unfilteredBooks by viewModel.unfilteredBooks.collectAsStateWithLifecycle()
+    val books by viewModel.filteredBooks.collectAsStateWithLifecycle()
 
     FilterResultContent(
         filterType = filterType,
@@ -183,7 +177,7 @@ private fun FilterResultContent(
     onMarkBooksReadStatus: (Collection<String>, Boolean) -> Unit,
     onArchiveBooks: (Collection<String>) -> Unit,
     onDeleteBooks: (Collection<String>) -> Unit,
-    onNavigateToOrganize: (String) -> Unit,
+    onNavigateToOrganize: (Set<String>) -> Unit,
     onDeleteBook: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -266,7 +260,7 @@ private fun FilterResultContent(
                     exitMultiSelect()
                 },
                 onOrganize = {
-                    val ids = selectedBooks.joinToString(",")
+                    val ids = selectedBooks
                     exitMultiSelect()
                     onNavigateToOrganize(ids)
                 },
@@ -794,7 +788,7 @@ private fun FilterResultDialogsAndSheets(
     onNavigateToBookInfo: (String) -> Unit,
     onToggleArchive: (String) -> Unit,
     onToggleReadStatus: (String) -> Unit,
-    onNavigateToOrganize: (String) -> Unit,
+    onNavigateToOrganize: (Set<String>) -> Unit,
     onDeleteBook: (String) -> Unit,
     onEnterMultiSelect: (String) -> Unit,
 ) {
@@ -818,7 +812,7 @@ private fun FilterResultDialogsAndSheets(
             onNavigateToBookInfo = onNavigateToBookInfo,
             onToggleArchive = { onToggleArchive(bookId) },
             onToggleReadStatus = { onToggleReadStatus(bookId) },
-            onOrganize = { onNavigateToOrganize(bookId) },
+            onOrganize = { onNavigateToOrganize(setOf(bookId)) },
             onDeleteBook = { onDeleteBook(bookId) },
             onEnterMultiSelect = { onEnterMultiSelect(bookId) },
             onDismiss = onBookMenuDismiss,

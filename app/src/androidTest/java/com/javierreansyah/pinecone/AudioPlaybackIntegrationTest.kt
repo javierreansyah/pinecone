@@ -34,6 +34,9 @@ import java.util.UUID
 
 /** Real Hilt graph, navigation entry, Readium engine and Media3 controller on the device. */
 class AudioPlaybackIntegrationTest {
+    private val reading get() = dagger.hilt.android.EntryPointAccessors.fromApplication(
+        app, com.javierreansyah.pinecone.testing.ReadingTestEntryPoint::class.java,
+    ).readingRepository()
     private lateinit var scenario: ActivityScenario<MainActivity>
     private val imported = mutableListOf<String>()
     private val app get() = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as PineconeApplication
@@ -49,7 +52,10 @@ class AudioPlaybackIntegrationTest {
         repeat(samples) { bytes.putShort((1500 * kotlin.math.sin(2 * Math.PI * 440 * it / 22_050)).toInt().toShort()) }
         try {
             file.writeBytes(bytes.array())
-            requireNotNull(app.libraryRepository.importBook(Uri.fromFile(file))).book.id.also { imported += it }
+            val publications = dagger.hilt.android.EntryPointAccessors.fromApplication(
+                app, com.javierreansyah.pinecone.testing.ReadingTestEntryPoint::class.java,
+            ).publications()
+            requireNotNull(publications.importBook(Uri.fromFile(file))).book.id.also { imported += it }
         } finally { file.delete() }
     }
 
@@ -211,7 +217,7 @@ class AudioPlaybackIntegrationTest {
             future = androidx.media3.session.MediaController.Builder(activity, androidx.media3.session.SessionToken(activity,
                 android.content.ComponentName(activity, com.javierreansyah.pinecone.reader.audio.AudioPlaybackService::class.java))).buildAsync()
         }
-        await(10_000, "enabling per-book settings") { runBlocking(Dispatchers.IO) { app.libraryRepository.rendition(id, "original")?.preferencesJson != "{}" } }
+        await(10_000, "enabling per-book settings") { runBlocking(Dispatchers.IO) { reading.rendition(id, "original")?.preferencesJson != "{}" } }
         scenario.onActivity {
             player.updateSettings { it.copy(formatPreferences = it.formatPreferences.copy(audioSpeed = 1.5, audioPitch = 1.1)) }
         }
@@ -232,11 +238,11 @@ class AudioPlaybackIntegrationTest {
             scenario.onActivity {
                 notes.toggleBookmark(requireNotNull(controls.state.value.locator), controls.state.value.chapter)
             }
-            await(10_000) { runBlocking { app.libraryRepository.getBookmarks(id).first().isNotEmpty() } }
+            await(10_000) { runBlocking { reading.getBookmarks(id).first().isNotEmpty() } }
         } finally { scenario.onActivity { controller.release() } }
         scenario.onActivity { controls.dismiss() }
         await(15_000) { controls.state.value.bookId == null }
-        val saved = runBlocking { app.libraryRepository.getLastLocator(id) }
+        val saved = runBlocking { reading.getLastLocator(id) }
         assertTrue((saved?.locations?.totalProgression ?: 0.0) >= 0.18)
         scenario.onActivity { player.open(retry = true) }
         await(20_000) { controls.state.value.bookId == id && controls.state.value.ready && controls.state.value.elapsedSeconds >= 11 }
@@ -251,11 +257,11 @@ class AudioPlaybackIntegrationTest {
             player = ViewModelProvider(activity.viewModelStore, activity.defaultViewModelProviderFactory,
                 activity.defaultViewModelCreationExtras.withCreationCallback<AudioPlayerViewModel.Factory> { it.create(id) })["recovery:$id", AudioPlayerViewModel::class.java]
         }
-        runBlocking { app.libraryRepository.setReadingOverrides(id, "original", "{invalid-json") }
+        runBlocking { reading.setReadingOverrides(id, "original", "{invalid-json") }
         await(10_000, "reporting malformed book settings") { controls.state.value.error != null }
         scenario.onActivity { player.setUseBookSettings(false) }
         await(10_000, "disabling malformed book settings") {
-            runBlocking { app.libraryRepository.rendition(id, "original")?.preferencesJson == "{}" }
+            runBlocking { reading.rendition(id, "original")?.preferencesJson == "{}" }
         }
         scenario.onActivity { player.open(retry = true) }
         await(20_000, "retry after clearing book settings") {

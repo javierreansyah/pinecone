@@ -69,6 +69,7 @@ fun OrganizeBottomSheet(
     viewModel: OrganizeViewModel,
     onNavigateBack: () -> Unit,
 ) {
+    com.javierreansyah.pinecone.ui.components.MutationErrorDialog(viewModel.mutationErrors)
     val uiState = viewModel.uiState.collectAsStateWithLifecycle()
 
     val textFieldState = remember { TextFieldState() }

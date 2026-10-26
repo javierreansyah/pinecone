@@ -83,7 +83,6 @@ import com.javierreansyah.pinecone.ui.components.SegmentedListScope
 import com.javierreansyah.pinecone.ui.features.settings.components.ColorSchemePickerDialog
 import com.javierreansyah.pinecone.ui.features.settings.components.SettingsItem
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
-import com.javierreansyah.pinecone.worker.WorkerUtils
 import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
@@ -245,7 +244,6 @@ fun SettingsScreen(
         },
         onAutoBackupFrequencySelected = { frequency ->
             viewModel.updateSettings { current -> current.copy(autoBackupFrequency = frequency) }
-            WorkerUtils.scheduleBackupWork(context, frequency)
         },
         onBackupLocationClick = launchFolderPicker,
         onBackupClick = {
@@ -356,7 +354,6 @@ fun SettingsScreen(
                 LocaleListCompat.getEmptyLocaleList(),
             )
 
-            WorkerUtils.scheduleBackupWork(context, "12h")
 
             Toast.makeText(
                 context,

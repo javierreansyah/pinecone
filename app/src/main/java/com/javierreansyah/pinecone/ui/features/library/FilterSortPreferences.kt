@@ -1,17 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library
 
-@kotlinx.serialization.Serializable
-data class FilterSortPreferences(
-    val layoutMode: LayoutMode = LayoutMode.Grid,
-    val sortType: SortType = SortType.Added,
-    val isAscending: Boolean = false,
-    val selectedStatus: Set<StatusFilter> = setOf(
-        StatusFilter.NotStarted, StatusFilter.Reading, StatusFilter.Finished,
-    ),
-    val selectedShelfFilter: Set<ShelfFilter> = setOf(ShelfFilter.Shelves, ShelfFilter.Unshelved),
-    val selectedFormats: Set<FileFilter> = FileFilter.entries.toSet(),
-    val libraryView: LibraryView = LibraryView.Both,
-)
+typealias FilterSortPreferences = com.javierreansyah.pinecone.data.model.library.FilterSortPreferences
 
 /** Selecting the current sort reverses it; a new sort starts ascending except last-read. */
 fun FilterSortPreferences.selectSort(sort: SortType): FilterSortPreferences =

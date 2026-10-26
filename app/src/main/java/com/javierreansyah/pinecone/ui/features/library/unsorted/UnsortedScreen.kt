@@ -45,7 +45,7 @@ fun UnsortedScreen(
     onNavigateBack: () -> Unit,
     onNavigateToReader: (String) -> Unit,
     onNavigateToBookInfo: (String) -> Unit,
-    onNavigateToOrganize: (String) -> Unit,
+    onNavigateToOrganize: (Set<String>) -> Unit,
     viewModel: UnsortedViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -94,7 +94,7 @@ fun UnsortedScreen(
             exitMultiSelect()
         },
         onArchiveSelected = {
-            viewModel.toggleArchiveBooks(selectedBooks)
+            viewModel.setArchived(selectedBooks, true)
             exitMultiSelect()
         },
         onDeleteSelected = {
@@ -102,7 +102,7 @@ fun UnsortedScreen(
             exitMultiSelect()
         },
         onOrganizeSelected = {
-            val ids = selectedBooks.joinToString(",")
+            val ids = selectedBooks
             exitMultiSelect()
             onNavigateToOrganize(ids)
         },
@@ -118,7 +118,7 @@ fun UnsortedScreen(
             onNavigateToBookInfo = onNavigateToBookInfo,
             onToggleArchive = { viewModel.toggleArchive(bookId) },
             onToggleReadStatus = { viewModel.toggleReadStatus(bookId) },
-            onOrganize = onNavigateToOrganize,
+            onOrganize = { onNavigateToOrganize(setOf(it)) },
             onDeleteBook = { viewModel.deleteBook(bookId) },
             onEnterMultiSelect = {
                 selectedBooks = setOf(bookId)

@@ -13,6 +13,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -44,12 +45,12 @@ internal fun List<SpaceWithShelvesItemState>.prioritizedShelfGroups(): List<Spac
 
 @HiltViewModel(assistedFactory = OrganizeViewModel.Factory::class)
 class OrganizeViewModel @AssistedInject constructor(
-    @Assisted bookIdsStr: String,
+    @Assisted bookIds: List<String>,
     private val repository: LibraryRepository,
     private val readerPreferences: ReaderPreferences,
+    @com.javierreansyah.pinecone.di.DefaultDispatcher computation: kotlinx.coroutines.CoroutineDispatcher,
 ) : ViewModel() {
-    private val targetBookIds =
-        bookIdsStr.splitToSequence(',').map { it.trim() }.filter { it.isNotEmpty() }.toList()
+    private val targetBookIds = bookIds.toSet()
 
     val uiState: StateFlow<OrganizeUiState> = combine(
         repository.getAllShelvesWithBooks(),
@@ -60,15 +61,15 @@ class OrganizeViewModel @AssistedInject constructor(
     ) { shelvesWithBooks, spaces, spaceCrossRefs, settings, books ->
         val validShelves =
             shelvesWithBooks.filter { (itShelf, books1) -> itShelf.id != "unshelved" }
+        val organized = books.asSequence().filterNot { it.book.isUnsorted }.map { it.book.id }.toSet()
+        val membersBySpace = spaceCrossRefs.groupBy({ it.spaceId }, { it.bookId }).mapValues { it.value.toSet() }
 
         val spaceItems =
             spaces.asSequence().filter { settings.spacesEnabled || it.id == "_all_" }.map { space ->
                 val spaceId = space.id
-                val booksInSpace =
-                    spaceCrossRefs.asSequence().filter { (_, itSpaceId) -> itSpaceId == spaceId }
-                        .map { (itBookId, spaceId1) -> itBookId }.toSet()
+                val booksInSpace = membersBySpace[spaceId].orEmpty()
                 val countInSpace =
-                    targetBookIds.count { id -> id in booksInSpace && (spaceId != "_all_" || books.any { it.book.id == id && !it.book.isUnsorted }) }
+                    targetBookIds.count { id -> id in booksInSpace && (spaceId != "_all_" || id in organized) }
 
                 val spaceState = when (countInSpace) {
                     0 -> ToggleableState.Off
@@ -80,7 +81,7 @@ class OrganizeViewModel @AssistedInject constructor(
                     .filter { (itShelf2, books1) -> !settings.spacesEnabled || itShelf2.spaceId == spaceId }
                     .map { (shelfWithBooksShelf, shelfWithBooksBooks) ->
                         val booksInShelf =
-                            shelfWithBooksBooks.map { details -> details.book.id }
+                            shelfWithBooksBooks.mapTo(mutableSetOf()) { details -> details.book.id }
                         val countInShelf = targetBookIds.count { it in booksInShelf }
                         val shelfState = when (countInShelf) {
                             0 -> ToggleableState.Off
@@ -102,58 +103,28 @@ class OrganizeViewModel @AssistedInject constructor(
             isLoading = false,
             spacesEnabled = settings.spacesEnabled,
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), OrganizeUiState())
+    }.flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), OrganizeUiState())
+
+    val mutationErrors = com.javierreansyah.pinecone.ui.components.MutationErrorState()
 
     fun toggleShelf(shelfId: String, currentState: ToggleableState) {
-        val newState = when (currentState) {
-            ToggleableState.Indeterminate -> ToggleableState.On
-            ToggleableState.On -> ToggleableState.Off
-            ToggleableState.Off -> ToggleableState.On
-        }
-        viewModelScope.launch {
-            targetBookIds.forEach { bookId ->
-                if (newState == ToggleableState.On) {
-                    repository.addBookToShelf(shelfId, bookId)
-                } else {
-                    repository.removeBookFromShelf(shelfId, bookId)
-                }
-            }
-        }
+        viewModelScope.launch { mutationErrors.run { repository.setBooksInShelf(shelfId, targetBookIds, currentState != ToggleableState.On) } }
     }
 
     fun toggleSpace(spaceId: String, currentState: ToggleableState) {
-        val newState = when (currentState) {
-            ToggleableState.Indeterminate -> ToggleableState.On
-            ToggleableState.On -> ToggleableState.Off
-            ToggleableState.Off -> ToggleableState.On
-        }
-        viewModelScope.launch {
-            targetBookIds.forEach { bookId ->
-                if (newState == ToggleableState.On) {
-                    repository.addBookToSpace(spaceId, bookId)
-                } else {
-                    repository.removeBookFromSpace(spaceId, bookId)
-                }
-            }
-        }
+        viewModelScope.launch { mutationErrors.run { repository.setBooksInSpace(spaceId, targetBookIds, currentState != ToggleableState.On) } }
     }
 
     fun createShelf(spaceId: String, name: String) {
-        viewModelScope.launch {
-            val shelfId = repository.createShelf(spaceId, name)
-            targetBookIds.forEach { bookId -> repository.addBookToShelf(shelfId, bookId) }
-        }
+        viewModelScope.launch { mutationErrors.run { repository.createShelfWithBooks(spaceId, name, targetBookIds) } }
     }
 
     fun createSpace(name: String) {
-        viewModelScope.launch {
-            val spaceId = repository.createSpace(name)
-            targetBookIds.forEach { bookId -> repository.addBookToSpace(spaceId, bookId) }
-        }
+        viewModelScope.launch { mutationErrors.run { repository.createSpaceWithBooks(name, targetBookIds) } }
     }
 
     @dagger.assisted.AssistedFactory
     interface Factory {
-        fun create(bookIdsStr: String): OrganizeViewModel
+        fun create(bookIds: List<String>): OrganizeViewModel
     }
 }

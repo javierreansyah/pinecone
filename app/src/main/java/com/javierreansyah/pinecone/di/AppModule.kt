@@ -14,20 +14,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import timber.log.Timber
-import javax.inject.Qualifier
 import javax.inject.Singleton
-
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class ApplicationScope
-
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class IoDispatcher
-
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class MainDispatcher
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -35,6 +22,10 @@ object AppModule {
     @Provides
     @IoDispatcher
     fun ioDispatcher(): CoroutineDispatcher = Dispatchers.IO
+
+    @Provides
+    @DefaultDispatcher
+    fun defaultDispatcher(): CoroutineDispatcher = Dispatchers.Default
 
     @Provides
     @MainDispatcher

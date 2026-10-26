@@ -153,7 +153,7 @@ fun BookInfoScreen(
     onNavigateBack: () -> Unit,
     onNavigateToEdit: (String) -> Unit,
     onNavigateToTag: (String) -> Unit,
-    onNavigateToOrganize: (String) -> Unit,
+    onNavigateToOrganize: (Set<String>) -> Unit,
 ) {
     val viewModel = hiltViewModel<BookInfoViewModel, BookInfoViewModel.Factory>(
         creationCallback = { it.create(bookId) },
@@ -200,7 +200,7 @@ fun BookInfoScreen(
                     onNavigateBack = onNavigateBack,
                     onNavigateToEdit = onNavigateToEdit,
                     onNavigateToTag = onNavigateToTag,
-                    onOrganizeClick = { onNavigateToOrganize(bookId) },
+                    onOrganizeClick = { onNavigateToOrganize(setOf(bookId)) },
                 ) { showDeleteConfirm = true }
             }
         }
@@ -476,8 +476,9 @@ private fun BookBackgroundBanner(
             }
             .clipToBounds(),
     ) {
-        if (book.coverPath != null) {
-            val coverModel = remember(book.coverPath) { File(book.coverPath) }
+        val coverPath = book.coverPath
+        if (coverPath != null) {
+            val coverModel = remember(coverPath) { File(coverPath) }
             AsyncImage(
                 model = coverModel,
                 contentDescription = null,
@@ -540,8 +541,9 @@ private fun AboutTabContent(
             isAudio = book.fileFormat() == FileFilter.Audio
         )
 
-        if (!book.description.isNullOrBlank()) {
-            BookDescription(description = book.description)
+        val description = book.description
+        if (!description.isNullOrBlank()) {
+            BookDescription(description = description)
         }
 
         BookMetadata(book = book)

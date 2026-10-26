@@ -1,5 +1,8 @@
 package com.javierreansyah.pinecone.ui.features.reader
 
+import com.javierreansyah.pinecone.data.publication.resolveGeneratedLocator
+import com.javierreansyah.pinecone.data.repository.library.readingSessionToken
+
 import android.graphics.Color.colorToHSV
 import android.os.Bundle
 import android.view.ActionMode
@@ -51,6 +54,7 @@ class EpubNavigatorController(
 
     private var navigator: EpubNavigatorFragment? = null
     private val renditionKey = viewModel.activeRendition.value
+    private var session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null
 
     private val _navigatorFlow = MutableStateFlow<EpubNavigatorFragment?>(null)
 
@@ -76,6 +80,7 @@ class EpubNavigatorController(
     }
 
     fun setupNavigator(publication: Publication) {
+        session = publication.readingSessionToken()
         if (fragmentManager.findFragmentByTag(NAVIGATOR_TAG) != null) {
             navigator = fragmentManager.findFragmentByTag(NAVIGATOR_TAG) as? EpubNavigatorFragment
             navigator?.let {
@@ -300,10 +305,10 @@ class EpubNavigatorController(
                                             otherLocations = position.locations.otherLocations + visible?.locations?.otherLocations.orEmpty(),
                                         ), text = visible?.text ?: position.text)
                                 } else position)
-                        if (viewModel.activeRendition.value == renditionKey) viewModel.onLocatorChanged(
+                        if (viewModel.publication.value?.readingSessionToken() == session) viewModel.onLocatorChanged(
                             locator
                         )
-                        viewModel.savePosition(locator, renditionKey)
+                        viewModel.savePosition(locator, renditionKey, session)
                         lifecycleScope.launch {
                             delay(300.milliseconds)
                             reapplySelectionCss()
@@ -391,7 +396,7 @@ class EpubNavigatorController(
             lifecycleScope.launch {
                 val current =
                     if (renditionKey == "read-mode") viewModel.currentLocator.value else null
-                viewModel.savePosition(current ?: locator, renditionKey)
+                viewModel.savePosition(current ?: locator, renditionKey, session)
             }
         }
     }

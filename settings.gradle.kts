@@ -29,3 +29,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "Pinecone"
 include(":app")
+include(":core:model")
+include(":publication")
+include(":data")

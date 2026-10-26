@@ -6,6 +6,16 @@ description HTML is parsed and cleaned by jsoup before the app adds its own styl
 
 ## Ownership and persistence
 
+- Production module ownership is `:core:model` for neutral models/settings, `:publication` for
+  engines and conversion, `:data` for persistence/repositories, and `:app` for Android UI, playback,
+  workers and composition. Shared services use constructor injection; builder providers remain in
+  focused Hilt modules. `OperationScheduler` is the small execution boundary from data to app.
+- Book imports, folder scans and PDF read-mode generation persist in Room and execute through
+  Hilt WorkManager workers. Attempt/generation/deletion guards fence late commits; immutable assets
+  use leases while open. Portable backup format remains 2; library database schema is now 2.
+  See [the implementation log](ARCHITECTURE_REFACTOR_PLAN.md) and
+  [measurement/validation notes](ARCHITECTURE_PERFORMANCE.md) for recovery rules and remaining checks.
+
 - Hilt's singleton component owns the database, repositories, preference managers, Readium services,
   and the playback client/read-only presentation state. The service component owns the audio engine,
   publication and navigator. ViewModels keep their activity/navigation-entry lifetimes. Assisted

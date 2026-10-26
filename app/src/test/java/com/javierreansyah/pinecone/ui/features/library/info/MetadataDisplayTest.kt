@@ -1,6 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library.info
 
-import com.javierreansyah.pinecone.data.local.database.library.PublicationCreditEntity
+import com.javierreansyah.pinecone.data.model.PublicationCredit
 import com.javierreansyah.pinecone.data.model.Book
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -57,7 +57,7 @@ class MetadataDisplayTest {
     }
 
     private fun credit(role: String, name: String, position: Int = 0) =
-        PublicationCreditEntity("test", role, position, name)
+        PublicationCredit("test", role, position, name)
 
     private fun book() = Book(
         id = "test", title = "Test", authors = emptyList(), coverPath = null,

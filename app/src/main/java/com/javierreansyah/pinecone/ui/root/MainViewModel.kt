@@ -2,13 +2,13 @@ package com.javierreansyah.pinecone.ui.root
 
 import android.app.Application
 import android.net.Uri
-import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
-import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
+import com.javierreansyah.pinecone.data.repository.library.PublicationOperations
+import com.javierreansyah.pinecone.data.repository.library.ReadingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,18 +16,35 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val application: Application,
-    private val libraryRepository: LibraryRepository,
+    private val operations: PublicationOperations,
+    @com.javierreansyah.pinecone.di.ApplicationScope private val applicationScope: kotlinx.coroutines.CoroutineScope,
+    private val reading: ReadingRepository,
     readerPreferences: ReaderPreferences,
+    private val startup: com.javierreansyah.pinecone.data.StartupCoordinator,
 ) : ViewModel() {
 
     private val _isReady = MutableStateFlow(value = false)
     val isReady: StateFlow<Boolean> = _isReady.asStateFlow()
+    val startupState = startup.state
+
+    fun retryStartup() {
+        viewModelScope.launch {
+            try {
+                startup.initialize()
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                // The coordinator publishes the recoverable failure without resetting stored data.
+            }
+        }
+    }
 
     private val _settings = MutableStateFlow(ReaderSettings())
     val settings: StateFlow<ReaderSettings> = _settings.asStateFlow()
@@ -39,11 +56,18 @@ class MainViewModel @Inject constructor(
     val importErrorReport: StateFlow<ImportErrorReport?> = _importErrorReport.asStateFlow()
 
     fun dismissImportErrorReport() {
-        _importErrorReport.value = null
+        viewModelScope.launch {
+            val dismissed = errorOperation
+            _importErrorReport.value = null
+            dismissed?.let { operations.acknowledge(it) }
+            if (errorOperation == dismissed) errorOperation = null
+        }
     }
 
     init {
+        retryStartup()
         viewModelScope.launch {
+            startup.awaitReady()
             readerPreferences.readerSettings.collect { newSettings ->
                 _settings.value = newSettings
 
@@ -55,159 +79,68 @@ class MainViewModel @Inject constructor(
     }
 
     suspend fun isAudiobook(bookId: String): Boolean =
-        libraryRepository.rendition(bookId, "original")?.profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO.name
+        reading.rendition(bookId, "original")?.profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO.name
 
-    fun importBook(uri: Uri) {
+    val importOperations = operations.imports.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, emptyList())
+    val libraryState = operations.libraryState.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, null)
+    private var errorOperation: String? = null
+
+    init {
         viewModelScope.launch {
-            val app = application
-            _toastMessage.emit(
-                app.resources.getQuantityString(
-                    R.plurals.nav_importing_files,
-                    1,
-                    1,
-                ),
-            )
-            val fileName = getFileNameFromUri(uri)
-            val result = libraryRepository.importBook(uri)
-            if (result != null) {
-                _toastMessage.emit(app.getString(R.string.nav_import_complete))
-            } else {
-                _importErrorReport.value = ImportErrorReport(
-                    failedFiles = listOf(fileName),
-                    totalCount = 1,
-                    successCount = 0,
-                )
+            startup.awaitReady()
+            importOperations.collect { rows ->
+                rows.filter { it.state.terminal && it.id != errorOperation }.forEach { row ->
+                    if (row.state == com.javierreansyah.pinecone.data.model.OperationState.SUCCEEDED) {
+                        _toastMessage.emit(application.getString(if (row.total == 0) R.string.import_no_files_found else R.string.nav_import_complete))
+                        operations.acknowledge(row.id)
+                    } else if (row.state == com.javierreansyah.pinecone.data.model.OperationState.CANCELLED) {
+                        operations.acknowledge(row.id)
+                    } else if (_importErrorReport.value == null) {
+                        errorOperation = row.id
+                        _importErrorReport.value = ImportErrorReport(
+                            row.failures.ifEmpty { listOf(application.getString(R.string.publication_unknown)) },
+                            row.total.coerceAtLeast(1), (row.completed - row.failures.size).coerceAtLeast(0),
+                            inputRequired = row.state == com.javierreansyah.pinecone.data.model.OperationState.INPUT_REQUIRED || row.error == "input_required",
+                        )
+                    }
+                }
             }
         }
     }
 
+    fun importBook(uri: Uri) = importBooks(listOf(uri))
     fun importBooks(uris: List<Uri>) {
         if (uris.isEmpty()) return
-        viewModelScope.launch {
-            val app = application
-            _toastMessage.emit(
-                app.resources.getQuantityString(
-                    R.plurals.nav_importing_files,
-                    uris.size,
-                    uris.size,
-                ),
-            )
-            var successCount = 0
-            val failedFiles = mutableListOf<String>()
-            uris.forEach { uri ->
-                val fileName = getFileNameFromUri(uri)
-                val result = libraryRepository.importBook(uri)
-                if (result != null) {
-                    successCount++
-                } else {
-                    failedFiles.add(fileName)
-                }
-            }
-            if (failedFiles.isEmpty()) {
-                _toastMessage.emit(app.getString(R.string.nav_import_complete))
-            } else {
-                _importErrorReport.value = ImportErrorReport(
-                    failedFiles = failedFiles,
-                    totalCount = uris.size,
-                    successCount = successCount,
-                )
-            }
-        }
+        enqueue(uris.map { it.lastPathSegment.orEmpty() }) { it.enqueueImports(uris) }
     }
 
     fun scanFolder(uri: Uri) {
-        viewModelScope.launch {
-            val app = application
-            _toastMessage.emit(app.getString(R.string.nav_scanning_folder))
-            val root = DocumentFile.fromTreeUri(app, uri)
-            val publicationFiles =
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    mutableListOf<DocumentFile>().also { files ->
-                        root?.let {
-                            collectPublicationFiles(
-                                it,
-                                files
-                            )
-                        }
-                    }
-                }
-            if (publicationFiles.isEmpty()) {
-                _toastMessage.emit(app.getString(R.string.import_no_files_found))
-                return@launch
-            }
-            var successCount = 0
-            val failedFiles = mutableListOf<String>()
-            publicationFiles.forEach { file ->
-                val result =
-                    if (file.isDirectory) libraryRepository.importPublicationFolder(file) else libraryRepository.importBook(
-                        file.uri
-                    )
-                if (result != null) {
-                    successCount++
-                } else {
-                    failedFiles.add(file.name ?: app.getString(R.string.publication_unknown))
-                }
-            }
-            if (failedFiles.isEmpty()) {
-                _toastMessage.emit(app.getString(R.string.nav_folder_scan_complete))
-            } else {
-                _importErrorReport.value = ImportErrorReport(
-                    failedFiles = failedFiles,
-                    totalCount = publicationFiles.size,
-                    successCount = successCount,
-                )
-            }
-        }
+        enqueue(listOf(uri.lastPathSegment.orEmpty())) { it.enqueueScan(uri) }
     }
 
-    private fun collectPublicationFiles(file: DocumentFile, result: MutableList<DocumentFile>) {
-        if (file.isDirectory) {
-            if (file.findFile("manifest.json") != null) {
-                result.add(file)
-                return
-            }
-            file.listFiles().forEach { child ->
-                collectPublicationFiles(child, result)
-            }
-        } else {
-            val name = file.name?.lowercase() ?: ""
-            if (name.substringAfterLast('.') in com.javierreansyah.pinecone.data.publication.PublicationFormats.extensions) {
-                result.add(file)
-            }
-        }
-    }
-
-    private fun getFileNameFromUri(uri: Uri): String {
-        val context = application
-        if (uri.scheme == "content") {
+    private fun enqueue(names: List<String>, submit: suspend (PublicationOperations) -> Unit) {
+        val service = operations
+        val gate = startup
+        val errors = _importErrorReport
+        applicationScope.launch {
             try {
-                context.contentResolver.query(
-                    uri,
-                    arrayOf(android.provider.OpenableColumns.DISPLAY_NAME),
-                    null,
-                    null,
-                    null,
-                )?.use { cursor ->
-                    if (cursor.moveToFirst()) {
-                        val index =
-                            cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-                        if (index != -1) {
-                            val name = cursor.getString(index)
-                            if (!name.isNullOrBlank()) return name
-                        }
-                    }
-                }
-            } catch (_: Exception) {
+                gate.initialize()
+                submit(service)
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                timber.log.Timber.w(error, "Publication request could not be accepted")
+                errors.compareAndSet(null, ImportErrorReport(names, names.size, 0, inputRequired = true))
             }
         }
-        return uri.lastPathSegment?.substringAfterLast('/') ?: uri.toString()
     }
 
-
+    fun cancelImport(id: String) { viewModelScope.launch { operations.cancel(id) } }
 }
 
 data class ImportErrorReport(
     val failedFiles: List<String>,
     val totalCount: Int,
     val successCount: Int,
+    val inputRequired: Boolean = false,
 )

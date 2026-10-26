@@ -18,6 +18,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import coil3.compose.rememberConstraintsSizeResolver
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import com.javierreansyah.pinecone.R
@@ -35,13 +36,12 @@ fun CoverImage(
     val displayMode = LocalCoverDisplayMode.current
     val contentScale =
         if (displayMode == CoverDisplayMode.Cover) ContentScale.Crop else ContentScale.Fit
-    if (book.coverPath != null) {
+    val coverPath = book.coverPath
+    if (coverPath != null) {
         val context = LocalContext.current
-        val imageRequest = remember(book.coverPath) {
-            ImageRequest.Builder(context)
-                .data(File(book.coverPath))
-                .memoryCacheKey(book.coverPath)
-                .build()
+        val sizeResolver = rememberConstraintsSizeResolver()
+        val imageRequest = remember(coverPath, sizeResolver, context, displayMode) {
+            coverRequest(context, coverPath, sizeResolver, displayMode)
         }
 
         val painter = rememberAsyncImagePainter(
@@ -59,7 +59,7 @@ fun CoverImage(
         }
 
         Box(
-            modifier = modifier.clip(MaterialTheme.shapes.small),
+            modifier = modifier.then(sizeResolver).clip(MaterialTheme.shapes.small),
             contentAlignment = Alignment.TopCenter,
         ) {
 
@@ -102,13 +102,12 @@ fun AutoWidthCoverImage(
     book: Book,
     modifier: Modifier = Modifier,
 ) {
-    if (book.coverPath != null) {
+    val coverPath = book.coverPath
+    if (coverPath != null) {
         val context = LocalContext.current
-        val imageRequest = remember(book.coverPath) {
-            ImageRequest.Builder(context)
-                .data(File(book.coverPath))
-                .memoryCacheKey(book.coverPath)
-                .build()
+        val sizeResolver = rememberConstraintsSizeResolver()
+        val imageRequest = remember(coverPath, sizeResolver, context) {
+            coverRequest(context, coverPath, sizeResolver, CoverDisplayMode.Contain)
         }
         val painter = rememberAsyncImagePainter(
             model = imageRequest,
@@ -117,7 +116,7 @@ fun AutoWidthCoverImage(
         Image(
             painter = painter,
             contentDescription = stringResource(R.string.publication_cover_description, book.title),
-            modifier = modifier.clip(MaterialTheme.shapes.small),
+            modifier = modifier.then(sizeResolver).clip(MaterialTheme.shapes.small),
             contentScale = ContentScale.Fit,
         )
     } else {

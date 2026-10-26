@@ -1,0 +1,5 @@
+<resources>
+    <string name="generated_contents">Table of contents</string>
+    <string name="generated_scanned_page_notice">This page has no extractable text. Its original appearance is preserved below; OCR is not enabled.</string>
+    <string name="generated_page_label">Page %1$d</string>
+</resources>

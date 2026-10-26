@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.data.model.fromEntity
 import com.javierreansyah.pinecone.ui.features.library.components.book.CoverImage
 import com.javierreansyah.pinecone.ui.features.library.fileFormat
 import com.javierreansyah.pinecone.ui.features.library.publicationCountLabel
@@ -42,7 +43,9 @@ fun ShelfListItem(
     val visibleBooks = shelfWithCovers.books
     val booksCount = visibleBooks.size
 
-    val booksForThumbnail = visibleBooks.asSequence().take(2).map { Book.fromEntity(it) }.toList()
+    val booksForThumbnail = androidx.compose.runtime.remember(visibleBooks) {
+        visibleBooks.asSequence().take(2).map { Book.fromEntity(it) }.toList()
+    }
 
     Row(
         modifier = modifier

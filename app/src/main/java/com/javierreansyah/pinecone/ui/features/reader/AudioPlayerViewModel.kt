@@ -10,6 +10,7 @@ import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.data.local.preferences.encodeReadingOverrides
 import com.javierreansyah.pinecone.data.local.preferences.withReadingPreferencesFrom
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
+import com.javierreansyah.pinecone.data.repository.library.ReadingRepository
 import com.javierreansyah.pinecone.reader.audio.AudioPlaybackClient
 import com.javierreansyah.pinecone.reader.audio.AudioPlaybackState
 import dagger.assisted.Assisted
@@ -39,6 +40,7 @@ class AudioPlayerViewModel @AssistedInject constructor(
     private val playback: AudioPlaybackClient,
     private val application: Application,
     private val repository: LibraryRepository,
+    private val reading: ReadingRepository,
     private val preferences: ReaderPreferences,
     private val savedState: SavedStateHandle,
 ) : ViewModel() {
@@ -51,9 +53,9 @@ class AudioPlayerViewModel @AssistedInject constructor(
     }.stateIn(viewModelScope, SharingStarted.Eagerly, AudioPlaybackState(bookId = bookId, loading = true))
     private var opened = false
     private val settingsMutex = Mutex()
-    private val localSettings = repository.renditionFlow(bookId, "original").map {
+    private val localSettings = reading.renditionFlow(bookId, "original").map { it?.preferencesJson }.distinctUntilChanged().map {
         try {
-            val local = decodeLocalSettings(it?.preferencesJson)
+            val local = decodeLocalSettings(it)
             settingsError.value = null
             local
         } catch (error: IllegalArgumentException) {
@@ -73,7 +75,7 @@ class AudioPlayerViewModel @AssistedInject constructor(
     init {
         viewModelScope.launch {
             settings.map { it.jumpHistoryMode }.distinctUntilChanged().collect { mode ->
-                if (mode == "disabled") repository.clearJumpOrigin(bookId)
+                if (mode == "disabled") reading.clearJumpOrigin(bookId)
             }
         }
     }
@@ -112,14 +114,14 @@ class AudioPlayerViewModel @AssistedInject constructor(
     private fun recordJumpOrigin() {
         val locator = state.value.locator ?: return
         viewModelScope.launch {
-            if (settings.first().jumpHistoryMode != "disabled") repository.saveJumpOrigin(bookId, locator)
+            if (settings.first().jumpHistoryMode != "disabled") reading.saveJumpOrigin(bookId, locator)
         }
     }
     fun returnToOrigin() = forCurrentBook {
         jumpOrigin.value?.let(playback::go)
         clearJumpOrigin()
     }
-    fun clearJumpOrigin() { viewModelScope.launch { repository.clearJumpOrigin(bookId) } }
+    fun clearJumpOrigin() { viewModelScope.launch { reading.clearJumpOrigin(bookId) } }
 
     private fun decodeLocalSettings(encoded: String?): ReaderSettings? =
         encoded?.takeUnless { it == "{}" }?.let { Json.decodeFromString<ReaderSettings>(it) }
@@ -128,12 +130,12 @@ class AudioPlayerViewModel @AssistedInject constructor(
         if (settingsError.value != null) return
         viewModelScope.launch {
             settingsMutex.withLock {
-                val encoded = repository.rendition(bookId, "original")?.preferencesJson
+                val encoded = reading.rendition(bookId, "original")?.preferencesJson
                 val local = decodeLocalSettings(encoded)
                 if (local == null) preferences.updateSettings(transform)
                 else {
                     val current = preferences.readerSettings.first().withReadingPreferencesFrom(local)
-                    repository.setReadingOverrides(bookId, "original", ReaderSettings().withReadingPreferencesFrom(transform(current)).encodeReadingOverrides())
+                    reading.setReadingOverrides(bookId, "original", ReaderSettings().withReadingPreferencesFrom(transform(current)).encodeReadingOverrides())
                 }
             }
         }
@@ -142,14 +144,14 @@ class AudioPlayerViewModel @AssistedInject constructor(
         viewModelScope.launch {
             settingsMutex.withLock {
                 if (!enabled) {
-                    repository.setReadingOverrides(bookId, "original", "{}")
+                    reading.setReadingOverrides(bookId, "original", "{}")
                     return@withLock
                 }
-                val encoded = repository.rendition(bookId, "original")?.preferencesJson
+                val encoded = reading.rendition(bookId, "original")?.preferencesJson
                 val local = decodeLocalSettings(encoded)
                 val global = preferences.readerSettings.first()
                 val current = if (local == null) global else global.withReadingPreferencesFrom(local)
-                repository.setReadingOverrides(
+                reading.setReadingOverrides(
                     bookId, "original", ReaderSettings().withReadingPreferencesFrom(current).encodeReadingOverrides(),
                 )
             }

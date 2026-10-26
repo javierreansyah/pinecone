@@ -15,8 +15,12 @@ import com.javierreansyah.pinecone.data.publication.PublicationFormats
 import com.javierreansyah.pinecone.data.publication.ReaderProfile
 import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
+import com.javierreansyah.pinecone.data.repository.library.PublicationRepository
+import com.javierreansyah.pinecone.data.repository.library.readingSessionToken
+import com.javierreansyah.pinecone.data.repository.library.ReadingRepository
 import com.javierreansyah.pinecone.reader.epub.toEpubPreferences
 import com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences
+import com.javierreansyah.pinecone.reader.pdf.toMuPdfPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -82,7 +86,11 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
     private val application: Application,
     @dagger.assisted.Assisted private val bookId: String,
     private val repository: LibraryRepository,
+    private val publications: PublicationRepository,
+    private val operations: com.javierreansyah.pinecone.data.repository.library.PublicationOperations,
+    private val reading: ReadingRepository,
     private val readerPreferences: ReaderPreferences,
+    private val startup: com.javierreansyah.pinecone.data.StartupCoordinator,
 ) : ViewModel() {
     private val initialSystemDark = application.resources.configuration.uiMode and
             android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
@@ -92,6 +100,8 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
     val profile: MutableStateFlow<ReaderProfile> = MutableStateFlow(ReaderProfile.EPUB)
     val activeRendition: MutableStateFlow<String> = MutableStateFlow("original")
     private var conversionJob: Job? = null
+    private var currentConversionId: String? = null
+    private var openJob: Job? = null
 
     private val _positions = MutableStateFlow<List<Locator>>(emptyList())
     val positions: StateFlow<List<Locator>> = _positions.asStateFlow()
@@ -150,10 +160,10 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
 
     val pdfPreferences: StateFlow<MuPdfPreferences> =
         combine(settingsFlow, systemDarkThemeFlow) { settings, systemDark ->
-            settings.formatPreferences.pdf.resolveTheme(settings.readingThemeIsDark(systemDark))
+            settings.formatPreferences.pdf.toMuPdfPreferences(settings.readingThemeIsDark(systemDark))
         }.stateIn(
             viewModelScope, SharingStarted.Eagerly,
-            FormatPreferences().pdf.resolveTheme(initialSystemDark)
+            FormatPreferences().pdf.toMuPdfPreferences(initialSystemDark)
         )
 
     val imageFilterCss: StateFlow<String> =
@@ -203,21 +213,63 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
 
     init {
         viewModelScope.launch {
+            startup.awaitReady()
+            var observed = false
+            var restoring = false
+            combine(repository.getBookFlow(bookId), operations.libraryState, reading.renditionFlow(bookId, "read-mode")) { details, runtime, readMode ->
+                ReaderIdentity(runtime.first, runtime.second, details?.book?.activeRendition,
+                    if (details?.book?.activeRendition == "read-mode") readMode?.sha256 else details?.book?.filePath)
+            }.distinctUntilChanged().collect { identity ->
+                if (identity.maintenance) {
+                    openJob?.cancel()
+                    _publication.value?.let { retiredPublications += it }
+                    _publication.value = null
+                    _bookState.update { it.copy(isLoading = true) }
+                    restoring = true
+                } else {
+                    if (observed && (restoring || _publication.value != null || openJob?.isActive == true)) openBook()
+                    restoring = false
+                }
+                observed = true
+            }
+        }
+        viewModelScope.launch {
+            startup.awaitReady()
+            operations.conversion(bookId).distinctUntilChanged().collect { operation ->
+                currentConversionId = operation?.id
+                _bookState.update { state -> state.copy(
+                    converting = operation != null && !operation.state.terminal,
+                    conversionPage = operation?.completed ?: 0, conversionTotal = operation?.total ?: 0,
+                    conversionError = if (operation?.state in listOf(com.javierreansyah.pinecone.data.model.OperationState.FAILED,
+                            com.javierreansyah.pinecone.data.model.OperationState.INPUT_REQUIRED)) application.getString(R.string.reader_conversion_failed) else state.conversionError,
+                ) }
+            }
+        }
+        viewModelScope.launch {
+            startup.awaitReady()
             settingsFlow.map { it.jumpHistoryMode }.distinctUntilChanged().collect { mode ->
                 if (mode == "disabled") {
-                    repository.clearJumpOrigin(bookId)
+                    reading.clearJumpOrigin(bookId, _publication.value?.readingSessionToken())
                 }
             }
         }
     }
 
     fun openBook() {
-        viewModelScope.launch {
+        val previous = openJob
+        previous?.cancel()
+        openJob = viewModelScope.launch {
+            previous?.join()
+            _publication.value?.let { retiredPublications += it }
+            _publication.value = null
+            _positions.value = emptyList()
+            _currentLocator.value = null
             _bookState.update { it.copy(isLoading = true, error = null) }
-
+            var acquired: Publication? = null
             try {
+                startup.initialize()
                 val (resolvedLocator, book) = coroutineScope {
-                    val locatorDeferred = async { repository.getLastLocator(bookId) }
+                    val locatorDeferred = async { reading.getLastLocator(bookId) }
                     val bookDeferred = async { repository.getBook(bookId) }
                     locatorDeferred.await() to bookDeferred.await()
                 }
@@ -232,7 +284,8 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
                 activeRendition.value = book.book.activeRendition
                 loadReadingOverrides(book.book.activeRendition)
 
-                val pub = repository.openPublication(book)
+                val pub = publications.openPublication(book)
+                acquired = pub
                 if (pub == null) {
                     _bookState.update {
                         it.copy(
@@ -243,18 +296,13 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
                     return@launch
                 }
 
-                _publication.value = pub
                 profile.value = PublicationFormats.profile(pub)
-
-                viewModelScope.launch {
-                    val p =
-                        if (profile.value == ReaderProfile.AUDIO) emptyList() else pub.positions()
-                    _positions.value = p
-                    _currentLocator.value?.let { onLocatorChanged(it) }
-                }
+                _positions.value = if (profile.value == ReaderProfile.AUDIO) emptyList() else pub.positions()
+                _publication.value = pub
+                acquired = null
 
                 val sourceIsPdf =
-                    repository.rendition(bookId, "original")?.profile == ReaderProfile.PDF.name
+                    reading.rendition(bookId, "original")?.profile == ReaderProfile.PDF.name
                 _bookState.update {
                     it.copy(
                         isLoading = false, title = book.book.title,
@@ -272,7 +320,7 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
                         error = application.getString(R.string.reader_open_failed)
                     )
                 }
-            }
+            } finally { acquired?.close() }
         }
     }
 
@@ -308,7 +356,7 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
             viewModelScope.launch {
                 val jumpHistoryMode = settingsFlow.first().jumpHistoryMode
                 if (jumpHistoryMode == "disabled") {
-                    repository.clearJumpOrigin(bookId)
+                    reading.clearJumpOrigin(bookId, _publication.value?.readingSessionToken())
                 } else if (jumpHistoryMode == "page_turn") {
                     if (justJumped) {
                         justJumped = false
@@ -321,7 +369,7 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
                                     oldLocator,
                                 )
                             ) {
-                                repository.clearJumpOrigin(bookId)
+                                reading.clearJumpOrigin(bookId, _publication.value?.readingSessionToken())
                             }
                         }
                     }
@@ -401,9 +449,10 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
         ) else ""
     }
 
-    fun savePosition(locator: Locator, renditionKey: String = activeRendition.value) {
+    fun savePosition(locator: Locator, renditionKey: String = activeRendition.value,
+        session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = _publication.value?.readingSessionToken()) {
         viewModelScope.launch {
-            repository.saveReadingPosition(bookId, locator, renditionKey)
+            reading.saveReadingPosition(bookId, locator, renditionKey, session)
         }
     }
 
@@ -417,115 +466,17 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
     private fun preparePdfRendition(forceReparse: Boolean) {
         if (!_bookState.value.sourceIsPdf || conversionJob?.isActive == true) return
         conversionJob = viewModelScope.launch {
-            val old = _publication.value ?: return@launch
-            var source = _currentLocator.value
-            val destination =
-                if (forceReparse || activeRendition.value == "original") "read-mode" else "original"
-            _bookState.update { it.copy(conversionError = null) }
-            var next: Publication? = null
             try {
-                source?.let { repository.saveReadingPosition(bookId, it, activeRendition.value) }
-                if (destination == "read-mode") {
-                    repository.createReadMode(
-                        bookId,
-                        forceReparse = forceReparse,
-                        onConversionStart = {
-                            _bookState.update {
-                                it.copy(
-                                    converting = true,
-                                    conversionPage = 0,
-                                    conversionTotal = 0
-                                )
-                            }
-                        },
-                    ) { page, total ->
-                        _bookState.update {
-                            it.copy(
-                                conversionPage = page,
-                                conversionTotal = total
-                            )
-                        }
-                    }
-                }
-                // The PDF remains interactive during conversion. Map the position the
-                // reader has reached now, rather than the position where it started.
-                source = _currentLocator.value ?: source
-                source?.let { repository.saveReadingPosition(bookId, it, activeRendition.value) }
-                repository.activateRendition(bookId, destination)
-                val item = requireNotNull(repository.getBook(bookId))
-                next = requireNotNull(repository.openPublication(item))
-                val target = requireNotNull(repository.rendition(bookId, destination))
-                val sourceMap = repository.rendition(bookId, "read-mode")?.sourceMapJson?.let {
-                    kotlinx.serialization.json.Json.decodeFromString<List<com.javierreansyah.pinecone.data.publication.conversion.SourcePage>>(
-                        it
-                    )
-                }.orEmpty()
-
-                fun mappedPage(locator: Locator): Int =
-                    if (locator.mediaType.toString() == "application/pdf") {
-                        val page = sourcePage(locator)
-                        sourceMap.firstOrNull { it.sourceHref == locator.href.toString() && it.sourcePage == page }?.page
-                            ?: page
-                    } else sourcePage(locator)
-
-                val sourcePage = source?.let(::mappedPage) ?: 1
-                val stored = target.lastLocatorJson?.let { fromJSON(JSONObject(it)) }
-                val nextLocator = stored?.takeIf { mappedPage(it) == sourcePage }
-                    ?: if (destination == "read-mode") {
-                        val resource =
-                            sourceMap.firstOrNull { it.page == sourcePage }?.href?.substringBefore(
-                                '#'
-                            )
-                        next.readingOrder.find {
-                            if (resource != null) GeneratedEpubLocations.sameContentResource(
-                                it.href.toString(),
-                                resource
-                            )
-                            else GeneratedEpubLocations.isContent(it.href.toString())
-                        }?.let(next::locatorFromLink)?.copyWithLocations(
-                            fragments = listOf("source-page-$sourcePage"),
-                        )
-                    } else {
-                        val mapping = sourceMap.firstOrNull { it.page == sourcePage }
-                        val link =
-                            next.readingOrder.find { it.href.toString() == mapping?.sourceHref }
-                                ?: next.readingOrder.firstOrNull()
-                        link?.let(next::locatorFromLink)?.copyWithLocations(
-                            fragments = listOf("page=${mapping?.sourcePage ?: sourcePage}"),
-                            position = sourcePage,
-                        )
-                    }
-                val nextPositions = next.positions()
-                loadReadingOverrides(destination)
-                initialLocator = nextLocator
-                activeRendition.value = destination
-                profile.value = PublicationFormats.profile(next)
-                _currentLocator.value = null
-                _positions.value = nextPositions
-                retiredPublications += old
-                _publication.value = next
-                next = null
-                _bookState.update {
-                    it.copy(
-                        readMode = destination == "read-mode",
-                        converting = false
-                    )
-                }
-            } catch (cancelled: CancellationException) {
-                kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
-                    repository.activateRendition(
-                        bookId,
-                        activeRendition.value
-                    )
-                }
-                throw cancelled
-            } catch (failure: Exception) {
-                repository.activateRendition(bookId, activeRendition.value)
-                timber.log.Timber.e(failure, "PDF conversion failed")
+                _bookState.update { it.copy(conversionError = null) }
+                val session = _publication.value?.readingSessionToken()
+                _currentLocator.value?.let { reading.saveReadingPosition(bookId, it, activeRendition.value, session) }
+                if (!forceReparse && activeRendition.value == "read-mode") {
+                    reading.activateMappedRendition(bookId, "original", session)
+                } else currentConversionId = operations.enqueueReadMode(bookId, forceReparse)
+            } catch (cancelled: CancellationException) { throw cancelled
+            } catch (error: Exception) {
+                timber.log.Timber.e(error, "Could not request PDF mode")
                 _bookState.update { it.copy(conversionError = application.getString(R.string.reader_conversion_failed)) }
-            } finally {
-                next?.close()
-                _bookState.update { it.copy(converting = false) }
             }
         }
     }
@@ -545,7 +496,7 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
         } else locator
 
     fun cancelConversion() {
-        conversionJob?.cancel()
+        currentConversionId?.let { id -> viewModelScope.launch { operations.cancel(id) } }
     }
 
     fun dismissConversionError() {
@@ -557,7 +508,7 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
         viewModelScope.launch {
             val jumpHistoryMode = settingsFlow.first().jumpHistoryMode
             if (jumpHistoryMode != "disabled") {
-                repository.saveJumpOrigin(bookId, current)
+                reading.saveJumpOrigin(bookId, current, _publication.value?.readingSessionToken())
                 justJumped = true
             }
         }
@@ -565,7 +516,7 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
 
     fun clearJumpOrigin() {
         viewModelScope.launch {
-            repository.clearJumpOrigin(bookId)
+            reading.clearJumpOrigin(bookId, _publication.value?.readingSessionToken())
         }
     }
 
@@ -630,10 +581,11 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
                         global.withReadingPreferencesFrom(requireNotNull(readingOverrides.value))
                     val local = ReaderSettings().withReadingPreferencesFrom(transform(current))
                     readingOverrides.value = local
-                    repository.setReadingOverrides(
+                    reading.setReadingOverrides(
                         bookId,
                         activeRendition.value,
                         local.encodeReadingOverrides(),
+                        _publication.value?.readingSessionToken(),
                     )
                 } else {
                     readerPreferences.updateSettings(transform)
@@ -643,7 +595,7 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
     }
 
     private suspend fun loadReadingOverrides(key: String) {
-        val encoded = repository.rendition(bookId, key)?.preferencesJson
+        val encoded = reading.rendition(bookId, key)?.preferencesJson
         readingOverrides.value = encoded?.takeUnless { it == "{}" }
             ?.let { kotlinx.serialization.json.Json.decodeFromString<ReaderSettings>(it) }
     }
@@ -656,11 +608,12 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
                     readingOverrides.value?.let { global.withReadingPreferencesFrom(it) } ?: global
                 readingOverrides.value =
                     if (enabled) ReaderSettings().withReadingPreferencesFrom(current) else null
-                repository.setReadingOverrides(
+                reading.setReadingOverrides(
                     bookId,
                     activeRendition.value,
                     readingOverrides.value?.let { it.encodeReadingOverrides() }
                         ?: "{}",
+                    _publication.value?.readingSessionToken(),
                 )
             }
         }
@@ -673,6 +626,7 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
     }
 
     override fun onCleared() {
+        openJob?.cancel()
         closeBook()
     }
 
@@ -681,4 +635,6 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
     interface Factory {
         fun create(bookId: String): ReaderViewModel
     }
+
+    private data class ReaderIdentity(val generation: Long, val maintenance: Boolean, val rendition: String?, val asset: String?)
 }

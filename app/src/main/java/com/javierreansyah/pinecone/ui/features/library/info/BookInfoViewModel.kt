@@ -5,8 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.data.model.fromEntity
 import com.javierreansyah.pinecone.domain.DeleteBooks
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
+import com.javierreansyah.pinecone.data.repository.library.PublicationRepository
+import com.javierreansyah.pinecone.data.repository.library.ReadingRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,6 +31,8 @@ import org.readium.r2.shared.publication.services.positions
 class BookInfoViewModel @AssistedInject constructor(
     @Assisted private val bookId: String,
     private val repository: LibraryRepository,
+    private val publications: PublicationRepository,
+    private val reading: ReadingRepository,
     readerPreferences: com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences,
     private val deletePublications: DeleteBooks,
 ) : ViewModel() {
@@ -49,13 +54,13 @@ class BookInfoViewModel @AssistedInject constructor(
         )
 
     val bookmarks: StateFlow<List<BookmarkEntity>> =
-        combine(repository.getBookmarks(bookId), repository.getBookFlow(bookId)) { items, item ->
+        combine(reading.getBookmarks(bookId), repository.getBookFlow(bookId)) { items, item ->
             items.filter { it.renditionKey == item?.book?.activeRendition }
         }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val notes: StateFlow<List<NoteEntity>> =
-        combine(repository.getNotes(bookId), repository.getBookFlow(bookId)) { items, item ->
+        combine(reading.getNotes(bookId), repository.getBookFlow(bookId)) { items, item ->
             items.filter { it.renditionKey == item?.book?.activeRendition }
         }
             .map { list -> list.filter { note -> note.noteText.isNotBlank() } }
@@ -69,22 +74,29 @@ class BookInfoViewModel @AssistedInject constructor(
 
     init {
         viewModelScope.launch {
-            val details = repository.getBook(bookId)
-            if (details != null) {
-                val (toc, pos) = withContext(Dispatchers.IO) {
-                    val pub = repository.openPublication(details)
-                    if (pub != null) {
-                        val tableOfContents = pub.tableOfContents
-                        val positions = pub.positions()
-                        pub.close()
-                        tableOfContents to positions
-                    } else {
-                        null
-                    }
-                } ?: (emptyList<Link>() to emptyList())
+            try {
+                val details = repository.getBook(bookId)
+                if (details != null) {
+                    val (toc, pos) = withContext(Dispatchers.IO) {
+                        val pub = publications.openPublication(details)
+                        if (pub != null) {
+                            try {
+                                pub.tableOfContents to pub.positions()
+                            } finally {
+                                pub.close()
+                            }
+                        } else {
+                            null
+                        }
+                    } ?: (emptyList<Link>() to emptyList())
 
-                _tableOfContents.value = toc
-                _positions.value = pos
+                    _tableOfContents.value = toc
+                    _positions.value = pos
+                }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                timber.log.Timber.e(error, "Could not load publication contents")
             }
         }
     }
@@ -111,25 +123,25 @@ class BookInfoViewModel @AssistedInject constructor(
 
     fun deleteFurthestPosition() {
         viewModelScope.launch {
-            repository.resetFurthestToCurrent(bookId)
+            reading.resetFurthestToCurrent(bookId)
         }
     }
 
     fun deleteBookmark(bookmarkId: Long) {
         viewModelScope.launch {
-            repository.removeBookmark(bookmarkId)
+            reading.removeBookmark(bookmarkId)
         }
     }
 
     fun deleteNote(noteId: Long) {
         viewModelScope.launch {
-            repository.removeNote(noteId)
+            reading.removeNote(noteId)
         }
     }
 
     fun saveReadingPosition(locator: Locator, onSaved: () -> Unit) {
         viewModelScope.launch {
-            repository.saveReadingPosition(
+            reading.saveReadingPosition(
                 bookId,
                 locator,
                 repository.getBook(bookId)?.book?.activeRendition ?: "original"
@@ -140,7 +152,7 @@ class BookInfoViewModel @AssistedInject constructor(
 
     fun saveJumpReadingPosition(locator: Locator, onSaved: () -> Unit) {
         viewModelScope.launch {
-            repository.saveJumpReadingPosition(bookId, locator)
+            reading.saveJumpReadingPosition(bookId, locator)
             onSaved()
         }
     }

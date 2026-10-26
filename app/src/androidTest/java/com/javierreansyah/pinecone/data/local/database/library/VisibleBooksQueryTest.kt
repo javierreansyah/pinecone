@@ -3,6 +3,7 @@ package com.javierreansyah.pinecone.data.local.database.library
 import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.data.model.fromEntity
 import com.javierreansyah.pinecone.ui.features.library.FilterSortPreferences
 import com.javierreansyah.pinecone.ui.features.library.SortType
 import com.javierreansyah.pinecone.ui.features.library.filterAndSort

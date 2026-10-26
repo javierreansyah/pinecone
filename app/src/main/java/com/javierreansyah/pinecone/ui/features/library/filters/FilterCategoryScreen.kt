@@ -60,6 +60,7 @@ fun AllFilterItemsScreen(
     onNavigateBack: () -> Unit, onNavigateToDetail: (String) -> Unit,
 ) {
     val viewModel: FilterCategoryViewModel = hiltViewModel()
+    com.javierreansyah.pinecone.ui.components.MutationErrorDialog(viewModel.mutationErrors)
 
     val itemsWithCounts by when (filterType) {
         "author" -> viewModel.authorsWithCounts.collectAsStateWithLifecycle()

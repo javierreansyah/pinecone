@@ -82,7 +82,11 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.publication.filterNotNull().collect { publication ->
+                viewModel.publication.collect { publication ->
+                    if (publication == null) {
+                        navigatorController.detachNavigator()
+                        return@collect
+                    }
                     if (com.javierreansyah.pinecone.data.publication.PublicationFormats.profile(
                             publication
                         ) ==
@@ -115,6 +119,8 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
             val readerBgColor = themeColorsState.value.backgroundColor
 
             PineconeTheme(readerBackgroundColor = readerBgColor) {
+                val bookState = viewModel.bookState.collectAsStateWithLifecycle()
+                com.javierreansyah.pinecone.ui.components.WorkNotificationPermission(bookState.value.converting)
                 ReaderOverlay(
                     viewModel = viewModel,
                     searchViewModel = searchViewModel,

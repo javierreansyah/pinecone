@@ -1,6 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library
 
-import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
+import com.javierreansyah.pinecone.data.model.LibrarySpace
 import com.javierreansyah.pinecone.data.model.Book
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -65,8 +65,8 @@ class PublicationWordingTest {
 
     @Test
     fun `global label actions include other spaces even when visible counts contain only books`() {
-        val reading = SpaceEntity("reading", "Reading")
-        val audio = SpaceEntity("audio", "Audio")
+        val reading = LibrarySpace("reading", "Reading")
+        val audio = LibrarySpace("audio", "Audio")
         val library = listOf(
             item("novel.epub").copy(authors = listOf("Author"), spaces = listOf(reading)),
             item("narration.m4b").copy(authors = listOf("Author"), spaces = listOf(audio)),

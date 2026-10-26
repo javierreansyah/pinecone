@@ -30,13 +30,19 @@ class ReaderDictionaryViewModel @Inject constructor(
     private val _definitionState = MutableStateFlow(DefinitionState())
     val definitionState: StateFlow<DefinitionState> = _definitionState.asStateFlow()
 
+    private var lookupJob: kotlinx.coroutines.Job? = null
+    private var requestGeneration = 0L
+
     fun lookupDefinition(word: String, clearHistory: Boolean = false) {
-        val cleanWord = word.trim().replace(Regex("[^\\w\\s-]"), "")
+        val cleanWord = word.trim().replace(Regex("[^\\p{L}\\p{M}\\p{N}\\s-]"), "")
         if (cleanWord.isBlank()) return
 
-        viewModelScope.launch {
+        lookupJob?.cancel()
+        val generation = ++requestGeneration
+        lookupJob = viewModelScope.launch {
             val activeDictId = readerPreferences.readerSettings.first().activeDictionaryId
             val results = dictionaryRepository.lookupWord(activeDictId, cleanWord)
+            if (generation != requestGeneration) return@launch
             _definitionState.update { state ->
                 val newHistory = if (clearHistory) {
                     emptyList()
@@ -72,6 +78,8 @@ class ReaderDictionaryViewModel @Inject constructor(
     }
 
     fun hideDefinition() {
+        ++requestGeneration
+        lookupJob?.cancel()
         _definitionState.update { it.copy(showDefinition = false, wordHistory = emptyList()) }
     }
 

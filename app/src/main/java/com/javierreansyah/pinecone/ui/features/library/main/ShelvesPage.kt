@@ -37,6 +37,7 @@ import com.composables.icons.materialsymbols.outlined.Folder
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.data.model.fromEntity
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.features.library.ALL_SPACES_ID
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
@@ -280,7 +281,7 @@ private fun ShelfBooksHorizontalRow(
             modifier = Modifier.fillMaxWidth(),
         ) {
             items(visibleBooks, key = { details -> details.book.id }) { bookEntity ->
-                val book = Book.fromEntity(bookEntity)
+                val book = androidx.compose.runtime.remember(bookEntity) { Book.fromEntity(bookEntity) }
                 BookItem(
                     book = book,
                     onClick = { onBookClick(book.id) },

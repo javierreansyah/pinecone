@@ -36,3 +36,7 @@ class MuPdfPreferencesEditor(initial: MuPdfPreferences) : PreferencesEditor<MuPd
         preferences = MuPdfPreferences()
     }
 }
+
+/** Adapt stored controls at the engine boundary without changing their persisted representation. */
+fun com.javierreansyah.pinecone.data.local.preferences.PdfPreferences.toMuPdfPreferences(isDark: Boolean): MuPdfPreferences =
+    MuPdfPreferences(scroll, horizontal, rightToLeft, fitWidth, pageSpacing, invert ?: isDark)

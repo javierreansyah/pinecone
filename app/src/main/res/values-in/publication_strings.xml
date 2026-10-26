@@ -70,4 +70,9 @@
     <string name="publication_mark_as_listened">Tandai sebagai selesai didengarkan</string>
     <string name="publication_mark_as_unlistened">Tandai sebagai belum didengarkan</string>
     <string name="publication_listening_progress">Kemajuan mendengarkan</string>
+    <string name="publication_work_channel">Impor dan konversi PDF</string>
+    <string name="publication_work_importing">Mengimpor publikasi</string>
+    <string name="publication_work_converting">Menyiapkan mode baca PDF</string>
+    <string name="publication_work_progress">%1$d dari %2$d</string>
+    <string name="publication_input_required">Pilih kembali berkas atau folder untuk mencoba impor lagi.</string>
 </resources>

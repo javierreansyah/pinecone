@@ -32,4 +32,5 @@
     <string name="action_sort">Urutkan</string>
     <string name="action_voice_search">Pencarian suara</string>
     <string name="common_error">Kesalahan: %s</string>
+    <string name="common_operation_failed">Tidak dapat menyimpan perubahan. Silakan coba lagi.</string>
 </resources>

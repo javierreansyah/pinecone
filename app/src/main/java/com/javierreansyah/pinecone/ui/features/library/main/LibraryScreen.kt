@@ -80,7 +80,7 @@ fun LibraryRoute(
     onNavigateToAllTags: () -> Unit = {},
     onNavigateToAllSpaces: () -> Unit = {},
     onNavigateToBookInfo: (String) -> Unit,
-    onNavigateToOrganize: (String) -> Unit,
+    onNavigateToOrganize: (Set<String>) -> Unit,
     onNavigateToUnsorted: () -> Unit = {},
     onNavigateToArchives: () -> Unit,
     onNavigateToSettings: () -> Unit,
@@ -159,7 +159,7 @@ fun LibraryScreen(
     onNavigateToAllTags: () -> Unit = {},
     onNavigateToAllSpaces: () -> Unit = {},
     onNavigateToBookInfo: (String) -> Unit,
-    onNavigateToOrganize: (String) -> Unit,
+    onNavigateToOrganize: (Set<String>) -> Unit,
     onNavigateToUnsorted: () -> Unit = {},
     onNavigateToArchives: () -> Unit,
     onNavigateToSettings: () -> Unit,
@@ -293,7 +293,7 @@ fun LibraryScreen(
                                 exitMultiSelect()
                             },
                             onOrganizeBooks = {
-                                val ids = selectedBooks.joinToString(",")
+                                val ids = selectedBooks
                                 exitMultiSelect()
                                 onNavigateToOrganize(ids)
                             },
@@ -425,7 +425,7 @@ fun LibraryScreen(
                         onNavigateToBookInfo = onNavigateToBookInfo,
                         onToggleArchive = { toggleArchive(bookId) },
                         onToggleReadStatus = { toggleReadStatus(bookId) },
-                        onOrganize = { onNavigateToOrganize(bookId) },
+                        onOrganize = { onNavigateToOrganize(setOf(bookId)) },
                         onDeleteBook = { deleteBook(bookId) },
                         onEnterMultiSelect = {
                             selectedBooks = setOf(bookId)

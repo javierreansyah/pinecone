@@ -11,9 +11,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -75,6 +75,9 @@ fun ImportErrorDialog(
             Column(
                 modifier = Modifier.fillMaxWidth(),
             ) {
+                if (report.inputRequired) {
+                    Text(stringResource(R.string.publication_input_required))
+                }
                 if (report.failedFiles.size == 1 && report.totalCount == 1) {
                     Text(
                         text = stringResource(
@@ -127,13 +130,12 @@ fun ImportErrorDialog(
                             )
                             .padding(horizontal = 12.dp, vertical = 8.dp),
                     ) {
-                        Column(
+                        LazyColumn(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .verticalScroll(rememberScrollState()),
+                                .fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
-                            report.failedFiles.forEach { fileName ->
+                            items(report.failedFiles) { fileName ->
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.Top,

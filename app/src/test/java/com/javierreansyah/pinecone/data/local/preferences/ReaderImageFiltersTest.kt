@@ -89,7 +89,7 @@ class ReaderImageFiltersTest {
         modes.forEach { invert ->
             val settings = ReaderSettings(
                 formatPreferences = FormatPreferences(
-                    pdf = MuPdfPreferences(invert = invert), epubImageFilterFollowTheme = false,
+                    pdf = PdfPreferences(invert = invert), epubImageFilterFollowTheme = false,
                 )
             )
             assertEquals(
@@ -106,7 +106,7 @@ class ReaderImageFiltersTest {
         val global = ReaderSettings(themeMode = "Light", spacesEnabled = false)
         val local = ReaderSettings(
             imageFilter = "Darken", formatPreferences = FormatPreferences(
-                pdf = MuPdfPreferences(invert = false), epubImageFilterFollowTheme = false,
+                pdf = PdfPreferences(invert = false), epubImageFilterFollowTheme = false,
             )
         )
         val merged = global.withReadingPreferencesFrom(local)

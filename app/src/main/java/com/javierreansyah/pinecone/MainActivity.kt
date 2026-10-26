@@ -29,7 +29,9 @@ class MainActivity : AppCompatActivity() {
 
         // Keep splash screen visible until the real settings are loaded from DataStore,
         // preventing a flicker from default theme (Dynamic) to the user's actual theme.
-        splashScreen.setKeepOnScreenCondition { !viewModel.isReady.value }
+        splashScreen.setKeepOnScreenCondition {
+            !viewModel.isReady.value && viewModel.startupState.value !is com.javierreansyah.pinecone.data.StartupState.Failed
+        }
 
         handleIntent(intent)
 
@@ -47,7 +49,22 @@ class MainActivity : AppCompatActivity() {
             }
 
             val isReady by viewModel.isReady.collectAsStateWithLifecycle()
+            val startup by viewModel.startupState.collectAsStateWithLifecycle()
             if (!isReady) {
+                if (startup is com.javierreansyah.pinecone.data.StartupState.Failed) {
+                    AppTheme {
+                        androidx.compose.material3.AlertDialog(
+                            onDismissRequest = {},
+                            title = { androidx.compose.material3.Text(getString(R.string.startup_failed)) },
+                            text = { androidx.compose.material3.Text(getString(R.string.startup_retry_description)) },
+                            confirmButton = {
+                                androidx.compose.material3.TextButton(onClick = viewModel::retryStartup) {
+                                    androidx.compose.material3.Text(getString(R.string.reader_audio_retry))
+                                }
+                            },
+                        )
+                    }
+                }
                 return@setContent
             }
 

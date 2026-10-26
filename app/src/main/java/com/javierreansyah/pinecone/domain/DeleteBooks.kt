@@ -9,6 +9,6 @@ class DeleteBooks @Inject constructor(
     private val playback: AudioPlaybackClient,
 ) {
     suspend operator fun invoke(bookIds: Collection<String>) = playback.withPlaybackStopped(bookIds) {
-        bookIds.forEach { repository.deleteBook(it) }
+        repository.deleteBooks(bookIds)
     }
 }

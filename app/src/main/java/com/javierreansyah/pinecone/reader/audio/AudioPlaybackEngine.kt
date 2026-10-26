@@ -7,6 +7,9 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.withReadingPreferencesFrom
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
+import com.javierreansyah.pinecone.data.repository.library.readingSessionToken
+import com.javierreansyah.pinecone.data.repository.library.PublicationRepository
+import com.javierreansyah.pinecone.data.repository.library.ReadingRepository
 import dagger.hilt.android.scopes.ServiceScoped
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -17,6 +20,8 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -35,8 +40,12 @@ import org.readium.r2.shared.publication.Publication
 class AudioPlaybackEngine @Inject constructor(
     private val app: Application,
     private val repository: LibraryRepository,
+    private val publications: PublicationRepository,
+    private val reading: ReadingRepository,
     private val preferences: ReaderPreferences,
     private val store: AudioPlaybackStore,
+    private val startup: com.javierreansyah.pinecone.data.StartupCoordinator,
+    private val operations: com.javierreansyah.pinecone.data.repository.library.PublicationOperations,
 ) {
     private val state get() = store.state
     private var navigator: AudioNavigator<ExoPlayerSettings, ExoPlayerPreferences>? = null
@@ -48,6 +57,7 @@ class AudioPlaybackEngine @Inject constructor(
         releasePlayer()
         store.publish(AudioPlaybackState(bookId = bookId, loading = true))
         try {
+            startup.initialize()
             val book = requireNotNull(repository.getBook(bookId))
             store.publish(state.value.copy(
                 title = book.book.title,
@@ -56,10 +66,10 @@ class AudioPlaybackEngine @Inject constructor(
                 coverPath = book.book.coverPath,
             ))
             // Retain ownership before honoring cancellation so an IO result cannot leak a publication.
-            val pub = requireNotNull(withContext(NonCancellable) { repository.openPublication(book) })
+            val pub = requireNotNull(withContext(NonCancellable) { publications.openPublication(book) })
             publication = pub
             currentCoroutineContext().ensureActive()
-            val originalRendition = repository.rendition(bookId, "original")
+            val originalRendition = reading.rendition(bookId, "original")
             val override = originalRendition?.preferencesJson?.takeUnless { it == "{}" }?.let {
                 kotlinx.serialization.json.Json.decodeFromString<com.javierreansyah.pinecone.data.local.preferences.ReaderSettings>(
                     it
@@ -108,30 +118,43 @@ class AudioPlaybackEngine @Inject constructor(
                 scope.launch {
                     nav.currentLocator.collect {
                         store.update { state -> state.copy(locator = it) }
-                        repository.saveReadingPosition(bookId, it)
+                        reading.saveReadingPosition(bookId, it, session = pub.readingSessionToken())
                     }
                 },
                 scope.launch {
                     combine(
                         preferences.readerSettings,
-                        repository.renditionFlow(bookId, "original")
-                    ) { global, rendition ->
-                        val local = rendition?.preferencesJson?.takeUnless { it == "{}" }?.let {
+                        reading.renditionFlow(bookId, "original").map { it?.preferencesJson }.distinctUntilChanged()
+                    ) { global, encoded ->
+                        val local = encoded?.takeUnless { it == "{}" }?.let {
                             kotlinx.serialization.json.Json.decodeFromString<com.javierreansyah.pinecone.data.local.preferences.ReaderSettings>(
                                 it
                             )
                         }
                         if (local == null) global else global.withReadingPreferencesFrom(local)
-                    }.collect {
+                    }.map { it.formatPreferences.audioSpeed to it.formatPreferences.audioPitch }
+                        .distinctUntilChanged().collect { (speed, pitch) ->
                         nav.submitPreferences(
                             ExoPlayerPreferences(
-                                speed = it.formatPreferences.audioSpeed,
-                                pitch = it.formatPreferences.audioPitch
+                                speed = speed,
+                                pitch = pitch
                             )
                         )
                     }
                 },
             )
+            val invalidation = scope.launch(start = kotlinx.coroutines.CoroutineStart.LAZY) {
+                combine(repository.getBookFlow(bookId), operations.libraryState) { details, runtime ->
+                    details == null || runtime.second || runtime.first != pub.readingSessionToken()?.generation
+                }.first { it }
+                val self = currentCoroutineContext()[Job]
+                val others = jobs.filter { it != self }
+                others.forEach(Job::cancel)
+                others.joinAll()
+                releasePlayer()
+            }
+            jobs = jobs + invalidation
+            invalidation.start()
         } catch (cancelled: CancellationException) {
             releasePlayer(); throw cancelled
         } catch (error: Exception) {
@@ -153,7 +176,7 @@ class AudioPlaybackEngine @Inject constructor(
         try {
             val bookId = state.value.bookId
             val lastLocator = state.value.locator
-            if (bookId != null && lastLocator != null) repository.saveReadingPosition(bookId, lastLocator)
+            if (bookId != null && lastLocator != null) reading.saveReadingPosition(bookId, lastLocator, session = publication?.readingSessionToken())
         } finally {
             releasePlayer()
         }

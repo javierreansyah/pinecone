@@ -58,7 +58,8 @@ fun NavGraph(
         contract = object :
             ActivityResultContract<Array<String>, List<@JvmSuppressWildcards Uri>>() {
             override fun createIntent(context: Context, input: Array<String>): Intent {
-                return Intent(Intent.ACTION_GET_CONTENT).apply {
+                return Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
                     type = "*/*"
                     putExtra(Intent.EXTRA_MIME_TYPES, input)
                     putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
@@ -123,7 +124,19 @@ fun NavGraph(
     }
     val navigateToReader: (String) -> Unit = { openBook(it, null) }
     val density = LocalDensity.current
-    var organizeBookIds by remember { mutableStateOf<String?>(null) }
+    var organizeBookIds by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<Set<String>?>(null) }
+    val libraryState by mainViewModel.libraryState.collectAsStateWithLifecycle()
+    var stableGeneration by remember { mutableStateOf<Long?>(null) }
+    androidx.compose.runtime.LaunchedEffect(libraryState) {
+        libraryState?.takeUnless { it.second }?.let { (generation, _) ->
+            if (stableGeneration != null && stableGeneration != generation) {
+                organizeBookIds = null
+                backStack.clear()
+                backStack.add(Screen.Library)
+            }
+            stableGeneration = generation
+        }
+    }
 
     val backDispatcher = remember { ScreenBackDispatcher() }
     val navigateBack: () -> Unit = backDispatcher::onBack
@@ -134,6 +147,22 @@ fun NavGraph(
     val exclusionWidth = windowInfo.containerSize.width.toFloat()
     val exclusionHeight = with(density) { 120.dp.toPx() }
 
+    val imports by mainViewModel.importOperations.collectAsStateWithLifecycle()
+    val activeImport = imports.firstOrNull { !it.state.terminal }
+    com.javierreansyah.pinecone.ui.components.WorkNotificationPermission(activeImport != null)
+    androidx.compose.foundation.layout.Column(modifier) {
+    activeImport?.let { operation ->
+        androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            androidx.compose.material3.Text(
+                androidx.compose.ui.res.stringResource(com.javierreansyah.pinecone.R.string.publication_work_importing) + " · " +
+                    androidx.compose.ui.res.stringResource(com.javierreansyah.pinecone.R.string.publication_work_progress, operation.completed, operation.total),
+                modifier = Modifier.weight(1f),
+            )
+            androidx.compose.material3.TextButton(onClick = { mainViewModel.cancelImport(operation.id) }) {
+                androidx.compose.material3.Text(androidx.compose.ui.res.stringResource(android.R.string.cancel))
+            }
+        }
+    }
     ScreenNavDisplay(
         backStack = backStack.filterNot { it is Screen.AudioPlayer },
         backDispatcher = backDispatcher,
@@ -141,7 +170,7 @@ fun NavGraph(
             rememberSaveableStateHolderNavEntryDecorator(),
             rememberViewModelStoreNavEntryDecorator(),
         ),
-        modifier = modifier
+        modifier = Modifier.weight(1f)
             .background(MaterialTheme.colorScheme.background)
             .systemGestureExclusion {
                 Rect(0f, 0f, exclusionWidth, exclusionHeight)
@@ -376,15 +405,25 @@ fun NavGraph(
         },
     )
 
-    organizeBookIds?.let { bookIds ->
-        val organizeViewModel = hiltViewModel<
-                com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel,
-                com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel.Factory,
-                >(key = "organize:$bookIds", creationCallback = { it.create(bookIds) })
-        com.javierreansyah.pinecone.ui.features.library.organize.OrganizeBottomSheet(
-            viewModel = organizeViewModel,
-        ) { organizeBookIds = null }
     }
+
+    val organizerEntries = androidx.navigation3.runtime.rememberDecoratedNavEntries(
+        backStack = organizeBookIds?.let { listOf(Screen.Organize(it.sorted())) }.orEmpty(),
+        entryDecorators = listOf(
+            rememberSaveableStateHolderNavEntryDecorator(),
+            rememberViewModelStoreNavEntryDecorator(),
+        ),
+        entryProvider = entryProvider {
+            entry<Screen.Organize> { selection ->
+                val organizeViewModel = hiltViewModel<
+                    com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel,
+                    com.javierreansyah.pinecone.ui.features.library.organize.OrganizeViewModel.Factory,
+                >(creationCallback = { it.create(selection.bookIds) })
+                com.javierreansyah.pinecone.ui.features.library.organize.OrganizeBottomSheet(organizeViewModel) { organizeBookIds = null }
+            }
+        },
+    )
+    organizerEntries.lastOrNull()?.Content()
 
     val importErrorReport by mainViewModel.importErrorReport.collectAsStateWithLifecycle()
     importErrorReport?.let { report ->

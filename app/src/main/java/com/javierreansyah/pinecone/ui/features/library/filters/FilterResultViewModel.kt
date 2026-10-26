@@ -9,6 +9,7 @@ import com.javierreansyah.pinecone.data.local.database.library.TagEntity
 import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
 import com.javierreansyah.pinecone.data.local.preferences.libraryPreferenceDefaults
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.data.model.fromEntity
 import com.javierreansyah.pinecone.domain.DeleteBooks
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
@@ -22,7 +23,6 @@ import com.javierreansyah.pinecone.ui.features.library.sortShelfBooks
 import com.javierreansyah.pinecone.ui.features.library.toggleFormat
 import com.javierreansyah.pinecone.ui.features.library.toggleStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +30,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -43,7 +45,10 @@ class FilterResultViewModel @Inject constructor(
     private val bookRepository: LibraryRepository,
     private val deletePublications: DeleteBooks,
     private val prefsManager: LibraryPreferencesManager,
+    @com.javierreansyah.pinecone.di.DefaultDispatcher private val computation: kotlinx.coroutines.CoroutineDispatcher,
 ) : ViewModel() {
+    val mutationErrors = com.javierreansyah.pinecone.ui.components.MutationErrorState()
+
     private val screenKey = "filter_result"
 
     private val _uiState =
@@ -51,8 +56,9 @@ class FilterResultViewModel @Inject constructor(
 
     val uiState: StateFlow<FilterResultUiState> = _uiState.asStateFlow()
 
-    private val booksFlow: Flow<List<Book>> =
+    private val booksFlow: StateFlow<List<Book>> =
         bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }
+            .flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val actionBooks: StateFlow<List<Book>> = combine(
         booksFlow, bookRepository.getArchivedBooks(),
@@ -108,29 +114,21 @@ class FilterResultViewModel @Inject constructor(
     val allSpaces: StateFlow<List<SpaceEntity>> =
         bookRepository.getAllSpaces().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    fun getBooksByAuthor(author: String): Flow<List<Book>> = allBooks.map { books ->
-        books.filter { author in it.authors }
-    }
+    private val selection = MutableStateFlow("" to "")
+    fun selectCollection(type: String, value: String) { selection.value = type to value }
 
-    fun getBooksByTag(tag: String): Flow<List<Book>> = allBooks.map { books ->
-        books.filter { tag in it.tags }
-    }
-
-    fun getBooksBySpace(spaceName: String): Flow<List<Book>> =
-        combine(allBooksAcrossSpaces, allSpaces) { books, spaces ->
-            val space = spaces.find { (_, itName3, _) -> itName3 == spaceName }
-            if (space != null) {
-                books.inSpace(space.id)
-            } else {
-                emptyList()
-            }
+    val unfilteredBooks: StateFlow<List<Book>> = combine(selection, allBooks, allBooksAcrossSpaces, allSpaces) { (type, value), visible, all, spaces ->
+        when (type) {
+            "author" -> visible.filter { value in it.authors }
+            "tag" -> visible.filter { value in it.tags }
+            "space" -> spaces.firstOrNull { it.name == value }?.let { all.inSpace(it.id) }.orEmpty()
+            else -> emptyList()
         }
+    }.flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun getFilteredAndSortedBooks(baseFlow: Flow<List<Book>>): Flow<List<Book>> {
-        return combine(baseFlow, _uiState) { books, (stateBookPreferences) ->
-            books.filterAndSort(stateBookPreferences)
-        }
-    }
+    val filteredBooks: StateFlow<List<Book>> = combine(unfilteredBooks, _uiState.map { it.bookPreferences }.distinctUntilChanged()) { books, prefs ->
+        books.filterAndSort(prefs)
+    }.flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun onLayoutModeChange(mode: LayoutMode) {
         val spaceId = globalSpaceId.value
@@ -161,18 +159,22 @@ class FilterResultViewModel @Inject constructor(
     }
 
     fun deleteFilterItem(type: String, name: String, onSuccess: () -> Unit) {
-        onSuccess()
-        viewModelScope.launch(Dispatchers.IO) {
-            bookRepository.deleteFilterItem(type, name)
+        viewModelScope.launch {
+            mutationErrors.run {
+                bookRepository.deleteFilterItem(type, name)
+                onSuccess()
+            }
         }
     }
 
     fun renameFilterItem(
         type: String, oldName: String, newName: String, onSuccess: (String) -> Unit,
     ) {
-        onSuccess(newName.trim())
-        viewModelScope.launch(Dispatchers.IO) {
-            bookRepository.renameFilterItem(type, oldName, newName)
+        viewModelScope.launch {
+            mutationErrors.run {
+                bookRepository.renameFilterItem(type, oldName, newName)
+                onSuccess(newName.trim())
+            }
         }
     }
 
@@ -195,15 +197,7 @@ class FilterResultViewModel @Inject constructor(
     }
 
     fun archiveBooks(bookIds: Collection<String>) {
-        viewModelScope.launch {
-            val currentBooks = allBooksAcrossSpaces.value.associateBy(Book::id)
-            bookIds.forEach { bookId ->
-                val book = currentBooks[bookId]
-                if (book != null && !book.isArchived) {
-                    bookRepository.toggleArchive(bookId)
-                }
-            }
-        }
+        viewModelScope.launch { bookRepository.setArchived(bookIds, true) }
     }
 
     fun toggleReadStatus(bookId: String) {
@@ -213,15 +207,7 @@ class FilterResultViewModel @Inject constructor(
     }
 
     fun markBooksReadStatus(bookIds: Collection<String>, markAsRead: Boolean) {
-        viewModelScope.launch {
-            val currentBooks = allBooksAcrossSpaces.value.associateBy(Book::id)
-            bookIds.forEach { bookId ->
-                val book = currentBooks[bookId]
-                if (book != null && book.isRead != markAsRead) {
-                    bookRepository.toggleReadStatus(bookId)
-                }
-            }
-        }
+        viewModelScope.launch { bookRepository.setReadStatus(bookIds, markAsRead) }
     }
 
 }

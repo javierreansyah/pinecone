@@ -82,6 +82,7 @@ import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.data.model.fromEntity
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
@@ -109,7 +110,7 @@ fun ShelfDetailScreen(
     onNavigateBack: () -> Unit,
     onNavigateToReader: (String) -> Unit,
     onNavigateToBookInfo: (String) -> Unit,
-    onNavigateToOrganize: (String) -> Unit,
+    onNavigateToOrganize: (Set<String>) -> Unit,
     viewModel: ShelfDetailViewModel = hiltViewModel(),
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle()
@@ -125,16 +126,10 @@ fun ShelfDetailScreen(
     var selectedBooks by remember { mutableStateOf(emptySet<String>()) }
     var isInMultiSelectMode by remember { mutableStateOf(value = false) }
 
-    val shelves by viewModel.shelves.collectAsStateWithLifecycle()
+    androidx.compose.runtime.LaunchedEffect(shelfId) { viewModel.selectShelf(shelfId) }
     val allBooks by viewModel.allBooks.collectAsStateWithLifecycle()
-    val shelfWithCovers = shelves.find { (itShelf, _) -> itShelf.id == shelfId }
-
-    val baseBooksFlow = remember(shelfWithCovers) {
-        flowOf(shelfWithCovers?.books?.map { Book.fromEntity(it) } ?: emptyList())
-    }
-
-    val books by viewModel.getFilteredAndSortedBooks(baseBooksFlow)
-        .collectAsStateWithLifecycle(initialValue = emptyList())
+    val shelfWithCovers = viewModel.selectedShelf.collectAsStateWithLifecycle().value
+    val books by viewModel.filteredBooks.collectAsStateWithLifecycle()
 
     var reorderBooks by remember { mutableStateOf(emptyList<Book>()) }
 
@@ -199,7 +194,7 @@ fun ShelfDetailScreen(
             exitMultiSelect()
         },
         onOrganizeSelected = {
-            val ids = selectedBooks.joinToString(",")
+            val ids = selectedBooks
             exitMultiSelect()
             onNavigateToOrganize(ids)
         },
@@ -218,7 +213,7 @@ fun ShelfDetailScreen(
         },
         onStartReordering = {
             if (shelfWithCovers != null) {
-                reorderBooks = shelfWithCovers.books.map { Book.fromEntity(it) }
+                reorderBooks = allBooks
                 isReordering = true
             }
         },
@@ -290,7 +285,7 @@ fun ShelfDetailScreen(
             onNavigateToBookInfo = onNavigateToBookInfo,
             onToggleArchive = { viewModel.toggleArchive(bookId) },
             onToggleReadStatus = { viewModel.toggleReadStatus(bookId) },
-            onOrganize = onNavigateToOrganize,
+            onOrganize = { onNavigateToOrganize(setOf(it)) },
             onDeleteBook = { viewModel.deleteBook(bookId) },
             onEnterMultiSelect = {
                 selectedBooks = setOf(bookId)

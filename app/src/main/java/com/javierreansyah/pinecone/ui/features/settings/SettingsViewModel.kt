@@ -56,12 +56,17 @@ class SettingsViewModel @Inject constructor(
 
     fun performFullBackup(onStart: () -> Unit, onSuccess: () -> Unit, onFailure: () -> Unit) {
         viewModelScope.launch {
-            _isBackingUp.value = true; onStart()
-            val result = backupRepository.createSnapshot(manual = true)
-            _isBackingUp.value = false
-            if (result.isSuccess) {
-                loadBackups(); onSuccess()
-            } else onFailure()
+            if (_isBackingUp.value) return@launch
+            _isBackingUp.value = true
+            try {
+                onStart()
+                val result = backupRepository.createSnapshot(manual = true)
+                if (result.isSuccess) {
+                    loadBackups(); onSuccess()
+                } else onFailure()
+            } finally {
+                _isBackingUp.value = false
+            }
         }
     }
 
@@ -86,21 +91,26 @@ class SettingsViewModel @Inject constructor(
         onFailure: () -> Unit,
     ) {
         viewModelScope.launch {
-            _isRestoring.value = true; onStart()
-            when (restoreBackup(uri)) {
-                is BackupResult.Success, BackupResult.Skipped -> {
-                    application.imageLoader.memoryCache?.clear()
-                    application.imageLoader.diskCache?.clear()
-                    onSuccess()
-                }
+            if (_isRestoring.value) return@launch
+            _isRestoring.value = true
+            try {
+                onStart()
+                when (restoreBackup(uri)) {
+                    is BackupResult.Success, BackupResult.Skipped -> {
+                        application.imageLoader.memoryCache?.clear()
+                        application.imageLoader.diskCache?.clear()
+                        onSuccess()
+                    }
 
-                is BackupResult.Partial -> {
-                    onWarning(); onSuccess()
-                }
+                    is BackupResult.Partial -> {
+                        onWarning(); onSuccess()
+                    }
 
-                is BackupResult.Failure -> onFailure()
+                    is BackupResult.Failure -> onFailure()
+                }
+            } finally {
+                _isRestoring.value = false
             }
-            _isRestoring.value = false
         }
     }
 

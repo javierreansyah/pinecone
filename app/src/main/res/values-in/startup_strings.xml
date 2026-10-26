@@ -1,0 +1,4 @@
+<resources>
+    <string name="startup_failed">Tidak dapat membuka pustaka</string>
+    <string name="startup_retry_description">Berkas tersimpan tetap dipertahankan. Coba lagi untuk menyelesaikan pemuatan pustaka dan pengaturan.</string>
+</resources>

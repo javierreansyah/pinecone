@@ -7,7 +7,7 @@ import com.javierreansyah.pinecone.data.local.database.library.ShelfEntity
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
 
-const val ALL_SPACES_ID: String = "_all_"
+const val ALL_SPACES_ID: String = com.javierreansyah.pinecone.data.model.library.ALL_SPACES_ID
 
 fun List<Book>.inSpace(spaceId: String?): List<Book> =
     filter { !it.isUnsorted && (spaceId == null || spaceId == ALL_SPACES_ID || spaceId in it.spaceIds) }

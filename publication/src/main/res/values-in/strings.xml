@@ -1,0 +1,5 @@
+<resources>
+    <string name="generated_contents">Daftar isi</string>
+    <string name="generated_scanned_page_notice">Tidak ada teks yang dapat diekstrak dari halaman ini. Tampilan aslinya dipertahankan di bawah ini; OCR tidak diaktifkan.</string>
+    <string name="generated_page_label">Halaman %1$d</string>
+</resources>

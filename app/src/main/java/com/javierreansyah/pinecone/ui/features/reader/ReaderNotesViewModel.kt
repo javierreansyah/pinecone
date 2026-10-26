@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
-import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
+import com.javierreansyah.pinecone.data.repository.library.ReadingRepository
 import com.javierreansyah.pinecone.ui.features.reader.components.SortOption
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -32,7 +32,7 @@ data class SelectionState(
 @HiltViewModel(assistedFactory = ReaderNotesViewModel.Factory::class)
 class ReaderNotesViewModel @dagger.assisted.AssistedInject constructor(
     @dagger.assisted.Assisted private val bookId: String,
-    private val repository: LibraryRepository,
+    private val repository: ReadingRepository,
 ) : ViewModel() {
 
     private val _selectionState = MutableStateFlow(SelectionState())
@@ -43,7 +43,11 @@ class ReaderNotesViewModel @dagger.assisted.AssistedInject constructor(
 
     private val _sortOption = MutableStateFlow(SortOption.BOOK_ORDER_ASC)
     private val renditionKey = MutableStateFlow("original")
-    fun setRendition(key: String) {
+    private var session: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null
+
+    fun setRendition(key: String, token: com.javierreansyah.pinecone.data.model.ReadingSessionToken? = null) {
+        if (token != null) session = token
+        if (session == null) viewModelScope.launch { session = repository.currentSession(bookId) }
         renditionKey.value = key
         _selectionState.value = SelectionState()
     }
@@ -174,16 +178,16 @@ class ReaderNotesViewModel @dagger.assisted.AssistedInject constructor(
                 }
             }
             if (existing != null) {
-                repository.removeBookmark(existing.id)
+                repository.removeBookmark(existing.id, session)
             } else {
-                repository.addBookmark(bookId, locator, chapterTitle, renditionKey.value)
+                repository.addBookmark(bookId, locator, chapterTitle, renditionKey.value, session)
             }
         }
     }
 
     fun deleteBookmark(bookmarkId: Long) {
         viewModelScope.launch {
-            repository.removeBookmark(bookmarkId)
+            repository.removeBookmark(bookmarkId, session)
         }
     }
 
@@ -194,7 +198,7 @@ class ReaderNotesViewModel @dagger.assisted.AssistedInject constructor(
         chapterTitle: String?,
     ) {
         viewModelScope.launch {
-            repository.addNote(bookId, locator, noteText, color, chapterTitle, renditionKey.value)
+            repository.addNote(bookId, locator, noteText, color, chapterTitle, renditionKey.value, session)
         }
     }
 
@@ -204,7 +208,7 @@ class ReaderNotesViewModel @dagger.assisted.AssistedInject constructor(
         chapterTitle: String?,
     ) {
         viewModelScope.launch {
-            repository.addNote(bookId, locator, "", color, chapterTitle, renditionKey.value)
+            repository.addNote(bookId, locator, "", color, chapterTitle, renditionKey.value, session)
         }
     }
 
@@ -218,16 +222,17 @@ class ReaderNotesViewModel @dagger.assisted.AssistedInject constructor(
                     color = note.color,
                     chapterTitle = note.chapterTitle,
                     renditionKey = note.renditionKey,
+                    session = session,
                 )
             } else {
-                repository.updateNote(note)
+                repository.updateNote(note, session)
             }
         }
     }
 
     fun deleteNote(noteId: Long) {
         viewModelScope.launch {
-            repository.removeNote(noteId)
+            repository.removeNote(noteId, session)
         }
     }
 

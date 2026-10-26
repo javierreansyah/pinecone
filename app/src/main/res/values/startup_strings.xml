@@ -1,0 +1,4 @@
+<resources>
+    <string name="startup_failed">Could not open your library</string>
+    <string name="startup_retry_description">Your saved files have been kept. Retry to finish loading your library and settings.</string>
+</resources>

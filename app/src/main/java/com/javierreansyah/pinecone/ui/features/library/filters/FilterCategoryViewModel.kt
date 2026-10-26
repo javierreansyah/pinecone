@@ -7,17 +7,18 @@ import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.data.local.database.library.TagEntity
 import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.data.model.fromEntity
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.inNamedCollection
 import com.javierreansyah.pinecone.ui.features.library.inSpace
 import com.javierreansyah.pinecone.ui.features.library.publicationWording
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -34,96 +35,110 @@ data class FilterCollectionSummary(
 class FilterCategoryViewModel @Inject constructor(
     private val bookRepository: LibraryRepository,
     private val prefsManager: LibraryPreferencesManager,
+    @com.javierreansyah.pinecone.di.DefaultDispatcher private val computation: kotlinx.coroutines.CoroutineDispatcher,
 ) : ViewModel() {
+    val mutationErrors = com.javierreansyah.pinecone.ui.components.MutationErrorState()
 
-    private val unfilteredBooks: Flow<List<Book>> =
+
+    private val unfilteredBooks: StateFlow<List<Book>> =
         bookRepository.getAllBooks().map { entities -> entities.map { Book.fromEntity(it) } }
+            .flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Label edits affect archived items too, even though visible counts exclude them.
-    private val actionBooks: Flow<List<Book>> = combine(
+    private val actionBooks: StateFlow<List<Book>> = combine(
         unfilteredBooks, bookRepository.getArchivedBooks(),
     ) { books, archived -> books + archived.map { Book.fromEntity(it) } }
+        .flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val globalSpaceId = prefsManager.getEffectiveSpaceFlow().stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), null,
     )
 
-    private val booksFlow: Flow<List<Book>> =
+    private val booksFlow: StateFlow<List<Book>> =
         combine(unfilteredBooks, globalSpaceId) { books, spaceId ->
             books.inSpace(spaceId)
-        }
+        }.flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val visibleIndex = booksFlow.map(::LibraryCategoryIndex).flowOn(computation)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LibraryCategoryIndex(emptyList()))
+    private val actionIndex = actionBooks.map(::LibraryCategoryIndex).flowOn(computation)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LibraryCategoryIndex(emptyList()))
+    private val spaceIndex = unfilteredBooks.map(::LibraryCategoryIndex).flowOn(computation)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LibraryCategoryIndex(emptyList()))
 
     val allAuthors: StateFlow<List<AuthorEntity>> =
-        combine(bookRepository.getAllAuthors(), booksFlow) { authors, books ->
-            val namesInSpace =
-                books.flatMapTo(mutableSetOf()) { book -> book.authors }
-            authors.filter { (_, itName) -> itName in namesInSpace }
-        }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+        combine(bookRepository.getAllAuthors(), visibleIndex) { authors, index ->
+            authors.filter { it.name in index.authors }
+        }.flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val allTags: StateFlow<List<TagEntity>> =
-        combine(bookRepository.getAllTags(), booksFlow) { tags, books ->
-            val namesInSpace =
-                books.flatMapTo(mutableSetOf()) { book -> book.tags }
-            tags.filter { (_, itName2) -> itName2 in namesInSpace }
-        }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+        combine(bookRepository.getAllTags(), visibleIndex) { tags, index ->
+            tags.filter { it.name in index.tags }
+        }.flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val allSpaces: StateFlow<List<SpaceEntity>> =
         bookRepository.getAllSpaces().stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val authorsWithCounts: StateFlow<List<FilterCollectionSummary>> =
-        combine(allAuthors, booksFlow, actionBooks) { authors, books, allBooks ->
+        combine(allAuthors, visibleIndex, actionIndex) { authors, books, allBooks ->
             authors.map { (_, authorName) ->
-                val members = books.filter { authorName in it.authors }
+                val members = books.authors[authorName].orEmpty()
                 FilterCollectionSummary(
                     authorName, members.size, members.publicationWording(),
-                    allBooks.inNamedCollection("author", authorName).publicationWording()
+                    allBooks.authors[authorName].orEmpty().publicationWording()
                 )
             }
         }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val tagsWithCounts: StateFlow<List<FilterCollectionSummary>> =
-        combine(allTags, booksFlow, actionBooks) { tags, books, allBooks ->
+        combine(allTags, visibleIndex, actionIndex) { tags, books, allBooks ->
             tags.map { (_, tagName) ->
-                val members = books.filter { tagName in it.tags }
+                val members = books.tags[tagName].orEmpty()
                 FilterCollectionSummary(
                     tagName, members.size, members.publicationWording(),
-                    allBooks.inNamedCollection("tag", tagName).publicationWording()
+                    allBooks.tags[tagName].orEmpty().publicationWording()
                 )
             }
         }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val spacesWithCounts: StateFlow<List<FilterCollectionSummary>> =
-        combine(allSpaces, unfilteredBooks, actionBooks) { spaces, books, allBooks ->
+        combine(allSpaces, spaceIndex, actionIndex) { spaces, books, allBooks ->
             spaces.filter { it.id != "_all_" }.map { (spaceId2, spaceName, createdAt) ->
-                val members = books.filter { !it.isUnsorted && spaceId2 in it.spaceIds }
+                val members = books.spaces[spaceId2].orEmpty()
                 FilterCollectionSummary(
                     spaceName, members.size, members.publicationWording(),
-                    allBooks.inNamedCollection("space", spaceName).publicationWording()
+                    allBooks.spaceNames[spaceName].orEmpty().publicationWording()
                 )
             }
         }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     fun deleteFilterItem(type: String, name: String, onSuccess: () -> Unit) {
-        onSuccess()
-        viewModelScope.launch(Dispatchers.IO) {
-            bookRepository.deleteFilterItem(type, name)
+        viewModelScope.launch {
+            mutationErrors.run {
+                bookRepository.deleteFilterItem(type, name)
+                onSuccess()
+            }
         }
     }
 
     fun renameFilterItem(
         type: String, oldName: String, newName: String, onSuccess: (String) -> Unit,
     ) {
-        onSuccess(newName.trim())
-        viewModelScope.launch(Dispatchers.IO) {
-            bookRepository.renameFilterItem(type, oldName, newName)
+        viewModelScope.launch {
+            mutationErrors.run {
+                bookRepository.renameFilterItem(type, oldName, newName)
+                onSuccess(newName.trim())
+            }
         }
     }
 
     fun renameFilterItems(
         type: String, oldNames: List<String>, newName: String, onSuccess: (String) -> Unit,
     ) {
-        onSuccess(newName.trim())
-        viewModelScope.launch(Dispatchers.IO) {
-            oldNames.forEach { oldName ->
-                bookRepository.renameFilterItem(type, oldName, newName)
+        viewModelScope.launch {
+            mutationErrors.run {
+                oldNames.forEach { oldName ->
+                    bookRepository.renameFilterItem(type, oldName, newName)
+                }
+                onSuccess(newName.trim())
             }
         }
     }

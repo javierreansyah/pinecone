@@ -1,22 +1,10 @@
 package com.javierreansyah.pinecone.ui.features.library
 
-@kotlinx.serialization.Serializable
-enum class LayoutMode { Grid, BigGrid, List, BigList }
-
-@kotlinx.serialization.Serializable
-enum class SortType { Title, Author, LastRead, Added, Progress, Custom }
-
-@kotlinx.serialization.Serializable
-enum class StatusFilter { NotStarted, Reading, Finished }
-
-@kotlinx.serialization.Serializable
-enum class ShelfFilter { Shelves, Unshelved }
-
-@kotlinx.serialization.Serializable
-enum class SearchCategory { All, Books, Authors, Shelves, Tags }
-
-@kotlinx.serialization.Serializable
-enum class LibraryView { Both, Books, Shelves }
-
-@kotlinx.serialization.Serializable
-enum class FileFilter { EPUB, PDF, Comics, Audio, Images, WebPublication, Other }
+// Feature aliases keep presentation imports stable; persistence imports the shared model directly.
+typealias LayoutMode = com.javierreansyah.pinecone.data.model.library.LayoutMode
+typealias SortType = com.javierreansyah.pinecone.data.model.library.SortType
+typealias StatusFilter = com.javierreansyah.pinecone.data.model.library.StatusFilter
+typealias ShelfFilter = com.javierreansyah.pinecone.data.model.library.ShelfFilter
+typealias SearchCategory = com.javierreansyah.pinecone.data.model.library.SearchCategory
+typealias LibraryView = com.javierreansyah.pinecone.data.model.library.LibraryView
+typealias FileFilter = com.javierreansyah.pinecone.data.model.library.FileFilter

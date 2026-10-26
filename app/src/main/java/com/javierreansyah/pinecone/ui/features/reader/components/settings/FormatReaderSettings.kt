@@ -135,7 +135,7 @@ fun FormatReaderSettings(
                         page == 0 -> when {
                             profile == ReaderProfile.PDF -> {
                                 val pdf = settings.formatPreferences.pdf
-                                fun update(transform: (com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences) -> com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences) =
+                                fun update(transform: (com.javierreansyah.pinecone.data.local.preferences.PdfPreferences) -> com.javierreansyah.pinecone.data.local.preferences.PdfPreferences) =
                                     onChange { current ->
                                         current.copy(
                                             formatPreferences = current.formatPreferences.copy(
@@ -301,7 +301,7 @@ private fun FormatAdvancedSettings(
             onChange { current ->
                 val format = when {
                     profile == ReaderProfile.PDF -> current.formatPreferences.copy(
-                        pdf = com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences()
+                        pdf = com.javierreansyah.pinecone.data.local.preferences.PdfPreferences()
                     )
 
                     profile == ReaderProfile.AUDIO -> current.formatPreferences.copy(

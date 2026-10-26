@@ -14,6 +14,7 @@ import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesMana
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.libraryPreferenceDefaults
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.data.model.fromEntity
 import com.javierreansyah.pinecone.domain.DeleteBooks
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
@@ -38,6 +39,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -59,6 +61,7 @@ class LibraryViewModel @Inject constructor(
     private val deletePublications: DeleteBooks,
     private val prefsManager: LibraryPreferencesManager,
     private val readerPreferences: ReaderPreferences,
+    @com.javierreansyah.pinecone.di.DefaultDispatcher private val computation: kotlinx.coroutines.CoroutineDispatcher,
 ) : ViewModel() {
     private val screenKey = "library_books"
 
@@ -82,6 +85,7 @@ class LibraryViewModel @Inject constructor(
         globalSpaceId.flatMapLatest { spaceId ->
             bookRepository.getVisibleBooks(spaceId)
                 .map { entities -> entities.map(Book::fromEntity) }
+                .flowOn(computation)
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -102,21 +106,17 @@ class LibraryViewModel @Inject constructor(
         )
 
     init {
-        // Pre-warm Coil's memory cache with the first 8 book covers as soon as
-        // the ViewModel is created. By the time the user taps the search bar the
-        // bitmaps are already decoded and cached, so CoverImage renders instantly
-        // and nothing competes with the expansion animation on the UI thread.
+        // Bound prefetch to eight covers and use the same decode/cache policy as displayed images.
         viewModelScope.launch {
+            val coverMode = readerPreferences.readerSettings.first().coverDisplayMode
             allBooks.first { it.isNotEmpty() }.let { books ->
                 books.take(8)
                     .forEach { book ->
-                        if (book.coverPath != null) {
-                            val request = ImageRequest.Builder(application)
-                                .data(File(book.coverPath))
-                                .size(400, 600)
-                                .scale(Scale.FILL)
-                                .memoryCacheKey(book.coverPath)
-                                .build()
+                        val coverPath = book.coverPath
+                        if (coverPath != null) {
+                            val request = com.javierreansyah.pinecone.ui.features.library.components.book.coverRequest(
+                                application, coverPath, coil3.size.SizeResolver(coil3.size.Size(400, 600)), coverMode,
+                            )
                             application.imageLoader.enqueue(request)
                         }
                     }
@@ -140,7 +140,7 @@ class LibraryViewModel @Inject constructor(
         _uiState.map { it.bookPreferences }.distinctUntilChanged(),
     ) { books, preferences ->
         books.filterAndSort(preferences)
-    }.onEach { _isBooksLoading.value = false }.stateIn(
+    }.flowOn(computation).onEach { _isBooksLoading.value = false }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList(),
@@ -161,7 +161,7 @@ class LibraryViewModel @Inject constructor(
             unshelvedLabel = application.getString(R.string.library_label_unshelved),
             globalSpaceId = spaceId,
         )
-    }.onEach { _isShelvesLoading.value = false }
+    }.flowOn(computation).onEach { _isShelvesLoading.value = false }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     @OptIn(FlowPreview::class)
@@ -236,7 +236,7 @@ class LibraryViewModel @Inject constructor(
                 )
             }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SearchResults())
+    }.flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SearchResults())
 
     private val hasUnsortedBooks: Flow<Boolean> = bookRepository.hasUnsortedBooks()
 
@@ -319,15 +319,7 @@ class LibraryViewModel @Inject constructor(
     }
 
     fun archiveBooks(bookIds: Collection<String>) {
-        viewModelScope.launch {
-            val currentBooks = allBooks.value.associateBy(Book::id)
-            bookIds.forEach { bookId ->
-                val book = currentBooks[bookId]
-                if (book != null && !book.isArchived) {
-                    bookRepository.toggleArchive(bookId)
-                }
-            }
-        }
+        viewModelScope.launch { bookRepository.setArchived(bookIds, true) }
     }
 
     fun toggleReadStatus(bookId: String) {
@@ -337,15 +329,7 @@ class LibraryViewModel @Inject constructor(
     }
 
     fun markBooksReadStatus(bookIds: Collection<String>, markAsRead: Boolean) {
-        viewModelScope.launch {
-            val currentBooks = allBooks.value.associateBy(Book::id)
-            bookIds.forEach { bookId ->
-                val book = currentBooks[bookId]
-                if (book != null && book.isRead != markAsRead) {
-                    bookRepository.toggleReadStatus(bookId)
-                }
-            }
-        }
+        viewModelScope.launch { bookRepository.setReadStatus(bookIds, markAsRead) }
     }
 
     fun onSearchQueryChange(query: String) {

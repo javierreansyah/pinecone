@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -48,7 +49,10 @@ fun HtmlWebView(
     val secondary = colorScheme.secondary
     val tertiary = colorScheme.tertiary
 
+    val wordClick = rememberUpdatedState(config.onWordClick)
+    val wordClickEnabled = config.onWordClick != null
     val fullHtml = remember(
+        wordClickEnabled,
         htmlContent,
         config.preset,
         config.extraCss,
@@ -96,21 +100,23 @@ fun HtmlWebView(
                     builtInZoomControls = false
                     displayZoomControls = false
                 }
-                if (config.onWordClick != null) {
-                    addJavascriptInterface(
-                        object {
-                            @android.webkit.JavascriptInterface
-                            fun onWordClick(word: String) {
-                                post { config.onWordClick.invoke(word) }
-                            }
-                        },
-                        "Android",
-                    )
-                }
+                addJavascriptInterface(
+                    object {
+                        @android.webkit.JavascriptInterface
+                        fun onWordClick(word: String) {
+                            post { wordClick.value?.invoke(word) }
+                        }
+                    },
+                    "Android",
+                )
             }
         },
         update = { webView ->
-            webView.loadDataWithBaseURL(null, fullHtml, "text/html", "UTF-8", null)
+            webView.settings.javaScriptEnabled = wordClickEnabled
+            if (webView.tag != fullHtml) {
+                webView.tag = fullHtml
+                webView.loadDataWithBaseURL(null, fullHtml, "text/html", "UTF-8", null)
+            }
         },
         onRelease = { webView ->
             webView.destroy()

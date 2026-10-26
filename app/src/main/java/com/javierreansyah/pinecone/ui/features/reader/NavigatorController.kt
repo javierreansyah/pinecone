@@ -2,6 +2,8 @@
 
 package com.javierreansyah.pinecone.ui.features.reader
 
+import com.javierreansyah.pinecone.data.repository.library.readingSessionToken
+
 import android.os.Bundle
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -68,20 +70,26 @@ class NavigatorController(
         lifecycleOwner.lifecycle.addObserver(this)
     }
 
-    fun setupNavigator(publication: Publication) {
-        if (this.publication === publication) return
+    fun detachNavigator() {
         locationJob?.cancel(); preferencesJob?.cancel(); searchNavigationJob?.cancel()
         pdfAnnotationsJob?.cancel(); pdfClearSelectionJob?.cancel()
         epub?.close(); epub = null
         navigator = null
-        fragmentManager.fragments.filter { it.id == R.id.navigator_container }.forEach {
-            fragmentManager.beginTransaction().remove(it).commitNow()
+        if (!fragmentManager.isDestroyed) fragmentManager.fragments.filter { it.id == R.id.navigator_container }.forEach {
+            fragmentManager.beginTransaction().remove(it).commitNowAllowingStateLoss()
         }
+        publication = null
         viewModel.onNavigatorDetached()
+    }
+
+    fun setupNavigator(publication: Publication) {
+        if (this.publication === publication) return
+        detachNavigator()
         this.publication = publication
-        notesViewModel.setRendition(viewModel.activeRendition.value)
+        notesViewModel.setRendition(viewModel.activeRendition.value, publication.readingSessionToken())
         searchViewModel.exitSearchNavigation()
         val rendition = viewModel.activeRendition.value
+        val session = publication.readingSessionToken()
         when (PublicationFormats.profile(publication)) {
             ReaderProfile.EPUB -> {
                 epub = EpubNavigatorController(
@@ -178,8 +186,8 @@ class NavigatorController(
         })
         locationJob = lifecycleOwner.lifecycleScope.launch {
             nav.currentLocator.collect {
-                if (viewModel.activeRendition.value == rendition) viewModel.onLocatorChanged(it)
-                viewModel.savePosition(it, rendition)
+                if (viewModel.publication.value === publication) viewModel.onLocatorChanged(it)
+                viewModel.savePosition(it, rendition, session)
             }
         }
         searchNavigationJob = lifecycleOwner.lifecycleScope.launch {

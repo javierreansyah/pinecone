@@ -77,6 +77,7 @@ android {
         }
 
         create("staging") {
+            matchingFallbacks += "release"
             initWith(getByName("release"))
             applicationIdSuffix = ".dev"
             manifestPlaceholders["appName"] = "Pinecone Dev"
@@ -120,6 +121,11 @@ androidComponents {
             true
     }
     onVariants { variant ->
+        variant.deviceTests.values.forEach { test ->
+            test.sources.java?.addStaticSourceDirectory(
+                rootProject.file("test-support/src/androidTest/java").absolutePath,
+            )
+        }
         variant.sources.assets?.addGeneratedSourceDirectory(
             publicationLicenseAssets,
             PublicationLicenseAssetsTask::outputDirectory
@@ -139,6 +145,9 @@ androidComponents {
 }
 
 dependencies {
+    implementation(project(":core:model"))
+    implementation(project(":publication"))
+    implementation(project(":data"))
     implementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
@@ -222,6 +231,11 @@ kotlin {
     compilerOptions {
         allWarningsAsErrors.set(true)
     }
+}
+
+// Keep the documented Quick command inclusive as implementation moves into libraries.
+tasks.matching { it.name == "testDebugUnitTest" }.configureEach {
+    dependsOn(":core:model:test", ":publication:testDebugUnitTest", ":data:testDebugUnitTest")
 }
 
 tasks.withType<JavaCompile>().configureEach {
