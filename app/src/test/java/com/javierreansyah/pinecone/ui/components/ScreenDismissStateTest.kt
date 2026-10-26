@@ -11,7 +11,7 @@ class ScreenDismissStateTest {
     private val motionSpec = MotionScheme.expressive().defaultEffectsSpec<Float>()
 
     @Test
-    fun committedGestureFinishesShrinkingBeforeFlyingAndClosesOnlyOnce() {
+    fun committedGestureFliesAtReleaseScaleAndClosesOnlyOnce() {
         val state = ScreenDismissState()
         state.seek(0.37f)
         val frames = mutableListOf<Pair<Float, Float>>()
@@ -20,16 +20,15 @@ class ScreenDismissStateTest {
 
         runBlocking(clock) {
             state.dismiss(motionSpec) {
-                assertEquals(1f, state.progress)
+                assertEquals(0.37f, state.progress)
                 assertEquals(1f, state.exit)
                 closes++
             }
             state.dismiss(motionSpec) { closes++ }
         }
 
-        assertTrue(frames.any { (progress, exit) -> progress > 0.37f && progress < 1f && exit == 0f })
         assertTrue(frames.any { (_, exit) -> exit > 0f && exit < 1f })
-        assertTrue(frames.all { (progress, exit) -> exit == 0f || progress == 1f })
+        assertTrue(frames.all { (progress, _) -> progress == 0.37f })
         assertEquals(1, closes)
     }
 
@@ -52,10 +51,15 @@ class ScreenDismissStateTest {
     }
 
     @Test
-    fun buttonBackUsesBothPhasesAndResetAllowsAnotherNavigation() {
+    fun buttonBackSlidesAtFullSizeAndResetAllowsAnotherNavigation() {
         val state = ScreenDismissState()
         var closes = 0
-        runBlocking(FrameClock {}) { state.dismiss(motionSpec) { closes++ } }
+        val frames = mutableListOf<Pair<Float, Float>>()
+        runBlocking(FrameClock { frames += state.progress to state.exit }) {
+            state.dismiss(motionSpec) { closes++ }
+        }
+        assertTrue(frames.any { (_, exit) -> exit > 0f && exit < 1f })
+        assertTrue(frames.all { (progress, _) -> progress == 0f })
         state.reset()
 
         assertEquals(0f, state.progress)

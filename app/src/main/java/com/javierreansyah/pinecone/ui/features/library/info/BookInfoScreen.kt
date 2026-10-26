@@ -71,6 +71,7 @@ import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -131,8 +132,10 @@ import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLoca
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.SegmentedColumn
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
+import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.fileFormat
+import com.javierreansyah.pinecone.ui.features.library.main.ShelvesPage
 import com.javierreansyah.pinecone.ui.features.library.publicationWording
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import kotlinx.coroutines.launch
@@ -152,6 +155,7 @@ fun BookInfoScreen(
     onNavigateToReader: (String, Locator?) -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToEdit: (String) -> Unit,
+    onNavigateToShelf: (String, String, Int) -> Unit,
     onNavigateToTag: (String) -> Unit,
     onNavigateToOrganize: (Set<String>) -> Unit,
 ) {
@@ -199,6 +203,7 @@ fun BookInfoScreen(
                     viewModel = viewModel,
                     onNavigateBack = onNavigateBack,
                     onNavigateToEdit = onNavigateToEdit,
+                    onNavigateToShelf = onNavigateToShelf,
                     onNavigateToTag = onNavigateToTag,
                     onOrganizeClick = { onNavigateToOrganize(setOf(bookId)) },
                 ) { showDeleteConfirm = true }
@@ -261,6 +266,7 @@ private fun BookInfoContent(
     viewModel: BookInfoViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToEdit: (String) -> Unit,
+    onNavigateToShelf: (String, String, Int) -> Unit,
     onNavigateToTag: (String) -> Unit,
     onOrganizeClick: () -> Unit,
     showDeleteConfirm: () -> Unit,
@@ -275,6 +281,8 @@ private fun BookInfoContent(
     val librarySettings by viewModel.settings.collectAsStateWithLifecycle()
     val bookmarks by viewModel.bookmarks.collectAsStateWithLifecycle()
     val notes by viewModel.notes.collectAsStateWithLifecycle()
+    val shelves by viewModel.shelves.collectAsStateWithLifecycle()
+    val spaceNames by viewModel.spaceNames.collectAsStateWithLifecycle()
     val tableOfContents by viewModel.tableOfContents.collectAsStateWithLifecycle()
     val positions by viewModel.positions.collectAsStateWithLifecycle()
 
@@ -376,14 +384,21 @@ private fun BookInfoContent(
                 onDeleteClick = showDeleteConfirm,
             )
 
-            val pagerState = rememberPagerState { 4 }
-            val coroutineScope = rememberCoroutineScope()
+            var hasShelvesTab by remember { mutableStateOf(false) }
             val tabs = listOf(
                 stringResource(book.publicationWording.infoTitle),
                 stringResource(R.string.reader_chapters_title),
                 stringResource(R.string.reader_bookmarks_title),
                 stringResource(R.string.reader_notes_title),
-            )
+            ) + if (hasShelvesTab) listOf(stringResource(R.string.library_tab_shelves)) else emptyList()
+            val pagerState = rememberPagerState { tabs.size }
+            LaunchedEffect(shelves.isNotEmpty()) {
+                if (shelves.isEmpty() && pagerState.currentPage == 4) {
+                    pagerState.scrollToPage(0)
+                }
+                hasShelvesTab = shelves.isNotEmpty()
+            }
+            val coroutineScope = rememberCoroutineScope()
 
             SecondaryScrollableTabRow(
                 selectedTabIndex = pagerState.currentPage,
@@ -449,6 +464,15 @@ private fun BookInfoContent(
                         onNoteClick = jumpToLocator,
                         onDeleteNote = { viewModel.deleteNote(it) },
                         maxTabHeight = maxTabHeight,
+                    )
+
+                    4 -> ShelvesPage(
+                        shelves = shelves,
+                        spaceNames = if (librarySettings.spacesEnabled) spaceNames else emptyMap(),
+                        onShelfClick = onNavigateToShelf,
+                        onBookClick = { onNavigateToReader(it, null) },
+                        layoutMode = LayoutMode.BigList,
+                        modifier = Modifier.fillMaxWidth().height(maxTabHeight),
                     )
                 }
             }

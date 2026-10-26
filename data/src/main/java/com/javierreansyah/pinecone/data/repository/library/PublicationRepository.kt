@@ -237,6 +237,26 @@ class PublicationRepository @Inject constructor(
     }
 
 
+    private fun PublicationRenditionEntity.isReusableReadMode(): Boolean =
+        converterVersion == PdfReadModeConverter.VERSION && File(filePath).isFile
+
+    /** Reuse is a storage mutation, but never a conversion operation. */
+    suspend fun tryReuseReadMode(
+        bookId: String,
+        commit: suspend (PublicationRenditionEntity) -> Unit,
+    ): Boolean = withContext(ioDispatcher) {
+        storageMutex.withLock {
+            database.withTransaction {
+                check(!database.operationDao().runtime().maintenance) { "Library restore in progress" }
+                if (database.operationDao().activeConversion(bookId) != null) return@withTransaction false
+                val existing = publicationDao.rendition(bookId, "read-mode")
+                    ?.takeIf { it.isReusableReadMode() } ?: return@withTransaction false
+                commit(existing)
+                true
+            }
+        }
+    }
+
     suspend fun createReadMode(
         bookId: String,
         forceReparse: Boolean = false,
@@ -246,8 +266,7 @@ class PublicationRepository @Inject constructor(
     ): PublicationRenditionEntity = withContext(ioDispatcher) {
         conversionMutex.withLock {
             val existing = publicationDao.rendition(bookId, "read-mode")
-            if (!forceReparse && existing != null && existing.converterVersion == PdfReadModeConverter.VERSION &&
-                File(existing.filePath).isFile
+            if (!forceReparse && existing?.isReusableReadMode() == true
             ) return@withLock storageMutex.withLock {
                 database.withTransaction {
                     check(

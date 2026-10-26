@@ -9,7 +9,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.rememberTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -189,9 +188,7 @@ fun <T : Any> ScreenNavDisplay(
 
                     else -> {
                         // Covers programmatic pops that did not use the shared Back dispatcher.
-                        (EnterTransition.None togetherWith scaleOut(
-                            exitEffectsSpec, targetScale = ScreenMinimizedScale,
-                        ) + slideOutHorizontally(
+                        (EnterTransition.None togetherWith slideOutHorizontally(
                             exitOffsetSpec,
                         ) { it })
                     }

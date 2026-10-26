@@ -50,10 +50,7 @@ internal class ScreenDismissState {
     suspend fun dismiss(animationSpec: FiniteAnimationSpec<Float>, onDismissed: () -> Unit) {
         if (isDismissing) return
         isDismissing = true
-        // Settle into the box first, including when Back was tapped instead of swiped.
-        animate(progress, 1f, animationSpec = animationSpec) { value, _ ->
-            progress = value
-        }
+        // Freeze the gesture's scale and fly away immediately, including for button Back.
         animate(
             exit, 1f,
             animationSpec = animationSpec,

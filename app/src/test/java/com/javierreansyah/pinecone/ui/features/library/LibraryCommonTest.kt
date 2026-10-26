@@ -260,6 +260,23 @@ class LibraryCommonTest {
             ordered.filterAndSort(prefs.copy(isAscending = false)).map { it.id })
     }
 
+    @Test
+    fun `membership shelf sorting preserves empty previews and ignores library visibility filters`() {
+        val empty = ShelfWithCovers(ShelfEntity("empty", work.id, "A shelf"), emptyList())
+        val populated = ShelfWithCovers(
+            ShelfEntity("populated", work.id, "Z shelf"), listOf(details("pdf", "application/pdf")),
+        )
+        val prefs = libraryPreferenceDefaults("library_shelves").copy(
+            selectedFormats = setOf(FileFilter.EPUB),
+            selectedShelfFilter = setOf(ShelfFilter.Unshelved),
+        )
+        assertEquals(listOf(empty, populated), sortShelves(listOf(populated, empty), prefs))
+        assertEquals(
+            listOf(populated, empty),
+            sortShelves(listOf(empty, populated), prefs.copy(isAscending = false)),
+        )
+    }
+
     private fun details(id: String, mime: String) = BookWithDetails(
         BookEntity(id = id, title = id, filePath = "/$id", mediaType = mime),
         emptyList(), emptyList(), emptyList(), listOf(all, work, leisure),

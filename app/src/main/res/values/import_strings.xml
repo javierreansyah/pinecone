@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="import_failed_files">Could not import:\n%1$s</string>
     <plurals name="import_all_failed_message">
         <item quantity="one">Failed to import %d file:</item>
         <item quantity="other">Failed to import %d files:</item>

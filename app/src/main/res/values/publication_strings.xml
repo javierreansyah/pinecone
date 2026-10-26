@@ -74,5 +74,7 @@
     <string name="publication_work_importing">Importing publications</string>
     <string name="publication_work_converting">Preparing PDF read mode</string>
     <string name="publication_work_progress">%1$d of %2$d</string>
+    <string name="publication_work_processing">Processing %1$d of %2$d</string>
+    <string name="publication_work_preparing">Preparing files…</string>
     <string name="publication_input_required">Select the file or folder again to retry this import.</string>
 </resources>

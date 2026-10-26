@@ -297,6 +297,37 @@ class PublicationOperationsTest {
                     session = original.readingSessionToken()
                 )
                 assertEquals(originalState, f.reading.rendition(book.book.id, "original"))
+
+                val cached = requireNotNull(f.reading.rendition(book.book.id, "read-mode"))
+                val cachedFile = File(cached.filePath)
+                val cachedBytes = cachedFile.readBytes().toList()
+                f.reading.activateMappedRendition(book.book.id, "original")
+                val session = f.reading.currentSession(book.book.id)
+                assertTrue(f.publications.tryReuseReadMode(book.book.id) {
+                    f.reading.activateMappedRendition(book.book.id, "read-mode", session)
+                })
+                assertEquals("read-mode", f.db.bookDao().getById(book.book.id)?.book?.activeRendition)
+                assertEquals(cached.filePath, f.reading.rendition(book.book.id, "read-mode")?.filePath)
+                assertEquals(cachedBytes, cachedFile.readBytes().toList())
+                assertEquals(id, operations.conversion(book.book.id).first()?.id)
+                assertTrue("source-page-2" in f.db.bookDao().getById(book.book.id)?.book?.lastLocatorJson.orEmpty())
+
+                // An invalidated reader cannot activate a cached rendition.
+                f.reading.activateMappedRendition(book.book.id, "original")
+                f.publications.tryReuseReadMode(book.book.id) {
+                    f.reading.activateMappedRendition(book.book.id, "read-mode", session?.copy(generation = -1))
+                }
+                assertEquals("original", f.db.bookDao().getById(book.book.id)?.book?.activeRendition)
+
+                f.db.publicationDao().putRenditions(listOf(cached.copy(converterVersion = -1)))
+                assertFalse(f.publications.tryReuseReadMode(book.book.id) { error("Outdated cache reused") })
+                f.db.publicationDao().putRenditions(listOf(cached))
+                val forced = operations.enqueueReadMode(book.book.id, true)
+                assertFalse(f.publications.tryReuseReadMode(book.book.id) { error("Active conversion bypassed") })
+                operations.cancel(forced)
+                assertTrue(cachedFile.delete())
+                assertFalse(f.publications.tryReuseReadMode(book.book.id) { error("Missing cache reused") })
+
             } finally {
                 original.close()
             }

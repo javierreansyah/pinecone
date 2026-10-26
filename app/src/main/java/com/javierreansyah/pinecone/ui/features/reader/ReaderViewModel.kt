@@ -63,6 +63,7 @@ data class BookState(
     val sourceIsPdf: Boolean = false,
     val readMode: Boolean = false,
     val converting: Boolean = false,
+    val conversionId: String? = null,
     val conversionPage: Int = 0,
     val conversionTotal: Int = 0,
     val conversionError: String? = null,
@@ -247,6 +248,7 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
                 _bookState.update { state ->
                     state.copy(
                         converting = operation != null && !operation.state.terminal,
+                        conversionId = operation?.id,
                         conversionPage = operation?.completed ?: 0,
                         conversionTotal = operation?.total ?: 0,
                         conversionError = if (operation?.state in listOf(
@@ -500,7 +502,11 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
                 }
                 if (!forceReparse && activeRendition.value == "read-mode") {
                     reading.activateMappedRendition(bookId, "original", session)
-                } else currentConversionId = operations.enqueueReadMode(bookId, forceReparse)
+                } else if (forceReparse || !publications.tryReuseReadMode(bookId) {
+                        reading.activateMappedRendition(bookId, "read-mode", session)
+                    }) {
+                    currentConversionId = operations.enqueueReadMode(bookId, forceReparse)
+                }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {

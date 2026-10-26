@@ -46,6 +46,7 @@ internal fun LibraryCollectionScreen(
     emptyText: String,
     emptyIcon: ImageVector,
     archived: Boolean,
+    longPressSelects: Boolean = false,
 ) {
     val preferences by viewModel.preferences.collectAsStateWithLifecycle()
     val books by viewModel.filteredBooks.collectAsStateWithLifecycle()
@@ -111,7 +112,14 @@ internal fun LibraryCollectionScreen(
         },
         onOpenFilter = { showFilterSheet = true },
         onBookClick = onNavigateToReader,
-        onBookLongClick = { selectedBookForMenu = it },
+        onBookLongClick = { bookId ->
+            if (longPressSelects) {
+                selectedBooks = selectedBooks + bookId
+                isInMultiSelectMode = true
+            } else {
+                selectedBookForMenu = bookId
+            }
+        },
     )
 
     selectedBookForMenu?.let { bookId ->

@@ -88,8 +88,8 @@ class ScreenNavDisplayTest {
             assertFalse(model.cleared)
 
             scenario.onActivity {
-                it.onBackPressedDispatcher.dispatchOnBackStarted(backEvent(0f))
-                it.onBackPressedDispatcher.dispatchOnBackProgressed(backEvent(0.6f))
+                it.onBackPressedDispatcher.dispatchOnBackStarted(backEvent(0f, BackEventCompat.EDGE_RIGHT))
+                it.onBackPressedDispatcher.dispatchOnBackProgressed(backEvent(0.6f, BackEventCompat.EDGE_RIGHT))
             }
             await { "first" in probe.composed }
             scenario.onActivity {
@@ -174,8 +174,8 @@ class ScreenNavDisplayTest {
             }
         }
 
-    private fun backEvent(progress: Float) =
-        BackEventCompat(0f, 500f, progress, BackEventCompat.EDGE_LEFT)
+    private fun backEvent(progress: Float, edge: Int = BackEventCompat.EDGE_LEFT) =
+        BackEventCompat(0f, 500f, progress, edge)
 
     private fun await(condition: () -> Boolean) {
         val deadline = android.os.SystemClock.uptimeMillis() + 5_000L

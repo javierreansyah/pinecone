@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -34,14 +35,15 @@ import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -65,6 +67,8 @@ import com.javierreansyah.pinecone.data.local.database.dictionary.DictionaryEntr
 import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
+import com.javierreansyah.pinecone.ui.components.OperationFeedback
+import com.javierreansyah.pinecone.ui.components.OperationReport
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.reader.ReaderDictionaryViewModel
 import com.javierreansyah.pinecone.ui.features.reader.ReaderNavigationRouter
@@ -146,6 +150,8 @@ fun ReaderOverlay(
     }
 
     val context = LocalContext.current
+    var bottomBarHeight by remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
 
     LaunchedEffect(bookState.value.isLoading) {
         if (!bookState.value.isLoading && bookState.value.error == null) {
@@ -245,13 +251,13 @@ fun ReaderOverlay(
                 readMode = bookState.value.readMode,
                 onToggleReadMode = viewModel::togglePdfReadMode,
                 converting = bookState.value.converting,
-                conversionPage = bookState.value.conversionPage,
-                conversionTotal = bookState.value.conversionTotal,
-                onCancelConversion = viewModel::cancelConversion,
             )
 
             ReaderBottomBarSection(
-                modifier = Modifier.align(Alignment.BottomCenter),
+                modifier = Modifier.align(Alignment.BottomCenter).onSizeChanged {
+                    // Retain the anchor while both controls and the FAB are exiting.
+                    if (it.height > 0) bottomBarHeight = it.height
+                },
                 showControls = controlsState.value.showControls && profile != com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO,
                 showSearch = controlsState.value.showSearch,
                 isInSearchNavigationMode = searchState.value.isInNavMode,
@@ -429,20 +435,38 @@ fun ReaderOverlay(
                 publication = publication,
             )
 
-            bookState.value.conversionError?.let { message ->
-                androidx.compose.material3.AlertDialog(
-                    onDismissRequest = viewModel::dismissConversionError,
-                    title = { Text(stringResource(R.string.reader_read_mode_failed)) },
-                    text = { Text(message) },
-                    confirmButton = {
-                        androidx.compose.material3.TextButton(onClick = viewModel::dismissConversionError) {
-                            Text(
-                                stringResource(R.string.action_close)
-                            )
-                        }
-                    },
+            val conversionMessage = if (bookState.value.conversionTotal > 0) {
+                stringResource(
+                    R.string.reader_conversion_progress,
+                    bookState.value.conversionPage / 2,
+                    bookState.value.conversionTotal / 2,
                 )
-            }
+            } else stringResource(R.string.reader_preparing_read_mode)
+            OperationFeedback(
+                operationId = bookState.value.conversionId.takeIf { bookState.value.converting },
+                progress = bookState.value.takeIf { it.conversionTotal > 0 }?.let {
+                    it.conversionPage.toFloat() / it.conversionTotal
+                },
+                showFab = controlsState.value.showControls && !controlsState.value.showSearch,
+                fabContainerColor = readerTextColor.copy(alpha = 0.18f).compositeOver(readerBgColor),
+                fabContentColor = readerTextColor,
+                title = stringResource(R.string.reader_preparing_read_mode),
+                progressMessage = conversionMessage,
+                onCancel = viewModel::cancelConversion,
+                report = bookState.value.conversionError?.let { message ->
+                    OperationReport(
+                        id = bookState.value.conversionId ?: bookId,
+                        title = stringResource(R.string.reader_read_mode_failed),
+                        message = message,
+                    )
+                },
+                onDismissReport = viewModel::dismissConversionError,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(bottom = with(density) { bottomBarHeight.toDp() })
+                    .then(if (bottomBarHeight == 0) Modifier.navigationBarsPadding() else Modifier),
+            )
+
         }
     }
 }
@@ -475,24 +499,11 @@ fun ReaderTopBarSection(
     readMode: Boolean = false,
     onToggleReadMode: () -> Unit = {},
     converting: Boolean = false,
-    conversionPage: Int = 0,
-    conversionTotal: Int = 0,
-    onCancelConversion: () -> Unit = {},
 ) {
     val actionsSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
     val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
     val density = LocalDensity.current
     val offset = with(density) { 30.dp.roundToPx() }
-
-    var showConversionDialog by rememberSaveable(converting) { mutableStateOf(true) }
-    if (converting && showConversionDialog) {
-        ConversionProgressDialog(
-            page = conversionPage,
-            total = conversionTotal,
-            onHide = { showConversionDialog = false },
-            onCancel = onCancelConversion,
-        )
-    }
 
     AnimatedVisibility(
         visible = showControls && !showSearch,
@@ -534,8 +545,6 @@ fun ReaderTopBarSection(
             readMode = readMode,
             onToggleReadMode = onToggleReadMode,
             converting = converting,
-            showConversionSpinner = !showConversionDialog,
-            onShowConversionProgress = { showConversionDialog = true },
         )
     }
 }

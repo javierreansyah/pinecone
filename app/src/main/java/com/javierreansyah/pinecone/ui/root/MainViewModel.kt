@@ -1,28 +1,26 @@
 package com.javierreansyah.pinecone.ui.root
 
-import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
+import com.javierreansyah.pinecone.data.model.OperationState
 import com.javierreansyah.pinecone.data.repository.library.PublicationOperations
 import com.javierreansyah.pinecone.data.repository.library.ReadingRepository
+import com.javierreansyah.pinecone.ui.features.library.components.ImportReport
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val application: Application,
     private val operations: PublicationOperations,
     @com.javierreansyah.pinecone.di.ApplicationScope private val applicationScope: kotlinx.coroutines.CoroutineScope,
     private val reading: ReadingRepository,
@@ -49,19 +47,15 @@ class MainViewModel @Inject constructor(
     private val _settings = MutableStateFlow(ReaderSettings())
     val settings: StateFlow<ReaderSettings> = _settings.asStateFlow()
 
-    private val _toastMessage = MutableSharedFlow<String>()
-    val toastMessage: SharedFlow<String> = _toastMessage.asSharedFlow()
+    private val _importReports = MutableStateFlow<List<ImportReport>>(emptyList())
+    val importReport = _importReports.map { it.firstOrNull() }.stateIn(
+        viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, null,
+    )
 
-    private val _importErrorReport = MutableStateFlow<ImportErrorReport?>(null)
-    val importErrorReport: StateFlow<ImportErrorReport?> = _importErrorReport.asStateFlow()
-
-    fun dismissImportErrorReport() {
-        viewModelScope.launch {
-            val dismissed = errorOperation
-            _importErrorReport.value = null
-            dismissed?.let { operations.acknowledge(it) }
-            if (errorOperation == dismissed) errorOperation = null
-        }
+    fun dismissImportReport(id: String) {
+        val report = _importReports.value.firstOrNull()?.takeIf { it.id == id } ?: return
+        _importReports.update { reports -> reports.filterNot { it.id == report.id } }
+        report.operationId?.let { id -> viewModelScope.launch { operations.acknowledge(id) } }
     }
 
     init {
@@ -94,26 +88,24 @@ class MainViewModel @Inject constructor(
         kotlinx.coroutines.flow.SharingStarted.Eagerly,
         null
     )
-    private var errorOperation: String? = null
-
     init {
         viewModelScope.launch {
             startup.awaitReady()
+            val reported = mutableSetOf<String>()
             importOperations.collect { rows ->
-                rows.filter { it.state.terminal && it.id != errorOperation }.forEach { row ->
-                    if (row.state == com.javierreansyah.pinecone.data.model.OperationState.SUCCEEDED) {
-                        _toastMessage.emit(application.getString(if (row.total == 0) R.string.import_no_files_found else R.string.nav_import_complete))
+                reported.retainAll(rows.mapTo(mutableSetOf()) { it.id })
+                rows.filter { it.state.terminal && reported.add(it.id) }.forEach { row ->
+                    if (row.state == OperationState.CANCELLED || row.state == OperationState.SUCCEEDED) {
                         operations.acknowledge(row.id)
-                    } else if (row.state == com.javierreansyah.pinecone.data.model.OperationState.CANCELLED) {
-                        operations.acknowledge(row.id)
-                    } else if (_importErrorReport.value == null) {
-                        errorOperation = row.id
-                        _importErrorReport.value = ImportErrorReport(
-                            row.failures.ifEmpty { listOf(application.getString(R.string.publication_unknown)) },
-                            row.total.coerceAtLeast(1),
-                            (row.completed - row.failures.size).coerceAtLeast(0),
-                            inputRequired = row.state == com.javierreansyah.pinecone.data.model.OperationState.INPUT_REQUIRED || row.error == "input_required",
+                    } else {
+                        val report = ImportReport(
+                            id = row.id,
+                            operationId = row.id,
+                            failedFiles = row.failures,
+                            successCount = (row.completed - row.failures.size).coerceAtLeast(0),
+                            inputRequired = row.state == OperationState.INPUT_REQUIRED || row.error == "input_required",
                         )
+                        _importReports.update { it + report }
                     }
                 }
             }
@@ -133,7 +125,7 @@ class MainViewModel @Inject constructor(
     private fun enqueue(names: List<String>, submit: suspend (PublicationOperations) -> Unit) {
         val service = operations
         val gate = startup
-        val errors = _importErrorReport
+        val reports = _importReports
         applicationScope.launch {
             try {
                 gate.initialize()
@@ -142,10 +134,11 @@ class MainViewModel @Inject constructor(
                 throw cancelled
             } catch (error: Exception) {
                 timber.log.Timber.w(error, "Publication request could not be accepted")
-                errors.compareAndSet(
-                    null,
-                    ImportErrorReport(names, names.size, 0, inputRequired = true)
-                )
+                reports.update {
+                    it + ImportReport(
+                        failedFiles = names, successCount = 0, inputRequired = true,
+                    )
+                }
             }
         }
     }
@@ -154,10 +147,3 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch { operations.cancel(id) }
     }
 }
-
-data class ImportErrorReport(
-    val failedFiles: List<String>,
-    val totalCount: Int,
-    val successCount: Int,
-    val inputRequired: Boolean = false,
-)

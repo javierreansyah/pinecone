@@ -37,17 +37,6 @@ class MainActivity : AppCompatActivity() {
 
         enableEdgeToEdge()
         setContent {
-            val context = androidx.compose.ui.platform.LocalContext.current
-            androidx.compose.runtime.LaunchedEffect(viewModel) {
-                viewModel.toastMessage.collect { message ->
-                    android.widget.Toast.makeText(
-                        context,
-                        message,
-                        android.widget.Toast.LENGTH_SHORT,
-                    ).show()
-                }
-            }
-
             val isReady by viewModel.isReady.collectAsStateWithLifecycle()
             val startup by viewModel.startupState.collectAsStateWithLifecycle()
             if (!isReady) {
@@ -95,7 +84,7 @@ class MainActivity : AppCompatActivity() {
                 themeContrast = settings.value.themeContrast,
             ) {
                 val initialBackStack = androidx.compose.runtime.remember {
-                    com.javierreansyah.pinecone.ui.root.getInitialBackStackFromIntent(intent)
+                    com.javierreansyah.pinecone.ui.root.getInitialBackStackFromIntent(intent, settings.value.unsortedEnabled)
                 }
 
                 val backStack =
@@ -103,6 +92,7 @@ class MainActivity : AppCompatActivity() {
 
                 com.javierreansyah.pinecone.ui.root.HandleDeepLinks(
                     backStack = backStack,
+                    unsortedEnabled = settings.value.unsortedEnabled,
                     addOnNewIntentListener = { addOnNewIntentListener(it) },
                 ) { removeOnNewIntentListener(it) }
 

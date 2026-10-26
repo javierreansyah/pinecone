@@ -4,21 +4,27 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
+import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
+import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.model.fromEntity
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.data.repository.library.PublicationRepository
 import com.javierreansyah.pinecone.data.repository.library.ReadingRepository
 import com.javierreansyah.pinecone.domain.DeleteBooks
+import com.javierreansyah.pinecone.ui.features.library.sortShelfBooks
+import com.javierreansyah.pinecone.ui.features.library.sortShelves
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
@@ -36,6 +42,7 @@ class BookInfoViewModel @AssistedInject constructor(
     private val reading: ReadingRepository,
     readerPreferences: com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences,
     private val deletePublications: DeleteBooks,
+    libraryPreferences: LibraryPreferencesManager,
 ) : ViewModel() {
 
 
@@ -60,6 +67,22 @@ class BookInfoViewModel @AssistedInject constructor(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = BookInfoUiState(),
         )
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val shelves: StateFlow<List<ShelfWithCovers>> = libraryPreferences.getEffectiveSpaceFlow()
+        .flatMapLatest { spaceId ->
+            combine(
+                repository.getShelvesForBook(bookId, spaceId),
+                repository.getAllShelfBookCrossRefs(),
+                libraryPreferences.preferences(spaceId, "library_shelves"),
+            ) { memberships, refs, preferences ->
+                sortShelves(sortShelfBooks(memberships, refs, spaceId), preferences)
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val spaceNames = repository.getAllSpaces()
+        .map { spaces -> spaces.associate { it.id to it.name } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     val bookmarks: StateFlow<List<BookmarkEntity>> =
         combine(reading.getBookmarks(bookId), bookDetails) { items, item ->

@@ -139,6 +139,37 @@ fun sortShelfBooks(
     }
 }
 
+fun sortShelves(
+    shelves: List<ShelfWithCovers>,
+    prefs: FilterSortPreferences,
+): List<ShelfWithCovers> {
+    val baseComparator = when (prefs.sortType) {
+        SortType.Title -> compareBy { (itShelf2, _) -> itShelf2.name.lowercase() }
+        SortType.LastRead -> compareBy { shelf: ShelfWithCovers ->
+            shelf.books.maxOfOrNull { details ->
+                details.book.lastReadDate ?: 0L
+            } ?: 0L
+        }
+
+        SortType.Progress -> compareBy { shelf: ShelfWithCovers ->
+            if (shelf.books.isEmpty()) 0.0 else shelf.books.asSequence()
+                .map { details -> details.book.progression }
+                .average()
+        }
+
+        SortType.Added -> compareBy { (itShelf3, _) -> itShelf3.createdAt }
+        else -> compareBy { (itShelf4, _) -> itShelf4.name.lowercase() }
+    }
+
+    val finalComparator = if (prefs.isAscending) {
+        baseComparator.thenBy { (itShelf5, _) -> itShelf5.name.lowercase() }
+    } else {
+        baseComparator.reversed().thenBy { it.shelf.name.lowercase() }
+    }
+
+    return shelves.sortedWith(finalComparator)
+}
+
 fun mapAndSortShelves(
     shelvesList: List<ShelfWithCovers>,
     crossRefs: List<ShelfBookCrossRefEntity>,
@@ -151,33 +182,7 @@ fun mapAndSortShelves(
         shelf.copy(books = shelf.books.filter { it.book.fileFormat() in prefs.selectedFormats })
     }.filter { it.books.isNotEmpty() }
 
-    val sortedShelves = mappedShelves.let { processedShelves ->
-        val baseComparator = when (prefs.sortType) {
-            SortType.Title -> compareBy { (itShelf2, _) -> itShelf2.name.lowercase() }
-            SortType.LastRead -> compareBy { shelf: ShelfWithCovers ->
-                shelf.books.maxOfOrNull { details ->
-                    details.book.lastReadDate ?: 0L
-                } ?: 0L
-            }
-
-            SortType.Progress -> compareBy { shelf: ShelfWithCovers ->
-                if (shelf.books.isEmpty()) 0.0 else shelf.books.asSequence()
-                    .map { details -> details.book.progression }
-                    .average()
-            }
-
-            SortType.Added -> compareBy { (itShelf3, _) -> itShelf3.createdAt }
-            else -> compareBy { (itShelf4, _) -> itShelf4.name.lowercase() }
-        }
-
-        val finalComparator = if (prefs.isAscending) {
-            baseComparator.thenBy { (itShelf5, _) -> itShelf5.name.lowercase() }
-        } else {
-            baseComparator.reversed().thenBy { it.shelf.name.lowercase() }
-        }
-
-        processedShelves.sortedWith(finalComparator)
-    }
+    val sortedShelves = sortShelves(mappedShelves, prefs)
 
     val isSpaceSelected = globalSpaceId != null && globalSpaceId != ALL_SPACES_ID
     val currentSpaceShelves = if (isSpaceSelected) {

@@ -3,7 +3,6 @@ package com.javierreansyah.pinecone.ui.features.reader
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -14,7 +13,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -102,7 +100,7 @@ fun AudioPlayerScreen(
                     onOpenSettings = { showSettings = true },
                     onRetry = { player.open(retry = true) },
                 )
-            } else CircularProgressIndicator(Modifier.align(Alignment.Center))
+            }
             ReaderTopBar(
                 modifier = Modifier.graphicsLayer { alpha = topBarAlpha },
                 isBookmarked = bookmarked,

@@ -338,6 +338,13 @@ class LibraryRepository @Inject constructor(
             bookIds.distinct().chunked(900).forEach { bookDao.setReadStatus(it, value) }
         }
 
+    fun getShelvesForBook(bookId: String, spaceId: String?): Flow<List<ShelfWithCovers>> =
+        shelfDao.getShelvesForBook(bookId, spaceId?.takeUnless { it == "_all_" }).map { shelves ->
+            shelves.map { shelf ->
+                shelf.copy(books = shelf.books.filter { !it.book.isArchived })
+            }
+        }
+
     fun getAllShelvesWithBooks(): Flow<List<ShelfWithCovers>> =
         shelfDao.getAllShelvesWithBooks().map { shelves ->
             shelves.map { shelf ->

@@ -9,6 +9,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -34,6 +35,7 @@ import com.javierreansyah.pinecone.ui.components.ScreenNavDisplay
 import com.javierreansyah.pinecone.ui.features.dictionary.DictionariesScreen
 import com.javierreansyah.pinecone.ui.features.dictionary.DictionariesViewModel
 import com.javierreansyah.pinecone.ui.features.library.archive.ArchiveScreen
+import com.javierreansyah.pinecone.ui.features.library.components.ImportFeedbackState
 import com.javierreansyah.pinecone.ui.features.library.filters.AllFilterItemsScreen
 import com.javierreansyah.pinecone.ui.features.library.filters.FilterResultScreen
 import com.javierreansyah.pinecone.ui.features.library.info.BookInfoScreen
@@ -83,8 +85,7 @@ fun NavGraph(
     ) { uris ->
         if (uris.isNotEmpty()) {
             backStack.clear()
-            backStack.add(Screen.Library)
-            backStack.add(Screen.Unsorted)
+            backStack.addAll(importDestinationStack(mainViewModel.settings.value.unsortedEnabled))
             mainViewModel.importBooks(uris)
         }
     }
@@ -104,8 +105,7 @@ fun NavGraph(
     ) { uri ->
         uri?.let {
             backStack.clear()
-            backStack.add(Screen.Library)
-            backStack.add(Screen.Unsorted)
+            backStack.addAll(importDestinationStack(mainViewModel.settings.value.unsortedEnabled))
             mainViewModel.scanFolder(it)
         }
     }
@@ -153,271 +153,267 @@ fun NavGraph(
 
     val imports by mainViewModel.importOperations.collectAsStateWithLifecycle()
     val activeImport = imports.firstOrNull { !it.state.terminal }
-    androidx.compose.foundation.layout.Column(modifier) {
-        activeImport?.let { operation ->
-            androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                androidx.compose.material3.Text(
-                    androidx.compose.ui.res.stringResource(com.javierreansyah.pinecone.R.string.publication_work_importing) + " · " +
-                            androidx.compose.ui.res.stringResource(
-                                com.javierreansyah.pinecone.R.string.publication_work_progress,
-                                operation.completed,
-                                operation.total
-                            ),
-                    modifier = Modifier.weight(1f),
+    val importReport = mainViewModel.importReport.collectAsStateWithLifecycle().value
+    val importFeedbackState = ImportFeedbackState(activeImport, importReport)
+    val settings by mainViewModel.settings.collectAsStateWithLifecycle()
+    ScreenNavDisplay(
+        backStack = backStack.filterNot { it is Screen.AudioPlayer },
+        backDispatcher = backDispatcher,
+        entryDecorators = listOf(
+            rememberSaveableStateHolderNavEntryDecorator(),
+            rememberViewModelStoreNavEntryDecorator(),
+        ),
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .systemGestureExclusion {
+                Rect(0f, 0f, exclusionWidth, exclusionHeight)
+            },
+        onBack = {
+            if (backStack.size > 1) {
+                backStack.removeLastOrNull()
+            } else {
+                (context as? Activity)?.finish()
+            }
+        },
+        entryProvider = entryProvider {
+            entry<Screen.Library> {
+                LibraryRoute(
+                    onNavigateToReader = navigateToReader,
+                    onNavigateToShelf = { shelfId, name, count ->
+                        backStack.add(Screen.ShelfDetail(shelfId, name, count))
+                    },
+                    onNavigateToAuthor = { authorName ->
+                        backStack.add(Screen.AuthorDetail(authorName))
+                    },
+                    onNavigateToTag = { tagName ->
+                        backStack.add(Screen.TagDetail(tagName))
+                    },
+                    onNavigateToAllAuthors = {
+                        backStack.add(Screen.AllAuthors)
+                    },
+                    onNavigateToAllTags = {
+                        backStack.add(Screen.AllTags)
+                    },
+                    onNavigateToAllSpaces = {
+                        backStack.add(Screen.AllSpaces)
+                    },
+                    onNavigateToBookInfo = { bookId ->
+                        backStack.add(Screen.BookInfo(bookId))
+                    },
+                    onNavigateToOrganize = { bookIds ->
+                        organizeBookIds = bookIds
+                    },
+                    onNavigateToUnsorted = {
+                        backStack.clear()
+                        backStack.add(Screen.Library)
+                        backStack.add(Screen.Unsorted)
+                    },
+                    onNavigateToArchives = {
+                        backStack.clear()
+                        backStack.add(Screen.Library)
+                        backStack.add(Screen.Archives)
+                    },
+                    onNavigateToSettings = {
+                        backStack.clear()
+                        backStack.add(Screen.Library)
+                        backStack.add(Screen.Settings)
+                    },
+                    onNavigateToDictionaries = {
+                        backStack.clear()
+                        backStack.add(Screen.Library)
+                        backStack.add(Screen.Dictionaries)
+                    },
+                    onImportFilesClick = {
+                        filePickerLauncher.launch(
+                            com.javierreansyah.pinecone.data.publication.PublicationFormats.pickerMimeTypes,
+                        )
+                    },
+                    onScanFolderClick = { folderPickerLauncher.launch(null) },
+                    importFeedbackState = importFeedbackState,
+                    importFeedbackEnabled = !settings.unsortedEnabled,
+                    onCancelImport = mainViewModel::cancelImport,
+                    onDismissImportReport = mainViewModel::dismissImportReport,
                 )
-                androidx.compose.material3.TextButton(onClick = {
-                    mainViewModel.cancelImport(
-                        operation.id
-                    )
-                }) {
-                    androidx.compose.material3.Text(androidx.compose.ui.res.stringResource(android.R.string.cancel))
+            }
+            entry<Screen.Settings> {
+                SettingsScreen(
+                    onNavigateBack = navigateBack,
+                ) {
+                    backStack.add(Screen.About)
                 }
             }
-        }
-        ScreenNavDisplay(
-            backStack = backStack.filterNot { it is Screen.AudioPlayer },
-            backDispatcher = backDispatcher,
-            entryDecorators = listOf(
-                rememberSaveableStateHolderNavEntryDecorator(),
-                rememberViewModelStoreNavEntryDecorator(),
-            ),
-            modifier = Modifier
-                .weight(1f)
-                .background(MaterialTheme.colorScheme.background)
-                .systemGestureExclusion {
-                    Rect(0f, 0f, exclusionWidth, exclusionHeight)
-                },
-            onBack = {
-                if (backStack.size > 1) {
-                    backStack.removeLastOrNull()
-                } else {
-                    (context as? Activity)?.finish()
-                }
-            },
-            entryProvider = entryProvider {
-                entry<Screen.Library> {
-                    LibraryRoute(
-                        onNavigateToReader = navigateToReader,
-                        onNavigateToShelf = { shelfId, name, count ->
-                            backStack.add(Screen.ShelfDetail(shelfId, name, count))
-                        },
-                        onNavigateToAuthor = { authorName ->
-                            backStack.add(Screen.AuthorDetail(authorName))
-                        },
-                        onNavigateToTag = { tagName ->
-                            backStack.add(Screen.TagDetail(tagName))
-                        },
-                        onNavigateToAllAuthors = {
-                            backStack.add(Screen.AllAuthors)
-                        },
-                        onNavigateToAllTags = {
-                            backStack.add(Screen.AllTags)
-                        },
-                        onNavigateToAllSpaces = {
-                            backStack.add(Screen.AllSpaces)
-                        },
-                        onNavigateToBookInfo = { bookId ->
-                            backStack.add(Screen.BookInfo(bookId))
-                        },
-                        onNavigateToOrganize = { bookIds ->
-                            organizeBookIds = bookIds
-                        },
-                        onNavigateToUnsorted = {
-                            backStack.clear()
-                            backStack.add(Screen.Library)
-                            backStack.add(Screen.Unsorted)
-                        },
-                        onNavigateToArchives = {
-                            backStack.clear()
-                            backStack.add(Screen.Library)
-                            backStack.add(Screen.Archives)
-                        },
-                        onNavigateToSettings = {
-                            backStack.clear()
-                            backStack.add(Screen.Library)
-                            backStack.add(Screen.Settings)
-                        },
-                        onNavigateToDictionaries = {
-                            backStack.clear()
-                            backStack.add(Screen.Library)
-                            backStack.add(Screen.Dictionaries)
-                        },
-                        onImportFilesClick = {
-                            filePickerLauncher.launch(
-                                com.javierreansyah.pinecone.data.publication.PublicationFormats.pickerMimeTypes,
-                            )
-                        },
-                    ) { folderPickerLauncher.launch(null) }
-                }
-                entry<Screen.Settings> {
-                    SettingsScreen(
-                        onNavigateBack = navigateBack,
-                    ) {
-                        backStack.add(Screen.About)
-                    }
-                }
-                entry<Screen.About> {
-                    AboutScreen(
-                        onNavigateBack = navigateBack,
-                        onNavigateToOpenSourceLicenses = {
-                            backStack.add(Screen.OpenSourceLicenses)
-                        },
-                    )
-                }
-                entry<Screen.OpenSourceLicenses> {
-                    OpenSourceLicensesScreen(
-                        onNavigateBack = navigateBack,
-                    )
-                }
-                entry<Screen.Unsorted> {
-                    UnsortedScreen(
-                        onNavigateBack = navigateBack,
-                        onNavigateToReader = navigateToReader,
-                        onNavigateToBookInfo = { bookId ->
-                            backStack.add(Screen.BookInfo(bookId))
-                        },
-                        onNavigateToOrganize = { bookIds ->
-                            organizeBookIds = bookIds
-                        },
-                    )
-                }
-                entry<Screen.Archives> {
-                    ArchiveScreen(
-                        onNavigateBack = navigateBack,
-                        onNavigateToReader = navigateToReader,
-                        onNavigateToBookInfo = { bookId ->
-                            backStack.add(Screen.BookInfo(bookId))
-                        },
-                        onNavigateToOrganize = { bookIds ->
-                            organizeBookIds = bookIds
-                        },
-                    )
-                }
-                entry<Screen.ShelfDetail> { (argsShelfId, argsName, argsCount) ->
-                    ShelfDetailScreen(
-                        shelfId = argsShelfId,
-                        initialShelfName = argsName,
-                        initialBookCount = argsCount,
-                        onNavigateBack = navigateBack,
-                        onNavigateToReader = navigateToReader,
-                        onNavigateToBookInfo = { bookId ->
-                            backStack.add(Screen.BookInfo(bookId))
-                        },
-                        onNavigateToOrganize = { bookIds ->
-                            organizeBookIds = bookIds
-                        },
-                    )
-                }
-                entry<Screen.AuthorDetail> { (argsAuthorName) ->
-                    FilterResultScreen(
-                        filterType = "author",
-                        filterValue = argsAuthorName,
-                        onNavigateBack = navigateBack,
-                        onNavigateToReader = navigateToReader,
-                        onNavigateToMerged = { newName ->
-                            backStack.removeLastOrNull()
-                            backStack.add(Screen.AuthorDetail(newName))
-                        },
-                        onNavigateToBookInfo = { bookId ->
-                            backStack.add(Screen.BookInfo(bookId))
-                        },
-                        onNavigateToOrganize = { bookIds ->
-                            organizeBookIds = bookIds
-                        },
-                    )
-                }
-                entry<Screen.TagDetail> { (argsTagName) ->
-                    FilterResultScreen(
-                        filterType = "tag",
-                        filterValue = argsTagName,
-                        onNavigateBack = navigateBack,
-                        onNavigateToReader = navigateToReader,
-                        onNavigateToMerged = { newName ->
-                            backStack.removeLastOrNull()
-                            backStack.add(Screen.TagDetail(newName))
-                        },
-                        onNavigateToBookInfo = { bookId ->
-                            backStack.add(Screen.BookInfo(bookId))
-                        },
-                        onNavigateToOrganize = { bookIds ->
-                            organizeBookIds = bookIds
-                        },
-                    )
-                }
-                entry<Screen.SpaceDetail> { (argsSpaceName) ->
-                    FilterResultScreen(
-                        filterType = "space",
-                        filterValue = argsSpaceName,
-                        onNavigateBack = navigateBack,
-                        onNavigateToReader = navigateToReader,
-                        onNavigateToMerged = { newName ->
-                            backStack.removeLastOrNull()
-                            backStack.add(Screen.SpaceDetail(newName))
-                        },
-                        onNavigateToBookInfo = { bookId ->
-                            backStack.add(Screen.BookInfo(bookId))
-                        },
-                        onNavigateToOrganize = { bookIds ->
-                            organizeBookIds = bookIds
-                        },
-                    )
-                }
-                entry<Screen.AllAuthors> {
-                    AllFilterItemsScreen(
-                        filterType = "author",
-                        onNavigateBack = navigateBack,
-                    ) { authorName ->
-                        backStack.add(Screen.AuthorDetail(authorName))
-                    }
-                }
-                entry<Screen.AllTags> {
-                    AllFilterItemsScreen(
-                        filterType = "tag",
-                        onNavigateBack = navigateBack,
-                    ) { tagName ->
-                        backStack.add(Screen.TagDetail(tagName))
-                    }
-                }
-                entry<Screen.AllSpaces> {
-                    AllFilterItemsScreen(
-                        filterType = "space",
-                        onNavigateBack = navigateBack,
-                    ) { spaceName ->
-                        backStack.add(Screen.SpaceDetail(spaceName))
-                    }
-                }
-                entry<Screen.Dictionaries> {
-                    val dictViewModel: DictionariesViewModel = hiltViewModel()
-                    DictionariesScreen(
-                        viewModel = dictViewModel,
-                        onBack = navigateBack,
-                    )
-                }
-                entry<Screen.BookInfo> { (argsBookId) ->
-                    BookInfoScreen(
-                        bookId = argsBookId,
-                        onNavigateToReader = openBook,
-                        onNavigateBack = navigateBack,
-                        onNavigateToEdit = { id ->
-                            backStack.add(Screen.EditBook(id))
-                        },
-                        onNavigateToTag = { tagName ->
-                            backStack.add(Screen.TagDetail(tagName))
-                        },
-                    ) { bookIds ->
+            entry<Screen.About> {
+                AboutScreen(
+                    onNavigateBack = navigateBack,
+                    onNavigateToOpenSourceLicenses = {
+                        backStack.add(Screen.OpenSourceLicenses)
+                    },
+                )
+            }
+            entry<Screen.OpenSourceLicenses> {
+                OpenSourceLicensesScreen(
+                    onNavigateBack = navigateBack,
+                )
+            }
+            entry<Screen.Unsorted> {
+                UnsortedScreen(
+                    importFeedbackState = importFeedbackState,
+                    importFeedbackEnabled = settings.unsortedEnabled,
+                    onImportFiles = {
+                        filePickerLauncher.launch(com.javierreansyah.pinecone.data.publication.PublicationFormats.pickerMimeTypes)
+                    },
+                    onScanFolder = { folderPickerLauncher.launch(null) },
+                    onCancelImport = mainViewModel::cancelImport,
+                    onDismissImportReport = mainViewModel::dismissImportReport,
+                    onNavigateBack = navigateBack,
+                    onNavigateToReader = navigateToReader,
+                    onNavigateToBookInfo = { bookId ->
+                        backStack.add(Screen.BookInfo(bookId))
+                    },
+                    onNavigateToOrganize = { bookIds ->
                         organizeBookIds = bookIds
-                    }
+                    },
+                )
+            }
+            entry<Screen.Archives> {
+                ArchiveScreen(
+                    onNavigateBack = navigateBack,
+                    onNavigateToReader = navigateToReader,
+                    onNavigateToBookInfo = { bookId ->
+                        backStack.add(Screen.BookInfo(bookId))
+                    },
+                    onNavigateToOrganize = { bookIds ->
+                        organizeBookIds = bookIds
+                    },
+                )
+            }
+            entry<Screen.ShelfDetail> { (argsShelfId, argsName, argsCount) ->
+                ShelfDetailScreen(
+                    shelfId = argsShelfId,
+                    initialShelfName = argsName,
+                    initialBookCount = argsCount,
+                    onNavigateBack = navigateBack,
+                    onNavigateToReader = navigateToReader,
+                    onNavigateToBookInfo = { bookId ->
+                        backStack.add(Screen.BookInfo(bookId))
+                    },
+                    onNavigateToOrganize = { bookIds ->
+                        organizeBookIds = bookIds
+                    },
+                )
+            }
+            entry<Screen.AuthorDetail> { (argsAuthorName) ->
+                FilterResultScreen(
+                    filterType = "author",
+                    filterValue = argsAuthorName,
+                    onNavigateBack = navigateBack,
+                    onNavigateToReader = navigateToReader,
+                    onNavigateToMerged = { newName ->
+                        backStack.removeLastOrNull()
+                        backStack.add(Screen.AuthorDetail(newName))
+                    },
+                    onNavigateToBookInfo = { bookId ->
+                        backStack.add(Screen.BookInfo(bookId))
+                    },
+                    onNavigateToOrganize = { bookIds ->
+                        organizeBookIds = bookIds
+                    },
+                )
+            }
+            entry<Screen.TagDetail> { (argsTagName) ->
+                FilterResultScreen(
+                    filterType = "tag",
+                    filterValue = argsTagName,
+                    onNavigateBack = navigateBack,
+                    onNavigateToReader = navigateToReader,
+                    onNavigateToMerged = { newName ->
+                        backStack.removeLastOrNull()
+                        backStack.add(Screen.TagDetail(newName))
+                    },
+                    onNavigateToBookInfo = { bookId ->
+                        backStack.add(Screen.BookInfo(bookId))
+                    },
+                    onNavigateToOrganize = { bookIds ->
+                        organizeBookIds = bookIds
+                    },
+                )
+            }
+            entry<Screen.SpaceDetail> { (argsSpaceName) ->
+                FilterResultScreen(
+                    filterType = "space",
+                    filterValue = argsSpaceName,
+                    onNavigateBack = navigateBack,
+                    onNavigateToReader = navigateToReader,
+                    onNavigateToMerged = { newName ->
+                        backStack.removeLastOrNull()
+                        backStack.add(Screen.SpaceDetail(newName))
+                    },
+                    onNavigateToBookInfo = { bookId ->
+                        backStack.add(Screen.BookInfo(bookId))
+                    },
+                    onNavigateToOrganize = { bookIds ->
+                        organizeBookIds = bookIds
+                    },
+                )
+            }
+            entry<Screen.AllAuthors> {
+                AllFilterItemsScreen(
+                    filterType = "author",
+                    onNavigateBack = navigateBack,
+                ) { authorName ->
+                    backStack.add(Screen.AuthorDetail(authorName))
                 }
-                entry<Screen.EditBook> { (argsBookId2) ->
-                    EditBookScreen(
-                        bookId = argsBookId2,
-                        onNavigateBack = navigateBack,
-                    )
+            }
+            entry<Screen.AllTags> {
+                AllFilterItemsScreen(
+                    filterType = "tag",
+                    onNavigateBack = navigateBack,
+                ) { tagName ->
+                    backStack.add(Screen.TagDetail(tagName))
                 }
-            },
-        )
-
-    }
+            }
+            entry<Screen.AllSpaces> {
+                AllFilterItemsScreen(
+                    filterType = "space",
+                    onNavigateBack = navigateBack,
+                ) { spaceName ->
+                    backStack.add(Screen.SpaceDetail(spaceName))
+                }
+            }
+            entry<Screen.Dictionaries> {
+                val dictViewModel: DictionariesViewModel = hiltViewModel()
+                DictionariesScreen(
+                    viewModel = dictViewModel,
+                    onBack = navigateBack,
+                )
+            }
+            entry<Screen.BookInfo> { (argsBookId) ->
+                BookInfoScreen(
+                    bookId = argsBookId,
+                    onNavigateToReader = openBook,
+                    onNavigateBack = navigateBack,
+                    onNavigateToEdit = { id ->
+                        backStack.add(Screen.EditBook(id))
+                    },
+                    onNavigateToShelf = { id, name, count ->
+                        backStack.add(Screen.ShelfDetail(id, name, count))
+                    },
+                    onNavigateToTag = { tagName ->
+                        backStack.add(Screen.TagDetail(tagName))
+                    },
+                ) { bookIds ->
+                    organizeBookIds = bookIds
+                }
+            }
+            entry<Screen.EditBook> { (argsBookId2) ->
+                EditBookScreen(
+                    bookId = argsBookId2,
+                    onNavigateBack = navigateBack,
+                )
+            }
+        },
+    )
 
     val organizerEntries = androidx.navigation3.runtime.rememberDecoratedNavEntries(
         backStack = organizeBookIds?.let { listOf(Screen.Organize(it.sorted())) }.orEmpty(),
@@ -439,10 +435,4 @@ fun NavGraph(
     )
     organizerEntries.lastOrNull()?.Content()
 
-    val importErrorReport by mainViewModel.importErrorReport.collectAsStateWithLifecycle()
-    importErrorReport?.let { report ->
-        ImportErrorDialog(
-            report = report,
-        ) { mainViewModel.dismissImportErrorReport() }
-    }
 }

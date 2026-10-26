@@ -51,6 +51,10 @@ interface ShelfDao {
     @Query("SELECT * FROM shelves ORDER BY createdAt DESC")
     fun getAllShelvesWithBooks(): Flow<List<ShelfWithCovers>>
 
+    @Transaction
+    @Query("SELECT * FROM shelves WHERE id IN (SELECT shelfId FROM shelf_book_cross_ref WHERE bookId = :bookId) AND (:spaceId IS NULL OR spaceId = :spaceId) ORDER BY createdAt DESC")
+    fun getShelvesForBook(bookId: String, spaceId: String?): Flow<List<ShelfWithCovers>>
+
     @Query("SELECT * FROM shelves WHERE name LIKE '%' || :query || '%' ORDER BY createdAt DESC")
     fun searchShelves(query: String): Flow<List<ShelfEntity>>
 

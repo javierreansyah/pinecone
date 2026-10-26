@@ -7,11 +7,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.core.util.Consumer
 import androidx.navigation3.runtime.NavKey
 
-fun getInitialBackStackFromIntent(intent: Intent): List<NavKey> {
+internal fun importDestinationStack(unsortedEnabled: Boolean): List<NavKey> =
+    if (unsortedEnabled) listOf(Screen.Library, Screen.Unsorted) else listOf(Screen.Library)
+
+fun getInitialBackStackFromIntent(intent: Intent, unsortedEnabled: Boolean = true): List<NavKey> {
     val uri = intent.data
     if (intent.action == Intent.ACTION_VIEW && uri != null) {
         if (uri.scheme == "pinecone" && uri.host == "audio_player") {
@@ -26,7 +30,7 @@ fun getInitialBackStackFromIntent(intent: Intent): List<NavKey> {
                 }
             }
         } else if (uri.scheme == "file" || uri.scheme == "content") {
-            return listOf(Screen.Library, Screen.Unsorted)
+            return importDestinationStack(unsortedEnabled)
         }
     }
     return listOf(Screen.Library)
@@ -36,9 +40,11 @@ fun getInitialBackStackFromIntent(intent: Intent): List<NavKey> {
 fun HandleDeepLinks(
     backStack: MutableList<NavKey>,
     addOnNewIntentListener: (Consumer<Intent>) -> Unit,
+    unsortedEnabled: Boolean = true,
     removeOnNewIntentListener: (Consumer<Intent>) -> Unit,
 ) {
     var currentIntent by remember { mutableStateOf<Intent?>(null) }
+    val currentUnsortedEnabled by rememberUpdatedState(unsortedEnabled)
 
     DisposableEffect(Unit) {
         val listener = Consumer<Intent> { newIntent ->
@@ -58,10 +64,10 @@ fun HandleDeepLinks(
                 val bookId = uri.lastPathSegment
                 bookId?.let { backStack.add(Screen.BookInfo(it)) }
             } else if (uri.scheme == "file" || uri.scheme == "content") {
-                if (backStack.lastOrNull() != Screen.Unsorted) {
+                val destination = if (currentUnsortedEnabled) Screen.Unsorted else Screen.Library
+                if (backStack.lastOrNull() != destination) {
                     backStack.clear()
-                    backStack.add(Screen.Library)
-                    backStack.add(Screen.Unsorted)
+                    backStack.addAll(importDestinationStack(currentUnsortedEnabled))
                 }
             }
         }

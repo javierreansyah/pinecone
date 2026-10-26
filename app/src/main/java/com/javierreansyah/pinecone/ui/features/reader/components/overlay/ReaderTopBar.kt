@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -53,8 +52,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -105,8 +102,6 @@ fun ReaderTopBar(
     readMode: Boolean = false,
     onToggleReadMode: () -> Unit = {},
     converting: Boolean = false,
-    showConversionSpinner: Boolean = false,
-    onShowConversionProgress: () -> Unit = {},
 ) {
     Box(
         modifier = modifier
@@ -170,19 +165,6 @@ fun ReaderTopBar(
                 }
             },
             actions = {
-                if (converting && showConversionSpinner) {
-                    val progressDescription = stringResource(R.string.reader_preparing_read_mode)
-                    IconButton(
-                        onClick = onShowConversionProgress,
-                        modifier = Modifier.semantics { contentDescription = progressDescription },
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = readerTextColor,
-                            strokeWidth = 2.dp,
-                        )
-                    }
-                }
                 val topBarState = when {
                     isInSearchMode -> TopBarState.SEARCH
                     jumpOrigin != null -> TopBarState.JUMP

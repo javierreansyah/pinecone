@@ -50,6 +50,8 @@ import com.javierreansyah.pinecone.ui.features.library.SearchCategory
 import com.javierreansyah.pinecone.ui.features.library.ShelfFilter
 import com.javierreansyah.pinecone.ui.features.library.SortType
 import com.javierreansyah.pinecone.ui.features.library.StatusFilter
+import com.javierreansyah.pinecone.ui.features.library.components.ImportFeedback
+import com.javierreansyah.pinecone.ui.features.library.components.ImportFeedbackState
 import com.javierreansyah.pinecone.ui.features.library.components.LibraryFilterBottomSheet
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectAppBar
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectTopBarTransition
@@ -81,6 +83,10 @@ fun LibraryRoute(
     onNavigateToDictionaries: () -> Unit,
     onImportFilesClick: () -> Unit,
     onScanFolderClick: () -> Unit,
+    importFeedbackState: ImportFeedbackState = ImportFeedbackState(),
+    importFeedbackEnabled: Boolean = false,
+    onCancelImport: (String) -> Unit = {},
+    onDismissImportReport: (String) -> Unit = {},
 ) {
     val viewModel: LibraryViewModel = hiltViewModel()
 
@@ -121,6 +127,10 @@ fun LibraryRoute(
         onNavigateToDictionaries = onNavigateToDictionaries,
         onImportFilesClick = onImportFilesClick,
         onScanFolderClick = onScanFolderClick,
+        importFeedbackState = importFeedbackState,
+        importFeedbackEnabled = importFeedbackEnabled,
+        onCancelImport = onCancelImport,
+        onDismissImportReport = onDismissImportReport,
     )
 }
 
@@ -160,6 +170,10 @@ fun LibraryScreen(
     onNavigateToDictionaries: () -> Unit,
     onImportFilesClick: () -> Unit,
     onScanFolderClick: () -> Unit,
+    importFeedbackState: ImportFeedbackState = ImportFeedbackState(),
+    importFeedbackEnabled: Boolean = false,
+    onCancelImport: (String) -> Unit = {},
+    onDismissImportReport: (String) -> Unit = {},
 ) {
     val drawerState =
         rememberWideNavigationRailState(initialValue = WideNavigationRailValue.Collapsed)
@@ -389,6 +403,14 @@ fun LibraryScreen(
                             com.javierreansyah.pinecone.ui.root.AudioMiniPlayerBar(
                                 includeNavigationBarPadding = false,
                                 bottomInset = innerPadding.calculateBottomPadding(),
+                            )
+                        }
+                        if (importFeedbackEnabled) {
+                            ImportFeedback(
+                                state = importFeedbackState,
+                                onCancel = onCancelImport,
+                                onDismissReport = onDismissImportReport,
+                                modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = miniPlayerPadding),
                             )
                         }
                     }
