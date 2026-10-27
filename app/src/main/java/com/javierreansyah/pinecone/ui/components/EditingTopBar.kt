@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.components
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
@@ -33,6 +34,8 @@ import com.javierreansyah.pinecone.R
 
 @Composable
 internal fun EditingNavigationIcon(editing: Boolean, onBack: () -> Unit, onCancel: () -> Unit) {
+    BackHandler(enabled = editing, onBack = onCancel)
+
     val rotation by animateFloatAsState(
         targetValue = if (editing) 90f else 0f,
         animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),

@@ -1,5 +1,8 @@
 package com.javierreansyah.pinecone.ui.components
 
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -120,6 +123,32 @@ class UiReuseTest {
         }
         step(R.string.action_increase)
         compose.runOnIdle { assertEquals(128.0, settings.value.verticalMargin, 0.00001) }
+    }
+
+    @Test
+    fun systemBackCancelsEditingBeforeNavigating() {
+        val editing = mutableStateOf(false)
+        val calls = mutableListOf<String>()
+        lateinit var dispatcher: OnBackPressedDispatcher
+        compose.setContent {
+            dispatcher = requireNotNull(LocalOnBackPressedDispatcherOwner.current)
+                .onBackPressedDispatcher
+            BackHandler { calls += "back" }
+            MaterialTheme {
+                EditingNavigationIcon(editing.value, { calls += "back" }) {
+                    calls += "cancel"
+                    editing.value = false
+                }
+            }
+        }
+        compose.runOnIdle { editing.value = true }
+        compose.runOnIdle { dispatcher.onBackPressed() }
+        compose.runOnIdle {
+            assertEquals(false, editing.value)
+            assertEquals(listOf("cancel"), calls)
+        }
+        compose.runOnIdle { dispatcher.onBackPressed() }
+        compose.runOnIdle { assertEquals(listOf("cancel", "back"), calls) }
     }
 
     @Test
