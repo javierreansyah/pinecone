@@ -7,6 +7,7 @@ import android.provider.DocumentsContract
 import androidx.documentfile.provider.DocumentFile
 import androidx.room.withTransaction
 import com.javierreansyah.pinecone.data.local.database.dictionary.DictionaryStore
+import com.javierreansyah.pinecone.data.local.database.dictionary.validDictionaryId
 import com.javierreansyah.pinecone.data.local.database.library.BookEntity
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
@@ -313,6 +314,8 @@ class BackupRepository @Inject constructor(
             BackupResult.Failure(BackupFailure.PERMISSION_DENIED, e)
         } catch (e: InvalidDictionaryException) {
             BackupResult.Failure(BackupFailure.INVALID_DATABASE, e)
+        } catch (e: UnsupportedBackupException) {
+            BackupResult.Failure(BackupFailure.UNSUPPORTED_VERSION, e)
         } catch (e: IllegalArgumentException) {
             val reason = when {
                 e.message?.contains("dictionary", ignoreCase = true) == true ->
@@ -505,7 +508,9 @@ class BackupRepository @Inject constructor(
             require(entry.name == "snapshot.json" && !entry.isDirectory)
             val bytes = zip.readLimitedMetadata()
             require(zip.nextEntry == null)
-            return json.decodeFromString<VaultSnapshot>(bytes.toString(Charsets.UTF_8)).also {
+            val text = bytes.toString(Charsets.UTF_8)
+            checkBackupFormat(json, text, SNAPSHOT_FORMAT)
+            return json.decodeFromString<VaultSnapshot>(text).also {
                 validateSnapshot(it)
             }
         }
@@ -557,12 +562,14 @@ class BackupRepository @Inject constructor(
     private fun validateSnapshot(snapshot: VaultSnapshot) {
         require(snapshot.format == SNAPSHOT_FORMAT)
         if (snapshot.formatVersion != FORMAT_VERSION) throw UnsupportedBackupException()
+        require(snapshot.library.books.all { BackupArchiveIO.safeFileName(it.id) }) { "Invalid book identity" }
+        require(snapshot.dictionaries.all { validDictionaryId(it.dictionary.id) }) { "Invalid dictionary identity" }
         allObjects(snapshot)
         require(snapshot.id.matches(Regex("[0-9]{8}_[0-9]{6}_[0-9]{3}")))
         require(snapshot.backupKind == MANUAL || snapshot.backupKind == AUTOMATIC)
         require(snapshot.recordCounts == recordCounts(snapshot.library))
         require(validRelationships(snapshot.library))
-        require(snapshot.library.version == FORMAT_VERSION)
+        if (snapshot.library.version != FORMAT_VERSION) throw UnsupportedBackupException()
         require(snapshot.renditions.map { it.bookId to it.key }
             .toSet() == snapshot.library.renditions.map { it.bookId to it.key }.toSet())
         require(snapshot.renditions.size == snapshot.library.renditions.size)
@@ -717,16 +724,16 @@ class BackupRepository @Inject constructor(
             val rebased = snapshot.library.books.map { book ->
                 val (_, refBook, refCover) = refs[book.id] ?: error("Missing book object")
                 val bookTarget =
-                    File(booksDir, "${book.id}_$token.${refBook.fileName.substringAfterLast('.')}")
-                copyRawObject(dirs.books, refBook, bookTarget)
+                    BackupArchiveIO.restoreTarget(booksDir, "${book.id}_$token.${refBook.fileName.substringAfterLast('.')}")
                 stagedBooks += bookTarget
+                copyRawObject(dirs.books, refBook, bookTarget)
                 onFileRestored()
                 val coverTarget = refCover?.let { cover ->
-                    File(
+                    BackupArchiveIO.restoreTarget(
                         coversDir,
                         "${book.id}_$token.${cover.fileName.substringAfterLast('.')}",
                     ).also {
-                        copyRawObject(dirs.covers, cover, it); stagedBooks += it
+                        stagedBooks += it; copyRawObject(dirs.covers, cover, it)
                         onFileRestored()
                     }
                 }
@@ -736,10 +743,10 @@ class BackupRepository @Inject constructor(
             snapshot.dictionaries.forEach { (referenceDictionary, referenceObjectInfo) ->
                 val objectFile = dirs.dictionaries.findFile(referenceObjectInfo.fileName)
                     ?: error("Missing dictionary object")
-                val staged = File(context.cacheDir, "dict_${referenceDictionary.id}_$token.db")
-                verifyDictionaryObject(objectFile, referenceObjectInfo, staged)
-                validateDictionary(staged)
+                val staged = BackupArchiveIO.restoreTarget(context.cacheDir, "dict_${referenceDictionary.id}_$token.db")
                 dictionaryStages += DictionaryStage(referenceDictionary, staged)
+                verifyDictionaryObject(objectFile, referenceObjectInfo, staged)
+                validateDictionary(staged, migrate = true)
                 onFileRestored()
             }
             val oldBooks = database.bookDao().getAllBooksSync()
@@ -749,11 +756,11 @@ class BackupRepository @Inject constructor(
                 val ref = renditionRefs.getValue(rendition.bookId to rendition.key).objectInfo
                 val target = if (rendition.key == "original") {
                     File(rebased.first { it.id == rendition.bookId }.filePath)
-                } else File(
+                } else BackupArchiveIO.restoreTarget(
                     booksDir,
                     "${ref.sha256}_$token.${ref.fileName.substringAfterLast('.')}"
                 ).also {
-                    copyRawObject(dirs.books, ref, it); stagedBooks += it
+                    stagedBooks += it; copyRawObject(dirs.books, ref, it)
                     onFileRestored()
                 }
                 require(
@@ -873,7 +880,7 @@ class BackupRepository @Inject constructor(
         }
     }
 
-    private fun validateDictionary(file: File) {
+    private fun validateDictionary(file: File, migrate: Boolean = false) {
         try {
             SQLiteDatabase.openDatabase(file.path, null, SQLiteDatabase.OPEN_READONLY).use { db ->
                 db.rawQuery("PRAGMA integrity_check", null).use {
@@ -885,6 +892,8 @@ class BackupRepository @Inject constructor(
                 }
                 require(required.isEmpty())
             }
+            if (migrate) com.javierreansyah.pinecone.data.local.database.dictionary
+                .prepareRestoredDictionary(context, file)
         } catch (error: Throwable) {
             throw InvalidDictionaryException(error)
         }
@@ -947,9 +956,10 @@ class BackupRepository @Inject constructor(
             ZipInputStream(input.buffered()).use { zip ->
                 val manifestEntry = zip.nextEntry ?: error("Empty archive")
                 require(manifestEntry.name == "manifest.json")
-                val (portableFormat, portableFormatVersion, portableSnapshot) = json.decodeFromString<PortableBackupManifest>(
-                    zip.readLimitedMetadata().toString(Charsets.UTF_8),
-                )
+                val text = zip.readLimitedMetadata().toString(Charsets.UTF_8)
+                checkBackupFormat(json, text, PORTABLE_FORMAT)
+                val (portableFormat, portableFormatVersion, portableSnapshot) =
+                    json.decodeFromString<PortableBackupManifest>(text)
                 require(portableFormat == PORTABLE_FORMAT)
                 if (portableFormatVersion != FORMAT_VERSION) throw UnsupportedBackupException()
                 snapshot = portableSnapshot.also(::validateSnapshot)
@@ -970,6 +980,7 @@ class BackupRepository @Inject constructor(
                         val partialName = ".${UUID.randomUUID()}.partial"
                         val partial = folder.createFile("application/octet-stream", partialName)
                             ?: error("Cannot create imported object")
+                        created += partial
                         val (storedSize2, _, storedCrc322) = resolver.openOutputStream(
                             partial.uri,
                             "wt"
@@ -980,7 +991,7 @@ class BackupRepository @Inject constructor(
                         check(partial.renameTo(info.fileName))
                         val final =
                             folder.findFile(info.fileName) ?: error("Missing imported object")
-                        created += final; written += final.length()
+                        created[created.lastIndex] = final; written += final.length()
                     }
                     zip.closeEntry()
                 }
@@ -1005,6 +1016,7 @@ class BackupRepository @Inject constructor(
             created.forEach { it.delete() }
             BackupResult.Failure(BackupFailure.MALFORMED_ARCHIVE, e)
         } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            created.forEach { it.delete() }
             throw cancelled
         } catch (e: Exception) {
             created.forEach { it.delete() }
@@ -1017,9 +1029,10 @@ class BackupRepository @Inject constructor(
         ZipInputStream(input.buffered()).use { zip ->
             val first = zip.nextEntry ?: error("Empty export")
             require(first.name == "manifest.json")
-            val (portableFormat2, portableFormatVersion2, portableSnapshot2) = json.decodeFromString<PortableBackupManifest>(
-                zip.readLimitedMetadata().toString(Charsets.UTF_8),
-            )
+            val text = zip.readLimitedMetadata().toString(Charsets.UTF_8)
+            checkBackupFormat(json, text, PORTABLE_FORMAT)
+            val (portableFormat2, portableFormatVersion2, portableSnapshot2) =
+                json.decodeFromString<PortableBackupManifest>(text)
             require(portableFormat2 == PORTABLE_FORMAT)
             if (portableFormatVersion2 != FORMAT_VERSION) throw UnsupportedBackupException()
             val expected =

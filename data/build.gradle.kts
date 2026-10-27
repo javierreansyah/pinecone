@@ -8,6 +8,7 @@ plugins {
 android {
     namespace = "com.javierreansyah.pinecone.data"
     compileSdk = 37
+    buildToolsVersion = "37.0.0"
     defaultConfig {
         minSdk = 34
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -31,6 +32,7 @@ androidComponents {
     onVariants { variant ->
         variant.deviceTests.values.forEach { test ->
             test.sources.assets?.addStaticSourceDirectory(layout.projectDirectory.dir("schemas").asFile.absolutePath)
+            test.sources.assets?.addStaticSourceDirectory(layout.projectDirectory.dir("src/test/resources").asFile.absolutePath)
             test.sources.java?.addStaticSourceDirectory(
                 rootProject.file("test-support/src/androidTest/java").absolutePath,
             )

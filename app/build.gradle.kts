@@ -11,20 +11,21 @@ if (providers.gradleProperty("analyzeDependencies").map(String::toBoolean).getOr
     pluginManager.apply("com.autonomousapps.dependency-analysis")
 }
 
-abstract class BuildTimestampVersionCode : ValueSource<Int, ValueSourceParameters.None> {
-    override fun obtain(): Int {
-        val offset = 1_704_067_200L // 2024-01-01 UTC; keep existing installed versions compatible.
-        return Math.toIntExact(System.currentTimeMillis() / 1000L - offset)
-    }
+val releaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+    .associateWith { providers.gradleProperty("pinecone.signing.$it").orNull }
+require(releaseSigning.values.all { it == null } || releaseSigning.values.all { !it.isNullOrBlank() }) {
+    "Set all four pinecone.signing properties, or omit all four for an unsigned release."
 }
-
-val buildVersionCode: Provider<Int> = providers.of(BuildTimestampVersionCode::class) {}
-// MAJOR.MINOR.PATCH, shared by app metadata and APK filenames for every variant.
-val appVersionName: String = "1.0.0"
 
 abstract class PublicationLicenseAssetsTask : DefaultTask() {
     @get:InputFiles
     abstract val licenseFiles: ConfigurableFileCollection
+
+    @get:InputFiles
+    abstract val nativeLicenseFiles: ConfigurableFileCollection
+
+    @get:Internal
+    abstract val nativeLicenseRoot: DirectoryProperty
 
     @get:OutputDirectory
     abstract val outputDirectory: DirectoryProperty
@@ -32,12 +33,17 @@ abstract class PublicationLicenseAssetsTask : DefaultTask() {
     @TaskAction
     fun generate() {
         val directory = outputDirectory.get().asFile.apply { mkdirs() }
-        val files = licenseFiles.files
-        val names = files.mapTo(mutableSetOf()) { it.name }
-        directory.listFiles()?.filter { it.isFile && it.name !in names }?.forEach {
+        val files = licenseFiles.files.associateBy { it.name } + nativeLicenseFiles.files.associateBy {
+            "mupdf/" + it.relativeTo(nativeLicenseRoot.get().asFile).invariantSeparatorsPath
+        }
+        directory.walkTopDown().filter { it.isFile && it.relativeTo(directory).invariantSeparatorsPath !in files }.forEach {
             check(it.delete()) { "Cannot remove obsolete generated notice: $it" }
         }
-        files.forEach { it.copyTo(directory.resolve(it.name), overwrite = true) }
+        files.forEach { (name, source) ->
+            val target = directory.resolve(name)
+            target.parentFile.mkdirs()
+            source.copyTo(target, overwrite = true)
+        }
     }
 }
 
@@ -45,21 +51,40 @@ val publicationLicenseAssets: TaskProvider<PublicationLicenseAssetsTask> =
     tasks.register<PublicationLicenseAssetsTask>("publicationLicenseAssets") {
         description = ""
         licenseFiles.from(rootProject.file("COPYING"))
+        nativeLicenseRoot.set(rootProject.layout.projectDirectory.dir("native/mupdf/source"))
+        if (providers.gradleProperty("mupdfFromSource").map(String::toBoolean).getOrElse(false)) {
+            nativeLicenseFiles.from(rootProject.fileTree("native/mupdf/source") {
+                include("COPYING", "thirdparty/**/COPYING*", "thirdparty/**/LICENSE*", "thirdparty/**/NOTICE*", "thirdparty/**/OFL*", "thirdparty/**/FTL.TXT", "resources/**/OFL*", "resources/**/LICENSE*", "resources/**/COPYING*")
+                exclude("**/.git/**", "**/build/**")
+            })
+        }
         outputDirectory.set(layout.buildDirectory.dir("generated/publicationLicenseAssets"))
     }
 
 android {
     namespace = "com.javierreansyah.pinecone"
     compileSdk = 37
+    buildToolsVersion = "37.0.0"
 
     defaultConfig {
         applicationId = "com.javierreansyah.pinecone"
         minSdk = 34
         targetSdk = 37
-        versionName = appVersionName
+        versionCode = 100000000
+        versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (releaseSigning.values.all { it != null }) {
+            create("production") {
+                storeFile = file(requireNotNull(releaseSigning["storeFile"]))
+                storePassword = releaseSigning["storePassword"]
+                keyAlias = releaseSigning["keyAlias"]
+                keyPassword = releaseSigning["keyPassword"]
+            }
+        }
+    }
     buildTypes {
         debug {
             applicationIdSuffix = ".dev"
@@ -74,11 +99,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro",
             )
 
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("production")
         }
 
         create("staging") {
             initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += "release"
             applicationIdSuffix = ".dev"
             manifestPlaceholders["appName"] = "Pinecone Dev"
@@ -131,15 +157,14 @@ androidComponents {
             publicationLicenseAssets,
             PublicationLicenseAssetsTask::outputDirectory
         )
+        val appVersionName = android.defaultConfig.versionName
         val outputName = when (variant.name) {
-            "release" -> "pinecone-v$appVersionName.apk"
+            "release" -> "pinecone-v$appVersionName${if (releaseSigning["storeFile"] == null) "-unsigned" else ""}.apk"
             "debug" -> "pinecone-$appVersionName-debug.apk"
             "staging" -> "pinecone-$appVersionName-staging.apk"
             else -> "pinecone-$appVersionName-${variant.name}.apk"
         }
         variant.outputs.forEach { output ->
-            // Keep the clock lazy so cached task graphs cannot restore an older timestamp.
-            output.versionCode.set(buildVersionCode)
             output.outputFileName.set(outputName)
         }
     }
@@ -254,4 +279,7 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 aboutLibraries {
+    if (providers.gradleProperty("mupdfFromSource").map(String::toBoolean).getOrElse(false)) {
+        collect { configPath.set(layout.projectDirectory.dir("config/aboutlibraries-source")) }
+    }
 }

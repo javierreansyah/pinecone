@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.data.repository.backup
 
+import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import java.security.MessageDigest
@@ -34,6 +35,16 @@ internal object BackupArchiveIO {
         val normalized = path.replace('\\', '/')
         return normalized.isNotBlank() && !normalized.startsWith('/') &&
                 normalized.split('/').none { it.isBlank() || it == "." || it == ".." }
+    }
+
+    fun safeFileName(name: String): Boolean = name.isNotBlank() && name != "." && name != ".." &&
+            name.none { it == '/' || it == '\\' || it == ':' || it.isISOControl() }
+
+    fun restoreTarget(directory: File, name: String): File {
+        require(safeFileName(name)) { "Invalid restore filename" }
+        return File(directory, name).canonicalFile.also {
+            require(it.parentFile == directory.canonicalFile) { "Restore target escapes its directory" }
+        }
     }
 
     private fun ByteArray.toHex() = joinToString("") { "%02x".format(it) }

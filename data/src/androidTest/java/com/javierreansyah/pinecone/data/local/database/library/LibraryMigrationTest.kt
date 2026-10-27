@@ -13,6 +13,34 @@ import java.util.UUID
 
 class LibraryMigrationTest {
     @Test
+    fun taggedVersionOneDatabaseOpensWithAllHistoricalRecords() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val name = "historical-${UUID.randomUUID()}.db"
+        val file = context.getDatabasePath(name).also { it.parentFile?.mkdirs() }
+        try {
+            context.assets.open("compatibility/v1.0.0/library.db").use { input ->
+                file.outputStream().use { input.copyTo(it) }
+            }
+            val db = Room.databaseBuilder(context, AppDatabase::class.java, name)
+                .addMigrations(AppDatabase.MIGRATION_1_2)
+                .addCallback(AppDatabase.BACKUP_REVISION_CALLBACK).build()
+            try {
+                val book = db.bookDao().getAllBooksSync().single()
+                assertEquals("Baseline book", book.title)
+                assertEquals(0.75, book.furthestProgression, 0.0)
+                assertEquals("Retained note", db.noteDao().getAllNotesSync().single().noteText)
+                assertEquals(book.id, db.shelfDao().getShelfRefsSync("favorites").single().bookId)
+                assertEquals(1, db.bookmarkDao().getAllBookmarksSync().size)
+                assertEquals("Baseline author", db.publicationDao().allCredits().single().name)
+            } finally {
+                db.close()
+            }
+        } finally {
+            context.deleteDatabase(name)
+        }
+    }
+
+    @Test
     fun schemaOneContentAndReadingStateSurviveOperationTableMigration() = runBlocking {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val name = "migration-${UUID.randomUUID()}.db"

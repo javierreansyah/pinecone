@@ -47,7 +47,10 @@ class LibraryProcessingTest {
         val db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
             .addCallback(AppDatabase.BACKUP_REVISION_CALLBACK)
             .setQueryCallback({ sql, _ ->
-                if (sql.startsWith("SELECT", ignoreCase = true)) reads += sql
+                // Background invalidation polling is unrelated to reading-state row loads.
+                if (sql.startsWith("SELECT", ignoreCase = true) &&
+                    "room_table_modification_log" !in sql
+                ) reads += sql
             }, { it.run() })
             .build()
         try {

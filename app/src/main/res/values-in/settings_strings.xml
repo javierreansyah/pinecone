@@ -55,6 +55,6 @@
     <string name="settings_cover_contain">Utuh (tampilkan seluruh sampul)</string>
     <string name="settings_cover_cover">Penuhi (potong bagian berlebih)</string>
     <string name="settings_backup_preparing">Menyiapkan cadangan…</string>
-    <string name="settings_backup_progress">%1$d dari %2$d berkas selesai</string>
+    <string name="settings_backup_progress">Berkas selesai: %1$d dari %2$d</string>
     <string name="settings_restore_preparing">Menyiapkan pemulihan…</string>
 </resources>

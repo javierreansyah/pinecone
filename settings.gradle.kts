@@ -13,17 +13,11 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
-plugins {
-    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
-}
 dependencyResolutionManagement {
     @Suppress("UnstableApiUsage") repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
-        maven("https://maven.ghostscript.com") {
-            content { includeGroup("com.artifex.mupdf") }
-        }
     }
 }
 
@@ -32,3 +26,10 @@ include(":app")
 include(":core:model")
 include(":publication")
 include(":data")
+
+if (providers.gradleProperty("mupdfFromSource").map(String::toBoolean).getOrElse(false)) {
+    include(":mupdf")
+    project(":mupdf").projectDir = file("native/mupdf")
+} else {
+    apply(from = "gradle/mupdf-prebuilt.settings.gradle.kts")
+}

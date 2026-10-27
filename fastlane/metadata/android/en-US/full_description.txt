@@ -1,0 +1,9 @@
+Pinecone is a free Android reader for books, PDFs, comics and audiobooks, with Material 3 design.
+
+Read EPUB, PDF and CBZ files, image publications and audiobook packages. Organize your library with spaces, shelves and tags; save reading positions, bookmarks, notes and highlights where supported.
+
+Customize typography, spacing, colors and reading controls. Listen to audiobooks with playback speed controls. Import StarDict dictionaries for offline lookup. Switch supported PDFs to an on-device reflowable reading view; scanned pages remain images and OCR is not supported.
+
+Create manual or scheduled local backups and restore your books, dictionaries, settings and reading progress. English and Indonesian interfaces are available.
+
+Requires Android 14 or newer. Pinecone is licensed under AGPL-3.0-or-later.

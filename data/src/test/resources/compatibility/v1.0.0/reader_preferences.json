@@ -1,0 +1,71 @@
+{
+  "settings": {
+    "themeMode": "System",
+    "colorPalette": "Dynamic",
+    "themeContrast": "Standard",
+    "locale": "id",
+    "brightness": 0.5,
+    "autoBrightness": true,
+    "forceOrientation": "Auto",
+    "preventScreenTimeout": false,
+    "alwaysShowStatusBar": false,
+    "publisherStyles": true,
+    "fontSize": 1.15,
+    "fontFamily": "Literata",
+    "textAlign": "Start",
+    "lineHeight": 1.5,
+    "paragraphSpacing": 0.0,
+    "paragraphIndent": 0.0,
+    "wordSpacing": 0.0,
+    "letterSpacing": 0.0,
+    "fontWeights": {},
+    "hyphens": false,
+    "scroll": false,
+    "columnCount": "Auto",
+    "pageMargins": 1.0,
+    "imageFilter": "None",
+    "typeScale": 1.0,
+    "verticalMargin": 32.0,
+    "readingProgression": "LTR",
+    "textNormalization": false,
+    "pineconeThemePreset": "Auto",
+    "customBackgroundColor": "#FFFFFF",
+    "customTextColor": "#000000",
+    "customThemes": [],
+    "autoBackupFrequency": "12h",
+    "lastBackupTime": 0,
+    "lastBackupRevision": -1,
+    "backupFolderUri": "",
+    "activeDictionaryId": "baseline",
+    "installedDictionaries": [
+      {
+        "id": "baseline",
+        "name": "Baseline dictionary",
+        "wordCount": 1
+      }
+    ],
+    "jumpHistoryMode": "explicit",
+    "showAllSpaces": true,
+    "spacesEnabled": true,
+    "unsortedEnabled": true,
+    "showLibraryBottomNavigation": true,
+    "coverDisplayMode": "Contain",
+    "formatPreferences": {
+      "audioSpeed": 1.0,
+      "audioPitch": 1.0,
+      "epubSpread": "auto",
+      "epubLigatures": null,
+      "epubVerticalText": null,
+      "epubImageFilterFollowTheme": true,
+      "pdf": {
+        "scroll": true,
+        "horizontal": false,
+        "rightToLeft": false,
+        "fitWidth": false,
+        "pageSpacing": 12.0,
+        "invert": null
+      }
+    }
+  },
+  "legacyMigrationComplete": true
+}

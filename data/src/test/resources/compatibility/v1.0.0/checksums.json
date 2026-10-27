@@ -1,0 +1,12 @@
+{
+  "dictionary-schema.json": "f9d508e010a33c0a17b57cc970812b1d11c05382adbc0804959648b401404e45",
+  "dictionary.db": "dec5b24e924eabffeb960fe10f2bc7d8201ce2da385803cf63a55acf7b534820",
+  "format.json": "ec69435fa171cf22c442e9d4dd2ca28572eb7d52e967d62197ac29b24234d957",
+  "library-schema.json": "73f106b75fc9e122125081071516db6713c1346742f546ea3c1d10b77152a8d2",
+  "library.db": "e72bc3687ea78e95ca68549e7989cfe13db1c08a696a27392462cee2cd3ff77e",
+  "library_preferences.json": "6fed595ce8847b477df8bd3455be2cce53a756bfd844cbff4705c0a4588553d3",
+  "portable.pinebackup": "7f8f98dba658217d8b63162ec014620147833bed4017b0416854039d01d1a8cd",
+  "reader_preferences.json": "38bfb2879979dc627bbfdf6eeafe0c656cef70e939923c755c3bf1984a0abe98",
+  "snapshot.json": "61a5c4f3106f29f748d17609265551472b58db6938feb9d4d138f179065dab7e",
+  "vault.zip": "fc19a8622493e1bec9eac6e5526fdd4ce9671e9bcae6b1f54b20600f1ae6293f"
+}

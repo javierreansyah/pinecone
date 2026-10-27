@@ -1,0 +1,306 @@
+{
+  "format": "pinecone-vault-snapshot",
+  "formatVersion": 2,
+  "id": "20261027_000000_000",
+  "createdAt": 1,
+  "backupKind": "manual",
+  "appVersion": "1.0.0",
+  "databaseRevision": 17,
+  "stateFingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+  "recordCounts": {
+    "books": 1,
+    "bookmarks": 1,
+    "shelves": 1,
+    "shelfBookCrossRefs": 1,
+    "notes": 1,
+    "authors": 1,
+    "tags": 1,
+    "bookAuthorCrossRefs": 1,
+    "bookTagCrossRefs": 1,
+    "spaces": 2,
+    "bookSpaceCrossRefs": 2,
+    "renditions": 1,
+    "credits": 1
+  },
+  "library": {
+    "version": 2,
+    "books": [
+      {
+        "id": "80f60a8baa84df6c579cdd8ac0fdec0a895d10b925a1fcb8f6dfe4e2feed7c56",
+        "title": "Baseline book",
+        "coverPath": "/old/app/cover.png",
+        "filePath": "/old/app/book.epub",
+        "mediaType": "application/epub+zip",
+        "identifier": null,
+        "language": "en",
+        "progression": 0.5,
+        "lastLocatorJson": "{\"href\":\"chapter.xhtml\",\"type\":\"application/xhtml+xml\",\"locations\":{\"totalProgression\":0.5}}",
+        "addedDate": 1,
+        "lastReadDate": 2,
+        "isArchived": false,
+        "description": "Saved description",
+        "publisher": null,
+        "published": null,
+        "isRead": false,
+        "furthestProgression": 0.75,
+        "furthestLocatorJson": "{\"href\":\"chapter.xhtml\",\"type\":\"application/xhtml+xml\",\"locations\":{\"totalProgression\":0.5}}",
+        "jumpOriginLocatorJson": null,
+        "activeRendition": "original",
+        "metadataJson": "{}",
+        "sourceMetadataJson": "{}",
+        "originalFilename": "book.epub",
+        "isUnsorted": false
+      }
+    ],
+    "bookmarks": [
+      {
+        "id": 1,
+        "bookId": "80f60a8baa84df6c579cdd8ac0fdec0a895d10b925a1fcb8f6dfe4e2feed7c56",
+        "locatorJson": "{\"href\":\"chapter.xhtml\",\"type\":\"application/xhtml+xml\",\"locations\":{\"totalProgression\":0.5}}",
+        "chapterTitle": "Baseline",
+        "createdAt": 3,
+        "renditionKey": "original"
+      }
+    ],
+    "shelves": [
+      {
+        "id": "favorites",
+        "spaceId": "personal",
+        "name": "Favorites",
+        "createdAt": 1
+      }
+    ],
+    "shelfBookCrossRefs": [
+      {
+        "shelfId": "favorites",
+        "bookId": "80f60a8baa84df6c579cdd8ac0fdec0a895d10b925a1fcb8f6dfe4e2feed7c56",
+        "addedAt": 1,
+        "orderIndex": 0
+      }
+    ],
+    "notes": [
+      {
+        "id": 1,
+        "bookId": "80f60a8baa84df6c579cdd8ac0fdec0a895d10b925a1fcb8f6dfe4e2feed7c56",
+        "locatorJson": "{\"href\":\"chapter.xhtml\",\"type\":\"application/xhtml+xml\",\"locations\":{\"totalProgression\":0.5}}",
+        "chapterTitle": "Baseline",
+        "noteText": "Retained note",
+        "color": -1,
+        "createdAt": 4,
+        "renditionKey": "original"
+      }
+    ],
+    "authors": [
+      {
+        "id": 1,
+        "name": "Baseline author"
+      }
+    ],
+    "tags": [
+      {
+        "id": 1,
+        "name": "Saved tag"
+      }
+    ],
+    "bookAuthorCrossRefs": [
+      {
+        "bookId": "80f60a8baa84df6c579cdd8ac0fdec0a895d10b925a1fcb8f6dfe4e2feed7c56",
+        "authorId": 1,
+        "authorOrder": 0
+      }
+    ],
+    "bookTagCrossRefs": [
+      {
+        "bookId": "80f60a8baa84df6c579cdd8ac0fdec0a895d10b925a1fcb8f6dfe4e2feed7c56",
+        "tagId": 1
+      }
+    ],
+    "spaces": [
+      {
+        "id": "_all_",
+        "name": "All",
+        "createdAt": 0
+      },
+      {
+        "id": "personal",
+        "name": "Personal",
+        "createdAt": 1
+      }
+    ],
+    "bookSpaceCrossRefs": [
+      {
+        "bookId": "80f60a8baa84df6c579cdd8ac0fdec0a895d10b925a1fcb8f6dfe4e2feed7c56",
+        "spaceId": "_all_"
+      },
+      {
+        "bookId": "80f60a8baa84df6c579cdd8ac0fdec0a895d10b925a1fcb8f6dfe4e2feed7c56",
+        "spaceId": "personal"
+      }
+    ],
+    "renditions": [
+      {
+        "bookId": "80f60a8baa84df6c579cdd8ac0fdec0a895d10b925a1fcb8f6dfe4e2feed7c56",
+        "key": "original",
+        "filePath": "/old/app/book.epub",
+        "mediaType": "application/epub+zip",
+        "profile": "EPUB",
+        "sha256": "80f60a8baa84df6c579cdd8ac0fdec0a895d10b925a1fcb8f6dfe4e2feed7c56",
+        "converterVersion": null,
+        "sourceMapJson": null,
+        "lastLocatorJson": "{\"href\":\"chapter.xhtml\",\"type\":\"application/xhtml+xml\",\"locations\":{\"totalProgression\":0.5}}",
+        "progression": 0.5,
+        "furthestLocatorJson": "{\"href\":\"chapter.xhtml\",\"type\":\"application/xhtml+xml\",\"locations\":{\"totalProgression\":0.5}}",
+        "furthestProgression": 0.75,
+        "jumpOriginLocatorJson": null,
+        "preferencesJson": "{\"themeMode\":\"System\",\"colorPalette\":\"Dynamic\",\"themeContrast\":\"Standard\",\"locale\":\"id\",\"brightness\":0.5,\"autoBrightness\":true,\"forceOrientation\":\"Auto\",\"preventScreenTimeout\":false,\"alwaysShowStatusBar\":false,\"publisherStyles\":true,\"fontSize\":1.15,\"fontFamily\":\"Literata\",\"textAlign\":\"Start\",\"lineHeight\":1.5,\"paragraphSpacing\":0.0,\"paragraphIndent\":0.0,\"wordSpacing\":0.0,\"letterSpacing\":0.0,\"fontWeights\":{},\"hyphens\":false,\"scroll\":false,\"columnCount\":\"Auto\",\"pageMargins\":1.0,\"imageFilter\":\"None\",\"typeScale\":1.0,\"verticalMargin\":32.0,\"readingProgression\":\"LTR\",\"textNormalization\":false,\"pineconeThemePreset\":\"Auto\",\"customBackgroundColor\":\"#FFFFFF\",\"customTextColor\":\"#000000\",\"customThemes\":[],\"autoBackupFrequency\":\"12h\",\"lastBackupTime\":0,\"lastBackupRevision\":-1,\"backupFolderUri\":\"\",\"activeDictionaryId\":\"baseline\",\"installedDictionaries\":[{\"id\":\"baseline\",\"name\":\"Baseline dictionary\",\"wordCount\":1}],\"jumpHistoryMode\":\"explicit\",\"showAllSpaces\":true,\"spacesEnabled\":true,\"unsortedEnabled\":true,\"showLibraryBottomNavigation\":true,\"coverDisplayMode\":\"Contain\",\"formatPreferences\":{\"audioSpeed\":1.0,\"audioPitch\":1.0,\"epubSpread\":\"auto\",\"epubLigatures\":null,\"epubVerticalText\":null,\"epubImageFilterFollowTheme\":true,\"pdf\":{\"scroll\":true,\"horizontal\":false,\"rightToLeft\":false,\"fitWidth\":false,\"pageSpacing\":12.0,\"invert\":null}}}"
+      }
+    ],
+    "credits": [
+      {
+        "bookId": "80f60a8baa84df6c579cdd8ac0fdec0a895d10b925a1fcb8f6dfe4e2feed7c56",
+        "role": "aut",
+        "position": 0,
+        "name": "Baseline author",
+        "identifier": null,
+        "metadataJson": "{}"
+      }
+    ]
+  },
+  "settings": {
+    "themeMode": "System",
+    "colorPalette": "Dynamic",
+    "themeContrast": "Standard",
+    "locale": "id",
+    "brightness": 0.5,
+    "autoBrightness": true,
+    "forceOrientation": "Auto",
+    "preventScreenTimeout": false,
+    "alwaysShowStatusBar": false,
+    "publisherStyles": true,
+    "fontSize": 1.15,
+    "fontFamily": "Literata",
+    "textAlign": "Start",
+    "lineHeight": 1.5,
+    "paragraphSpacing": 0.0,
+    "paragraphIndent": 0.0,
+    "wordSpacing": 0.0,
+    "letterSpacing": 0.0,
+    "fontWeights": {},
+    "hyphens": false,
+    "scroll": false,
+    "columnCount": "Auto",
+    "pageMargins": 1.0,
+    "imageFilter": "None",
+    "typeScale": 1.0,
+    "verticalMargin": 32.0,
+    "readingProgression": "LTR",
+    "textNormalization": false,
+    "pineconeThemePreset": "Auto",
+    "customBackgroundColor": "#FFFFFF",
+    "customTextColor": "#000000",
+    "customThemes": [],
+    "autoBackupFrequency": "12h",
+    "lastBackupTime": 0,
+    "lastBackupRevision": -1,
+    "backupFolderUri": "",
+    "activeDictionaryId": "baseline",
+    "installedDictionaries": [
+      {
+        "id": "baseline",
+        "name": "Baseline dictionary",
+        "wordCount": 1
+      }
+    ],
+    "jumpHistoryMode": "explicit",
+    "showAllSpaces": true,
+    "spacesEnabled": true,
+    "unsortedEnabled": true,
+    "showLibraryBottomNavigation": true,
+    "coverDisplayMode": "Contain",
+    "formatPreferences": {
+      "audioSpeed": 1.0,
+      "audioPitch": 1.0,
+      "epubSpread": "auto",
+      "epubLigatures": null,
+      "epubVerticalText": null,
+      "epubImageFilterFollowTheme": true,
+      "pdf": {
+        "scroll": true,
+        "horizontal": false,
+        "rightToLeft": false,
+        "fitWidth": false,
+        "pageSpacing": 12.0,
+        "invert": null
+      }
+    }
+  },
+  "books": [
+    {
+      "bookId": "80f60a8baa84df6c579cdd8ac0fdec0a895d10b925a1fcb8f6dfe4e2feed7c56",
+      "book": {
+        "kind": "BOOK",
+        "sha256": "80f60a8baa84df6c579cdd8ac0fdec0a895d10b925a1fcb8f6dfe4e2feed7c56",
+        "size": 997,
+        "crc32": 2590995104,
+        "storedSize": 997,
+        "storedCrc32": 2590995104,
+        "fileName": "80f60a8baa84df6c579cdd8ac0fdec0a895d10b925a1fcb8f6dfe4e2feed7c56.epub",
+        "sourcePath": "/old/app/book.epub",
+        "sourceSize": 997,
+        "sourceLastModified": 1
+      },
+      "cover": {
+        "kind": "COVER",
+        "sha256": "c97e255bba6143711779d73e61726eab398ef2d29caaa632083e59315d60f243",
+        "size": 68,
+        "crc32": 1145851640,
+        "storedSize": 68,
+        "storedCrc32": 1145851640,
+        "fileName": "c97e255bba6143711779d73e61726eab398ef2d29caaa632083e59315d60f243.png",
+        "sourcePath": "/old/app/cover.png",
+        "sourceSize": 68,
+        "sourceLastModified": 1
+      }
+    }
+  ],
+  "dictionaries": [
+    {
+      "dictionary": {
+        "id": "baseline",
+        "name": "Baseline dictionary",
+        "wordCount": 1
+      },
+      "objectInfo": {
+        "kind": "DICTIONARY",
+        "sha256": "dec5b24e924eabffeb960fe10f2bc7d8201ce2da385803cf63a55acf7b534820",
+        "size": 32768,
+        "crc32": 1458144268,
+        "storedSize": 831,
+        "storedCrc32": 244276050,
+        "fileName": "dec5b24e924eabffeb960fe10f2bc7d8201ce2da385803cf63a55acf7b534820.pinedict",
+        "sourcePath": "/old/app/dict_baseline.db",
+        "sourceSize": 32768,
+        "sourceLastModified": 1
+      }
+    }
+  ],
+  "activeDictionaryId": "baseline",
+  "renditions": [
+    {
+      "bookId": "80f60a8baa84df6c579cdd8ac0fdec0a895d10b925a1fcb8f6dfe4e2feed7c56",
+      "key": "original",
+      "objectInfo": {
+        "kind": "BOOK",
+        "sha256": "80f60a8baa84df6c579cdd8ac0fdec0a895d10b925a1fcb8f6dfe4e2feed7c56",
+        "size": 997,
+        "crc32": 2590995104,
+        "storedSize": 997,
+        "storedCrc32": 2590995104,
+        "fileName": "80f60a8baa84df6c579cdd8ac0fdec0a895d10b925a1fcb8f6dfe4e2feed7c56.epub",
+        "sourcePath": "/old/app/book.epub",
+        "sourceSize": 997,
+        "sourceLastModified": 1
+      }
+    }
+  ]
+}

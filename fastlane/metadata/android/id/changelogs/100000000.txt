@@ -1,0 +1,1 @@
+Penandatanganan rilis yang konsisten dan kode versi yang dapat direproduksi. Pengujian kompatibilitas cadangan lama dan pemulihan kamus yang lebih aman. Persiapan build dari sumber untuk F-Droid. Pengguna APK produksi lama yang ditandatangani dengan kunci debug harus memverifikasi cadangan portabel sebelum memasang ulang dengan kunci produksi.

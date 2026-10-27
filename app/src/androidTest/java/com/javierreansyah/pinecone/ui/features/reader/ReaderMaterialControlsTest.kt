@@ -1,5 +1,7 @@
 package com.javierreansyah.pinecone.ui.features.reader
 
+import android.annotation.SuppressLint
+
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.mutableStateOf
@@ -80,6 +82,7 @@ class ReaderMaterialControlsTest {
     }
 
     @Test
+    @SuppressLint("StringFormatTrivial") // Localized fixed-decimal formatting matches the UI; concatenation does not.
     fun audioSliderValuesStayOnTheRightOfTheirLabels() {
         val settings = ReaderSettings().let {
             it.copy(

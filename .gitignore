@@ -11,7 +11,6 @@
 /build
 **/build/
 /captures
-/app/release/mapping.txt
 .externalNativeBuild
 .cxx
 local.properties
@@ -19,3 +18,12 @@ local.properties
 # Local Kotlin caches and diagnostic output
 /.kotlin/
 /*.log
+
+# Release artifacts and credentials belong outside source control.
+/release/
+/app/release/
+*.jks
+*.keystore
+/signing.properties
+__pycache__/
+/native/mupdf/source/

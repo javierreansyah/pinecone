@@ -3,13 +3,31 @@ package com.javierreansyah.pinecone.data.repository.backup
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.zip.CRC32
 
 class BackupArchiveIOTest {
+    @get:Rule
+    val temporary = TemporaryFolder()
+
+    @Test
+    fun restoreTargetsRejectPathLikeNamesWithoutWritingFiles() {
+        val directory = temporary.newFolder("assets")
+        for (name in listOf("", " ", ".", "..", "../outside", "nested/file", "nested\\file", "/absolute", "C:drive", "bad\u0000name", "bad\nname")) {
+            assertThrows(name, IllegalArgumentException::class.java) {
+                BackupArchiveIO.restoreTarget(directory, name)
+            }
+        }
+        assertTrue(directory.listFiles().orEmpty().isEmpty())
+        assertEquals(directory.canonicalFile, BackupArchiveIO.restoreTarget(directory, "baseline-book_123.epub").parentFile)
+    }
+
     @Test
     fun copyCalculatesDigestAndCrcInSinglePass() {
         val bytes = "pinecone-object".repeat(1_000).toByteArray()

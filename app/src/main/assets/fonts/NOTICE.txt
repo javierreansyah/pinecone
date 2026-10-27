@@ -1,0 +1,22 @@
+Bundled fonts are distributed under the SIL Open Font License 1.1 (OFL.txt).
+The original font files also embed their license and copyright notices.
+
+Atkinson Hyperlegible (regular, bold, italic, bold italic)
+Copyright 2020 Braille Institute of America, Inc.
+https://www.brailleinstitute.org/freefont/
+
+Literata (regular and italic variable fonts)
+Copyright 2017 The Literata Project Authors
+https://github.com/googlefonts/literata
+
+Source Code Pro (regular and italic variable fonts)
+Copyright 2023 Adobe (http://www.adobe.com/), with Reserved Font Name "Source".
+https://github.com/adobe-fonts/source-code-pro
+
+Source Sans 3 (regular and italic variable fonts)
+Copyright 2023 Adobe (http://www.adobe.com/), with Reserved Font Name "Source".
+https://github.com/adobe-fonts/source-sans
+
+Source Serif 4 (regular and italic variable fonts)
+Copyright 2014-2023 Adobe (http://www.adobe.com/), with Reserved Font Name "Source".
+https://github.com/adobe-fonts/source-serif

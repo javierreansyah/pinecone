@@ -55,6 +55,6 @@
     <string name="settings_cover_contain">Contain (show full cover)</string>
     <string name="settings_cover_cover">Cover (fill and crop)</string>
     <string name="settings_backup_preparing">Preparing backup…</string>
-    <string name="settings_backup_progress">%1$d of %2$d files completed</string>
+    <string name="settings_backup_progress">Files completed: %1$d of %2$d</string>
     <string name="settings_restore_preparing">Preparing restore…</string>
 </resources>

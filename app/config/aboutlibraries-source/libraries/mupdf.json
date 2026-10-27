@@ -1,0 +1,9 @@
+{
+  "uniqueId": "com.artifex.mupdf:fitz",
+  "artifactVersion": "1.28.5",
+  "name": "MuPDF",
+  "description": "MuPDF JNI bindings built from the pinned official source and its submodules.",
+  "website": "https://mupdf.com",
+  "developers": [{"name": "Artifex Software LLC"}],
+  "licenses": ["AGPL-3.0-or-later"]
+}

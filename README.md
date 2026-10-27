@@ -46,6 +46,12 @@
 - **Local import and backups:** Import individual files or scan folders, create manual or scheduled
   backups, and restore your library, dictionaries, settings, and reading progress.
 
+## Building and updating
+
+See [the release and compatibility guide](docs/RELEASING.md) for signing, versioning, safe updates,
+backup recovery, lightweight Windows development, and server-built F-Droid releases. New releases must preserve
+installed data and backups from v1.0.0 onward. Development APKs use a separate app ID.
+
 ## License
 
 Pinecone is distributed under a single license, **AGPL-3.0-or-later**, with no alternative license

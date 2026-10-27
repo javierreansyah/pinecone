@@ -1,18 +1,24 @@
-# Validation
+# Working guidelines
 
-Default to **Quick** validation from the repository root (Windows PowerShell):
+Preserve unrelated user changes. Keep changes focused and reuse existing project patterns.
+
+Default to **Quick** from the repository root (Windows PowerShell):
 
 ```powershell
 .\gradlew.bat :app:assembleDebug :app:testDebugUnitTest --warning-mode all
 ```
 
-Fix build/compiler errors and warnings and failing tests, then rerun Quick until it passes. Quick
-does not run lint or IDE inspections; no additional validation guide is needed. If the user requests
-broader validation, read `docs/VALIDATION.md` and follow **Complete**. IDE recommendations are
-handled manually by the user in JetBrains tools, not by agents. Never claim Quick means all warnings
-are cleared. Preserve unrelated user changes.
+Fix compiler errors/warnings and failing tests, then rerun the requested validation. Keep strict
+checks; report remaining upstream warnings and skipped checks honestly. Quick does not run lint.
+Use **Complete** only when explicitly requested; see [validation](docs/VALIDATION.md) for scope
+and commands. IDE recommendations are handled manually by the user.
 
-# Device testing
+Use only **Resizable (Experimental)** for device testing. Keep local checks sequential and
+lightweight; native/F-Droid builds belong on F-Droid's hosted CI.
 
-When emulator or device-based UI testing is needed, use the **Resizable (Experimental)** emulator
-profile. Do not use **Medium Phone**.
+Read the relevant guide before changing:
+
+- [Releases and compatibility](docs/RELEASING.md): release configuration, dependencies, databases,
+  persisted models/settings, publication storage, and backup/restore. Preserve installed data and
+  backups from **v1.0.0 onward**, including skipped releases.
+- [Asset sources](docs/ASSET_SOURCES.md): bundled assets, attribution, and dependency licensing.

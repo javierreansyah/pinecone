@@ -35,13 +35,12 @@ class BackupVault @Inject constructor(
             ?.let { DocumentFile.fromTreeUri(context, it) } ?: return null
         if (!root.canRead() || create && !root.canWrite()) return null
         val vault = childDir(root, VAULT_DIR, create) ?: return null
+        if (create) ensureFormat(vault) else validateFormat(vault)
         val snapshots = childDir(vault, "snapshots", create) ?: return null
         val objects = childDir(vault, "objects", create) ?: return null
         val books = childDir(objects, "books", create) ?: return null
         val covers = childDir(objects, "covers", create) ?: return null
         val dictionaries = childDir(objects, "dictionaries", create) ?: return null
-        if (create) ensureFormat(vault)
-        else validateFormat(vault)
         return VaultDirs(vault, snapshots, books, covers, dictionaries)
     }
 
@@ -74,7 +73,9 @@ class BackupVault @Inject constructor(
     private fun validateFormat(vault: DocumentFile) {
         val file = vault.findFile("format.json") ?: error("Missing vault format")
         val (formatFormat, formatFormatVersion) = resolver.openInputStream(file.uri)?.use {
-            json.decodeFromString<VaultFormat>(it.readBytes().toString(Charsets.UTF_8))
+            val text = it.readBytes().toString(Charsets.UTF_8)
+            checkBackupFormat(json, text, VAULT_FORMAT)
+            json.decodeFromString<VaultFormat>(text)
         } ?: error("Cannot read vault format")
         require(formatFormat == VAULT_FORMAT)
         if (formatFormatVersion != FORMAT_VERSION) throw UnsupportedBackupException()

@@ -1,0 +1,6 @@
+{
+  "repository": "https://github.com/ArtifexSoftware/mupdf.git",
+  "revision": "8ad45e92f0935d3d87f1db3f873086472a5e1b24",
+  "version": "1.28.5",
+  "ndk": "28.2.13676358"
+}

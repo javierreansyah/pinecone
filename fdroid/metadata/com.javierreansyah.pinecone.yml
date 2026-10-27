@@ -1,0 +1,52 @@
+Categories:
+  - Reading
+License: AGPL-3.0-or-later
+AuthorName: Javier Aahmes Reansyah
+SourceCode: https://github.com/javierreansyah/pinecone
+IssueTracker: https://github.com/javierreansyah/pinecone/issues
+Changelog: https://github.com/javierreansyah/pinecone/releases
+AutoName: Pinecone
+RepoType: git
+Repo: https://github.com/javierreansyah/pinecone.git
+
+Builds:
+  - versionName: 1.0.0
+    versionCode: 100000000
+    disable: Replace the draft commit with the publicly available release commit hash before enabling
+    commit: v1.0.0
+    sudo:
+      - apt-get update
+      - apt-get install -y make gcc g++ pkg-config openjdk-17-jdk-headless openjdk-21-jdk-headless
+    gradle:
+      - yes
+    gradleprops:
+      - mupdfFromSource=true
+    srclibs:
+      - MuPDF@8ad45e92f0935d3d87f1db3f873086472a5e1b24
+    prebuild:
+      - rm -f gradle/mupdf-prebuilt.settings.gradle.kts
+      - mkdir -p native/mupdf
+      - cp -a $$MuPDF$$ native/mupdf/source
+      - rm -rf native/mupdf/source/thirdparty/lcms2/testbed
+      - rm -rf native/mupdf/source/thirdparty/lcms2/utils/delphi
+      - rm -rf native/mupdf/source/thirdparty/extract/test
+    scandelete:
+      - native/mupdf/source/thirdparty
+      - native/mupdf/source/platform/wasm
+    scanignore:
+      # Verified UTF-8 hyphenation pattern data, pinned by the MuPDF source commit.
+      - native/mupdf/source/resources/hyphen/hyph-std.zip
+      - native/mupdf/source/resources/hyphen/hyph-all.zip
+    build: python3 scripts/prepare_mupdf.py
+    output: app/build/outputs/apk/release/*-unsigned.apk
+    ndk: 28.2.13676358
+
+MaintainerNotes: |-
+  MuPDF resources/hyphen ZIPs contain source hyphenation patterns, not executable code.
+  Keep them unchanged so the native generator matches the upstream release build.
+  The compatibility vault ZIP contains only synthetic test data and is not packaged in the app.
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags ^v[0-9]+\.[0-9]+\.[0-9]+$
+CurrentVersion: 1.0.0
+CurrentVersionCode: 100000000

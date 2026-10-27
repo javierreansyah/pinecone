@@ -15,6 +15,50 @@ import java.util.UUID
 
 class DictionaryStoreTest {
     @Test
+    fun stagedHistoricalDictionaryMigratesAndClosesBeforeReplacement() = runBlocking {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val file = java.io.File.createTempFile("historical-dictionary-", ".db", context.cacheDir)
+        try {
+            context.assets.open("compatibility/v1.0.0/dictionary.db").use { input ->
+                file.outputStream().use { input.copyTo(it) }
+            }
+            android.database.sqlite.SQLiteDatabase.openDatabase(file.path, null, 0).use {
+                it.execSQL("DROP INDEX index_dictionary_entries_wordIndex")
+                it.version = 1
+            }
+            prepareRestoredDictionary(context, file)
+            val db = openDictionaryDatabase(context, file.absolutePath)
+            try {
+                assertEquals("A retained definition", db.dictionaryDao().getDefinitions("pinecone").single().definition)
+                assertEquals(2, db.openHelper.readableDatabase.version)
+            } finally {
+                db.close()
+            }
+        } finally {
+            file.delete()
+        }
+    }
+
+    @Test
+    fun stagedDictionaryCannotForgeAValidSchemaIdentity() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val file = java.io.File.createTempFile("invalid-dictionary-", ".db", context.cacheDir)
+        try {
+            context.assets.open("compatibility/v1.0.0/dictionary.db").use { input ->
+                file.outputStream().use { input.copyTo(it) }
+            }
+            android.database.sqlite.SQLiteDatabase.openDatabase(file.path, null, 0).use {
+                it.execSQL("ALTER TABLE dictionary_entries DROP COLUMN definition")
+            }
+            org.junit.Assert.assertThrows(IllegalStateException::class.java) {
+                prepareRestoredDictionary(context, file)
+            }
+        } finally {
+            file.delete()
+        }
+    }
+
+    @Test
     fun cancellationOnReturnFromIoDiscardsTheCompletedDatabase() = runBlocking {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val store = DictionaryStore(context, Dispatchers.IO)

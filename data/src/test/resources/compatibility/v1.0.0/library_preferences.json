@@ -1,0 +1,11 @@
+{
+  "globalSpaceId": "personal",
+  "screens": {
+    "personal_library_books": {
+      "sortType": "Title",
+      "isAscending": true,
+      "layoutMode": "List"
+    }
+  },
+  "legacyMigrationComplete": true
+}

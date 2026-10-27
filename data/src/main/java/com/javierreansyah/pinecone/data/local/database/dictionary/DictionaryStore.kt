@@ -8,6 +8,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -45,14 +46,33 @@ class DictionaryStore @Inject constructor(
     }
 
     private fun database(id: String): DictionaryDatabase = databases.getOrPut(id) {
-        Room.databaseBuilder(context, DictionaryDatabase::class.java, fileName(id))
-            .addMigrations(DictionaryDatabase.MIGRATION_1_2)
-            .build()
+        openDictionaryDatabase(context, fileName(id))
     }
 
     private fun fileName(id: String): String {
         require(validDictionaryId(id))
         return "dict_$id.db"
+    }
+}
+
+internal fun openDictionaryDatabase(context: Context, name: String): DictionaryDatabase =
+    Room.databaseBuilder(context, DictionaryDatabase::class.java, name)
+        .addMigrations(DictionaryDatabase.MIGRATION_1_2)
+        .build()
+
+/** Migrate a private staging copy, then checkpoint it before the restore journal moves it. */
+internal fun prepareRestoredDictionary(context: Context, file: File) {
+    // A backup's claimed Room identity is untrusted; validate its actual schema on the copy.
+    android.database.sqlite.SQLiteDatabase.openDatabase(
+        file.path, null, android.database.sqlite.SQLiteDatabase.OPEN_READWRITE
+    ).use { it.execSQL("DROP TABLE IF EXISTS room_master_table") }
+    val database = openDictionaryDatabase(context, file.absolutePath)
+    try {
+        database.openHelper.writableDatabase.query("PRAGMA wal_checkpoint(TRUNCATE)").use {
+            check(it.moveToFirst() && it.getInt(0) == 0) { "Dictionary checkpoint failed" }
+        }
+    } finally {
+        database.close()
     }
 }
 

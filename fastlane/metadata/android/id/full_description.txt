@@ -1,0 +1,9 @@
+Pinecone adalah pembaca buku, PDF, komik dan buku audio untuk Android dengan desain Material 3.
+
+Baca EPUB, PDF, CBZ, publikasi gambar dan paket buku audio. Atur perpustakaan dengan ruang, rak dan tag. Simpan posisi baca, penanda, catatan dan sorotan pada format yang mendukungnya.
+
+Sesuaikan tipografi, jarak, warna dan kontrol membaca. Atur kecepatan buku audio. Impor kamus StarDict untuk pencarian luring. Tampilkan PDF yang didukung dalam mode baca yang dibuat di perangkat; halaman hasil pemindaian tetap berupa gambar dan OCR tidak didukung.
+
+Buat cadangan lokal secara manual atau terjadwal untuk memulihkan buku, kamus, pengaturan dan kemajuan membaca. Antarmuka tersedia dalam bahasa Inggris dan Indonesia.
+
+Memerlukan Android 14 atau lebih baru. Pinecone berlisensi AGPL-3.0-or-later.

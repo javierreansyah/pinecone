@@ -1,0 +1,1 @@
+Consistent release signing and reproducible version codes. Historical backup compatibility tests and safer dictionary restoration. Source-build preparation for F-Droid. Users of an older debug-signed production APK must verify a portable backup before reinstalling with the production signing key.
