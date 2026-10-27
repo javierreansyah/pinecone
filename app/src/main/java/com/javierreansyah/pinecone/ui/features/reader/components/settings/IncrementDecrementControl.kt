@@ -37,8 +37,7 @@ fun IncrementDecrementControl(
     modifier: Modifier = Modifier,
     label: String,
     value: String,
-    onIncrement: () -> Unit,
-    onDecrement: () -> Unit,
+    onStep: (Int) -> Unit,
     enabled: Boolean = true,
     inline: Boolean = false,
 ) {
@@ -53,7 +52,7 @@ fun IncrementDecrementControl(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.weight(1f),
             )
-            IncrementDecrementButtons(value, onIncrement, onDecrement, enabled)
+            IncrementDecrementButtons(value, onStep, enabled)
         }
     } else {
         Column(
@@ -68,7 +67,7 @@ fun IncrementDecrementControl(
                     alpha = 0.38f
                 ),
             )
-            IncrementDecrementButtons(value, onIncrement, onDecrement, enabled)
+            IncrementDecrementButtons(value, onStep, enabled)
         }
     }
 }
@@ -76,8 +75,7 @@ fun IncrementDecrementControl(
 @Composable
 private fun IncrementDecrementButtons(
     value: String,
-    onIncrement: () -> Unit,
-    onDecrement: () -> Unit,
+    onStep: (Int) -> Unit,
     enabled: Boolean,
 ) {
     Row(
@@ -85,7 +83,7 @@ private fun IncrementDecrementButtons(
         horizontalArrangement = Arrangement.Start,
     ) {
         IconButton(
-            onClick = onDecrement,
+            onClick = { onStep(-1) },
             enabled = enabled,
             colors = IconButtonDefaults.iconButtonColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -148,7 +146,7 @@ private fun IncrementDecrementButtons(
         }
 
         IconButton(
-            onClick = onIncrement,
+            onClick = { onStep(1) },
             enabled = enabled,
             colors = IconButtonDefaults.iconButtonColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,

@@ -32,7 +32,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetValue
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -82,6 +81,7 @@ import com.javierreansyah.pinecone.ui.components.SegmentedColumn
 import com.javierreansyah.pinecone.ui.components.SegmentedListScope
 import com.javierreansyah.pinecone.ui.features.settings.components.ColorSchemePickerDialog
 import com.javierreansyah.pinecone.ui.features.settings.components.SettingsItem
+import com.javierreansyah.pinecone.ui.features.settings.components.SettingsSwitchItem
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import kotlinx.coroutines.launch
 import java.io.File
@@ -354,7 +354,6 @@ fun SettingsScreen(
                 LocaleListCompat.getEmptyLocaleList(),
             )
 
-
             Toast.makeText(
                 context,
                 restoreSuccessMsg,
@@ -525,18 +524,13 @@ private fun LanguageSettingsSection(
 
         val languageLabel = stringResource(R.string.settings_language)
         val localeKey = if (settings.locale == "in") "id" else settings.locale
-        val currentLanguageName = languagesMap[localeKey] ?: languagesMap.getValue("System")
 
         SettingsItem(
             content = { Text(languageLabel, style = MaterialTheme.typography.titleMedium) },
-            value = currentLanguageName,
-            options = languagesMap.values.toList(),
-            onSelected = { selectedName ->
-                val selectedKey =
-                    languagesMap.entries.find { (_, itValue) -> itValue == selectedName }?.key
-                        ?: selectedName
-                onLanguageSelected(selectedKey)
-            },
+            value = localeKey.takeIf { it in languagesMap } ?: "System",
+            options = languagesMap.keys.toList(),
+            onSelected = onLanguageSelected,
+            optionLabel = languagesMap::getValue,
             leadingIcon = {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Translate,
@@ -566,58 +560,25 @@ private fun LibrarySettingsSection(
                     style = MaterialTheme.typography.titleMedium
                 )
             },
-            value = coverModes.getValue(settings.coverDisplayMode),
-            options = coverModes.values.toList(),
-            onSelected = { label ->
-                coverModes.entries.firstOrNull { it.value == label }?.key?.let(
-                    onCoverDisplayModeSelected
-                )
-            },
+            value = settings.coverDisplayMode,
+            options = coverModes.keys.toList(),
+            onSelected = onCoverDisplayModeSelected,
+            optionLabel = coverModes::getValue,
             leadingIcon = { Icon(MaterialSymbols.Outlined.Image, contentDescription = null) },
         )
-        item(
-            onClick = { onLibraryBottomNavigationChanged(!settings.showLibraryBottomNavigation) },
-            leadingContent = {
-                Icon(
-                    imageVector = MaterialSymbols.Outlined.Swap_horiz,
-                    contentDescription = null
-                )
-            },
-            content = {
-                Text(
-                    stringResource(R.string.settings_library_bottom_navigation),
-                    style = MaterialTheme.typography.titleMedium
-                )
-            },
-            supportingContent = { Text(stringResource(R.string.settings_library_bottom_navigation_summary)) },
-            trailingContent = {
-                Switch(
-                    checked = settings.showLibraryBottomNavigation,
-                    onCheckedChange = null
-                )
-            },
+        SettingsSwitchItem(
+            title = stringResource(R.string.settings_library_bottom_navigation),
+            summary = stringResource(R.string.settings_library_bottom_navigation_summary),
+            checked = settings.showLibraryBottomNavigation,
+            onChanged = onLibraryBottomNavigationChanged,
+            icon = MaterialSymbols.Outlined.Swap_horiz,
         )
-        item(
-            onClick = { onUnsortedEnabledChanged(!settings.unsortedEnabled) },
-            leadingContent = {
-                Icon(
-                    imageVector = MaterialSymbols.Outlined.Inbox,
-                    contentDescription = null
-                )
-            },
-            content = {
-                Text(
-                    stringResource(R.string.settings_unsorted_enabled),
-                    style = MaterialTheme.typography.titleMedium
-                )
-            },
-            supportingContent = { Text(stringResource(R.string.settings_unsorted_enabled_summary)) },
-            trailingContent = {
-                Switch(
-                    checked = settings.unsortedEnabled,
-                    onCheckedChange = null
-                )
-            },
+        SettingsSwitchItem(
+            title = stringResource(R.string.settings_unsorted_enabled),
+            summary = stringResource(R.string.settings_unsorted_enabled_summary),
+            checked = settings.unsortedEnabled,
+            onChanged = onUnsortedEnabledChanged,
+            icon = MaterialSymbols.Outlined.Inbox,
         )
     }
 }
@@ -629,51 +590,20 @@ private fun SpaceSettingsSection(
     onShowAllSpacesChanged: (Boolean) -> Unit,
 ) {
     SettingsSection(stringResource(R.string.settings_space)) {
-        item(
-            onClick = { onSpacesEnabledChanged(!settings.spacesEnabled) },
-            leadingContent = {
-                Icon(
-                    imageVector = MaterialSymbols.Outlined.Forest,
-                    contentDescription = null
-                )
-            },
-            content = {
-                Text(
-                    stringResource(R.string.settings_spaces_enabled),
-                    style = MaterialTheme.typography.titleMedium
-                )
-            },
-            supportingContent = { Text(stringResource(R.string.settings_spaces_enabled_summary)) },
-            trailingContent = {
-                Switch(
-                    checked = settings.spacesEnabled,
-                    onCheckedChange = null
-                )
-            },
+        SettingsSwitchItem(
+            title = stringResource(R.string.settings_spaces_enabled),
+            summary = stringResource(R.string.settings_spaces_enabled_summary),
+            checked = settings.spacesEnabled,
+            onChanged = onSpacesEnabledChanged,
+            icon = MaterialSymbols.Outlined.Forest,
         )
-        item(
+        SettingsSwitchItem(
+            title = stringResource(R.string.settings_hide_all_space),
+            summary = stringResource(R.string.settings_hide_all_space_summary),
+            checked = !settings.showAllSpaces,
+            onChanged = { onShowAllSpacesChanged(!it) },
+            icon = MaterialSymbols.Outlined.Visibility_off,
             enabled = settings.spacesEnabled,
-            onClick = { onShowAllSpacesChanged(!settings.showAllSpaces) },
-            leadingContent = {
-                Icon(
-                    imageVector = MaterialSymbols.Outlined.Visibility_off,
-                    contentDescription = null
-                )
-            },
-            content = {
-                Text(
-                    stringResource(R.string.settings_hide_all_space),
-                    style = MaterialTheme.typography.titleMedium
-                )
-            },
-            supportingContent = { Text(stringResource(R.string.settings_hide_all_space_summary)) },
-            trailingContent = {
-                Switch(
-                    checked = !settings.showAllSpaces,
-                    enabled = settings.spacesEnabled,
-                    onCheckedChange = null
-                )
-            },
         )
     }
 }
@@ -695,14 +625,10 @@ private fun ThemeSettingsSection(
         val themeLabel = stringResource(R.string.settings_theme_mode)
         SettingsItem(
             content = { Text(themeLabel, style = MaterialTheme.typography.titleMedium) },
-            value = themeOptionsMap[settings.themeMode] ?: settings.themeMode,
-            options = themeOptionsMap.values.toList(),
-            onSelected = { label ->
-                val key =
-                    themeOptionsMap.entries.find { (_, itValue2) -> itValue2 == label }?.key
-                        ?: label
-                onThemeModeSelected(key)
-            },
+            value = settings.themeMode,
+            options = themeOptionsMap.keys.toList(),
+            onSelected = onThemeModeSelected,
+            optionLabel = { themeOptionsMap[it] ?: it },
             leadingIcon = {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Contrast,
@@ -787,14 +713,10 @@ private fun ThemeSettingsSection(
                     style = MaterialTheme.typography.titleMedium,
                 )
             },
-            value = themeContrastMap[settings.themeContrast] ?: settings.themeContrast,
-            options = themeContrastMap.values.toList(),
-            onSelected = { label ->
-                val key =
-                    themeContrastMap.entries.find { (_, itValue3) -> itValue3 == label }?.key
-                        ?: label
-                onThemeContrastSelected(key)
-            },
+            value = settings.themeContrast,
+            options = themeContrastMap.keys.toList(),
+            onSelected = onThemeContrastSelected,
+            optionLabel = { themeContrastMap[it] ?: it },
             leadingIcon = {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Contrast,
@@ -881,15 +803,10 @@ private fun BackupSettingsSection(
                             style = MaterialTheme.typography.titleMedium,
                         )
                     },
-                    value = frequencyOptionsMap[settings.autoBackupFrequency]
-                        ?: settings.autoBackupFrequency,
-                    options = frequencyOptionsMap.values.toList(),
-                    onSelected = { label ->
-                        val key =
-                            frequencyOptionsMap.entries.find { (_, itValue4) -> itValue4 == label }?.key
-                                ?: label
-                        onAutoBackupFrequencySelected(key)
-                    },
+                    value = settings.autoBackupFrequency,
+                    options = frequencyOptionsMap.keys.toList(),
+                    onSelected = onAutoBackupFrequencySelected,
+                    optionLabel = { frequencyOptionsMap[it] ?: it },
                     enabled = hasPermission,
                     leadingIcon = {
                         Icon(

@@ -41,7 +41,9 @@ class SegmentedListItemData(
     val content: @Composable () -> Unit,
 )
 
-interface SegmentedListScope {
+class SegmentedListScope {
+    val items: MutableList<SegmentedListItemData> = mutableListOf()
+
     fun item(
         key: Any? = null,
         selected: Boolean = false,
@@ -52,37 +54,6 @@ interface SegmentedListScope {
         trailingContent: (@Composable () -> Unit)? = null,
         supportingContent: (@Composable () -> Unit)? = null,
         wrapper: @Composable (itemContent: @Composable () -> Unit) -> Unit = { it() },
-        content: @Composable () -> Unit,
-    )
-
-    fun <T> items(
-        items: List<T>,
-        key: ((item: T) -> Any)? = null,
-        selected: (item: T) -> Boolean = { false },
-        enabled: (item: T) -> Boolean = { true },
-        onClick: ((item: T) -> Unit)? = null,
-        onLongClick: ((item: T) -> Unit)? = null,
-        leadingContent: (@Composable (item: T) -> Unit)? = null,
-        trailingContent: (@Composable (item: T) -> Unit)? = null,
-        supportingContent: (@Composable (item: T) -> Unit)? = null,
-        wrapper: @Composable (item: T, itemContent: @Composable () -> Unit) -> Unit = { _, it -> it() },
-        content: @Composable (item: T) -> Unit,
-    )
-}
-
-class SegmentedListBuilder : SegmentedListScope {
-    val items: MutableList<SegmentedListItemData> = mutableListOf()
-
-    override fun item(
-        key: Any?,
-        selected: Boolean,
-        enabled: Boolean,
-        onClick: (() -> Unit)?,
-        onLongClick: (() -> Unit)?,
-        leadingContent: (@Composable () -> Unit)?,
-        trailingContent: (@Composable () -> Unit)?,
-        supportingContent: (@Composable () -> Unit)?,
-        wrapper: @Composable (itemContent: @Composable () -> Unit) -> Unit,
         content: @Composable () -> Unit,
     ) {
         items.add(
@@ -101,17 +72,17 @@ class SegmentedListBuilder : SegmentedListScope {
         )
     }
 
-    override fun <T> items(
+    fun <T> items(
         items: List<T>,
-        key: ((item: T) -> Any)?,
-        selected: (item: T) -> Boolean,
-        enabled: (item: T) -> Boolean,
-        onClick: ((item: T) -> Unit)?,
-        onLongClick: ((item: T) -> Unit)?,
-        leadingContent: (@Composable (item: T) -> Unit)?,
-        trailingContent: (@Composable (item: T) -> Unit)?,
-        supportingContent: (@Composable (item: T) -> Unit)?,
-        wrapper: @Composable (item: T, itemContent: @Composable () -> Unit) -> Unit,
+        key: ((item: T) -> Any)? = null,
+        selected: (item: T) -> Boolean = { false },
+        enabled: (item: T) -> Boolean = { true },
+        onClick: ((item: T) -> Unit)? = null,
+        onLongClick: ((item: T) -> Unit)? = null,
+        leadingContent: (@Composable (item: T) -> Unit)? = null,
+        trailingContent: (@Composable (item: T) -> Unit)? = null,
+        supportingContent: (@Composable (item: T) -> Unit)? = null,
+        wrapper: @Composable (item: T, itemContent: @Composable () -> Unit) -> Unit = { _, it -> it() },
         content: @Composable (item: T) -> Unit,
     ) {
         items.forEach { item ->
@@ -137,7 +108,7 @@ inline fun SegmentedColumn(
     topAlignAccessories: Boolean = false,
     content: @Composable SegmentedListScope.() -> Unit,
 ) {
-    val builder = SegmentedListBuilder().apply { content() }
+    val builder = SegmentedListScope().apply { content() }
     val items = builder.items
     val count = items.size
 
@@ -179,7 +150,7 @@ inline fun SegmentedLazyColumn(
     animated: Boolean = true,
     content: @Composable SegmentedListScope.() -> Unit,
 ) {
-    val builder = SegmentedListBuilder().apply { content() }
+    val builder = SegmentedListScope().apply { content() }
     val items = builder.items
     val count = items.size
 

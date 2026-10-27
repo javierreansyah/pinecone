@@ -46,19 +46,17 @@ internal fun LibraryCollectionScreen(
     emptyIcon: ImageVector,
     archived: Boolean,
 ) {
-    val preferences by viewModel.preferences.collectAsStateWithLifecycle()
+    val preferences by viewModel.filters.preferences.collectAsStateWithLifecycle()
     com.javierreansyah.pinecone.ui.components.MutationErrorDialog(viewModel.bookActions.mutationErrors)
     val books by viewModel.filteredBooks.collectAsStateWithLifecycle()
     val allBooks by viewModel.allBooks.collectAsStateWithLifecycle()
 
     var showFilterSheet by remember { mutableStateOf(value = false) }
-    var selectedBooks by remember { mutableStateOf(emptySet<String>()) }
-    var isInMultiSelectMode by remember { mutableStateOf(value = false) }
+    val selection = remember { LibrarySelection() }
+    var selectedBooks by selection::ids
+    var isInMultiSelectMode by selection::active
 
-    val exitMultiSelect = {
-        selectedBooks = emptySet()
-        isInMultiSelectMode = false
-    }
+    val exitMultiSelect = selection::close
 
     BackHandler(enabled = isInMultiSelectMode, onBack = exitMultiSelect)
 
@@ -74,8 +72,7 @@ internal fun LibraryCollectionScreen(
         isInMultiSelectMode = isInMultiSelectMode,
         onNavigateBack = onNavigateBack,
         onEnterMultiSelect = {
-            selectedBooks = emptySet()
-            isInMultiSelectMode = true
+            selection.enter()
         },
         onExitMultiSelect = exitMultiSelect,
         onInfo = selectedBooks.singleOrNull()?.let { bookId ->
@@ -89,14 +86,8 @@ internal fun LibraryCollectionScreen(
                 books.map { book -> book.id }
                     .toSet()
         },
-        onClearSelection = { selectedBooks = emptySet() },
-        onToggleBookSelection = { bookId ->
-            selectedBooks = if (bookId in selectedBooks) {
-                selectedBooks - bookId
-            } else {
-                selectedBooks + bookId
-            }
-        },
+        onClearSelection = selection::clear,
+        onToggleBookSelection = selection::toggle,
         onMarkAsReadUnread = { showMarkAsRead ->
             viewModel.bookActions.markBooksReadStatus(selectedBooks, showMarkAsRead)
             exitMultiSelect()
@@ -117,8 +108,7 @@ internal fun LibraryCollectionScreen(
         onOpenFilter = { showFilterSheet = true },
         onBookClick = onNavigateToReader,
         onBookLongClick = { bookId ->
-            selectedBooks = setOf(bookId)
-            isInMultiSelectMode = true
+            selection.enter(setOf(bookId))
         },
     )
 
@@ -126,10 +116,10 @@ internal fun LibraryCollectionScreen(
         FilterResultBottomSheet(
             preferences = preferences,
             availableFormats = allBooks.mapTo(mutableSetOf()) { it.fileFormat() },
-            onLayoutModeChange = viewModel::onLayoutModeChange,
-            onSortTypeChange = viewModel::onSortTypeChange,
-            onStatusToggle = viewModel::toggleStatusFilter,
-            onFileFilterToggle = viewModel::toggleFileFilter,
+            onLayoutModeChange = viewModel.filters::onLayoutModeChange,
+            onSortTypeChange = viewModel.filters::onSortTypeChange,
+            onStatusToggle = viewModel.filters::toggleStatusFilter,
+            onFileFilterToggle = viewModel.filters::toggleFileFilter,
         ) { showFilterSheet = false }
     }
 }

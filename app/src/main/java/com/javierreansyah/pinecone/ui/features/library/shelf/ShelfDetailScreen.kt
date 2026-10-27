@@ -3,13 +3,10 @@ package com.javierreansyah.pinecone.ui.features.library.shelf
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -27,8 +24,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -54,22 +49,16 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Book
-import com.composables.icons.materialsymbols.outlined.Check
-import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Content_copy
 import com.composables.icons.materialsymbols.outlined.Delete
 import com.composables.icons.materialsymbols.outlined.Drag_handle
@@ -82,9 +71,12 @@ import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.ui.components.EditingActions
+import com.javierreansyah.pinecone.ui.components.EditingNavigationIcon
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
+import com.javierreansyah.pinecone.ui.features.library.LibrarySelection
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectAppBar
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectTopBarTransition
@@ -111,7 +103,7 @@ fun ShelfDetailScreen(
     onNavigateToOrganize: (Set<String>) -> Unit,
     viewModel: ShelfDetailViewModel = hiltViewModel(),
 ) {
-    val preferences by viewModel.preferences.collectAsStateWithLifecycle()
+    val preferences by viewModel.filters.preferences.collectAsStateWithLifecycle()
     com.javierreansyah.pinecone.ui.components.MutationErrorDialog(viewModel.bookActions.mutationErrors)
     val spaces by viewModel.allSpaces.collectAsStateWithLifecycle()
     val spacesEnabled by viewModel.spacesEnabled.collectAsStateWithLifecycle()
@@ -122,8 +114,9 @@ fun ShelfDetailScreen(
     var isRenaming by remember { mutableStateOf(value = false) }
     var renameName by remember { mutableStateOf(TextFieldValue("")) }
     var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
-    var selectedBooks by remember { mutableStateOf(emptySet<String>()) }
-    var isInMultiSelectMode by remember { mutableStateOf(value = false) }
+    val selection = remember { LibrarySelection() }
+    var selectedBooks by selection::ids
+    var isInMultiSelectMode by selection::active
 
     androidx.compose.runtime.LaunchedEffect(shelfId) { viewModel.selectShelf(shelfId) }
     val allBooks by viewModel.allBooks.collectAsStateWithLifecycle()
@@ -136,10 +129,7 @@ fun ShelfDetailScreen(
         ?: initialShelfName.ifEmpty { stringResource(R.string.library_tab_shelves) }
     val displayCount = shelfWithCovers?.books?.size ?: initialBookCount
 
-    val exitMultiSelect = {
-        selectedBooks = emptySet()
-        isInMultiSelectMode = false
-    }
+    val exitMultiSelect = selection::close
 
     BackHandler(enabled = isInMultiSelectMode, onBack = exitMultiSelect)
 
@@ -163,8 +153,7 @@ fun ShelfDetailScreen(
         isInMultiSelectMode = isInMultiSelectMode,
         onNavigateBack = onNavigateBack,
         onEnterMultiSelect = { bookId ->
-            selectedBooks = bookId?.let(::setOf) ?: emptySet()
-            isInMultiSelectMode = true
+            selection.enter(bookId?.let(::setOf) ?: emptySet())
         },
         onExitMultiSelect = exitMultiSelect,
         onInfo = selectedBooks.singleOrNull()?.let { bookId ->
@@ -178,14 +167,8 @@ fun ShelfDetailScreen(
                 books.map { book -> book.id }
                     .toSet()
         },
-        onClearSelection = { selectedBooks = emptySet() },
-        onToggleBookSelection = { bookId ->
-            selectedBooks = if (bookId in selectedBooks) {
-                selectedBooks - bookId
-            } else {
-                selectedBooks + bookId
-            }
-        },
+        onClearSelection = selection::clear,
+        onToggleBookSelection = selection::toggle,
         onMarkAsReadUnread = { showMarkAsRead ->
             viewModel.bookActions.markBooksReadStatus(selectedBooks, showMarkAsRead)
             exitMultiSelect()
@@ -264,10 +247,10 @@ fun ShelfDetailScreen(
             preferences = preferences,
             availableFormats = shelfWithCovers?.books.orEmpty()
                 .mapTo(mutableSetOf()) { it.book.fileFormat() },
-            onLayoutModeChange = viewModel::onLayoutModeChange,
-            onSortTypeChange = viewModel::onSortTypeChange,
-            onStatusToggle = viewModel::toggleStatusFilter,
-            onFileFilterToggle = viewModel::toggleFileFilter,
+            onLayoutModeChange = viewModel.filters::onLayoutModeChange,
+            onSortTypeChange = viewModel.filters::onSortTypeChange,
+            onStatusToggle = viewModel.filters::toggleStatusFilter,
+            onFileFilterToggle = viewModel.filters::toggleFileFilter,
         ) { showFilterSheet = false }
     }
 
@@ -294,8 +277,7 @@ fun ShelfDetailScreen(
             onOrganize = { onNavigateToOrganize(setOf(it)) },
             onDeleteBook = { viewModel.bookActions.deleteBook(bookId) },
             onEnterMultiSelect = {
-                selectedBooks = setOf(bookId)
-                isInMultiSelectMode = true
+                selection.enter(setOf(bookId))
             },
         ) { selectedBookForMenu = null }
     }
@@ -561,222 +543,140 @@ private fun ShelfDetailDefaultTopAppBar(
             )
         },
         navigationIcon = {
-            val isEditMode = isReordering || isRenaming
-            val rotation by animateFloatAsState(
-                targetValue = if (isEditMode) 90f else 0f,
-                animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
-                label = "navigationIconRotation",
-            )
-            val navEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
-
-            FilledTonalIconButton(
-                shapes = IconButtonDefaults.shapes(),
-                colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                onClick = {
-                    if (isEditMode) {
-                        if (isReordering) onCancelReorder() else onCancelRename()
-                    } else {
-                        onNavigateBack()
-                    }
-                },
-            ) {
-                Box(
-                    modifier = Modifier.graphicsLayer { rotationZ = rotation },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    AnimatedContent(
-                        targetState = isEditMode,
-                        transitionSpec = {
-                            fadeIn(animationSpec = navEffectsSpec) togetherWith fadeOut(
-                                animationSpec = navEffectsSpec,
-                            )
-                        },
-                        label = "navigationIconContent",
-                    ) { targetIsEditMode ->
-                        if (targetIsEditMode) {
-                            Icon(
-                                MaterialSymbols.Outlined.Close,
-                                contentDescription = stringResource(R.string.action_cancel),
-                            )
-                        } else {
-                            Icon(
-                                MaterialSymbols.Outlined.Arrow_back,
-                                contentDescription = stringResource(R.string.action_back),
-                            )
-                        }
-                    }
-                }
-            }
+            EditingNavigationIcon(
+                isReordering || isRenaming,
+                onNavigateBack
+            ) { if (isReordering) onCancelReorder() else onCancelRename() }
         },
         actions = {
-            val isEditMode = isReordering || isRenaming
-            val density = LocalDensity.current
-            val slideOffsetPx = remember(density) { with(density) { 30.dp.roundToPx() } }
-            val actionsSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
-            val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
-
-            AnimatedContent(
-                targetState = isEditMode,
-                transitionSpec = {
-                    if (targetState) {
-                        fadeIn(animationSpec = actionsEffectsSpec) togetherWith fadeOut(
-                            animationSpec = actionsEffectsSpec,
-                        ) + slideOutHorizontally(
-                            targetOffsetX = { slideOffsetPx },
-                            animationSpec = actionsSpatialSpec,
-                        )
-                    } else {
-                        fadeIn(animationSpec = actionsEffectsSpec) + slideInHorizontally(
-                            initialOffsetX = { slideOffsetPx },
-                            animationSpec = actionsSpatialSpec,
-                        ) togetherWith fadeOut(animationSpec = actionsEffectsSpec)
-                    }
-                },
-                label = "actionsContent",
-            ) { targetIsEditMode ->
-                if (targetIsEditMode) {
-                    FilledIconButton(
-                        modifier = Modifier
-                            .padding(end = 6.dp)
-                            .size(
-                                IconButtonDefaults.smallContainerSize(
-                                    widthOption = IconButtonDefaults.IconButtonWidthOption.Wide,
-                                ),
-                            ),
-                        shapes = IconButtonDefaults.shapes(),
-                        onClick = if (isReordering) onSaveReorder else onSaveRename,
-                    ) {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.Check,
-                            contentDescription = stringResource(R.string.action_save),
-                        )
-                    }
-                } else {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        if (shelfId != "unshelved") {
-                            IconButton(
-                                shapes = IconButtonDefaults.shapes(),
-                                onClick = onStartReordering,
-                            ) {
-                                Icon(
-                                    MaterialSymbols.Outlined.Format_list_numbered,
-                                    contentDescription = stringResource(R.string.action_sort),
-                                )
-                            }
-                        }
+            EditingActions(
+                isReordering || isRenaming,
+                if (isReordering) onSaveReorder else onSaveRename
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (shelfId != "unshelved") {
                         IconButton(
                             shapes = IconButtonDefaults.shapes(),
-                            onClick = onShowFilterSheet,
+                            onClick = onStartReordering,
                         ) {
                             Icon(
-                                MaterialSymbols.Outlined.Tune,
-                                contentDescription = stringResource(R.string.action_filter),
+                                MaterialSymbols.Outlined.Format_list_numbered,
+                                contentDescription = stringResource(R.string.action_sort),
                             )
                         }
-                        Box {
-                            IconButton(
-                                shapes = IconButtonDefaults.shapes(),
-                                onClick = { showMoreMenu = true },
+                    }
+                    IconButton(
+                        shapes = IconButtonDefaults.shapes(),
+                        onClick = onShowFilterSheet,
+                    ) {
+                        Icon(
+                            MaterialSymbols.Outlined.Tune,
+                            contentDescription = stringResource(R.string.action_filter),
+                        )
+                    }
+                    Box {
+                        IconButton(
+                            shapes = IconButtonDefaults.shapes(),
+                            onClick = { showMoreMenu = true },
+                        ) {
+                            Icon(
+                                MaterialSymbols.Outlined.More_vert,
+                                contentDescription = stringResource(R.string.action_more),
+                            )
+                        }
+                        val totalItems =
+                            if (shelfId == "unshelved") 1 else if (onTransferShelf != null) 5 else 3
+                        DropdownMenuPopup(
+                            expanded = showMoreMenu,
+                            onDismissRequest = { showMoreMenu = false },
+                        ) {
+                            val groupInteractionSource =
+                                remember { MutableInteractionSource() }
+                            DropdownMenuGroup(
+                                shapes = MenuDefaults.groupShape(0, 1),
+                                interactionSource = groupInteractionSource,
                             ) {
-                                Icon(
-                                    MaterialSymbols.Outlined.More_vert,
-                                    contentDescription = stringResource(R.string.action_more),
+                                SelectableDropdownMenuItem(
+                                    selected = false,
+                                    text = { Text(stringResource(R.string.action_select_multiple)) },
+                                    shapes = MenuDefaults.itemShape(0, totalItems),
+                                    leadingIcon = {
+                                        Icon(
+                                            MaterialSymbols.Outlined.Select,
+                                            modifier = Modifier.size(MenuDefaults.LeadingIconSize),
+                                            contentDescription = null,
+                                        )
+                                    },
+                                    onClick = {
+                                        onEnterMultiSelect()
+                                        showMoreMenu = false
+                                    },
                                 )
-                            }
-                            val totalItems =
-                                if (shelfId == "unshelved") 1 else if (onTransferShelf != null) 5 else 3
-                            DropdownMenuPopup(
-                                expanded = showMoreMenu,
-                                onDismissRequest = { showMoreMenu = false },
-                            ) {
-                                val groupInteractionSource =
-                                    remember { MutableInteractionSource() }
-                                DropdownMenuGroup(
-                                    shapes = MenuDefaults.groupShape(0, 1),
-                                    interactionSource = groupInteractionSource,
-                                ) {
+                                if (shelfId != "unshelved") {
                                     SelectableDropdownMenuItem(
                                         selected = false,
-                                        text = { Text(stringResource(R.string.action_select_multiple)) },
-                                        shapes = MenuDefaults.itemShape(0, totalItems),
+                                        text = { Text(stringResource(R.string.action_rename)) },
+                                        shapes = MenuDefaults.itemShape(1, totalItems),
                                         leadingIcon = {
                                             Icon(
-                                                MaterialSymbols.Outlined.Select,
+                                                MaterialSymbols.Outlined.Edit,
                                                 modifier = Modifier.size(MenuDefaults.LeadingIconSize),
                                                 contentDescription = null,
                                             )
                                         },
                                         onClick = {
-                                            onEnterMultiSelect()
+                                            onRenameClick()
                                             showMoreMenu = false
                                         },
                                     )
-                                    if (shelfId != "unshelved") {
-                                        SelectableDropdownMenuItem(
-                                            selected = false,
-                                            text = { Text(stringResource(R.string.action_rename)) },
-                                            shapes = MenuDefaults.itemShape(1, totalItems),
-                                            leadingIcon = {
-                                                Icon(
-                                                    MaterialSymbols.Outlined.Edit,
-                                                    modifier = Modifier.size(MenuDefaults.LeadingIconSize),
-                                                    contentDescription = null,
-                                                )
-                                            },
-                                            onClick = {
-                                                onRenameClick()
-                                                showMoreMenu = false
-                                            },
-                                        )
-                                        if (onTransferShelf != null) {
-                                            listOf(false, true).forEachIndexed { index, copy ->
-                                                SelectableDropdownMenuItem(
-                                                    selected = false,
-                                                    text = { Text(stringResource(if (copy) R.string.library_copy_shelves else R.string.library_move_shelves)) },
-                                                    shapes = MenuDefaults.itemShape(
-                                                        index + 2,
-                                                        totalItems
-                                                    ),
-                                                    leadingIcon = {
-                                                        Icon(
-                                                            if (copy) MaterialSymbols.Outlined.Content_copy else MaterialSymbols.Outlined.Drive_file_move,
-                                                            contentDescription = null
-                                                        )
-                                                    },
-                                                    onClick = {
-                                                        showMoreMenu = false; onTransferShelf(copy)
-                                                    },
-                                                )
-                                            }
+                                    if (onTransferShelf != null) {
+                                        listOf(false, true).forEachIndexed { index, copy ->
+                                            SelectableDropdownMenuItem(
+                                                selected = false,
+                                                text = { Text(stringResource(if (copy) R.string.library_copy_shelves else R.string.library_move_shelves)) },
+                                                shapes = MenuDefaults.itemShape(
+                                                    index + 2,
+                                                    totalItems
+                                                ),
+                                                leadingIcon = {
+                                                    Icon(
+                                                        if (copy) MaterialSymbols.Outlined.Content_copy else MaterialSymbols.Outlined.Drive_file_move,
+                                                        contentDescription = null
+                                                    )
+                                                },
+                                                onClick = {
+                                                    showMoreMenu = false; onTransferShelf(copy)
+                                                },
+                                            )
                                         }
-                                        SelectableDropdownMenuItem(
-                                            selected = false,
-                                            text = {
-                                                Text(
-                                                    stringResource(R.string.action_delete),
-                                                    color = MaterialTheme.colorScheme.error,
-                                                )
-                                            },
-                                            shapes = MenuDefaults.itemShape(
-                                                totalItems - 1,
-                                                totalItems
-                                            ),
-                                            leadingIcon = {
-                                                Icon(
-                                                    MaterialSymbols.Outlined.Delete,
-                                                    modifier = Modifier.size(MenuDefaults.LeadingIconSize),
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.error,
-                                                )
-                                            },
-                                            onClick = {
-                                                onDeleteClick()
-                                                showMoreMenu = false
-                                            },
-                                        )
                                     }
+                                    SelectableDropdownMenuItem(
+                                        selected = false,
+                                        text = {
+                                            Text(
+                                                stringResource(R.string.action_delete),
+                                                color = MaterialTheme.colorScheme.error,
+                                            )
+                                        },
+                                        shapes = MenuDefaults.itemShape(
+                                            totalItems - 1,
+                                            totalItems
+                                        ),
+                                        leadingIcon = {
+                                            Icon(
+                                                MaterialSymbols.Outlined.Delete,
+                                                modifier = Modifier.size(MenuDefaults.LeadingIconSize),
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.error,
+                                            )
+                                        },
+                                        onClick = {
+                                            onDeleteClick()
+                                            showMoreMenu = false
+                                        },
+                                    )
                                 }
                             }
                         }

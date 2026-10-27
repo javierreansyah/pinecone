@@ -4,13 +4,10 @@ import android.annotation.SuppressLint
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.LocalOverscrollFactory
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,11 +17,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledIconToggleButton
@@ -48,7 +43,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -58,8 +52,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.googlefonts.Font
 import androidx.compose.ui.text.googlefonts.GoogleFont
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
@@ -418,19 +410,10 @@ private fun TextTabContent(
             IncrementDecrementControl(
                 label = stringResource(R.string.reader_settings_text_size),
                 value = "${(settings.fontSize * 100).roundToInt()}%",
-                onIncrement = {
+                onStep = { direction ->
                     onSettingsChange { current ->
                         current.copy(
-                            fontSize = (((current.fontSize + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
-                                0.5, 3.0,
-                            ),
-                        )
-                    }
-                },
-                onDecrement = {
-                    onSettingsChange { current ->
-                        current.copy(
-                            fontSize = (((current.fontSize - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
+                            fontSize = (((current.fontSize + direction * 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
                                 0.5, 3.0,
                             ),
                         )
@@ -442,16 +425,9 @@ private fun TextTabContent(
             IncrementDecrementControl(
                 label = stringResource(R.string.reader_settings_font_weight),
                 value = String.format(locale, "%.2f", currentFontWeight),
-                onIncrement = {
+                onStep = { direction ->
                     val newWeight =
-                        (((currentFontWeight + 0.25) * 100.0).roundToInt() / 100.0).coerceIn(
-                            0.5, 2.25,
-                        )
-                    onSettingsChange { current -> current.copy(fontWeights = current.fontWeights + (current.fontFamily to newWeight)) }
-                },
-                onDecrement = {
-                    val newWeight =
-                        (((currentFontWeight - 0.25) * 100.0).roundToInt() / 100.0).coerceIn(
+                        (((currentFontWeight + direction * 0.25) * 100.0).roundToInt() / 100.0).coerceIn(
                             0.5, 2.25,
                         )
                     onSettingsChange { current -> current.copy(fontWeights = current.fontWeights + (current.fontFamily to newWeight)) }
@@ -467,19 +443,10 @@ private fun TextTabContent(
             IncrementDecrementControl(
                 label = stringResource(R.string.reader_settings_horizontal_margin),
                 value = String.format(locale, "%.1f", settings.pageMargins),
-                onIncrement = {
+                onStep = { direction ->
                     onSettingsChange { current ->
                         current.copy(
-                            pageMargins = (((current.pageMargins + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
-                                0.0, 3.0,
-                            ),
-                        )
-                    }
-                },
-                onDecrement = {
-                    onSettingsChange { current ->
-                        current.copy(
-                            pageMargins = (((current.pageMargins - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
+                            pageMargins = (((current.pageMargins + direction * 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
                                 0.0, 3.0,
                             ),
                         )
@@ -490,19 +457,10 @@ private fun TextTabContent(
             IncrementDecrementControl(
                 label = stringResource(R.string.reader_settings_vertical_margin),
                 value = String.format(locale, "%.1f", settings.verticalMargin / 32.0),
-                onIncrement = {
+                onStep = { direction ->
                     onSettingsChange { current ->
                         current.copy(
-                            verticalMargin = (((current.verticalMargin + 3.2) * 10.0).roundToInt() / 10.0).coerceIn(
-                                0.0, 128.0,
-                            ),
-                        )
-                    }
-                },
-                onDecrement = {
-                    onSettingsChange { current ->
-                        current.copy(
-                            verticalMargin = (((current.verticalMargin - 3.2) * 10.0).roundToInt() / 10.0).coerceIn(
+                            verticalMargin = (((current.verticalMargin + direction * 3.2) * 10.0).roundToInt() / 10.0).coerceIn(
                                 0.0, 128.0,
                             ),
                         )
@@ -525,19 +483,15 @@ private fun TextTabContent(
         )
         SegmentedButtonGroup(
             title = stringResource(R.string.reader_settings_alignment),
-            options = alignmentOptionsMap.values.toList(),
+            options = alignmentOptionsMap.keys.toList(),
+            optionLabel = { alignmentOptionsMap[it] ?: it },
             icons = listOf(
                 MaterialSymbols.Outlined.Format_align_left,
                 MaterialSymbols.Outlined.Format_align_right,
                 MaterialSymbols.Outlined.Format_align_justify,
             ),
-            selected = alignmentOptionsMap[settings.textAlign] ?: settings.textAlign,
-            onSelected = { localizedValue ->
-                val key =
-                    alignmentOptionsMap.entries.find { (_, itValue) -> itValue == localizedValue }?.key
-                        ?: localizedValue
-                onSettingsChange { current -> current.copy(textAlign = key) }
-            },
+            selected = settings.textAlign,
+            onSelected = { value -> onSettingsChange { current -> current.copy(textAlign = value) } },
             enabled = !settings.publisherStyles,
             modifier = Modifier.padding(horizontal = 16.dp),
         )
@@ -549,19 +503,10 @@ private fun TextTabContent(
             IncrementDecrementControl(
                 label = stringResource(R.string.reader_settings_line_spacing),
                 value = String.format(locale, "%.1f", settings.lineHeight),
-                onIncrement = {
+                onStep = { direction ->
                     onSettingsChange { current ->
                         current.copy(
-                            lineHeight = (((current.lineHeight + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
-                                1.0, 2.5,
-                            ),
-                        )
-                    }
-                },
-                onDecrement = {
-                    onSettingsChange { current ->
-                        current.copy(
-                            lineHeight = (((current.lineHeight - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
+                            lineHeight = (((current.lineHeight + direction * 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
                                 1.0, 2.5,
                             ),
                         )
@@ -573,19 +518,10 @@ private fun TextTabContent(
             IncrementDecrementControl(
                 label = stringResource(R.string.reader_settings_letter_spacing),
                 value = String.format(locale, "%.1f", settings.letterSpacing * 4.0),
-                onIncrement = {
+                onStep = { direction ->
                     onSettingsChange { current ->
                         current.copy(
-                            letterSpacing = (((current.letterSpacing + 0.025) * 1000.0).roundToInt() / 1000.0).coerceIn(
-                                0.0, 0.25,
-                            ),
-                        )
-                    }
-                },
-                onDecrement = {
-                    onSettingsChange { current ->
-                        current.copy(
-                            letterSpacing = (((current.letterSpacing - 0.025) * 1000.0).roundToInt() / 1000.0).coerceIn(
+                            letterSpacing = (((current.letterSpacing + direction * 0.025) * 1000.0).roundToInt() / 1000.0).coerceIn(
                                 0.0, 0.25,
                             ),
                         )
@@ -603,19 +539,10 @@ private fun TextTabContent(
             IncrementDecrementControl(
                 label = stringResource(R.string.reader_settings_word_spacing),
                 value = String.format(locale, "%.1f", settings.wordSpacing),
-                onIncrement = {
+                onStep = { direction ->
                     onSettingsChange { current ->
                         current.copy(
-                            wordSpacing = (((current.wordSpacing + 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
-                                0.0, 1.0,
-                            ),
-                        )
-                    }
-                },
-                onDecrement = {
-                    onSettingsChange { current ->
-                        current.copy(
-                            wordSpacing = (((current.wordSpacing - 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
+                            wordSpacing = (((current.wordSpacing + direction * 0.1) * 10.0).roundToInt() / 10.0).coerceIn(
                                 0.0, 1.0,
                             ),
                         )
@@ -627,19 +554,10 @@ private fun TextTabContent(
             IncrementDecrementControl(
                 label = stringResource(R.string.reader_settings_paragraph_spacing),
                 value = String.format(locale, "%.1f", settings.paragraphSpacing / 2.0),
-                onIncrement = {
+                onStep = { direction ->
                     onSettingsChange { current ->
                         current.copy(
-                            paragraphSpacing = (((current.paragraphSpacing + 0.2) * 10.0).roundToInt() / 10.0).coerceIn(
-                                0.0, 2.0,
-                            ),
-                        )
-                    }
-                },
-                onDecrement = {
-                    onSettingsChange { current ->
-                        current.copy(
-                            paragraphSpacing = (((current.paragraphSpacing - 0.2) * 10.0).roundToInt() / 10.0).coerceIn(
+                            paragraphSpacing = (((current.paragraphSpacing + direction * 0.2) * 10.0).roundToInt() / 10.0).coerceIn(
                                 0.0, 2.0,
                             ),
                         )
@@ -657,19 +575,10 @@ private fun TextTabContent(
             IncrementDecrementControl(
                 label = stringResource(R.string.reader_settings_paragraph_indent),
                 value = String.format(locale, "%.1f", settings.paragraphIndent / 2.0),
-                onIncrement = {
+                onStep = { direction ->
                     onSettingsChange { current ->
                         current.copy(
-                            paragraphIndent = (((current.paragraphIndent + 0.2) * 10.0).roundToInt() / 10.0).coerceIn(
-                                0.0, 4.0,
-                            ),
-                        )
-                    }
-                },
-                onDecrement = {
-                    onSettingsChange { current ->
-                        current.copy(
-                            paragraphIndent = (((current.paragraphIndent - 0.2) * 10.0).roundToInt() / 10.0).coerceIn(
+                            paragraphIndent = (((current.paragraphIndent + direction * 0.2) * 10.0).roundToInt() / 10.0).coerceIn(
                                 0.0, 4.0,
                             ),
                         )
@@ -777,19 +686,15 @@ private fun LightingTabContent(
             "Invert" to stringResource(R.string.reader_settings_image_filter_invert),
         )
         SegmentedButtonGroup(
-            options = imageFilterOptionsMap.values.toList(),
+            options = imageFilterOptionsMap.keys.toList(),
+            optionLabel = { imageFilterOptionsMap[it] ?: it },
             icons = listOf(
                 MaterialSymbols.Outlined.Image,
                 MaterialSymbols.Outlined.Contrast,
                 MaterialSymbols.Outlined.Invert_colors,
             ),
-            selected = imageFilterOptionsMap[settings.imageFilter] ?: settings.imageFilter,
-            onSelected = { localizedValue ->
-                val key =
-                    imageFilterOptionsMap.entries.find { (_, itValue2) -> itValue2 == localizedValue }?.key
-                        ?: localizedValue
-                onSettingsChange { current -> current.copy(imageFilter = key) }
-            },
+            selected = settings.imageFilter,
+            onSelected = { value -> onSettingsChange { current -> current.copy(imageFilter = value) } },
         )
     }
 
@@ -806,14 +711,15 @@ private fun LightingTabContent(
             false to stringResource(R.string.reader_always),
         )
         SegmentedButtonGroup(
-            options = modes.values.toList(),
+            options = modes.keys.toList(),
+            optionLabel = modes::getValue,
             icons = emptyList(),
-            selected = modes.getValue(settings.formatPreferences.epubImageFilterFollowTheme),
-            onSelected = { label ->
+            selected = settings.formatPreferences.epubImageFilterFollowTheme,
+            onSelected = { value ->
                 onSettingsChange { current ->
                     current.copy(
                         formatPreferences = current.formatPreferences.copy(
-                            epubImageFilterFollowTheme = modes.entries.first { it.value == label }.key,
+                            epubImageFilterFollowTheme = value,
                         )
                     )
                 }
@@ -895,46 +801,22 @@ internal fun AdvancedTabContent(
     content: @Composable () -> Unit = {},
     textPreferencesContent: @Composable () -> Unit = {},
 ) {
-    var showDictionaryDialog by remember { mutableStateOf(value = false) }
-    var showOrientationDialog by remember { mutableStateOf(value = false) }
 
     Column {
         content()
 
         if (includeTextPreferences) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showDictionaryDialog = true }
-                    .padding(horizontal = 16.dp, vertical = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    stringResource(R.string.reader_settings_dictionary),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                val activeName =
-                    settings.installedDictionaries.find { (itId, _, _) -> itId == settings.activeDictionaryId }?.name
-                        ?: stringResource(R.string.reader_settings_image_filter_none)
-                Text(
-                    activeName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            if (showDictionaryDialog) {
-                SettingsChoiceDialog(
-                    content = { Text(stringResource(R.string.dictionaries_select)) },
-                    options = settings.installedDictionaries,
-                    isSelected = { it.id == settings.activeDictionaryId },
-                    optionLabel = { it.name },
-                    emptyText = stringResource(R.string.dictionaries_none_installed),
-                    onSelected = { onSettingsChange { current -> current.copy(activeDictionaryId = it.id) } },
-                    onDismiss = { showDictionaryDialog = false },
-                )
-            }
+            ReaderChoiceRow(
+                title = stringResource(R.string.reader_settings_dictionary),
+                dialogTitle = stringResource(R.string.dictionaries_select),
+                valueLabel = settings.installedDictionaries.find { it.id == settings.activeDictionaryId }?.name
+                    ?: stringResource(R.string.reader_settings_image_filter_none),
+                options = settings.installedDictionaries,
+                isSelected = { it.id == settings.activeDictionaryId },
+                optionLabel = { it.name },
+                emptyText = stringResource(R.string.dictionaries_none_installed),
+                onSelected = { onSettingsChange { current -> current.copy(activeDictionaryId = it.id) } },
+            )
 
         }
 
@@ -944,76 +826,31 @@ internal fun AdvancedTabContent(
             "Landscape" to stringResource(R.string.reader_settings_orientation_landscape),
         )
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { showOrientationDialog = true }
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                stringResource(R.string.reader_settings_force_orientation),
-                style = MaterialTheme.typography.titleMedium,
-            )
-            val activeOrientationName =
-                orientationOptionsMap[settings.forceOrientation] ?: settings.forceOrientation
-            Text(
-                activeOrientationName,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
-        if (showOrientationDialog) {
-            SettingsChoiceDialog(
-                content = { Text(stringResource(R.string.reader_settings_force_orientation)) },
-                options = orientationOptionsMap.keys.toList(),
-                isSelected = { it == settings.forceOrientation },
-                optionLabel = { orientationOptionsMap.getValue(it) },
-                onSelected = { onSettingsChange { current -> current.copy(forceOrientation = it) } },
-                onDismiss = { showOrientationDialog = false },
-            )
-        }
+        ReaderChoiceRow(
+            title = stringResource(R.string.reader_settings_force_orientation),
+            valueLabel = orientationOptionsMap[settings.forceOrientation]
+                ?: settings.forceOrientation,
+            options = orientationOptionsMap.keys.toList(),
+            isSelected = { it == settings.forceOrientation },
+            optionLabel = orientationOptionsMap::getValue,
+            onSelected = { onSettingsChange { current -> current.copy(forceOrientation = it) } },
+        )
 
         val jumpHistoryOptionsMap = mapOf(
             "explicit" to stringResource(R.string.reader_jump_history_mode_explicit),
             "page_turn" to stringResource(R.string.reader_jump_history_mode_page_turn),
             "disabled" to stringResource(R.string.reader_jump_history_mode_disabled),
         )
-        var showJumpHistoryDialog by remember { mutableStateOf(value = false) }
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { showJumpHistoryDialog = true }
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                stringResource(R.string.reader_jump_history_mode),
-                style = MaterialTheme.typography.titleMedium,
-            )
-            val activeModeName =
-                jumpHistoryOptionsMap[settings.jumpHistoryMode] ?: settings.jumpHistoryMode
-            Text(
-                activeModeName,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
-        if (showJumpHistoryDialog) {
-            SettingsChoiceDialog(
-                content = { Text(stringResource(R.string.reader_jump_history_mode)) },
-                options = jumpHistoryOptionsMap.keys.toList(),
-                isSelected = { it == settings.jumpHistoryMode },
-                optionLabel = { jumpHistoryOptionsMap.getValue(it) },
-                onSelected = { onSettingsChange { current -> current.copy(jumpHistoryMode = it) } },
-                onDismiss = { showJumpHistoryDialog = false },
-            )
-        }
+        ReaderChoiceRow(
+            title = stringResource(R.string.reader_jump_history_mode),
+            valueLabel = jumpHistoryOptionsMap[settings.jumpHistoryMode]
+                ?: settings.jumpHistoryMode,
+            options = jumpHistoryOptionsMap.keys.toList(),
+            isSelected = { it == settings.jumpHistoryMode },
+            optionLabel = jumpHistoryOptionsMap::getValue,
+            onSelected = { onSettingsChange { current -> current.copy(jumpHistoryMode = it) } },
+        )
 
         if (includeTextPreferences) {
             SettingsSwitchRow(
@@ -1073,6 +910,34 @@ internal fun AdvancedTabContent(
 }
 
 @Composable
+private fun <T : Any> ReaderChoiceRow(
+    title: String, valueLabel: String, options: List<T>, isSelected: (T) -> Boolean,
+    optionLabel: (T) -> String, onSelected: (T) -> Unit,
+    dialogTitle: String = title, emptyText: String? = null,
+) {
+    var showDialog by remember { mutableStateOf(false) }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { showDialog = true }
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(title, style = MaterialTheme.typography.titleMedium)
+        Text(
+            valueLabel, style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+    if (showDialog) SettingsChoiceDialog(
+        content = { Text(dialogTitle) }, options = options, isSelected = isSelected,
+        optionLabel = optionLabel, onSelected = onSelected, emptyText = emptyText,
+        onDismiss = { showDialog = false },
+    )
+}
+
+@Composable
 internal fun SettingsSwitchRow(
     title: String,
     isChecked: Boolean,
@@ -1127,53 +992,20 @@ private fun FontSwatch(
         }
     }
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(1.dp),
-        modifier = modifier,
+    SwatchFrame(
+        modifier = modifier, isSelected = isSelected, label = label,
+        background = MaterialTheme.colorScheme.surfaceVariant,
+        interaction = Modifier.clickable(onClick = onClick),
     ) {
-        Box(
-            modifier = Modifier
-                .size(68.dp)
-                .padding(2.dp)
-                .let { m ->
-                    if (isSelected) {
-                        m.border(
-                            width = 2.dp,
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = CircleShape,
-                        )
-                    } else m
-                }
-                .padding(4.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .border(
-                    width = 1.5.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant,
-                    shape = CircleShape,
-                )
-                .clickable { onClick() },
-            contentAlignment = Alignment.Center,
-        ) {
-            // Literata's internal glyph metrics have extra padding at the top, pushing it down visually.
-            // We apply a tiny negative offset just to visually center it in the swatch box.
-            val yOffset = if (fontName == "Literata") (-2).dp else 0.dp
+        // Literata's internal glyph metrics have extra padding at the top, pushing it down visually.
+        // We apply a tiny negative offset just to visually center it in the swatch box.
+        val yOffset = if (fontName == "Literata") (-2).dp else 0.dp
 
-            Text(
-                text = "Aa",
-                fontFamily = fontFamily,
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.offset(y = yOffset),
-            )
-        }
         Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.width(68.dp),
-            textAlign = TextAlign.Center,
+            text = "Aa",
+            fontFamily = fontFamily,
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.offset(y = yOffset),
         )
     }
 }

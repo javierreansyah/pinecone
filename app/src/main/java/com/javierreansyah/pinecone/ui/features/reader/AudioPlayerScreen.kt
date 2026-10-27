@@ -134,15 +134,6 @@ fun AudioPlayerScreen(
             onChapterClick = { player.go(it); showContents = false },
             onBookmarkClick = { player.go(it); showContents = false },
             onNoteClick = { player.go(it); showContents = false },
-            onAddNote = { text ->
-                state.locator?.let {
-                    notes.addNote(
-                        it,
-                        text,
-                        chapterTitle = it.title ?: state.chapter
-                    )
-                }
-            },
             onDeleteBookmark = notes::deleteBookmark,
             onDeleteNote = notes::deleteNote,
             onDismiss = { showContents = false },

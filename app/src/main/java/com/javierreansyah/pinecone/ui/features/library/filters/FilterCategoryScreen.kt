@@ -34,6 +34,7 @@ import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.components.RenameDeleteMenu
 import com.javierreansyah.pinecone.ui.components.SegmentedLazyColumn
+import com.javierreansyah.pinecone.ui.features.library.LibrarySelection
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.combinedWording
 import com.javierreansyah.pinecone.ui.features.library.components.FilterItemSortBottomSheet
@@ -105,13 +106,13 @@ private fun AllFilterItemsContent(
     var itemToDelete by remember { mutableStateOf<String?>(null) }
     var itemToRename by remember { mutableStateOf<String?>(null) }
     var isMultiRename by remember { mutableStateOf(value = false) }
-    var selectedItems by remember { mutableStateOf(setOf<String>()) }
-    var isInMultiSelectMode by remember { mutableStateOf(value = false) }
+    val selection = remember { LibrarySelection() }
+    var selectedItems by selection::ids
+    var isInMultiSelectMode by selection::active
     val wordingByName = items.associate { it.name to it.actionWording }
 
     BackHandler(enabled = isInMultiSelectMode) {
-        selectedItems = emptySet()
-        isInMultiSelectMode = false
+        selection.close()
     }
 
     var sortType by remember { mutableStateOf(FilterItemSortType.Label) }
@@ -154,8 +155,7 @@ private fun AllFilterItemsContent(
                         selectedCount = selectedItems.size,
                         isAllSelected = selectedItems.size == sortedItems.size,
                         onCloseMultiSelect = {
-                            selectedItems = emptySet()
-                            isInMultiSelectMode = false
+                            selection.close()
                         },
                         onClearSelection = { selectedItems = emptySet() },
                         onSelectAll = {
@@ -170,8 +170,7 @@ private fun AllFilterItemsContent(
                             selectedItems.forEach { name ->
                                 onDeleteConfirm(name)
                             }
-                            selectedItems = emptySet()
-                            isInMultiSelectMode = false
+                            selection.close()
                         },
                     )
                 },
@@ -211,16 +210,11 @@ private fun AllFilterItemsContent(
                     itemToDelete = name
                 },
                 onToggleSelect = { name ->
-                    selectedItems = if (name in selectedItems) {
-                        selectedItems - name
-                    } else {
-                        selectedItems + name
-                    }
+                    selection.toggle(name)
                 },
                 onLongClick = { name ->
                     if (!isInMultiSelectMode) {
-                        selectedItems = setOf(name)
-                        isInMultiSelectMode = true
+                        selection.enter(setOf(name))
                     }
                 },
             )

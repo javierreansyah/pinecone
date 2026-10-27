@@ -51,26 +51,15 @@ fun BookCollection(
             },
             label = "bookCollectionLayoutTransition",
         ) { targetLayoutMode ->
-            if (targetLayoutMode != LayoutMode.List) {
-                BookGrid(
-                    books = books,
-                    layoutMode = targetLayoutMode,
-                    onBookClick = onBookClick,
-                    onBookLongClick = onBookLongClick,
-                    selectedBooks = selectedBooks,
-                    isInMultiSelectMode = isInMultiSelectMode,
-                    bottomContentPadding = bottomContentPadding,
-                )
-            } else {
-                BookList(
-                    books = books,
-                    onBookClick = onBookClick,
-                    onBookLongClick = onBookLongClick,
-                    selectedBooks = selectedBooks,
-                    isInMultiSelectMode = isInMultiSelectMode,
-                    bottomContentPadding = bottomContentPadding,
-                )
-            }
+            BookGrid(
+                books = books,
+                layoutMode = targetLayoutMode,
+                onBookClick = onBookClick,
+                onBookLongClick = onBookLongClick,
+                selectedBooks = selectedBooks,
+                isInMultiSelectMode = isInMultiSelectMode,
+                bottomContentPadding = bottomContentPadding,
+            )
         }
     }
 }
@@ -89,6 +78,7 @@ private fun BookGrid(
     val containerSize = LocalWindowInfo.current.containerSize
     val screenWidth = with(density) { containerSize.width.toDp() }
 
+    val isList = layoutMode == LayoutMode.List
     val itemWidth = when {
         screenWidth >= 840.dp -> if (layoutMode == LayoutMode.BigGrid) 200.dp else 140.dp
         screenWidth >= 600.dp -> if (layoutMode == LayoutMode.BigGrid) 180.dp else 120.dp
@@ -96,13 +86,15 @@ private fun BookGrid(
     }
 
     val horizontalPadding = when {
+        isList -> if (screenWidth >= 600.dp) 16.dp else 0.dp
         screenWidth >= 840.dp -> 24.dp
         screenWidth >= 600.dp -> 16.dp
         else -> 8.dp
     }
 
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = itemWidth),
+        columns = if (isList) GridCells.Fixed(if (screenWidth >= 600.dp) 2 else 1)
+        else GridCells.Adaptive(minSize = itemWidth),
         contentPadding = PaddingValues(bottom = bottomContentPadding),
         modifier = Modifier
             .fillMaxSize()
@@ -110,8 +102,8 @@ private fun BookGrid(
     ) {
         items(
             items = books,
-            key = { book -> "${book.id}-${layoutMode.name}" },
-            contentType = { layoutMode },
+            key = { book -> if (isList) book.id else "${book.id}-${layoutMode.name}" },
+            contentType = { if (isList) null else layoutMode },
         ) { book ->
             BookItem(
                 book = book,
@@ -119,45 +111,7 @@ private fun BookGrid(
                 onLongClick = if (selectedBooks.isNotEmpty()) null else {
                     { onBookLongClick?.invoke(book.id) }
                 },
-                isSelected = book.id in selectedBooks,
-                isInMultiSelectMode = isInMultiSelectMode,
-            )
-        }
-    }
-}
-
-@Composable
-private fun BookList(
-    books: List<Book>,
-    onBookClick: (String) -> Unit,
-    onBookLongClick: ((String) -> Unit)? = null,
-    selectedBooks: Set<String> = emptySet(),
-    isInMultiSelectMode: Boolean = false,
-    bottomContentPadding: Dp = 0.dp,
-) {
-    val density = LocalDensity.current
-    val containerSize = LocalWindowInfo.current.containerSize
-    val screenWidth = with(density) { containerSize.width.toDp() }
-    val columns = if (screenWidth >= 600.dp) 2 else 1
-    val horizontalPadding = if (screenWidth >= 600.dp) 16.dp else 0.dp
-
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(columns),
-        contentPadding = PaddingValues(bottom = bottomContentPadding),
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = horizontalPadding),
-    ) {
-        items(
-            books,
-            key = { book -> book.id }) { book ->
-            BookItem(
-                book = book,
-                onClick = { onBookClick(book.id) },
-                onLongClick = if (selectedBooks.isNotEmpty()) null else {
-                    { onBookLongClick?.invoke(book.id) }
-                },
-                isList = true,
+                isList = isList,
                 isSelected = book.id in selectedBooks,
                 isInMultiSelectMode = isInMultiSelectMode,
             )

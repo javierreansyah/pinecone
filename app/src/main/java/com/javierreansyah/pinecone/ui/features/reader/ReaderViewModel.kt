@@ -428,18 +428,7 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
         val page = if (activeRendition.value == "read-mode") readModePage(locator)
         else _positions.value.pageNumber(locator)
 
-        return when {
-            page != null -> application.resources.getQuantityString(
-                R.plurals.reader_page_num, page, page,
-            )
-
-            locator.locations.totalProgression != null -> application.getString(
-                R.string.reader_position_at,
-                "${(locator.locations.totalProgression!! * 100).toInt()}%",
-            )
-
-            else -> ""
-        }
+        return positionLabel(application.resources, page, locator.locations.totalProgression)
     }
 
     // Readium positions are byte-size estimates, not rendered screens. Inline
@@ -630,7 +619,6 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
         openJob?.cancel()
         closeBook()
     }
-
 
     @dagger.assisted.AssistedFactory
     interface Factory {

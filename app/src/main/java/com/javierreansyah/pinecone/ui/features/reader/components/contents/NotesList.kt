@@ -31,10 +31,8 @@ import com.composables.icons.materialsymbols.outlined.Edit
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.ui.components.EmptyState
+import com.javierreansyah.pinecone.ui.features.reader.toLocatorOrNull
 import org.readium.r2.shared.publication.Locator
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @Composable
 fun NotesList(
@@ -57,11 +55,7 @@ fun NotesList(
             modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 8.dp),
         ) {
             items(notes) { note ->
-                val locator = try {
-                    Locator.fromJSON(org.json.JSONObject(note.locatorJson))
-                } catch (_: Exception) {
-                    null
-                }
+                val locator = note.locatorJson.toLocatorOrNull()
                 if (locator != null) {
                     val inDocument = stringResource(R.string.reader_in_document)
                     val chapterTitle =
@@ -70,16 +64,7 @@ fun NotesList(
 
                     val positionLabel = getPositionLabel(locator)
                     val formattedDate = remember(note.createdAt, context) {
-                        val date = Date(note.createdAt)
-                        val locale = Locale.getDefault()
-                        val dateStr = if (locale.language == "en") {
-                            SimpleDateFormat("MM/dd/yyyy", locale).format(date)
-                        } else {
-                            android.text.format.DateFormat.getDateFormat(context).format(date)
-                        }
-                        val timeStr =
-                            android.text.format.DateFormat.getTimeFormat(context).format(date)
-                        "created $dateStr $timeStr"
+                        annotationTimestamp(context, note.createdAt)
                     }
                     val subtitle = if (positionLabel.isNotBlank()) {
                         "$positionLabel | $formattedDate"

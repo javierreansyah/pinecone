@@ -57,7 +57,6 @@ class LibraryRepository @Inject constructor(
 
     fun hasUnsortedBooks(): Flow<Boolean> = bookDao.hasUnsortedBooks()
 
-
     private val storageMutex get() = assets.mutationMutex
 
     /** Import, conversion, restore, deletion and orphan collection must not race durable assets. */
@@ -104,7 +103,6 @@ class LibraryRepository @Inject constructor(
     suspend fun getBook(id: String): BookWithDetails? = bookDao.getById(id)
 
     fun getBookFlow(id: String): Flow<BookWithDetails?> = bookDao.getByIdFlow(id)
-
 
     suspend fun deleteBook(bookId: String) = deleteBooks(listOf(bookId))
 
@@ -222,13 +220,8 @@ class LibraryRepository @Inject constructor(
 
                         bookDao.deleteBookAuthorCrossRefs(bookId)
                         authors.forEachIndexed { index, authorName ->
-                            var authorId =
-                                bookDao.insertAuthor(AuthorEntity(name = authorName.trim()))
-                            if (authorId == -1L) {
-                                authorId =
-                                    bookDao.getAuthorByName(authorName.trim())?.id
-                                        ?: return@forEachIndexed
-                            }
+                            val authorId =
+                                bookDao.authorId(authorName.trim()) ?: return@forEachIndexed
                             bookDao.insertBookAuthorCrossRef(
                                 BookAuthorCrossRef(
                                     bookId,
@@ -240,10 +233,7 @@ class LibraryRepository @Inject constructor(
 
                         bookDao.deleteBookTagCrossRefs(bookId)
                         tags.forEach { tagName ->
-                            var tagId = bookDao.insertTag(TagEntity(name = tagName.trim()))
-                            if (tagId == -1L) {
-                                tagId = bookDao.getTagByName(tagName.trim())?.id ?: return@forEach
-                            }
+                            val tagId = bookDao.tagId(tagName.trim()) ?: return@forEach
                             bookDao.insertBookTagCrossRef(BookTagCrossRef(bookId, tagId))
                         }
 
@@ -491,6 +481,5 @@ class LibraryRepository @Inject constructor(
 
     fun getAllBookSpaceCrossRefs(): Flow<List<BookSpaceCrossRef>> =
         spaceDao.getAllBookSpaceCrossRefs()
-
 
 }

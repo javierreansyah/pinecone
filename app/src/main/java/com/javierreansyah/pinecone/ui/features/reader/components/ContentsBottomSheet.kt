@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,13 +24,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -74,7 +71,6 @@ fun ReaderBottomSheet(
     onChapterClick: (Link) -> Unit,
     onBookmarkClick: (Locator) -> Unit,
     onNoteClick: (Locator) -> Unit,
-    onAddNote: (String) -> Unit,
     onDeleteBookmark: (Long) -> Unit,
     onDeleteNote: (Long) -> Unit,
     onDismiss: () -> Unit,
@@ -96,9 +92,6 @@ fun ReaderBottomSheet(
     val pagerState = rememberPagerState(initialPage = initialTab.coerceIn(0, 2)) { 3 }
     val coroutineScope = rememberCoroutineScope()
 
-    var showAddNoteDialog by remember { mutableStateOf(value = false) }
-    var noteText by remember { mutableStateOf("") }
-
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -115,36 +108,22 @@ fun ReaderBottomSheet(
                 PrimaryTabRow(
                     selectedTabIndex = pagerState.currentPage, containerColor = Color.Transparent,
                 ) {
-                    Tab(
-                        selected = pagerState.currentPage == 0,
-                        onClick = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
-                        text = {
-                            Text(
-                                stringResource(R.string.reader_chapters_title),
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                        },
-                    )
-                    Tab(
-                        selected = pagerState.currentPage == 1,
-                        onClick = { coroutineScope.launch { pagerState.animateScrollToPage(1) } },
-                        text = {
-                            Text(
-                                stringResource(R.string.reader_bookmarks_title),
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                        },
-                    )
-                    Tab(
-                        selected = pagerState.currentPage == 2,
-                        onClick = { coroutineScope.launch { pagerState.animateScrollToPage(2) } },
-                        text = {
-                            Text(
-                                stringResource(R.string.reader_notes_title),
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                        },
-                    )
+                    listOf(
+                        R.string.reader_chapters_title,
+                        R.string.reader_bookmarks_title,
+                        R.string.reader_notes_title,
+                    ).forEachIndexed { index, title ->
+                        Tab(
+                            selected = pagerState.currentPage == index,
+                            onClick = { coroutineScope.launch { pagerState.animateScrollToPage(index) } },
+                            text = {
+                                Text(
+                                    stringResource(title),
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            },
+                        )
+                    }
                 }
 
                 CompositionLocalProvider(
@@ -220,109 +199,26 @@ fun ReaderBottomSheet(
                             shapes = MenuDefaults.groupShape(0, 1),
                             interactionSource = groupInteractionSource,
                         ) {
-                            SelectableDropdownMenuItem(
-                                selected = sortOption == SortOption.CREATION_DATE_DESC,
-                                text = {
-                                    Text(stringResource(R.string.reader_sort_creation_date_desc))
-                                },
-                                onClick = {
-                                    onSortOptionChange(SortOption.CREATION_DATE_DESC)
-                                    showSortMenu = false
-                                },
-                                shapes = MenuDefaults.itemShape(0, 4),
-                            )
-                            SelectableDropdownMenuItem(
-                                selected = sortOption == SortOption.CREATION_DATE_ASC,
-                                text = {
-                                    Text(stringResource(R.string.reader_sort_creation_date_asc))
-                                },
-                                onClick = {
-                                    onSortOptionChange(SortOption.CREATION_DATE_ASC)
-                                    showSortMenu = false
-                                },
-                                shapes = MenuDefaults.itemShape(1, 4),
-                            )
-                            SelectableDropdownMenuItem(
-                                selected = sortOption == SortOption.BOOK_ORDER_ASC,
-                                text = {
-                                    Text(stringResource(R.string.reader_sort_reading_order_asc))
-                                },
-                                onClick = {
-                                    onSortOptionChange(SortOption.BOOK_ORDER_ASC)
-                                    showSortMenu = false
-                                },
-                                shapes = MenuDefaults.itemShape(2, 4),
-                            )
-                            SelectableDropdownMenuItem(
-                                selected = sortOption == SortOption.BOOK_ORDER_DESC,
-                                text = {
-                                    Text(stringResource(R.string.reader_sort_reading_order_desc))
-                                },
-                                onClick = {
-                                    onSortOptionChange(SortOption.BOOK_ORDER_DESC)
-                                    showSortMenu = false
-                                },
-                                shapes = MenuDefaults.itemShape(3, 4),
-                            )
+                            listOf(
+                                SortOption.CREATION_DATE_DESC to R.string.reader_sort_creation_date_desc,
+                                SortOption.CREATION_DATE_ASC to R.string.reader_sort_creation_date_asc,
+                                SortOption.BOOK_ORDER_ASC to R.string.reader_sort_reading_order_asc,
+                                SortOption.BOOK_ORDER_DESC to R.string.reader_sort_reading_order_desc,
+                            ).forEachIndexed { index, (option, label) ->
+                                SelectableDropdownMenuItem(
+                                    selected = sortOption == option,
+                                    text = { Text(stringResource(label)) },
+                                    onClick = {
+                                        onSortOptionChange(option)
+                                        showSortMenu = false
+                                    },
+                                    shapes = MenuDefaults.itemShape(index, 4),
+                                )
+                            }
                         }
                     }
                 }
             }
         }
-    }
-
-    if (showAddNoteDialog) {
-        AlertDialog(
-            onDismissRequest = { showAddNoteDialog = false },
-            title = {
-                Text(
-                    stringResource(R.string.reader_add_note),
-                    style = MaterialTheme.typography.titleLarge,
-                )
-            },
-            text = {
-                OutlinedTextField(
-                    value = noteText,
-                    onValueChange = { noteText = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = {
-                        Text(
-                            stringResource(R.string.reader_enter_note_placeholder),
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                    },
-                    minLines = 3,
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (noteText.isNotBlank()) {
-                            onAddNote(noteText)
-                        }
-                        noteText = ""
-                        showAddNoteDialog = false
-                    },
-                ) {
-                    Text(
-                        stringResource(R.string.action_save),
-                        style = MaterialTheme.typography.labelLarge,
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        noteText = ""
-                        showAddNoteDialog = false
-                    },
-                ) {
-                    Text(
-                        stringResource(R.string.action_cancel),
-                        style = MaterialTheme.typography.labelLarge,
-                    )
-                }
-            },
-        )
     }
 }

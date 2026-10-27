@@ -100,18 +100,10 @@ class ReaderSearchViewModel @Inject constructor(
                         val newItems = pageLocators.map { locator ->
                             val posIndex = positions.findIndexForLocator(locator)
 
-                            val positionLabel = when {
-                                posIndex != -1 -> application.resources.getQuantityString(
-                                    R.plurals.reader_page_num, posIndex + 1, posIndex + 1,
-                                )
-
-                                locator.locations.totalProgression != null -> application.getString(
-                                    R.string.reader_position_at,
-                                    "${(locator.locations.totalProgression!! * 100).toInt()}%",
-                                )
-
-                                else -> ""
-                            }
+                            val positionLabel = positionLabel(
+                                application.resources, posIndex.takeIf { it >= 0 }?.plus(1),
+                                locator.locations.totalProgression,
+                            )
 
                             SearchResultItem(
                                 locator = locator,
@@ -232,6 +224,5 @@ class ReaderSearchViewModel @Inject constructor(
     fun hideSearch() {
         searchJob?.cancel()
     }
-
 
 }

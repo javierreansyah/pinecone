@@ -140,6 +140,7 @@ import com.javierreansyah.pinecone.ui.features.library.publicationWording
 import com.javierreansyah.pinecone.ui.features.reader.chapterLocator
 import com.javierreansyah.pinecone.ui.features.reader.chapterPageNumber
 import com.javierreansyah.pinecone.ui.features.reader.pageNumber
+import com.javierreansyah.pinecone.ui.features.reader.toLocatorOrNull
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -811,11 +812,7 @@ private fun BookmarksTabContent(
                 }
 
                 items(bookmarks) { bookmark ->
-                    val locator = try {
-                        Locator.fromJSON(JSONObject(bookmark.locatorJson))
-                    } catch (_: Exception) {
-                        null
-                    }
+                    val locator = bookmark.locatorJson.toLocatorOrNull()
                     if (locator != null) {
                         val inDocument = stringResource(R.string.reader_in_document)
                         val chapterTitle =
@@ -901,11 +898,7 @@ private fun NotesTabContent(
             contentPadding = PaddingValues(vertical = 8.dp),
         ) {
             items(notes) { note ->
-                val locator = try {
-                    Locator.fromJSON(JSONObject(note.locatorJson))
-                } catch (_: Exception) {
-                    null
-                }
+                val locator = note.locatorJson.toLocatorOrNull()
                 if (locator != null) {
                     val inDocument = stringResource(R.string.reader_in_document)
                     val chapterTitle =
@@ -922,43 +915,11 @@ private fun NotesTabContent(
                             .padding(horizontal = 20.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(end = 16.dp),
-                            ) {
-                                Text(
-                                    text = chapterTitle,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                                val label = getPositionLabel(locator, positions, readMode)
-                                if (label.isNotBlank()) {
-                                    Text(
-                                        text = label,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
-                            androidx.compose.material3.IconButton(
-                                onClick = { onDeleteNote(note.id) },
-                                modifier = Modifier.size(24.dp),
-                            ) {
-                                Icon(
-                                    imageVector = MaterialSymbols.Outlined.Delete,
-                                    contentDescription = stringResource(R.string.action_delete),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
+                        com.javierreansyah.pinecone.ui.features.reader.components.contents.EntryHeader(
+                            title = chapterTitle,
+                            positionLabel = getPositionLabel(locator, positions, readMode),
+                            onDelete = { onDeleteNote(note.id) },
+                        )
 
                         locator.text.highlight?.takeIf { it.isNotBlank() }?.let { highlight ->
                             Row(
@@ -1644,17 +1605,11 @@ private fun getPositionLabel(
 ): String {
     val page = positions.pageNumber(locator, readMode)
 
-    return when {
-        page != null -> pluralStringResource(
-            R.plurals.reader_page_num, page, page,
-        )
-
-        locator.locations.totalProgression != null -> stringResource(
-            R.string.reader_position_at, "${(locator.locations.totalProgression!! * 100).toInt()}%",
-        )
-
-        else -> ""
-    }
+    return com.javierreansyah.pinecone.ui.features.reader.positionLabel(
+        androidx.compose.ui.platform.LocalResources.current,
+        page,
+        locator.locations.totalProgression,
+    )
 }
 
 @Composable

@@ -116,6 +116,13 @@ interface BookDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(books: List<BookEntity>)
 
+    suspend fun authorId(name: String): Long? =
+        insertAuthor(AuthorEntity(name = name)).takeUnless { it == -1L }
+            ?: getAuthorByName(name)?.id
+
+    suspend fun tagId(name: String): Long? =
+        insertTag(TagEntity(name = name)).takeUnless { it == -1L } ?: getTagByName(name)?.id
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAuthor(author: AuthorEntity): Long
 

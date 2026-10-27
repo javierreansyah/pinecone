@@ -18,10 +18,8 @@ import com.composables.icons.materialsymbols.outlined.Bookmark
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.ui.components.EmptyState
+import com.javierreansyah.pinecone.ui.features.reader.toLocatorOrNull
 import org.readium.r2.shared.publication.Locator
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @Composable
 fun BookmarksList(
@@ -44,11 +42,7 @@ fun BookmarksList(
             modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 8.dp),
         ) {
             items(bookmarks) { bookmark ->
-                val locator = try {
-                    Locator.fromJSON(org.json.JSONObject(bookmark.locatorJson))
-                } catch (_: Exception) {
-                    null
-                }
+                val locator = bookmark.locatorJson.toLocatorOrNull()
                 if (locator != null) {
                     val inDocument = stringResource(R.string.reader_in_document)
                     val chapterTitle =
@@ -57,16 +51,7 @@ fun BookmarksList(
 
                     val positionLabel = getPositionLabel(locator)
                     val formattedDate = remember(bookmark.createdAt, context) {
-                        val date = Date(bookmark.createdAt)
-                        val locale = Locale.getDefault()
-                        val dateStr = if (locale.language == "en") {
-                            SimpleDateFormat("MM/dd/yyyy", locale).format(date)
-                        } else {
-                            android.text.format.DateFormat.getDateFormat(context).format(date)
-                        }
-                        val timeStr =
-                            android.text.format.DateFormat.getTimeFormat(context).format(date)
-                        "created $dateStr $timeStr"
+                        annotationTimestamp(context, bookmark.createdAt)
                     }
                     val subtitle = if (positionLabel.isNotBlank()) {
                         "$positionLabel | $formattedDate"

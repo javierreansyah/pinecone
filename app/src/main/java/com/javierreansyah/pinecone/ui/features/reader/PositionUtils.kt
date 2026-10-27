@@ -1,5 +1,7 @@
 package com.javierreansyah.pinecone.ui.features.reader
 
+import android.content.res.Resources
+import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
@@ -136,4 +138,14 @@ fun Locator.isSamePosition(other: Locator): Boolean {
     val thisPos = locations.position
     val otherPos = other.locations.position
     return thisPos != null && otherPos != null && thisPos == otherPos
+}
+
+internal fun positionLabel(resources: Resources, page: Int?, progression: Double?): String = when {
+    page != null -> resources.getQuantityString(R.plurals.reader_page_num, page, page)
+    progression != null -> resources.getString(
+        R.string.reader_position_at,
+        "${(progression * 100).toInt()}%"
+    )
+
+    else -> ""
 }

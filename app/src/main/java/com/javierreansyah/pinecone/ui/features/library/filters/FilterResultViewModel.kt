@@ -6,36 +6,25 @@ import com.javierreansyah.pinecone.data.local.database.library.AuthorEntity
 import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.data.local.database.library.TagEntity
 import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
-import com.javierreansyah.pinecone.data.local.preferences.libraryPreferenceDefaults
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.model.fromEntity
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.domain.DeleteBooks
 import com.javierreansyah.pinecone.ui.features.library.BookActions
-import com.javierreansyah.pinecone.ui.features.library.FileFilter
-import com.javierreansyah.pinecone.ui.features.library.FilterSortPreferences
-import com.javierreansyah.pinecone.ui.features.library.LayoutMode
-import com.javierreansyah.pinecone.ui.features.library.SortType
-import com.javierreansyah.pinecone.ui.features.library.StatusFilter
+import com.javierreansyah.pinecone.ui.features.library.ScreenFilterPreferences
 import com.javierreansyah.pinecone.ui.features.library.filterAndSort
 import com.javierreansyah.pinecone.ui.features.library.inSpace
-import com.javierreansyah.pinecone.ui.features.library.selectSort
-import com.javierreansyah.pinecone.ui.features.library.toggleFormat
-import com.javierreansyah.pinecone.ui.features.library.toggleStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class FilterResultViewModel @Inject constructor(
     private val bookRepository: LibraryRepository,
@@ -67,9 +56,8 @@ class FilterResultViewModel @Inject constructor(
         initialValue = null,
     )
 
-    val preferences: StateFlow<FilterSortPreferences> = globalSpaceId
-        .flatMapLatest { spaceId -> prefsManager.preferences(spaceId, screenKey) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, libraryPreferenceDefaults(screenKey))
+    internal val filters =
+        ScreenFilterPreferences(prefsManager, viewModelScope, screenKey, globalSpaceId)
 
     val allBooks: StateFlow<List<Book>> = combine(booksFlow, globalSpaceId) { books, spaceId ->
         books.inSpace(spaceId)
@@ -114,23 +102,10 @@ class FilterResultViewModel @Inject constructor(
 
     val filteredBooks: StateFlow<List<Book>> = combine(
         unfilteredBooks,
-        preferences
+        filters.preferences
     ) { books, prefs ->
         books.filterAndSort(prefs)
     }.flowOn(computation).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    private fun updatePreferences(transform: (FilterSortPreferences) -> FilterSortPreferences) {
-        val spaceId = globalSpaceId.value
-        viewModelScope.launch { prefsManager.updatePreferences(spaceId, screenKey, transform) }
-    }
-
-    fun onLayoutModeChange(mode: LayoutMode) = updatePreferences { it.copy(layoutMode = mode) }
-
-    fun onSortTypeChange(sortType: SortType) = updatePreferences { it.selectSort(sortType) }
-
-    fun toggleFileFilter(format: FileFilter) = updatePreferences { it.toggleFormat(format) }
-
-    fun toggleStatusFilter(status: StatusFilter) = updatePreferences { it.toggleStatus(status) }
 
     fun deleteFilterItem(type: String, name: String, onSuccess: () -> Unit) {
         viewModelScope.launch {

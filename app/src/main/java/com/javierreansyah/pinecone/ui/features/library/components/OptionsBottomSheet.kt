@@ -248,15 +248,6 @@ fun LibraryFilterBottomSheet(
         val layoutModes = if (isShelvesTab) listOf(LayoutMode.List, LayoutMode.BigList)
         else listOf(LayoutMode.Grid, LayoutMode.BigGrid, LayoutMode.List)
 
-        SingleToggleGroupSection(
-            title = stringResource(R.string.library_label_layout),
-            options = layoutModes,
-            selectedOption = preferences.layoutMode,
-            onOptionSelected = onLayoutModeChange,
-        ) { mode ->
-            LayoutModeIcon(mode, selected = mode == preferences.layoutMode)
-        }
-
         val sortTypes = if (isShelvesTab) listOf(
             SortType.Title, SortType.LastRead, SortType.Added, SortType.Progress,
         )
@@ -264,12 +255,12 @@ fun LibraryFilterBottomSheet(
             SortType.Title, SortType.Author, SortType.LastRead, SortType.Added, SortType.Progress,
         )
 
-        SortSection(
-            options = sortTypes,
-            selectedOption = preferences.sortType,
-            isAscending = preferences.isAscending,
-            onOptionSelected = onSortTypeChange,
-            optionLabel = { stringResource(sortTypeLabelRes(it)) },
+        FilterLayoutAndSort(
+            preferences,
+            layoutModes,
+            sortTypes,
+            onLayoutModeChange,
+            onSortTypeChange
         )
 
         if (!isShelvesTab) {
@@ -324,6 +315,32 @@ fun LibraryFilterBottomSheet(
 }
 
 @Composable
+private fun FilterLayoutAndSort(
+    preferences: FilterSortPreferences,
+    layoutModes: List<LayoutMode>,
+    sortTypes: List<SortType>,
+    onLayoutModeChange: (LayoutMode) -> Unit,
+    onSortTypeChange: (SortType) -> Unit,
+) {
+    SingleToggleGroupSection(
+        title = stringResource(R.string.library_label_layout),
+        options = layoutModes,
+        selectedOption = preferences.layoutMode,
+        onOptionSelected = onLayoutModeChange,
+    ) { mode ->
+        LayoutModeIcon(mode, selected = mode == preferences.layoutMode)
+    }
+
+    SortSection(
+        options = sortTypes,
+        selectedOption = preferences.sortType,
+        isAscending = preferences.isAscending,
+        onOptionSelected = onSortTypeChange,
+        optionLabel = { stringResource(sortTypeLabelRes(it)) },
+    )
+}
+
+@Composable
 fun ShelfDetailFilterBottomSheet(
     shelfId: String,
     preferences: FilterSortPreferences,
@@ -334,40 +351,12 @@ fun ShelfDetailFilterBottomSheet(
     onFileFilterToggle: (FileFilter) -> Unit = {},
     onDismiss: () -> Unit,
 ) {
-    OptionsBottomSheet(onDismissRequest = onDismiss) {
-        val layoutModes = listOf(LayoutMode.Grid, LayoutMode.BigGrid, LayoutMode.List)
-        SingleToggleGroupSection(
-            title = stringResource(R.string.library_label_layout),
-            options = layoutModes,
-            selectedOption = preferences.layoutMode,
-            onOptionSelected = onLayoutModeChange,
-        ) { mode ->
-            LayoutModeIcon(mode, selected = mode == preferences.layoutMode)
-        }
-
-        val sortTypes =
-            if (shelfId == "unshelved") SortType.entries.filter { it != SortType.Custom } else SortType.entries
-        SortSection(
-            options = sortTypes,
-            selectedOption = preferences.sortType,
-            isAscending = preferences.isAscending,
-            onOptionSelected = onSortTypeChange,
-            optionLabel = { stringResource(sortTypeLabelRes(it)) },
-        )
-
-        MultiToggleGroupSection(
-            title = stringResource(R.string.library_label_status),
-            options = StatusFilter.entries,
-            selectedOptions = preferences.selectedStatus,
-            onOptionToggled = onStatusToggle,
-        ) { status ->
-            Text(
-                stringResource(statusLabelRes(status)),
-            )
-        }
-
-        FileFilterSection(preferences, availableFormats, onFileFilterToggle)
-    }
+    FilterResultBottomSheet(
+        preferences, availableFormats, onLayoutModeChange, onSortTypeChange, onStatusToggle,
+        onFileFilterToggle, onDismiss = onDismiss,
+        sortTypes = if (shelfId == "unshelved") SortType.entries.filter { it != SortType.Custom }
+        else SortType.entries,
+    )
 }
 
 @Composable
@@ -378,28 +367,15 @@ fun FilterResultBottomSheet(
     onSortTypeChange: (SortType) -> Unit,
     onStatusToggle: (StatusFilter) -> Unit,
     onFileFilterToggle: (FileFilter) -> Unit = {},
+    sortTypes: List<SortType> = listOf(
+        SortType.Title, SortType.Author, SortType.LastRead, SortType.Added, SortType.Progress,
+    ),
     onDismiss: () -> Unit,
 ) {
     OptionsBottomSheet(onDismissRequest = onDismiss) {
-        val layoutModes = listOf(LayoutMode.Grid, LayoutMode.BigGrid, LayoutMode.List)
-        SingleToggleGroupSection(
-            title = stringResource(R.string.library_label_layout),
-            options = layoutModes,
-            selectedOption = preferences.layoutMode,
-            onOptionSelected = onLayoutModeChange,
-        ) { mode ->
-            LayoutModeIcon(mode, selected = mode == preferences.layoutMode)
-        }
-
-        val sortTypes = listOf(
-            SortType.Title, SortType.Author, SortType.LastRead, SortType.Added, SortType.Progress,
-        )
-        SortSection(
-            options = sortTypes,
-            selectedOption = preferences.sortType,
-            isAscending = preferences.isAscending,
-            onOptionSelected = onSortTypeChange,
-            optionLabel = { stringResource(sortTypeLabelRes(it)) },
+        FilterLayoutAndSort(
+            preferences, listOf(LayoutMode.Grid, LayoutMode.BigGrid, LayoutMode.List), sortTypes,
+            onLayoutModeChange, onSortTypeChange,
         )
 
         MultiToggleGroupSection(

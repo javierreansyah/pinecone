@@ -98,7 +98,8 @@ class LibraryBackupTest {
             assertSuccess(f.backups.createSnapshot(true))
             val saved = f.backups.listSnapshots().single()
             val metadata =
-                (f.context.contentResolver.openInputStream(saved.uri) ?: return@fixture).use { it.readBytes() }
+                (f.context.contentResolver.openInputStream(saved.uri)
+                    ?: return@fixture).use { it.readBytes() }
             f.library.deleteBook(source.id)
             (f.context.contentResolver.openOutputStream(saved.uri, "wt") ?: return@fixture)
                 .use { it.write(byteArrayOf(0)) }
@@ -111,7 +112,8 @@ class LibraryBackupTest {
             assertTrue(requireNotNull(f.vault.open(false)).books.listFiles().isNotEmpty())
             assertTrue(requireNotNull(f.vault.open(false)).covers.listFiles().isNotEmpty())
 
-            (f.context.contentResolver.openOutputStream(saved.uri, "wt") ?: return@fixture).use { it.write(metadata) }
+            (f.context.contentResolver.openOutputStream(saved.uri, "wt")
+                ?: return@fixture).use { it.write(metadata) }
             assertSuccess(f.backups.restoreSnapshot(saved.uri))
             val restored = requireNotNull(f.db.bookDao().getEntity(source.id))
             assertArrayEquals(bytes, File(restored.filePath).readBytes())

@@ -78,15 +78,11 @@ internal fun ExpandedSearchContent(
         )
 
         SegmentedButtonGroup(
-            options = SearchCategory.entries.map { categoryLabels[it] ?: it.name },
+            options = SearchCategory.entries,
+            optionLabel = { categoryLabels[it] ?: it.name },
             icons = emptyList(),
-            selected = categoryLabels[searchCategory] ?: searchCategory.name,
-            onSelected = { selectedLabel ->
-                val category =
-                    categoryLabels.entries.find { (_, itValue) -> itValue == selectedLabel }?.key
-                        ?: SearchCategory.All
-                onSearchCategoryChange(category)
-            },
+            selected = searchCategory,
+            onSelected = onSearchCategoryChange,
             modifier = Modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState())

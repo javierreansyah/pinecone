@@ -43,6 +43,45 @@ fun ThemeSwatch(
     isCustom: Boolean = false,
     label: String,
 ) {
+    SwatchFrame(
+        modifier = modifier,
+        isSelected = isSelected,
+        label = label,
+        background = if (isAuto || isCustom || iconRes != null) Color.Transparent else color,
+        interaction = Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick),
+    ) {
+        if (isAuto) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                drawArc(
+                    color = Color.White, startAngle = 90f, sweepAngle = 180f, useCenter = true,
+                )
+                drawArc(
+                    color = Color.Black, startAngle = 270f, sweepAngle = 180f, useCenter = true,
+                )
+            }
+        } else if (iconRes != null) {
+            Image(
+                painter = painterResource(id = iconRes),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        } else if (isCustom) {
+            Icon(
+                imageVector = MaterialSymbols.Outlined.Add,
+                contentDescription = stringResource(R.string.reader_settings_add_theme),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+internal fun SwatchFrame(
+    modifier: Modifier = Modifier,
+    isSelected: Boolean, label: String, background: Color, interaction: Modifier,
+    content: @Composable () -> Unit,
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(1.dp),
@@ -52,52 +91,20 @@ fun ThemeSwatch(
             modifier = Modifier
                 .size(68.dp)
                 .padding(2.dp)
-                .let { m ->
-                    if (isSelected) {
-                        m.border(
-                            width = 2.dp,
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = CircleShape,
-                        )
-                    } else m
-                }
+                .then(
+                    if (isSelected) Modifier.border(
+                        2.dp,
+                        MaterialTheme.colorScheme.primary,
+                        CircleShape
+                    ) else Modifier
+                )
                 .padding(4.dp)
                 .clip(CircleShape)
-                .background(if (isAuto || isCustom || iconRes != null) Color.Transparent else color)
-                .border(
-                    width = 1.5.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant,
-                    shape = CircleShape,
-                )
-                .combinedClickable(
-                    onClick = onClick, onLongClick = onLongClick,
-                ),
+                .background(background)
+                .border(1.5.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                .then(interaction),
             contentAlignment = Alignment.Center,
-        ) {
-            if (isAuto) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    drawArc(
-                        color = Color.White, startAngle = 90f, sweepAngle = 180f, useCenter = true,
-                    )
-                    drawArc(
-                        color = Color.Black, startAngle = 270f, sweepAngle = 180f, useCenter = true,
-                    )
-                }
-            } else if (iconRes != null) {
-                Image(
-                    painter = painterResource(id = iconRes),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
-            } else if (isCustom) {
-                Icon(
-                    imageVector = MaterialSymbols.Outlined.Add,
-                    contentDescription = stringResource(R.string.reader_settings_add_theme),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
+        ) { content() }
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,

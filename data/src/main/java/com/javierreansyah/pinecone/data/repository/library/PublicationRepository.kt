@@ -5,14 +5,12 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.room.withTransaction
 import com.javierreansyah.pinecone.data.local.database.library.AppDatabase
-import com.javierreansyah.pinecone.data.local.database.library.AuthorEntity
 import com.javierreansyah.pinecone.data.local.database.library.BookAuthorCrossRef
 import com.javierreansyah.pinecone.data.local.database.library.BookEntity
 import com.javierreansyah.pinecone.data.local.database.library.BookSpaceCrossRef
 import com.javierreansyah.pinecone.data.local.database.library.BookTagCrossRef
 import com.javierreansyah.pinecone.data.local.database.library.BookWithDetails
 import com.javierreansyah.pinecone.data.local.database.library.PublicationRenditionEntity
-import com.javierreansyah.pinecone.data.local.database.library.TagEntity
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.model.ReadingSessionToken
 import com.javierreansyah.pinecone.data.model.library.ALL_SPACES_ID
@@ -189,10 +187,7 @@ class PublicationRepository @Inject constructor(
                             publicationDao.putCredits(metadata.credits.map { it.toEntity() })
                             metadata.credits.filter { it.role == "author" || it.role == "writer" }
                                 .map { it.name }.distinct().forEachIndexed { index, name ->
-                                    val inserted = bookDao.insertAuthor(AuthorEntity(name = name))
-                                    val id = if (inserted == -1L) requireNotNull(
-                                        bookDao.getAuthorByName(name)
-                                    ).id else inserted
+                                    val id = requireNotNull(bookDao.authorId(name))
                                     bookDao.insertBookAuthorCrossRef(
                                         BookAuthorCrossRef(
                                             hash,
@@ -202,9 +197,7 @@ class PublicationRepository @Inject constructor(
                                     )
                                 }
                             metadata.subjects.distinct().forEach { name ->
-                                val inserted = bookDao.insertTag(TagEntity(name = name))
-                                val id =
-                                    if (inserted == -1L) requireNotNull(bookDao.getTagByName(name)).id else inserted
+                                val id = requireNotNull(bookDao.tagId(name))
                                 bookDao.insertBookTagCrossRef(BookTagCrossRef(hash, id))
                             }
                             val result = requireNotNull(bookDao.getById(hash))
@@ -235,7 +228,6 @@ class PublicationRepository @Inject constructor(
         return uri.lastPathSegment?.substringAfterLast('/')
             ?: context.getString(com.javierreansyah.pinecone.data.R.string.storage_untitled)
     }
-
 
     private fun PublicationRenditionEntity.isReusableReadMode(): Boolean =
         converterVersion == PdfReadModeConverter.VERSION && File(filePath).isFile
@@ -476,7 +468,6 @@ class PublicationRepository @Inject constructor(
         val token: ReadingSessionToken,
         val lease: AutoCloseable
     )
-
 
     private suspend fun openPublicationFromFile(
         file: File,

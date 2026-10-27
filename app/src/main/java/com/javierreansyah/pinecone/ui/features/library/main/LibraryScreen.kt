@@ -44,6 +44,7 @@ import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
+import com.javierreansyah.pinecone.ui.features.library.LibrarySelection
 import com.javierreansyah.pinecone.ui.features.library.LibraryView
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.SearchCategory
@@ -185,9 +186,10 @@ fun LibraryScreen(
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
 
     var selectedBookContext by remember { mutableStateOf<Pair<String, String?>?>(null) }
-    var selectedBooks by remember { mutableStateOf(emptySet<String>()) }
+    val selection = remember { LibrarySelection() }
+    var selectedBooks by selection::ids
     var selectedShelves by remember { mutableStateOf(emptySet<String>()) }
-    var isInMultiSelectMode by remember { mutableStateOf(value = false) }
+    var isInMultiSelectMode by selection::active
 
     var transferCopy by remember { mutableStateOf<Boolean?>(null) }
     val libraryView = uiState.bookPreferences.libraryView
@@ -355,12 +357,7 @@ fun LibraryScreen(
                                         selectedBooks = selectedBooks,
                                         onBookClick = { bookId ->
                                             if (isInMultiSelectMode) {
-                                                selectedBooks =
-                                                    if (bookId in selectedBooks) {
-                                                        selectedBooks - bookId
-                                                    } else {
-                                                        selectedBooks + bookId
-                                                    }
+                                                selection.toggle(bookId)
                                             } else {
                                                 onNavigateToReader(bookId)
                                             }

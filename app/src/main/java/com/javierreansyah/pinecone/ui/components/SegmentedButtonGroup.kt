@@ -19,11 +19,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun SegmentedButtonGroup(
-    options: List<String>,
+fun <T> SegmentedButtonGroup(
+    options: List<T>,
     icons: List<ImageVector>,
-    selected: String,
-    onSelected: (String) -> Unit,
+    selected: T,
+    onSelected: (T) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     title: String? = null,
@@ -36,6 +36,7 @@ fun SegmentedButtonGroup(
         selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary,
     ),
     border: BorderStroke? = null,
+    optionLabel: (T) -> String = { it.toString() },
 ) {
     val buttonRow = @Composable {
         Row(
@@ -51,7 +52,7 @@ fun SegmentedButtonGroup(
                     onClick = { onSelected(option) },
                     label = {
                         Text(
-                            text = option, style = MaterialTheme.typography.labelLarge,
+                            text = optionLabel(option), style = MaterialTheme.typography.labelLarge,
                         )
                     },
                     leadingIcon = icon?.let {

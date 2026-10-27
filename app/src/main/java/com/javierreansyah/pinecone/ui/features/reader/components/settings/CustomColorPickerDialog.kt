@@ -145,15 +145,12 @@ fun CustomColorPickerDialog(
 
                     SegmentedButtonGroup(
                         title = stringResource(R.string.settings_theme_mode),
-                        options = uiThemeOptions.map { (itFirst, _) -> itFirst },
+                        options = uiThemeOptions.map { it.second },
+                        optionLabel = { value -> uiThemeOptions.first { it.second == value }.first },
                         icons = emptyList(),
-                        selected = uiThemeOptions.find { (_, itSecond) -> itSecond == uiThemeInput }?.first
-                            ?: stringResource(R.string.reader_settings_theme_setting),
-                        onSelected = { selectedLabel ->
-                            uiThemeInput =
-                                uiThemeOptions.find { (itFirst2, _) -> itFirst2 == selectedLabel }?.second
-                                    ?: "Setting"
-                        },
+                        selected = uiThemeInput.takeIf { value -> uiThemeOptions.any { it.second == value } }
+                            ?: "Setting",
+                        onSelected = { uiThemeInput = it },
                         modifier = Modifier.fillMaxWidth(),
                     )
 

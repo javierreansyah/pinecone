@@ -63,9 +63,9 @@ import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Search
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.dictionary.DictionaryEntry
-import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
+import com.javierreansyah.pinecone.ui.components.HtmlWebView
 import com.javierreansyah.pinecone.ui.components.OperationFeedback
 import com.javierreansyah.pinecone.ui.components.OperationReport
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
@@ -74,16 +74,14 @@ import com.javierreansyah.pinecone.ui.features.reader.ReaderNavigationRouter
 import com.javierreansyah.pinecone.ui.features.reader.ReaderNotesViewModel
 import com.javierreansyah.pinecone.ui.features.reader.ReaderSearchViewModel
 import com.javierreansyah.pinecone.ui.features.reader.ReaderViewModel
-import com.javierreansyah.pinecone.ui.features.reader.SearchResultItem
 import com.javierreansyah.pinecone.ui.features.reader.components.ExternalLinkBottomSheet
 import com.javierreansyah.pinecone.ui.features.reader.components.NoteBottomSheet
 import com.javierreansyah.pinecone.ui.features.reader.components.ReaderBottomSheet
 import com.javierreansyah.pinecone.ui.features.reader.components.ReaderSearch
-import com.javierreansyah.pinecone.ui.features.reader.components.SortOption
-import com.javierreansyah.pinecone.ui.features.reader.components.dictionary.DefinitionWebView
 import com.javierreansyah.pinecone.ui.features.reader.components.dictionary.DictionaryFormatter
 import com.javierreansyah.pinecone.ui.features.reader.components.settings.ReaderSettingsContent
 import com.javierreansyah.pinecone.ui.features.reader.isSamePosition
+import com.javierreansyah.pinecone.ui.features.reader.toLocatorOrNull
 import com.javierreansyah.pinecone.ui.theme.AppTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -91,6 +89,7 @@ import org.json.JSONObject
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReaderOverlay(
     viewModel: ReaderViewModel,
@@ -139,11 +138,7 @@ fun ReaderOverlay(
     val isBookmarked = remember(sortedBookmarks, currentLocator) {
         val locator = currentLocator
         locator != null && sortedBookmarks.any { bookmark ->
-            val loc = try {
-                Locator.fromJSON(JSONObject(bookmark.locatorJson))
-            } catch (_: Exception) {
-                null
-            }
+            val loc = bookmark.locatorJson.toLocatorOrNull()
             loc != null && loc.isSamePosition(locator)
         }
     }
@@ -343,98 +338,133 @@ fun ReaderOverlay(
                 },
             )
 
-            ReaderSheetsLayer(
-                wording = when {
-                    bookState.value.sourceIsPdf -> PublicationWording.Documents
-                    profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.EPUB -> PublicationWording.Books
-                    profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF -> PublicationWording.Documents
-                    profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO -> PublicationWording.Audiobooks
-                    else -> PublicationWording.Items
-                },
-                showToc = controlsState.value.showToc,
-                contentsInitialTab = controlsState.value.contentsInitialTab,
-                showSettings = controlsState.value.showSettings,
-                showSearch = controlsState.value.showSearch,
-                showDefinition = definitionState.value.showDefinition,
-                editingNote = selectionState.value.editingNote,
-                definitionWord = definitionState.value.definitionWord,
-                definitionResults = definitionState.value.definitionResults,
-                definitionWordHistorySize = definitionState.value.wordHistory.size,
-                tableOfContents = viewModel.tableOfContents,
-                sortedBookmarks = sortedBookmarks,
-                sortedNotes = sortedNotes,
-                sortOption = sortOption,
-                onSortOptionChange = { notesViewModel.setSortOption(it) },
-                currentLocator = currentLocator,
-                settings = settings,
-                searchQuery = searchState.value.query,
-                searchResults = searchState.value.results,
-                searchLoading = searchState.value.isLoading,
-                searchPerformed = searchState.value.searchPerformed,
-                getPositionLabel = { viewModel.getPositionLabel(it) },
-                getChapterPageLabel = { viewModel.getChapterPageLabel(it) },
-                onNavigateToChapter = onNavigateToChapter,
-                onNavigateToLocator = onNavigateToLocator,
-                onRecordJumpOrigin = { viewModel.recordJumpOrigin() },
-                onHideToc = { viewModel.hideToc() },
-                onToggleControls = { viewModel.toggleControls() },
-                onAddNote = { text ->
-                    currentLocator?.let {
-                        notesViewModel.addNote(
-                            it,
-                            text,
-                            chapterTitle = it.title ?: bookState.value.chapter,
-                        )
-                    }
-                },
-                onDeleteBookmark = { notesViewModel.deleteBookmark(it) },
-                onDeleteNote = { notesViewModel.deleteNote(it) },
-                onHideSettings = { viewModel.hideSettings() },
-                onUpdateSettings = { viewModel.updateSettings(it) },
-                onUpdateSearchQuery = { searchViewModel.updateSearchQuery(it) },
-                onPerformSearch = {
-                    searchViewModel.performSearch(
-                        it,
-                        viewModel.publication.value,
-                        positions,
-                    )
-                },
-                onSelectSearchResult = {
-                    viewModel.recordJumpOrigin()
-                    searchViewModel.selectSearchResult(it)
-                    viewModel.hideSearch()
-                },
-                onHideSearch = { viewModel.hideSearch(); searchViewModel.hideSearch() },
-                onUpdateNote = { notesViewModel.updateNote(it) },
-                onHideEditNote = { notesViewModel.hideEditNote() },
-                onHideDefinition = { dictionaryViewModel.hideDefinition() },
-                onDefineWord = { dictionaryViewModel.lookupDefinition(it) },
-                onPopDefinition = { dictionaryViewModel.popDefinition() },
-                showExternalLinkMenu = externalLinkState.value.showMenu,
-                externalLinkUrl = externalLinkState.value.url,
-                onCopyExternalLink = { url ->
-                    val clipboard =
-                        context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    val clip = ClipData.newPlainText("url", url)
-                    // The platform getter/setter nullability makes primaryClip read-only in Kotlin.
-                    @Suppress("UsePropertyAccessSyntax")
-                    clipboard.setPrimaryClip(clip)
-                },
-                onOpenExternalLink = { url ->
-                    try {
-                        val intent = Intent(Intent.ACTION_VIEW, url.toUri())
-                        context.startActivity(intent)
-                    } catch (_: Exception) {
-                    }
-                },
-                profile = profile,
-                fixedEpub = fixedEpub,
-                useBookSettings = useBookSettings,
-                onUseBookSettings = viewModel::setUseBookSettings,
-                onReparsePdf = viewModel::reparsePdf,
-                onHideExternalLinkMenu = viewModel::hideExternalLinkMenu,
-                publication = publication,
+            val settingsSheetState = rememberBottomSheetState(
+                initialValue = SheetValue.Hidden,
+                enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
             )
+            val sheetEffectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+            if (controlsState.value.showToc) {
+                ReaderBottomSheet(
+                    initialTab = controlsState.value.contentsInitialTab,
+                    tableOfContents = viewModel.tableOfContents,
+                    sortedBookmarks = sortedBookmarks,
+                    sortedNotes = sortedNotes,
+                    sortOption = sortOption,
+                    onSortOptionChange = notesViewModel::setSortOption,
+                    currentLocator = currentLocator,
+                    getPositionLabel = viewModel::getPositionLabel,
+                    getChapterPageLabel = viewModel::getChapterPageLabel,
+                    onChapterClick = { link ->
+                        viewModel.recordJumpOrigin()
+                        onNavigateToChapter(link)
+                        viewModel.hideToc()
+                        viewModel.toggleControls()
+                    },
+                    onBookmarkClick = { locator ->
+                        viewModel.recordJumpOrigin()
+                        onNavigateToLocator(locator)
+                        viewModel.hideToc()
+                        viewModel.toggleControls()
+                    },
+                    onNoteClick = { locator ->
+                        viewModel.recordJumpOrigin()
+                        onNavigateToLocator(locator)
+                        viewModel.hideToc()
+                        viewModel.toggleControls()
+                    },
+                    onDeleteBookmark = notesViewModel::deleteBookmark,
+                    onDeleteNote = notesViewModel::deleteNote,
+                    onDismiss = viewModel::hideToc,
+                )
+            }
+            if (controlsState.value.showSettings) {
+                ModalBottomSheet(
+                    onDismissRequest = viewModel::hideSettings,
+                    sheetState = settingsSheetState,
+                ) {
+                    ReaderSettingsContent(
+                        settings = settings,
+                        onSettingsChange = viewModel::updateSettings,
+                        profile = profile,
+                        fixedEpub = fixedEpub,
+                        publication = publication,
+                        useBookSettings = useBookSettings,
+                        onUseBookSettings = viewModel::setUseBookSettings,
+                        onReparsePdf = viewModel::reparsePdf,
+                    )
+                }
+            }
+            AnimatedVisibility(
+                visible = controlsState.value.showSearch,
+                enter = fadeIn(animationSpec = sheetEffectsSpec),
+                exit = fadeOut(animationSpec = sheetEffectsSpec),
+            ) {
+                ReaderSearch(
+                    wording = when {
+                        bookState.value.sourceIsPdf -> PublicationWording.Documents
+                        profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.EPUB -> PublicationWording.Books
+                        profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF -> PublicationWording.Documents
+                        profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.AUDIO -> PublicationWording.Audiobooks
+                        else -> PublicationWording.Items
+                    },
+                    query = searchState.value.query,
+                    results = searchState.value.results,
+                    isLoading = searchState.value.isLoading,
+                    searchPerformed = searchState.value.searchPerformed,
+                    onQueryChange = searchViewModel::updateSearchQuery,
+                    onSearch = {
+                        searchViewModel.performSearch(
+                            it,
+                            viewModel.publication.value,
+                            positions
+                        )
+                    },
+                    onResultClick = {
+                        viewModel.recordJumpOrigin()
+                        searchViewModel.selectSearchResult(it)
+                        viewModel.hideSearch()
+                    },
+                    onClose = { viewModel.hideSearch(); searchViewModel.hideSearch() },
+                )
+            }
+            selectionState.value.editingNote?.let { note ->
+                NoteBottomSheet(
+                    note = note,
+                    onUpdateNote = notesViewModel::updateNote,
+                    onDeleteNote = notesViewModel::deleteNote,
+                    onDismiss = notesViewModel::hideEditNote,
+                )
+            }
+            if (definitionState.value.showDefinition) {
+                ReaderDefinitionBottomSheet(
+                    definitionWord = definitionState.value.definitionWord,
+                    definitionResults = definitionState.value.definitionResults,
+                    historySize = definitionState.value.wordHistory.size,
+                    onDismiss = dictionaryViewModel::hideDefinition,
+                    onPop = dictionaryViewModel::popDefinition,
+                    onWordClick = { dictionaryViewModel.lookupDefinition(it) },
+                )
+            }
+            if (externalLinkState.value.showMenu) {
+                val url = externalLinkState.value.url
+                ExternalLinkBottomSheet(
+                    url = url,
+                    onCopy = {
+                        val clipboard =
+                            context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        // The platform getter/setter nullability makes primaryClip read-only in Kotlin.
+                        @Suppress("UsePropertyAccessSyntax")
+                        clipboard.setPrimaryClip(ClipData.newPlainText("url", url))
+                    },
+                    onOpenInBrowser = {
+                        try {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
+                        } catch (_: Exception) {
+                        }
+                    },
+                    onDismiss = viewModel::hideExternalLinkMenu,
+                )
+            }
 
             val conversionMessage = if (bookState.value.conversionTotal > 0) {
                 stringResource(
@@ -684,172 +714,6 @@ fun ReaderBottomBarSection(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ReaderSheetsLayer(
-    showToc: Boolean,
-    contentsInitialTab: Int,
-    showSettings: Boolean,
-    showSearch: Boolean,
-    showDefinition: Boolean,
-    editingNote: NoteEntity?,
-    definitionWord: String,
-    definitionResults: List<DictionaryEntry>,
-    definitionWordHistorySize: Int,
-    tableOfContents: List<Link>,
-    sortedBookmarks: List<BookmarkEntity>,
-    sortedNotes: List<NoteEntity>,
-    sortOption: SortOption,
-    onSortOptionChange: (SortOption) -> Unit,
-    currentLocator: Locator?,
-    settings: ReaderSettings,
-    searchQuery: String,
-    searchResults: List<SearchResultItem>,
-    searchLoading: Boolean,
-    searchPerformed: Boolean,
-    getPositionLabel: (Locator) -> String,
-    getChapterPageLabel: (Link) -> String,
-    onNavigateToChapter: (Link) -> Unit,
-    onNavigateToLocator: (Locator) -> Unit,
-    onRecordJumpOrigin: () -> Unit,
-    onHideToc: () -> Unit,
-    onToggleControls: () -> Unit,
-    onAddNote: (String) -> Unit,
-    onDeleteBookmark: (Long) -> Unit,
-    onDeleteNote: (Long) -> Unit,
-    onHideSettings: () -> Unit,
-    onUpdateSettings: ((ReaderSettings) -> ReaderSettings) -> Unit,
-    onUpdateSearchQuery: (String) -> Unit,
-    onPerformSearch: (String) -> Unit,
-    onSelectSearchResult: (Int) -> Unit,
-    onHideSearch: () -> Unit,
-    onUpdateNote: (NoteEntity) -> Unit,
-    onHideEditNote: () -> Unit,
-    onHideDefinition: () -> Unit,
-    onDefineWord: (String) -> Unit,
-    onPopDefinition: () -> Unit,
-    showExternalLinkMenu: Boolean,
-    externalLinkUrl: String,
-    onCopyExternalLink: (String) -> Unit,
-    onOpenExternalLink: (String) -> Unit,
-    onHideExternalLinkMenu: () -> Unit,
-    profile: com.javierreansyah.pinecone.data.publication.ReaderProfile = com.javierreansyah.pinecone.data.publication.ReaderProfile.EPUB,
-    fixedEpub: Boolean = false,
-    useBookSettings: Boolean = false,
-    onUseBookSettings: (Boolean) -> Unit = {},
-    onReparsePdf: (() -> Unit)? = null,
-    publication: org.readium.r2.shared.publication.Publication? = null,
-    wording: PublicationWording = PublicationWording.Items,
-) {
-    val settingsSheetState = rememberBottomSheetState(
-        initialValue = SheetValue.Hidden,
-        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
-    )
-
-    val actionsEffectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-
-    if (showToc) {
-        ReaderBottomSheet(
-            initialTab = contentsInitialTab,
-            tableOfContents = tableOfContents,
-            sortedBookmarks = sortedBookmarks,
-            sortedNotes = sortedNotes,
-            sortOption = sortOption,
-            onSortOptionChange = onSortOptionChange,
-            currentLocator = currentLocator,
-            getPositionLabel = getPositionLabel,
-            getChapterPageLabel = getChapterPageLabel,
-            onChapterClick = { link ->
-                onRecordJumpOrigin()
-                onNavigateToChapter(link)
-                onHideToc()
-                onToggleControls()
-            },
-            onBookmarkClick = { locator ->
-                onRecordJumpOrigin()
-                onNavigateToLocator(locator)
-                onHideToc()
-                onToggleControls()
-            },
-            onNoteClick = { locator ->
-                onRecordJumpOrigin()
-                onNavigateToLocator(locator)
-                onHideToc()
-                onToggleControls()
-            },
-            onAddNote = onAddNote,
-            onDeleteBookmark = onDeleteBookmark,
-            onDeleteNote = onDeleteNote,
-            onDismiss = onHideToc,
-        )
-    }
-
-    if (showSettings) {
-        ModalBottomSheet(
-            onDismissRequest = onHideSettings,
-            sheetState = settingsSheetState,
-        ) {
-            ReaderSettingsContent(
-                settings = settings,
-                onSettingsChange = onUpdateSettings,
-                profile = profile,
-                fixedEpub = fixedEpub,
-                publication = publication,
-                useBookSettings = useBookSettings,
-                onUseBookSettings = onUseBookSettings,
-                onReparsePdf = onReparsePdf,
-            )
-        }
-    }
-
-    AnimatedVisibility(
-        visible = showSearch,
-        enter = fadeIn(animationSpec = actionsEffectsSpec),
-        exit = fadeOut(animationSpec = actionsEffectsSpec),
-    ) {
-        ReaderSearch(
-            wording = wording,
-            query = searchQuery,
-            results = searchResults,
-            isLoading = searchLoading,
-            searchPerformed = searchPerformed,
-            onQueryChange = onUpdateSearchQuery,
-            onSearch = onPerformSearch,
-            onResultClick = onSelectSearchResult,
-            onClose = onHideSearch,
-        )
-    }
-
-    editingNote?.let { note ->
-        NoteBottomSheet(
-            note = note,
-            onUpdateNote = onUpdateNote,
-            onDeleteNote = onDeleteNote,
-            onDismiss = onHideEditNote,
-        )
-    }
-
-    if (showDefinition) {
-        ReaderDefinitionBottomSheet(
-            definitionWord = definitionWord,
-            definitionResults = definitionResults,
-            historySize = definitionWordHistorySize,
-            onDismiss = onHideDefinition,
-            onPop = onPopDefinition,
-            onWordClick = onDefineWord,
-        )
-    }
-
-    if (showExternalLinkMenu) {
-        ExternalLinkBottomSheet(
-            url = externalLinkUrl,
-            onCopy = { onCopyExternalLink(externalLinkUrl) },
-            onOpenInBrowser = { onOpenExternalLink(externalLinkUrl) },
-            onDismiss = onHideExternalLinkMenu,
-        )
-    }
-}
-
 @Composable
 fun PineconeThemedContent(
     uiDarkTheme: Boolean,
@@ -946,7 +810,7 @@ private fun ReaderDefinitionBottomSheet(
 
                         val combinedHtmlContent =
                             DictionaryFormatter.prepareHtmlForMultipleEntries(sortedResults)
-                        DefinitionWebView(
+                        HtmlWebView(
                             htmlContent = combinedHtmlContent,
                             modifier = Modifier.fillMaxWidth(),
                             onWordClick = onWordClick,

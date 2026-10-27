@@ -166,21 +166,14 @@ fun FormatReaderSettings(
                                         label = stringResource(R.string.reader_page_spacing),
                                         inline = true,
                                         value = pdf.pageSpacing.roundToInt().toString(),
-                                        onIncrement = {
+                                        onStep = { direction ->
                                             update { latest ->
                                                 latest.copy(
-                                                    pageSpacing = (latest.pageSpacing + 1).coerceAtMost(
-                                                        64.0
-                                                    )
-                                                )
-                                            }
-                                        },
-                                        onDecrement = {
-                                            update { latest ->
-                                                latest.copy(
-                                                    pageSpacing = (latest.pageSpacing - 1).coerceAtLeast(
-                                                        0.0
-                                                    )
+                                                    pageSpacing = if (direction > 0) {
+                                                        (latest.pageSpacing + 1).coerceAtMost(64.0)
+                                                    } else {
+                                                        (latest.pageSpacing - 1).coerceAtLeast(0.0)
+                                                    }
                                                 )
                                             }
                                         },
@@ -233,20 +226,21 @@ fun FormatReaderSettings(
                                     style = MaterialTheme.typography.titleMedium
                                 )
                                 val values = linkedMapOf(
-                                    stringResource(R.string.reader_settings_theme_auto) to "auto",
-                                    stringResource(R.string.reader_single_page) to "never",
-                                    stringResource(R.string.reader_two_pages) to "always"
+                                    "auto" to stringResource(R.string.reader_settings_theme_auto),
+                                    "never" to stringResource(R.string.reader_single_page),
+                                    "always" to stringResource(R.string.reader_two_pages)
                                 )
                                 SegmentedButtonGroup(
                                     options = values.keys.toList(),
+                                    optionLabel = values::getValue,
                                     icons = emptyList(),
-                                    selected = values.entries.firstOrNull { it.value == settings.formatPreferences.epubSpread }?.key
+                                    selected = settings.formatPreferences.epubSpread.takeIf { it in values }
                                         ?: values.keys.first(),
                                     onSelected = {
                                         onChange { current ->
                                             current.copy(
                                                 formatPreferences = current.formatPreferences.copy(
-                                                    epubSpread = values.getValue(it)
+                                                    epubSpread = it
                                                 )
                                             )
                                         }
@@ -379,11 +373,11 @@ private fun PdfInversionControl(
             false to stringResource(R.string.reader_never),
         )
         SegmentedButtonGroup(
-            options = options.values.toList(),
+            options = options.keys.toList(),
+            optionLabel = options::getValue,
             icons = emptyList(),
-            selected = options.getValue(settings.formatPreferences.pdf.invert),
-            onSelected = { label ->
-                val invert = options.entries.first { it.value == label }.key
+            selected = settings.formatPreferences.pdf.invert,
+            onSelected = { invert ->
                 onChange { current ->
                     current.copy(
                         formatPreferences = current.formatPreferences.copy(
@@ -488,12 +482,12 @@ private fun PreferenceSlider(
         )
         if (presets.isNotEmpty()) {
             val locale = LocalLocale.current.platformLocale
-            val labels = presets.map { String.format(locale, "%.1f×", it) }
             SegmentedButtonGroup(
-                options = labels,
+                options = presets,
+                optionLabel = { String.format(locale, "%.1f×", it) },
                 icons = emptyList(),
-                selected = presets.indexOf(value).let { labels.getOrNull(it) }.orEmpty(),
-                onSelected = { onChange(presets[labels.indexOf(it)]) },
+                selected = value,
+                onSelected = onChange,
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
             )
         }

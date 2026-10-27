@@ -65,15 +65,16 @@ fun RichMetadataEditor(
                 style = MaterialTheme.typography.titleSmall
             )
             val directions = linkedMapOf(
-                stringResource(R.string.reader_settings_theme_auto) to "auto",
-                stringResource(R.string.publication_left_to_right) to "ltr",
-                stringResource(R.string.reader_right_to_left) to "rtl"
+                "auto" to stringResource(R.string.reader_settings_theme_auto),
+                "ltr" to stringResource(R.string.publication_left_to_right),
+                "rtl" to stringResource(R.string.reader_right_to_left)
             )
             com.javierreansyah.pinecone.ui.components.SegmentedButtonGroup(
                 options = directions.keys.toList(), icons = emptyList(),
-                selected = directions.entries.firstOrNull { it.value == metadata.readingDirection }?.key
+                optionLabel = directions::getValue,
+                selected = metadata.readingDirection.takeIf { it in directions }
                     ?: directions.keys.first(),
-                onSelected = { onMetadata(metadata.copy(readingDirection = directions.getValue(it))) })
+                onSelected = { onMetadata(metadata.copy(readingDirection = it)) })
         }
         (PublicationMetadata.creditRoles + state.creditDrafts.keys).distinct()
             .filterNot { it == "author" }.forEach { role ->
