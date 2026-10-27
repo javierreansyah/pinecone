@@ -1,16 +1,20 @@
 package com.javierreansyah.pinecone.ui.features.library.organize
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -22,7 +26,6 @@ import com.composables.icons.materialsymbols.outlined.Forest
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
-import com.javierreansyah.pinecone.ui.components.SegmentedColumn
 import com.composables.icons.materialsymbols.outlinedfilled.Forest as FilledForest
 
 @Composable
@@ -58,15 +61,16 @@ fun SelectSpaceForShelfDialog(
                     modifier = Modifier.padding(bottom = 12.dp),
                 )
 
-                SegmentedColumn(
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    spaces.forEach { (spaceId, spaceName, _) ->
+                    spaces.forEachIndexed { index, (spaceId, spaceName, _) ->
                         val isSelected = spaceId in selectedSpaceIds
-                        item(
-                            key = spaceId,
-                            selected = isSelected,
-                            onClick = {
+                        key(spaceId) {
+                            val shapes =
+                                ListItemDefaults.segmentedShapes(index = index, count = spaces.size)
+                            val onSelect = {
                                 selectedSpaceIds = if (singleSelect) {
                                     setOf(spaceId)
                                 } else if (isSelected) {
@@ -74,21 +78,32 @@ fun SelectSpaceForShelfDialog(
                                 } else {
                                     selectedSpaceIds + spaceId
                                 }
-                            },
-                            leadingContent = {
+                            }
+                            val leadingContent: @Composable () -> Unit = {
                                 AnimatedSelectionIcon(
                                     selected = isSelected,
                                     outlinedIcon = MaterialSymbols.Outlined.Forest,
                                     filledIcon = MaterialSymbols.OutlinedFilled.FilledForest,
                                     contentDescription = null,
-                                    tint = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.primary,
                                 )
-                            },
-                        ) {
-                            Text(
-                                text = spaceName,
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
+                            }
+                            if (singleSelect) {
+                                SegmentedListItem(
+                                    colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                                    selected = isSelected,
+                                    onClick = onSelect,
+                                    shapes = shapes,
+                                    leadingContent = leadingContent,
+                                ) { Text(spaceName) }
+                            } else {
+                                SegmentedListItem(
+                                    colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                                    checked = isSelected,
+                                    onCheckedChange = { onSelect() },
+                                    shapes = shapes,
+                                    leadingContent = leadingContent,
+                                ) { Text(spaceName) }
+                            }
                         }
                     }
                 }

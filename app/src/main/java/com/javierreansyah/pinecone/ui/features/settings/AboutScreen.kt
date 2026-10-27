@@ -1,14 +1,17 @@
 package com.javierreansyah.pinecone.ui.features.settings
 
 import android.content.Intent
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -29,7 +32,6 @@ import com.composables.icons.materialsymbols.outlined.Info
 import com.composables.icons.materialsymbols.outlined.Keyboard_arrow_right
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
-import com.javierreansyah.pinecone.ui.components.SegmentedColumn
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 
 @Composable
@@ -88,8 +90,13 @@ fun AboutScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            SegmentedColumn(modifier = Modifier.padding(top = 16.dp)) {
-                item(
+            Column(
+                modifier = Modifier.padding(top = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+            ) {
+                SegmentedListItem(
+                    colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                    shapes = ListItemDefaults.segmentedShapes(index = 0, count = 3),
                     onClick = {
                         showLicense = true
                     },
@@ -102,7 +109,6 @@ fun AboutScreen(
                     content = {
                         Text(
                             text = stringResource(R.string.about_view_full_license),
-                            style = MaterialTheme.typography.titleMedium,
                         )
                     },
                     trailingContent = {
@@ -113,7 +119,9 @@ fun AboutScreen(
                     },
                 )
 
-                item(
+                SegmentedListItem(
+                    colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                    shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
                     onClick = {
                         val intent = Intent(
                             Intent.ACTION_VIEW,
@@ -130,7 +138,6 @@ fun AboutScreen(
                     content = {
                         Text(
                             text = stringResource(R.string.about_source_code),
-                            style = MaterialTheme.typography.titleMedium,
                         )
                     },
                     trailingContent = {
@@ -141,7 +148,9 @@ fun AboutScreen(
                     },
                 )
 
-                item(
+                SegmentedListItem(
+                    colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                    shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
                     onClick = onNavigateToOpenSourceLicenses,
                     leadingContent = {
                         Icon(
@@ -152,7 +161,6 @@ fun AboutScreen(
                     content = {
                         Text(
                             text = stringResource(R.string.about_open_source_licenses),
-                            style = MaterialTheme.typography.titleMedium,
                         )
                     },
                     trailingContent = {

@@ -1,15 +1,20 @@
 package com.javierreansyah.pinecone.ui.features.library.filters
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -18,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
@@ -32,8 +38,8 @@ import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
+import com.javierreansyah.pinecone.ui.components.ListItemAccessory
 import com.javierreansyah.pinecone.ui.components.RenameDeleteMenu
-import com.javierreansyah.pinecone.ui.components.SegmentedLazyColumn
 import com.javierreansyah.pinecone.ui.features.library.LibrarySelection
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.combinedWording
@@ -339,18 +345,26 @@ private fun AllFilterItemsList(
     onLongClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    SegmentedLazyColumn(
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
         modifier = modifier
             .padding(innerPadding)
             .fillMaxSize()
             .padding(horizontal = 16.dp),
         contentPadding = PaddingValues(bottom = 16.dp + LocalAudioPlayerBottomPadding.current),
     ) {
-        sortedItems.forEach { (itemFirst, itemSecond, wording, _) ->
+        itemsIndexed(
+            sortedItems,
+            key = { _, item -> item.name }) { index, (itemFirst, itemSecond, wording, _) ->
             val isSelected = itemFirst in selectedItems
-            item(
-                selected = isSelected,
-                onClick = {
+            SegmentedListItem(
+                verticalAlignment = Alignment.Top,
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                modifier = Modifier.animateItem(),
+                shapes = ListItemDefaults.segmentedShapes(index = index, count = sortedItems.size),
+                checked = isSelected,
+                onCheckedChange = {
                     if (isInMultiSelectMode) onToggleSelect(itemFirst)
                     else onNavigateToDetail(itemFirst)
                 },
@@ -362,19 +376,21 @@ private fun AllFilterItemsList(
                     )
                 },
                 trailingContent = {
-                    if (isInMultiSelectMode) {
-                        Checkbox(
-                            checked = itemFirst in selectedItems,
-                            onCheckedChange = { onToggleSelect(itemFirst) },
-                        )
-                    } else {
-                        RenameDeleteMenu(
-                            isMenuExpanded = selectedItemForMenu == itemFirst,
-                            onMoreClick = { onMoreClick(itemFirst) },
-                            onMenuDismiss = onMenuDismiss,
-                            onRenameClick = { onRenameClick(itemFirst) },
-                            onDeleteClick = { onDeleteClick(itemFirst) },
-                        )
+                    ListItemAccessory {
+                        if (isInMultiSelectMode) {
+                            Checkbox(
+                                checked = itemFirst in selectedItems,
+                                onCheckedChange = { onToggleSelect(itemFirst) },
+                            )
+                        } else {
+                            RenameDeleteMenu(
+                                isMenuExpanded = selectedItemForMenu == itemFirst,
+                                onMoreClick = { onMoreClick(itemFirst) },
+                                onMenuDismiss = onMenuDismiss,
+                                onRenameClick = { onRenameClick(itemFirst) },
+                                onDeleteClick = { onDeleteClick(itemFirst) },
+                            )
+                        }
                     }
                 },
             )

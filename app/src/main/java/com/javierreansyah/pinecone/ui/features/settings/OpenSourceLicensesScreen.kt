@@ -10,8 +10,10 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -29,7 +31,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
-import com.javierreansyah.pinecone.ui.components.SegmentedListItem
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import com.mikepenz.aboutlibraries.Libs
 import com.mikepenz.aboutlibraries.entity.Library
@@ -91,7 +92,7 @@ fun OpenSourceLicensesScreen(
                     top = 8.dp,
                     bottom = 8.dp + LocalAudioPlayerBottomPadding.current
                 ),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
             ) {
                 itemsIndexed(
                     libs ?: emptyList(),
@@ -99,23 +100,23 @@ fun OpenSourceLicensesScreen(
                 ) { index, library ->
                     val license = library.licenses.firstOrNull()
                     SegmentedListItem(
-                        selected = false,
-                        index = index,
-                        count = (libs ?: return@itemsIndexed).size,
+                        colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                        shapes = ListItemDefaults.segmentedShapes(
+                            index = index,
+                            count = (libs ?: return@itemsIndexed).size
+                        ),
                         onClick = {
                             selectedLibrary = library
                         },
                         content = {
                             Text(
                                 text = library.name,
-                                style = MaterialTheme.typography.titleMedium,
                             )
                         },
                         supportingContent = {
                             Text(
                                 text = license?.name
                                     ?: stringResource(R.string.about_unknown_license),
-                                style = MaterialTheme.typography.bodyMedium,
                             )
                         },
                     )

@@ -102,9 +102,11 @@ internal fun LibraryCollectionScreen(
             }
         },
     ) { innerPadding ->
-        Box(Modifier
-            .padding(innerPadding)
-            .fillMaxSize()) {
+        Box(
+            Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+        ) {
             if (isEmpty) {
                 EmptyState(
                     icon = emptyIcon,

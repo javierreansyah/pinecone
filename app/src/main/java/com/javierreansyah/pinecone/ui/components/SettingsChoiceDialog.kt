@@ -7,18 +7,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import com.javierreansyah.pinecone.R
 
 /** Single-choice settings use the same selected rows and connected shapes as space selection. */
@@ -41,7 +38,7 @@ fun <T : Any> SettingsChoiceDialog(
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
                     .selectableGroup(),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
             ) {
                 if (options.isEmpty() && emptyText != null) {
                     Text(emptyText, style = MaterialTheme.typography.bodyLarge)
@@ -50,19 +47,18 @@ fun <T : Any> SettingsChoiceDialog(
                     val optionSelected = isSelected(option)
                     key(option) {
                         SegmentedListItem(
-                            modifier = Modifier.semantics {
-                                role = Role.RadioButton
-                                selected = optionSelected
-                            },
+                            colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
                             selected = optionSelected,
                             onClick = {
                                 onSelected(option)
                                 onDismiss()
                             },
-                            index = index,
-                            count = options.size,
+                            shapes = ListItemDefaults.segmentedShapes(
+                                index = index,
+                                count = options.size
+                            ),
                         ) {
-                            Text(optionLabel(option), style = MaterialTheme.typography.bodyLarge)
+                            Text(optionLabel(option))
                         }
                     }
                 }

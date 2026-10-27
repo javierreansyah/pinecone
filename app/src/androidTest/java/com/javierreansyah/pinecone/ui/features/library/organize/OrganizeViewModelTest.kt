@@ -25,6 +25,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.time.Duration.Companion.milliseconds
 
 class OrganizeViewModelTest {
     @Test
@@ -71,7 +72,7 @@ class OrganizeViewModelTest {
                 })[OrganizeViewModel::class]
             }
             val enabled =
-                withTimeout(5000) { model.uiState.first { !it.isLoading && it.spacesEnabled } }
+                withTimeout(5000.milliseconds) { model.uiState.first { !it.isLoading && it.spacesEnabled } }
             assertEquals(
                 ToggleableState.Indeterminate,
                 enabled.spaces.first { it.space.id == "_all_" }.state
@@ -81,7 +82,7 @@ class OrganizeViewModelTest {
             assertEquals(ToggleableState.Indeterminate, work.shelves.single().state)
             preferences.updateSettings { it.copy(spacesEnabled = false) }
             val disabled =
-                withTimeout(5000) { model.uiState.first { !it.isLoading && !it.spacesEnabled } }
+                withTimeout(5000.milliseconds) { model.uiState.first { !it.isLoading && !it.spacesEnabled } }
             assertEquals("_all_", disabled.spaces.single().space.id)
             assertEquals(
                 ToggleableState.Indeterminate,

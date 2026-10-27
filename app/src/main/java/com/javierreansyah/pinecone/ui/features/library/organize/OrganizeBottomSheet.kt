@@ -24,11 +24,13 @@ import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarState
 import androidx.compose.material3.SearchBarValue
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TriStateCheckbox
@@ -36,6 +38,7 @@ import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.rememberContainedSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +50,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -58,7 +63,6 @@ import com.composables.icons.materialsymbols.outlined.Mic
 import com.composables.icons.materialsymbols.outlined.Search
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
-import com.javierreansyah.pinecone.ui.components.SegmentedColumn
 import com.javierreansyah.pinecone.ui.components.rememberVoiceSearchLauncher
 import com.composables.icons.materialsymbols.outlinedfilled.Folder as FilledFolder
 import com.composables.icons.materialsymbols.outlinedfilled.Forest as FilledForest
@@ -289,43 +293,48 @@ private fun OrganizeContent(
             ) {
                 if (showCreateSpace || showCreateShelf) {
                     item(key = "create_section") {
-                        SegmentedColumn(
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             if (showCreateSpace) {
-                                item(
-                                    key = "create_space_query",
+                                SegmentedListItem(
+                                    colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                                    shapes = ListItemDefaults.segmentedShapes(
+                                        index = 0,
+                                        count = if (showCreateShelf) 2 else 1
+                                    ),
                                     onClick = { onCreateSpaceWithQuery(searchQuery) },
                                     leadingContent = {
                                         Icon(
                                             MaterialSymbols.Outlined.Forest,
                                             contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
                                         )
                                     },
                                 ) {
                                     Text(
                                         text = stringResource(R.string.library_new_space) + " \"$searchQuery\"",
-                                        color = MaterialTheme.colorScheme.primary,
                                     )
                                 }
                             }
 
                             if (showCreateShelf) {
-                                item(
-                                    key = "create_shelf_query",
+                                SegmentedListItem(
+                                    colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                                    shapes = ListItemDefaults.segmentedShapes(
+                                        index = if (showCreateSpace) 1 else 0,
+                                        count = if (showCreateSpace) 2 else 1
+                                    ),
                                     onClick = { onRequestCreateShelf(searchQuery) },
                                     leadingContent = {
                                         Icon(
                                             MaterialSymbols.Outlined.Folder,
                                             contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
                                         )
                                     },
                                 ) {
                                     Text(
                                         text = stringResource(R.string.library_new_shelf) + " \"$searchQuery\"",
-                                        color = MaterialTheme.colorScheme.primary,
                                     )
                                 }
                             }
@@ -342,40 +351,49 @@ private fun OrganizeContent(
                                     else R.string.settings_library,
                                 ),
                             )
-                            SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
-                                spaces.forEach { (space, state, _) ->
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+                            ) {
+                                spaces.forEachIndexed { index, (space, state, _) ->
                                     val selected = state == ToggleableState.On
-                                    item(
-                                        key = "space_${space.id}",
-                                        selected = selected,
-                                        onClick = if (space.id == "_all_" && selected) null else ({
-                                            onToggleSpace(space.id, state)
-                                        }),
-                                        leadingContent = {
-                                            AnimatedSelectionIcon(
-                                                selected = selected,
-                                                outlinedIcon = if (spacesEnabled) MaterialSymbols.Outlined.Forest else MaterialSymbols.Outlined.Folder,
-                                                filledIcon = if (spacesEnabled) MaterialSymbols.OutlinedFilled.FilledForest else MaterialSymbols.OutlinedFilled.FilledFolder,
-                                                contentDescription = null,
-                                                tint = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.primary,
-                                            )
-                                        },
-                                        content = {
-                                            Text(
-                                                text = if (spacesEnabled) space.name else stringResource(
-                                                    R.string.library_add_to_library
-                                                ),
-                                                style = MaterialTheme.typography.titleMedium,
-                                            )
-                                        },
-                                        trailingContent = {
-                                            TriStateCheckbox(
-                                                state = state,
-                                                enabled = space.id != "_all_" || !selected,
-                                                onClick = null,
-                                            )
-                                        },
-                                    )
+                                    key(space.id) {
+                                        SegmentedListItem(
+                                            colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                                            shapes = ListItemDefaults.segmentedShapes(
+                                                index = index,
+                                                count = spaces.size
+                                            ),
+                                            modifier = Modifier.semantics {
+                                                toggleableState = state
+                                            },
+                                            checked = selected,
+                                            enabled = space.id != "_all_" || !selected,
+                                            onCheckedChange = { onToggleSpace(space.id, state) },
+                                            leadingContent = {
+                                                AnimatedSelectionIcon(
+                                                    selected = selected,
+                                                    outlinedIcon = if (spacesEnabled) MaterialSymbols.Outlined.Forest else MaterialSymbols.Outlined.Folder,
+                                                    filledIcon = if (spacesEnabled) MaterialSymbols.OutlinedFilled.FilledForest else MaterialSymbols.OutlinedFilled.FilledFolder,
+                                                    contentDescription = null,
+                                                )
+                                            },
+                                            content = {
+                                                Text(
+                                                    text = if (spacesEnabled) space.name else stringResource(
+                                                        R.string.library_add_to_library
+                                                    ),
+                                                )
+                                            },
+                                            trailingContent = {
+                                                TriStateCheckbox(
+                                                    state = state,
+                                                    enabled = space.id != "_all_" || !selected,
+                                                    onClick = null,
+                                                )
+                                            },
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -394,32 +412,40 @@ private fun OrganizeContent(
                             )
                             else stringResource(R.string.library_tab_shelves),
                         )
-                        SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
-                            shelves.forEach { (shelf, state) ->
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+                        ) {
+                            shelves.forEachIndexed { index, (shelf, state) ->
                                 val selected = state == ToggleableState.On
-                                item(
-                                    key = "shelf_${shelf.id}",
-                                    selected = selected,
-                                    onClick = { onToggleShelf(shelf.id, state) },
-                                    leadingContent = {
-                                        AnimatedSelectionIcon(
-                                            selected = selected,
-                                            outlinedIcon = MaterialSymbols.Outlined.Folder,
-                                            filledIcon = MaterialSymbols.OutlinedFilled.FilledFolder,
-                                            contentDescription = null,
-                                            tint = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.secondary,
-                                        )
-                                    },
-                                    content = {
-                                        Text(
-                                            text = shelf.name,
-                                            style = MaterialTheme.typography.titleMedium,
-                                        )
-                                    },
-                                    trailingContent = {
-                                        TriStateCheckbox(state = state, onClick = null)
-                                    },
-                                )
+                                key(shelf.id) {
+                                    SegmentedListItem(
+                                        colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                                        shapes = ListItemDefaults.segmentedShapes(
+                                            index = index,
+                                            count = shelves.size
+                                        ),
+                                        modifier = Modifier.semantics { toggleableState = state },
+                                        checked = selected,
+                                        onCheckedChange = { onToggleShelf(shelf.id, state) },
+                                        leadingContent = {
+                                            AnimatedSelectionIcon(
+                                                selected = selected,
+                                                outlinedIcon = MaterialSymbols.Outlined.Folder,
+                                                filledIcon = MaterialSymbols.OutlinedFilled.FilledFolder,
+                                                contentDescription = null,
+                                            )
+                                        },
+                                        content = {
+                                            Text(
+                                                text = shelf.name,
+                                            )
+                                        },
+                                        trailingContent = {
+                                            TriStateCheckbox(state = state, onClick = null)
+                                        },
+                                    )
+                                }
                             }
                         }
                     }

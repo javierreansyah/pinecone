@@ -57,6 +57,7 @@ import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SecondaryScrollableTabRow
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.SplitButtonDefaults
 import androidx.compose.material3.SplitButtonLayout
@@ -130,7 +131,6 @@ import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import com.javierreansyah.pinecone.ui.components.EmptyState
-import com.javierreansyah.pinecone.ui.components.SegmentedColumn
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
@@ -1478,20 +1478,17 @@ private fun BookMetadata(
                 add(stringResource(R.string.publication_format) to parseBookFormat(it, it))
             }
         }.filter { (_, value) -> metadataValue(value) != null }.distinct()
-        SegmentedColumn(modifier = Modifier.fillMaxWidth()) {
-            fields.forEach { (label, value) ->
-                item {
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(
-                            label, style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            value, style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
-                }
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+        ) {
+            fields.forEachIndexed { index, (label, value) ->
+                SegmentedListItem(
+                    colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                    shapes = ListItemDefaults.segmentedShapes(index = index, count = fields.size),
+                    overlineContent = { Text(label) },
+                    content = { Text(value) },
+                )
             }
         }
     }

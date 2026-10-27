@@ -14,6 +14,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,9 +29,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearWavyProgressIndicator
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -77,8 +80,7 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.CoverDisplayMode
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
-import com.javierreansyah.pinecone.ui.components.SegmentedColumn
-import com.javierreansyah.pinecone.ui.components.SegmentedListScope
+import com.javierreansyah.pinecone.ui.components.ListItemAccessory
 import com.javierreansyah.pinecone.ui.features.settings.components.ColorSchemePickerDialog
 import com.javierreansyah.pinecone.ui.features.settings.components.SettingsItem
 import com.javierreansyah.pinecone.ui.features.settings.components.SettingsSwitchItem
@@ -488,12 +490,10 @@ private fun SettingsTopBar(
     )
 }
 
-// Keep section content in the caller's composition scope: it populates a transient
-// SegmentedColumn builder, so restarting it independently would leave rendered rows stale.
 @Composable
-private inline fun SettingsSection(
+private fun SettingsSection(
     title: String,
-    content: @Composable SegmentedListScope.() -> Unit,
+    content: @Composable () -> Unit,
 ) {
     Column {
         Text(
@@ -502,11 +502,10 @@ private inline fun SettingsSection(
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(bottom = 8.dp),
         )
-        SegmentedColumn(
-            topAlignAccessories = true,
+        Column(
+            verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
             modifier = Modifier.padding(bottom = 16.dp),
-            content = content
-        )
+        ) { content() }
     }
 }
 
@@ -526,7 +525,8 @@ private fun LanguageSettingsSection(
         val localeKey = if (settings.locale == "in") "id" else settings.locale
 
         SettingsItem(
-            content = { Text(languageLabel, style = MaterialTheme.typography.titleMedium) },
+            shapes = ListItemDefaults.segmentedShapes(index = 0, count = 1),
+            content = { Text(languageLabel) },
             value = localeKey.takeIf { it in languagesMap } ?: "System",
             options = languagesMap.keys.toList(),
             onSelected = onLanguageSelected,
@@ -554,10 +554,10 @@ private fun LibrarySettingsSection(
             CoverDisplayMode.Cover to stringResource(R.string.settings_cover_cover),
         )
         SettingsItem(
+            shapes = ListItemDefaults.segmentedShapes(index = 0, count = 3),
             content = {
                 Text(
                     stringResource(R.string.settings_cover_display),
-                    style = MaterialTheme.typography.titleMedium
                 )
             },
             value = settings.coverDisplayMode,
@@ -567,6 +567,7 @@ private fun LibrarySettingsSection(
             leadingIcon = { Icon(MaterialSymbols.Outlined.Image, contentDescription = null) },
         )
         SettingsSwitchItem(
+            shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
             title = stringResource(R.string.settings_library_bottom_navigation),
             summary = stringResource(R.string.settings_library_bottom_navigation_summary),
             checked = settings.showLibraryBottomNavigation,
@@ -574,6 +575,7 @@ private fun LibrarySettingsSection(
             icon = MaterialSymbols.Outlined.Swap_horiz,
         )
         SettingsSwitchItem(
+            shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
             title = stringResource(R.string.settings_unsorted_enabled),
             summary = stringResource(R.string.settings_unsorted_enabled_summary),
             checked = settings.unsortedEnabled,
@@ -591,6 +593,7 @@ private fun SpaceSettingsSection(
 ) {
     SettingsSection(stringResource(R.string.settings_space)) {
         SettingsSwitchItem(
+            shapes = ListItemDefaults.segmentedShapes(index = 0, count = 2),
             title = stringResource(R.string.settings_spaces_enabled),
             summary = stringResource(R.string.settings_spaces_enabled_summary),
             checked = settings.spacesEnabled,
@@ -598,6 +601,7 @@ private fun SpaceSettingsSection(
             icon = MaterialSymbols.Outlined.Forest,
         )
         SettingsSwitchItem(
+            shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
             title = stringResource(R.string.settings_hide_all_space),
             summary = stringResource(R.string.settings_hide_all_space_summary),
             checked = !settings.showAllSpaces,
@@ -624,7 +628,8 @@ private fun ThemeSettingsSection(
 
         val themeLabel = stringResource(R.string.settings_theme_mode)
         SettingsItem(
-            content = { Text(themeLabel, style = MaterialTheme.typography.titleMedium) },
+            shapes = ListItemDefaults.segmentedShapes(index = 0, count = 3),
+            content = { Text(themeLabel) },
             value = settings.themeMode,
             options = themeOptionsMap.keys.toList(),
             onSelected = onThemeModeSelected,
@@ -653,48 +658,54 @@ private fun ThemeSettingsSection(
             }
         }
 
-        item(
+        SegmentedListItem(
+            verticalAlignment = Alignment.Top,
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+            colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+            shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
             onClick = onColorPaletteClick,
             leadingContent = {
-                Icon(
-                    imageVector = MaterialSymbols.Outlined.Palette,
-                    contentDescription = null,
-                )
+                ListItemAccessory {
+                    Icon(
+                        imageVector = MaterialSymbols.Outlined.Palette,
+                        contentDescription = null,
+                    )
+                }
             },
             content = {
                 Text(
                     colorPaletteLabel,
-                    style = MaterialTheme.typography.titleMedium,
                 )
             },
             supportingContent = {
                 Text(
                     colorPaletteValue,
-                    style = MaterialTheme.typography.bodyMedium,
                 )
             },
             trailingContent = {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    if (!isDynamic && parsedColor != null) {
-                        Box(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .clip(CircleShape)
-                                .background(parsedColor)
-                                .border(
-                                    1.dp,
-                                    MaterialTheme.colorScheme.outlineVariant,
-                                    CircleShape,
-                                ),
+                ListItemAccessory {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        if (!isDynamic && parsedColor != null) {
+                            Box(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .clip(CircleShape)
+                                    .background(parsedColor)
+                                    .border(
+                                        1.dp,
+                                        MaterialTheme.colorScheme.outlineVariant,
+                                        CircleShape,
+                                    ),
+                            )
+                        }
+                        Icon(
+                            imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
+                            contentDescription = null,
                         )
                     }
-                    Icon(
-                        imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                        contentDescription = null,
-                    )
                 }
             },
         )
@@ -707,10 +718,10 @@ private fun ThemeSettingsSection(
 
         val themeContrastLabel = stringResource(R.string.settings_theme_contrast)
         SettingsItem(
+            shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
             content = {
                 Text(
                     themeContrastLabel,
-                    style = MaterialTheme.typography.titleMedium,
                 )
             },
             value = settings.themeContrast,
@@ -752,37 +763,43 @@ private fun BackupSettingsSection(
                 modifier = Modifier.padding(bottom = 8.dp),
             )
 
-            SegmentedColumn(
-                topAlignAccessories = true,
+            Column(
+                verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
                 modifier = Modifier.padding(bottom = 16.dp)
             ) {
                 val backupLocationLabel = stringResource(R.string.settings_backup_location)
-                item(
+                SegmentedListItem(
+                    verticalAlignment = Alignment.Top,
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                    colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                    shapes = ListItemDefaults.segmentedShapes(index = 0, count = 5),
                     onClick = onBackupLocationClick,
                     leadingContent = {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.Folder,
-                            contentDescription = null,
-                        )
+                        ListItemAccessory {
+                            Icon(
+                                imageVector = MaterialSymbols.Outlined.Folder,
+                                contentDescription = null,
+                            )
+                        }
                     },
                     content = {
                         Text(
                             backupLocationLabel,
-                            style = MaterialTheme.typography.titleMedium,
                         )
                     },
                     supportingContent = {
                         Text(
                             if (hasPermission) stringResource(R.string.settings_option_selected)
                             else stringResource(R.string.settings_option_not_selected),
-                            style = MaterialTheme.typography.bodyMedium,
                         )
                     },
                     trailingContent = {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                            contentDescription = null,
-                        )
+                        ListItemAccessory {
+                            Icon(
+                                imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
+                                contentDescription = null,
+                            )
+                        }
                     },
                 )
 
@@ -797,10 +814,10 @@ private fun BackupSettingsSection(
 
                 val autoBackupFrequencyLabel = stringResource(R.string.settings_auto_backup_freq)
                 SettingsItem(
+                    shapes = ListItemDefaults.segmentedShapes(index = 1, count = 5),
                     content = {
                         Text(
                             autoBackupFrequencyLabel,
-                            style = MaterialTheme.typography.titleMedium,
                         )
                     },
                     value = settings.autoBackupFrequency,
@@ -827,19 +844,24 @@ private fun BackupSettingsSection(
                     stringResource(R.string.settings_option_never)
                 }
 
-                item(
+                SegmentedListItem(
+                    verticalAlignment = Alignment.Top,
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                    colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                    shapes = ListItemDefaults.segmentedShapes(index = 2, count = 5),
                     enabled = hasPermission,
                     onClick = onBackupClick,
                     leadingContent = {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.Save,
-                            contentDescription = null,
-                        )
+                        ListItemAccessory {
+                            Icon(
+                                imageVector = MaterialSymbols.Outlined.Save,
+                                contentDescription = null,
+                            )
+                        }
                     },
                     content = {
                         Text(
                             stringResource(R.string.settings_backup_now),
-                            style = MaterialTheme.typography.titleMedium,
                         )
                     },
                     supportingContent = {
@@ -853,7 +875,6 @@ private fun BackupSettingsSection(
                                 } else {
                                     stringResource(R.string.nav_setup_now)
                                 },
-                                style = MaterialTheme.typography.bodyMedium,
                             )
                             AnimatedVisibility(visible = isBackingUp) {
                                 LinearWavyProgressIndicator(
@@ -865,33 +886,39 @@ private fun BackupSettingsSection(
                         }
                     },
                     trailingContent = {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                            contentDescription = null,
-                        )
+                        ListItemAccessory {
+                            Icon(
+                                imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
+                                contentDescription = null,
+                            )
+                        }
                     },
                 )
 
-                item(
+                SegmentedListItem(
+                    verticalAlignment = Alignment.Top,
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                    colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                    shapes = ListItemDefaults.segmentedShapes(index = 3, count = 5),
                     enabled = hasPermission,
                     onClick = onRestoreClick,
                     leadingContent = {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.History,
-                            contentDescription = null,
-                        )
+                        ListItemAccessory {
+                            Icon(
+                                imageVector = MaterialSymbols.Outlined.History,
+                                contentDescription = null,
+                            )
+                        }
                     },
                     content = {
                         Text(
                             stringResource(R.string.settings_restore),
-                            style = MaterialTheme.typography.titleMedium,
                         )
                     },
                     supportingContent = {
                         Column {
                             Text(
                                 stringResource(R.string.settings_restore_summary),
-                                style = MaterialTheme.typography.bodyMedium,
                             )
                             AnimatedVisibility(visible = isRestoring) {
                                 LinearWavyProgressIndicator(
@@ -903,36 +930,44 @@ private fun BackupSettingsSection(
                         }
                     },
                     trailingContent = {
-                        Icon(
-                            imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                            contentDescription = null,
-                        )
+                        ListItemAccessory {
+                            Icon(
+                                imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
+                                contentDescription = null,
+                            )
+                        }
                     },
                 )
 
-                item(
+                SegmentedListItem(
+                    verticalAlignment = Alignment.Top,
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                    colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                    shapes = ListItemDefaults.segmentedShapes(index = 4, count = 5),
                     enabled = hasPermission,
                     onClick = onImportClick,
                     leadingContent = {
-                        Icon(MaterialSymbols.Outlined.Folder, contentDescription = null)
+                        ListItemAccessory {
+                            Icon(MaterialSymbols.Outlined.Folder, contentDescription = null)
+                        }
                     },
                     content = {
                         Text(
                             stringResource(R.string.settings_import_backup),
-                            style = MaterialTheme.typography.titleMedium,
                         )
                     },
                     supportingContent = {
                         Text(
                             stringResource(R.string.settings_import_backup_summary),
-                            style = MaterialTheme.typography.bodyMedium,
                         )
                     },
                     trailingContent = {
-                        Icon(
-                            MaterialSymbols.Outlined.Keyboard_arrow_right,
-                            contentDescription = null,
-                        )
+                        ListItemAccessory {
+                            Icon(
+                                MaterialSymbols.Outlined.Keyboard_arrow_right,
+                                contentDescription = null,
+                            )
+                        }
                     },
                 )
             }
@@ -953,8 +988,13 @@ private fun AboutSettingsSection(
             modifier = Modifier.padding(bottom = 8.dp),
         )
 
-        SegmentedColumn(topAlignAccessories = true, modifier = Modifier.padding(bottom = 16.dp)) {
-            item(
+        Column(
+            modifier = Modifier.padding(bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+        ) {
+            SegmentedListItem(
+                colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                shapes = ListItemDefaults.segmentedShapes(index = 0, count = 1),
                 onClick = onNavigateToAbout,
                 leadingContent = {
                     Icon(
@@ -965,7 +1005,6 @@ private fun AboutSettingsSection(
                 content = {
                     Text(
                         stringResource(R.string.settings_about_app),
-                        style = MaterialTheme.typography.titleMedium,
                     )
                 },
                 trailingContent = {
@@ -1082,10 +1121,15 @@ private fun RestoreBottomSheet(
                                 style = MaterialTheme.typography.titleSmall,
                                 color = MaterialTheme.colorScheme.primary,
                             )
-                            SegmentedColumn(topAlignAccessories = true) {
+                            Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
                                 backups.sortedByDescending { backup -> backup.timestamp }
-                                    .forEach { backup ->
-                                        item(
+                                    .forEachIndexed { index, backup ->
+                                        SegmentedListItem(
+                                            colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                                            shapes = ListItemDefaults.segmentedShapes(
+                                                index = index,
+                                                count = backups.size
+                                            ),
                                             onClick = {
                                                 onSelectBackup(backup)
                                                 scope.launch { bottomSheetState.hide() }
@@ -1104,7 +1148,6 @@ private fun RestoreBottomSheet(
                                             content = {
                                                 Text(
                                                     text = backup.formattedDate,
-                                                    style = MaterialTheme.typography.bodyLarge,
                                                 )
                                             },
                                             trailingContent = {

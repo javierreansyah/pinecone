@@ -4,18 +4,23 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearWavyProgressIndicator
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -25,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -39,8 +45,8 @@ import com.javierreansyah.pinecone.data.local.preferences.InstalledDictionary
 import com.javierreansyah.pinecone.data.repository.dictionary.DictionaryState
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
+import com.javierreansyah.pinecone.ui.components.ListItemAccessory
 import com.javierreansyah.pinecone.ui.components.RenameDeleteMenu
-import com.javierreansyah.pinecone.ui.components.SegmentedLazyColumn
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 
 @Composable
@@ -244,13 +250,20 @@ private fun DictionariesList(
     onDeleteClick: (InstalledDictionary) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    SegmentedLazyColumn(
+    val installing = uiState.importState is DictionaryState.Loading
+    val count = uiState.installedDictionaries.size + if (installing) 1 else 0
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
         modifier = modifier.padding(horizontal = 16.dp),
         contentPadding = PaddingValues(bottom = LocalAudioPlayerBottomPadding.current),
     ) {
-        uiState.installedDictionaries.forEach { dict ->
-            item(
-                key = dict.id,
+        itemsIndexed(uiState.installedDictionaries, key = { _, dict -> dict.id }) { index, dict ->
+            SegmentedListItem(
+                verticalAlignment = Alignment.Top,
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                modifier = Modifier.animateItem(),
+                shapes = ListItemDefaults.segmentedShapes(index = index, count = count),
                 content = { Text(dict.name) },
                 supportingContent = {
                     Text(
@@ -262,31 +275,37 @@ private fun DictionariesList(
                     )
                 },
                 trailingContent = {
-                    RenameDeleteMenu(
-                        isMenuExpanded = selectedItemForMenu == dict.id,
-                        onMoreClick = { onMoreClick(dict.id) },
-                        onMenuDismiss = onMenuDismiss,
-                        onRenameClick = { onRenameClick(dict) },
-                        onDeleteClick = { onDeleteClick(dict) },
-                    )
+                    ListItemAccessory {
+                        RenameDeleteMenu(
+                            isMenuExpanded = selectedItemForMenu == dict.id,
+                            onMoreClick = { onMoreClick(dict.id) },
+                            onMenuDismiss = onMenuDismiss,
+                            onRenameClick = { onRenameClick(dict) },
+                            onDeleteClick = { onDeleteClick(dict) },
+                        )
+                    }
                 },
             )
         }
 
-        if (uiState.importState is DictionaryState.Loading) {
-            item(
-                key = "import",
-                content = { Text(stringResource(R.string.dictionaries_installing)) },
-                supportingContent = {
-                    LinearWavyProgressIndicator(
-                        progress = { animatedProgress },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp),
-                    )
-                },
-                trailingContent = { Text("${(animatedProgress * 100).toInt()}%") },
-            )
+        if (installing) {
+            item(key = "import") {
+                SegmentedListItem(
+                    colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                    modifier = Modifier.animateItem(),
+                    shapes = ListItemDefaults.segmentedShapes(index = count - 1, count = count),
+                    content = { Text(stringResource(R.string.dictionaries_installing)) },
+                    supportingContent = {
+                        LinearWavyProgressIndicator(
+                            progress = { animatedProgress },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
+                        )
+                    },
+                    trailingContent = { Text("${(animatedProgress * 100).toInt()}%") },
+                )
+            }
         }
 
     }
