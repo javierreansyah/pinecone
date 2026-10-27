@@ -79,6 +79,7 @@ import com.composables.icons.materialsymbols.outlined.Visibility_off
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.CoverDisplayMode
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
+import com.javierreansyah.pinecone.data.repository.backup.BackupProgress
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.components.ListItemAccessory
 import com.javierreansyah.pinecone.ui.features.settings.components.ColorSchemePickerDialog
@@ -111,7 +112,9 @@ fun SettingsScreen(
 
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val isBackingUp by viewModel.isBackingUp.collectAsStateWithLifecycle()
+    val backupProgress by viewModel.backupProgress.collectAsStateWithLifecycle()
     val isRestoring by viewModel.isRestoring.collectAsStateWithLifecycle()
+    val restoreProgress by viewModel.restoreProgress.collectAsStateWithLifecycle()
     val availableBackups by viewModel.availableBackups.collectAsStateWithLifecycle()
 
     var showColorPicker by remember { mutableStateOf(value = false) }
@@ -119,7 +122,6 @@ fun SettingsScreen(
     var showRestoreWarning by remember { mutableStateOf(value = false) }
     var showRestoreBottomSheet by remember { mutableStateOf(value = false) }
     var selectedBackupToRestore by remember { mutableStateOf<BackupFile?>(null) }
-    var selectedBackupToExport by remember { mutableStateOf<BackupFile?>(null) }
 
     val folderPickerLauncher = rememberLauncherForActivityResult(
         contract = object : ActivityResultContracts.OpenDocumentTree() {
@@ -135,38 +137,6 @@ fun SettingsScreen(
                 Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
             context.contentResolver.takePersistableUriPermission(it, takeFlags)
             viewModel.updateSettings { current -> current.copy(backupFolderUri = it.toString()) }
-        }
-    }
-
-    val exportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/octet-stream"),
-    ) { destination ->
-        val selected = selectedBackupToExport
-        if (destination != null && selected != null) {
-            viewModel.exportBackup(
-                selected.uri, destination,
-                onSuccess = {
-                    Toast.makeText(context, navBackupSuccessMsg, Toast.LENGTH_SHORT).show()
-                },
-            ) {
-                Toast.makeText(context, navBackupFailedMsg, Toast.LENGTH_SHORT).show()
-            }
-        }
-        selectedBackupToExport = null
-    }
-
-    val importLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument(),
-    ) { source ->
-        source?.let {
-            viewModel.importBackup(
-                it,
-                onSuccess = {
-                    Toast.makeText(context, navBackupSuccessMsg, Toast.LENGTH_SHORT).show()
-                },
-            ) {
-                Toast.makeText(context, navBackupFailedMsg, Toast.LENGTH_SHORT).show()
-            }
         }
     }
 
@@ -192,7 +162,9 @@ fun SettingsScreen(
         settings = settings,
         hasPermission = hasPermission,
         isBackingUp = isBackingUp,
+        backupProgress = backupProgress,
         isRestoring = isRestoring,
+        restoreProgress = restoreProgress,
         onNavigateBack = onNavigateBack,
         onNavigateToAbout = onNavigateToAbout,
         onRestoreDefaultClick = { showRestoreDefaultWarning = true },
@@ -272,9 +244,6 @@ fun SettingsScreen(
                 viewModel.loadBackups()
                 showRestoreBottomSheet = true
             }
-        },
-        onImportClick = {
-            importLauncher.launch(arrayOf("application/octet-stream", "application/zip"))
         },
     )
 
@@ -373,10 +342,7 @@ fun SettingsScreen(
                 showRestoreBottomSheet = false
                 showRestoreWarning = true
             },
-        ) { backup ->
-            selectedBackupToExport = backup
-            exportLauncher.launch("pinecone_${backup.name}.pine")
-        }
+        )
     }
 }
 
@@ -385,7 +351,9 @@ private fun SettingsContent(
     settings: ReaderSettings,
     hasPermission: Boolean,
     isBackingUp: Boolean,
+    backupProgress: BackupProgress,
     isRestoring: Boolean,
+    restoreProgress: BackupProgress,
     onNavigateBack: () -> Unit,
     onNavigateToAbout: () -> Unit,
     onRestoreDefaultClick: () -> Unit,
@@ -402,7 +370,6 @@ private fun SettingsContent(
     onBackupLocationClick: () -> Unit,
     onBackupClick: () -> Unit,
     onRestoreClick: () -> Unit,
-    onImportClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -449,12 +416,13 @@ private fun SettingsContent(
                 settings = settings,
                 hasPermission = hasPermission,
                 isBackingUp = isBackingUp,
+                backupProgress = backupProgress,
                 isRestoring = isRestoring,
+                restoreProgress = restoreProgress,
                 onAutoBackupFrequencySelected = onAutoBackupFrequencySelected,
                 onBackupLocationClick = onBackupLocationClick,
                 onBackupClick = onBackupClick,
                 onRestoreClick = onRestoreClick,
-                onImportClick = onImportClick,
             )
 
             AboutSettingsSection(
@@ -661,7 +629,10 @@ private fun ThemeSettingsSection(
         SegmentedListItem(
             verticalAlignment = Alignment.Top,
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-            colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+            colors = ListItemDefaults.segmentedColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+            ),
             shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
             onClick = onColorPaletteClick,
             leadingContent = {
@@ -743,12 +714,13 @@ private fun BackupSettingsSection(
     settings: ReaderSettings,
     hasPermission: Boolean,
     isBackingUp: Boolean,
+    backupProgress: BackupProgress,
     isRestoring: Boolean,
+    restoreProgress: BackupProgress,
     onAutoBackupFrequencySelected: (String) -> Unit,
     onBackupLocationClick: () -> Unit,
     onBackupClick: () -> Unit,
     onRestoreClick: () -> Unit,
-    onImportClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -771,8 +743,11 @@ private fun BackupSettingsSection(
                 SegmentedListItem(
                     verticalAlignment = Alignment.Top,
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-                    colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                    shapes = ListItemDefaults.segmentedShapes(index = 0, count = 5),
+                    colors = ListItemDefaults.segmentedColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    ),
+                    shapes = ListItemDefaults.segmentedShapes(index = 0, count = 4),
                     onClick = onBackupLocationClick,
                     leadingContent = {
                         ListItemAccessory {
@@ -814,7 +789,7 @@ private fun BackupSettingsSection(
 
                 val autoBackupFrequencyLabel = stringResource(R.string.settings_auto_backup_freq)
                 SettingsItem(
-                    shapes = ListItemDefaults.segmentedShapes(index = 1, count = 5),
+                    shapes = ListItemDefaults.segmentedShapes(index = 1, count = 4),
                     content = {
                         Text(
                             autoBackupFrequencyLabel,
@@ -847,9 +822,12 @@ private fun BackupSettingsSection(
                 SegmentedListItem(
                     verticalAlignment = Alignment.Top,
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-                    colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                    shapes = ListItemDefaults.segmentedShapes(index = 2, count = 5),
-                    enabled = hasPermission,
+                    colors = ListItemDefaults.segmentedColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    ),
+                    shapes = ListItemDefaults.segmentedShapes(index = 2, count = 4),
+                    enabled = hasPermission && !isBackingUp && !isRestoring,
                     onClick = onBackupClick,
                     leadingContent = {
                         ListItemAccessory {
@@ -877,11 +855,25 @@ private fun BackupSettingsSection(
                                 },
                             )
                             AnimatedVisibility(visible = isBackingUp) {
-                                LinearWavyProgressIndicator(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 8.dp),
-                                )
+                                Column {
+                                    Text(
+                                        if (backupProgress.totalFiles == 0) {
+                                            stringResource(R.string.settings_backup_preparing)
+                                        } else {
+                                            stringResource(
+                                                R.string.settings_backup_progress,
+                                                backupProgress.completedFiles,
+                                                backupProgress.totalFiles,
+                                            )
+                                        },
+                                    )
+                                    LinearWavyProgressIndicator(
+                                        progress = { backupProgress.fraction },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 8.dp),
+                                    )
+                                }
                             }
                         }
                     },
@@ -898,9 +890,12 @@ private fun BackupSettingsSection(
                 SegmentedListItem(
                     verticalAlignment = Alignment.Top,
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-                    colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                    shapes = ListItemDefaults.segmentedShapes(index = 3, count = 5),
-                    enabled = hasPermission,
+                    colors = ListItemDefaults.segmentedColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    ),
+                    shapes = ListItemDefaults.segmentedShapes(index = 3, count = 4),
+                    enabled = hasPermission && !isBackingUp && !isRestoring,
                     onClick = onRestoreClick,
                     leadingContent = {
                         ListItemAccessory {
@@ -921,11 +916,25 @@ private fun BackupSettingsSection(
                                 stringResource(R.string.settings_restore_summary),
                             )
                             AnimatedVisibility(visible = isRestoring) {
-                                LinearWavyProgressIndicator(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 8.dp),
-                                )
+                                Column {
+                                    Text(
+                                        if (restoreProgress.totalFiles == 0) {
+                                            stringResource(R.string.settings_restore_preparing)
+                                        } else {
+                                            stringResource(
+                                                R.string.settings_backup_progress,
+                                                restoreProgress.completedFiles,
+                                                restoreProgress.totalFiles,
+                                            )
+                                        },
+                                    )
+                                    LinearWavyProgressIndicator(
+                                        progress = { restoreProgress.fraction },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 8.dp),
+                                    )
+                                }
                             }
                         }
                     },
@@ -933,38 +942,6 @@ private fun BackupSettingsSection(
                         ListItemAccessory {
                             Icon(
                                 imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                                contentDescription = null,
-                            )
-                        }
-                    },
-                )
-
-                SegmentedListItem(
-                    verticalAlignment = Alignment.Top,
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-                    colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                    shapes = ListItemDefaults.segmentedShapes(index = 4, count = 5),
-                    enabled = hasPermission,
-                    onClick = onImportClick,
-                    leadingContent = {
-                        ListItemAccessory {
-                            Icon(MaterialSymbols.Outlined.Folder, contentDescription = null)
-                        }
-                    },
-                    content = {
-                        Text(
-                            stringResource(R.string.settings_import_backup),
-                        )
-                    },
-                    supportingContent = {
-                        Text(
-                            stringResource(R.string.settings_import_backup_summary),
-                        )
-                    },
-                    trailingContent = {
-                        ListItemAccessory {
-                            Icon(
-                                MaterialSymbols.Outlined.Keyboard_arrow_right,
                                 contentDescription = null,
                             )
                         }
@@ -993,7 +970,10 @@ private fun AboutSettingsSection(
             verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
         ) {
             SegmentedListItem(
-                colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                colors = ListItemDefaults.segmentedColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                ),
                 shapes = ListItemDefaults.segmentedShapes(index = 0, count = 1),
                 onClick = onNavigateToAbout,
                 leadingContent = {
@@ -1074,7 +1054,6 @@ private fun RestoreBottomSheet(
     availableBackups: List<BackupFile>,
     onDismiss: () -> Unit,
     onSelectBackup: (BackupFile) -> Unit,
-    onExportBackup: (BackupFile) -> Unit,
 ) {
     val bottomSheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
     val scope = rememberCoroutineScope()
@@ -1125,7 +1104,11 @@ private fun RestoreBottomSheet(
                                 backups.sortedByDescending { backup -> backup.timestamp }
                                     .forEachIndexed { index, backup ->
                                         SegmentedListItem(
-                                            colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            colors = ListItemDefaults.segmentedColors(
+                                                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                                disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                            ),
                                             shapes = ListItemDefaults.segmentedShapes(
                                                 index = index,
                                                 count = backups.size
@@ -1151,18 +1134,10 @@ private fun RestoreBottomSheet(
                                                 )
                                             },
                                             trailingContent = {
-                                                Row {
-                                                    IconButton(onClick = { onExportBackup(backup) }) {
-                                                        Icon(
-                                                            imageVector = MaterialSymbols.Outlined.Save,
-                                                            contentDescription = stringResource(R.string.settings_export_backup),
-                                                        )
-                                                    }
-                                                    Icon(
-                                                        imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                                                        contentDescription = null,
-                                                    )
-                                                }
+                                                Icon(
+                                                    imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
+                                                    contentDescription = null,
+                                                )
                                             },
                                         )
                                     }

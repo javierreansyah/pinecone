@@ -67,8 +67,11 @@ class BackupRepository @Inject constructor(
     private val resolver get() = context.contentResolver
     private val json = Json { encodeDefaults = true; ignoreUnknownKeys = false; isLenient = false }
 
-    suspend fun createSnapshot(manual: Boolean): BackupResult = withContext(ioDispatcher) {
-        operationMutex.withLock { createSnapshotLocked(manual) }
+    suspend fun createSnapshot(
+        manual: Boolean,
+        onProgress: (BackupProgress) -> Unit = {},
+    ): BackupResult = withContext(ioDispatcher) {
+        operationMutex.withLock { createSnapshotLocked(manual, onProgress) }
     }
 
     suspend fun listSnapshots(): List<BackupSnapshotInfo> = withContext(ioDispatcher) {
@@ -85,13 +88,16 @@ class BackupRepository @Inject constructor(
         }
     }
 
-    suspend fun restoreSnapshot(uri: Uri): BackupResult = withContext(ioDispatcher) {
+    suspend fun restoreSnapshot(
+        uri: Uri,
+        onProgress: (BackupProgress) -> Unit = {},
+    ): BackupResult = withContext(ioDispatcher) {
         operationMutex.withLock {
             try {
                 completePendingSettingsRestoreLocked()
                 val dirs = vault.open(create = false)
                     ?: return@withLock BackupResult.Failure(BackupFailure.BACKUP_LOCATION_MISSING)
-                restoreLocked(readSnapshot(uri), dirs)
+                restoreLocked(readSnapshot(uri), dirs, onProgress)
             } catch (e: UnsupportedBackupException) {
                 BackupResult.Failure(BackupFailure.UNSUPPORTED_VERSION, e)
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
@@ -143,7 +149,10 @@ class BackupRepository @Inject constructor(
         val reused: Boolean,
     )
 
-    private suspend fun createSnapshotLocked(manual: Boolean): BackupResult {
+    private suspend fun createSnapshotLocked(
+        manual: Boolean,
+        onProgress: (BackupProgress) -> Unit,
+    ): BackupResult {
         val leases = mutableListOf<AutoCloseable>()
         val started = System.currentTimeMillis()
         var bytesWritten = 0L
@@ -173,6 +182,20 @@ class BackupRepository @Inject constructor(
                 readSnapshots(dirs).maxByOrNull { (_, itSecond) -> itSecond.createdAt }?.second
             if (!manual && previous?.stateFingerprint == fingerprint) return BackupResult.Skipped
 
+            val rawFiles = payload.books.flatMap { book ->
+                listOfNotNull(
+                    VaultObjectKind.BOOK to File(book.filePath).canonicalPath,
+                    book.coverPath?.let { VaultObjectKind.COVER to File(it).canonicalPath },
+                )
+            } + payload.renditions.map { VaultObjectKind.BOOK to File(it.filePath).canonicalPath }
+            // The snapshot is the last file; report it complete only after maintenance finishes.
+            val totalFiles = rawFiles.distinct().size + settings.installedDictionaries.size + 1
+            var completedFiles = 0
+            fun fileCompleted() {
+                onProgress(BackupProgress(++completedFiles, totalFiles))
+            }
+            onProgress(BackupProgress(totalFiles = totalFiles))
+
             val objects = mutableMapOf<Pair<VaultObjectKind, String>, VaultObject>()
             fun rawObject(
                 source: File,
@@ -183,6 +206,7 @@ class BackupRepository @Inject constructor(
                 objects.getOrPut(kind to source.canonicalPath) {
                     reuseOrWriteRaw(source, kind, folder, prior).also {
                         if (it.reused) bytesReused += it.info.storedSize else bytesWritten += it.info.storedSize
+                        fileCompleted()
                     }.info
                 }
 
@@ -239,6 +263,7 @@ class BackupRepository @Inject constructor(
                     else writeDictionaryObject(source, dirs.dictionaries)
                     if (objectResultReused) bytesReused += objectResultInfo.storedSize
                     else bytesWritten += objectResultInfo.storedSize
+                    fileCompleted()
                     DictionaryObjectReference(dictionary, objectResultInfo)
                 }
             phases["objects"] = System.currentTimeMillis() - phaseStarted
@@ -281,6 +306,7 @@ class BackupRepository @Inject constructor(
             if (!pruneObjects(dirs)) warnings += BackupFailure.IO_ERROR
             phases["maintenance"] = System.currentTimeMillis() - phaseStarted
             preferences.markBackup(createdAt, revision)
+            fileCompleted()
             val duration = System.currentTimeMillis() - started
             BackupResult.Success(id, bytesWritten, bytesReused, duration, phases, warnings)
         } catch (e: SecurityException) {
@@ -635,15 +661,32 @@ class BackupRepository @Inject constructor(
         }
     }
 
-    private suspend fun restoreLocked(snapshot: VaultSnapshot, dirs: VaultDirs): BackupResult {
+    private suspend fun restoreLocked(
+        snapshot: VaultSnapshot,
+        dirs: VaultDirs,
+        onProgress: (BackupProgress) -> Unit,
+    ): BackupResult {
+        val totalFiles = snapshot.books.size + snapshot.books.count { it.cover != null } +
+                snapshot.dictionaries.size + snapshot.library.renditions.count { it.key != "original" } + 1
+        var completedFiles = 0
+        fun fileCompleted() {
+            onProgress(BackupProgress(++completedFiles, totalFiles))
+        }
+        onProgress(BackupProgress(totalFiles = totalFiles))
         libraryRepository.withAssetTransaction {
             database.withTransaction {
                 database.operationDao().beginRestore(); database.operationDao().invalidateAll()
             }
         }
-        return try {
+        val result = try {
             dictionaries.withExclusiveFiles {
-                libraryRepository.withAssetTransaction { restoreStaged(snapshot, dirs) }
+                libraryRepository.withAssetTransaction {
+                    restoreStaged(
+                        snapshot,
+                        dirs,
+                        ::fileCompleted
+                    )
+                }
             }
         } finally {
             withContext(kotlinx.coroutines.NonCancellable) {
@@ -651,9 +694,16 @@ class BackupRepository @Inject constructor(
                     .finishRestore()
             }
         }
+        // Finish the snapshot metadata only after settings, cleanup, and the restore lock complete.
+        if (result is BackupResult.Success) fileCompleted()
+        return result
     }
 
-    private suspend fun restoreStaged(snapshot: VaultSnapshot, dirs: VaultDirs): BackupResult {
+    private suspend fun restoreStaged(
+        snapshot: VaultSnapshot,
+        dirs: VaultDirs,
+        onFileRestored: () -> Unit,
+    ): BackupResult {
         val started = System.currentTimeMillis()
         val stagedBooks = mutableListOf<File>()
         val dictionaryStages = mutableListOf<DictionaryStage>()
@@ -670,12 +720,14 @@ class BackupRepository @Inject constructor(
                     File(booksDir, "${book.id}_$token.${refBook.fileName.substringAfterLast('.')}")
                 copyRawObject(dirs.books, refBook, bookTarget)
                 stagedBooks += bookTarget
+                onFileRestored()
                 val coverTarget = refCover?.let { cover ->
                     File(
                         coversDir,
                         "${book.id}_$token.${cover.fileName.substringAfterLast('.')}",
                     ).also {
                         copyRawObject(dirs.covers, cover, it); stagedBooks += it
+                        onFileRestored()
                     }
                 }
                 book.copy(filePath = bookTarget.absolutePath, coverPath = coverTarget?.absolutePath)
@@ -688,6 +740,7 @@ class BackupRepository @Inject constructor(
                 verifyDictionaryObject(objectFile, referenceObjectInfo, staged)
                 validateDictionary(staged)
                 dictionaryStages += DictionaryStage(referenceDictionary, staged)
+                onFileRestored()
             }
             val oldBooks = database.bookDao().getAllBooksSync()
             val oldRenditions = database.publicationDao().allRenditions()
@@ -701,6 +754,7 @@ class BackupRepository @Inject constructor(
                     "${ref.sha256}_$token.${ref.fileName.substringAfterLast('.')}"
                 ).also {
                     copyRawObject(dirs.books, ref, it); stagedBooks += it
+                    onFileRestored()
                 }
                 require(
                     target.inputStream()

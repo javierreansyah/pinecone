@@ -13,7 +13,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -35,7 +34,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ButtonGroup
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.IconButtonShapes
+import androidx.compose.material3.IconToggleButtonShapes
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -72,7 +76,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -330,30 +333,9 @@ private fun AudioTransportButtons(
             customItem(
                 buttonGroupContent = {
                     val interactionSource = sources[index]
-                    val isPressed by interactionSource.collectIsPressedAsState()
-
-                    // Preset theme fast expressive motion specs
-                    val spatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
-                    val cornerSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<Dp>()
                     val effectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
                     val iconSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
-
-                    val scale by animateFloatAsState(
-                        targetValue = if (isPressed) 0.93f else 1f,
-                        animationSpec = spatialSpec,
-                        label = "transportButtonScale_$index",
-                    )
-
                     val isCenter = index == 1
-                    val normalCorner = if (isCenter) 28.dp else 38.dp
-                    val pressedCorner = if (isCenter) 18.dp else 20.dp
-
-                    val cornerRadius by animateDpAsState(
-                        targetValue = if (isPressed) pressedCorner else normalCorner,
-                        animationSpec = cornerSpatialSpec,
-                        label = "transportButtonCorner_$index",
-                    )
-                    val shape = RoundedCornerShape(cornerRadius)
 
                     val containerColor = if (isCenter) {
                         MaterialTheme.colorScheme.tertiaryContainer
@@ -366,11 +348,16 @@ private fun AudioTransportButtons(
                         MaterialTheme.colorScheme.onSurface
                     }
 
-                    Surface(
+                    FilledIconButton(
                         onClick = action,
-                        shape = shape,
-                        color = containerColor,
-                        contentColor = contentColor,
+                        shapes = IconButtonShapes(
+                            shape = RoundedCornerShape(if (isCenter) 28.dp else 38.dp),
+                            pressedShape = RoundedCornerShape(if (isCenter) 18.dp else 20.dp),
+                        ),
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = containerColor,
+                            contentColor = contentColor,
+                        ),
                         interactionSource = interactionSource,
                         modifier = Modifier
                             .weight(if (isCenter) 1.25f else 1f)
@@ -378,44 +365,35 @@ private fun AudioTransportButtons(
                                 interactionSource = interactionSource,
                                 compressionLimit = 36.dp
                             )
-                            .height(76.dp)
-                            .graphicsLayer {
-                                scaleX = scale
-                                scaleY = scale
-                            },
+                            .height(76.dp),
                     ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            if (isCenter) {
-                                AnimatedContent(
-                                    targetState = playing,
-                                    transitionSpec = {
-                                        fadeIn(animationSpec = effectsSpec) +
-                                                scaleIn(
-                                                    initialScale = 0.75f,
-                                                    animationSpec = iconSpatialSpec
-                                                ) togetherWith fadeOut(animationSpec = effectsSpec) + scaleOut(
-                                            targetScale = 0.75f,
-                                            animationSpec = iconSpatialSpec
-                                        )
-                                    },
-                                    label = "playPauseTransition",
-                                ) { isPlaying ->
-                                    Icon(
-                                        imageVector = if (isPlaying) MaterialSymbols.OutlinedFilled.Pause else MaterialSymbols.OutlinedFilled.Play_arrow,
-                                        contentDescription = label,
-                                        modifier = Modifier.size(38.dp),
+                        if (isCenter) {
+                            AnimatedContent(
+                                targetState = playing,
+                                transitionSpec = {
+                                    fadeIn(animationSpec = effectsSpec) +
+                                            scaleIn(
+                                                initialScale = 0.75f,
+                                                animationSpec = iconSpatialSpec
+                                            ) togetherWith fadeOut(animationSpec = effectsSpec) + scaleOut(
+                                        targetScale = 0.75f,
+                                        animationSpec = iconSpatialSpec
                                     )
-                                }
-                            } else {
+                                },
+                                label = "playPauseTransition",
+                            ) { isPlaying ->
                                 Icon(
-                                    imageVector = if (index == 0) MaterialSymbols.Outlined.Skip_previous else MaterialSymbols.Outlined.Skip_next,
+                                    imageVector = if (isPlaying) MaterialSymbols.OutlinedFilled.Pause else MaterialSymbols.OutlinedFilled.Play_arrow,
                                     contentDescription = label,
-                                    modifier = Modifier.size(32.dp),
+                                    modifier = Modifier.size(38.dp),
                                 )
                             }
+                        } else {
+                            Icon(
+                                imageVector = if (index == 0) MaterialSymbols.Outlined.Skip_previous else MaterialSymbols.Outlined.Skip_next,
+                                contentDescription = label,
+                                modifier = Modifier.size(32.dp),
+                            )
                         }
                     }
                 },
@@ -757,51 +735,46 @@ private fun ExpressiveConnectedActionButton(
     filledIcon: ImageVector? = null,
     selected: Boolean = false,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val actionTint = if (enabled) tint else tint.copy(alpha = 0.38f)
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.88f else 1f,
-        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
-        label = "actionButtonScale",
-    )
-
-    Surface(
-        onClick = onClick,
-        enabled = enabled,
-        shape = if (isPressed) pressedShape else shape,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        contentColor = actionTint,
-        interactionSource = interactionSource,
-        modifier = modifier
-            .height(48.dp)
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            },
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (filledIcon != null) {
-                AnimatedSelectionIcon(
-                    selected = selected,
-                    outlinedIcon = icon,
-                    filledIcon = filledIcon,
-                    contentDescription = contentDescription,
-                    modifier = Modifier.size(24.dp),
-                    tint = actionTint,
-                )
-            } else {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = contentDescription,
-                    modifier = Modifier.size(24.dp),
-                    tint = actionTint,
-                )
-            }
+    val content: @Composable () -> Unit = {
+        if (filledIcon != null) {
+            AnimatedSelectionIcon(
+                selected = selected,
+                outlinedIcon = icon,
+                filledIcon = filledIcon,
+                contentDescription = contentDescription,
+                modifier = Modifier.size(24.dp),
+            )
+        } else {
+            Icon(icon, contentDescription = contentDescription, modifier = Modifier.size(24.dp))
         }
+    }
+    if (filledIcon != null) {
+        FilledIconToggleButton(
+            checked = selected,
+            onCheckedChange = { onClick() },
+            enabled = enabled,
+            shapes = IconToggleButtonShapes(shape = shape, pressedShape = pressedShape),
+            colors = IconButtonDefaults.filledIconToggleButtonColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = tint,
+                checkedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                checkedContentColor = tint,
+            ),
+            modifier = modifier.height(48.dp),
+            content = content,
+        )
+    } else {
+        FilledIconButton(
+            onClick = onClick,
+            enabled = enabled,
+            shapes = IconButtonShapes(shape = shape, pressedShape = pressedShape),
+            colors = IconButtonDefaults.filledIconButtonColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = tint,
+            ),
+            modifier = modifier.height(48.dp),
+            content = content,
+        )
     }
 }
 

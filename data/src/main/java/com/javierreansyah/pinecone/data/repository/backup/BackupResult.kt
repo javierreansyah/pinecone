@@ -1,5 +1,10 @@
 package com.javierreansyah.pinecone.data.repository.backup
 
+data class BackupProgress(val completedFiles: Int = 0, val totalFiles: Int = 0) {
+    val fraction: Float
+        get() = if (totalFiles == 0) 0f else completedFiles.toFloat() / totalFiles
+}
+
 sealed interface BackupResult {
     data class Success(
         val snapshotId: String? = null,

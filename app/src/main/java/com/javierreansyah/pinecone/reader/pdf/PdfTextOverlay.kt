@@ -73,16 +73,17 @@ internal fun PdfTextOverlay(
                     href
                 ) || publication.locatorFromLink(it)?.href?.toString() == href
             }
-            val base = publication.positions().firstOrNull {
-                samePdfResource(
-                    it.href.toString(),
-                    href
-                ) && "page=${pageIndex + 1}" in it.locations.fragments
-            } ?: link?.let(publication::locatorFromLink) ?: Locator(
-                // Url(...) is a nullable companion factory, not a non-null constructor.
-                requireNotNull(Url(href)) { "Invalid PDF resource URL: $href" },
-                MediaType.PDF
-            )
+            @Suppress("RedundantRequireNotNullCall") val base =
+                publication.positions().firstOrNull {
+                    samePdfResource(
+                        it.href.toString(),
+                        href
+                    ) && "page=${pageIndex + 1}" in it.locations.fragments
+                } ?: link?.let(publication::locatorFromLink) ?: Locator(
+                    // Url(...) is a nullable companion factory, not a non-null constructor.
+                    requireNotNull(Url(href)) { "Invalid PDF resource URL: $href" },
+                    MediaType.PDF
+                )
             value = LoadedTextLayer(text, base)
         } catch (cancelled: CancellationException) {
             throw cancelled

@@ -53,7 +53,10 @@ class StardictParser @Inject constructor(
         // Retain ownership if cancellation discards the result at the dispatcher hand-off.
         var acquiredId: String? = null
         try {
-            return parseOnIo(zipUri, onProgress) { acquiredId = it }
+            return parseOnIo(zipUri, onProgress) {
+                @Suppress("AssignedValueIsNeverRead")
+                acquiredId = it
+            }
         } catch (cancelled: kotlinx.coroutines.CancellationException) {
             acquiredId?.let { id ->
                 withContext(kotlinx.coroutines.NonCancellable) { dictionaries.delete(id) }

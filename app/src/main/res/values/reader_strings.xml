@@ -85,7 +85,6 @@
         <item quantity="one">%d result</item>
         <item quantity="other">%d results</item>
     </plurals>
-    <string name="reader_setting_value">%1$s · %2$s</string>
     <string name="reader_settings_add_theme">Add theme</string>
     <string name="reader_settings_alignment">Alignment</string>
     <string name="reader_settings_alignment_justify">Justify</string>

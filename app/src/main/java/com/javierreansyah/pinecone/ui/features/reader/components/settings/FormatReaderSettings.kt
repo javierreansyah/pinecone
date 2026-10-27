@@ -1,7 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.reader.components.settings
 
 import androidx.compose.foundation.LocalOverscrollFactory
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,6 +14,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Slider
@@ -32,7 +33,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Restart_alt
@@ -128,7 +128,7 @@ fun FormatReaderSettings(
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
                         .padding(top = if (isAudio) 0.dp else 16.dp, bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = if (isAudio) Arrangement.Top else Arrangement.spacedBy(16.dp)
                 ) {
                     val advancedPage = if (isAudio) 0 else if (isPdf) 1 else 2
                     when {
@@ -188,13 +188,12 @@ fun FormatReaderSettings(
                                 PdfInversionControl(settings, onChange)
                             }
 
-                            profile == ReaderProfile.AUDIO -> SettingsGroup {
+                            profile == ReaderProfile.AUDIO -> SettingsGroup(verticalArrangement = Arrangement.Top) {
                                 PreferenceSlider(
                                     stringResource(R.string.reader_playback_speed),
                                     settings.formatPreferences.audioSpeed.toFloat(),
                                     .3f..3f,
                                     presets = listOf(.5f, 1f, 1.5f, 2f),
-                                    topPadding = 0.dp,
                                 ) {
                                     onChange { current ->
                                         current.copy(
@@ -324,34 +323,15 @@ private fun FormatAdvancedSettings(
                 onUseBookSettings
             )
             if (isPdf && onReparsePdf != null) {
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onReparsePdf)
-                        .padding(horizontal = 16.dp, vertical = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Column(
-                        Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            stringResource(R.string.reader_reparse_pdf),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Text(
-                            stringResource(R.string.reader_reparse_pdf_description),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Icon(
-                        MaterialSymbols.Outlined.Restart_alt,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                ListItem(
+                    onClick = onReparsePdf,
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    supportingContent = { Text(stringResource(R.string.reader_reparse_pdf_description)) },
+                    trailingContent = {
+                        Icon(MaterialSymbols.Outlined.Restart_alt, contentDescription = null)
+                    },
+                    content = { Text(stringResource(R.string.reader_reparse_pdf)) },
+                )
             }
         },
     )
@@ -453,17 +433,23 @@ private fun PreferenceSlider(
     value: Float,
     range: ClosedFloatingPointRange<Float>,
     presets: List<Float> = emptyList(),
-    topPadding: Dp = 8.dp,
     onChange: (Float) -> Unit
 ) {
-    Column(Modifier.padding(start = 16.dp, end = 16.dp, top = topPadding, bottom = 8.dp)) {
-        Text(
-            stringResource(
-                R.string.reader_setting_value,
-                label,
-                String.format(LocalLocale.current.platformLocale, "%.1f", value)
-            ), style = MaterialTheme.typography.titleSmall
-        )
+    Column(Modifier.padding(bottom = 8.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, top = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                String.format(LocalLocale.current.platformLocale, "%.1f", value),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         val slider = rememberSliderState(
             steps = ((range.endInclusive - range.start) * 10).roundToInt() - 1,
             trackRange = range,
@@ -471,6 +457,7 @@ private fun PreferenceSlider(
         slider.value = value.coerceIn(range)
         Slider(
             state = slider,
+            modifier = Modifier.padding(horizontal = 16.dp),
             onValueChange = { onChange((it * 10).roundToInt() / 10f) },
             track = { sliderState ->
                 SliderDefaults.Track(
@@ -488,7 +475,9 @@ private fun PreferenceSlider(
                 icons = emptyList(),
                 selected = value,
                 onSelected = onChange,
-                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .horizontalScroll(rememberScrollState()),
             )
         }
     }

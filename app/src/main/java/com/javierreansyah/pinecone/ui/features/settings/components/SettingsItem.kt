@@ -37,7 +37,10 @@ fun <T : Any> SettingsItem(
     SegmentedListItem(
         verticalAlignment = Alignment.Top,
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-        colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        colors = ListItemDefaults.segmentedColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
         shapes = shapes,
         enabled = enabled,
         onClick = { showDialog = true },
@@ -79,7 +82,10 @@ internal fun SettingsSwitchItem(
     SegmentedListItem(
         verticalAlignment = Alignment.Top,
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-        colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        colors = ListItemDefaults.segmentedColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
         shapes = shapes,
         enabled = enabled,
         onClick = { onChanged(!checked) },

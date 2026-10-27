@@ -82,7 +82,6 @@
     <plurals name="reader_search_results_count">
         <item quantity="other">%d hasil</item>
     </plurals>
-    <string name="reader_setting_value">%1$s · %2$s</string>
     <string name="reader_settings_add_theme">Tambah tema</string>
     <string name="reader_settings_alignment">Perataan</string>
     <string name="reader_settings_alignment_justify">Rata kanan-kiri</string>

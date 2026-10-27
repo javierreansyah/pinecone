@@ -89,7 +89,7 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
     private val publications: PublicationRepository,
     private val operations: com.javierreansyah.pinecone.data.repository.library.PublicationOperations,
     private val reading: ReadingRepository,
-    private val readerPreferences: ReaderPreferences,
+    readerPreferences: ReaderPreferences,
     private val bookPreferences: BookReadingPreferences,
     private val startup: com.javierreansyah.pinecone.data.StartupCoordinator,
 ) : ViewModel() {

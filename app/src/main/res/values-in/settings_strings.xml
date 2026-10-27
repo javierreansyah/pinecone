@@ -17,11 +17,8 @@
     <string name="settings_choose_color_scheme">Pilih skema warna</string>
     <string name="settings_color_palette">Palet warna</string>
     <string name="settings_error_set_backup_location">Harap pilih lokasi cadangan terlebih dahulu</string>
-    <string name="settings_export_backup">Ekspor cadangan</string>
     <string name="settings_hide_all_space">Sembunyikan ruang Semua</string>
     <string name="settings_hide_all_space_summary">Sembunyikan Semua dari navigasi.</string>
-    <string name="settings_import_backup">Impor cadangan</string>
-    <string name="settings_import_backup_summary">Tambahkan cadangan portabel Pinecone ke brankas ini</string>
     <string name="settings_language">@string/publication_language</string>
     <string name="settings_last_backup_format">Terakhir: %s</string>
     <string name="settings_library_bottom_navigation">Tampilkan navigasi bawah pustaka</string>
@@ -57,4 +54,7 @@
     <string name="settings_cover_display">Tampilan sampul</string>
     <string name="settings_cover_contain">Utuh (tampilkan seluruh sampul)</string>
     <string name="settings_cover_cover">Penuhi (potong bagian berlebih)</string>
+    <string name="settings_backup_preparing">Menyiapkan cadangan…</string>
+    <string name="settings_backup_progress">%1$d dari %2$d berkas selesai</string>
+    <string name="settings_restore_preparing">Menyiapkan pemulihan…</string>
 </resources>

@@ -79,17 +79,64 @@ class LibraryBackupTest {
     fun originalRenditionSharesOneObjectAndIsCountedOnce() = runBlocking {
         fixture { f ->
             val source = f.seedBook()
-            val first = f.backups.createSnapshot(true)
+            val progress = mutableListOf<BackupProgress>()
+            val first = f.backups.createSnapshot(true) { progress += it }
             assertSuccess(first)
+            val expectedProgress = (0..3).map { BackupProgress(it, 3) }
+            assertEquals(expectedProgress, progress)
             assertEquals(0L, (first as BackupResult.Success).bytesReused)
-            val second = f.backups.createSnapshot(true)
+            progress.clear()
+            val second = f.backups.createSnapshot(true) { progress += it }
             assertSuccess(second)
+            assertEquals(expectedProgress, progress)
             assertEquals(
                 File(source.filePath).length() + File(requireNotNull(source.coverPath)).length(),
                 (second as BackupResult.Success).bytesReused
             )
             val dirs = requireNotNull(f.vault.open(false))
             assertEquals(1, dirs.books.listFiles().size)
+        }
+    }
+
+    @Test
+    fun emptyLibraryProgressCompletesWithTheSnapshotFile() = runBlocking {
+        fixture { f ->
+            val progress = mutableListOf<BackupProgress>()
+            assertSuccess(f.backups.createSnapshot(true) { progress += it })
+            assertEquals(listOf(BackupProgress(totalFiles = 1), BackupProgress(1, 1)), progress)
+            progress.clear()
+            assertSuccess(
+                f.backups.restoreSnapshot(
+                    f.backups.listSnapshots().single().uri
+                ) { progress += it })
+            assertEquals(listOf(BackupProgress(totalFiles = 1), BackupProgress(1, 1)), progress)
+        }
+    }
+
+    @Test
+    fun restoreProgressCountsReadModeSeparatelyFromTheOriginalFile() = runBlocking {
+        fixture { f ->
+            val source = f.seedBook()
+            val original = requireNotNull(f.db.publicationDao().rendition(source.id, "original"))
+            f.db.publicationDao().putRenditions(listOf(original.copy(key = "read-mode")))
+            assertSuccess(f.backups.createSnapshot(true))
+            val progress = mutableListOf<BackupProgress>()
+            assertSuccess(
+                f.backups.restoreSnapshot(
+                    f.backups.listSnapshots().single().uri
+                ) { progress += it })
+            assertEquals((0..4).map { BackupProgress(it, 4) }, progress)
+        }
+    }
+
+    @Test
+    fun missingBookNeverReportsACompleteBackup() = runBlocking {
+        fixture { f ->
+            val source = f.seedBook()
+            assertTrue(File(source.filePath).delete())
+            val progress = mutableListOf<BackupProgress>()
+            assertTrue(f.backups.createSnapshot(true) { progress += it } is BackupResult.Failure)
+            assertFalse(progress.any { it.fraction == 1f })
         }
     }
 
@@ -115,7 +162,9 @@ class LibraryBackupTest {
             f.preferences.updateSettings { it.copy(fontSize = 1.7) }
             assertSuccess(f.backups.importPortable(Uri.fromFile(portable)))
             val imported = f.backups.listSnapshots().single()
-            assertSuccess(f.backups.restoreSnapshot(imported.uri))
+            val restoreProgress = mutableListOf<BackupProgress>()
+            assertSuccess(f.backups.restoreSnapshot(imported.uri) { restoreProgress += it })
+            assertEquals((0..3).map { BackupProgress(it, 3) }, restoreProgress)
 
             val restored = requireNotNull(f.db.bookDao().getEntity(source.id))
             assertEquals(
@@ -138,7 +187,10 @@ class LibraryBackupTest {
             val objectFile = requireNotNull(f.vault.open(false)).books.listFiles().single()
             (f.context.contentResolver.openOutputStream(objectFile.uri, "wt") ?: return@fixture)
                 .use { it.write(byteArrayOf(0)) }
-            assertTrue(f.backups.restoreSnapshot(imported.uri) is BackupResult.Failure)
+            restoreProgress.clear()
+            assertTrue(f.backups.restoreSnapshot(imported.uri) { restoreProgress += it } is BackupResult.Failure)
+            assertTrue(restoreProgress.isNotEmpty())
+            assertFalse(restoreProgress.any { it.fraction == 1f })
             assertEquals(restored, f.db.bookDao().getEntity(source.id))
             assertEquals(listOf(note), f.db.noteDao().getAllNotesSync())
             assertArrayEquals(bytes, File(restored.filePath).readBytes())

@@ -39,7 +39,7 @@ class AudioPlayerViewModel @AssistedInject constructor(
     private val application: Application,
     repository: LibraryRepository,
     private val reading: ReadingRepository,
-    private val preferences: ReaderPreferences,
+    preferences: ReaderPreferences,
     private val bookPreferences: BookReadingPreferences,
     private val savedState: SavedStateHandle,
 ) : ViewModel() {

@@ -118,8 +118,10 @@ class DictionaryBackupRoundTripTest {
             }
             preferences.updateSettings { it.copy(fontSize = 1.7) }
 
-            val restored = backups.restoreSnapshot(saved.uri)
+            val restoreProgress = mutableListOf<BackupProgress>()
+            val restored = backups.restoreSnapshot(saved.uri) { restoreProgress += it }
             assertTrue(restored.toString(), restored is BackupResult.Success)
+            assertEquals((0..2).map { BackupProgress(it, 2) }, restoreProgress)
             assertEquals(
                 "saved",
                 dictionaries.withDictionary(id) { it.getDefinitions("word").single().definition })

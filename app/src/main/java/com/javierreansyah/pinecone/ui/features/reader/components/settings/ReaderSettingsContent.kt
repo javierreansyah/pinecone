@@ -20,11 +20,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Slider
@@ -49,6 +52,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.googlefonts.Font
 import androidx.compose.ui.text.googlefonts.GoogleFont
@@ -888,24 +892,14 @@ internal fun AdvancedTabContent(
             onCheckedChange = { onSettingsChange { current -> current.copy(alwaysShowStatusBar = it) } },
         )
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onRestoreDefaultsClick() }
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = stringResource(R.string.reader_settings_restore_defaults),
-                style = MaterialTheme.typography.titleMedium,
-            )
-            Icon(
-                imageVector = MaterialSymbols.Outlined.Restart_alt,
-                contentDescription = stringResource(R.string.reader_settings_restore_defaults),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        ListItem(
+            onClick = onRestoreDefaultsClick,
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            trailingContent = {
+                Icon(MaterialSymbols.Outlined.Restart_alt, contentDescription = null)
+            },
+            content = { Text(stringResource(R.string.reader_settings_restore_defaults)) },
+        )
     }
 }
 
@@ -916,20 +910,12 @@ private fun <T : Any> ReaderChoiceRow(
     dialogTitle: String = title, emptyText: String? = null,
 ) {
     var showDialog by remember { mutableStateOf(false) }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { showDialog = true }
-            .padding(horizontal = 16.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(title, style = MaterialTheme.typography.titleMedium)
-        Text(
-            valueLabel, style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
+    ListItem(
+        onClick = { showDialog = true },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        trailingContent = { Text(valueLabel, style = MaterialTheme.typography.bodyMedium) },
+        content = { Text(title) },
+    )
     if (showDialog) SettingsChoiceDialog(
         content = { Text(dialogTitle) }, options = options, isSelected = isSelected,
         optionLabel = optionLabel, onSelected = onSelected, emptyText = emptyText,
@@ -945,19 +931,21 @@ internal fun SettingsSwitchRow(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(enabled = enabled) { onCheckedChange(!isChecked) }
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-        Switch(
-            checked = isChecked, onCheckedChange = onCheckedChange, enabled = enabled,
-        )
-    }
+    ListItem(
+        modifier = modifier.toggleable(
+            value = isChecked, enabled = enabled, role = Role.Switch,
+            onValueChange = onCheckedChange,
+        ),
+        enabled = enabled,
+        colors = ListItemDefaults.colors(
+            containerColor = Color.Transparent,
+            disabledContainerColor = Color.Transparent,
+        ),
+        trailingContent = {
+            Switch(checked = isChecked, onCheckedChange = null, enabled = enabled)
+        },
+        content = { Text(title) },
+    )
 }
 
 @SuppressLint("LogNotTimber")

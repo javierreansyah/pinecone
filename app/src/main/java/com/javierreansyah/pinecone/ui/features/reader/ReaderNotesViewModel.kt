@@ -125,25 +125,6 @@ class ReaderNotesViewModel @dagger.assisted.AssistedInject constructor(
         }
     }
 
-    fun addNote(
-        locator: Locator,
-        noteText: String,
-        color: Int = "#40FFEB3B".toColorInt(),
-        chapterTitle: String?,
-    ) {
-        viewModelScope.launch {
-            repository.addNote(
-                bookId,
-                locator,
-                noteText,
-                color,
-                chapterTitle,
-                renditionKey.value,
-                session
-            )
-        }
-    }
-
     fun addHighlight(
         locator: Locator,
         color: Int = "#4003A9F4".toColorInt(),

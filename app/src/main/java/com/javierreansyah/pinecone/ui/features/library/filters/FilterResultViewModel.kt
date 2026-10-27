@@ -29,7 +29,7 @@ import javax.inject.Inject
 class FilterResultViewModel @Inject constructor(
     private val bookRepository: LibraryRepository,
     deletePublications: DeleteBooks,
-    private val prefsManager: LibraryPreferencesManager,
+    prefsManager: LibraryPreferencesManager,
     @com.javierreansyah.pinecone.di.DefaultDispatcher private val computation: kotlinx.coroutines.CoroutineDispatcher,
 ) : ViewModel() {
     val bookActions = BookActions(viewModelScope, bookRepository, deletePublications)

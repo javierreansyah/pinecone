@@ -2,6 +2,7 @@ package com.javierreansyah.pinecone.domain
 
 import android.net.Uri
 import com.javierreansyah.pinecone.data.repository.backup.BackupFailure
+import com.javierreansyah.pinecone.data.repository.backup.BackupProgress
 import com.javierreansyah.pinecone.data.repository.backup.BackupRepository
 import com.javierreansyah.pinecone.data.repository.backup.BackupResult
 import com.javierreansyah.pinecone.reader.audio.AudioPlaybackClient
@@ -13,8 +14,11 @@ class RestoreBackup @Inject constructor(
     private val repository: BackupRepository,
     private val playback: AudioPlaybackClient,
 ) {
-    suspend operator fun invoke(uri: Uri): BackupResult = try {
-        playback.withPlaybackStopped { repository.restoreSnapshot(uri) }
+    suspend operator fun invoke(
+        uri: Uri,
+        onProgress: (BackupProgress) -> Unit = {},
+    ): BackupResult = try {
+        playback.withPlaybackStopped { repository.restoreSnapshot(uri, onProgress) }
     } catch (timeout: TimeoutCancellationException) {
         BackupResult.Failure(BackupFailure.IO_ERROR, timeout)
     } catch (cancelled: CancellationException) {

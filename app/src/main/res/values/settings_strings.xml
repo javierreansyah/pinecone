@@ -17,11 +17,8 @@
     <string name="settings_choose_color_scheme">Choose color scheme</string>
     <string name="settings_color_palette">Color palette</string>
     <string name="settings_error_set_backup_location">Please select a backup location first</string>
-    <string name="settings_export_backup">Export backup</string>
     <string name="settings_hide_all_space">Hide \"All\" space</string>
     <string name="settings_hide_all_space_summary">Hide \"All\" from the navigation rail.</string>
-    <string name="settings_import_backup">Import backup</string>
-    <string name="settings_import_backup_summary">Add a portable Pinecone backup to this vault</string>
     <string name="settings_language">@string/publication_language</string>
     <string name="settings_last_backup_format">Last: %s</string>
     <string name="settings_library_bottom_navigation">Show library bottom navigation</string>
@@ -57,4 +54,7 @@
     <string name="settings_cover_display">Cover display</string>
     <string name="settings_cover_contain">Contain (show full cover)</string>
     <string name="settings_cover_cover">Cover (fill and crop)</string>
+    <string name="settings_backup_preparing">Preparing backup…</string>
+    <string name="settings_backup_progress">%1$d of %2$d files completed</string>
+    <string name="settings_restore_preparing">Preparing restore…</string>
 </resources>

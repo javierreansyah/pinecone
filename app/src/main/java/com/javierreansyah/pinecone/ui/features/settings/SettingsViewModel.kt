@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import coil3.imageLoader
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
+import com.javierreansyah.pinecone.data.repository.backup.BackupProgress
 import com.javierreansyah.pinecone.data.repository.backup.BackupRepository
 import com.javierreansyah.pinecone.data.repository.backup.BackupResult
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -38,8 +39,12 @@ class SettingsViewModel @Inject constructor(
     val settings: StateFlow<ReaderSettings> = _settings.asStateFlow()
     private val _isBackingUp = MutableStateFlow(value = false)
     val isBackingUp: StateFlow<Boolean> = _isBackingUp.asStateFlow()
+    private val _backupProgress = MutableStateFlow(BackupProgress())
+    val backupProgress: StateFlow<BackupProgress> = _backupProgress.asStateFlow()
     private val _isRestoring = MutableStateFlow(value = false)
     val isRestoring: StateFlow<Boolean> = _isRestoring.asStateFlow()
+    private val _restoreProgress = MutableStateFlow(BackupProgress())
+    val restoreProgress: StateFlow<BackupProgress> = _restoreProgress.asStateFlow()
     private val _availableBackups = MutableStateFlow<List<BackupFile>>(emptyList())
     val availableBackups: StateFlow<List<BackupFile>> = _availableBackups.asStateFlow()
 
@@ -57,10 +62,13 @@ class SettingsViewModel @Inject constructor(
     fun performFullBackup(onStart: () -> Unit, onSuccess: () -> Unit, onFailure: () -> Unit) {
         viewModelScope.launch {
             if (_isBackingUp.value) return@launch
+            _backupProgress.value = BackupProgress()
             _isBackingUp.value = true
             try {
                 onStart()
-                val result = backupRepository.createSnapshot(manual = true)
+                val result = backupRepository.createSnapshot(manual = true) {
+                    _backupProgress.value = it
+                }
                 if (result.isSuccess) {
                     loadBackups(); onSuccess()
                 } else onFailure()
@@ -92,10 +100,11 @@ class SettingsViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             if (_isRestoring.value) return@launch
+            _restoreProgress.value = BackupProgress()
             _isRestoring.value = true
             try {
                 onStart()
-                when (restoreBackup(uri)) {
+                when (restoreBackup(uri) { _restoreProgress.value = it }) {
                     is BackupResult.Success, BackupResult.Skipped -> {
                         application.imageLoader.memoryCache?.clear()
                         application.imageLoader.diskCache?.clear()
@@ -113,25 +122,5 @@ class SettingsViewModel @Inject constructor(
             }
         }
     }
-
-    fun exportBackup(uri: Uri, destination: Uri, onSuccess: () -> Unit, onFailure: () -> Unit) {
-        viewModelScope.launch {
-            if (backupRepository.exportSnapshot(
-                    uri,
-                    destination,
-                ).isSuccess
-            ) onSuccess() else onFailure()
-        }
-    }
-
-    fun importBackup(uri: Uri, onSuccess: () -> Unit, onFailure: () -> Unit) {
-        viewModelScope.launch {
-            val result = backupRepository.importPortable(uri)
-            if (result.isSuccess) {
-                loadBackups(); onSuccess()
-            } else onFailure()
-        }
-    }
-
 
 }
