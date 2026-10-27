@@ -10,7 +10,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,12 +25,11 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Select
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
-import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.features.library.components.FilterResultBottomSheet
-import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectAppBar
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectTopBarTransition
+import com.javierreansyah.pinecone.ui.features.library.components.SelectedBooksBar
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookCollection
 
 @Composable
@@ -50,152 +48,63 @@ internal fun LibraryCollectionScreen(
     com.javierreansyah.pinecone.ui.components.MutationErrorDialog(viewModel.bookActions.mutationErrors)
     val books by viewModel.filteredBooks.collectAsStateWithLifecycle()
     val allBooks by viewModel.allBooks.collectAsStateWithLifecycle()
-
-    var showFilterSheet by remember { mutableStateOf(value = false) }
+    var showFilterSheet by remember { mutableStateOf(false) }
     val selection = remember { LibrarySelection() }
-    var selectedBooks by selection::ids
-    var isInMultiSelectMode by selection::active
-
-    val exitMultiSelect = selection::close
-
-    BackHandler(enabled = isInMultiSelectMode, onBack = exitMultiSelect)
-
-    CollectionContent(
-        title = title,
-        emptyText = emptyText,
-        emptyIcon = emptyIcon,
-        archived = archived,
-        books = books,
-        allBooks = allBooks,
-        preferences = preferences,
-        selectedBooks = selectedBooks,
-        isInMultiSelectMode = isInMultiSelectMode,
-        onNavigateBack = onNavigateBack,
-        onEnterMultiSelect = {
-            selection.enter()
-        },
-        onExitMultiSelect = exitMultiSelect,
-        onInfo = selectedBooks.singleOrNull()?.let { bookId ->
-            {
-                exitMultiSelect()
-                onNavigateToBookInfo(bookId)
-            }
-        },
-        onSelectAll = {
-            selectedBooks =
-                books.map { book -> book.id }
-                    .toSet()
-        },
-        onClearSelection = selection::clear,
-        onToggleBookSelection = selection::toggle,
-        onMarkAsReadUnread = { showMarkAsRead ->
-            viewModel.bookActions.markBooksReadStatus(selectedBooks, showMarkAsRead)
-            exitMultiSelect()
-        },
-        onArchiveSelected = {
-            viewModel.bookActions.setArchived(selectedBooks, !archived)
-            exitMultiSelect()
-        },
-        onDeleteSelected = {
-            viewModel.bookActions.deleteBooks(selectedBooks)
-            exitMultiSelect()
-        },
-        onOrganizeSelected = {
-            val ids = selectedBooks
-            exitMultiSelect()
-            onNavigateToOrganize(ids)
-        },
-        onOpenFilter = { showFilterSheet = true },
-        onBookClick = onNavigateToReader,
-        onBookLongClick = { bookId ->
-            selection.enter(setOf(bookId))
-        },
-    )
-
-    if (showFilterSheet) {
-        FilterResultBottomSheet(
-            preferences = preferences,
-            availableFormats = allBooks.mapTo(mutableSetOf()) { it.fileFormat() },
-            onLayoutModeChange = viewModel.filters::onLayoutModeChange,
-            onSortTypeChange = viewModel.filters::onSortTypeChange,
-            onStatusToggle = viewModel.filters::toggleStatusFilter,
-            onFileFilterToggle = viewModel.filters::toggleFileFilter,
-        ) { showFilterSheet = false }
-    }
-}
-
-@Composable
-private fun CollectionContent(
-    title: String,
-    emptyText: String,
-    emptyIcon: ImageVector,
-    archived: Boolean,
-    books: List<Book>,
-    allBooks: List<Book>,
-    preferences: FilterSortPreferences,
-    selectedBooks: Set<String>,
-    isInMultiSelectMode: Boolean,
-    onNavigateBack: () -> Unit,
-    onEnterMultiSelect: () -> Unit,
-    onExitMultiSelect: () -> Unit,
-    onInfo: (() -> Unit)?,
-    onSelectAll: () -> Unit,
-    onClearSelection: () -> Unit,
-    onToggleBookSelection: (String) -> Unit,
-    onMarkAsReadUnread: (Boolean) -> Unit,
-    onArchiveSelected: () -> Unit,
-    onDeleteSelected: () -> Unit,
-    onOrganizeSelected: () -> Unit,
-    onOpenFilter: () -> Unit,
-    onBookClick: (String) -> Unit,
-    onBookLongClick: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val isEmpty = books.isEmpty()
 
-    val showMarkAsRead = remember(allBooks, selectedBooks) {
-        allBooks
-            .filter { book -> book.id in selectedBooks }
-            .any { book -> !book.isRead }
-    }
-
+    BackHandler(enabled = selection.active, onBack = selection::close)
     Scaffold(
-        modifier = if (isEmpty || isInMultiSelectMode) {
-            modifier
-        } else {
-            modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
-        },
+        modifier = if (isEmpty || selection.active) Modifier else Modifier.nestedScroll(
+            scrollBehavior.nestedScrollConnection
+        ),
         topBar = {
-            CollectionTopBar(
-                title = title,
-                archived = archived,
-                wording = allBooks.filter { it.id in selectedBooks }.publicationWording(),
-                isInMultiSelectMode = isInMultiSelectMode,
-                isEmpty = isEmpty,
-                selectedCount = selectedBooks.size,
-                isAllSelected = books.isNotEmpty() && selectedBooks.size == books.size,
-                showMarkAsRead = showMarkAsRead,
-                scrollBehavior = scrollBehavior,
-                onNavigateBack = onNavigateBack,
-                onEnterMultiSelect = onEnterMultiSelect,
-                onExitMultiSelect = onExitMultiSelect,
-                onInfo = onInfo,
-                onSelectAll = onSelectAll,
-                onClearSelection = onClearSelection,
-                onMarkAsReadUnread = { onMarkAsReadUnread(showMarkAsRead) },
-                onArchive = onArchiveSelected,
-                onDelete = onDeleteSelected,
-                onOrganize = onOrganizeSelected,
-                onOpenFilter = onOpenFilter,
-            )
+            MultiSelectTopBarTransition(
+                isMultiSelect = selection.active,
+                multiSelectBar = {
+                    SelectedBooksBar(
+                        selection = selection,
+                        books = books,
+                        allBooks = allBooks,
+                        onMarkRead = viewModel.bookActions::markBooksReadStatus,
+                        onArchive = { viewModel.bookActions.setArchived(it, !archived) },
+                        onDelete = viewModel.bookActions::deleteBooks,
+                        onInfo = onNavigateToBookInfo,
+                        onOrganize = onNavigateToOrganize,
+                        isUnarchive = archived,
+                    )
+                },
+            ) {
+                LibraryTopAppBar(
+                    title = { Text(title) },
+                    onBack = onNavigateBack,
+                    isEmpty = isEmpty,
+                    scrollBehavior = scrollBehavior,
+                    actions = {
+                        IconButton(
+                            shapes = IconButtonDefaults.shapes(),
+                            onClick = { selection.enter() }) {
+                            Icon(
+                                MaterialSymbols.Outlined.Select,
+                                contentDescription = stringResource(R.string.action_select_multiple),
+                            )
+                        }
+                        IconButton(
+                            shapes = IconButtonDefaults.shapes(),
+                            onClick = { showFilterSheet = true }) {
+                            Icon(
+                                MaterialSymbols.Outlined.Tune,
+                                contentDescription = stringResource(R.string.action_filter),
+                            )
+                        }
+                    },
+                )
+            }
         },
     ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize(),
-        ) {
+        Box(Modifier
+            .padding(innerPadding)
+            .fillMaxSize()) {
             if (isEmpty) {
                 EmptyState(
                     icon = emptyIcon,
@@ -208,95 +117,31 @@ private fun CollectionContent(
                 BookCollection(
                     books = books,
                     layoutMode = preferences.layoutMode,
-                    selectedBooks = selectedBooks,
-                    isInMultiSelectMode = isInMultiSelectMode,
-                    onBookClick = { bookId ->
-                        if (isInMultiSelectMode) {
-                            onToggleBookSelection(bookId)
-                        } else {
-                            onBookClick(bookId)
-                        }
+                    selectedBooks = selection.ids,
+                    isInMultiSelectMode = selection.active,
+                    onBookClick = {
+                        if (selection.active) selection.toggle(it) else onNavigateToReader(
+                            it
+                        )
                     },
-                    onBookLongClick = onBookLongClick,
+                    onBookLongClick = { selection.enter(setOf(it)) },
                     scrollKey = Triple(
                         preferences.sortType,
                         preferences.isAscending,
-                        preferences.selectedStatus,
+                        preferences.selectedStatus
                     ),
                 )
             }
         }
     }
-}
-
-@Composable
-private fun CollectionTopBar(
-    title: String,
-    archived: Boolean,
-    wording: PublicationWording,
-    isInMultiSelectMode: Boolean,
-    isEmpty: Boolean,
-    selectedCount: Int,
-    isAllSelected: Boolean,
-    showMarkAsRead: Boolean,
-    scrollBehavior: TopAppBarScrollBehavior,
-    onNavigateBack: () -> Unit,
-    onEnterMultiSelect: () -> Unit,
-    onExitMultiSelect: () -> Unit,
-    onInfo: (() -> Unit)?,
-    onSelectAll: () -> Unit,
-    onClearSelection: () -> Unit,
-    onMarkAsReadUnread: () -> Unit,
-    onArchive: () -> Unit,
-    onDelete: () -> Unit,
-    onOrganize: () -> Unit,
-    onOpenFilter: () -> Unit,
-) {
-    MultiSelectTopBarTransition(
-        isMultiSelect = isInMultiSelectMode,
-        multiSelectBar = {
-            MultiSelectAppBar(
-                wording = wording,
-                selectedCount = selectedCount,
-                isAllSelected = isAllSelected,
-                showMarkAsRead = showMarkAsRead,
-                onCloseMultiSelect = onExitMultiSelect,
-                onClearSelection = onClearSelection,
-                onSelectAll = onSelectAll,
-                onMarkAsReadUnread = onMarkAsReadUnread,
-                onOrganize = onOrganize,
-                onArchive = onArchive,
-                onDelete = onDelete,
-                onInfo = onInfo,
-                isUnarchive = archived,
-            )
-        },
-    ) {
-        LibraryTopAppBar(
-            title = { Text(title) },
-            onBack = onNavigateBack,
-            isEmpty = isEmpty,
-            scrollBehavior = scrollBehavior,
-            actions = {
-                IconButton(
-                    shapes = IconButtonDefaults.shapes(),
-                    onClick = onEnterMultiSelect,
-                ) {
-                    Icon(
-                        MaterialSymbols.Outlined.Select,
-                        contentDescription = stringResource(R.string.action_select_multiple),
-                    )
-                }
-                IconButton(
-                    shapes = IconButtonDefaults.shapes(),
-                    onClick = onOpenFilter,
-                ) {
-                    Icon(
-                        MaterialSymbols.Outlined.Tune,
-                        contentDescription = stringResource(R.string.action_filter),
-                    )
-                }
-            },
-        )
+    if (showFilterSheet) {
+        FilterResultBottomSheet(
+            preferences = preferences,
+            availableFormats = allBooks.mapTo(mutableSetOf()) { it.fileFormat() },
+            onLayoutModeChange = viewModel.filters::onLayoutModeChange,
+            onSortTypeChange = viewModel.filters::onSortTypeChange,
+            onStatusToggle = viewModel.filters::toggleStatusFilter,
+            onFileFilterToggle = viewModel.filters::toggleFileFilter,
+        ) { showFilterSheet = false }
     }
 }

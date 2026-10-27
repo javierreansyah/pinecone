@@ -21,6 +21,26 @@ import java.util.concurrent.CopyOnWriteArrayList
 
 class LibraryProcessingTest {
     @Test
+    fun organizerProjectionExcludesArchivesButKeepsInboxVisibility() = runBlocking {
+        fixture { db, repository ->
+            db.bookDao().insertAll(
+                listOf(
+                    BookEntity("visible", "Visible", filePath = "/visible"),
+                    BookEntity("inbox", "Inbox", filePath = "/inbox", isUnsorted = true),
+                    BookEntity("archived", "Archived", filePath = "/archived", isArchived = true),
+                )
+            )
+            assertEquals(
+                setOf(
+                    BookOrganizationState("visible", false),
+                    BookOrganizationState("inbox", true)
+                ),
+                repository.getOrganizationBooks().first().toSet()
+            )
+        }
+    }
+
+    @Test
     fun readingWritesAvoidRelationshipQueriesAndKeepMirroredStateAndSessionGuards() = runBlocking {
         val reads = CopyOnWriteArrayList<String>()
         val context = InstrumentationRegistry.getInstrumentation().targetContext

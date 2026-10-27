@@ -8,13 +8,13 @@ import com.javierreansyah.pinecone.data.local.preferences.FormatPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.data.local.preferences.decodeReadingOverrides
-import com.javierreansyah.pinecone.data.local.preferences.encodeReadingOverrides
 import com.javierreansyah.pinecone.data.local.preferences.epubImageFilterCss
 import com.javierreansyah.pinecone.data.local.preferences.readingThemeIsDark
 import com.javierreansyah.pinecone.data.local.preferences.withReadingPreferencesFrom
 import com.javierreansyah.pinecone.data.publication.PublicationFormats
 import com.javierreansyah.pinecone.data.publication.ReaderProfile
 import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
+import com.javierreansyah.pinecone.data.repository.library.BookReadingPreferences
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.data.repository.library.PublicationRepository
 import com.javierreansyah.pinecone.data.repository.library.ReadingRepository
@@ -41,8 +41,6 @@ import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import org.json.JSONObject
 import org.readium.r2.navigator.epub.EpubPreferences
 import org.readium.r2.shared.publication.Link
@@ -92,6 +90,7 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
     private val operations: com.javierreansyah.pinecone.data.repository.library.PublicationOperations,
     private val reading: ReadingRepository,
     private val readerPreferences: ReaderPreferences,
+    private val bookPreferences: BookReadingPreferences,
     private val startup: com.javierreansyah.pinecone.data.StartupCoordinator,
 ) : ViewModel() {
     private val initialSystemDark = application.resources.configuration.uiMode and
@@ -142,13 +141,12 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
         }
         .stateIn(viewModelScope, WhileSubscribed(5000), null)
 
-    private val settingsMutex = Mutex()
     private val readingOverrides = MutableStateFlow<ReaderSettings?>(null)
     val useBookSettings: StateFlow<Boolean> =
         readingOverrides.map { it != null }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
     val settingsFlow: SharedFlow<ReaderSettings> =
         combine(readerPreferences.readerSettings, readingOverrides) { global, local ->
-            if (local == null) global else global.withReadingPreferencesFrom(local)
+            global.withReadingPreferencesFrom(local)
         }
             .distinctUntilChanged()
             // Share the merge without emitting default settings before DataStore has loaded.
@@ -565,23 +563,10 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
 
     fun updateSettings(transform: (ReaderSettings) -> ReaderSettings) {
         viewModelScope.launch {
-            settingsMutex.withLock {
-                if (readingOverrides.value != null) {
-                    val global = readerPreferences.readerSettings.first()
-                    val current =
-                        global.withReadingPreferencesFrom(requireNotNull(readingOverrides.value))
-                    val local = ReaderSettings().withReadingPreferencesFrom(transform(current))
-                    readingOverrides.value = local
-                    reading.setReadingOverrides(
-                        bookId,
-                        activeRendition.value,
-                        local.encodeReadingOverrides(),
-                        _publication.value?.readingSessionToken(),
-                    )
-                } else {
-                    readerPreferences.updateSettings(transform)
-                }
-            }
+            bookPreferences.update(
+                bookId, activeRendition.value, _publication.value?.readingSessionToken(),
+                onLocalChange = { readingOverrides.value = it }, transform = transform,
+            )
         }
     }
 
@@ -592,20 +577,9 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
 
     fun setUseBookSettings(enabled: Boolean) {
         viewModelScope.launch {
-            settingsMutex.withLock {
-                val global = readerPreferences.readerSettings.first()
-                val current =
-                    readingOverrides.value?.let { global.withReadingPreferencesFrom(it) } ?: global
-                readingOverrides.value =
-                    if (enabled) ReaderSettings().withReadingPreferencesFrom(current) else null
-                reading.setReadingOverrides(
-                    bookId,
-                    activeRendition.value,
-                    readingOverrides.value?.encodeReadingOverrides()
-                        ?: "{}",
-                    _publication.value?.readingSessionToken(),
-                )
-            }
+            bookPreferences.setEnabled(
+                bookId, activeRendition.value, enabled, _publication.value?.readingSessionToken(),
+            ) { readingOverrides.value = it }
         }
     }
 

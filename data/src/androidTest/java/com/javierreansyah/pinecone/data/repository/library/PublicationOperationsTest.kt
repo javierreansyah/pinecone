@@ -19,6 +19,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.job
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -36,6 +37,136 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 class PublicationOperationsTest {
+    @Test
+    fun reportsReadOnlyFailuresInInputOrder() = runBlocking {
+        fixture { f ->
+            val dao = f.db.operationDao()
+            dao.insert(
+                com.javierreansyah.pinecone.data.local.database.library.OperationEntity(
+                    "report", "IMPORT", "RUNNING", 0, 0, 1, completed = 1000, total = 1000,
+                )
+            )
+            dao.insertInputs((0..<1000).reversed().map { index ->
+                com.javierreansyah.pinecone.data.local.database.library.OperationInputEntity(
+                    "report", index, "file:$index", "input-$index",
+                    state = when (index) {
+                        4 -> "FAILED"; 993 -> "INPUT_REQUIRED"; else -> "SUCCESS"
+                    },
+                )
+            })
+            val report = requireNotNull(f.operations().observe("report").first())
+            assertEquals(listOf("input-4", "input-993"), report.failures)
+            assertEquals("input_required", report.error)
+            assertEquals(1000, report.completed)
+            assertEquals(2, dao.failures("report").size)
+            dao.inputs("report").filter { it.state != "SUCCESS" }.forEach {
+                dao.updateInput(it.copy(state = "SUCCESS"))
+            }
+            assertTrue(dao.failures("report").isEmpty())
+            assertTrue(requireNotNull(f.operations().observe("report").first()).failures.isEmpty())
+        }
+    }
+
+    @Test
+    fun bookSettingsShareEditsWithoutChangingAppSettingsAndRejectStaleSessions() = runBlocking {
+        fixture { f ->
+            val book = f.publications.importBook(Uri.fromFile(epub(f, "Settings")))
+            val id = book.book.id
+            val settings = BookReadingPreferences(f.reading, f.preferences)
+            f.preferences.updateSettings {
+                it.copy(
+                    fontSize = 1.7,
+                    backupFolderUri = "content://backups"
+                )
+            }
+            settings.setEnabled(id, "original", true)
+            var immediate: com.javierreansyah.pinecone.data.local.preferences.ReaderSettings? = null
+            settings.update(
+                id,
+                "original",
+                onLocalChange = { immediate = it }) { it.copy(fontSize = 1.2) }
+            fun decode(encoded: String?) =
+                com.javierreansyah.pinecone.data.local.preferences.decodeReadingOverrides(encoded)
+            assertEquals(1.2, requireNotNull(immediate).fontSize, 0.0)
+            assertEquals(
+                1.2,
+                requireNotNull(
+                    decode(
+                        f.reading.rendition(
+                            id,
+                            "original"
+                        )?.preferencesJson
+                    )
+                ).fontSize,
+                0.0
+            )
+            assertEquals("", requireNotNull(immediate).backupFolderUri)
+            assertEquals(1.7, f.preferences.readerSettings.first().fontSize, 0.0)
+            val session = requireNotNull(f.reading.currentSession(id))
+            settings.update(
+                id,
+                "original",
+                session.copy(generation = -1)
+            ) { it.copy(fontSize = 9.0) }
+            assertEquals(
+                1.2,
+                requireNotNull(
+                    decode(
+                        f.reading.rendition(
+                            id,
+                            "original"
+                        )?.preferencesJson
+                    )
+                ).fontSize,
+                0.0
+            )
+            settings.update(
+                id,
+                "original"
+            ) { com.javierreansyah.pinecone.data.local.preferences.ReaderSettings() }
+            assertEquals(
+                1.0,
+                requireNotNull(
+                    decode(
+                        f.reading.rendition(
+                            id,
+                            "original"
+                        )?.preferencesJson
+                    )
+                ).fontSize,
+                0.0
+            )
+            kotlinx.coroutines.coroutineScope {
+                repeat(10) {
+                    launch {
+                        settings.update(
+                            id,
+                            "original"
+                        ) { it.copy(fontSize = it.fontSize + 0.1) }
+                    }
+                }
+            }
+            assertEquals(
+                2.0,
+                requireNotNull(
+                    decode(
+                        f.reading.rendition(
+                            id,
+                            "original"
+                        )?.preferencesJson
+                    )
+                ).fontSize,
+                0.000001
+            )
+            f.reading.setReadingOverrides(id, "original", "malformed")
+            settings.setEnabled(id, "original", false)
+            assertEquals("{}", f.reading.rendition(id, "original")?.preferencesJson)
+            settings.update(id, "original") { it.copy(fontSize = 1.3) }
+            assertEquals(1.3, f.preferences.readerSettings.first().fontSize, 0.0)
+            assertEquals("content://backups", f.preferences.readerSettings.first().backupFolderUri)
+        }
+    }
+
     @Test
     fun folderRequestsShareOwnedGrantsAndPreservePreexistingGrants() = runBlocking {
         fixture { f ->

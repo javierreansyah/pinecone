@@ -67,6 +67,8 @@ data class PublicationDeletionEntity(@PrimaryKey val bookId: String, val sequenc
 @Entity(tableName = "operation_uri_grants")
 data class OperationUriGrantEntity(@PrimaryKey val uri: String)
 
+data class OperationFailure(val displayName: String, val state: String)
+
 @Dao
 interface OperationDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
@@ -98,6 +100,9 @@ interface OperationDao {
 
     @Query("SELECT * FROM publication_operation_inputs WHERE operationId = :id ORDER BY ordinal")
     suspend fun inputs(id: String): List<OperationInputEntity>
+
+    @Query("SELECT displayName, state FROM publication_operation_inputs WHERE operationId = :id AND state IN ('FAILED', 'INPUT_REQUIRED') ORDER BY ordinal")
+    suspend fun failures(id: String): List<OperationFailure>
 
     @Query("SELECT * FROM publication_operations WHERE state IN ('PREPARING','QUEUED','RUNNING') ORDER BY createdAt")
     suspend fun resumable(): List<OperationEntity>

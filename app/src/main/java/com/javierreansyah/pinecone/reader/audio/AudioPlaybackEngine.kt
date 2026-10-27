@@ -145,7 +145,7 @@ class AudioPlaybackEngine @Inject constructor(
                             .distinctUntilChanged()
                     ) { global, encoded ->
                         val local = decodeReadingOverrides(encoded)
-                        if (local == null) global else global.withReadingPreferencesFrom(local)
+                        global.withReadingPreferencesFrom(local)
                     }.map { it.formatPreferences.audioSpeed to it.formatPreferences.audioPitch }
                         .distinctUntilChanged().collect { (speed, pitch) ->
                             nav.submitPreferences(

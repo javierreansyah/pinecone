@@ -39,6 +39,61 @@ import java.util.UUID
 /** Isolated library test application and a separate vault directory for every test. */
 class LibraryBackupTest {
     @Test
+    fun conflictingReferencesToOneObjectCannotRestoreOverTheCurrentLibrary() = runBlocking {
+        fixture { f ->
+            val source = f.seedBook()
+            assertSuccess(f.backups.createSnapshot(true))
+            val saved = f.backups.listSnapshots().single()
+            val snapshot = java.util.zip.ZipInputStream(
+                requireNotNull(f.context.contentResolver.openInputStream(saved.uri))
+            ).use { zip ->
+                zip.nextEntry
+                kotlinx.serialization.json.Json.decodeFromString<com.javierreansyah.pinecone.data.model.VaultSnapshot>(
+                    zip.readBytes().decodeToString()
+                )
+            }
+            val conflicting = snapshot.copy(renditions = snapshot.renditions.map {
+                it.copy(objectInfo = it.objectInfo.copy(size = it.objectInfo.size + 1))
+            })
+            java.util.zip.ZipOutputStream(
+                requireNotNull(
+                    f.context.contentResolver.openOutputStream(
+                        saved.uri,
+                        "wt"
+                    )
+                )
+            ).use { zip ->
+                zip.putNextEntry(java.util.zip.ZipEntry("snapshot.json"))
+                zip.write(
+                    kotlinx.serialization.json.Json.encodeToString(conflicting).encodeToByteArray()
+                )
+                zip.closeEntry()
+            }
+            assertTrue(f.backups.restoreSnapshot(saved.uri) is BackupResult.Failure)
+            assertEquals(source, f.db.bookDao().getEntity(source.id))
+            assertTrue(File(source.filePath).isFile)
+        }
+    }
+
+    @Test
+    fun originalRenditionSharesOneObjectAndIsCountedOnce() = runBlocking {
+        fixture { f ->
+            val source = f.seedBook()
+            val first = f.backups.createSnapshot(true)
+            assertSuccess(first)
+            assertEquals(0L, (first as BackupResult.Success).bytesReused)
+            val second = f.backups.createSnapshot(true)
+            assertSuccess(second)
+            assertEquals(
+                File(source.filePath).length() + File(requireNotNull(source.coverPath)).length(),
+                (second as BackupResult.Success).bytesReused
+            )
+            val dirs = requireNotNull(f.vault.open(false))
+            assertEquals(1, dirs.books.listFiles().size)
+        }
+    }
+
+    @Test
     fun portableBookBackupRoundTripsAndCorruptRestorePreservesTheCurrentLibrary() = runBlocking {
         fixture { f ->
             val source = f.seedBook()
@@ -145,7 +200,7 @@ class LibraryBackupTest {
     }
 
     private class Fixture {
-        val context: Context? = InstrumentationRegistry.getInstrumentation().targetContext
+        val context: Context = InstrumentationRegistry.getInstrumentation().targetContext
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         private val files = mutableSetOf<File>()
         private val settings =

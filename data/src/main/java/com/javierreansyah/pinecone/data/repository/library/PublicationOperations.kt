@@ -424,7 +424,7 @@ class PublicationOperations @Inject constructor(
     }
 
     private suspend fun snapshot(row: OperationEntity): OperationSnapshot {
-        val failures = dao.inputs(row.id).filter { it.state in listOf("FAILED", "INPUT_REQUIRED") }
+        val failures = dao.failures(row.id)
         return OperationSnapshot(
             row.id, OperationKind.valueOf(row.kind), OperationState.valueOf(row.state), row.bookId,
             row.completed, row.total, failures.map { it.displayName },

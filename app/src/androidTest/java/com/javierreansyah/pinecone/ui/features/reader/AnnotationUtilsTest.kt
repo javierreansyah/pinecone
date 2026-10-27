@@ -31,7 +31,7 @@ class AnnotationUtilsTest {
             assertEquals(
                 ids, sortAnnotations(
                     items, sort, emptyList(),
-                { it.json.toLocatorOrNull() }, { it.createdAt }).map { it.id })
+                    { it.json.toLocatorOrNull() }, { it.createdAt }).map { it.id })
         }
         assertNull("broken json".toLocatorOrNull())
     }

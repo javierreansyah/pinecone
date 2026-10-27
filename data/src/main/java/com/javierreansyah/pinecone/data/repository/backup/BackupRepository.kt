@@ -173,6 +173,19 @@ class BackupRepository @Inject constructor(
                 readSnapshots(dirs).maxByOrNull { (_, itSecond) -> itSecond.createdAt }?.second
             if (!manual && previous?.stateFingerprint == fingerprint) return BackupResult.Skipped
 
+            val objects = mutableMapOf<Pair<VaultObjectKind, String>, VaultObject>()
+            fun rawObject(
+                source: File,
+                kind: VaultObjectKind,
+                folder: DocumentFile,
+                prior: VaultObject?
+            ) =
+                objects.getOrPut(kind to source.canonicalPath) {
+                    reuseOrWriteRaw(source, kind, folder, prior).also {
+                        if (it.reused) bytesReused += it.info.storedSize else bytesWritten += it.info.storedSize
+                    }.info
+                }
+
             val priorBooks = previous?.books?.associateBy { (itBookId, _, _) -> itBookId }.orEmpty()
             phaseStarted = System.currentTimeMillis()
             val bookRefs =
@@ -180,22 +193,18 @@ class BackupRepository @Inject constructor(
                     val source = File(bookItem.filePath)
                     require(source.isFile) { "Missing book ${bookItem.id}" }
                     val old = priorBooks[bookItem.id]
-                    val bookObject = reuseOrWriteRaw(
+                    val bookObject = rawObject(
                         source, VaultObjectKind.BOOK, dirs.books, old?.book,
-                    ).also { (_, itInfo, itReused) ->
-                        if (itReused) bytesReused += itInfo.storedSize else bytesWritten += itInfo.storedSize
-                    }.info
+                    )
                     val coverObject = bookItem.coverPath?.let { path ->
                         val cover = File(path)
                         require(cover.isFile) { "Missing cover ${bookItem.id}" }
-                        reuseOrWriteRaw(
+                        rawObject(
                             cover,
                             VaultObjectKind.COVER,
                             dirs.covers,
                             old?.cover
-                        ).also { (_, itInfo2, itReused2) ->
-                            if (itReused2) bytesReused += itInfo2.storedSize else bytesWritten += itInfo2.storedSize
-                        }.info
+                        )
                     }
                     BookObjectReference(bookItem.id, bookObject, coverObject)
                 }
@@ -207,9 +216,11 @@ class BackupRepository @Inject constructor(
                 val source = File(rendition.filePath)
                 require(source.isFile) { "Missing rendition ${rendition.bookId}/${rendition.key}" }
                 val old = priorRenditions[rendition.bookId to rendition.key]?.objectInfo
-                val result = reuseOrWriteRaw(source, VaultObjectKind.BOOK, dirs.books, old)
-                if (result.reused) bytesReused += result.info.storedSize else bytesWritten += result.info.storedSize
-                RenditionObjectReference(rendition.bookId, rendition.key, result.info)
+                RenditionObjectReference(
+                    rendition.bookId,
+                    rendition.key,
+                    rawObject(source, VaultObjectKind.BOOK, dirs.books, old)
+                )
             }
             val dictionaryRefs =
                 settings.installedDictionaries.sortedBy { (itId, _, _) -> itId }.map { dictionary ->
@@ -520,6 +531,7 @@ class BackupRepository @Inject constructor(
     private fun validateSnapshot(snapshot: VaultSnapshot) {
         require(snapshot.format == SNAPSHOT_FORMAT)
         if (snapshot.formatVersion != FORMAT_VERSION) throw UnsupportedBackupException()
+        allObjects(snapshot)
         require(snapshot.id.matches(Regex("[0-9]{8}_[0-9]{6}_[0-9]{3}")))
         require(snapshot.backupKind == MANUAL || snapshot.backupKind == AUTOMATIC)
         require(snapshot.recordCounts == recordCounts(snapshot.library))
@@ -974,15 +986,14 @@ class BackupRepository @Inject constructor(
     }
 
     private fun validateAllObjects(snapshot: VaultSnapshot, dirs: VaultDirs) {
-        snapshot.renditions.forEach { verifyRaw(dirs.books, it.objectInfo) }
-        snapshot.books.forEach { (_, refBook2, refCover2) ->
-            verifyRaw(dirs.books, refBook2); refCover2?.let { verifyRaw(dirs.covers, it) }
-        }
-        snapshot.dictionaries.forEach { (_, refObjectInfo) ->
-            val file =
-                dirs.dictionaries.findFile(refObjectInfo.fileName) ?: error("Missing dictionary")
-            require(file.length() == refObjectInfo.storedSize)
-            verifyDictionaryObject(file, refObjectInfo, null)
+        allObjects(snapshot).forEach { info ->
+            val folder = objectFolder(dirs, info.kind)
+            if (info.kind != VaultObjectKind.DICTIONARY) verifyRaw(folder, info)
+            else {
+                val file = folder.findFile(info.fileName) ?: error("Missing dictionary")
+                require(file.length() == info.storedSize)
+                verifyDictionaryObject(file, info, null)
+            }
         }
     }
 
@@ -1002,7 +1013,16 @@ class BackupRepository @Inject constructor(
                 itCover4
             )
         } +
-                snapshot.dictionaries.map { (_, itObjectInfo4) -> itObjectInfo4 }).distinctBy { info -> info.kind to info.fileName }
+                snapshot.dictionaries.map { (_, itObjectInfo4) -> itObjectInfo4 })
+            .groupBy { it.kind to it.fileName }.values.map { references ->
+                references.first().also { expected ->
+                    require(references.all {
+                        it.sha256 == expected.sha256 && it.size == expected.size &&
+                                it.crc32 == expected.crc32 && it.storedSize == expected.storedSize &&
+                                it.storedCrc32 == expected.storedCrc32
+                    }) { "Conflicting backup object references" }
+                }
+            }
 
     private fun objectFolder(dirs: VaultDirs, kind: VaultObjectKind) = when (kind) {
         VaultObjectKind.BOOK -> dirs.books

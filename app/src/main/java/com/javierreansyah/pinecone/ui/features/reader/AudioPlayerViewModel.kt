@@ -8,8 +8,8 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.data.local.preferences.decodeReadingOverrides
-import com.javierreansyah.pinecone.data.local.preferences.encodeReadingOverrides
 import com.javierreansyah.pinecone.data.local.preferences.withReadingPreferencesFrom
+import com.javierreansyah.pinecone.data.repository.library.BookReadingPreferences
 import com.javierreansyah.pinecone.data.repository.library.LibraryRepository
 import com.javierreansyah.pinecone.data.repository.library.ReadingRepository
 import com.javierreansyah.pinecone.reader.audio.AudioPlaybackClient
@@ -28,8 +28,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import org.json.JSONObject
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
@@ -42,6 +40,7 @@ class AudioPlayerViewModel @AssistedInject constructor(
     repository: LibraryRepository,
     private val reading: ReadingRepository,
     private val preferences: ReaderPreferences,
+    private val bookPreferences: BookReadingPreferences,
     private val savedState: SavedStateHandle,
 ) : ViewModel() {
     private val openingError = MutableStateFlow<String?>(null)
@@ -60,7 +59,6 @@ class AudioPlayerViewModel @AssistedInject constructor(
             AudioPlaybackState(bookId = bookId, loading = true)
         )
     private var opened = false
-    private val settingsMutex = Mutex()
     private val localSettings =
         reading.renditionFlow(bookId, "original").map { it?.preferencesJson }.distinctUntilChanged()
             .map {
@@ -77,7 +75,7 @@ class AudioPlayerViewModel @AssistedInject constructor(
     val useBookSettings = localSettings.map { it != null }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
     val settings = combine(preferences.readerSettings, localSettings) { global, local ->
-        if (local == null) global else global.withReadingPreferencesFrom(local)
+        global.withReadingPreferencesFrom(local)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ReaderSettings())
     val jumpOrigin = repository.getBookFlow(bookId).map {
         it?.book?.jumpOriginLocatorJson?.let { encoded ->
@@ -154,42 +152,13 @@ class AudioPlayerViewModel @AssistedInject constructor(
     fun updateSettings(transform: (ReaderSettings) -> ReaderSettings) {
         if (settingsError.value != null) return
         viewModelScope.launch {
-            settingsMutex.withLock {
-                val encoded = reading.rendition(bookId, "original")?.preferencesJson
-                val local = decodeReadingOverrides(encoded)
-                if (local == null) preferences.updateSettings(transform)
-                else {
-                    val current =
-                        preferences.readerSettings.first().withReadingPreferencesFrom(local)
-                    reading.setReadingOverrides(
-                        bookId,
-                        "original",
-                        ReaderSettings().withReadingPreferencesFrom(transform(current))
-                            .encodeReadingOverrides()
-                    )
-                }
-            }
+            bookPreferences.update(bookId, "original", transform = transform)
         }
     }
 
     fun setUseBookSettings(enabled: Boolean) {
         viewModelScope.launch {
-            settingsMutex.withLock {
-                if (!enabled) {
-                    reading.setReadingOverrides(bookId, "original", "{}")
-                    return@withLock
-                }
-                val encoded = reading.rendition(bookId, "original")?.preferencesJson
-                val local = decodeReadingOverrides(encoded)
-                val global = preferences.readerSettings.first()
-                val current =
-                    if (local == null) global else global.withReadingPreferencesFrom(local)
-                reading.setReadingOverrides(
-                    bookId,
-                    "original",
-                    ReaderSettings().withReadingPreferencesFrom(current).encodeReadingOverrides(),
-                )
-            }
+            bookPreferences.setEnabled(bookId, "original", enabled)
         }
     }
 

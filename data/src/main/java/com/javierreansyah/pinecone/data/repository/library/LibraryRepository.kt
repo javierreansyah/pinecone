@@ -52,6 +52,8 @@ class LibraryRepository @Inject constructor(
 
     fun getAllBooks(): Flow<List<BookWithDetails>> = bookDao.getAllBooks()
 
+    fun getOrganizationBooks() = bookDao.organizationBooks()
+
     fun getVisibleBooks(spaceId: String?): Flow<List<BookWithDetails>> =
         bookDao.getVisibleBooks(spaceId)
 

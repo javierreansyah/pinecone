@@ -32,6 +32,8 @@ class ReadingPreferenceOverridesTest {
     fun disabledOverridesAndMalformedOverridesRemainDifferent() {
         assertNull(decodeReadingOverrides(null))
         assertNull(decodeReadingOverrides("{}"))
+        val global = ReaderSettings(fontSize = 1.7)
+        assertEquals(global, global.withReadingPreferencesFrom(null))
         assertThrows(IllegalArgumentException::class.java) { decodeReadingOverrides("not json") }
     }
 }

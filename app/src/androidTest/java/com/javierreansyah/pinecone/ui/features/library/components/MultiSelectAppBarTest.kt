@@ -23,6 +23,59 @@ class MultiSelectAppBarTest {
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
 
     @Test
+    fun selectedBooksWorkflowKeepsFilteredSelectionAndClosesAfterActions() {
+        val selection = com.javierreansyah.pinecone.ui.features.library.LibrarySelection()
+        val book = com.javierreansyah.pinecone.data.model.Book(
+            "visible", "Visible", emptyList(), null, 0.0, null, null, 1, false,
+        )
+        var organized = emptySet<String>()
+        var marked = false
+        var archived = emptyList<String>()
+        selection.enter()
+        compose.setContent {
+            MaterialTheme {
+                SelectedBooksBar(
+                    selection, listOf(book), listOf(book, book.copy(id = "hidden")),
+                    { ids, read -> assertEquals(setOf("visible"), ids.toSet()); marked = read },
+                    { archived = it.toList() }, {}, {}, { organized = it }, isUnarchive = true
+                )
+            }
+        }
+        compose.onNodeWithContentDescription(context.getString(R.string.action_select_all))
+            .performClick()
+        compose.runOnIdle { assertEquals(setOf("visible"), selection.ids) }
+        compose.onNodeWithContentDescription(context.getString(R.string.action_deselect_all))
+            .performClick()
+        compose.runOnIdle { assertTrue(selection.active); assertTrue(selection.ids.isEmpty()) }
+        compose.onNodeWithContentDescription(context.getString(R.string.action_select_all))
+            .performClick()
+        compose.onNodeWithContentDescription(context.getString(R.string.action_organize))
+            .performClick()
+        compose.runOnIdle {
+            assertEquals(setOf("visible"), organized)
+            assertTrue(selection.ids.isEmpty()); assertTrue(!selection.active)
+            selection.enter(setOf("visible"))
+        }
+        compose.onNodeWithContentDescription(context.getString(R.string.action_more)).performClick()
+        compose.onNodeWithText(context.getString(R.string.publication_mark_as_read)).performClick()
+        compose.runOnIdle {
+            assertTrue(marked); assertTrue(!selection.active); selection.enter(
+            setOf(
+                "visible"
+            )
+        )
+        }
+        compose.onNodeWithContentDescription(context.getString(R.string.action_more)).performClick()
+        compose.onNodeWithText(context.getString(R.string.publication_unarchive)).performClick()
+        compose.runOnIdle {
+            assertEquals(
+                listOf("visible"),
+                archived
+            ); assertTrue(!selection.active)
+        }
+    }
+
+    @Test
     fun emptySelectionDisablesActionsAndSingleSelectionOffersInfoAtTheRightEdge() {
         val count = mutableIntStateOf(0)
         var openedInfo = 0

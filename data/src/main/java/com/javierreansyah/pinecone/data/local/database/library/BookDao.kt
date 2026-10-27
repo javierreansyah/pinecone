@@ -9,8 +9,13 @@ import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
+data class BookOrganizationState(val id: String, val isUnsorted: Boolean)
+
 @Dao
 interface BookDao {
+    @Query("SELECT id, isUnsorted FROM books WHERE isArchived = 0")
+    fun organizationBooks(): Flow<List<BookOrganizationState>>
+
     @Query("UPDATE books SET isUnsorted = 0 WHERE id IN (:ids) AND isUnsorted = 1")
     suspend fun markOrganized(ids: List<String>)
 

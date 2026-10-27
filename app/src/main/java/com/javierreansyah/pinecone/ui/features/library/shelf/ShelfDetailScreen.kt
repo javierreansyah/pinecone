@@ -78,8 +78,8 @@ import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.LibrarySelection
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
-import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectAppBar
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectTopBarTransition
+import com.javierreansyah.pinecone.ui.features.library.components.SelectedBooksBar
 import com.javierreansyah.pinecone.ui.features.library.components.ShelfDetailFilterBottomSheet
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookCollection
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookContextMenu
@@ -143,7 +143,6 @@ fun ShelfDetailScreen(
         spaceName = if (spacesEnabled && shelfId != "unshelved") spaces.find { it.id == shelfWithCovers?.shelf?.spaceId }?.name else null,
         shelfWithCovers = shelfWithCovers,
         books = books,
-        allBooks = allBooks,
         reorderBooks = reorderBooks,
         isReordering = isReordering,
         isRenaming = isRenaming,
@@ -155,37 +154,19 @@ fun ShelfDetailScreen(
         onEnterMultiSelect = { bookId ->
             selection.enter(bookId?.let(::setOf) ?: emptySet())
         },
-        onExitMultiSelect = exitMultiSelect,
-        onInfo = selectedBooks.singleOrNull()?.let { bookId ->
-            {
-                exitMultiSelect()
-                onNavigateToBookInfo(bookId)
-            }
+        content = {
+            SelectedBooksBar(
+                selection = selection,
+                books = books,
+                allBooks = allBooks,
+                onMarkRead = viewModel.bookActions::markBooksReadStatus,
+                onArchive = viewModel.bookActions::archiveBooks,
+                onDelete = viewModel.bookActions::deleteBooks,
+                onInfo = onNavigateToBookInfo,
+                onOrganize = onNavigateToOrganize,
+            )
         },
-        onSelectAll = {
-            selectedBooks =
-                books.map { book -> book.id }
-                    .toSet()
-        },
-        onClearSelection = selection::clear,
         onToggleBookSelection = selection::toggle,
-        onMarkAsReadUnread = { showMarkAsRead ->
-            viewModel.bookActions.markBooksReadStatus(selectedBooks, showMarkAsRead)
-            exitMultiSelect()
-        },
-        onArchiveSelected = {
-            viewModel.bookActions.archiveBooks(selectedBooks)
-            exitMultiSelect()
-        },
-        onDeleteSelected = {
-            viewModel.bookActions.deleteBooks(selectedBooks)
-            exitMultiSelect()
-        },
-        onOrganizeSelected = {
-            val ids = selectedBooks
-            exitMultiSelect()
-            onNavigateToOrganize(ids)
-        },
         onRenameNameChange = { renameName = it },
         onStartRename = {
             val name = shelfWithCovers?.shelf?.name ?: ""
@@ -292,7 +273,6 @@ private fun ShelfDetailContent(
     spaceName: String?,
     shelfWithCovers: ShelfWithCovers?,
     books: List<Book>,
-    allBooks: List<Book>,
     reorderBooks: List<Book>,
     isReordering: Boolean,
     isRenaming: Boolean,
@@ -302,15 +282,7 @@ private fun ShelfDetailContent(
     isInMultiSelectMode: Boolean,
     onNavigateBack: () -> Unit,
     onEnterMultiSelect: (String?) -> Unit,
-    onExitMultiSelect: () -> Unit,
-    onInfo: (() -> Unit)?,
-    onSelectAll: () -> Unit,
-    onClearSelection: () -> Unit,
     onToggleBookSelection: (String) -> Unit,
-    onMarkAsReadUnread: (Boolean) -> Unit,
-    onArchiveSelected: () -> Unit,
-    onDeleteSelected: () -> Unit,
-    onOrganizeSelected: () -> Unit,
     onRenameNameChange: (TextFieldValue) -> Unit,
     onStartRename: () -> Unit,
     onCancelRename: () -> Unit,
@@ -325,6 +297,7 @@ private fun ShelfDetailContent(
     onBookClick: (String) -> Unit,
     onBookLongClick: (String) -> Unit,
     scrollKey: Any? = null,
+    content: @Composable () -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -336,24 +309,14 @@ private fun ShelfDetailContent(
                 displayTitle = displayTitle,
                 displayCount = displayCount,
                 spaceName = spaceName,
-                books = books,
-                allBooks = allBooks,
-                selectedBooks = selectedBooks,
                 isInMultiSelectMode = isInMultiSelectMode,
                 isReordering = isReordering,
                 isRenaming = isRenaming,
                 renameName = renameName,
                 scrollBehavior = scrollBehavior,
+                content = content,
                 onNavigateBack = onNavigateBack,
                 onEnterMultiSelect = { onEnterMultiSelect(null) },
-                onExitMultiSelect = onExitMultiSelect,
-                onInfo = onInfo,
-                onSelectAll = onSelectAll,
-                onClearSelection = onClearSelection,
-                onMarkAsReadUnread = onMarkAsReadUnread,
-                onArchiveSelected = onArchiveSelected,
-                onDeleteSelected = onDeleteSelected,
-                onOrganizeSelected = onOrganizeSelected,
                 onRenameNameChange = onRenameNameChange,
                 onStartRename = onStartRename,
                 onCancelRename = onCancelRename,
@@ -396,9 +359,6 @@ private fun ShelfDetailTopBar(
     displayTitle: String,
     displayCount: String,
     spaceName: String?,
-    books: List<Book>,
-    allBooks: List<Book>,
-    selectedBooks: Set<String>,
     isInMultiSelectMode: Boolean,
     isReordering: Boolean,
     isRenaming: Boolean,
@@ -406,14 +366,6 @@ private fun ShelfDetailTopBar(
     scrollBehavior: TopAppBarScrollBehavior,
     onNavigateBack: () -> Unit,
     onEnterMultiSelect: () -> Unit,
-    onExitMultiSelect: () -> Unit,
-    onInfo: (() -> Unit)?,
-    onSelectAll: () -> Unit,
-    onClearSelection: () -> Unit,
-    onMarkAsReadUnread: (Boolean) -> Unit,
-    onArchiveSelected: () -> Unit,
-    onDeleteSelected: () -> Unit,
-    onOrganizeSelected: () -> Unit,
     onRenameNameChange: (TextFieldValue) -> Unit,
     onStartRename: () -> Unit,
     onCancelRename: () -> Unit,
@@ -425,30 +377,11 @@ private fun ShelfDetailTopBar(
     onShowDeleteDialog: () -> Unit,
     onTransferShelf: ((Boolean) -> Unit)?,
     modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
 ) {
-    val showMarkAsRead = remember(allBooks, selectedBooks) {
-        allBooks.filter { book -> book.id in selectedBooks }
-            .any { book -> !book.isRead }
-    }
-
     MultiSelectTopBarTransition(
         isMultiSelect = isInMultiSelectMode,
-        multiSelectBar = {
-            MultiSelectAppBar(
-                wording = allBooks.filter { it.id in selectedBooks }.publicationWording(),
-                selectedCount = selectedBooks.size,
-                isAllSelected = books.isNotEmpty() && selectedBooks.size == books.size,
-                showMarkAsRead = showMarkAsRead,
-                onCloseMultiSelect = onExitMultiSelect,
-                onClearSelection = onClearSelection,
-                onSelectAll = onSelectAll,
-                onMarkAsReadUnread = { onMarkAsReadUnread(showMarkAsRead) },
-                onOrganize = onOrganizeSelected,
-                onArchive = onArchiveSelected,
-                onDelete = onDeleteSelected,
-                onInfo = onInfo,
-            )
-        },
+        multiSelectBar = content,
     ) {
         ShelfDetailDefaultTopAppBar(
             shelfId = shelfId,

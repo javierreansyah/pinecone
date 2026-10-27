@@ -63,8 +63,8 @@ import com.javierreansyah.pinecone.ui.features.library.LibrarySelection
 import com.javierreansyah.pinecone.ui.features.library.SortType
 import com.javierreansyah.pinecone.ui.features.library.StatusFilter
 import com.javierreansyah.pinecone.ui.features.library.components.FilterResultBottomSheet
-import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectAppBar
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectTopBarTransition
+import com.javierreansyah.pinecone.ui.features.library.components.SelectedBooksBar
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookCollection
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookContextMenu
 import com.javierreansyah.pinecone.ui.features.library.deleteCollectionTitle
@@ -198,9 +198,6 @@ private fun FilterResultContent(
         topBar = {
             FilterResultTopBar(
                 filterValue = filterValue,
-                allBooks = allBooks,
-                books = books,
-                selectedBooks = selectedBooks,
                 isInMultiSelectMode = isInMultiSelectMode,
                 showMenu = showMenu,
                 isRenaming = isRenaming,
@@ -240,35 +237,17 @@ private fun FilterResultContent(
                     showDeleteConfirm = true
                 },
                 onEnterMultiSelect = { isInMultiSelectMode = true },
-                onExitMultiSelect = exitMultiSelect,
-                onInfo = selectedBooks.singleOrNull()?.let { bookId ->
-                    {
-                        exitMultiSelect()
-                        onNavigateToBookInfo(bookId)
-                    }
-                },
-                onClearSelection = selection::clear,
-                onSelectAll = {
-                    selectedBooks =
-                        books.map { book -> book.id }
-                            .toSet()
-                },
-                onMarkAsReadUnread = { showMarkAsRead ->
-                    onMarkBooksReadStatus(selectedBooks, showMarkAsRead)
-                    exitMultiSelect()
-                },
-                onOrganize = {
-                    val ids = selectedBooks
-                    exitMultiSelect()
-                    onNavigateToOrganize(ids)
-                },
-                onArchive = {
-                    onArchiveBooks(selectedBooks)
-                    exitMultiSelect()
-                },
-                onDelete = {
-                    onDeleteBooks(selectedBooks)
-                    exitMultiSelect()
+                content = {
+                    SelectedBooksBar(
+                        selection = selection,
+                        books = books,
+                        allBooks = allBooks,
+                        onMarkRead = onMarkBooksReadStatus,
+                        onArchive = onArchiveBooks,
+                        onDelete = onDeleteBooks,
+                        onInfo = onNavigateToBookInfo,
+                        onOrganize = onNavigateToOrganize,
+                    )
                 },
             )
         },
@@ -362,9 +341,6 @@ private fun FilterResultContent(
 @Composable
 private fun FilterResultTopBar(
     filterValue: String,
-    allBooks: List<Book>,
-    books: List<Book>,
-    selectedBooks: Set<String>,
     isInMultiSelectMode: Boolean,
     showMenu: Boolean,
     isRenaming: Boolean,
@@ -381,39 +357,12 @@ private fun FilterResultTopBar(
     onRenameClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onEnterMultiSelect: () -> Unit,
-    onExitMultiSelect: () -> Unit,
-    onInfo: (() -> Unit)?,
-    onClearSelection: () -> Unit,
-    onSelectAll: () -> Unit,
-    onMarkAsReadUnread: (Boolean) -> Unit,
-    onOrganize: () -> Unit,
-    onArchive: () -> Unit,
-    onDelete: () -> Unit,
     modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
 ) {
-    val showMarkAsRead = remember(allBooks, selectedBooks) {
-        allBooks.filter { book -> book.id in selectedBooks }
-            .any { book -> !book.isRead }
-    }
-
     MultiSelectTopBarTransition(
         isMultiSelect = isInMultiSelectMode,
-        multiSelectBar = {
-            MultiSelectAppBar(
-                wording = allBooks.filter { it.id in selectedBooks }.publicationWording(),
-                selectedCount = selectedBooks.size,
-                isAllSelected = books.isNotEmpty() && selectedBooks.size == books.size,
-                showMarkAsRead = showMarkAsRead,
-                onCloseMultiSelect = onExitMultiSelect,
-                onClearSelection = onClearSelection,
-                onSelectAll = onSelectAll,
-                onMarkAsReadUnread = { onMarkAsReadUnread(showMarkAsRead) },
-                onOrganize = onOrganize,
-                onArchive = onArchive,
-                onDelete = onDelete,
-                onInfo = onInfo,
-            )
-        },
+        multiSelectBar = content,
     ) {
         FilterResultDefaultTopAppBar(
             filterValue = filterValue,

@@ -54,8 +54,8 @@ import com.javierreansyah.pinecone.ui.features.library.StatusFilter
 import com.javierreansyah.pinecone.ui.features.library.components.ImportFeedback
 import com.javierreansyah.pinecone.ui.features.library.components.ImportFeedbackState
 import com.javierreansyah.pinecone.ui.features.library.components.LibraryFilterBottomSheet
-import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectAppBar
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectTopBarTransition
+import com.javierreansyah.pinecone.ui.features.library.components.SelectedBooksBar
 import com.javierreansyah.pinecone.ui.features.library.components.ShelvesMultiSelectAppBar
 import com.javierreansyah.pinecone.ui.features.library.components.ShelvesPage
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookCollection
@@ -257,9 +257,6 @@ fun LibraryScreen(
                             isInMultiSelectMode = isInMultiSelectMode,
                             shelves = uiState.shelves,
                             selectedShelves = selectedShelves,
-                            allBooks = uiState.allBooks,
-                            filteredBooks = uiState.filteredBooks,
-                            selectedBooks = selectedBooks,
                             searchQuery = uiState.searchQuery,
                             searchCategory = uiState.searchCategory,
                             searchResults = uiState.searchResults,
@@ -275,12 +272,6 @@ fun LibraryScreen(
                             onAuthorsHeaderClick = onNavigateToAllAuthors,
                             onTagsHeaderClick = onNavigateToAllTags,
                             onExitMultiSelect = exitMultiSelect,
-                            onInfo = selectedBooks.singleOrNull()?.let { bookId ->
-                                {
-                                    exitMultiSelect()
-                                    onNavigateToBookInfo(bookId)
-                                }
-                            },
                             onClearShelvesSelection = { selectedShelves = emptySet() },
                             onSelectAllShelves = {
                                 selectedShelves = uiState.shelves
@@ -300,29 +291,19 @@ fun LibraryScreen(
                                 deleteShelves(selectedShelves)
                                 exitMultiSelect()
                             },
-                            onClearBooksSelection = { selectedBooks = emptySet() },
-                            onSelectAllBooks = {
-                                selectedBooks =
-                                    uiState.filteredBooks.map { book -> book.id }
-                                        .toSet()
+                            content = {
+                                SelectedBooksBar(
+                                    selection = selection,
+                                    books = uiState.filteredBooks,
+                                    allBooks = uiState.allBooks,
+                                    onMarkRead = markBooksReadStatus,
+                                    onArchive = archiveBooks,
+                                    onDelete = deleteBooks,
+                                    onInfo = onNavigateToBookInfo,
+                                    onOrganize = onNavigateToOrganize,
+                                )
                             },
-                            onMarkBooksReadStatus = { showMarkAsRead ->
-                                markBooksReadStatus(selectedBooks, showMarkAsRead)
-                                exitMultiSelect()
-                            },
-                            onOrganizeBooks = {
-                                val ids = selectedBooks
-                                exitMultiSelect()
-                                onNavigateToOrganize(ids)
-                            },
-                            onArchiveBooks = {
-                                archiveBooks(selectedBooks)
-                                exitMultiSelect()
-                            },
-                        ) {
-                            deleteBooks(selectedBooks)
-                            exitMultiSelect()
-                        }
+                        )
                     },
                     bottomBar = {
                         if (libraryView == LibraryView.Both && uiState.showLibraryBottomNavigation) LibraryShortBottomNavigation(
@@ -481,9 +462,6 @@ private fun LibraryTopBar(
     isInMultiSelectMode: Boolean,
     shelves: List<ShelfWithCovers>,
     selectedShelves: Set<String>,
-    allBooks: List<Book>,
-    filteredBooks: List<Book>,
-    selectedBooks: Set<String>,
     searchQuery: String,
     searchCategory: SearchCategory,
     searchResults: SearchResults,
@@ -499,18 +477,12 @@ private fun LibraryTopBar(
     onAuthorsHeaderClick: () -> Unit,
     onTagsHeaderClick: () -> Unit,
     onExitMultiSelect: () -> Unit,
-    onInfo: (() -> Unit)?,
     onClearShelvesSelection: () -> Unit,
     onSelectAllShelves: () -> Unit,
     onRenameShelf: (String) -> Unit,
     onDeleteShelves: () -> Unit,
     onTransferShelves: ((Boolean) -> Unit)?,
-    onClearBooksSelection: () -> Unit,
-    onSelectAllBooks: () -> Unit,
-    onMarkBooksReadStatus: (Boolean) -> Unit,
-    onOrganizeBooks: () -> Unit,
-    onArchiveBooks: () -> Unit,
-    onDeleteBooks: () -> Unit,
+    content: @Composable () -> Unit,
 ) {
     MultiSelectTopBarTransition(
         isMultiSelect = isInMultiSelectMode,
@@ -535,23 +507,7 @@ private fun LibraryTopBar(
                     onTransfer = onTransferShelves,
                 )
             } else {
-                val showMarkAsRead = allBooks
-                    .filter { book -> book.id in selectedBooks }
-                    .any { book -> !book.isRead }
-                MultiSelectAppBar(
-                    wording = allBooks.filter { it.id in selectedBooks }.publicationWording(),
-                    selectedCount = selectedBooks.size,
-                    isAllSelected = filteredBooks.isNotEmpty() && selectedBooks.size == filteredBooks.size,
-                    showMarkAsRead = showMarkAsRead,
-                    onCloseMultiSelect = onExitMultiSelect,
-                    onClearSelection = onClearBooksSelection,
-                    onSelectAll = onSelectAllBooks,
-                    onMarkAsReadUnread = { onMarkBooksReadStatus(showMarkAsRead) },
-                    onOrganize = onOrganizeBooks,
-                    onArchive = onArchiveBooks,
-                    onDelete = onDeleteBooks,
-                    onInfo = onInfo,
-                )
+                content()
             }
         },
     ) {

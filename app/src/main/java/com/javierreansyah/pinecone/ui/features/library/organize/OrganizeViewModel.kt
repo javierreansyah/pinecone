@@ -53,16 +53,22 @@ class OrganizeViewModel @AssistedInject constructor(
     private val targetBookIds = bookIds.toSet()
 
     val uiState: StateFlow<OrganizeUiState> = combine(
-        repository.getAllShelvesWithBooks(),
+        combine(
+            repository.searchShelves(""),
+            repository.getAllShelfBookCrossRefs()
+        ) { shelves, refs ->
+            shelves to refs
+        },
         repository.getAllSpaces(),
         repository.getAllBookSpaceCrossRefs(),
         readerPreferences.readerSettings,
-        repository.getAllBooks(),
-    ) { shelvesWithBooks, spaces, spaceCrossRefs, settings, books ->
-        val validShelves =
-            shelvesWithBooks.filter { (itShelf, books1) -> itShelf.id != "unshelved" }
-        val organized =
-            books.asSequence().filterNot { it.book.isUnsorted }.map { it.book.id }.toSet()
+        repository.getOrganizationBooks(),
+    ) { (shelves, shelfRefs), spaces, spaceCrossRefs, settings, books ->
+        val validShelves = shelves.filter { it.id != "unshelved" }
+        val visibleIds = books.mapTo(mutableSetOf()) { it.id }
+        val organized = books.filterNot { it.isUnsorted }.mapTo(mutableSetOf()) { it.id }
+        val membersByShelf = shelfRefs.filter { it.bookId in visibleIds }
+            .groupBy({ it.shelfId }, { it.bookId }).mapValues { it.value.toSet() }
         val membersBySpace =
             spaceCrossRefs.groupBy({ it.spaceId }, { it.bookId }).mapValues { it.value.toSet() }
 
@@ -80,17 +86,16 @@ class OrganizeViewModel @AssistedInject constructor(
                 }
 
                 val spaceShelves = validShelves.asSequence()
-                    .filter { (itShelf2, books1) -> !settings.spacesEnabled || itShelf2.spaceId == spaceId }
-                    .map { (shelfWithBooksShelf, shelfWithBooksBooks) ->
-                        val booksInShelf =
-                            shelfWithBooksBooks.mapTo(mutableSetOf()) { details -> details.book.id }
+                    .filter { !settings.spacesEnabled || it.spaceId == spaceId }
+                    .map { shelf ->
+                        val booksInShelf = membersByShelf[shelf.id].orEmpty()
                         val countInShelf = targetBookIds.count { it in booksInShelf }
                         val shelfState = when (countInShelf) {
                             0 -> ToggleableState.Off
                             targetBookIds.size -> ToggleableState.On
                             else -> ToggleableState.Indeterminate
                         }
-                        ShelfItemState(shelfWithBooksShelf, shelfState)
+                        ShelfItemState(shelf, shelfState)
                     }.sortedBy { (itShelf3, state) -> itShelf3.name.lowercase() }.toList()
 
                 SpaceWithShelvesItemState(
