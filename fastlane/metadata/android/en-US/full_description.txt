@@ -1,9 +1,18 @@
-Pinecone is a free Android reader for books, PDFs, comics and audiobooks, with Material 3 design.
+Your books, documents, comics, and audiobooks deserve a comfortable home. Pinecone brings them together in a customizable Android library, ready for reading and listening on your device.
 
-Read EPUB, PDF and CBZ files, image publications and audiobook packages. Organize your library with spaces, shelves and tags; save reading positions, bookmarks, notes and highlights where supported.
+Bring your collection together
+Import EPUB books, PDFs, CBZ comics, images, and audiobooks. Browse your library by cover, search titles and authors, and filter by format, reading status, or shelf.
 
-Customize typography, spacing, colors and reading controls. Listen to audiobooks with playback speed controls. Import StarDict dictionaries for offline lookup. Switch supported PDFs to an on-device reflowable reading view; scanned pages remain images and OCR is not supported.
+Organize your way
+Arrange titles in shelves and separate spaces, edit book details and covers, and organize multiple titles at once. Keep new imports in an Unsorted inbox or archive titles for later.
 
-Create manual or scheduled local backups and restore your books, dictionaries, settings and reading progress. English and Indonesian interfaces are available.
+Read comfortably
+Adjust fonts, text size, spacing, colors, and brightness. Read PDFs in their original layout or switch to a reflowable view generated on your device. Scanned pages remain images; OCR is not supported.
 
-Requires Android 14 or newer. Pinecone is licensed under AGPL-3.0-or-later.
+Remember and discover
+Keep your place with reading progress, bookmarks, notes, and highlights where supported. Search inside EPUB books and PDFs, or import a StarDict dictionary for offline word lookup.
+
+Listen and keep your library safe
+Play audiobook packages and supported audio files, navigate chapters, and adjust playback speed. Create manual or scheduled local backups and restore your library, dictionaries, settings, and reading progress.
+
+Choose a light or dark theme and an English or Indonesian interface. Requires Android 14 or newer.

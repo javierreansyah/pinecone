@@ -1,9 +1,18 @@
-Pinecone adalah pembaca buku, PDF, komik dan buku audio untuk Android dengan desain Material 3.
+Buku, dokumen, komik, dan buku audio Anda kini punya rumah yang nyaman. Pinecone menyatukan koleksi dalam perpustakaan Android yang dapat disesuaikan, siap dibaca dan didengarkan di perangkat Anda.
 
-Baca EPUB, PDF, CBZ, publikasi gambar dan paket buku audio. Atur perpustakaan dengan ruang, rak dan tag. Simpan posisi baca, penanda, catatan dan sorotan pada format yang mendukungnya.
+Satukan koleksi
+Impor buku EPUB, PDF, komik CBZ, gambar, dan buku audio. Jelajahi koleksi lewat sampul, cari judul dan penulis, lalu saring berdasarkan format, status baca, atau rak.
 
-Sesuaikan tipografi, jarak, warna dan kontrol membaca. Atur kecepatan buku audio. Impor kamus StarDict untuk pencarian luring. Tampilkan PDF yang didukung dalam mode baca yang dibuat di perangkat; halaman hasil pemindaian tetap berupa gambar dan OCR tidak didukung.
+Atur sesuai keinginan
+Kelompokkan judul dalam rak dan ruang terpisah, ubah detail dan sampul buku, serta atur beberapa judul sekaligus. Simpan impor baru di kotak Belum Diurutkan atau arsipkan judul untuk nanti.
 
-Buat cadangan lokal secara manual atau terjadwal untuk memulihkan buku, kamus, pengaturan dan kemajuan membaca. Antarmuka tersedia dalam bahasa Inggris dan Indonesia.
+Baca dengan nyaman
+Sesuaikan font, ukuran teks, jarak, warna, dan kecerahan. Baca PDF dengan tata letak asli atau beralih ke tampilan baca yang menyesuaikan teks dan dibuat di perangkat. Halaman hasil pemindaian tetap berupa gambar; OCR tidak didukung.
 
-Memerlukan Android 14 atau lebih baru. Pinecone berlisensi AGPL-3.0-or-later.
+Simpan dan temukan
+Lanjutkan membaca dari posisi terakhir, simpan penanda, catatan, dan sorotan pada format yang mendukungnya. Cari teks dalam buku EPUB dan PDF, atau impor kamus StarDict untuk mencari arti kata secara luring.
+
+Dengarkan dan jaga koleksi
+Putar paket buku audio dan berkas audio yang didukung, pindah antarbagian, dan atur kecepatan pemutaran. Buat cadangan lokal secara manual atau terjadwal untuk memulihkan perpustakaan, kamus, pengaturan, dan kemajuan membaca.
+
+Pilih tema terang atau gelap serta antarmuka bahasa Inggris atau Indonesia. Memerlukan Android 14 atau lebih baru.

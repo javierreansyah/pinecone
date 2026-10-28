@@ -2,7 +2,7 @@
   <img src="docs/images/app-icon.jpg" width="160" alt="Pinecone icon" />
   <h1>Pinecone</h1>
   <p>
-    Pinecone is an Android reader for books, documents, comics, and audiobooks, with Material 3 Expressive design and customizable reading and listening.
+    A comfortable home for your books, documents, comics, and audiobooks on Android.
   </p>
 </div>
 
@@ -44,33 +44,21 @@ images; OCR is not supported.
 
 Screenshot content and artwork retain their original rights; see [asset sources](docs/ASSET_SOURCES.md).
 
-## Features
+## Made for your reading life
 
-- **Books, documents, comics, and audiobooks:** Read EPUB books, PDF documents, CBZ comics, image
-  publications, and audiobook packages, or listen to supported standalone audio files.
-- **PDF read mode:** Switch between the original PDF and a reflowable reading view generated on your
-  device. Scanned pages remain images; OCR is not supported.
-- **Audiobook playback:** Play and pause, seek, skip forward or back by 10 seconds, and adjust
-  playback speed. Embedded audio tags supply titles and authors when available.
-- **Spaces and shelves:** Organize titles into optional spaces and shelves. Create shelves in
-  multiple spaces, and move or copy shelves between spaces.
-- **Library browsing:** Search titles, authors, shelves, and tags; switch between grid and list
-  layouts; and filter by format, reading status, or shelf membership.
-- **Reading status and archives:** Track progress, mark titles as finished, archive them, and
-  optionally keep new imports in an Unsorted inbox until organized.
-- **Bulk organization:** Select multiple titles to organize, mark as read, archive, or delete.
-- **Publication details:** View and edit titles, contributors, descriptions, covers, languages,
-  identifiers, and comic volume and issue metadata, including imported ComicInfo.xml fields.
-- **Bookmarks, notes, and highlights:** Save passages and reading positions, then revisit them from
-  the reader or title info page where supported by the format.
-- **Search within publications:** Find text in EPUB books and PDF documents and jump to matches.
-- **Offline dictionaries:** Import StarDict dictionaries and look up selected words while reading.
-- **Reading customization:** Adjust typography, spacing, colors, brightness, and reading options,
-  with settings suited to each format.
-- **Material 3 Expressive:** Use dynamic colors or curated palettes, light and dark themes,
-  adjustable contrast, and English or Indonesian interface text.
-- **Local import and backups:** Import individual files or scan folders, create manual or scheduled
-  backups, and restore your library, dictionaries, settings, and reading progress.
+**Bring your collection together.** Import EPUB books, PDFs, CBZ comics, images, and audiobooks from your device. Browse covers, search your library, and find titles with filters for format, reading status, and shelf.
+
+**Make the library your own.** Arrange titles in shelves and separate spaces, edit book details and covers, and organize several titles at once. Keep new imports in an Unsorted inbox or archive books you want to set aside.
+
+**Read comfortably.** Choose fonts, text size, spacing, colors, and brightness to suit you. Open a PDF in its original layout or switch to a reflowable reading view made on your device. Scanned pages remain images; OCR is not supported.
+
+**Remember and discover.** Pick up where you left off, save bookmarks, notes, and highlights where supported, and search inside EPUB books and PDFs. Import an offline StarDict dictionary to look up words as you read.
+
+**Listen your way.** Play audiobook packages or supported audio files, move between chapters, skip forward or back, and adjust playback speed. The mini player keeps controls within reach while you browse.
+
+**Keep your library safe.** Create manual or scheduled local backups and restore your library, dictionaries, settings, and reading progress. Choose a light or dark theme, a color palette, and an English or Indonesian interface.
+
+Pinecone requires **Android 14 or newer**.
 
 ## License
 
