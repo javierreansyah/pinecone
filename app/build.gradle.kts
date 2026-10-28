@@ -16,6 +16,9 @@ val releaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPasswo
 require(releaseSigning.values.all { it == null } || releaseSigning.values.all { !it.isNullOrBlank() }) {
     "Set all four pinecone.signing properties, or omit all four for an unsigned release."
 }
+// Android Studio's signing wizard supplies AGP credentials separately from our private properties.
+val releaseSigningConfigured = releaseSigning["storeFile"] != null ||
+        providers.gradleProperty("android.injected.signing.store.file").isPresent
 
 abstract class PublicationLicenseAssetsTask : DefaultTask() {
     @get:InputFiles
@@ -187,7 +190,7 @@ androidComponents {
             output.versionCode.set(baseVersionCode + abiOffset)
             val abiSuffix = if (abi != null) "-$abi" else ""
             val outputName = when (variant.name) {
-                "release" -> "pinecone-v$appVersionName$abiSuffix${if (releaseSigning["storeFile"] == null) "-unsigned" else ""}.apk"
+                "release" -> "pinecone-v$appVersionName$abiSuffix${if (releaseSigningConfigured) "" else "-unsigned"}.apk"
                 "debug" -> "pinecone-$appVersionName$abiSuffix-debug.apk"
                 "staging" -> "pinecone-$appVersionName$abiSuffix-staging.apk"
                 else -> "pinecone-$appVersionName$abiSuffix-${variant.name}.apk"

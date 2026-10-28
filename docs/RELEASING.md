@@ -10,7 +10,9 @@ and loading newer formats into older apps are unsupported; reject them before ch
 - F-Droid signs its releases. Optional direct APKs retain the existing developer key, whose
   certificate is checked by [the release verifier](../scripts/verify_release.py). Keep signing
   credentials private and backed up; the build's `pinecone.signing.*` properties belong in private
-  Gradle user properties. Missing credentials produce an unsigned APK; partial configuration fails.
+  Gradle user properties. Android Studio's signed APK wizard also supplies credentials; filenames
+  omit `-unsigned` for either signing method. Missing credentials produce an unsigned APK; partial
+  private configuration fails. Verify the APK certificate before distribution regardless of filename.
 - Android replacement requires compatible package, certificate, version code, SDK and ABI support.
   Switching between developer-signed and F-Droid installations requires a verified backup outside
   app-private storage, reinstall, and restore. Android cloud backup/device transfer is disabled.
