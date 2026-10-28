@@ -8,7 +8,8 @@ for a new build.
 | Assets | Provenance and license |
 | --- | --- |
 | Fonts | Atkinson Hyperlegible, Literata and Adobe Source families: OFL-1.1. Sources/copyrights are in the bundled [font notice](../app/src/main/assets/fonts/NOTICE.txt), alongside `OFL.txt`. Preserve the reserved name "Source". |
-| App/listing artwork | Existing project artwork under AGPL-3.0-or-later. Listing icon derives from `docs/images/AppIcon.jpg`; the Settings capture avoids third-party book artwork. The Indonesian listing currently reuses the English capture. |
+| App/listing artwork | Existing project artwork under AGPL-3.0-or-later. Listing icon derives from `docs/images/app-icon.jpg`. Fastlane retains its separate Settings capture; the Indonesian listing reuses the English capture. |
+| Documentation screenshots | Native-resolution captures of the development app on Resizable (Experimental). Books/covers come from [Project Gutenberg](https://www.gutenberg.org/) and [Standard Ebooks](https://standardebooks.org/ebooks/jane-austen/pride-and-prejudice); the audiobook/cover is the [LibriVox Romeo and Juliet edition](https://librivox.org/romeo-and-juliet-by-william-shakespeare/). PDF excerpts show Vaswani et al., [Attention Is All You Need](https://arxiv.org/abs/1706.03762). These works retain their original rights; the app license does not relicense them. |
 | Material Symbols | Supplied by the existing icon dependency under Apache-2.0. |
 | Compatibility fixtures | Project-created synthetic books, images, records and dictionary content under the project license. |
 

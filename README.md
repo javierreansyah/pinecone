@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/images/AppIcon.jpg" width="160" alt="Pinecone Icon" />
+  <img src="docs/images/app-icon.jpg" width="160" alt="Pinecone icon" />
   <h1>Pinecone</h1>
   <p>
     Pinecone is an Android reader for books, documents, comics, and audiobooks, with Material 3 Expressive design and customizable reading and listening.
@@ -8,15 +8,41 @@
 
 ## Screenshots
 
-<div align="center">
-  <img src="docs/images/Library.png" width="32%" alt="Library screen" />
-  <img src="docs/images/Shelves.png" width="32%" alt="Shelves screen" />
-  <img src="docs/images/BookInfo.png" width="32%" alt="Book info screen" />
-  <img src="docs/images/Reader.png" width="32%" alt="Reader screen" />
-  <img src="docs/images/ReaderSettings.png" width="32%" alt="Reader settings screen" />
-  <img src="docs/images/LibrarySearch.png" width="32%" alt="Library search screen" />
-  <img src="docs/images/Settings.png" width="32%" alt="Settings screen" />
-</div>
+Current development app, captured at 1080 × 2400 on the Resizable (Experimental) emulator.
+
+| Library | Shelves | Book details |
+| --- | --- | --- |
+| <img src="docs/images/library.png" width="280" alt="Library grid with book covers, authors and reading progress" /> | <img src="docs/images/shelves.png" width="280" alt="Audiobooks and Classic Literature shelves" /> | <img src="docs/images/book-info.png" width="280" alt="Book cover, contributors, tags and reading details" /> |
+
+| EPUB reading | Original PDF | PDF converted to EPUB read mode |
+| --- | --- | --- |
+| <img src="docs/images/epub-reader.png" width="280" alt="Pride and Prejudice in the sepia reader with a saved bookmark" /> | <img src="docs/images/pdf-reader.png" width="280" alt="Attention Is All You Need in its original PDF layout" /> | <img src="docs/images/pdf-read-mode.png" width="280" alt="The same paper converted on device into reflowable text" /> |
+
+PDF read mode keeps the original available and supports reading customization. Scanned pages remain
+images; OCR is not supported.
+
+| Audiobook playback | Offline dictionary | Reader customization |
+| --- | --- | --- |
+| <img src="docs/images/audiobook-player.png" width="280" alt="Romeo and Juliet audiobook with cover art and playback controls" /> | <img src="docs/images/dictionary-lookup.png" width="280" alt="An offline word definition opened from selected text" /> | <img src="docs/images/reader-settings.png" width="280" alt="Font, typography, spacing and publisher-style controls" /> |
+
+<details>
+<summary>More features: search, organization, annotations, appearance and backups</summary>
+
+| Library search | Spaces | Bulk selection |
+| --- | --- | --- |
+| <img src="docs/images/library-search.png" width="280" alt="Search results for Shakespeare across books, audiobooks and authors" /> | <img src="docs/images/spaces.png" width="280" alt="Fiction and Non Fiction spaces with title counts" /> | <img src="docs/images/bulk-selection.png" width="280" alt="Three selected books with bulk actions and a paused audio mini player" /> |
+
+| Shelf membership | Notes and highlights | Converted PDF chapters |
+| --- | --- | --- |
+| <img src="docs/images/bulk-organize.png" width="280" alt="Organize selected books into spaces and shelves" /> | <img src="docs/images/notes.png" width="280" alt="A saved highlighted word and reading note" /> | <img src="docs/images/pdf-chapters.png" width="280" alt="Chapter navigation in the converted PDF read mode" /> |
+
+| Playback settings | App appearance | Backup and restore |
+| --- | --- | --- |
+| <img src="docs/images/audiobook-settings.png" width="280" alt="Audiobook playback speed, pitch and reading options" /> | <img src="docs/images/appearance.png" width="280" alt="Material color palettes for the app theme" /> | <img src="docs/images/backup-restore.png" width="280" alt="Local backup location, schedule, manual backup and restore controls" /> |
+
+</details>
+
+Screenshot content and artwork retain their original rights; see [asset sources](docs/ASSET_SOURCES.md).
 
 ## Features
 
