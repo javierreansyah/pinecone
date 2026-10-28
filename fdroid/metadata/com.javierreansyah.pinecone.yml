@@ -13,7 +13,7 @@ Repo: https://github.com/javierreansyah/pinecone.git
 
 Builds:
   - versionName: 1.0.0
-    versionCode: 100004
+    versionCode: 100001
     commit: v1.0.0
     sudo:
       - echo "deb https://deb.debian.org/debian bookworm main" > /etc/apt/sources.list.d/bookworm.list
@@ -22,7 +22,7 @@ Builds:
       - apt-get install -y -t bookworm openjdk-17-jdk-headless
     gradle:
       - yes
-    output: app/build/outputs/apk/release/*-unsigned.apk
+    output: app/build/outputs/apk/release/*-armeabi-v7a-unsigned.apk
     srclibs:
       - MuPDF@8ad45e92f0935d3d87f1db3f873086472a5e1b24
     prebuild:
@@ -44,6 +44,109 @@ Builds:
     ndk: 28.2.13676358
     gradleprops:
       - mupdfFromSource=true
+      - abiFilter=armeabi-v7a
+
+  - versionName: 1.0.0
+    versionCode: 100002
+    commit: v1.0.0
+    sudo:
+      - echo "deb https://deb.debian.org/debian bookworm main" > /etc/apt/sources.list.d/bookworm.list
+      - apt-get update
+      - apt-get install -y make gcc g++ pkg-config openjdk-21-jdk-headless
+      - apt-get install -y -t bookworm openjdk-17-jdk-headless
+    gradle:
+      - yes
+    output: app/build/outputs/apk/release/*-arm64-v8a-unsigned.apk
+    srclibs:
+      - MuPDF@8ad45e92f0935d3d87f1db3f873086472a5e1b24
+    prebuild:
+      - sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
+      - git -C $$MuPDF$$ submodule update --init --recursive
+      - rm -f gradle/mupdf-prebuilt.settings.gradle.kts
+      - mkdir -p native/mupdf
+      - cp -a $$MuPDF$$ native/mupdf/source
+      - rm -rf native/mupdf/source/thirdparty/lcms2/testbed
+      - rm -rf native/mupdf/source/thirdparty/lcms2/utils/delphi
+      - rm -rf native/mupdf/source/thirdparty/extract/test
+    scanignore:
+      - native/mupdf/source/resources/hyphen/hyph-std.zip
+      - native/mupdf/source/resources/hyphen/hyph-all.zip
+    scandelete:
+      - native/mupdf/source/thirdparty
+      - native/mupdf/source/platform/wasm
+    build: python3 scripts/prepare_mupdf.py
+    ndk: 28.2.13676358
+    gradleprops:
+      - mupdfFromSource=true
+      - abiFilter=arm64-v8a
+
+  - versionName: 1.0.0
+    versionCode: 100003
+    commit: v1.0.0
+    sudo:
+      - echo "deb https://deb.debian.org/debian bookworm main" > /etc/apt/sources.list.d/bookworm.list
+      - apt-get update
+      - apt-get install -y make gcc g++ pkg-config openjdk-21-jdk-headless
+      - apt-get install -y -t bookworm openjdk-17-jdk-headless
+    gradle:
+      - yes
+    output: app/build/outputs/apk/release/*-x86-unsigned.apk
+    srclibs:
+      - MuPDF@8ad45e92f0935d3d87f1db3f873086472a5e1b24
+    prebuild:
+      - sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
+      - git -C $$MuPDF$$ submodule update --init --recursive
+      - rm -f gradle/mupdf-prebuilt.settings.gradle.kts
+      - mkdir -p native/mupdf
+      - cp -a $$MuPDF$$ native/mupdf/source
+      - rm -rf native/mupdf/source/thirdparty/lcms2/testbed
+      - rm -rf native/mupdf/source/thirdparty/lcms2/utils/delphi
+      - rm -rf native/mupdf/source/thirdparty/extract/test
+    scanignore:
+      - native/mupdf/source/resources/hyphen/hyph-std.zip
+      - native/mupdf/source/resources/hyphen/hyph-all.zip
+    scandelete:
+      - native/mupdf/source/thirdparty
+      - native/mupdf/source/platform/wasm
+    build: python3 scripts/prepare_mupdf.py
+    ndk: 28.2.13676358
+    gradleprops:
+      - mupdfFromSource=true
+      - abiFilter=x86
+
+  - versionName: 1.0.0
+    versionCode: 100004
+    commit: v1.0.0
+    sudo:
+      - echo "deb https://deb.debian.org/debian bookworm main" > /etc/apt/sources.list.d/bookworm.list
+      - apt-get update
+      - apt-get install -y make gcc g++ pkg-config openjdk-21-jdk-headless
+      - apt-get install -y -t bookworm openjdk-17-jdk-headless
+    gradle:
+      - yes
+    output: app/build/outputs/apk/release/*-x86_64-unsigned.apk
+    srclibs:
+      - MuPDF@8ad45e92f0935d3d87f1db3f873086472a5e1b24
+    prebuild:
+      - sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
+      - git -C $$MuPDF$$ submodule update --init --recursive
+      - rm -f gradle/mupdf-prebuilt.settings.gradle.kts
+      - mkdir -p native/mupdf
+      - cp -a $$MuPDF$$ native/mupdf/source
+      - rm -rf native/mupdf/source/thirdparty/lcms2/testbed
+      - rm -rf native/mupdf/source/thirdparty/lcms2/utils/delphi
+      - rm -rf native/mupdf/source/thirdparty/extract/test
+    scanignore:
+      - native/mupdf/source/resources/hyphen/hyph-std.zip
+      - native/mupdf/source/resources/hyphen/hyph-all.zip
+    scandelete:
+      - native/mupdf/source/thirdparty
+      - native/mupdf/source/platform/wasm
+    build: python3 scripts/prepare_mupdf.py
+    ndk: 28.2.13676358
+    gradleprops:
+      - mupdfFromSource=true
+      - abiFilter=x86_64
 
 MaintainerNotes: |-
   MuPDF resources/hyphen ZIPs contain source hyphenation patterns, not executable code.
@@ -52,5 +155,10 @@ MaintainerNotes: |-
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9]+\.[0-9]+\.[0-9]+$
+VercodeOperation:
+  - '%c + 1'
+  - '%c + 2'
+  - '%c + 3'
+  - '%c + 4'
 CurrentVersion: 1.0.0
 CurrentVersionCode: 100004

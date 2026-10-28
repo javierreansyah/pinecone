@@ -70,16 +70,21 @@ android {
         applicationId = "com.javierreansyah.pinecone"
         minSdk = 34
         targetSdk = 37
-        versionCode = 100004
+        versionCode = 100000
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    val targetAbi = providers.gradleProperty("abiFilter").orNull
     splits {
         abi {
             isEnable = true
             reset()
-            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            if (targetAbi != null) {
+                include(targetAbi)
+            } else {
+                include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            }
             isUniversalApk = false
         }
     }
@@ -167,18 +172,19 @@ androidComponents {
             PublicationLicenseAssetsTask::outputDirectory
         )
         val appVersionName = android.defaultConfig.versionName
-        val abiCodeMap = mapOf(
-            "armeabi-v7a" to 100001,
-            "arm64-v8a" to 100002,
-            "x86" to 100003,
-            "x86_64" to 100004,
+        val baseVersionCode = android.defaultConfig.versionCode ?: 100000
+        val abiCodeOffsets = mapOf(
+            "armeabi-v7a" to 1,
+            "arm64-v8a" to 2,
+            "x86" to 3,
+            "x86_64" to 4,
         )
         variant.outputs.forEach { output ->
             val abi = output.filters.find {
                 it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI
             }?.identifier
-            val code = abi?.let { abiCodeMap[it] } ?: (android.defaultConfig.versionCode ?: 100004)
-            output.versionCode.set(code)
+            val abiOffset = abi?.let { abiCodeOffsets[it] } ?: 0
+            output.versionCode.set(baseVersionCode + abiOffset)
             val abiSuffix = if (abi != null) "-$abi" else ""
             val outputName = when (variant.name) {
                 "release" -> "pinecone-v$appVersionName$abiSuffix${if (releaseSigning["storeFile"] == null) "-unsigned" else ""}.apk"

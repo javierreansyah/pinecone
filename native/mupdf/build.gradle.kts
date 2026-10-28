@@ -14,7 +14,12 @@ android {
     ndkVersion = pin["ndk"].toString()
     defaultConfig {
         minSdk = 34
-        ndk { abiFilters += setOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64") }
+        val targetAbi = providers.gradleProperty("abiFilter").orNull
+        if (targetAbi != null) {
+            ndk { abiFilters += targetAbi }
+        } else {
+            ndk { abiFilters += setOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64") }
+        }
         externalNativeBuild {
             ndkBuild {
                 arguments += "-j2"
