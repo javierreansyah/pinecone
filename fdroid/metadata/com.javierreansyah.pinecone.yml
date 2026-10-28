@@ -35,7 +35,6 @@ Builds:
       - rm -rf native/mupdf/source/thirdparty/lcms2/utils/delphi
       - rm -rf native/mupdf/source/thirdparty/extract/test
     scanignore:
-      # Verified UTF-8 hyphenation pattern data, pinned by the MuPDF source commit.
       - native/mupdf/source/resources/hyphen/hyph-std.zip
       - native/mupdf/source/resources/hyphen/hyph-all.zip
     scandelete:
