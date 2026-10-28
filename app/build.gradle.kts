@@ -70,9 +70,18 @@ android {
         applicationId = "com.javierreansyah.pinecone"
         minSdk = 34
         targetSdk = 37
-        versionCode = 100000000
+        versionCode = 100000
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            isUniversalApk = false
+        }
     }
 
     signingConfigs {
@@ -158,13 +167,26 @@ androidComponents {
             PublicationLicenseAssetsTask::outputDirectory
         )
         val appVersionName = android.defaultConfig.versionName
-        val outputName = when (variant.name) {
-            "release" -> "pinecone-v$appVersionName${if (releaseSigning["storeFile"] == null) "-unsigned" else ""}.apk"
-            "debug" -> "pinecone-$appVersionName-debug.apk"
-            "staging" -> "pinecone-$appVersionName-staging.apk"
-            else -> "pinecone-$appVersionName-${variant.name}.apk"
-        }
+        val baseVersionCode = android.defaultConfig.versionCode ?: 100000
+        val abiCodeOffsets = mapOf(
+            "armeabi-v7a" to 1,
+            "arm64-v8a" to 2,
+            "x86" to 3,
+            "x86_64" to 4,
+        )
         variant.outputs.forEach { output ->
+            val abi = output.filters.find {
+                it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI
+            }?.identifier
+            val abiOffset = abi?.let { abiCodeOffsets[it] } ?: 0
+            output.versionCode.set(baseVersionCode + abiOffset)
+            val abiSuffix = if (abi != null) "-$abi" else ""
+            val outputName = when (variant.name) {
+                "release" -> "pinecone-v$appVersionName$abiSuffix${if (releaseSigning["storeFile"] == null) "-unsigned" else ""}.apk"
+                "debug" -> "pinecone-$appVersionName$abiSuffix-debug.apk"
+                "staging" -> "pinecone-$appVersionName$abiSuffix-staging.apk"
+                else -> "pinecone-$appVersionName$abiSuffix-${variant.name}.apk"
+            }
             output.outputFileName.set(outputName)
         }
     }
