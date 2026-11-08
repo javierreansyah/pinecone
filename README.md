@@ -8,8 +8,6 @@
 
 ## Screenshots
 
-Current development app, captured at 1080 × 2400 on the Resizable (Experimental) emulator.
-
 | Library | Shelves | Book details |
 | --- | --- | --- |
 | <img src="docs/images/library.png" width="280" alt="Library grid with book covers, authors and reading progress" /> | <img src="docs/images/shelves.png" width="280" alt="Audiobooks and Classic Literature shelves" /> | <img src="docs/images/book-info.png" width="280" alt="Book cover, contributors, tags and reading details" /> |
