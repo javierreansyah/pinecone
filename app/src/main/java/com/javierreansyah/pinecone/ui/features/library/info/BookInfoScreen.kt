@@ -131,6 +131,7 @@ import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import com.javierreansyah.pinecone.ui.components.EmptyState
+import com.javierreansyah.pinecone.ui.components.InsetListItemDefaults
 import com.javierreansyah.pinecone.ui.components.SegmentedListDefaults
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
@@ -650,30 +651,23 @@ private fun ChaptersTabContent(
                     if (sourcePage != null) link == currentChapter else currentHref == linkHref
                 val pageLabel = getChapterPageLabel(link, positions)
                 ListItem(
-                    modifier = Modifier.clickable {
+                    onClick = {
                         val targetLocator = positions.chapterLocator(link)
                         onChapterClick(targetLocator)
                     },
-                    leadingContent = null,
-                    trailingContent = null,
-                    overlineContent = null,
+                    modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
+                    shapes = InsetListItemDefaults.shapes(),
+                    colors = ListItemDefaults.colors(
+                        containerColor = Color.Transparent,
+                        contentColor = if (isCurrentChapter) MaterialTheme.colorScheme.primary else Color.Unspecified,
+                        supportingContentColor = if (isCurrentChapter) MaterialTheme.colorScheme.primary else Color.Unspecified,
+                    ),
+                    contentPadding = InsetListItemDefaults.ContentPadding,
                     supportingContent = if (pageLabel.isNotBlank()) {
-                        {
-                            Text(
-                                text = pageLabel,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                        { Text(text = pageLabel) }
                     } else null,
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                    elevation = ListItemDefaults.elevation(),
                     content = {
-                        Text(
-                            text = link.title ?: link.href.toString(),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else Color.Unspecified,
-                        )
+                        Text(text = link.title ?: link.href.toString())
                     },
                 )
             }
@@ -723,9 +717,8 @@ private fun BookmarksTabContent(
             currentLocator?.let { locator ->
                 item {
                     ListItem(
-                        modifier = Modifier.clickable {
-                            onNavigateToLocator(locator)
-                        },
+                        onClick = { onNavigateToLocator(locator) },
+                        modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
                         leadingContent = {
                             Icon(
                                 imageVector = MaterialSymbols.Outlined.Book,
@@ -733,23 +726,15 @@ private fun BookmarksTabContent(
                                 tint = MaterialTheme.colorScheme.primary,
                             )
                         },
-                        trailingContent = null,
-                        overlineContent = null,
                         supportingContent = {
                             val label = getPositionLabel(locator, positions, readMode)
-                            Text(
-                                text = label.ifBlank { stringResource(R.string.reader_in_document) },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            Text(text = label.ifBlank { stringResource(R.string.reader_in_document) })
                         },
+                        shapes = InsetListItemDefaults.shapes(),
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                        elevation = ListItemDefaults.elevation(),
+                        contentPadding = InsetListItemDefaults.ContentPadding,
                         content = {
-                            Text(
-                                text = stringResource(R.string.publication_info_current_position),
-                                style = MaterialTheme.typography.titleMedium,
-                            )
+                            Text(text = stringResource(R.string.publication_info_current_position))
                         },
                     )
                 }
@@ -758,9 +743,8 @@ private fun BookmarksTabContent(
             furthestLocator?.let { locator ->
                 item {
                     ListItem(
-                        modifier = Modifier.clickable {
-                            onJumpToLocator(locator)
-                        },
+                        onClick = { onJumpToLocator(locator) },
+                        modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
                         leadingContent = {
                             Icon(
                                 imageVector = MaterialSymbols.Outlined.Book,
@@ -775,26 +759,18 @@ private fun BookmarksTabContent(
                                 Icon(
                                     imageVector = MaterialSymbols.Outlined.Delete,
                                     contentDescription = stringResource(R.string.action_delete),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         },
-                        overlineContent = null,
                         supportingContent = {
                             val label = getPositionLabel(locator, positions, readMode)
-                            Text(
-                                text = label.ifBlank { stringResource(R.string.reader_in_document) },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            Text(text = label.ifBlank { stringResource(R.string.reader_in_document) })
                         },
+                        shapes = InsetListItemDefaults.shapes(),
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                        elevation = ListItemDefaults.elevation(),
+                        contentPadding = InsetListItemDefaults.ContentPadding,
                         content = {
-                            Text(
-                                text = stringResource(R.string.publication_info_furthest_position),
-                                style = MaterialTheme.typography.titleMedium,
-                            )
+                            Text(text = stringResource(R.string.publication_info_furthest_position))
                         },
                     )
                 }
@@ -825,10 +801,8 @@ private fun BookmarksTabContent(
                                 }?.title ?: inDocument
 
                         ListItem(
-                            modifier = Modifier.clickable {
-                                onJumpToLocator(locator)
-                            },
-                            leadingContent = null,
+                            onClick = { onJumpToLocator(locator) },
+                            modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
                             trailingContent = {
                                 androidx.compose.material3.IconButton(
                                     onClick = { onDeleteBookmark(bookmark.id) },
@@ -836,25 +810,21 @@ private fun BookmarksTabContent(
                                     Icon(
                                         imageVector = MaterialSymbols.Outlined.Delete,
                                         contentDescription = stringResource(R.string.action_delete),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
                             },
-                            overlineContent = null,
                             supportingContent = {
                                 val label = getPositionLabel(locator, positions, readMode)
-                                Text(
-                                    text = label.ifBlank { inDocument },
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                                Text(text = label.ifBlank { inDocument })
                             },
+                            shapes = InsetListItemDefaults.shapes(),
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                            elevation = ListItemDefaults.elevation(),
+                            contentPadding = InsetListItemDefaults.ContentPadding,
                             content = {
                                 Text(
                                     text = chapterTitle,
-                                    style = MaterialTheme.typography.titleMedium,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
                                 )
                             },
                         )
@@ -909,53 +879,75 @@ private fun NotesTabContent(
                                     .substringBefore("#")
                             }?.title ?: inDocument
 
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onNoteClick(locator) }
-                            .padding(horizontal = 20.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        com.javierreansyah.pinecone.ui.features.reader.components.contents.EntryHeader(
-                            title = chapterTitle,
-                            positionLabel = getPositionLabel(locator, positions, readMode),
-                            onDelete = { onDeleteNote(note.id) },
-                        )
-
-                        locator.text.highlight?.takeIf { it.isNotBlank() }?.let { highlight ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(IntrinsicSize.Min),
+                    val positionLabel = getPositionLabel(locator, positions, readMode)
+                    ListItem(
+                        onClick = { onNoteClick(locator) },
+                        modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
+                        verticalAlignment = Alignment.Top,
+                        shapes = InsetListItemDefaults.shapes(),
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                        contentPadding = InsetListItemDefaults.ContentPadding,
+                        trailingContent = {
+                            androidx.compose.material3.IconButton(
+                                onClick = { onDeleteNote(note.id) },
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .width(4.dp)
-                                        .fillMaxHeight()
-                                        .clip(CircleShape)
-                                        .background(
-                                            Color(note.color).copy(
-                                                alpha = 1f,
-                                            ),
-                                        ),
-                                )
-                                Text(
-                                    text = highlight,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(start = 12.dp),
+                                Icon(
+                                    imageVector = MaterialSymbols.Outlined.Delete,
+                                    contentDescription = stringResource(R.string.action_delete),
                                 )
                             }
-                        }
+                        },
+                        supportingContent = {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                if (positionLabel.isNotBlank()) {
+                                    Text(text = positionLabel)
+                                }
 
-                        if (note.noteText.isNotBlank()) {
+                                locator.text.highlight?.takeIf { it.isNotBlank() }
+                                    ?.let { highlight ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(IntrinsicSize.Min),
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .width(4.dp)
+                                                    .fillMaxHeight()
+                                                    .clip(CircleShape)
+                                                    .background(
+                                                        Color(note.color).copy(
+                                                            alpha = 1f,
+                                                        ),
+                                                    ),
+                                            )
+                                            Text(
+                                                text = highlight,
+                                                modifier = Modifier.padding(start = 12.dp),
+                                            )
+                                        }
+                                    }
+
+                                if (note.noteText.isNotBlank()) {
+                                    Text(
+                                        text = note.noteText,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                }
+                            }
+                        },
+                        content = {
                             Text(
-                                text = note.noteText,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
+                                text = chapterTitle,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
                             )
-                        }
-                    }
+                        },
+                    )
                 }
             }
         }

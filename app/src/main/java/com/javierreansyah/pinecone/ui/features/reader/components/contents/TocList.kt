@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.reader.components.contents
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -21,6 +20,7 @@ import com.composables.icons.materialsymbols.outlined.Format_list_bulleted
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import com.javierreansyah.pinecone.ui.components.EmptyState
+import com.javierreansyah.pinecone.ui.components.InsetListItemDefaults
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 
@@ -76,24 +76,21 @@ fun TocList(
                     } else currentHref == linkHref
                 val pageLabel = getChapterPageLabel(link)
                 ListItem(
-                    content = {
-                        Text(
-                            text = link.title ?: link.href.toString(),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else Color.Unspecified,
-                        )
-                    },
+                    onClick = { onChapterClick(link) },
+                    modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
+                    shapes = InsetListItemDefaults.shapes(),
+                    colors = ListItemDefaults.colors(
+                        containerColor = Color.Transparent,
+                        contentColor = if (isCurrentChapter) MaterialTheme.colorScheme.primary else Color.Unspecified,
+                        supportingContentColor = if (isCurrentChapter) MaterialTheme.colorScheme.primary else Color.Unspecified,
+                    ),
+                    contentPadding = InsetListItemDefaults.ContentPadding,
                     supportingContent = if (pageLabel.isNotBlank()) {
-                        {
-                            Text(
-                                text = pageLabel,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                        { Text(text = pageLabel) }
                     } else null,
-                    modifier = Modifier.clickable { onChapterClick(link) },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    content = {
+                        Text(text = link.title ?: link.href.toString())
+                    },
                 )
             }
         }

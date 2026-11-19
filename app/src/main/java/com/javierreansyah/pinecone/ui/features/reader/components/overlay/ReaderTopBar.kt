@@ -7,13 +7,11 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -48,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -236,13 +235,19 @@ fun ReaderTopBar(
                             }
                         } else {
                             if (state == TopBarState.JUMP) {
+                                val jumpContainerColor = if (audioPlayer) {
+                                    MaterialTheme.colorScheme.surfaceContainerHigh
+                                } else {
+                                    barContentColor.copy(alpha = 0.18f)
+                                        .compositeOver(barContainerColor)
+                                }
                                 JumpHistoryPill(
                                     onGoBack = onGoBackToOriginClick,
                                     onClear = onClearJumpOriginClick,
                                     textColor = barContentColor,
-                                    containerColor = if (audioPlayer) Color.Transparent else barContainerColor,
+                                    containerColor = jumpContainerColor,
                                 )
-                                Spacer(modifier = Modifier.width(4.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
                             }
 
                             val items = remember(state, canSearch, showReadMode, audioPlayer) {
@@ -550,21 +555,21 @@ fun JumpHistoryPill(
     containerColor: Color = Color.Transparent,
 ) {
     val description = stringResource(R.string.action_clear)
-    val size = SplitButtonDefaults.ExtraSmallContainerHeight
-    val transparentOutline = textColor.copy(alpha = 0.3f)
+    val size = SplitButtonDefaults.SmallContainerHeight
+    val buttonColors = ButtonDefaults.filledTonalButtonColors(
+        containerColor = containerColor,
+        contentColor = textColor,
+    )
 
     SplitButtonLayout(
         leadingButton = {
-            SplitButtonDefaults.OutlinedLeadingButton(
+            SplitButtonDefaults.LeadingButton(
                 onClick = onGoBack,
                 modifier = Modifier.heightIn(size),
                 shapes = SplitButtonDefaults.leadingButtonShapesFor(size),
                 contentPadding = SplitButtonDefaults.leadingButtonContentPaddingFor(size),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = textColor,
-                    containerColor = containerColor,
-                ),
-                border = BorderStroke(1.dp, transparentOutline),
+                colors = buttonColors,
+                elevation = null,
             ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Restart_alt,
@@ -582,28 +587,23 @@ fun JumpHistoryPill(
         },
         trailingButton = {
             TooltipBox(
-                positionProvider = TooltipDefaults.rememberTooltipPositionProvider(positioning = TooltipAnchorPosition.Above),
+                positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+                    positioning = TooltipAnchorPosition.Above,
+                ),
                 tooltip = {
                     PlainTooltip {
                         Text(description)
                     }
                 },
                 state = rememberTooltipState(),
-                modifier = Modifier.fillMaxHeight(),
             ) {
-                SplitButtonDefaults.OutlinedTrailingButton(
-                    checked = false,
-                    onCheckedChange = { _ -> onClear() },
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .heightIn(size),
+                SplitButtonDefaults.TrailingButton(
+                    onClick = onClear,
+                    modifier = Modifier.heightIn(size),
                     shapes = SplitButtonDefaults.trailingButtonShapesFor(size),
                     contentPadding = SplitButtonDefaults.trailingButtonContentPaddingFor(size),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = textColor,
-                        containerColor = containerColor,
-                    ),
-                    border = BorderStroke(1.dp, transparentOutline),
+                    colors = buttonColors,
+                    elevation = null,
                 ) {
                     Icon(
                         imageVector = MaterialSymbols.Outlined.Close,

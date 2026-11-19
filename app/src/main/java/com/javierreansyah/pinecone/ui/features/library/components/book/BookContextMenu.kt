@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.library.components.book
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -43,6 +42,7 @@ import com.composables.icons.materialsymbols.outlined.Select
 import com.composables.icons.materialsymbols.outlined.Unarchive
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.ui.components.InsetListItemDefaults
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.publicationWording
 
@@ -117,126 +117,111 @@ fun BookContextMenu(
             }
 
             ListItem(
-                modifier = Modifier.clickable {
+                onClick = {
                     onNavigateToBookInfo(bookId)
                     onDismiss()
                 },
+                modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
                 leadingContent = {
                     Icon(
                         MaterialSymbols.Outlined.Info, contentDescription = null,
                     )
                 },
-                trailingContent = null,
-                overlineContent = null,
-                supportingContent = null,
+                shapes = InsetListItemDefaults.shapes(),
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                elevation = ListItemDefaults.elevation(),
+                contentPadding = InsetListItemDefaults.ContentPadding,
                 content = {
-                    Text(
-                        stringResource(wording.infoTitle),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
+                    Text(stringResource(wording.infoTitle))
                 },
             )
 
             ListItem(
-                modifier = Modifier.clickable {
+                onClick = {
                     onToggleReadStatus()
                     onDismiss()
                 },
+                modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
                 leadingContent = {
                     Icon(
                         if (book?.isRead == true) MaterialSymbols.Outlined.Radio_button_unchecked else MaterialSymbols.Outlined.Check_circle,
                         contentDescription = null,
                     )
                 },
-                trailingContent = null,
-                overlineContent = null,
-                supportingContent = null,
+                shapes = InsetListItemDefaults.shapes(),
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                elevation = ListItemDefaults.elevation(),
+                contentPadding = InsetListItemDefaults.ContentPadding,
                 content = {
                     val labelText =
                         if (book?.isRead == true) stringResource(R.string.publication_mark_as_unread) else stringResource(
                             R.string.publication_mark_as_read,
                         )
-                    Text(labelText, style = MaterialTheme.typography.titleMedium)
+                    Text(labelText)
                 },
             )
 
             ListItem(
-                modifier = Modifier.clickable {
+                onClick = {
                     onOrganize(bookId)
                     onDismiss()
                 },
+                modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
                 leadingContent = {
                     Icon(
                         MaterialSymbols.Outlined.Create_new_folder, contentDescription = null,
                     )
                 },
-                trailingContent = null,
-                overlineContent = null,
-                supportingContent = null,
+                shapes = InsetListItemDefaults.shapes(),
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                elevation = ListItemDefaults.elevation(),
+                contentPadding = InsetListItemDefaults.ContentPadding,
                 content = {
-                    Text(
-                        stringResource(R.string.action_organize),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
+                    Text(stringResource(R.string.action_organize))
                 },
             )
 
             ListItem(
-                modifier = Modifier.clickable {
+                onClick = {
                     onToggleArchive()
                     onDismiss()
                 },
+                modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
                 leadingContent = {
                     Icon(
                         if (book?.isArchived == true) MaterialSymbols.Outlined.Unarchive else MaterialSymbols.Outlined.Archive,
                         contentDescription = null,
                     )
                 },
-                trailingContent = null,
-                overlineContent = null,
-                supportingContent = null,
+                shapes = InsetListItemDefaults.shapes(),
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                elevation = ListItemDefaults.elevation(),
+                contentPadding = InsetListItemDefaults.ContentPadding,
                 content = {
                     val labelText =
                         if (book?.isArchived == true) stringResource(R.string.publication_unarchive) else stringResource(
                             R.string.publication_archive,
                         )
-                    Text(
-                        labelText,
-                        style = MaterialTheme.typography.titleMedium,
-                    )
+                    Text(labelText)
                 },
             )
 
             ListItem(
-                modifier = Modifier.clickable {
+                onClick = {
                     showDeleteConfirmation = true
                 },
+                modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
                 leadingContent = {
                     Icon(
                         MaterialSymbols.Outlined.Delete,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
                     )
                 },
-                trailingContent = null,
-                overlineContent = null,
-                supportingContent = null,
-                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                elevation = ListItemDefaults.elevation(),
+                shapes = InsetListItemDefaults.shapes(),
+                colors = ListItemDefaults.colors(
+                    containerColor = Color.Transparent,
+                    contentColor = MaterialTheme.colorScheme.error,
+                    leadingContentColor = MaterialTheme.colorScheme.error,
+                ),
+                contentPadding = InsetListItemDefaults.ContentPadding,
                 content = {
-                    Text(
-                        stringResource(R.string.action_delete),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.error,
-                    )
+                    Text(stringResource(R.string.action_delete))
                 },
             )
 
@@ -247,25 +232,21 @@ fun BookContextMenu(
                     ),
                 )
                 ListItem(
-                    modifier = Modifier.clickable {
+                    onClick = {
                         onEnterMultiSelect()
                         onDismiss()
                     },
+                    modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
                     leadingContent = {
                         Icon(
                             MaterialSymbols.Outlined.Select, contentDescription = null,
                         )
                     },
-                    trailingContent = null,
-                    overlineContent = null,
-                    supportingContent = null,
+                    shapes = InsetListItemDefaults.shapes(),
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                    elevation = ListItemDefaults.elevation(),
+                    contentPadding = InsetListItemDefaults.ContentPadding,
                     content = {
-                        Text(
-                            stringResource(R.string.action_select_multiple),
-                            style = MaterialTheme.typography.titleMedium,
-                        )
+                        Text(stringResource(R.string.action_select_multiple))
                     },
                 )
             }

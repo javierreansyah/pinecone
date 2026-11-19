@@ -14,7 +14,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,22 +68,32 @@ fun AboutScreen(
             },
         )
     }
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val scrollState = rememberScrollState()
+    val topAppBarState = rememberTopAppBarState()
+    val canScroll by remember {
+        derivedStateOf { scrollState.maxValue > 0 || topAppBarState.heightOffset < 0f }
+    }
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+        state = topAppBarState,
+        canScroll = { canScroll },
+    )
 
     Scaffold(
-        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = modifier.then(
+            if (canScroll) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection) else Modifier,
+        ),
         topBar = {
             LibraryTopAppBar(
                 title = { LibraryTopAppBarTitle(stringResource(R.string.about_title)) },
                 onBack = onNavigateBack,
-                scrollBehavior = scrollBehavior,
+                scrollBehavior = if (canScroll) scrollBehavior else null,
             )
         },
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState, enabled = canScroll)
                 .padding(innerPadding)
                 .padding(bottom = LocalAudioPlayerBottomPadding.current)
                 .padding(horizontal = 16.dp, vertical = 8.dp),

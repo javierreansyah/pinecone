@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledIconToggleButton
@@ -53,6 +52,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.googlefonts.Font
 import androidx.compose.ui.text.googlefonts.GoogleFont
@@ -73,6 +76,7 @@ import com.javierreansyah.pinecone.data.local.preferences.CustomPineconeTheme
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.reader.epub.toEpubPreferences
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
+import com.javierreansyah.pinecone.ui.components.InsetListItemDefaults
 import com.javierreansyah.pinecone.ui.components.SegmentedButtonGroup
 import com.javierreansyah.pinecone.ui.components.SettingsChoiceDialog
 import kotlinx.coroutines.launch
@@ -894,7 +898,10 @@ internal fun AdvancedTabContent(
 
         ListItem(
             onClick = onRestoreDefaultsClick,
+            modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
+            shapes = InsetListItemDefaults.shapes(),
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            contentPadding = InsetListItemDefaults.ContentPadding,
             trailingContent = {
                 Icon(MaterialSymbols.Outlined.Restart_alt, contentDescription = null)
             },
@@ -912,7 +919,10 @@ private fun <T : Any> ReaderChoiceRow(
     var showDialog by remember { mutableStateOf(false) }
     ListItem(
         onClick = { showDialog = true },
+        modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
+        shapes = InsetListItemDefaults.shapes(),
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        contentPadding = InsetListItemDefaults.ContentPadding,
         trailingContent = { Text(valueLabel, style = MaterialTheme.typography.bodyMedium) },
         content = { Text(title) },
     )
@@ -932,15 +942,20 @@ internal fun SettingsSwitchRow(
     enabled: Boolean = true,
 ) {
     ListItem(
-        modifier = modifier.toggleable(
-            value = isChecked, enabled = enabled, role = Role.Switch,
-            onValueChange = onCheckedChange,
-        ),
+        onClick = { onCheckedChange(!isChecked) },
+        modifier = modifier
+            .padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding)
+            .semantics {
+                role = Role.Switch
+                toggleableState = ToggleableState(isChecked)
+            },
         enabled = enabled,
+        shapes = InsetListItemDefaults.shapes(),
         colors = ListItemDefaults.colors(
             containerColor = Color.Transparent,
             disabledContainerColor = Color.Transparent,
         ),
+        contentPadding = InsetListItemDefaults.ContentPadding,
         trailingContent = {
             Switch(checked = isChecked, onCheckedChange = null, enabled = enabled)
         },

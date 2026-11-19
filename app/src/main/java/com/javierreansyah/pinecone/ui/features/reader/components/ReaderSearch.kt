@@ -3,7 +3,6 @@ package com.javierreansyah.pinecone.ui.features.reader.components
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +23,8 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearWavyProgressIndicator
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarValue
@@ -39,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -55,6 +57,7 @@ import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Mic
 import com.composables.icons.materialsymbols.outlined.Search
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.components.InsetListItemDefaults
 import com.javierreansyah.pinecone.ui.components.PredictiveBackOverlay
 import com.javierreansyah.pinecone.ui.components.rememberVoiceSearchLauncher
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
@@ -308,69 +311,63 @@ fun SearchResultCard(
 ) {
     val primary = MaterialTheme.colorScheme.primary
     val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+    val subtitleText = if (item.positionLabel.isNotBlank()) {
+        "${index + 1} | ${item.positionLabel}"
+    } else {
+        (index + 1).toString()
+    }
+    val snippet = buildAnnotatedString {
+        val before = item.textBefore?.trim() ?: ""
+        val highlight = item.highlight ?: query
+        val after = item.textAfter?.trim() ?: ""
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Column {
+        if (before.isNotBlank()) {
+            withStyle(SpanStyle(color = onSurfaceVariant, fontSize = 14.sp)) {
+                append(before)
+                if (!before.endsWith(" ")) append(" ")
+            }
+        }
+        withStyle(
+            SpanStyle(
+                color = primary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                background = primary.copy(alpha = 0.12f),
+            ),
+        ) {
+            append(highlight)
+        }
+        if (after.isNotBlank()) {
+            withStyle(SpanStyle(color = onSurfaceVariant, fontSize = 14.sp)) {
+                if (!after.startsWith(" ")) append(" ")
+                append(after)
+            }
+        }
+    }
 
+    ListItem(
+        onClick = onClick,
+        modifier = modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
+        shapes = InsetListItemDefaults.shapes(),
+        colors = ListItemDefaults.colors(
+            containerColor = Color.Transparent,
+            contentColor = primary,
+        ),
+        contentPadding = InsetListItemDefaults.ContentPadding,
+        supportingContent = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(text = subtitleText)
+                Text(
+                    text = snippet,
+                    lineHeight = 20.sp,
+                    modifier = Modifier.widthIn(max = 600.dp),
+                )
+            }
+        },
+        content = {
             Text(
                 text = item.chapterTitle ?: stringResource(R.string.reader_unknown_chapter),
-                style = MaterialTheme.typography.titleMedium,
-                color = primary,
             )
-
-            val subtitleText = if (item.positionLabel.isNotBlank()) {
-                "${index + 1} | ${item.positionLabel}"
-            } else {
-                (index + 1).toString()
-            }
-            Text(
-                text = subtitleText,
-                style = MaterialTheme.typography.bodySmall,
-                color = onSurfaceVariant,
-            )
-        }
-
-        val snippet = buildAnnotatedString {
-            val before = item.textBefore?.trim() ?: ""
-            val highlight = item.highlight ?: query
-            val after = item.textAfter?.trim() ?: ""
-
-            if (before.isNotBlank()) {
-                withStyle(SpanStyle(color = onSurfaceVariant, fontSize = 14.sp)) {
-                    append(before)
-                    if (!before.endsWith(" ")) append(" ")
-                }
-            }
-            withStyle(
-                SpanStyle(
-                    color = primary,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    background = primary.copy(alpha = 0.12f),
-                ),
-            ) {
-                append(highlight)
-            }
-            if (after.isNotBlank()) {
-                withStyle(SpanStyle(color = onSurfaceVariant, fontSize = 14.sp)) {
-                    if (!after.startsWith(" ")) append(" ")
-                    append(after)
-                }
-            }
-        }
-
-        Text(
-            text = snippet,
-            style = MaterialTheme.typography.bodyMedium,
-            lineHeight = 20.sp,
-            modifier = Modifier.widthIn(max = 600.dp),
-        )
-
-    }
+        },
+    )
 }

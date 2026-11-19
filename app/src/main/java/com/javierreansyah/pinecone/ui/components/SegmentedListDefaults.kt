@@ -1,9 +1,33 @@
 package com.javierreansyah.pinecone.ui.components
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.ListItemShapes
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+
+object InsetListItemDefaults {
+    val OuterHorizontalPadding: Dp = 4.dp
+
+    private val interactiveShape = RoundedCornerShape(12.dp)
+
+    val ContentPadding: PaddingValues
+        get() = PaddingValues(
+            start = 12.dp,
+            top = ListItemDefaults.ContentPadding.calculateTopPadding(),
+            end = 12.dp,
+            bottom = ListItemDefaults.ContentPadding.calculateBottomPadding(),
+        )
+
+    @Composable
+    fun shapes(): ListItemShapes = ListItemDefaults.shapes(
+        pressedShape = interactiveShape,
+        focusedShape = interactiveShape,
+        hoveredShape = interactiveShape,
+    )
+}
 
 object SegmentedListDefaults {
     val Gap: Dp = 2.dp

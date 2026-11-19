@@ -45,6 +45,7 @@ import com.javierreansyah.pinecone.ui.features.library.shelf.ShelfDetailScreen
 import com.javierreansyah.pinecone.ui.features.library.unsorted.UnsortedScreen
 import com.javierreansyah.pinecone.ui.features.reader.ReaderActivity
 import com.javierreansyah.pinecone.ui.features.settings.AboutScreen
+import com.javierreansyah.pinecone.ui.features.settings.OpenSourceLicenseDetailScreen
 import com.javierreansyah.pinecone.ui.features.settings.OpenSourceLicensesScreen
 import com.javierreansyah.pinecone.ui.features.settings.SettingsScreen
 import kotlinx.coroutines.launch
@@ -253,6 +254,16 @@ fun NavGraph(
             }
             entry<Screen.OpenSourceLicenses> {
                 OpenSourceLicensesScreen(
+                    onNavigateBack = navigateBack,
+                    onLicenseClick = { libraryId, libraryName ->
+                        backStack.add(Screen.OpenSourceLicenseDetail(libraryId, libraryName))
+                    },
+                )
+            }
+            entry<Screen.OpenSourceLicenseDetail> { key ->
+                OpenSourceLicenseDetailScreen(
+                    libraryId = key.libraryId,
+                    libraryName = key.libraryName,
                     onNavigateBack = navigateBack,
                 )
             }

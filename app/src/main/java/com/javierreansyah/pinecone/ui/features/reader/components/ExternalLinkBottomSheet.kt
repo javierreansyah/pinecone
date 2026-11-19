@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.reader.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,6 +26,7 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Content_copy
 import com.composables.icons.materialsymbols.outlined.Open_in_new
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.components.InsetListItemDefaults
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,38 +82,34 @@ fun ExternalLinkBottomSheet(
             )
 
             ListItem(
-                content = {
-                    Text(
-                        stringResource(R.string.reader_copy_link),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                },
+                onClick = onCopy,
+                modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
                 leadingContent = {
                     Icon(
                         MaterialSymbols.Outlined.Content_copy, contentDescription = null,
                     )
                 },
+                shapes = InsetListItemDefaults.shapes(),
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                modifier = Modifier.clickable {
-                    onCopy()
+                contentPadding = InsetListItemDefaults.ContentPadding,
+                content = {
+                    Text(stringResource(R.string.reader_copy_link))
                 },
             )
 
             ListItem(
-                content = {
-                    Text(
-                        stringResource(R.string.reader_open_in_browser),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                },
+                onClick = onOpenInBrowser,
+                modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
                 leadingContent = {
                     Icon(
                         MaterialSymbols.Outlined.Open_in_new, contentDescription = null,
                     )
                 },
+                shapes = InsetListItemDefaults.shapes(),
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                modifier = Modifier.clickable {
-                    onOpenInBrowser()
+                contentPadding = InsetListItemDefaults.ContentPadding,
+                content = {
+                    Text(stringResource(R.string.reader_open_in_browser))
                 },
             )
         }
