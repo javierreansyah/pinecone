@@ -11,6 +11,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
@@ -30,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -38,8 +43,6 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -184,7 +187,7 @@ private fun FilterResultContent(
     var showFilterSheet by remember { mutableStateOf(value = false) }
     var showDeleteConfirm by remember { mutableStateOf(value = false) }
     var isRenaming by remember { mutableStateOf(value = false) }
-    var renameName by remember { mutableStateOf(TextFieldValue("")) }
+    val renameNameState = rememberTextFieldState()
     var showMergeWarningDialog by remember { mutableStateOf(value = false) }
     var pendingRenameName by remember { mutableStateOf("") }
     val selection = remember { LibrarySelection() }
@@ -205,13 +208,12 @@ private fun FilterResultContent(
                 isInMultiSelectMode = isInMultiSelectMode,
                 showMenu = showMenu,
                 isRenaming = isRenaming,
-                renameName = renameName,
+                renameNameState = renameNameState,
                 suggestions = suggestionList,
                 scrollBehavior = scrollBehavior,
-                onRenameNameChange = { renameName = it },
                 onCancelRename = { isRenaming = false },
                 onSaveRename = {
-                    val newName = renameName.text.trim()
+                    val newName = renameNameState.text.toString().trim()
                     if (newName.isNotBlank()) {
                         if (newName in suggestionList && newName != filterValue) {
                             pendingRenameName = newName
@@ -230,10 +232,7 @@ private fun FilterResultContent(
                 onMenuDismiss = { showMenu = false },
                 onRenameClick = {
                     showMenu = false
-                    renameName = TextFieldValue(
-                        text = filterValue,
-                        selection = TextRange(filterValue.length),
-                    )
+                    renameNameState.setTextAndPlaceCursorAtEnd(filterValue)
                     isRenaming = true
                 },
                 onDeleteClick = {
@@ -348,10 +347,9 @@ private fun FilterResultTopBar(
     isInMultiSelectMode: Boolean,
     showMenu: Boolean,
     isRenaming: Boolean,
-    renameName: TextFieldValue,
+    renameNameState: TextFieldState,
     suggestions: List<String>,
     scrollBehavior: TopAppBarScrollBehavior,
-    onRenameNameChange: (TextFieldValue) -> Unit,
     onCancelRename: () -> Unit,
     onSaveRename: () -> Unit,
     onNavigateBack: () -> Unit,
@@ -372,9 +370,8 @@ private fun FilterResultTopBar(
             filterValue = filterValue,
             showMenu = showMenu,
             isRenaming = isRenaming,
-            renameName = renameName,
+            renameNameState = renameNameState,
             suggestions = suggestions,
-            onRenameNameChange = onRenameNameChange,
             onCancelRename = onCancelRename,
             onSaveRename = onSaveRename,
             onNavigateBack = onNavigateBack,
@@ -395,9 +392,8 @@ private fun FilterResultDefaultTopAppBar(
     filterValue: String,
     showMenu: Boolean,
     isRenaming: Boolean,
-    renameName: TextFieldValue,
+    renameNameState: TextFieldState,
     suggestions: List<String>,
-    onRenameNameChange: (TextFieldValue) -> Unit,
     onCancelRename: () -> Unit,
     onSaveRename: () -> Unit,
     onNavigateBack: () -> Unit,
@@ -411,13 +407,15 @@ private fun FilterResultDefaultTopAppBar(
     modifier: Modifier = Modifier,
 ) {
     var isSuggestionsExpanded by remember { mutableStateOf(value = false) }
-    val filteredSuggestions = remember(renameName.text, suggestions) {
-        if (renameName.text.isBlank()) emptyList()
+    var ignoreNextTextChange by remember { mutableStateOf(value = false) }
+    val currentRenameText = renameNameState.text.toString()
+    val filteredSuggestions = remember(currentRenameText, suggestions) {
+        if (currentRenameText.isBlank()) emptyList()
         else suggestions.filter {
             it.contains(
-                renameName.text,
+                currentRenameText,
                 ignoreCase = true,
-            ) && it != renameName.text
+            ) && it != currentRenameText
         }.take(5)
     }
 
@@ -425,7 +423,20 @@ private fun FilterResultDefaultTopAppBar(
 
     LaunchedEffect(isRenaming) {
         if (isRenaming) {
+            isSuggestionsExpanded = false
             focusRequester.requestFocus()
+            var isFirst = true
+            snapshotFlow { renameNameState.text.toString() }.collect {
+                if (isFirst) {
+                    isFirst = false
+                } else if (ignoreNextTextChange) {
+                    ignoreNextTextChange = false
+                } else {
+                    isSuggestionsExpanded = true
+                }
+            }
+        } else {
+            isSuggestionsExpanded = false
         }
     }
 
@@ -436,17 +447,16 @@ private fun FilterResultDefaultTopAppBar(
                 val isCollapsed = LocalTopAppBarCollapsedRow.current
                 if (isRenaming) {
                     BasicTextField(
-                        value = renameName,
-                        onValueChange = {
-                            onRenameNameChange(it)
-                            isSuggestionsExpanded = true
-                        },
+                        state = renameNameState,
                         textStyle = LocalTextStyle.current.copy(
                             color = MaterialTheme.colorScheme.onSurface,
                         ),
                         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                        singleLine = isCollapsed,
-                        maxLines = if (isCollapsed) 1 else 2,
+                        lineLimits = if (isCollapsed) {
+                            TextFieldLineLimits.SingleLine
+                        } else {
+                            TextFieldLineLimits.MultiLine(maxHeightInLines = 2)
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .focusRequester(focusRequester),
@@ -568,12 +578,8 @@ private fun FilterResultDefaultTopAppBar(
                                 text = { Text(suggestion) },
                                 shapes = MenuDefaults.itemShape(index, filteredSuggestions.size),
                                 onClick = {
-                                    onRenameNameChange(
-                                        TextFieldValue(
-                                            text = suggestion,
-                                            selection = TextRange(suggestion.length),
-                                        ),
-                                    )
+                                    ignoreNextTextChange = true
+                                    renameNameState.setTextAndPlaceCursorAtEnd(suggestion)
                                     isSuggestionsExpanded = false
                                 },
                             )

@@ -7,7 +7,8 @@ import kotlinx.serialization.json.jsonPrimitive
 
 /** Inspect versions before payload decoding so newer fields cannot hide an unsupported format. */
 internal fun checkBackupFormat(json: Json, text: String, format: String): JsonObject {
-    val root = requireNotNull(json.parseToJsonElement(text) as? JsonObject) { "Expected backup object" }
+    val root =
+        requireNotNull(json.parseToJsonElement(text) as? JsonObject) { "Expected backup object" }
     require(root["format"]?.jsonPrimitive?.content == format)
     fun checkVersion(record: JsonObject, key: String) {
         val version = requireNotNull(record[key]?.jsonPrimitive?.intOrNull) { "Missing $key" }

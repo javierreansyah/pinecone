@@ -24,8 +24,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.clearText
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuGroup
@@ -46,6 +48,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults.UnfocusedBorderThick
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldLabelPosition
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -68,7 +71,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
@@ -399,9 +401,14 @@ private fun AutocompleteChipTextField(
     onRemove: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var text by remember { mutableStateOf("") }
+    val textFieldState = rememberTextFieldState()
+    val text = textFieldState.text.toString()
     var expanded by remember { mutableStateOf(value = false) }
     var textFieldWidth by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(text) {
+        expanded = text.isNotBlank()
+    }
 
     val filteredSuggestions = remember(suggestions, items, text) {
         suggestions.filter { it.contains(text, ignoreCase = true) && it !in items }
@@ -413,31 +420,63 @@ private fun AutocompleteChipTextField(
         },
     ) {
         val interactionSource = remember { MutableInteractionSource() }
+        val baseDecorator = OutlinedTextFieldDefaults.decorator(
+            state = textFieldState,
+            enabled = true,
+            lineLimits = TextFieldLineLimits.SingleLine,
+            outputTransformation = null,
+            interactionSource = interactionSource,
+            labelPosition = TextFieldLabelPosition.Cutout(isAlwaysMinimized = items.isNotEmpty()),
+            label = { Text(label) },
+            trailingIcon = {
+                IconButton(
+                    enabled = text.isNotBlank(),
+                    onClick = {
+                        if (text.isNotBlank()) {
+                            onAdd(text)
+                            textFieldState.clearText()
+                            expanded = false
+                        }
+                    },
+                ) {
+                    Icon(
+                        MaterialSymbols.Outlined.Add,
+                        contentDescription = stringResource(R.string.action_add),
+                    )
+                }
+            },
+            colors = OutlinedTextFieldDefaults.colors(),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+            container = {
+                OutlinedTextFieldDefaults.Container(
+                    enabled = true,
+                    isError = false,
+                    interactionSource = interactionSource,
+                    colors = OutlinedTextFieldDefaults.colors(),
+                    shape = OutlinedTextFieldDefaults.shape,
+                    focusedBorderThickness = FocusedBorderThickness,
+                    unfocusedBorderThickness = UnfocusedBorderThickness,
+                )
+            },
+        )
 
         BasicTextField(
-            value = text,
-            onValueChange = {
-                text = it
-                expanded = it.isNotBlank()
-            },
+            state = textFieldState,
             modifier = Modifier.fillMaxWidth(),
             interactionSource = interactionSource,
             textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            lineLimits = TextFieldLineLimits.SingleLine,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    if (text.isNotBlank()) {
-                        onAdd(text)
-                        text = ""
-                        expanded = false
-                    }
-                },
-            ),
-        ) { innerTextField ->
-            OutlinedTextFieldDefaults.DecorationBox(
-                value = if (items.isNotEmpty()) " " else text,
-                innerTextField = {
+            onKeyboardAction = {
+                if (text.isNotBlank()) {
+                    onAdd(text)
+                    textFieldState.clearText()
+                    expanded = false
+                }
+            },
+            decorator = { innerTextField ->
+                baseDecorator.Decoration {
                     CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
                         FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -472,44 +511,9 @@ private fun AutocompleteChipTextField(
                             }
                         }
                     }
-                },
-                enabled = true,
-                singleLine = true,
-                visualTransformation = VisualTransformation.None,
-                interactionSource = interactionSource,
-                label = { Text(label) },
-                trailingIcon = {
-                    IconButton(
-                        enabled = text.isNotBlank(),
-                        onClick = {
-                            if (text.isNotBlank()) {
-                                onAdd(text)
-                                text = ""
-                                expanded = false
-                            }
-                        },
-                    ) {
-                        Icon(
-                            MaterialSymbols.Outlined.Add,
-                            contentDescription = stringResource(R.string.action_add),
-                        )
-                    }
-                },
-                colors = OutlinedTextFieldDefaults.colors(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-                container = {
-                    OutlinedTextFieldDefaults.Container(
-                        enabled = true,
-                        isError = false,
-                        interactionSource = interactionSource,
-                        colors = OutlinedTextFieldDefaults.colors(),
-                        shape = OutlinedTextFieldDefaults.shape,
-                        focusedBorderThickness = FocusedBorderThickness,
-                        unfocusedBorderThickness = UnfocusedBorderThickness,
-                    )
-                },
-            )
-        }
+                }
+            },
+        )
 
         DropdownMenuPopup(
             expanded = expanded && text.isNotBlank(),
@@ -534,7 +538,7 @@ private fun AutocompleteChipTextField(
                         shapes = MenuDefaults.itemShape(index, totalCount),
                         onClick = {
                             onAdd(suggestion)
-                            text = ""
+                            textFieldState.clearText()
                             expanded = false
                         },
                     )
@@ -547,7 +551,7 @@ private fun AutocompleteChipTextField(
                         shapes = MenuDefaults.itemShape(finalSuggestions.size, totalCount),
                         onClick = {
                             onAdd(text)
-                            text = ""
+                            textFieldState.clearText()
                             expanded = false
                         },
                     )

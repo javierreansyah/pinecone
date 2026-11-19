@@ -83,7 +83,8 @@ fun ShelvesPage(
                     },
                     label = "shelvesPageLayoutTransition",
                 ) { targetLayoutMode ->
-                    val extraVerticalPadding = if (targetLayoutMode != LayoutMode.List) 4.dp else 0.dp
+                    val extraVerticalPadding =
+                        if (targetLayoutMode != LayoutMode.List) 4.dp else 0.dp
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(

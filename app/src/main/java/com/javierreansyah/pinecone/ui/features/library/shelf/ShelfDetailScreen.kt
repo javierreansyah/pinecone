@@ -22,6 +22,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
@@ -51,8 +55,6 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -114,7 +116,7 @@ fun ShelfDetailScreen(
     var isReordering by remember { mutableStateOf(value = false) }
     var showDeleteDialog by remember { mutableStateOf(value = false) }
     var isRenaming by remember { mutableStateOf(value = false) }
-    var renameName by remember { mutableStateOf(TextFieldValue("")) }
+    val renameNameState = rememberTextFieldState()
     var selectedBookForMenu by remember { mutableStateOf<String?>(null) }
     val selection = remember { LibrarySelection() }
     var selectedBooks by selection::ids
@@ -148,7 +150,7 @@ fun ShelfDetailScreen(
         reorderBooks = reorderBooks,
         isReordering = isReordering,
         isRenaming = isRenaming,
-        renameName = renameName,
+        renameNameState = renameNameState,
         layoutMode = preferences.layoutMode,
         selectedBooks = selectedBooks,
         isInMultiSelectMode = isInMultiSelectMode,
@@ -169,16 +171,16 @@ fun ShelfDetailScreen(
             )
         },
         onToggleBookSelection = selection::toggle,
-        onRenameNameChange = { renameName = it },
         onStartRename = {
             val name = shelfWithCovers?.shelf?.name ?: ""
-            renameName = TextFieldValue(text = name, selection = TextRange(name.length))
+            renameNameState.setTextAndPlaceCursorAtEnd(name)
             isRenaming = true
         },
         onCancelRename = { isRenaming = false },
         onSaveRename = {
-            if (renameName.text.isNotBlank()) {
-                viewModel.renameShelf(shelfId, renameName.text.trim())
+            val newName = renameNameState.text.toString()
+            if (newName.isNotBlank()) {
+                viewModel.renameShelf(shelfId, newName.trim())
             }
             isRenaming = false
         },
@@ -278,14 +280,13 @@ private fun ShelfDetailContent(
     reorderBooks: List<Book>,
     isReordering: Boolean,
     isRenaming: Boolean,
-    renameName: TextFieldValue,
+    renameNameState: TextFieldState,
     layoutMode: LayoutMode,
     selectedBooks: Set<String>,
     isInMultiSelectMode: Boolean,
     onNavigateBack: () -> Unit,
     onEnterMultiSelect: (String?) -> Unit,
     onToggleBookSelection: (String) -> Unit,
-    onRenameNameChange: (TextFieldValue) -> Unit,
     onStartRename: () -> Unit,
     onCancelRename: () -> Unit,
     onSaveRename: () -> Unit,
@@ -314,12 +315,11 @@ private fun ShelfDetailContent(
                 isInMultiSelectMode = isInMultiSelectMode,
                 isReordering = isReordering,
                 isRenaming = isRenaming,
-                renameName = renameName,
+                renameNameState = renameNameState,
                 scrollBehavior = scrollBehavior,
                 content = content,
                 onNavigateBack = onNavigateBack,
                 onEnterMultiSelect = { onEnterMultiSelect(null) },
-                onRenameNameChange = onRenameNameChange,
                 onStartRename = onStartRename,
                 onCancelRename = onCancelRename,
                 onSaveRename = onSaveRename,
@@ -364,11 +364,10 @@ private fun ShelfDetailTopBar(
     isInMultiSelectMode: Boolean,
     isReordering: Boolean,
     isRenaming: Boolean,
-    renameName: TextFieldValue,
+    renameNameState: TextFieldState,
     scrollBehavior: TopAppBarScrollBehavior,
     onNavigateBack: () -> Unit,
     onEnterMultiSelect: () -> Unit,
-    onRenameNameChange: (TextFieldValue) -> Unit,
     onStartRename: () -> Unit,
     onCancelRename: () -> Unit,
     onSaveRename: () -> Unit,
@@ -392,10 +391,9 @@ private fun ShelfDetailTopBar(
             spaceName = spaceName,
             isReordering = isReordering,
             isRenaming = isRenaming,
-            renameName = renameName,
+            renameNameState = renameNameState,
             scrollBehavior = scrollBehavior,
             onNavigateBack = onNavigateBack,
-            onRenameNameChange = onRenameNameChange,
             onCancelRename = onCancelRename,
             onSaveRename = onSaveRename,
             onStartReordering = onStartReordering,
@@ -419,10 +417,9 @@ private fun ShelfDetailDefaultTopAppBar(
     spaceName: String?,
     isReordering: Boolean,
     isRenaming: Boolean,
-    renameName: TextFieldValue,
+    renameNameState: TextFieldState,
     scrollBehavior: TopAppBarScrollBehavior,
     onNavigateBack: () -> Unit,
-    onRenameNameChange: (TextFieldValue) -> Unit,
     onCancelRename: () -> Unit,
     onSaveRename: () -> Unit,
     onStartReordering: () -> Unit,
@@ -450,13 +447,12 @@ private fun ShelfDetailDefaultTopAppBar(
         title = {
             if (isRenaming) {
                 BasicTextField(
-                    value = renameName,
-                    onValueChange = onRenameNameChange,
+                    state = renameNameState,
                     textStyle = LocalTextStyle.current.copy(
                         color = MaterialTheme.colorScheme.onSurface,
                     ),
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                    singleLine = true,
+                    lineLimits = TextFieldLineLimits.SingleLine,
                     modifier = Modifier
                         .fillMaxWidth()
                         .focusRequester(focusRequester),
@@ -623,6 +619,7 @@ private fun ShelfDetailDefaultTopAppBar(
 
 @Composable
 private fun ShelfDetailBookListContent(
+    modifier: Modifier = Modifier,
     shelfWithCovers: ShelfWithCovers?,
     books: List<Book>,
     reorderBooks: List<Book>,
@@ -634,7 +631,6 @@ private fun ShelfDetailBookListContent(
     onBookClick: (String) -> Unit,
     onBookLongClick: (String) -> Unit,
     contentPadding: PaddingValues = PaddingValues(0.dp),
-    modifier: Modifier = Modifier,
     scrollKey: Any? = null,
 ) {
     val layoutEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()

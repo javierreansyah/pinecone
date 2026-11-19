@@ -3,9 +3,9 @@
 Use **Quick** by default and **Complete** only when explicitly requested. Run from the repository
 root in Windows PowerShell.
 
-| Mode | Builds and JVM tests | Android lint |
-| --- | --- | --- |
-| Quick | Debug | None |
+| Mode     | Builds and JVM tests    | Android lint       |
+|----------|-------------------------|--------------------|
+| Quick    | Debug                   | None               |
 | Complete | Debug, release, staging | All three variants |
 
 ```powershell

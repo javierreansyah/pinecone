@@ -29,7 +29,10 @@ class DictionaryStoreTest {
             prepareRestoredDictionary(context, file)
             val db = openDictionaryDatabase(context, file.absolutePath)
             try {
-                assertEquals("A retained definition", db.dictionaryDao().getDefinitions("pinecone").single().definition)
+                assertEquals(
+                    "A retained definition",
+                    db.dictionaryDao().getDefinitions("pinecone").single().definition
+                )
                 assertEquals(2, db.openHelper.readableDatabase.version)
             } finally {
                 db.close()

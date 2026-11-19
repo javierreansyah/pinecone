@@ -32,7 +32,7 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.javierreansyah.pinecone.R
 
-internal val LocalTopAppBarCollapsedFraction = compositionLocalOf<() -> Float> { { 0f } }
+internal val LocalTopAppBarCollapsedFraction = compositionLocalOf { { 0f } }
 val LocalTopAppBarCollapsedRow = compositionLocalOf { false }
 
 @Composable

@@ -724,7 +724,10 @@ class BackupRepository @Inject constructor(
             val rebased = snapshot.library.books.map { book ->
                 val (_, refBook, refCover) = refs[book.id] ?: error("Missing book object")
                 val bookTarget =
-                    BackupArchiveIO.restoreTarget(booksDir, "${book.id}_$token.${refBook.fileName.substringAfterLast('.')}")
+                    BackupArchiveIO.restoreTarget(
+                        booksDir,
+                        "${book.id}_$token.${refBook.fileName.substringAfterLast('.')}"
+                    )
                 stagedBooks += bookTarget
                 copyRawObject(dirs.books, refBook, bookTarget)
                 onFileRestored()
@@ -743,7 +746,10 @@ class BackupRepository @Inject constructor(
             snapshot.dictionaries.forEach { (referenceDictionary, referenceObjectInfo) ->
                 val objectFile = dirs.dictionaries.findFile(referenceObjectInfo.fileName)
                     ?: error("Missing dictionary object")
-                val staged = BackupArchiveIO.restoreTarget(context.cacheDir, "dict_${referenceDictionary.id}_$token.db")
+                val staged = BackupArchiveIO.restoreTarget(
+                    context.cacheDir,
+                    "dict_${referenceDictionary.id}_$token.db"
+                )
                 dictionaryStages += DictionaryStage(referenceDictionary, staged)
                 verifyDictionaryObject(objectFile, referenceObjectInfo, staged)
                 validateDictionary(staged, migrate = true)
