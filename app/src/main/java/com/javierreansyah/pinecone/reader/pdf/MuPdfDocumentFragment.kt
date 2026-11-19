@@ -1,4 +1,7 @@
-@file:OptIn(org.readium.r2.shared.ExperimentalReadiumApi::class)
+@file:OptIn(
+    org.readium.r2.shared.ExperimentalReadiumApi::class,
+    androidx.compose.foundation.layout.ExperimentalLayoutApi::class,
+)
 
 package com.javierreansyah.pinecone.reader.pdf
 
@@ -14,10 +17,15 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsIgnoringVisibility
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -30,6 +38,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -54,6 +63,7 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.javierreansyah.pinecone.R
@@ -196,6 +206,12 @@ class MuPdfDocumentFragment(
             .background(background)
         val spacing = preferences.pageSpacing.dp
         val reverse = preferences.horizontal && preferences.rightToLeft
+        val statusBarTop = WindowInsets.statusBarsIgnoringVisibility
+            .union(WindowInsets.displayCutout)
+            .asPaddingValues()
+            .calculateTopPadding()
+        val topInset = statusBarTop + TopAppBarDefaults.TopAppBarExpandedHeight
+        val scrollPage = preferences.fitWidth && (!preferences.scroll || preferences.horizontal)
         val scrollBy: (Float) -> Float = remember(list, pager, preferences.scroll) {
             { delta ->
                 if (preferences.scroll) list.dispatchRawDelta(delta)
@@ -214,6 +230,7 @@ class MuPdfDocumentFragment(
                     modifier,
                     state = list,
                     reverseLayout = reverse,
+                    contentPadding = if (scrollPage) PaddingValues(0.dp) else PaddingValues(top = topInset),
                     horizontalArrangement = Arrangement.spacedBy(spacing)
                 ) {
                     items(pdf.pageCount) { index ->
@@ -225,6 +242,7 @@ class MuPdfDocumentFragment(
                             aspectRatios[index],
                             matchesByPage[index].orEmpty(), highlights.focusedIndex,
                             onDoubleTap,
+                            topInset = if (scrollPage) topInset else 0.dp,
                         )
                     }
                 }
@@ -233,7 +251,7 @@ class MuPdfDocumentFragment(
                     modifier,
                     state = list,
                     verticalArrangement = Arrangement.spacedBy(spacing),
-                    contentPadding = PaddingValues(vertical = spacing)
+                    contentPadding = PaddingValues(top = topInset, bottom = spacing)
                 ) {
                     items(pdf.pageCount) { index ->
                         PageImage(
@@ -251,19 +269,27 @@ class MuPdfDocumentFragment(
                 HorizontalPager(
                     pager,
                     modifier,
+                    contentPadding = if (scrollPage) PaddingValues(0.dp) else PaddingValues(top = topInset),
                     reverseLayout = reverse,
                     pageSpacing = spacing
                 ) { index ->
                     PageImage(
                         pdf, index, preferences, Modifier.fillMaxSize(), aspectRatios[index],
-                        matchesByPage[index].orEmpty(), highlights.focusedIndex, onDoubleTap
+                        matchesByPage[index].orEmpty(), highlights.focusedIndex, onDoubleTap,
+                        topInset = if (scrollPage) topInset else 0.dp,
                     )
                 }
             } else {
-                VerticalPager(pager, modifier, pageSpacing = spacing) { index ->
+                VerticalPager(
+                    pager,
+                    modifier,
+                    contentPadding = if (scrollPage) PaddingValues(0.dp) else PaddingValues(top = topInset),
+                    pageSpacing = spacing
+                ) { index ->
                     PageImage(
                         pdf, index, preferences, Modifier.fillMaxSize(), aspectRatios[index],
-                        matchesByPage[index].orEmpty(), highlights.focusedIndex, onDoubleTap
+                        matchesByPage[index].orEmpty(), highlights.focusedIndex, onDoubleTap,
+                        topInset = if (scrollPage) topInset else 0.dp,
                     )
                 }
             }
@@ -280,6 +306,7 @@ class MuPdfDocumentFragment(
         matches: List<PdfSearchMatch>,
         focusedIndex: Int?,
         onDoubleTap: () -> Unit,
+        topInset: Dp = 0.dp,
     ) {
         var error by remember(index) { mutableStateOf<String?>(null) }
         val bitmap by produceState<android.graphics.Bitmap?>(null, pdf, index) {
@@ -340,6 +367,7 @@ class MuPdfDocumentFragment(
                     .verticalScroll(rememberScrollState()) else Modifier.fillMaxSize()
                 Box(viewport, contentAlignment = Alignment.TopCenter) {
                     val image = if (scrollPage) Modifier
+                        .padding(top = topInset)
                         .fillMaxWidth()
                         .aspectRatio(it.width.toFloat() / it.height) else Modifier.fillMaxSize()
                     // The navigator transforms the bitmap and overlays together.

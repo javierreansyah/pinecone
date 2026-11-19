@@ -2,6 +2,8 @@
 <resources>
     <string name="settings_about_app">Tentang aplikasi ini</string>
     <string name="settings_about_section">Tentang</string>
+    <string name="settings_amoled_dark_mode">Mode gelap AMOLED</string>
+    <string name="settings_amoled_dark_mode_summary">Gunakan permukaan hitam pekat dalam mode gelap.</string>
     <string name="settings_auto_backup_freq">Frekuensi cadangan otomatis</string>
     <item name="settings_backup_auto_label" type="string">@string/reader_settings_theme_auto</item>
     <string name="settings_backup_freq_12h">12 jam</string>

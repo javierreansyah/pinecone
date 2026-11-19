@@ -1,0 +1,13 @@
+{
+  "uniqueId": "font_roboto",
+  "name": "Roboto",
+  "developers": [
+    {
+      "name": "The Roboto Project Authors"
+    }
+  ],
+  "website": "https://fonts.google.com/specimen/Roboto",
+  "licenses": [
+    "OFL-1.1"
+  ]
+}

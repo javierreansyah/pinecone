@@ -2,6 +2,8 @@
 
 Preserve unrelated user changes. Keep changes focused and reuse existing project patterns.
 
+Production is currently on **v1.0.0**; active development targets **v1.1.0**.
+
 Default to **Quick** from the repository root (Windows PowerShell):
 
 ```powershell

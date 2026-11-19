@@ -2,6 +2,8 @@
 <resources>
     <string name="settings_about_app">About this app</string>
     <string name="settings_about_section">About</string>
+    <string name="settings_amoled_dark_mode">AMOLED dark mode</string>
+    <string name="settings_amoled_dark_mode_summary">Use pure black surfaces in dark mode.</string>
     <string name="settings_auto_backup_freq">Auto backup frequency</string>
     <item name="settings_backup_auto_label" type="string">@string/reader_settings_theme_auto</item>
     <string name="settings_backup_freq_12h">12 hours</string>

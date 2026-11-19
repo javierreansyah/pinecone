@@ -62,6 +62,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Contrast
+import com.composables.icons.materialsymbols.outlined.Dark_mode
 import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Forest
 import com.composables.icons.materialsymbols.outlined.History
@@ -172,6 +173,9 @@ fun SettingsScreen(
             viewModel.updateSettings { current -> current.copy(themeMode = themeMode) }
         },
         onColorPaletteClick = { showColorPicker = true },
+        onAmoledDarkModeChanged = { enabled ->
+            viewModel.updateSettings { current -> current.copy(amoledDarkMode = enabled) }
+        },
         onThemeContrastSelected = { themeContrast ->
             viewModel.updateSettings { current -> current.copy(themeContrast = themeContrast) }
         },
@@ -309,6 +313,7 @@ fun SettingsScreen(
                 current.copy(
                     themeMode = "System",
                     colorPalette = "Dynamic",
+                    amoledDarkMode = true,
                     themeContrast = "Standard",
                     locale = "System",
                     autoBackupFrequency = "12h",
@@ -359,6 +364,7 @@ private fun SettingsContent(
     onRestoreDefaultClick: () -> Unit,
     onThemeModeSelected: (String) -> Unit,
     onColorPaletteClick: () -> Unit,
+    onAmoledDarkModeChanged: (Boolean) -> Unit,
     onThemeContrastSelected: (String) -> Unit,
     onSpacesEnabledChanged: (Boolean) -> Unit,
     onShowAllSpacesChanged: (Boolean) -> Unit,
@@ -409,6 +415,7 @@ private fun SettingsContent(
                 settings = settings,
                 onThemeModeSelected = onThemeModeSelected,
                 onColorPaletteClick = onColorPaletteClick,
+                onAmoledDarkModeChanged = onAmoledDarkModeChanged,
                 onThemeContrastSelected = onThemeContrastSelected,
             )
 
@@ -585,6 +592,7 @@ private fun ThemeSettingsSection(
     settings: ReaderSettings,
     onThemeModeSelected: (String) -> Unit,
     onColorPaletteClick: () -> Unit,
+    onAmoledDarkModeChanged: (Boolean) -> Unit,
     onThemeContrastSelected: (String) -> Unit,
 ) {
     SettingsSection(stringResource(R.string.reader_settings_theme)) {
@@ -596,7 +604,7 @@ private fun ThemeSettingsSection(
 
         val themeLabel = stringResource(R.string.settings_theme_mode)
         SettingsItem(
-            shapes = ListItemDefaults.segmentedShapes(index = 0, count = 3),
+            shapes = ListItemDefaults.segmentedShapes(index = 0, count = 4),
             content = { Text(themeLabel) },
             value = settings.themeMode,
             options = themeOptionsMap.keys.toList(),
@@ -633,7 +641,7 @@ private fun ThemeSettingsSection(
                 containerColor = MaterialTheme.colorScheme.surfaceContainer,
                 disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
             ),
-            shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
+            shapes = ListItemDefaults.segmentedShapes(index = 1, count = 4),
             onClick = onColorPaletteClick,
             leadingContent = {
                 ListItemAccessory {
@@ -681,6 +689,15 @@ private fun ThemeSettingsSection(
             },
         )
 
+        SettingsSwitchItem(
+            shapes = ListItemDefaults.segmentedShapes(index = 2, count = 4),
+            title = stringResource(R.string.settings_amoled_dark_mode),
+            summary = stringResource(R.string.settings_amoled_dark_mode_summary),
+            checked = settings.amoledDarkMode,
+            onChanged = onAmoledDarkModeChanged,
+            icon = MaterialSymbols.Outlined.Dark_mode,
+        )
+
         val themeContrastMap = mapOf(
             "Standard" to stringResource(R.string.settings_option_standard),
             "Medium" to stringResource(R.string.settings_option_medium),
@@ -689,7 +706,7 @@ private fun ThemeSettingsSection(
 
         val themeContrastLabel = stringResource(R.string.settings_theme_contrast)
         SettingsItem(
-            shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
+            shapes = ListItemDefaults.segmentedShapes(index = 3, count = 4),
             content = {
                 Text(
                     themeContrastLabel,

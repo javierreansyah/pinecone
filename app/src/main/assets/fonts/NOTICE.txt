@@ -9,6 +9,10 @@ Literata (regular and italic variable fonts)
 Copyright 2017 The Literata Project Authors
 https://github.com/googlefonts/literata
 
+Roboto (regular and italic variable fonts)
+Copyright 2011 The Roboto Project Authors
+https://github.com/googlefonts/roboto-classic
+
 Source Code Pro (regular and italic variable fonts)
 Copyright 2023 Adobe (http://www.adobe.com/), with Reserved Font Name "Source".
 https://github.com/adobe-fonts/source-code-pro

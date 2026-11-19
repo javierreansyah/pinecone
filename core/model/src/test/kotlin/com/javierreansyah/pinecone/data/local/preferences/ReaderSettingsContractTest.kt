@@ -26,4 +26,12 @@ class ReaderSettingsContractTest {
         assertEquals(ReaderSettings(), Json.decodeFromString<ReaderSettings>(enabled))
         assertEquals(Json.decodeFromString<PdfPreferences>("{}"), PdfPreferences())
     }
+
+    @Test
+    fun amoledDarkModeDefaultsToTrueForLegacyJsonAndRoundTripsFalse() {
+        val legacy = Json.decodeFromString<ReaderSettings>("""{"themeMode":"Dark"}""")
+        assertEquals(true, legacy.amoledDarkMode)
+        val disabled = ReaderSettings(amoledDarkMode = false)
+        assertEquals(disabled, Json.decodeFromString<ReaderSettings>(Json.encodeToString(disabled)))
+    }
 }

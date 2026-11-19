@@ -81,6 +81,7 @@ class MainActivity : AppCompatActivity() {
             AppTheme(
                 darkTheme = darkTheme,
                 colorPalette = settings.value.colorPalette,
+                amoledDarkMode = settings.value.amoledDarkMode,
                 themeContrast = settings.value.themeContrast,
             ) {
                 val initialBackStack = androidx.compose.runtime.remember {

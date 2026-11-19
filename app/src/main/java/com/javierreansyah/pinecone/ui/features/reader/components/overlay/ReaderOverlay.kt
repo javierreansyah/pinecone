@@ -127,6 +127,7 @@ fun ReaderOverlay(
     val activeRendition by viewModel.activeRendition.collectAsStateWithLifecycle()
     val publication by viewModel.publication.collectAsStateWithLifecycle()
     val useBookSettings by viewModel.useBookSettings.collectAsStateWithLifecycle()
+    val pdfPreferences by viewModel.pdfPreferences.collectAsStateWithLifecycle()
     val fixedEpub = publication?.metadata?.layout == org.readium.r2.shared.publication.Layout.FIXED
 
     LaunchedEffect(activeRendition) { notesViewModel.setRendition(activeRendition) }
@@ -245,6 +246,8 @@ fun ReaderOverlay(
                 readMode = bookState.value.readMode,
                 onToggleReadMode = viewModel::togglePdfReadMode,
                 converting = bookState.value.converting,
+                pdfMode = profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF,
+                pdfDarkPage = pdfPreferences.invert == true,
             )
 
             ReaderBottomBarSection(
@@ -531,6 +534,8 @@ fun ReaderTopBarSection(
     readMode: Boolean = false,
     onToggleReadMode: () -> Unit = {},
     converting: Boolean = false,
+    pdfMode: Boolean = false,
+    pdfDarkPage: Boolean = false,
 ) {
     val actionsSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
     val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
@@ -577,6 +582,8 @@ fun ReaderTopBarSection(
             readMode = readMode,
             onToggleReadMode = onToggleReadMode,
             converting = converting,
+            pdfMode = pdfMode,
+            pdfDarkPage = pdfDarkPage,
         )
     }
 }
@@ -723,6 +730,7 @@ fun PineconeThemedContent(
     AppTheme(
         darkTheme = uiDarkTheme,
         colorPalette = settings.colorPalette,
+        amoledDarkMode = settings.amoledDarkMode,
         themeContrast = settings.themeContrast,
         content = content,
     )
