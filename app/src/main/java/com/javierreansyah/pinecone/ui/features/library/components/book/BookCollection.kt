@@ -33,6 +33,7 @@ fun BookCollection(
     selectedBooks: Set<String> = emptySet(),
     isInMultiSelectMode: Boolean = false,
     scrollKey: Any? = null,
+    topContentPadding: Dp = 0.dp,
     bottomContentPadding: Dp = LocalAudioPlayerBottomPadding.current,
 ) {
     val layoutEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
@@ -58,6 +59,7 @@ fun BookCollection(
                 onBookLongClick = onBookLongClick,
                 selectedBooks = selectedBooks,
                 isInMultiSelectMode = isInMultiSelectMode,
+                topContentPadding = topContentPadding,
                 bottomContentPadding = bottomContentPadding,
             )
         }
@@ -72,6 +74,7 @@ private fun BookGrid(
     onBookLongClick: ((String) -> Unit)? = null,
     selectedBooks: Set<String> = emptySet(),
     isInMultiSelectMode: Boolean = false,
+    topContentPadding: Dp = 0.dp,
     bottomContentPadding: Dp = 0.dp,
 ) {
     val density = LocalDensity.current
@@ -95,7 +98,7 @@ private fun BookGrid(
     LazyVerticalGrid(
         columns = if (isList) GridCells.Fixed(if (screenWidth >= 600.dp) 2 else 1)
         else GridCells.Adaptive(minSize = itemWidth),
-        contentPadding = PaddingValues(bottom = bottomContentPadding),
+        contentPadding = PaddingValues(top = topContentPadding, bottom = bottomContentPadding),
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = horizontalPadding),

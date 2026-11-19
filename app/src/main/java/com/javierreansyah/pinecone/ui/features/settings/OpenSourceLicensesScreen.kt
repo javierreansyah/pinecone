@@ -3,6 +3,8 @@ package com.javierreansyah.pinecone.ui.features.settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,11 +28,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
+import com.javierreansyah.pinecone.ui.components.LibraryTopAppBarTitle
+import com.javierreansyah.pinecone.ui.components.SegmentedListDefaults
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import com.mikepenz.aboutlibraries.Libs
 import com.mikepenz.aboutlibraries.entity.Library
@@ -67,7 +72,7 @@ fun OpenSourceLicensesScreen(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LibraryTopAppBar(
-                title = { Text(stringResource(R.string.about_open_source_licenses)) },
+                title = { LibraryTopAppBarTitle(stringResource(R.string.about_open_source_licenses)) },
                 onBack = onNavigateBack,
                 scrollBehavior = scrollBehavior,
                 isEmpty = libraries?.isEmpty() == true,
@@ -83,16 +88,20 @@ fun OpenSourceLicensesScreen(
                     .padding(16.dp),
             )
         } else {
+            val layoutDirection = LocalLayoutDirection.current
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
+                    .padding(
+                        start = innerPadding.calculateStartPadding(layoutDirection),
+                        end = innerPadding.calculateEndPadding(layoutDirection),
+                    )
                     .padding(horizontal = 16.dp),
                 contentPadding = PaddingValues(
-                    top = 8.dp,
-                    bottom = 8.dp + LocalAudioPlayerBottomPadding.current
+                    top = innerPadding.calculateTopPadding() + 8.dp,
+                    bottom = innerPadding.calculateBottomPadding() + 8.dp + LocalAudioPlayerBottomPadding.current,
                 ),
-                verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+                verticalArrangement = Arrangement.spacedBy(SegmentedListDefaults.Gap),
             ) {
                 itemsIndexed(
                     libs ?: emptyList(),
@@ -101,7 +110,7 @@ fun OpenSourceLicensesScreen(
                     val license = library.licenses.firstOrNull()
                     SegmentedListItem(
                         colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                        shapes = ListItemDefaults.segmentedShapes(
+                        shapes = SegmentedListDefaults.shapes(
                             index = index,
                             count = (libs ?: return@itemsIndexed).size
                         ),

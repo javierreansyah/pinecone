@@ -32,6 +32,8 @@ import com.composables.icons.materialsymbols.outlined.Info
 import com.composables.icons.materialsymbols.outlined.Keyboard_arrow_right
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
+import com.javierreansyah.pinecone.ui.components.LibraryTopAppBarTitle
+import com.javierreansyah.pinecone.ui.components.SegmentedListDefaults
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 
 @Composable
@@ -70,7 +72,7 @@ fun AboutScreen(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LibraryTopAppBar(
-                title = { Text(stringResource(R.string.about_title)) },
+                title = { LibraryTopAppBarTitle(stringResource(R.string.about_title)) },
                 onBack = onNavigateBack,
                 scrollBehavior = scrollBehavior,
             )
@@ -79,8 +81,8 @@ fun AboutScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
+                .padding(innerPadding)
                 .padding(bottom = LocalAudioPlayerBottomPadding.current)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
@@ -92,11 +94,11 @@ fun AboutScreen(
 
             Column(
                 modifier = Modifier.padding(top = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+                verticalArrangement = Arrangement.spacedBy(SegmentedListDefaults.Gap),
             ) {
                 SegmentedListItem(
                     colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                    shapes = ListItemDefaults.segmentedShapes(index = 0, count = 3),
+                    shapes = SegmentedListDefaults.shapes(index = 0, count = 3),
                     onClick = {
                         showLicense = true
                     },
@@ -121,7 +123,7 @@ fun AboutScreen(
 
                 SegmentedListItem(
                     colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                    shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
+                    shapes = SegmentedListDefaults.shapes(index = 1, count = 3),
                     onClick = {
                         val intent = Intent(
                             Intent.ACTION_VIEW,
@@ -150,7 +152,7 @@ fun AboutScreen(
 
                 SegmentedListItem(
                     colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                    shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
+                    shapes = SegmentedListDefaults.shapes(index = 2, count = 3),
                     onClick = onNavigateToOpenSourceLicenses,
                     leadingContent = {
                         Icon(

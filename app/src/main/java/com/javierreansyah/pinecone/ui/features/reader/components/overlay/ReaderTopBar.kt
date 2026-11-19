@@ -8,10 +8,8 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,21 +19,14 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.IconButtonShapes
-import androidx.compose.material3.IconToggleButtonShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.PlainTooltip
@@ -56,9 +47,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -80,12 +69,14 @@ import com.composables.icons.materialsymbols.outlined.Search
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
+import com.javierreansyah.pinecone.ui.components.ConnectedButtonGroup
+import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
+import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconToggleButton
+import com.javierreansyah.pinecone.ui.components.topBarFadeBackground
 import org.readium.r2.shared.publication.Locator
 import com.composables.icons.materialsymbols.outlinedfilled.Bookmark_check as FilledBookmarkCheck
 
 enum class TopBarState { NORMAL, JUMP, SEARCH }
-
-private enum class PdfTopBarAction { READ_MODE, BOOKMARK, SETTINGS, MORE }
 
 @Composable
 fun ReaderTopBar(
@@ -118,18 +109,18 @@ fun ReaderTopBar(
 ) {
     val pdfContainerColor = if (pdfDarkPage) Color.Black else Color.White
     val pdfContentColor = if (pdfDarkPage) Color.White else Color.Black
-    val pdfCanvasColor = if (pdfDarkPage) Color(0xFF171717) else Color(0xFFE8E8E8)
-    val barBgColor = if (pdfMode) pdfCanvasColor else readerBgColor
+    val barContainerColor = if (pdfMode) pdfContainerColor else readerBgColor
     val barContentColor = if (pdfMode) pdfContentColor else readerTextColor
+    val topBarBackgroundModifier = if (pdfMode) {
+        Modifier
+    } else {
+        Modifier.topBarFadeBackground(readerBgColor)
+    }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(barBgColor, Color.Transparent),
-                ),
-            ),
+            .then(topBarBackgroundModifier),
     ) {
         TopAppBar(
             title = {
@@ -173,26 +164,18 @@ fun ReaderTopBar(
                             contentDescription = stringResource(R.string.reader_collapse_audio_player),
                         )
                     }
-                } else if (pdfMode) {
+                } else {
                     FilledTonalIconButton(
                         onClick = onBack,
                         shapes = IconButtonDefaults.shapes(),
                         colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = pdfContainerColor,
-                            contentColor = pdfContentColor,
+                            containerColor = barContainerColor,
+                            contentColor = barContentColor,
                         ),
                     ) {
                         Icon(
                             MaterialSymbols.Outlined.Arrow_back,
                             contentDescription = stringResource(R.string.action_back),
-                        )
-                    }
-                } else {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            MaterialSymbols.Outlined.Arrow_back,
-                            contentDescription = stringResource(R.string.action_back),
-                            tint = readerTextColor,
                         )
                     }
                 }
@@ -238,28 +221,18 @@ fun ReaderTopBar(
                 ) { state ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (state == TopBarState.SEARCH) {
-                            if (pdfMode) {
-                                FilledTonalIconButton(
-                                    onClick = onCloseSearch,
-                                    shapes = IconButtonDefaults.shapes(),
-                                    colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                        containerColor = pdfContainerColor,
-                                        contentColor = pdfContentColor,
-                                    ),
-                                ) {
-                                    Icon(
-                                        MaterialSymbols.Outlined.Close,
-                                        contentDescription = stringResource(R.string.action_close),
-                                    )
-                                }
-                            } else {
-                                IconButton(onClick = onCloseSearch) {
-                                    Icon(
-                                        MaterialSymbols.Outlined.Close,
-                                        contentDescription = stringResource(R.string.action_close),
-                                        tint = readerTextColor,
-                                    )
-                                }
+                            FilledTonalIconButton(
+                                onClick = onCloseSearch,
+                                shapes = IconButtonDefaults.shapes(),
+                                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                    containerColor = barContainerColor,
+                                    contentColor = barContentColor,
+                                ),
+                            ) {
+                                Icon(
+                                    MaterialSymbols.Outlined.Close,
+                                    contentDescription = stringResource(R.string.action_close),
+                                )
                             }
                         } else {
                             if (state == TopBarState.JUMP) {
@@ -267,7 +240,7 @@ fun ReaderTopBar(
                                     onGoBack = onGoBackToOriginClick,
                                     onClear = onClearJumpOriginClick,
                                     textColor = barContentColor,
-                                    containerColor = if (pdfMode) pdfContainerColor else Color.Transparent,
+                                    containerColor = if (audioPlayer) Color.Transparent else barContainerColor,
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                             }
@@ -283,8 +256,16 @@ fun ReaderTopBar(
                                 }
                             }
 
-                            if (pdfMode) {
-                                PdfTopBarButtonGroup(
+                            if (audioPlayer) {
+                                IconButton(onClick = onInfoClick) {
+                                    Icon(
+                                        MaterialSymbols.Outlined.Info,
+                                        contentDescription = stringResource(R.string.reader_menu_info),
+                                        tint = readerTextColor,
+                                    )
+                                }
+                            } else {
+                                ReaderTopBarButtonGroup(
                                     state = state,
                                     isBookmarked = isBookmarked,
                                     typographySettings = typographySettings,
@@ -292,8 +273,8 @@ fun ReaderTopBar(
                                     readMode = readMode,
                                     converting = converting,
                                     moreItems = items,
-                                    containerColor = pdfContainerColor,
-                                    contentColor = pdfContentColor,
+                                    containerColor = barContainerColor,
+                                    contentColor = barContentColor,
                                     onToggleReadMode = onToggleReadMode,
                                     onToggleBookmark = onToggleBookmark,
                                     onSettingsClick = onSettingsClick,
@@ -302,80 +283,6 @@ fun ReaderTopBar(
                                     onInfoClick = onInfoClick,
                                     modifier = Modifier.padding(end = 4.dp),
                                 )
-                            } else {
-                                if (showReadMode && !converting) {
-                                    IconButton(onClick = onToggleReadMode) {
-                                        Icon(
-                                            imageVector = if (readMode) MaterialSymbols.Outlined.Description else MaterialSymbols.Outlined.Menu_book,
-                                            contentDescription = stringResource(if (readMode) R.string.reader_original_pdf else R.string.reader_read_mode),
-                                            tint = readerTextColor,
-                                        )
-                                    }
-                                }
-
-                                if (!audioPlayer) {
-                                    IconButton(onClick = onToggleBookmark) {
-                                        AnimatedSelectionIcon(
-                                            selected = isBookmarked,
-                                            outlinedIcon = MaterialSymbols.Outlined.Bookmark,
-                                            filledIcon = MaterialSymbols.OutlinedFilled.FilledBookmarkCheck,
-                                            contentDescription = if (isBookmarked) stringResource(R.string.reader_remove_bookmark) else stringResource(
-                                                R.string.reader_add_bookmark,
-                                            ),
-                                            tint = readerTextColor,
-                                        )
-                                    }
-                                } else {
-                                    IconButton(onClick = onInfoClick) {
-                                        Icon(
-                                            MaterialSymbols.Outlined.Info,
-                                            contentDescription = stringResource(R.string.reader_menu_info),
-                                            tint = readerTextColor,
-                                        )
-                                    }
-                                }
-
-                                if (state == TopBarState.NORMAL && !audioPlayer) {
-                                    if (!showReadMode) IconButton(onClick = onTocClick) {
-                                        Icon(
-                                            MaterialSymbols.Outlined.List,
-                                            contentDescription = stringResource(R.string.reader_toc_title),
-                                            modifier = Modifier.size(28.dp),
-                                            tint = readerTextColor,
-                                        )
-                                    }
-
-                                    IconButton(onClick = onSettingsClick) {
-                                        Icon(
-                                            if (typographySettings) MaterialSymbols.Outlined.Match_case else MaterialSymbols.Outlined.Tune,
-                                            contentDescription = stringResource(if (typographySettings) R.string.reader_settings_typography else R.string.reader_format_settings),
-                                            modifier = Modifier.size(28.dp),
-                                            tint = readerTextColor,
-                                        )
-                                    }
-                                }
-
-                                if (items.isNotEmpty()) {
-                                    var showMoreMenu by remember { mutableStateOf(value = false) }
-                                    Box {
-                                        IconButton(onClick = { showMoreMenu = true }) {
-                                            Icon(
-                                                MaterialSymbols.Outlined.More_vert,
-                                                contentDescription = stringResource(R.string.action_more),
-                                                tint = readerTextColor,
-                                            )
-                                        }
-                                        ReaderTopBarMoreMenu(
-                                            expanded = showMoreMenu,
-                                            items = items,
-                                            onDismiss = { showMoreMenu = false },
-                                            onTocClick = onTocClick,
-                                            onSettingsClick = onSettingsClick,
-                                            onSearchClick = onSearchClick,
-                                            onInfoClick = onInfoClick,
-                                        )
-                                    }
-                                }
                             }
                         }
                     }
@@ -391,7 +298,7 @@ fun ReaderTopBar(
 }
 
 @Composable
-private fun PdfTopBarButtonGroup(
+private fun ReaderTopBarButtonGroup(
     state: TopBarState,
     isBookmarked: Boolean,
     typographySettings: Boolean,
@@ -409,125 +316,98 @@ private fun PdfTopBarButtonGroup(
     onInfoClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val actions = remember(state, showReadMode, converting, moreItems.isNotEmpty()) {
-        buildList {
-            if (showReadMode && !converting) add(PdfTopBarAction.READ_MODE)
-            add(PdfTopBarAction.BOOKMARK)
-            if (state == TopBarState.NORMAL) add(PdfTopBarAction.SETTINGS)
-            if (moreItems.isNotEmpty()) add(PdfTopBarAction.MORE)
-        }
-    }
     var showMoreMenu by remember { mutableStateOf(false) }
 
-    Row(
+    ConnectedButtonGroup(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
-        verticalAlignment = Alignment.CenterVertically,
+        containerColor = containerColor,
+        contentColor = contentColor,
     ) {
-        actions.forEachIndexed { index, action ->
-            val (shape, pressedShape) = connectedTopBarButtonShapes(index, actions.size)
-            when (action) {
-                PdfTopBarAction.READ_MODE -> {
-                    FilledIconButton(
-                        onClick = onToggleReadMode,
-                        shapes = IconButtonShapes(shape = shape, pressedShape = pressedShape),
-                        colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = containerColor,
-                            contentColor = contentColor,
-                        ),
-                        modifier = Modifier.width(48.dp),
-                    ) {
-                        Icon(
-                            imageVector = if (readMode) MaterialSymbols.Outlined.Description else MaterialSymbols.Outlined.Menu_book,
-                            contentDescription = stringResource(if (readMode) R.string.reader_original_pdf else R.string.reader_read_mode),
-                            modifier = Modifier.size(24.dp),
-                        )
-                    }
-                }
+        if (showReadMode && !converting) {
+            ConnectedGroupIconButton(
+                onClick = onToggleReadMode,
+                buttonSize = 40.dp,
+                contentColor = contentColor,
+            ) {
+                Icon(
+                    imageVector = if (readMode) MaterialSymbols.Outlined.Description else MaterialSymbols.Outlined.Menu_book,
+                    contentDescription = stringResource(if (readMode) R.string.reader_original_pdf else R.string.reader_read_mode),
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+        }
 
-                PdfTopBarAction.BOOKMARK -> {
-                    FilledIconToggleButton(
-                        checked = isBookmarked,
-                        onCheckedChange = { onToggleBookmark() },
-                        shapes = IconToggleButtonShapes(shape = shape, pressedShape = pressedShape),
-                        colors = IconButtonDefaults.filledIconToggleButtonColors(
-                            containerColor = containerColor,
-                            contentColor = contentColor,
-                            checkedContainerColor = containerColor,
-                            checkedContentColor = contentColor,
-                        ),
-                        modifier = Modifier.width(48.dp),
-                    ) {
-                        AnimatedSelectionIcon(
-                            selected = isBookmarked,
-                            outlinedIcon = MaterialSymbols.Outlined.Bookmark,
-                            filledIcon = MaterialSymbols.OutlinedFilled.FilledBookmarkCheck,
-                            contentDescription = if (isBookmarked) stringResource(R.string.reader_remove_bookmark) else stringResource(
-                                R.string.reader_add_bookmark,
-                            ),
-                            modifier = Modifier.size(24.dp),
-                            tint = contentColor,
-                        )
-                    }
-                }
+        ConnectedGroupIconToggleButton(
+            checked = isBookmarked,
+            onCheckedChange = { onToggleBookmark() },
+            buttonSize = 40.dp,
+            contentColor = contentColor,
+        ) {
+            AnimatedSelectionIcon(
+                selected = isBookmarked,
+                outlinedIcon = MaterialSymbols.Outlined.Bookmark,
+                filledIcon = MaterialSymbols.OutlinedFilled.FilledBookmarkCheck,
+                contentDescription = if (isBookmarked) stringResource(R.string.reader_remove_bookmark) else stringResource(
+                    R.string.reader_add_bookmark,
+                ),
+                modifier = Modifier.size(24.dp),
+                tint = contentColor,
+            )
+        }
 
-                PdfTopBarAction.SETTINGS -> {
-                    FilledIconButton(
-                        onClick = onSettingsClick,
-                        shapes = IconButtonShapes(shape = shape, pressedShape = pressedShape),
-                        colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = containerColor,
-                            contentColor = contentColor,
-                        ),
-                        modifier = Modifier.width(48.dp),
-                    ) {
-                        Icon(
-                            imageVector = if (typographySettings) MaterialSymbols.Outlined.Match_case else MaterialSymbols.Outlined.Tune,
-                            contentDescription = stringResource(if (typographySettings) R.string.reader_settings_typography else R.string.reader_format_settings),
-                            modifier = Modifier.size(26.dp),
-                        )
-                    }
+        if (state == TopBarState.NORMAL) {
+            if (!showReadMode) {
+                ConnectedGroupIconButton(
+                    onClick = onTocClick,
+                    buttonSize = 40.dp,
+                    contentColor = contentColor,
+                ) {
+                    Icon(
+                        imageVector = MaterialSymbols.Outlined.List,
+                        contentDescription = stringResource(R.string.reader_toc_title),
+                        modifier = Modifier.size(26.dp),
+                    )
                 }
+            }
 
-                PdfTopBarAction.MORE -> {
-                    Box {
-                        FilledIconButton(
-                            onClick = { showMoreMenu = true },
-                            shapes = IconButtonShapes(shape = shape, pressedShape = pressedShape),
-                            colors = IconButtonDefaults.filledIconButtonColors(
-                                containerColor = containerColor,
-                                contentColor = contentColor,
-                            ),
-                            modifier = Modifier.width(48.dp),
-                        ) {
-                            Icon(
-                                MaterialSymbols.Outlined.More_vert,
-                                contentDescription = stringResource(R.string.action_more),
-                                modifier = Modifier.size(24.dp),
-                            )
-                        }
-                        ReaderTopBarMoreMenu(
-                            expanded = showMoreMenu,
-                            items = moreItems,
-                            onDismiss = { showMoreMenu = false },
-                            onTocClick = onTocClick,
-                            onSettingsClick = onSettingsClick,
-                            onSearchClick = onSearchClick,
-                            onInfoClick = onInfoClick,
-                        )
-                    }
+            ConnectedGroupIconButton(
+                onClick = onSettingsClick,
+                buttonSize = 40.dp,
+                contentColor = contentColor,
+            ) {
+                Icon(
+                    imageVector = if (typographySettings) MaterialSymbols.Outlined.Match_case else MaterialSymbols.Outlined.Tune,
+                    contentDescription = stringResource(if (typographySettings) R.string.reader_settings_typography else R.string.reader_format_settings),
+                    modifier = Modifier.size(26.dp),
+                )
+            }
+        }
+
+        if (moreItems.isNotEmpty()) {
+            Box {
+                ConnectedGroupIconButton(
+                    onClick = { showMoreMenu = true },
+                    buttonSize = 40.dp,
+                    contentColor = contentColor,
+                ) {
+                    Icon(
+                        MaterialSymbols.Outlined.More_vert,
+                        contentDescription = stringResource(R.string.action_more),
+                        modifier = Modifier.size(24.dp),
+                    )
                 }
+                ReaderTopBarMoreMenu(
+                    expanded = showMoreMenu,
+                    items = moreItems,
+                    onDismiss = { showMoreMenu = false },
+                    onTocClick = onTocClick,
+                    onSettingsClick = onSettingsClick,
+                    onSearchClick = onSearchClick,
+                    onInfoClick = onInfoClick,
+                )
             }
         }
     }
-}
-
-@Composable
-private fun connectedTopBarButtonShapes(index: Int, count: Int): Pair<Shape, Shape> = when {
-    count <= 1 -> CircleShape to ButtonGroupDefaults.connectedMiddleButtonPressShape
-    index == 0 -> ButtonGroupDefaults.connectedLeadingButtonShape to ButtonGroupDefaults.connectedLeadingButtonPressShape
-    index == count - 1 -> ButtonGroupDefaults.connectedTrailingButtonShape to ButtonGroupDefaults.connectedTrailingButtonPressShape
-    else -> RoundedCornerShape(4.dp) to ButtonGroupDefaults.connectedMiddleButtonPressShape
 }
 
 @Composable

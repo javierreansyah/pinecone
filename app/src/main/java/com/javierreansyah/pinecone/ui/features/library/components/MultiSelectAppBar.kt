@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.SelectableDropdownMenuItem
@@ -24,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Archive
 import com.composables.icons.materialsymbols.outlined.Check_circle
@@ -34,6 +34,7 @@ import com.composables.icons.materialsymbols.outlined.Info
 import com.composables.icons.materialsymbols.outlined.More_vert
 import com.composables.icons.materialsymbols.outlined.Unarchive
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 
 @Composable
@@ -64,14 +65,22 @@ fun MultiSelectAppBar(
         onSelectAll = onSelectAll,
         modifier = modifier,
         content = {
-            IconButton(onClick = onOrganize, enabled = selectedCount > 0) {
+            ConnectedGroupIconButton(
+                onClick = onOrganize,
+                enabled = selectedCount > 0,
+                buttonSize = 40.dp,
+            ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Create_new_folder,
                     contentDescription = stringResource(R.string.action_organize),
                 )
             }
             Box {
-                IconButton(onClick = { menuExpanded = true }, enabled = selectedCount > 0) {
+                ConnectedGroupIconButton(
+                    onClick = { menuExpanded = true },
+                    enabled = selectedCount > 0,
+                    buttonSize = 40.dp,
+                ) {
                     Icon(
                         imageVector = MaterialSymbols.Outlined.More_vert,
                         contentDescription = stringResource(R.string.action_more),

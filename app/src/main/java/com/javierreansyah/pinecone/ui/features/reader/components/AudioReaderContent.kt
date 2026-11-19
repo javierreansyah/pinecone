@@ -35,11 +35,9 @@ import androidx.compose.material3.ButtonGroup
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconButtonShapes
-import androidx.compose.material3.IconToggleButtonShapes
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -58,7 +56,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
@@ -94,6 +91,9 @@ import com.composables.icons.materialsymbols.outlinedfilled.Play_arrow
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.reader.audio.AudioPlaybackState
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
+import com.javierreansyah.pinecone.ui.components.ConnectedButtonGroup
+import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
+import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconToggleButton
 import kotlinx.coroutines.delay
 import java.io.File
 import java.util.Locale
@@ -657,22 +657,20 @@ private fun AudioActionsStrip(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
+        ConnectedButtonGroup(
             modifier = Modifier
-                .widthIn(max = 56.dp * 6 + ButtonGroupDefaults.ConnectedSpaceBetween * 5)
+                .widthIn(max = 48.dp * 6)
                 .fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
-            verticalAlignment = Alignment.CenterVertically,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         ) {
-            ExpressiveConnectedActionButton(
+            AudioStripActionButton(
                 onClick = { onSkip(-10) },
                 modifier = Modifier.weight(1f),
                 icon = MaterialSymbols.Outlined.Replay_10,
                 contentDescription = stringResource(R.string.reader_rewind),
-                shape = ButtonGroupDefaults.connectedLeadingButtonShape,
-                pressedShape = ButtonGroupDefaults.connectedLeadingButtonPressShape,
             )
-            ExpressiveConnectedActionButton(
+            AudioStripActionButton(
                 onClick = onToggleBookmark,
                 modifier = Modifier.weight(1f),
                 icon = MaterialSymbols.Outlined.Bookmark,
@@ -681,54 +679,42 @@ private fun AudioActionsStrip(
                 contentDescription = stringResource(
                     if (isBookmarked) R.string.reader_remove_bookmark else R.string.reader_add_bookmark
                 ),
-                shape = RoundedCornerShape(4.dp),
-                pressedShape = ButtonGroupDefaults.connectedMiddleButtonPressShape,
                 tint = if (isBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            ExpressiveConnectedActionButton(
+            AudioStripActionButton(
                 onClick = onAddNote,
                 modifier = Modifier.weight(1f),
                 enabled = canAddNote,
                 icon = MaterialSymbols.Outlined.Edit_note,
                 contentDescription = stringResource(R.string.reader_add_note),
-                shape = RoundedCornerShape(4.dp),
-                pressedShape = ButtonGroupDefaults.connectedMiddleButtonPressShape,
             )
-            ExpressiveConnectedActionButton(
+            AudioStripActionButton(
                 onClick = onOpenBookmarks,
                 modifier = Modifier.weight(1f),
                 icon = MaterialSymbols.Outlined.List,
                 contentDescription = stringResource(R.string.reader_bookmarks_title),
-                shape = RoundedCornerShape(4.dp),
-                pressedShape = ButtonGroupDefaults.connectedMiddleButtonPressShape,
             )
-            ExpressiveConnectedActionButton(
+            AudioStripActionButton(
                 onClick = onOpenSettings,
                 modifier = Modifier.weight(1f),
                 icon = MaterialSymbols.Outlined.Tune,
                 contentDescription = stringResource(R.string.settings_title),
-                shape = RoundedCornerShape(4.dp),
-                pressedShape = ButtonGroupDefaults.connectedMiddleButtonPressShape,
             )
-            ExpressiveConnectedActionButton(
+            AudioStripActionButton(
                 onClick = { onSkip(10) },
                 modifier = Modifier.weight(1f),
                 icon = MaterialSymbols.Outlined.Forward_10,
                 contentDescription = stringResource(R.string.reader_forward),
-                shape = ButtonGroupDefaults.connectedTrailingButtonShape,
-                pressedShape = ButtonGroupDefaults.connectedTrailingButtonPressShape,
             )
         }
     }
 }
 
 @Composable
-private fun ExpressiveConnectedActionButton(
+private fun AudioStripActionButton(
     onClick: () -> Unit,
     icon: ImageVector,
     contentDescription: String,
-    shape: Shape,
-    pressedShape: Shape,
     modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     enabled: Boolean = true,
@@ -749,30 +735,21 @@ private fun ExpressiveConnectedActionButton(
         }
     }
     if (filledIcon != null) {
-        FilledIconToggleButton(
+        ConnectedGroupIconToggleButton(
             checked = selected,
             onCheckedChange = { onClick() },
             enabled = enabled,
-            shapes = IconToggleButtonShapes(shape = shape, pressedShape = pressedShape),
-            colors = IconButtonDefaults.filledIconToggleButtonColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                contentColor = tint,
-                checkedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                checkedContentColor = tint,
-            ),
-            modifier = modifier.height(48.dp),
+            contentColor = tint,
+            checkedContentColor = tint,
+            modifier = modifier,
             content = content,
         )
     } else {
-        FilledIconButton(
+        ConnectedGroupIconButton(
             onClick = onClick,
             enabled = enabled,
-            shapes = IconButtonShapes(shape = shape, pressedShape = pressedShape),
-            colors = IconButtonDefaults.filledIconButtonColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                contentColor = tint,
-            ),
-            modifier = modifier.height(48.dp),
+            contentColor = tint,
+            modifier = modifier,
             content = content,
         )
     }

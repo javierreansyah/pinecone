@@ -47,6 +47,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -60,6 +61,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -67,6 +69,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -80,6 +83,7 @@ import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Image
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.components.topBarFadeBackground
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import java.io.File
 
@@ -169,7 +173,13 @@ private fun EditBookTopAppBar(
     modifier: Modifier = Modifier,
 ) {
     TopAppBar(
-        title = { Text(title) },
+        title = {
+            Text(
+                text = title,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
         navigationIcon = {
             FilledTonalIconButton(
                 shapes = IconButtonDefaults.shapes(),
@@ -201,7 +211,11 @@ private fun EditBookTopAppBar(
                 )
             }
         },
-        modifier = modifier,
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Transparent,
+            scrolledContainerColor = Color.Transparent,
+        ),
+        modifier = modifier.topBarFadeBackground(),
     )
 }
 
@@ -224,10 +238,10 @@ private fun EditBookContent(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(innerPadding)
             .consumeWindowInsets(innerPadding)
             .imePadding()
             .verticalScroll(rememberScrollState())
+            .padding(innerPadding)
             .padding(bottom = LocalAudioPlayerBottomPadding.current)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),

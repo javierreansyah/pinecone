@@ -2,13 +2,12 @@ package com.javierreansyah.pinecone.ui.features.library
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -18,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -25,12 +25,16 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Select
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
+import com.javierreansyah.pinecone.ui.components.LibraryTopAppBarTitle
+import com.javierreansyah.pinecone.ui.components.TopAppBarActionGroup
 import com.javierreansyah.pinecone.ui.features.library.components.FilterResultBottomSheet
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectTopBarTransition
 import com.javierreansyah.pinecone.ui.features.library.components.SelectedBooksBar
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookCollection
+import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 
 @Composable
 internal fun LibraryCollectionScreen(
@@ -76,35 +80,43 @@ internal fun LibraryCollectionScreen(
                 },
             ) {
                 LibraryTopAppBar(
-                    title = { Text(title) },
+                    title = { LibraryTopAppBarTitle(title) },
                     onBack = onNavigateBack,
                     isEmpty = isEmpty,
                     scrollBehavior = scrollBehavior,
                     actions = {
-                        IconButton(
-                            shapes = IconButtonDefaults.shapes(),
-                            onClick = { selection.enter() }) {
-                            Icon(
-                                MaterialSymbols.Outlined.Select,
-                                contentDescription = stringResource(R.string.action_select_multiple),
-                            )
-                        }
-                        IconButton(
-                            shapes = IconButtonDefaults.shapes(),
-                            onClick = { showFilterSheet = true }) {
-                            Icon(
-                                MaterialSymbols.Outlined.Tune,
-                                contentDescription = stringResource(R.string.action_filter),
-                            )
+                        TopAppBarActionGroup {
+                            ConnectedGroupIconButton(
+                                onClick = { selection.enter() },
+                                buttonSize = 40.dp,
+                            ) {
+                                Icon(
+                                    MaterialSymbols.Outlined.Select,
+                                    contentDescription = stringResource(R.string.action_select_multiple),
+                                )
+                            }
+                            ConnectedGroupIconButton(
+                                onClick = { showFilterSheet = true },
+                                buttonSize = 40.dp,
+                            ) {
+                                Icon(
+                                    MaterialSymbols.Outlined.Tune,
+                                    contentDescription = stringResource(R.string.action_filter),
+                                )
+                            }
                         }
                     },
                 )
             }
         },
     ) { innerPadding ->
+        val layoutDirection = LocalLayoutDirection.current
         Box(
             Modifier
-                .padding(innerPadding)
+                .padding(
+                    start = innerPadding.calculateStartPadding(layoutDirection),
+                    end = innerPadding.calculateEndPadding(layoutDirection),
+                )
                 .fillMaxSize()
         ) {
             if (isEmpty) {
@@ -113,6 +125,10 @@ internal fun LibraryCollectionScreen(
                     text = emptyText,
                     modifier = Modifier
                         .fillMaxSize()
+                        .padding(
+                            top = innerPadding.calculateTopPadding(),
+                            bottom = innerPadding.calculateBottomPadding(),
+                        )
                         .padding(16.dp),
                 )
             } else {
@@ -132,6 +148,8 @@ internal fun LibraryCollectionScreen(
                         preferences.isAscending,
                         preferences.selectedStatus
                     ),
+                    topContentPadding = innerPadding.calculateTopPadding(),
+                    bottomContentPadding = innerPadding.calculateBottomPadding() + LocalAudioPlayerBottomPadding.current,
                 )
             }
         }

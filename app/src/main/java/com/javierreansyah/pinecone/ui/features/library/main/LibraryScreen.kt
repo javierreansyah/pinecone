@@ -3,10 +3,13 @@ package com.javierreansyah.pinecone.ui.features.library.main
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarScrollBehavior
@@ -29,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -318,9 +322,15 @@ fun LibraryScreen(
                 ) { innerPadding ->
                     var miniPlayerHeight by remember { mutableIntStateOf(0) }
                     val miniPlayerPadding = with(LocalDensity.current) { miniPlayerHeight.toDp() }
+                    val layoutDirection = LocalLayoutDirection.current
+                    val topPadding = innerPadding.calculateTopPadding()
+                    val bottomPadding = innerPadding.calculateBottomPadding()
                     Box(
                         Modifier
-                            .padding(innerPadding)
+                            .padding(
+                                start = innerPadding.calculateStartPadding(layoutDirection),
+                                end = innerPadding.calculateEndPadding(layoutDirection),
+                            )
                             .fillMaxSize()
                     ) {
                         HorizontalPager(
@@ -333,7 +343,8 @@ fun LibraryScreen(
                                     LibraryBooksTabContent(
                                         showEmptyState = showEmptyState,
                                         books = uiState.filteredBooks,
-                                        bottomContentPadding = miniPlayerPadding,
+                                        topContentPadding = topPadding,
+                                        bottomContentPadding = bottomPadding + miniPlayerPadding,
                                         layoutMode = uiState.bookPreferences.layoutMode,
                                         selectedBooks = selectedBooks,
                                         onBookClick = { bookId ->
@@ -354,7 +365,8 @@ fun LibraryScreen(
                                         // Loading state handled in ShelvesPage if needed
                                     } else {
                                         ShelvesPage(
-                                            bottomContentPadding = miniPlayerPadding,
+                                            topContentPadding = topPadding,
+                                            bottomContentPadding = bottomPadding + miniPlayerPadding,
                                             shelves = uiState.shelves,
                                             spaceNames = if (uiState.spacesEnabled && (uiState.globalSpaceId == null || uiState.globalSpaceId == "_all_")) uiState.allSpaces.associate { it.id to it.name } else emptyMap(),
                                             onShelfClick = onNavigateToShelf,
@@ -385,10 +397,11 @@ fun LibraryScreen(
                         Box(
                             Modifier
                                 .align(Alignment.BottomCenter)
+                                .padding(bottom = bottomPadding)
                                 .onSizeChanged { miniPlayerHeight = it.height }) {
                             com.javierreansyah.pinecone.ui.root.AudioMiniPlayerBar(
                                 includeNavigationBarPadding = false,
-                                bottomInset = innerPadding.calculateBottomPadding(),
+                                bottomInset = bottomPadding,
                             )
                         }
                         if (importFeedbackEnabled) {
@@ -398,7 +411,7 @@ fun LibraryScreen(
                                 onDismissReport = onDismissImportReport,
                                 modifier = Modifier
                                     .align(Alignment.BottomEnd)
-                                    .padding(bottom = miniPlayerPadding),
+                                    .padding(bottom = bottomPadding + miniPlayerPadding),
                             )
                         }
                     }
@@ -536,7 +549,9 @@ private fun LibraryShortBottomNavigation(
     wording: PublicationWording,
     onTabSelected: (Int) -> Unit,
 ) {
-    ShortNavigationBar {
+    ShortNavigationBar(
+        containerColor = MaterialTheme.colorScheme.background,
+    ) {
         ShortNavigationBarItem(
             selected = currentPage == 0,
             onClick = { onTabSelected(0) },
@@ -576,12 +591,11 @@ private fun LibraryBooksTabContent(
     onBookClick: (String) -> Unit,
     onBookLongClick: (String) -> Unit,
     scrollKey: Any? = null,
+    topContentPadding: Dp = 0.dp,
     bottomContentPadding: Dp = 0.dp,
 ) {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = 8.dp),
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.TopStart,
     ) {
         if (showEmptyState) {
@@ -590,6 +604,7 @@ private fun LibraryBooksTabContent(
                 text = stringResource(R.string.library_empty_items),
                 modifier = Modifier
                     .fillMaxSize()
+                    .padding(top = topContentPadding, bottom = bottomContentPadding)
                     .padding(16.dp),
             )
         } else {
@@ -601,6 +616,7 @@ private fun LibraryBooksTabContent(
                 selectedBooks = selectedBooks,
                 isInMultiSelectMode = isInMultiSelectMode,
                 scrollKey = scrollKey,
+                topContentPadding = topContentPadding + 8.dp,
                 bottomContentPadding = bottomContentPadding,
             )
         }

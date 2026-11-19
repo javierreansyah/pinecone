@@ -80,18 +80,24 @@ fun ReaderDockedToolbar(
     modifier: Modifier = Modifier,
     readerBgColor: Color,
     readerTextColor: Color,
+    showGradient: Boolean = true,
     content: @Composable () -> Unit,
 ) {
+    val backgroundModifier = if (showGradient) {
+        Modifier.background(
+            Brush.verticalGradient(
+                colors = listOf(readerBgColor.copy(alpha = 0f), readerBgColor),
+            ),
+        )
+    } else {
+        Modifier
+    }
     // Compose's expressive bottom app bar uses the Material docked-toolbar tokens:
     // 64dp content height, 16dp side padding, and system-bar insets handled once here.
     FlexibleBottomAppBar(
         modifier = modifier
             .fillMaxWidth()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(readerBgColor.copy(alpha = 0f), readerBgColor),
-                ),
-            ),
+            .then(backgroundModifier),
         containerColor = Color.Transparent,
         contentColor = readerTextColor,
     ) {

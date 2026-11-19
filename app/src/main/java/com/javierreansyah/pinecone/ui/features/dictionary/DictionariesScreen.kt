@@ -7,6 +7,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -34,7 +36,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
@@ -45,8 +49,10 @@ import com.javierreansyah.pinecone.data.local.preferences.InstalledDictionary
 import com.javierreansyah.pinecone.data.repository.dictionary.DictionaryState
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
+import com.javierreansyah.pinecone.ui.components.LibraryTopAppBarTitle
 import com.javierreansyah.pinecone.ui.components.ListItemAccessory
 import com.javierreansyah.pinecone.ui.components.RenameDeleteMenu
+import com.javierreansyah.pinecone.ui.components.SegmentedListDefaults
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 
 @Composable
@@ -164,10 +170,14 @@ private fun DictionariesContent(
             }
         },
     ) { padding ->
+        val layoutDirection = LocalLayoutDirection.current
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
+                .padding(
+                    start = padding.calculateStartPadding(layoutDirection),
+                    end = padding.calculateEndPadding(layoutDirection),
+                ),
         ) {
             val isLoadingImport = uiState.importState is DictionaryState.Loading
             val totalCount = uiState.installedDictionaries.size +
@@ -177,7 +187,12 @@ private fun DictionariesContent(
                 EmptyState(
                     icon = MaterialSymbols.Outlined.Book,
                     text = stringResource(R.string.dictionaries_empty),
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(
+                            top = padding.calculateTopPadding(),
+                            bottom = padding.calculateBottomPadding(),
+                        ),
                 )
             } else {
                 DictionariesList(
@@ -194,6 +209,8 @@ private fun DictionariesContent(
                         selectedItemForMenu = null
                         itemToDelete = dict
                     },
+                    topContentPadding = padding.calculateTopPadding(),
+                    bottomContentPadding = padding.calculateBottomPadding(),
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -231,7 +248,7 @@ private fun DictionariesTopAppBar(
     modifier: Modifier = Modifier,
 ) {
     LibraryTopAppBar(
-        title = { Text(stringResource(R.string.dictionaries_title)) },
+        title = { LibraryTopAppBarTitle(stringResource(R.string.dictionaries_title)) },
         onBack = onBack,
         isEmpty = isEmpty,
         scrollBehavior = scrollBehavior,
@@ -249,13 +266,18 @@ private fun DictionariesList(
     onRenameClick: (InstalledDictionary) -> Unit,
     onDeleteClick: (InstalledDictionary) -> Unit,
     modifier: Modifier = Modifier,
+    topContentPadding: Dp = 0.dp,
+    bottomContentPadding: Dp = 0.dp,
 ) {
     val installing = uiState.importState is DictionaryState.Loading
     val count = uiState.installedDictionaries.size + if (installing) 1 else 0
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+        verticalArrangement = Arrangement.spacedBy(SegmentedListDefaults.Gap),
         modifier = modifier.padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(bottom = LocalAudioPlayerBottomPadding.current),
+        contentPadding = PaddingValues(
+            top = topContentPadding,
+            bottom = bottomContentPadding + LocalAudioPlayerBottomPadding.current,
+        ),
     ) {
         itemsIndexed(uiState.installedDictionaries, key = { _, dict -> dict.id }) { index, dict ->
             SegmentedListItem(
@@ -263,7 +285,7 @@ private fun DictionariesList(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
                 colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
                 modifier = Modifier.animateItem(),
-                shapes = ListItemDefaults.segmentedShapes(index = index, count = count),
+                shapes = SegmentedListDefaults.shapes(index = index, count = count),
                 content = { Text(dict.name) },
                 supportingContent = {
                     Text(
@@ -293,7 +315,7 @@ private fun DictionariesList(
                 SegmentedListItem(
                     colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
                     modifier = Modifier.animateItem(),
-                    shapes = ListItemDefaults.segmentedShapes(index = count - 1, count = count),
+                    shapes = SegmentedListDefaults.shapes(index = count - 1, count = count),
                     content = { Text(stringResource(R.string.dictionaries_installing)) },
                     supportingContent = {
                         LinearWavyProgressIndicator(

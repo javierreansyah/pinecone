@@ -11,7 +11,8 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -25,8 +26,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
@@ -50,6 +49,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
@@ -71,10 +71,12 @@ import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
 import com.javierreansyah.pinecone.ui.components.EditingActions
 import com.javierreansyah.pinecone.ui.components.EditingNavigationIcon
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
+import com.javierreansyah.pinecone.ui.components.TopAppBarActionGroup
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.LibrarySelection
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
@@ -347,7 +349,7 @@ private fun ShelfDetailContent(
                 }
             },
             onBookLongClick = onBookLongClick,
-            modifier = Modifier.padding(innerPadding),
+            contentPadding = innerPadding,
             scrollKey = scrollKey,
         )
     }
@@ -486,13 +488,11 @@ private fun ShelfDetailDefaultTopAppBar(
                 isReordering || isRenaming,
                 if (isReordering) onSaveReorder else onSaveRename
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+                TopAppBarActionGroup {
                     if (shelfId != "unshelved") {
-                        IconButton(
-                            shapes = IconButtonDefaults.shapes(),
+                        ConnectedGroupIconButton(
                             onClick = onStartReordering,
+                            buttonSize = 40.dp,
                         ) {
                             Icon(
                                 MaterialSymbols.Outlined.Format_list_numbered,
@@ -500,9 +500,9 @@ private fun ShelfDetailDefaultTopAppBar(
                             )
                         }
                     }
-                    IconButton(
-                        shapes = IconButtonDefaults.shapes(),
+                    ConnectedGroupIconButton(
                         onClick = onShowFilterSheet,
+                        buttonSize = 40.dp,
                     ) {
                         Icon(
                             MaterialSymbols.Outlined.Tune,
@@ -510,9 +510,9 @@ private fun ShelfDetailDefaultTopAppBar(
                         )
                     }
                     Box {
-                        IconButton(
-                            shapes = IconButtonDefaults.shapes(),
+                        ConnectedGroupIconButton(
                             onClick = { showMoreMenu = true },
+                            buttonSize = 40.dp,
                         ) {
                             Icon(
                                 MaterialSymbols.Outlined.More_vert,
@@ -617,10 +617,6 @@ private fun ShelfDetailDefaultTopAppBar(
                 }
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            scrolledContainerColor = MaterialTheme.colorScheme.surface,
-        ),
         scrollBehavior = scrollBehavior,
     )
 }
@@ -637,18 +633,29 @@ private fun ShelfDetailBookListContent(
     onReorderBooksChange: (List<Book>) -> Unit,
     onBookClick: (String) -> Unit,
     onBookLongClick: (String) -> Unit,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
     modifier: Modifier = Modifier,
     scrollKey: Any? = null,
 ) {
     val layoutEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+    val layoutDirection = LocalLayoutDirection.current
+    val topPadding = contentPadding.calculateTopPadding()
+    val bottomPadding = contentPadding.calculateBottomPadding()
     Box(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .padding(
+                start = contentPadding.calculateStartPadding(layoutDirection),
+                end = contentPadding.calculateEndPadding(layoutDirection),
+            )
+            .fillMaxSize(),
     ) {
         if (shelfWithCovers == null) {
             Text(
                 stringResource(R.string.library_empty_shelves),
                 style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier
+                    .padding(top = topPadding, bottom = bottomPadding)
+                    .padding(16.dp),
             )
         } else if (books.isEmpty() && !isReordering) {
             EmptyState(
@@ -656,6 +663,7 @@ private fun ShelfDetailBookListContent(
                 text = stringResource(R.string.library_empty_items),
                 modifier = Modifier
                     .fillMaxSize()
+                    .padding(top = topPadding, bottom = bottomPadding)
                     .padding(16.dp),
             )
         } else if (reorderBooks.isEmpty() && isReordering) {
@@ -664,6 +672,7 @@ private fun ShelfDetailBookListContent(
                 text = stringResource(R.string.library_empty_items),
                 modifier = Modifier
                     .fillMaxSize()
+                    .padding(top = topPadding, bottom = bottomPadding)
                     .padding(16.dp),
             )
         } else {
@@ -695,7 +704,10 @@ private fun ShelfDetailBookListContent(
                     LazyColumn(
                         state = lazyListState,
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = LocalAudioPlayerBottomPadding.current),
+                        contentPadding = PaddingValues(
+                            top = topPadding,
+                            bottom = bottomPadding + LocalAudioPlayerBottomPadding.current,
+                        ),
                     ) {
                         items(
                             reorderBooks,
@@ -745,6 +757,8 @@ private fun ShelfDetailBookListContent(
                         selectedBooks = selectedBooks,
                         isInMultiSelectMode = isInMultiSelectMode,
                         scrollKey = scrollKey,
+                        topContentPadding = topPadding,
+                        bottomContentPadding = bottomPadding + LocalAudioPlayerBottomPadding.current,
                     )
                 }
             }

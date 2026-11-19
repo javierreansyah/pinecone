@@ -60,6 +60,7 @@ fun ShelvesPage(
     selectedShelves: Set<String> = emptySet(),
     onShelfLongClick: ((String) -> Unit)? = null,
     spaceNames: Map<String, String> = emptyMap(),
+    topContentPadding: Dp = 0.dp,
     bottomContentPadding: Dp = 0.dp,
     onShelfToggleSelect: ((String) -> Unit)? = null,
 ) {
@@ -82,14 +83,13 @@ fun ShelvesPage(
                     },
                     label = "shelvesPageLayoutTransition",
                 ) { targetLayoutMode ->
+                    val extraVerticalPadding = if (targetLayoutMode != LayoutMode.List) 4.dp else 0.dp
                     LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .then(
-                                if (targetLayoutMode != LayoutMode.List) Modifier.padding(vertical = 4.dp)
-                                else Modifier,
-                            ),
-                        contentPadding = PaddingValues(top = 8.dp, bottom = bottomContentPadding),
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            top = topContentPadding + 8.dp + extraVerticalPadding,
+                            bottom = bottomContentPadding + extraVerticalPadding,
+                        ),
                     ) {
                         items(shelves, key = { (itShelf, _) -> itShelf.id }) { shelfWithCovers ->
                             val visibleBooks = shelfWithCovers.books
@@ -151,6 +151,7 @@ fun ShelvesPage(
                     text = stringResource(R.string.library_empty_shelves),
                     modifier = Modifier
                         .fillMaxSize()
+                        .padding(top = topContentPadding, bottom = bottomContentPadding)
                         .padding(16.dp),
                 )
             }

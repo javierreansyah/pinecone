@@ -5,15 +5,20 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.AppBarWithSearch
 import androidx.compose.material3.ExpandedFullScreenContainedSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarScrollBehavior
@@ -21,6 +26,7 @@ import androidx.compose.material3.SearchBarState
 import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldColors
+import androidx.compose.material3.contentColorFor
 import androidx.compose.material3.rememberContainedSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -40,6 +46,7 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -57,6 +64,7 @@ import com.composables.icons.materialsymbols.outlined.Mic
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.rememberVoiceSearchLauncher
+import com.javierreansyah.pinecone.ui.components.topBarFadeBackground
 import com.javierreansyah.pinecone.ui.features.library.SearchCategory
 import kotlinx.coroutines.launch
 
@@ -103,13 +111,18 @@ fun LibrarySearchTopBar(
     val appBarWithSearchColors = SearchBarDefaults.appBarWithSearchColors(
         searchBarColors = SearchBarDefaults.colors(containerColor = searchBarContainerColor),
         scrolledSearchBarContainerColor = searchBarContainerColor,
-        appBarContainerColor = MaterialTheme.colorScheme.surface,
-        scrolledAppBarContainerColor = MaterialTheme.colorScheme.surface,
+        appBarContainerColor = Color.Transparent,
+        scrolledAppBarContainerColor = Color.Transparent,
     )
 
     val scope = rememberCoroutineScope()
+    val statusBarHeight = with(LocalDensity.current) { WindowInsets.statusBars.getTop(this).toDp() }
 
-    Box(modifier = modifier) {
+    Box(
+        modifier = modifier
+            .defaultMinSize(minHeight = statusBarHeight)
+            .topBarFadeBackground(),
+    ) {
         AppBarWithSearch(
             scrollBehavior = scrollBehavior,
             state = searchBarState,
@@ -126,7 +139,15 @@ fun LibrarySearchTopBar(
                 )
             },
             navigationIcon = {
-                IconButton(onClick = onOpenDrawerClick) {
+                val containerColor = MaterialTheme.colorScheme.background
+                FilledTonalIconButton(
+                    shapes = IconButtonDefaults.shapes(),
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = containerColor,
+                        contentColor = contentColorFor(containerColor),
+                    ),
+                    onClick = onOpenDrawerClick,
+                ) {
                     Icon(
                         MaterialSymbols.Outlined.Menu,
                         contentDescription = stringResource(R.string.action_menu),
@@ -134,7 +155,15 @@ fun LibrarySearchTopBar(
                 }
             },
             actions = {
-                IconButton(onClick = onFilterClick) {
+                val containerColor = MaterialTheme.colorScheme.background
+                FilledTonalIconButton(
+                    shapes = IconButtonDefaults.shapes(),
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = containerColor,
+                        contentColor = contentColorFor(containerColor),
+                    ),
+                    onClick = onFilterClick,
+                ) {
                     Icon(
                         MaterialSymbols.Outlined.Tune,
                         contentDescription = stringResource(R.string.action_filter),

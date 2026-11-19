@@ -45,7 +45,7 @@ internal fun EditingNavigationIcon(editing: Boolean, onBack: () -> Unit, onCance
 
     FilledTonalIconButton(
         shapes = IconButtonDefaults.shapes(),
-        colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        colors = topAppBarNavigationButtonColors(),
         onClick = {
             if (editing) {
                 onCancel()

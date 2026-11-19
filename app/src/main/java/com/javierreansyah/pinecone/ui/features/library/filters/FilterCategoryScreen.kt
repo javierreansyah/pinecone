@@ -3,6 +3,8 @@ package com.javierreansyah.pinecone.ui.features.library.filters
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,7 +12,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -26,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -36,10 +38,14 @@ import com.composables.icons.materialsymbols.outlined.Label
 import com.composables.icons.materialsymbols.outlined.Person
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
+import com.javierreansyah.pinecone.ui.components.LibraryTopAppBarTitle
 import com.javierreansyah.pinecone.ui.components.ListItemAccessory
 import com.javierreansyah.pinecone.ui.components.RenameDeleteMenu
+import com.javierreansyah.pinecone.ui.components.SegmentedListDefaults
+import com.javierreansyah.pinecone.ui.components.TopAppBarActionGroup
 import com.javierreansyah.pinecone.ui.features.library.LibrarySelection
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.combinedWording
@@ -285,17 +291,22 @@ private fun AllFilterItemsTopAppBar(
     }
 
     LibraryTopAppBar(
-        title = { Text(titleText) },
+        title = { LibraryTopAppBarTitle(titleText) },
         onBack = onNavigateBack,
         isEmpty = isEmpty,
         scrollBehavior = scrollBehavior,
         modifier = modifier,
         actions = {
-            IconButton(onClick = onSortClick) {
-                Icon(
-                    MaterialSymbols.Outlined.Tune,
-                    contentDescription = stringResource(R.string.action_sort),
-                )
+            TopAppBarActionGroup {
+                ConnectedGroupIconButton(
+                    onClick = onSortClick,
+                    buttonSize = 40.dp,
+                ) {
+                    Icon(
+                        MaterialSymbols.Outlined.Tune,
+                        contentDescription = stringResource(R.string.action_sort),
+                    )
+                }
             }
         },
     )
@@ -345,13 +356,20 @@ private fun AllFilterItemsList(
     onLongClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val layoutDirection = LocalLayoutDirection.current
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+        verticalArrangement = Arrangement.spacedBy(SegmentedListDefaults.Gap),
         modifier = modifier
-            .padding(innerPadding)
             .fillMaxSize()
+            .padding(
+                start = innerPadding.calculateStartPadding(layoutDirection),
+                end = innerPadding.calculateEndPadding(layoutDirection),
+            )
             .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(bottom = 16.dp + LocalAudioPlayerBottomPadding.current),
+        contentPadding = PaddingValues(
+            top = innerPadding.calculateTopPadding(),
+            bottom = innerPadding.calculateBottomPadding() + 16.dp + LocalAudioPlayerBottomPadding.current,
+        ),
     ) {
         itemsIndexed(
             sortedItems,
@@ -362,7 +380,7 @@ private fun AllFilterItemsList(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
                 colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
                 modifier = Modifier.animateItem(),
-                shapes = ListItemDefaults.segmentedShapes(index = index, count = sortedItems.size),
+                shapes = SegmentedListDefaults.shapes(index = index, count = sortedItems.size),
                 checked = isSelected,
                 onCheckedChange = {
                     if (isInMultiSelectMode) onToggleSelect(itemFirst)

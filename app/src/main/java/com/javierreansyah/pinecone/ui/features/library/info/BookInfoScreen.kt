@@ -131,6 +131,7 @@ import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import com.javierreansyah.pinecone.ui.components.EmptyState
+import com.javierreansyah.pinecone.ui.components.SegmentedListDefaults
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
@@ -1480,12 +1481,12 @@ private fun BookMetadata(
         }.filter { (_, value) -> metadataValue(value) != null }.distinct()
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+            verticalArrangement = Arrangement.spacedBy(SegmentedListDefaults.Gap),
         ) {
             fields.forEachIndexed { index, (label, value) ->
                 SegmentedListItem(
                     colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                    shapes = ListItemDefaults.segmentedShapes(index = index, count = fields.size),
+                    shapes = SegmentedListDefaults.shapes(index = index, count = fields.size),
                     overlineContent = { Text(label) },
                     content = { Text(value) },
                 )

@@ -26,6 +26,7 @@ import com.composables.icons.materialsymbols.outlined.Forest
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
+import com.javierreansyah.pinecone.ui.components.SegmentedListDefaults
 import com.composables.icons.materialsymbols.outlinedfilled.Forest as FilledForest
 
 @Composable
@@ -62,14 +63,14 @@ fun SelectSpaceForShelfDialog(
                 )
 
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+                    verticalArrangement = Arrangement.spacedBy(SegmentedListDefaults.Gap),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     spaces.forEachIndexed { index, (spaceId, spaceName, _) ->
                         val isSelected = spaceId in selectedSpaceIds
                         key(spaceId) {
                             val shapes =
-                                ListItemDefaults.segmentedShapes(index = index, count = spaces.size)
+                                SegmentedListDefaults.shapes(index = index, count = spaces.size)
                             val onSelect = {
                                 selectedSpaceIds = if (singleSelect) {
                                     setOf(spaceId)

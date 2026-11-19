@@ -2,22 +2,24 @@ package com.javierreansyah.pinecone.ui.features.reader.components
 
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,16 +27,20 @@ import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarValue
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberContainedSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -107,17 +113,29 @@ fun ReaderSearch(
         modifier = modifier,
         backgroundColor = backgroundColor,
     ) { dismiss ->
+        val listState = rememberLazyListState()
+        val fadeHeight = 16.dp
+        val fadeHeightPx = with(LocalDensity.current) { fadeHeight.toPx() }
+        val topFadeAlpha by remember(listState, fadeHeightPx) {
+            derivedStateOf {
+                if (listState.firstVisibleItemIndex > 0) {
+                    1f
+                } else {
+                    (listState.firstVisibleItemScrollOffset / fadeHeightPx).coerceIn(0f, 1f)
+                }
+            }
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(top = 8.dp),
+                .navigationBarsPadding(),
         ) {
-
             SearchBarDefaults.InputField(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
                     .focusRequester(focusRequester),
                 textFieldState = textFieldState,
                 searchBarState = searchBarState,
@@ -177,34 +195,48 @@ fun ReaderSearch(
                 },
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+            androidx.compose.animation.AnimatedVisibility(
+                visible = isLoading,
+                enter = fadeIn(animationSpec = actionsEffectsSpec),
+                exit = fadeOut(animationSpec = actionsEffectsSpec),
+            ) {
+                LinearWavyProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                )
+            }
 
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            ) {
                 LazyColumn(
-                    contentPadding = PaddingValues(bottom = 8.dp, top = 16.dp),
+                    state = listState,
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     if (searchPerformed && results.isNotEmpty()) {
                         item {
-                            Surface(
-                                color = backgroundColor, modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                val resultsText = androidx.compose.ui.res.pluralStringResource(
-                                    R.plurals.reader_search_results_count,
-                                    results.size,
-                                    results.size,
-                                )
-                                Text(
-                                    text = resultsText,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(
-                                        start = 20.dp,
-                                        end = 20.dp,
-                                        bottom = 16.dp,
-                                    ),
-                                )
-                            }
+                            val resultsText = androidx.compose.ui.res.pluralStringResource(
+                                R.plurals.reader_search_results_count,
+                                results.size,
+                                results.size,
+                            )
+                            Text(
+                                text = resultsText,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(
+                                    start = 20.dp,
+                                    end = 20.dp,
+                                    bottom = 16.dp,
+                                ),
+                            )
                         }
                     }
 
@@ -249,21 +281,18 @@ fun ReaderSearch(
                     }
                 }
 
-                val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = isLoading,
-                    enter = fadeIn(animationSpec = actionsEffectsSpec),
-                    exit = fadeOut(animationSpec = actionsEffectsSpec),
-                    modifier = Modifier.align(Alignment.TopCenter),
-                ) {
-                    LinearWavyProgressIndicator(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(8.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                    )
-                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(fadeHeight)
+                        .align(Alignment.TopCenter)
+                        .graphicsLayer { alpha = topFadeAlpha }
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(backgroundColor, backgroundColor.copy(alpha = 0f)),
+                            ),
+                        ),
+                )
             }
         }
     }

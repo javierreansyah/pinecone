@@ -268,6 +268,7 @@ fun ReaderOverlay(
                 currentPage = bookState.value.currentPage,
                 totalPages = bookState.value.totalPages,
                 showProgressBar = profile != com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF,
+                showGradient = profile != com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF,
                 readerBgColor = effectiveBgColor,
                 readerTextColor = effectiveTextColor,
                 onSeekToProgression = { progression ->
@@ -613,6 +614,7 @@ fun ReaderBottomBarSection(
     onColorSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
     showProgressBar: Boolean = true,
+    showGradient: Boolean = true,
 ) {
     val isSelectionActive = selectionLocator != null || viewingHighlight != null
     val showBottomBar = showControls && !showSearch || isSelectionActive
@@ -642,6 +644,7 @@ fun ReaderBottomBarSection(
             modifier = Modifier,
             readerBgColor = readerBgColor,
             readerTextColor = readerTextColor,
+            showGradient = showGradient,
         ) {
             val currentMode = when {
                 isSelectionActive -> BottomBarMode.TEXT_SELECTION
