@@ -38,10 +38,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -50,15 +50,24 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.ViewCompositionStrategy
@@ -73,6 +82,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -200,17 +213,16 @@ class MuPdfDocumentFragment(
                     }
                 }
         }
-        val background = if (preferences.invert == true) Color(0xFF171717) else Color(0xFFE8E8E8)
+        val background = if (preferences.invert == true) Color.Black else Color.White
         val modifier = Modifier
             .fillMaxSize()
             .background(background)
         val spacing = preferences.pageSpacing.dp
         val reverse = preferences.horizontal && preferences.rightToLeft
-        val statusBarTop = WindowInsets.statusBarsIgnoringVisibility
+        val topInset = WindowInsets.statusBarsIgnoringVisibility
             .union(WindowInsets.displayCutout)
             .asPaddingValues()
             .calculateTopPadding()
-        val topInset = statusBarTop + TopAppBarDefaults.TopAppBarExpandedHeight
         val scrollPage = preferences.fitWidth && (!preferences.scroll || preferences.horizontal)
         val scrollBy: (Float) -> Float = remember(list, pager, preferences.scroll) {
             { delta ->
@@ -218,13 +230,19 @@ class MuPdfDocumentFragment(
                 else pager.dispatchRawDelta(delta)
             }
         }
+        val containerWidthPx = LocalWindowInfo.current.containerSize.width
+        val baseRenderWidth = if (containerWidthPx > 0) {
+            containerWidthPx.coerceIn(720, 1800)
+        } else {
+            1400
+        }
         PdfNavigatorZoom(
             horizontal = preferences.horizontal,
             reverse = reverse,
             navigationKey = request,
             selectionController = selectionController,
             scrollBy = scrollBy,
-        ) { onDoubleTap ->
+        ) { zoomState, onDoubleTap ->
             if (preferences.scroll && preferences.horizontal) {
                 LazyRow(
                     modifier,
@@ -238,9 +256,11 @@ class MuPdfDocumentFragment(
                             pdf,
                             index,
                             preferences,
-                            Modifier.width((LocalWindowInfo.current.containerSize.width / resources.displayMetrics.density).dp),
+                            Modifier.width((containerWidthPx / resources.displayMetrics.density).dp),
                             aspectRatios[index],
                             matchesByPage[index].orEmpty(), highlights.focusedIndex,
+                            baseRenderWidth,
+                            zoomState,
                             onDoubleTap,
                             topInset = if (scrollPage) topInset else 0.dp,
                         )
@@ -261,6 +281,8 @@ class MuPdfDocumentFragment(
                             Modifier.fillMaxWidth(),
                             aspectRatios[index],
                             matchesByPage[index].orEmpty(), highlights.focusedIndex,
+                            baseRenderWidth,
+                            zoomState,
                             onDoubleTap,
                         )
                     }
@@ -275,7 +297,8 @@ class MuPdfDocumentFragment(
                 ) { index ->
                     PageImage(
                         pdf, index, preferences, Modifier.fillMaxSize(), aspectRatios[index],
-                        matchesByPage[index].orEmpty(), highlights.focusedIndex, onDoubleTap,
+                        matchesByPage[index].orEmpty(), highlights.focusedIndex,
+                        baseRenderWidth, zoomState, onDoubleTap,
                         topInset = if (scrollPage) topInset else 0.dp,
                     )
                 }
@@ -288,13 +311,20 @@ class MuPdfDocumentFragment(
                 ) { index ->
                     PageImage(
                         pdf, index, preferences, Modifier.fillMaxSize(), aspectRatios[index],
-                        matchesByPage[index].orEmpty(), highlights.focusedIndex, onDoubleTap,
+                        matchesByPage[index].orEmpty(), highlights.focusedIndex,
+                        baseRenderWidth, zoomState, onDoubleTap,
                         topInset = if (scrollPage) topInset else 0.dp,
                     )
                 }
             }
         }
     }
+
+    private data class RenderedPdfTile(
+        val imageBitmap: ImageBitmap,
+        val region: PdfTileRegion,
+        val fullPageWidthPx: Float,
+    )
 
     @Composable
     private fun PageImage(
@@ -305,13 +335,15 @@ class MuPdfDocumentFragment(
         aspectRatio: Float,
         matches: List<PdfSearchMatch>,
         focusedIndex: Int?,
+        baseRenderWidth: Int,
+        zoomState: PdfZoomViewportState,
         onDoubleTap: () -> Unit,
         topInset: Dp = 0.dp,
     ) {
         var error by remember(index) { mutableStateOf<String?>(null) }
-        val bitmap by produceState<android.graphics.Bitmap?>(null, pdf, index) {
+        val bitmap by produceState<android.graphics.Bitmap?>(null, pdf, index, baseRenderWidth) {
             try {
-                value = pdf.render(index)
+                value = pdf.render(index, width = baseRenderWidth)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (failure: Exception) {
@@ -319,6 +351,87 @@ class MuPdfDocumentFragment(
                 error = getString(R.string.reader_page_render_failed)
             }
         }
+        var renderedTile by remember(pdf, index) { mutableStateOf<RenderedPdfTile?>(null) }
+        var pageCoords by remember(index) { mutableStateOf<LayoutCoordinates?>(null) }
+        var positionTick by remember(index) { mutableIntStateOf(0) }
+
+        LaunchedEffect(pdf, index, bitmap, zoomState) {
+            val baseBitmap = bitmap ?: run {
+                renderedTile = null
+                return@LaunchedEffect
+            }
+            snapshotFlow {
+                @Suppress("UNUSED_EXPRESSION")
+                positionTick
+                val contentCoords = zoomState.contentCoordinates
+                val coords = pageCoords
+                val transform = zoomState.transform
+                val viewportSize = zoomState.viewportSize
+                if (
+                    contentCoords == null ||
+                    coords == null ||
+                    !contentCoords.isAttached ||
+                    !coords.isAttached
+                ) {
+                    null
+                } else {
+                    val boxBounds = contentCoords.localBoundingBoxOf(coords, clipBounds = false)
+                    val imageViewport = pdfImageViewport(
+                        boxBounds.width,
+                        boxBounds.height,
+                        baseBitmap.width,
+                        baseBitmap.height,
+                    )
+                    val pageBoundsInContent = Rect(
+                        left = boxBounds.left + imageViewport.left,
+                        top = boxBounds.top + imageViewport.top,
+                        right = boxBounds.left + imageViewport.left + imageViewport.width,
+                        bottom = boxBounds.top + imageViewport.top + imageViewport.height,
+                    )
+                    calculatePdfTilePlan(
+                        pageBoundsInContent = pageBoundsInContent,
+                        viewportSize = viewportSize,
+                        transform = transform,
+                        baseBitmapWidth = baseBitmap.width,
+                    )
+                }
+            }.distinctUntilChanged().collectLatest { plan ->
+                if (plan == null) {
+                    renderedTile = null
+                    return@collectLatest
+                }
+                val current = renderedTile
+                if (
+                    current != null &&
+                    shouldReusePdfTile(current.region, current.fullPageWidthPx, plan)
+                ) {
+                    return@collectLatest
+                }
+                delay(120.milliseconds)
+                try {
+                    val region = plan.request.region
+                    val tileBitmap = pdf.renderRegion(
+                        index = index,
+                        left = region.left,
+                        top = region.top,
+                        right = region.right,
+                        bottom = region.bottom,
+                        width = plan.request.widthPx,
+                        height = plan.request.heightPx,
+                    )
+                    renderedTile = RenderedPdfTile(
+                        imageBitmap = tileBitmap.asImageBitmap(),
+                        region = region,
+                        fullPageWidthPx = plan.request.fullPageWidthPx,
+                    )
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: Exception) {
+                    timber.log.Timber.w(failure, "Could not render zoomed PDF tile")
+                }
+            }
+        }
+
         val imageModifier = if (preferences.scroll && !preferences.horizontal) {
             modifier.aspectRatio(aspectRatio)
         } else modifier
@@ -334,6 +447,7 @@ class MuPdfDocumentFragment(
             contentAlignment = Alignment.Center
         ) {
             bitmap?.let {
+                val baseImage = remember(it) { it.asImageBitmap() }
                 val filter = if (preferences.invert == true) ColorFilter.colorMatrix(
                     ColorMatrix(
                         floatArrayOf(
@@ -370,16 +484,80 @@ class MuPdfDocumentFragment(
                         .padding(top = topInset)
                         .fillMaxWidth()
                         .aspectRatio(it.width.toFloat() / it.height) else Modifier.fillMaxSize()
+                    val pageBorderColor = if (preferences.invert == true) {
+                        Color.White.copy(alpha = 0.14f)
+                    } else {
+                        Color.Black.copy(alpha = 0.12f)
+                    }
                     // The navigator transforms the bitmap and overlays together.
                     // Keep yellow outside the bitmap's inversion filter for dark PDF mode.
-                    Box(image) {
+                    Box(
+                        image
+                            .onGloballyPositioned { coords ->
+                                pageCoords = coords
+                                positionTick++
+                            }
+                            .drawWithContent {
+                                drawContent()
+                                val viewport =
+                                    pdfImageViewport(size.width, size.height, it.width, it.height)
+                                val strokeWidth = 1.dp.toPx()
+                                val halfStroke = strokeWidth / 2f
+                                drawRect(
+                                    color = pageBorderColor,
+                                    topLeft = Offset(
+                                        viewport.left + halfStroke,
+                                        viewport.top + halfStroke,
+                                    ),
+                                    size = Size(
+                                        (viewport.width - strokeWidth).coerceAtLeast(0f),
+                                        (viewport.height - strokeWidth).coerceAtLeast(0f),
+                                    ),
+                                    style = Stroke(width = strokeWidth),
+                                )
+                            },
+                    ) {
                         Image(
-                            it.asImageBitmap(),
+                            baseImage,
                             stringResource(R.string.reader_page_label, index + 1),
                             Modifier.fillMaxSize(),
                             contentScale = ContentScale.Fit,
                             colorFilter = filter,
                         )
+                        renderedTile?.let { tile ->
+                            Canvas(Modifier.matchParentSize()) {
+                                val viewport =
+                                    pdfImageViewport(size.width, size.height, it.width, it.height)
+                                val dstLeft = viewport.left + tile.region.left * viewport.width
+                                val dstTop = viewport.top + tile.region.top * viewport.height
+                                val dstWidth =
+                                    (tile.region.right - tile.region.left) * viewport.width
+                                val dstHeight =
+                                    (tile.region.bottom - tile.region.top) * viewport.height
+                                if (dstWidth > 0f && dstHeight > 0f) {
+                                    clipRect(
+                                        viewport.left,
+                                        viewport.top,
+                                        viewport.left + viewport.width,
+                                        viewport.top + viewport.height,
+                                    ) {
+                                        withTransform({
+                                            translate(left = dstLeft, top = dstTop)
+                                            scale(
+                                                scaleX = dstWidth / tile.imageBitmap.width.toFloat(),
+                                                scaleY = dstHeight / tile.imageBitmap.height.toFloat(),
+                                                pivot = Offset.Zero,
+                                            )
+                                        }) {
+                                            drawImage(
+                                                image = tile.imageBitmap,
+                                                colorFilter = filter,
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         PdfTextOverlay(
                             pdf = pdf,
                             publication = input.publication,

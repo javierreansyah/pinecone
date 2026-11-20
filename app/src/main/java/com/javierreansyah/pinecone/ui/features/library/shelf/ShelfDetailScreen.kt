@@ -488,7 +488,6 @@ private fun ShelfDetailDefaultTopAppBar(
                     if (shelfId != "unshelved") {
                         ConnectedGroupIconButton(
                             onClick = onStartReordering,
-                            buttonSize = 40.dp,
                         ) {
                             Icon(
                                 MaterialSymbols.Outlined.Format_list_numbered,
@@ -498,7 +497,6 @@ private fun ShelfDetailDefaultTopAppBar(
                     }
                     ConnectedGroupIconButton(
                         onClick = onShowFilterSheet,
-                        buttonSize = 40.dp,
                     ) {
                         Icon(
                             MaterialSymbols.Outlined.Tune,
@@ -508,7 +506,6 @@ private fun ShelfDetailDefaultTopAppBar(
                     Box {
                         ConnectedGroupIconButton(
                             onClick = { showMoreMenu = true },
-                            buttonSize = 40.dp,
                         ) {
                             Icon(
                                 MaterialSymbols.Outlined.More_vert,

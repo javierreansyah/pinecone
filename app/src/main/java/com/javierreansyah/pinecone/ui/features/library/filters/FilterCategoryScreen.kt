@@ -300,7 +300,6 @@ private fun AllFilterItemsTopAppBar(
             TopAppBarActionGroup {
                 ConnectedGroupIconButton(
                     onClick = onSortClick,
-                    buttonSize = 40.dp,
                 ) {
                     Icon(
                         MaterialSymbols.Outlined.Tune,

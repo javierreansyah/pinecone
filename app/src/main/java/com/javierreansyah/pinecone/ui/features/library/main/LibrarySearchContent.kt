@@ -89,6 +89,7 @@ internal fun ExpandedSearchContent(
             icons = emptyList(),
             selected = searchCategory,
             onSelected = onSearchCategoryChange,
+            fillWidth = true,
             modifier = barModifier
                 .fillMaxWidth()
                 .horizontalScroll(chipScrollState)

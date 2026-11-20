@@ -22,6 +22,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
+val AppBarButtonSize: Dp = 48.dp
+
 @Composable
 fun ConnectedButtonGroup(
     modifier: Modifier = Modifier,
@@ -49,7 +51,7 @@ fun ConnectedGroupIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    buttonSize: Dp = 48.dp,
+    buttonSize: Dp = AppBarButtonSize,
     contentColor: Color = LocalContentColor.current,
     content: @Composable () -> Unit,
 ) {
@@ -82,7 +84,7 @@ fun ConnectedGroupIconToggleButton(
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    buttonSize: Dp = 48.dp,
+    buttonSize: Dp = AppBarButtonSize,
     contentColor: Color = LocalContentColor.current,
     checkedContentColor: Color = contentColor,
     content: @Composable () -> Unit,

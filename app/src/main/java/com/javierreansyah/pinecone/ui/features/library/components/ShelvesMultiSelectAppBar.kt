@@ -19,7 +19,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Content_copy
 import com.composables.icons.materialsymbols.outlined.Delete
@@ -61,7 +60,6 @@ fun ShelvesMultiSelectAppBar(
                     showRenameDialog = true
                 },
                 enabled = selectedCount == 1,
-                buttonSize = 40.dp,
             ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Edit,
@@ -72,7 +70,6 @@ fun ShelvesMultiSelectAppBar(
                 ConnectedGroupIconButton(
                     onClick = { onTransfer(false) },
                     enabled = selectedCount > 0,
-                    buttonSize = 40.dp,
                 ) {
                     Icon(
                         MaterialSymbols.Outlined.Drive_file_move,
@@ -82,7 +79,6 @@ fun ShelvesMultiSelectAppBar(
                 ConnectedGroupIconButton(
                     onClick = { onTransfer(true) },
                     enabled = selectedCount > 0,
-                    buttonSize = 40.dp,
                 ) {
                     Icon(
                         MaterialSymbols.Outlined.Content_copy,
@@ -93,7 +89,6 @@ fun ShelvesMultiSelectAppBar(
             ConnectedGroupIconButton(
                 onClick = { showDeleteConfirmation = true },
                 enabled = selectedCount > 0,
-                buttonSize = 40.dp,
                 contentColor = if (selectedCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
             ) {
                 Icon(

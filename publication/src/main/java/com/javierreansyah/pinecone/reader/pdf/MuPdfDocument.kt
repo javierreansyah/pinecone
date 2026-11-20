@@ -3,10 +3,12 @@ package com.javierreansyah.pinecone.reader.pdf
 import android.content.Context
 import android.graphics.Bitmap
 import com.artifex.mupdf.fitz.Document
+import com.artifex.mupdf.fitz.Matrix
 import com.artifex.mupdf.fitz.Outline
 import com.artifex.mupdf.fitz.android.AndroidDrawDevice
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import org.readium.r2.shared.util.Try
 import org.readium.r2.shared.util.data.ReadError
@@ -109,6 +111,50 @@ class MuPdfDocument(private val native: Document) : PdfDocument {
             val page = doc.loadPage(index)
             try {
                 AndroidDrawDevice.drawPageFit(page, width.coerceIn(1, 2400), 3200)
+            } finally {
+                page.destroy()
+            }
+        }
+    }
+
+    /** Render a normalized [0..1] sub-rectangle of a page directly into a screen-bounded tile. */
+    suspend fun renderRegion(
+        index: Int,
+        left: Float,
+        top: Float,
+        right: Float,
+        bottom: Float,
+        width: Int,
+        height: Int,
+    ): Bitmap = withContext(Dispatchers.Default) {
+        ensureActive()
+        val safeLeft = left.coerceIn(0f, 1f)
+        val safeTop = top.coerceIn(0f, 1f)
+        val safeRight = right.coerceIn(safeLeft, 1f)
+        val safeBottom = bottom.coerceIn(safeTop, 1f)
+        val spanX = (safeRight - safeLeft).coerceAtLeast(1e-4f)
+        val spanY = (safeBottom - safeTop).coerceAtLeast(1e-4f)
+        val safeWidth = width.coerceIn(1, 3200)
+        val safeHeight = height.coerceIn(1, 3200)
+        access { doc ->
+            val page = doc.loadPage(index)
+            try {
+                val bounds = page.bounds
+                val pageWidth = (bounds.x1 - bounds.x0).coerceAtLeast(1e-4f)
+                val pageHeight = (bounds.y1 - bounds.y0).coerceAtLeast(1e-4f)
+                val sx = safeWidth.toFloat() / (spanX * pageWidth)
+                val sy = safeHeight.toFloat() / (spanY * pageHeight)
+                val tx = -(bounds.x0 + safeLeft * pageWidth) * sx
+                val ty = -(bounds.y0 + safeTop * pageHeight) * sy
+                val bitmap = Bitmap.createBitmap(safeWidth, safeHeight, Bitmap.Config.ARGB_8888)
+                val device = AndroidDrawDevice(bitmap)
+                try {
+                    page.run(device, Matrix(sx, 0f, 0f, sy, tx, ty), null)
+                    device.close()
+                } finally {
+                    device.destroy()
+                }
+                bitmap
             } finally {
                 page.destroy()
             }

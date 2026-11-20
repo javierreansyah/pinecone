@@ -1,6 +1,9 @@
 package com.javierreansyah.pinecone.ui.features.library.main
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -11,11 +14,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SearchBarDefaults
-import androidx.compose.material3.SearchBarScrollBehavior
-import androidx.compose.material3.ShortNavigationBar
-import androidx.compose.material3.ShortNavigationBarItem
-import androidx.compose.material3.Text
 import androidx.compose.material3.WideNavigationRailValue
 import androidx.compose.material3.rememberWideNavigationRailState
 import androidx.compose.runtime.Composable
@@ -26,10 +24,10 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -40,11 +38,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Book
-import com.composables.icons.materialsymbols.outlined.Folder
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
-import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
@@ -69,8 +65,6 @@ import com.javierreansyah.pinecone.ui.features.library.organize.SelectSpaceForSh
 import com.javierreansyah.pinecone.ui.features.library.publicationWording
 import com.javierreansyah.pinecone.ui.root.AppDrawer
 import kotlinx.coroutines.launch
-import com.composables.icons.materialsymbols.outlinedfilled.Book as FilledBook
-import com.composables.icons.materialsymbols.outlinedfilled.Folder as FilledFolder
 
 @Composable
 fun LibraryRoute(
@@ -187,7 +181,7 @@ fun LibraryScreen(
     val scope = rememberCoroutineScope()
 
     val showFilterSheet = remember { mutableStateOf(value = false) }
-    val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
+    var isSearchOpen by rememberSaveable { mutableStateOf(value = false) }
 
     var selectedBookContext by remember { mutableStateOf<Pair<String, String?>?>(null) }
     val selection = remember { LibrarySelection() }
@@ -252,29 +246,36 @@ fun LibraryScreen(
 
             Box(modifier = Modifier.weight(1f)) {
                 Scaffold(
-                    modifier = if (isInMultiSelectMode) Modifier else Modifier.nestedScroll(
-                        scrollBehavior.nestedScrollConnection,
-                    ),
                     topBar = {
+                        val wording = uiState.allBooks.publicationWording()
+                        val activeCustomSpaceName = if (
+                            uiState.spacesEnabled &&
+                            uiState.globalSpaceId != null &&
+                            uiState.globalSpaceId != "_all_"
+                        ) {
+                            uiState.allSpaces.find { it.id == uiState.globalSpaceId }?.name
+                        } else {
+                            null
+                        }
+                        val homeTitle = activeCustomSpaceName ?: stringResource(
+                            if (isShelvesTab) R.string.library_tab_shelves else wording.libraryTab,
+                        )
                         LibraryTopBar(
+                            title = homeTitle,
                             isShelvesTab = isShelvesTab,
                             isInMultiSelectMode = isInMultiSelectMode,
+                            showViewSwitcher = libraryView == LibraryView.Both && uiState.showLibraryBottomNavigation,
+                            wording = wording,
                             shelves = uiState.shelves,
                             selectedShelves = selectedShelves,
-                            searchQuery = uiState.searchQuery,
-                            searchCategory = uiState.searchCategory,
-                            searchResults = uiState.searchResults,
-                            scrollBehavior = scrollBehavior,
-                            onSearchQueryChange = onSearchQueryChange,
-                            onSearchCategoryChange = onSearchCategoryChange,
                             onOpenDrawerClick = { scope.launch { drawerState.expand() } },
+                            onSearchClick = { isSearchOpen = true },
                             onFilterClick = { showFilterSheet.value = true },
-                            onNavigateToReader = onNavigateToReader,
-                            onNavigateToShelf = onNavigateToShelf,
-                            onNavigateToAuthor = onNavigateToAuthor,
-                            onNavigateToTag = onNavigateToTag,
-                            onAuthorsHeaderClick = onNavigateToAllAuthors,
-                            onTagsHeaderClick = onNavigateToAllTags,
+                            onToggleView = {
+                                scope.launch {
+                                    pagerState.animateScrollToPage(if (isShelvesTab) 0 else 1)
+                                }
+                            },
                             onExitMultiSelect = exitMultiSelect,
                             onClearShelvesSelection = { selectedShelves = emptySet() },
                             onSelectAllShelves = {
@@ -308,16 +309,6 @@ fun LibraryScreen(
                                 )
                             },
                         )
-                    },
-                    bottomBar = {
-                        if (libraryView == LibraryView.Both && uiState.showLibraryBottomNavigation) LibraryShortBottomNavigation(
-                            currentPage = pagerState.currentPage,
-                            wording = uiState.allBooks.publicationWording(),
-                        ) { page ->
-                            scope.launch {
-                                pagerState.animateScrollToPage(page)
-                            }
-                        }
                     },
                 ) { innerPadding ->
                     var miniPlayerHeight by remember { mutableIntStateOf(0) }
@@ -451,6 +442,50 @@ fun LibraryScreen(
                 }
             }
         }
+
+        val searchEffectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+        val closeSearch = {
+            isSearchOpen = false
+            onSearchQueryChange("")
+        }
+        AnimatedVisibility(
+            visible = isSearchOpen,
+            enter = fadeIn(animationSpec = searchEffectsSpec),
+            exit = fadeOut(animationSpec = searchEffectsSpec),
+        ) {
+            LibrarySearchOverlay(
+                searchQuery = uiState.searchQuery,
+                searchCategory = uiState.searchCategory,
+                searchResults = uiState.searchResults,
+                onSearchQueryChange = onSearchQueryChange,
+                onSearchCategoryChange = onSearchCategoryChange,
+                onClose = closeSearch,
+                onNavigateToReader = { bookId ->
+                    closeSearch()
+                    onNavigateToReader(bookId)
+                },
+                onNavigateToShelf = { shelfId, name, count ->
+                    closeSearch()
+                    onNavigateToShelf(shelfId, name, count)
+                },
+                onNavigateToAuthor = { author ->
+                    closeSearch()
+                    onNavigateToAuthor(author)
+                },
+                onNavigateToTag = { tag ->
+                    closeSearch()
+                    onNavigateToTag(tag)
+                },
+                onAuthorsHeaderClick = {
+                    closeSearch()
+                    onNavigateToAllAuthors()
+                },
+                onTagsHeaderClick = {
+                    closeSearch()
+                    onNavigateToAllTags()
+                },
+            )
+        }
     }
     transferCopy?.let { copy ->
         SelectSpaceForShelfDialog(
@@ -471,24 +506,17 @@ fun LibraryScreen(
 
 @Composable
 private fun LibraryTopBar(
+    title: String,
     isShelvesTab: Boolean,
     isInMultiSelectMode: Boolean,
+    showViewSwitcher: Boolean,
+    wording: PublicationWording,
     shelves: List<ShelfWithCovers>,
     selectedShelves: Set<String>,
-    searchQuery: String,
-    searchCategory: SearchCategory,
-    searchResults: SearchResults,
-    scrollBehavior: SearchBarScrollBehavior,
-    onSearchQueryChange: (String) -> Unit,
-    onSearchCategoryChange: (SearchCategory) -> Unit,
     onOpenDrawerClick: () -> Unit,
+    onSearchClick: () -> Unit,
     onFilterClick: () -> Unit,
-    onNavigateToReader: (String) -> Unit,
-    onNavigateToShelf: (String, String, Int) -> Unit,
-    onNavigateToAuthor: (String) -> Unit,
-    onNavigateToTag: (String) -> Unit,
-    onAuthorsHeaderClick: () -> Unit,
-    onTagsHeaderClick: () -> Unit,
+    onToggleView: () -> Unit,
     onExitMultiSelect: () -> Unit,
     onClearShelvesSelection: () -> Unit,
     onSelectAllShelves: () -> Unit,
@@ -524,59 +552,15 @@ private fun LibraryTopBar(
             }
         },
     ) {
-        LibrarySearchTopBar(
-            searchQuery = searchQuery,
-            searchCategory = searchCategory,
-            searchResults = searchResults,
-            onSearchQueryChange = onSearchQueryChange,
-            onSearchCategoryChange = onSearchCategoryChange,
+        LibraryHomeTopAppBar(
+            title = title,
             onOpenDrawerClick = onOpenDrawerClick,
+            onSearchClick = onSearchClick,
             onFilterClick = onFilterClick,
-            onNavigateToReader = onNavigateToReader,
-            onNavigateToShelf = onNavigateToShelf,
-            onNavigateToAuthor = onNavigateToAuthor,
-            onNavigateToTag = onNavigateToTag,
-            onAuthorsHeaderClick = onAuthorsHeaderClick,
-            onTagsHeaderClick = onTagsHeaderClick,
-            scrollBehavior = scrollBehavior,
-        )
-    }
-}
-
-@Composable
-private fun LibraryShortBottomNavigation(
-    currentPage: Int,
-    wording: PublicationWording,
-    onTabSelected: (Int) -> Unit,
-) {
-    ShortNavigationBar(
-        containerColor = MaterialTheme.colorScheme.background,
-    ) {
-        ShortNavigationBarItem(
-            selected = currentPage == 0,
-            onClick = { onTabSelected(0) },
-            icon = {
-                AnimatedSelectionIcon(
-                    selected = currentPage == 0,
-                    outlinedIcon = MaterialSymbols.Outlined.Book,
-                    filledIcon = MaterialSymbols.OutlinedFilled.FilledBook,
-                    contentDescription = stringResource(wording.libraryTab),
-                )
-            },
-            label = { Text(stringResource(wording.libraryTab)) },
-        )
-        ShortNavigationBarItem(
-            selected = currentPage == 1,
-            onClick = { onTabSelected(1) },
-            icon = {
-                AnimatedSelectionIcon(
-                    selected = currentPage == 1,
-                    outlinedIcon = MaterialSymbols.Outlined.Folder,
-                    filledIcon = MaterialSymbols.OutlinedFilled.FilledFolder,
-                    contentDescription = stringResource(R.string.library_tab_shelves),
-                )
-            },
-            label = { Text(stringResource(R.string.library_tab_shelves)) },
+            showViewSwitcher = showViewSwitcher,
+            isShelvesTab = isShelvesTab,
+            wording = wording,
+            onToggleView = onToggleView,
         )
     }
 }

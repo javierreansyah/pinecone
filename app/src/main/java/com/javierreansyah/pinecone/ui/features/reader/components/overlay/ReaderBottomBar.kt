@@ -23,7 +23,6 @@ import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.FlexibleBottomAppBar
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
@@ -66,6 +65,8 @@ import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Ink_highlighter
 import com.composables.icons.materialsymbols.outlined.Search
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.components.ConnectedButtonGroup
+import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -319,6 +320,7 @@ fun ReaderSearchNavigator(
     modifier: Modifier = Modifier,
     activeIndex: Int?,
     totalResults: Int,
+    containerColor: Color,
     textColor: Color,
     onPrev: () -> Unit,
     onNext: () -> Unit,
@@ -335,33 +337,37 @@ fun ReaderSearchNavigator(
             text = if (totalResults == 0) stringResource(R.string.reader_no_matches) else stringResource(
                 R.string.reader_result_num_of, currentNum, totalResults,
             ),
-            style = MaterialTheme.typography.labelMedium, color = textColor,
+            style = MaterialTheme.typography.labelMedium,
+            color = textColor,
             modifier = Modifier.padding(start = 8.dp),
         )
 
         Spacer(modifier = Modifier.weight(1f))
 
-        IconButton(
-            onClick = onPrev,
-            enabled = activeIndex != null && activeIndex > 0,
+        ConnectedButtonGroup(
+            containerColor = containerColor,
+            contentColor = textColor,
         ) {
-            Icon(
-                MaterialSymbols.Outlined.Arrow_back,
-                contentDescription = stringResource(R.string.action_back),
-                tint = if (activeIndex != null && activeIndex > 0) textColor
-                else textColor.copy(alpha = 0.3f),
-            )
-        }
-        IconButton(
-            onClick = onNext,
-            enabled = activeIndex != null && activeIndex < totalResults - 1,
-        ) {
-            Icon(
-                MaterialSymbols.Outlined.Arrow_forward,
-                contentDescription = stringResource(R.string.action_more),
-                tint = if (activeIndex != null && activeIndex < totalResults - 1) textColor
-                else textColor.copy(alpha = 0.3f),
-            )
+            ConnectedGroupIconButton(
+                onClick = onPrev,
+                enabled = activeIndex != null && activeIndex > 0,
+                contentColor = textColor,
+            ) {
+                Icon(
+                    MaterialSymbols.Outlined.Arrow_back,
+                    contentDescription = stringResource(R.string.action_back),
+                )
+            }
+            ConnectedGroupIconButton(
+                onClick = onNext,
+                enabled = activeIndex != null && activeIndex < totalResults - 1,
+                contentColor = textColor,
+            ) {
+                Icon(
+                    MaterialSymbols.Outlined.Arrow_forward,
+                    contentDescription = stringResource(R.string.action_more),
+                )
+            }
         }
     }
 }
@@ -370,6 +376,7 @@ fun ReaderSearchNavigator(
 fun ReaderTextSelectionControl(
     modifier: Modifier = Modifier,
     selectedColorInt: Int?,
+    containerColor: Color,
     readerTextColor: Color,
     showDeleteOption: Boolean,
     onCopy: () -> Unit,
@@ -387,106 +394,128 @@ fun ReaderTextSelectionControl(
             .height(48.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-
-        IconButton(onClick = onCopy) {
-            Icon(
-                MaterialSymbols.Outlined.Content_copy,
-                contentDescription = stringResource(R.string.action_copy),
-                tint = readerTextColor,
-            )
-        }
-        IconButton(onClick = onSearch) {
-            Icon(
-                MaterialSymbols.Outlined.Search,
-                contentDescription = stringResource(R.string.action_search),
-                tint = readerTextColor,
-            )
-        }
-        IconButton(onClick = onDefine) {
-            Icon(
-                MaterialSymbols.Outlined.Book_3,
-                contentDescription = stringResource(R.string.action_define),
-                tint = readerTextColor,
-            )
+        ConnectedButtonGroup(
+            containerColor = containerColor,
+            contentColor = readerTextColor,
+        ) {
+            ConnectedGroupIconButton(
+                onClick = onCopy,
+                contentColor = readerTextColor,
+            ) {
+                Icon(
+                    MaterialSymbols.Outlined.Content_copy,
+                    contentDescription = stringResource(R.string.action_copy),
+                )
+            }
+            ConnectedGroupIconButton(
+                onClick = onSearch,
+                contentColor = readerTextColor,
+            ) {
+                Icon(
+                    MaterialSymbols.Outlined.Search,
+                    contentDescription = stringResource(R.string.action_search),
+                )
+            }
+            ConnectedGroupIconButton(
+                onClick = onDefine,
+                contentColor = readerTextColor,
+            ) {
+                Icon(
+                    MaterialSymbols.Outlined.Book_3,
+                    contentDescription = stringResource(R.string.action_define),
+                )
+            }
         }
 
         Spacer(modifier = Modifier.weight(1f))
 
-        if (showDeleteOption) {
-            IconButton(onClick = onDelete) {
-                Icon(
-                    MaterialSymbols.Outlined.Delete,
-                    contentDescription = stringResource(R.string.action_delete),
-                    tint = readerTextColor,
-                )
-            }
-        }
-        IconButton(onClick = onMakeNote) {
-            Icon(
-                MaterialSymbols.Outlined.Edit,
-                contentDescription = stringResource(R.string.reader_make_note),
-                tint = readerTextColor,
-            )
-        }
-        Box {
-            IconButton(onClick = { expanded = true }) {
-                Icon(
-                    MaterialSymbols.Outlined.Ink_highlighter,
-                    contentDescription = stringResource(R.string.reader_highlight_color),
-                    tint = selectedColorInt?.let { Color(it).copy(alpha = 1f) } ?: readerTextColor,
-                )
-            }
-            DropdownMenuPopup(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-            ) {
-                val swatches = listOf(
-                    "#40fac02e".toColorInt(),
-                    "#40fd7142".toColorInt(),
-                    "#408bc24a".toColorInt(),
-                    "#4025c6da".toColorInt(),
-                )
-                val totalItems = swatches.size
-                val groupInteractionSource = remember { MutableInteractionSource() }
-                DropdownMenuGroup(
-                    shapes = MenuDefaults.groupShape(0, 1),
-                    interactionSource = groupInteractionSource,
+        ConnectedButtonGroup(
+            containerColor = containerColor,
+            contentColor = readerTextColor,
+        ) {
+            if (showDeleteOption) {
+                ConnectedGroupIconButton(
+                    onClick = onDelete,
+                    contentColor = readerTextColor,
                 ) {
-                    swatches.forEachIndexed { index, colorInt ->
-                        val isSelected = selectedColorInt == colorInt
-                        SelectableDropdownMenuItem(
-                            selected = isSelected,
-                            modifier = Modifier
-                                .width(64.dp),
-                            text = {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    contentAlignment = Alignment.Center,
-                                ) {
+                    Icon(
+                        MaterialSymbols.Outlined.Delete,
+                        contentDescription = stringResource(R.string.action_delete),
+                    )
+                }
+            }
+            ConnectedGroupIconButton(
+                onClick = onMakeNote,
+                contentColor = readerTextColor,
+            ) {
+                Icon(
+                    MaterialSymbols.Outlined.Edit,
+                    contentDescription = stringResource(R.string.reader_make_note),
+                )
+            }
+            Box {
+                ConnectedGroupIconButton(
+                    onClick = { expanded = true },
+                    contentColor = selectedColorInt?.let { Color(it).copy(alpha = 1f) }
+                        ?: readerTextColor,
+                ) {
+                    Icon(
+                        MaterialSymbols.Outlined.Ink_highlighter,
+                        contentDescription = stringResource(R.string.reader_highlight_color),
+                    )
+                }
+                DropdownMenuPopup(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false },
+                ) {
+                    val swatches = listOf(
+                        "#40fac02e".toColorInt(),
+                        "#40fd7142".toColorInt(),
+                        "#408bc24a".toColorInt(),
+                        "#4025c6da".toColorInt(),
+                    )
+                    val totalItems = swatches.size
+                    val groupInteractionSource = remember { MutableInteractionSource() }
+                    DropdownMenuGroup(
+                        shapes = MenuDefaults.groupShape(0, 1),
+                        interactionSource = groupInteractionSource,
+                    ) {
+                        swatches.forEachIndexed { index, colorInt ->
+                            val isSelected = selectedColorInt == colorInt
+                            SelectableDropdownMenuItem(
+                                selected = isSelected,
+                                modifier = Modifier
+                                    .width(64.dp),
+                                text = {
                                     Box(
-                                        modifier = Modifier
-                                            .size(24.dp)
-                                            .background(
-                                                color = Color(colorInt).copy(alpha = 1f),
-                                                shape = CircleShape,
-                                            )
-                                            .border(
-                                                width = 2.dp,
-                                                color = MaterialTheme.colorScheme.surfaceContainer.copy(
-                                                    alpha = 0.2f,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(24.dp)
+                                                .background(
+                                                    color = Color(colorInt).copy(alpha = 1f),
+                                                    shape = CircleShape,
+                                                )
+                                                .border(
+                                                    width = 2.dp,
+                                                    color = MaterialTheme.colorScheme.surfaceContainer.copy(
+                                                        alpha = 0.2f,
+                                                    ),
+                                                    shape = CircleShape,
                                                 ),
-                                                shape = CircleShape,
-                                            ),
-                                    )
-                                }
-                            },
-                            contentPadding = PaddingValues(0.dp),
-                            shapes = MenuDefaults.itemShape(index, totalItems),
-                            onClick = {
-                                onColorSelected(colorInt)
-                                expanded = false
-                            },
-                        )
+                                        )
+                                    }
+                                },
+                                contentPadding = PaddingValues(0.dp),
+                                shapes = MenuDefaults.itemShape(index, totalItems),
+                                onClick = {
+                                    onColorSelected(colorInt)
+                                    expanded = false
+                                },
+                            )
+                        }
                     }
                 }
             }

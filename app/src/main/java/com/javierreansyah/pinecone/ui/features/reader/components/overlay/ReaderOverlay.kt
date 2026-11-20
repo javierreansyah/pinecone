@@ -269,6 +269,8 @@ fun ReaderOverlay(
                 totalPages = bookState.value.totalPages,
                 showProgressBar = profile != com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF,
                 showGradient = profile != com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF,
+                pdfMode = profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF,
+                pdfDarkPage = pdfPreferences.invert == true,
                 readerBgColor = effectiveBgColor,
                 readerTextColor = effectiveTextColor,
                 onSeekToProgression = { progression ->
@@ -615,7 +617,13 @@ fun ReaderBottomBarSection(
     modifier: Modifier = Modifier,
     showProgressBar: Boolean = true,
     showGradient: Boolean = true,
+    pdfMode: Boolean = false,
+    pdfDarkPage: Boolean = false,
 ) {
+    val pdfContainerColor = if (pdfDarkPage) Color.Black else Color.White
+    val pdfContentColor = if (pdfDarkPage) Color.White else Color.Black
+    val barContainerColor = if (pdfMode) pdfContainerColor else readerBgColor
+    val barContentColor = if (pdfMode) pdfContentColor else readerTextColor
     val isSelectionActive = selectionLocator != null || viewingHighlight != null
     val showBottomBar = showControls && !showSearch || isSelectionActive
 
@@ -686,7 +694,8 @@ fun ReaderBottomBarSection(
                         ReaderSearchNavigator(
                             activeIndex = activeSearchIndex,
                             totalResults = searchResultsSize,
-                            textColor = readerTextColor,
+                            containerColor = barContainerColor,
+                            textColor = barContentColor,
                             onPrev = onPrevSearchResult,
                             onNext = onNextSearchResult,
                         )
@@ -708,7 +717,8 @@ fun ReaderBottomBarSection(
 
                         ReaderTextSelectionControl(
                             selectedColorInt = selectedColorInt,
-                            readerTextColor = readerTextColor,
+                            containerColor = barContainerColor,
+                            readerTextColor = barContentColor,
                             showDeleteOption = viewingHighlight != null && selectionLocator == null,
                             onCopy = { onCopy(highlightText) },
                             onSearch = { onSearch(highlightText) },

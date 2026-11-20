@@ -88,7 +88,6 @@ internal fun LibraryCollectionScreen(
                         TopAppBarActionGroup {
                             ConnectedGroupIconButton(
                                 onClick = { selection.enter() },
-                                buttonSize = 40.dp,
                             ) {
                                 Icon(
                                     MaterialSymbols.Outlined.Select,
@@ -97,7 +96,6 @@ internal fun LibraryCollectionScreen(
                             }
                             ConnectedGroupIconButton(
                                 onClick = { showFilterSheet = true },
-                                buttonSize = 40.dp,
                             ) {
                                 Icon(
                                     MaterialSymbols.Outlined.Tune,

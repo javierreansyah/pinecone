@@ -85,6 +85,8 @@ import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Image
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.components.AppBarButtonSize
+import com.javierreansyah.pinecone.ui.components.topAppBarNavigationButtonColors
 import com.javierreansyah.pinecone.ui.components.topBarFadeBackground
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import java.io.File
@@ -184,9 +186,10 @@ private fun EditBookTopAppBar(
         },
         navigationIcon = {
             FilledTonalIconButton(
-                shapes = IconButtonDefaults.shapes(),
+                modifier = Modifier.size(AppBarButtonSize),
+                shape = CircleShape,
                 onClick = onNavigateBack,
-                colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                colors = topAppBarNavigationButtonColors(),
             ) {
                 Icon(
                     MaterialSymbols.Outlined.Arrow_back,
@@ -198,11 +201,7 @@ private fun EditBookTopAppBar(
             FilledIconButton(
                 modifier = Modifier
                     .padding(end = 6.dp)
-                    .size(
-                        IconButtonDefaults.smallContainerSize(
-                            widthOption = IconButtonDefaults.IconButtonWidthOption.Wide,
-                        ),
-                    ),
+                    .size(width = 60.dp, height = AppBarButtonSize),
                 shapes = IconButtonDefaults.shapes(),
                 onClick = onSave,
                 enabled = !isSaving,

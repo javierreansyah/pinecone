@@ -24,7 +24,6 @@ import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SearchBarDefaults
@@ -300,7 +299,7 @@ private fun OrganizeContent(
                         ) {
                             if (showCreateSpace) {
                                 SegmentedListItem(
-                                    colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                                    colors = SegmentedListDefaults.colors(),
                                     shapes = SegmentedListDefaults.shapes(
                                         index = 0,
                                         count = if (showCreateShelf) 2 else 1
@@ -321,7 +320,7 @@ private fun OrganizeContent(
 
                             if (showCreateShelf) {
                                 SegmentedListItem(
-                                    colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                                    colors = SegmentedListDefaults.colors(),
                                     shapes = SegmentedListDefaults.shapes(
                                         index = if (showCreateSpace) 1 else 0,
                                         count = if (showCreateSpace) 2 else 1
@@ -360,7 +359,7 @@ private fun OrganizeContent(
                                     val selected = state == ToggleableState.On
                                     key(space.id) {
                                         SegmentedListItem(
-                                            colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                                            colors = SegmentedListDefaults.colors(),
                                             shapes = SegmentedListDefaults.shapes(
                                                 index = index,
                                                 count = spaces.size
@@ -421,7 +420,7 @@ private fun OrganizeContent(
                                 val selected = state == ToggleableState.On
                                 key(shelf.id) {
                                     SegmentedListItem(
-                                        colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                                        colors = SegmentedListDefaults.colors(),
                                         shapes = SegmentedListDefaults.shapes(
                                             index = index,
                                             count = shelves.size

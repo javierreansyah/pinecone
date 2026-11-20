@@ -2,7 +2,8 @@ package com.javierreansyah.pinecone.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonColors
@@ -19,11 +20,9 @@ import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -32,7 +31,6 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.javierreansyah.pinecone.R
 
-internal val LocalTopAppBarCollapsedFraction = compositionLocalOf { { 0f } }
 val LocalTopAppBarCollapsedRow = compositionLocalOf { false }
 
 @Composable
@@ -51,16 +49,10 @@ fun LibraryTopAppBarTitle(
 
 @Composable
 internal fun topAppBarNavigationButtonColors(): IconButtonColors {
-    val fraction = LocalTopAppBarCollapsedFraction.current().coerceIn(0f, 1f)
-    val expandedContainer = MaterialTheme.colorScheme.surfaceContainerHigh
-    val collapsedContainer = MaterialTheme.colorScheme.background
+    val containerColor = MaterialTheme.colorScheme.background
     return IconButtonDefaults.filledTonalIconButtonColors(
-        containerColor = lerp(expandedContainer, collapsedContainer, fraction),
-        contentColor = lerp(
-            contentColorFor(expandedContainer),
-            contentColorFor(collapsedContainer),
-            fraction,
-        ),
+        containerColor = containerColor,
+        contentColor = contentColorFor(containerColor),
     )
 }
 
@@ -84,7 +76,7 @@ fun TopAppBarActionGroup(
     content: @Composable RowScope.() -> Unit,
 ) {
     ConnectedButtonGroup(
-        modifier = modifier.padding(end = 4.dp),
+        modifier = modifier,
         containerColor = containerColor,
         contentColor = contentColor,
         content = content,
@@ -107,25 +99,20 @@ fun LibraryTopAppBar(
     ),
     expandedHeight: Dp = 180.dp,
 ) {
-    val collapsedFractionProvider: () -> Float = remember(isEmpty, scrollBehavior) {
-        { if (isEmpty) 0f else (scrollBehavior?.state?.collapsedFraction ?: 0f) }
-    }
-
     val finalNavigationIcon: @Composable () -> Unit = {
-        CompositionLocalProvider(LocalTopAppBarCollapsedFraction provides collapsedFractionProvider) {
-            if (navigationIcon != null) {
-                navigationIcon()
-            } else {
-                FilledTonalIconButton(
-                    shapes = IconButtonDefaults.shapes(),
-                    colors = topAppBarNavigationButtonColors(),
-                    onClick = onBack,
-                ) {
-                    Icon(
-                        MaterialSymbols.Outlined.Arrow_back,
-                        contentDescription = stringResource(R.string.action_back),
-                    )
-                }
+        if (navigationIcon != null) {
+            navigationIcon()
+        } else {
+            FilledTonalIconButton(
+                modifier = Modifier.size(AppBarButtonSize),
+                shape = CircleShape,
+                colors = topAppBarNavigationButtonColors(),
+                onClick = onBack,
+            ) {
+                Icon(
+                    MaterialSymbols.Outlined.Arrow_back,
+                    contentDescription = stringResource(R.string.action_back),
+                )
             }
         }
     }

@@ -739,6 +739,7 @@ private fun AudioStripActionButton(
             checked = selected,
             onCheckedChange = { onClick() },
             enabled = enabled,
+            buttonSize = 48.dp,
             contentColor = tint,
             checkedContentColor = tint,
             modifier = modifier,
@@ -748,6 +749,7 @@ private fun AudioStripActionButton(
         ConnectedGroupIconButton(
             onClick = onClick,
             enabled = enabled,
+            buttonSize = 48.dp,
             contentColor = tint,
             modifier = modifier,
             content = content,

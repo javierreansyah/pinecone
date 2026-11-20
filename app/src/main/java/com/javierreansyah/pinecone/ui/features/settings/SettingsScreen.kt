@@ -455,7 +455,6 @@ private fun SettingsTopBar(
             TopAppBarActionGroup {
                 ConnectedGroupIconButton(
                     onClick = onRestoreDefaultClick,
-                    buttonSize = 40.dp,
                 ) {
                     Icon(
                         imageVector = MaterialSymbols.Outlined.Restart_alt,

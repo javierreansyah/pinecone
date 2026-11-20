@@ -2,9 +2,12 @@ package com.javierreansyah.pinecone.ui.components
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.ListItemShapes
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -55,6 +58,15 @@ object SegmentedListDefaults {
             bottomStart = OuterCornerRadius,
             bottomEnd = OuterCornerRadius,
         ),
+    )
+
+    @Composable
+    fun colors(
+        containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
+        disabledContainerColor: Color = containerColor,
+    ): ListItemColors = ListItemDefaults.segmentedColors(
+        containerColor = containerColor,
+        disabledContainerColor = disabledContainerColor,
     )
 
     fun shapes(index: Int, count: Int): ListItemShapes = when {

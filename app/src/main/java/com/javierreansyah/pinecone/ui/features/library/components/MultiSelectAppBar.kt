@@ -23,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Archive
 import com.composables.icons.materialsymbols.outlined.Check_circle
@@ -68,7 +67,6 @@ fun MultiSelectAppBar(
             ConnectedGroupIconButton(
                 onClick = onOrganize,
                 enabled = selectedCount > 0,
-                buttonSize = 40.dp,
             ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Create_new_folder,
@@ -79,7 +77,6 @@ fun MultiSelectAppBar(
                 ConnectedGroupIconButton(
                     onClick = { menuExpanded = true },
                     enabled = selectedCount > 0,
-                    buttonSize = 40.dp,
                 ) {
                     Icon(
                         imageVector = MaterialSymbols.Outlined.More_vert,

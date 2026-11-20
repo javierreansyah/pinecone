@@ -23,7 +23,7 @@
     <string name="settings_hide_all_space_summary">Hide \"All\" from the navigation rail.</string>
     <string name="settings_language">@string/publication_language</string>
     <string name="settings_last_backup_format">Last: %s</string>
-    <string name="settings_library_bottom_navigation">Show library bottom navigation</string>
+    <string name="settings_library_bottom_navigation">Show library view switcher</string>
     <string name="settings_library_bottom_navigation_summary">Show the titles and shelves switcher.</string>
     <string name="settings_no_backups_found">No backups found in the selected folder.</string>
     <string name="settings_option_dark">@string/reader_settings_theme_dark</string>

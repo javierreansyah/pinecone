@@ -17,13 +17,13 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
@@ -68,9 +68,11 @@ import com.composables.icons.materialsymbols.outlined.Search
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
+import com.javierreansyah.pinecone.ui.components.AppBarButtonSize
 import com.javierreansyah.pinecone.ui.components.ConnectedButtonGroup
 import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
 import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconToggleButton
+import com.javierreansyah.pinecone.ui.components.topAppBarNavigationButtonColors
 import com.javierreansyah.pinecone.ui.components.topBarFadeBackground
 import org.readium.r2.shared.publication.Locator
 import com.composables.icons.materialsymbols.outlinedfilled.Bookmark_check as FilledBookmarkCheck
@@ -110,16 +112,11 @@ fun ReaderTopBar(
     val pdfContentColor = if (pdfDarkPage) Color.White else Color.Black
     val barContainerColor = if (pdfMode) pdfContainerColor else readerBgColor
     val barContentColor = if (pdfMode) pdfContentColor else readerTextColor
-    val topBarBackgroundModifier = if (pdfMode) {
-        Modifier
-    } else {
-        Modifier.topBarFadeBackground(readerBgColor)
-    }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .then(topBarBackgroundModifier),
+            .topBarFadeBackground(barContainerColor),
     ) {
         TopAppBar(
             title = {
@@ -152,11 +149,10 @@ fun ReaderTopBar(
             navigationIcon = {
                 if (audioPlayer) {
                     FilledTonalIconButton(
+                        modifier = Modifier.size(AppBarButtonSize),
                         onClick = onBack,
-                        shapes = IconButtonDefaults.shapes(),
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        ),
+                        shape = CircleShape,
+                        colors = topAppBarNavigationButtonColors(),
                     ) {
                         Icon(
                             MaterialSymbols.Outlined.Keyboard_arrow_down,
@@ -165,8 +161,9 @@ fun ReaderTopBar(
                     }
                 } else {
                     FilledTonalIconButton(
+                        modifier = Modifier.size(AppBarButtonSize),
                         onClick = onBack,
-                        shapes = IconButtonDefaults.shapes(),
+                        shape = CircleShape,
                         colors = IconButtonDefaults.filledTonalIconButtonColors(
                             containerColor = barContainerColor,
                             contentColor = barContentColor,
@@ -221,8 +218,9 @@ fun ReaderTopBar(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (state == TopBarState.SEARCH) {
                             FilledTonalIconButton(
+                                modifier = Modifier.size(AppBarButtonSize),
                                 onClick = onCloseSearch,
-                                shapes = IconButtonDefaults.shapes(),
+                                shape = CircleShape,
                                 colors = IconButtonDefaults.filledTonalIconButtonColors(
                                     containerColor = barContainerColor,
                                     contentColor = barContentColor,
@@ -262,11 +260,15 @@ fun ReaderTopBar(
                             }
 
                             if (audioPlayer) {
-                                IconButton(onClick = onInfoClick) {
+                                FilledTonalIconButton(
+                                    modifier = Modifier.size(AppBarButtonSize),
+                                    onClick = onInfoClick,
+                                    shape = CircleShape,
+                                    colors = topAppBarNavigationButtonColors(),
+                                ) {
                                     Icon(
                                         MaterialSymbols.Outlined.Info,
                                         contentDescription = stringResource(R.string.reader_menu_info),
-                                        tint = readerTextColor,
                                     )
                                 }
                             } else {
@@ -286,7 +288,6 @@ fun ReaderTopBar(
                                     onTocClick = onTocClick,
                                     onSearchClick = onSearchClick,
                                     onInfoClick = onInfoClick,
-                                    modifier = Modifier.padding(end = 4.dp),
                                 )
                             }
                         }
@@ -331,7 +332,6 @@ private fun ReaderTopBarButtonGroup(
         if (showReadMode && !converting) {
             ConnectedGroupIconButton(
                 onClick = onToggleReadMode,
-                buttonSize = 40.dp,
                 contentColor = contentColor,
             ) {
                 Icon(
@@ -345,7 +345,6 @@ private fun ReaderTopBarButtonGroup(
         ConnectedGroupIconToggleButton(
             checked = isBookmarked,
             onCheckedChange = { onToggleBookmark() },
-            buttonSize = 40.dp,
             contentColor = contentColor,
         ) {
             AnimatedSelectionIcon(
@@ -364,7 +363,6 @@ private fun ReaderTopBarButtonGroup(
             if (!showReadMode) {
                 ConnectedGroupIconButton(
                     onClick = onTocClick,
-                    buttonSize = 40.dp,
                     contentColor = contentColor,
                 ) {
                     Icon(
@@ -377,7 +375,6 @@ private fun ReaderTopBarButtonGroup(
 
             ConnectedGroupIconButton(
                 onClick = onSettingsClick,
-                buttonSize = 40.dp,
                 contentColor = contentColor,
             ) {
                 Icon(
@@ -392,7 +389,6 @@ private fun ReaderTopBarButtonGroup(
             Box {
                 ConnectedGroupIconButton(
                     onClick = { showMoreMenu = true },
-                    buttonSize = 40.dp,
                     contentColor = contentColor,
                 ) {
                     Icon(
@@ -555,7 +551,7 @@ fun JumpHistoryPill(
     containerColor: Color = Color.Transparent,
 ) {
     val description = stringResource(R.string.action_clear)
-    val size = SplitButtonDefaults.SmallContainerHeight
+    val size = AppBarButtonSize
     val buttonColors = ButtonDefaults.filledTonalButtonColors(
         containerColor = containerColor,
         contentColor = textColor,

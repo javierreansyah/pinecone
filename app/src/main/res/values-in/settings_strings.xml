@@ -23,7 +23,7 @@
     <string name="settings_hide_all_space_summary">Sembunyikan Semua dari navigasi.</string>
     <string name="settings_language">@string/publication_language</string>
     <string name="settings_last_backup_format">Terakhir: %s</string>
-    <string name="settings_library_bottom_navigation">Tampilkan navigasi bawah pustaka</string>
+    <string name="settings_library_bottom_navigation">Tampilkan pengalih tampilan pustaka</string>
     <string name="settings_library_bottom_navigation_summary">Tampilkan pengalih judul dan rak.</string>
     <string name="settings_no_backups_found">Tidak ada cadangan yang ditemukan di folder yang dipilih.</string>
     <string name="settings_option_dark">@string/reader_settings_theme_dark</string>

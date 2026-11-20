@@ -11,6 +11,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
@@ -44,7 +45,8 @@ internal fun EditingNavigationIcon(editing: Boolean, onBack: () -> Unit, onCance
     val navEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
 
     FilledTonalIconButton(
-        shapes = IconButtonDefaults.shapes(),
+        modifier = Modifier.size(AppBarButtonSize),
+        shape = CircleShape,
         colors = topAppBarNavigationButtonColors(),
         onClick = {
             if (editing) {
@@ -116,11 +118,7 @@ internal fun EditingActions(
             FilledIconButton(
                 modifier = Modifier
                     .padding(end = 6.dp)
-                    .size(
-                        IconButtonDefaults.smallContainerSize(
-                            widthOption = IconButtonDefaults.IconButtonWidthOption.Wide,
-                        ),
-                    ),
+                    .size(width = 60.dp, height = AppBarButtonSize),
                 shapes = IconButtonDefaults.shapes(),
                 onClick = onSave,
             ) {

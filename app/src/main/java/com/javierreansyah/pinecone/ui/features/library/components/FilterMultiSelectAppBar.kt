@@ -10,7 +10,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Delete
 import com.composables.icons.materialsymbols.outlined.Edit
@@ -43,7 +42,6 @@ fun FilterMultiSelectAppBar(
             ConnectedGroupIconButton(
                 onClick = onRenameClick,
                 enabled = selectedCount > 0,
-                buttonSize = 40.dp,
             ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Edit,
@@ -53,7 +51,6 @@ fun FilterMultiSelectAppBar(
             ConnectedGroupIconButton(
                 onClick = { showDeleteConfirmation = true },
                 enabled = selectedCount > 0,
-                buttonSize = 40.dp,
                 contentColor = if (selectedCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
             ) {
                 Icon(

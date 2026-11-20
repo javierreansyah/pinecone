@@ -130,6 +130,7 @@ import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
+import com.javierreansyah.pinecone.ui.components.AppBarButtonSize
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.InsetListItemDefaults
 import com.javierreansyah.pinecone.ui.components.SegmentedListDefaults
@@ -1494,21 +1495,22 @@ private fun BookInfoTopButtons(
     onNavigateToEdit: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val topButtonColors = IconButtonDefaults.filledTonalIconButtonColors(
+        containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.8f),
+        contentColor = MaterialTheme.colorScheme.onBackground,
+    )
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 8.dp),
+            .padding(horizontal = 4.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         FilledTonalIconButton(
-            shapes = IconButtonDefaults.shapes(),
+            modifier = Modifier.size(AppBarButtonSize),
+            shape = CircleShape,
             onClick = onNavigateBack,
-            colors = IconButtonDefaults.filledTonalIconButtonColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(
-                    alpha = 0.8f,
-                ),
-            ),
+            colors = topButtonColors,
         ) {
             Icon(
                 MaterialSymbols.Outlined.Arrow_back,
@@ -1517,13 +1519,10 @@ private fun BookInfoTopButtons(
         }
 
         FilledTonalIconButton(
-            shapes = IconButtonDefaults.shapes(),
+            modifier = Modifier.size(AppBarButtonSize),
+            shape = CircleShape,
             onClick = { onNavigateToEdit(bookId) },
-            colors = IconButtonDefaults.filledTonalIconButtonColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(
-                    alpha = 0.8f,
-                ),
-            ),
+            colors = topButtonColors,
         ) {
             Icon(
                 MaterialSymbols.Outlined.Edit,

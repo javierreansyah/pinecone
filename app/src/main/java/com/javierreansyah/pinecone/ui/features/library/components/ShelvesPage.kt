@@ -83,13 +83,11 @@ fun ShelvesPage(
                     },
                     label = "shelvesPageLayoutTransition",
                 ) { targetLayoutMode ->
-                    val extraVerticalPadding =
-                        if (targetLayoutMode != LayoutMode.List) 4.dp else 0.dp
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
-                            top = topContentPadding + 8.dp + extraVerticalPadding,
-                            bottom = bottomContentPadding + extraVerticalPadding,
+                            top = topContentPadding + 8.dp,
+                            bottom = bottomContentPadding,
                         ),
                     ) {
                         items(shelves, key = { (itShelf, _) -> itShelf.id }) { shelfWithCovers ->
@@ -193,7 +191,7 @@ private fun ShelfRowItem(
                     onLongClick?.invoke()
                 },
             )
-            .padding(vertical = 4.dp),
+            .padding(top = 8.dp, bottom = 4.dp),
     ) {
         ShelfRowHeader(
             shelfName = shelfWithCovers.shelf.name,
@@ -202,7 +200,6 @@ private fun ShelfRowItem(
             wording = publicationWording(visibleBooks.map { it.book.fileFormat() }),
             isInMultiSelectMode = isInMultiSelectMode,
             isSelected = isSelected,
-            onToggleSelect = onToggleSelect,
         )
         ShelfBooksHorizontalRow(
             shelfId = shelfWithCovers.shelf.id,
@@ -221,7 +218,6 @@ private fun ShelfRowHeader(
     wording: PublicationWording,
     isInMultiSelectMode: Boolean = false,
     isSelected: Boolean = false,
-    onToggleSelect: (() -> Unit)? = null,
 ) {
     Row(
         modifier = Modifier
@@ -230,9 +226,7 @@ private fun ShelfRowHeader(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(vertical = 4.dp),
+            modifier = Modifier.weight(1f),
         ) {
             Text(
                 text = shelfName,
@@ -248,7 +242,7 @@ private fun ShelfRowHeader(
         if (isInMultiSelectMode) {
             Checkbox(
                 checked = isSelected,
-                onCheckedChange = { onToggleSelect?.invoke() },
+                onCheckedChange = null,
             )
         }
     }

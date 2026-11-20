@@ -473,7 +473,6 @@ private fun FilterResultDefaultTopAppBar(
                     TopAppBarActionGroup {
                         ConnectedGroupIconButton(
                             onClick = onFilterClick,
-                            buttonSize = 40.dp,
                         ) {
                             Icon(
                                 MaterialSymbols.Outlined.Tune,
@@ -483,7 +482,6 @@ private fun FilterResultDefaultTopAppBar(
                         Box {
                             ConnectedGroupIconButton(
                                 onClick = onMenuToggle,
-                                buttonSize = 40.dp,
                             ) {
                                 Icon(
                                     MaterialSymbols.Outlined.More_vert,
