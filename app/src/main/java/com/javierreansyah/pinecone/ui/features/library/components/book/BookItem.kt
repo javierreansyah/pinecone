@@ -1,8 +1,15 @@
 package com.javierreansyah.pinecone.ui.features.library.components.book
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -23,12 +30,15 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.model.Book
@@ -69,20 +79,54 @@ fun BookItem(
                     )
                 }
             },
-            trailingContent = if (isInMultiSelectMode) {
-                {
-                    Box(
-                        modifier = Modifier.height(100.dp),
-                        contentAlignment = Alignment.Center,
+            trailingContent = {
+                val effectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+                val scaleSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
+                val sizeSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntSize>()
+                if (content != null) {
+                    AnimatedContent(
+                        targetState = isInMultiSelectMode,
+                        transitionSpec = {
+                            fadeIn(animationSpec = effectsSpec) togetherWith
+                                    fadeOut(animationSpec = effectsSpec)
+                        },
+                        label = "bookListTrailing",
+                    ) { multiSelect ->
+                        if (multiSelect) {
+                            Box(
+                                modifier = Modifier.height(100.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Checkbox(
+                                    checked = isSelected,
+                                    onCheckedChange = null,
+                                )
+                            }
+                        } else {
+                            content()
+                        }
+                    }
+                } else {
+                    AnimatedVisibility(
+                        visible = isInMultiSelectMode,
+                        enter = expandHorizontally(animationSpec = sizeSpec) +
+                                fadeIn(animationSpec = effectsSpec) +
+                                scaleIn(initialScale = 0.8f, animationSpec = scaleSpec),
+                        exit = shrinkHorizontally(animationSpec = sizeSpec) +
+                                fadeOut(animationSpec = effectsSpec) +
+                                scaleOut(targetScale = 0.8f, animationSpec = scaleSpec),
                     ) {
-                        Checkbox(
-                            checked = isSelected,
-                            onCheckedChange = null,
-                        )
+                        Box(
+                            modifier = Modifier.height(100.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Checkbox(
+                                checked = isSelected,
+                                onCheckedChange = null,
+                            )
+                        }
                     }
                 }
-            } else {
-                content
             },
             content = {
                 Column(
@@ -194,16 +238,29 @@ fun BookCoverWithSelection(
     isInMultiSelectMode: Boolean = false,
     isList: Boolean = false,
 ) {
+    val effectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+    val spatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
+    val coverScale by animateFloatAsState(
+        targetValue = if (isSelected && !isList) 0.94f else 1f,
+        animationSpec = spatialSpec,
+        label = "bookSelectionCoverScale",
+    )
+
     Box(modifier = modifier, contentAlignment = Alignment.TopStart) {
         CoverImage(
             book = book,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    scaleX = coverScale
+                    scaleY = coverScale
+                },
         ) {
             Box(modifier = Modifier.matchParentSize()) {
                 AnimatedVisibility(
                     visible = isSelected && !isList,
-                    enter = fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()),
-                    exit = fadeOut(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()),
+                    enter = fadeIn(animationSpec = effectsSpec),
+                    exit = fadeOut(animationSpec = effectsSpec),
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     Box(
@@ -215,11 +272,21 @@ fun BookCoverWithSelection(
                 }
             }
         }
-        if (!isList && isInMultiSelectMode) {
+        AnimatedVisibility(
+            visible = !isList && isInMultiSelectMode,
+            enter = fadeIn(animationSpec = effectsSpec) + scaleIn(
+                initialScale = 0.8f,
+                animationSpec = spatialSpec,
+            ),
+            exit = fadeOut(animationSpec = effectsSpec) + scaleOut(
+                targetScale = 0.8f,
+                animationSpec = spatialSpec,
+            ),
+            modifier = Modifier.padding(4.dp),
+        ) {
             Checkbox(
                 checked = isSelected,
                 onCheckedChange = null,
-                modifier = Modifier.padding(4.dp),
             )
         }
     }

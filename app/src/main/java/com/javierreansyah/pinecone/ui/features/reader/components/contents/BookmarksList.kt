@@ -9,6 +9,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -17,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Bookmark
@@ -45,10 +47,12 @@ fun BookmarksList(
                 .padding(32.dp),
         )
     } else {
+        val itemEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+        val itemPlacementSpec = MaterialTheme.motionScheme.fastEffectsSpec<IntOffset>()
         LazyColumn(
             modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 8.dp),
         ) {
-            items(bookmarks) { bookmark ->
+            items(bookmarks, key = { it.id }) { bookmark ->
                 val locator = bookmark.locatorJson.toLocatorOrNull()
                 if (locator != null) {
                     val inDocument = stringResource(R.string.reader_in_document)
@@ -68,7 +72,13 @@ fun BookmarksList(
 
                     ListItem(
                         onClick = { onBookmarkClick(locator) },
-                        modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
+                        modifier = Modifier
+                            .animateItem(
+                                fadeInSpec = itemEffectsSpec,
+                                placementSpec = itemPlacementSpec,
+                                fadeOutSpec = itemEffectsSpec,
+                            )
+                            .padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
                         shapes = InsetListItemDefaults.shapes(),
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         contentPadding = InsetListItemDefaults.ContentPadding,

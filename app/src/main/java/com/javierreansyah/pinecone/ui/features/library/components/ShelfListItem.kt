@@ -1,5 +1,12 @@
 package com.javierreansyah.pinecone.ui.features.library.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
@@ -20,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
@@ -96,8 +104,19 @@ fun ShelfListItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         },
-        trailingContent = if (isInMultiSelectMode) {
-            {
+        trailingContent = {
+            val effectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+            val scaleSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
+            val sizeSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntSize>()
+            AnimatedVisibility(
+                visible = isInMultiSelectMode,
+                enter = expandHorizontally(animationSpec = sizeSpec) +
+                        fadeIn(animationSpec = effectsSpec) +
+                        scaleIn(initialScale = 0.8f, animationSpec = scaleSpec),
+                exit = shrinkHorizontally(animationSpec = sizeSpec) +
+                        fadeOut(animationSpec = effectsSpec) +
+                        scaleOut(targetScale = 0.8f, animationSpec = scaleSpec),
+            ) {
                 Box(
                     modifier = Modifier.height(100.dp),
                     contentAlignment = Alignment.Center,
@@ -108,7 +127,7 @@ fun ShelfListItem(
                     )
                 }
             }
-        } else null,
+        },
         content = {
             Text(
                 text = shelfWithCovers.shelf.name,

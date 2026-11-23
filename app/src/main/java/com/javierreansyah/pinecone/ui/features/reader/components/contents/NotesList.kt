@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Delete
@@ -58,10 +59,12 @@ fun NotesList(
                 .padding(32.dp),
         )
     } else {
+        val itemEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+        val itemPlacementSpec = MaterialTheme.motionScheme.fastEffectsSpec<IntOffset>()
         LazyColumn(
             modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 8.dp),
         ) {
-            items(notes) { note ->
+            items(notes, key = { it.id }) { note ->
                 val locator = note.locatorJson.toLocatorOrNull()
                 if (locator != null) {
                     val inDocument = stringResource(R.string.reader_in_document)
@@ -81,7 +84,13 @@ fun NotesList(
 
                     ListItem(
                         onClick = { onNoteClick(locator) },
-                        modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
+                        modifier = Modifier
+                            .animateItem(
+                                fadeInSpec = itemEffectsSpec,
+                                placementSpec = itemPlacementSpec,
+                                fadeOutSpec = itemEffectsSpec,
+                            )
+                            .padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
                         verticalAlignment = Alignment.Top,
                         shapes = InsetListItemDefaults.shapes(),
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),

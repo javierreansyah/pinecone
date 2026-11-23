@@ -1,5 +1,12 @@
 package com.javierreansyah.pinecone.ui.features.library.components
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -15,7 +22,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Deselect
@@ -37,9 +47,34 @@ internal fun SelectionTopAppBar(
     modifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit,
 ) {
+    val spatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
+    val effectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+    val slideOffsetPx = with(LocalDensity.current) { 18.dp.roundToPx() }
+
     TopAppBar(
         title = {
-            Text(text = selectedCount.toString())
+            AnimatedContent(
+                targetState = selectedCount,
+                transitionSpec = {
+                    val isIncrement = targetState > initialState
+                    if (isIncrement) {
+                        (slideInVertically(animationSpec = spatialSpec) { slideOffsetPx } +
+                                fadeIn(animationSpec = effectsSpec)).togetherWith(
+                            slideOutVertically(animationSpec = spatialSpec) { -slideOffsetPx } +
+                                    fadeOut(animationSpec = effectsSpec),
+                        )
+                    } else {
+                        (slideInVertically(animationSpec = spatialSpec) { -slideOffsetPx } +
+                                fadeIn(animationSpec = effectsSpec)).togetherWith(
+                            slideOutVertically(animationSpec = spatialSpec) { slideOffsetPx } +
+                                    fadeOut(animationSpec = effectsSpec),
+                        )
+                    }
+                },
+                label = "selectionCountRolling",
+            ) { count ->
+                Text(text = count.toString())
+            }
         },
         navigationIcon = {
             FilledTonalIconButton(
@@ -65,12 +100,18 @@ internal fun SelectionTopAppBar(
                         }
                     },
                 ) {
-                    Icon(
-                        imageVector = if (isAllSelected) MaterialSymbols.Outlined.Deselect else MaterialSymbols.Outlined.Select_all,
-                        contentDescription = stringResource(
-                            if (isAllSelected) R.string.action_deselect_all else R.string.action_select_all,
-                        ),
-                    )
+                    Crossfade(
+                        targetState = isAllSelected,
+                        animationSpec = effectsSpec,
+                        label = "selectAllIcon",
+                    ) { allSelected ->
+                        Icon(
+                            imageVector = if (allSelected) MaterialSymbols.Outlined.Deselect else MaterialSymbols.Outlined.Select_all,
+                            contentDescription = stringResource(
+                                if (allSelected) R.string.action_deselect_all else R.string.action_select_all,
+                            ),
+                        )
+                    }
                 }
                 content()
             }

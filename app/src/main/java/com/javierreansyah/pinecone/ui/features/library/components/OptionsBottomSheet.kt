@@ -1,5 +1,11 @@
 package com.javierreansyah.pinecone.ui.features.library.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -22,16 +28,18 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_drop_down
-import com.composables.icons.materialsymbols.outlined.Arrow_drop_up
 import com.composables.icons.materialsymbols.outlined.Calendar_view_month
 import com.composables.icons.materialsymbols.outlined.View_carousel
 import com.composables.icons.materialsymbols.outlined.View_list
@@ -110,6 +118,13 @@ fun <T> SortRadioGroup(
     ) {
         options.forEachIndexed { index, type ->
             val isSelected = selectedOption == type
+            val arrowRotation by animateFloatAsState(
+                targetValue = if (isAscending) 180f else 0f,
+                animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+                label = "sortDirectionRotation",
+            )
+            val expandSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntSize>()
+            val fadeSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
             ToggleButton(
                 checked = isSelected,
                 onCheckedChange = { onOptionSelected(type) },
@@ -122,14 +137,22 @@ fun <T> SortRadioGroup(
             ) {
                 ProvideTextStyle(value = MaterialTheme.typography.labelLarge) {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(optionLabel(type))
-                        if (isSelected) {
+                        AnimatedVisibility(
+                            visible = isSelected,
+                            enter = expandHorizontally(animationSpec = expandSpec) +
+                                    fadeIn(animationSpec = fadeSpec),
+                            exit = shrinkHorizontally(animationSpec = expandSpec) +
+                                    fadeOut(animationSpec = fadeSpec),
+                        ) {
                             Icon(
-                                imageVector = if (isAscending) MaterialSymbols.Outlined.Arrow_drop_up else MaterialSymbols.Outlined.Arrow_drop_down,
+                                imageVector = MaterialSymbols.Outlined.Arrow_drop_down,
                                 contentDescription = null,
+                                modifier = Modifier
+                                    .padding(start = 4.dp)
+                                    .graphicsLayer { rotationZ = arrowRotation },
                             )
                         }
                     }

@@ -1,5 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.reader.components.overlay
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -168,6 +169,10 @@ fun ReaderProgressTracker(
     // Soften against the reading background in both light and dark themes.
     val progressColor = readerTextColor.copy(alpha = readerTextColor.alpha * 0.65f)
     val seekLabel = stringResource(R.string.publication_reading_progress)
+    val progressAnimSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+    val animatedSliderPosition = remember {
+        Animatable(progression.toFloat().coerceIn(0f, 1f))
+    }
 
     LaunchedEffect(progression, isSeeking, pendingSeek) {
         val target = pendingSeek
@@ -181,6 +186,19 @@ fun ReaderProgressTracker(
             sliderPosition = progression.toFloat().coerceIn(0f, 1f)
         }
     }
+
+    LaunchedEffect(sliderPosition, isSeeking) {
+        if (isSeeking) {
+            animatedSliderPosition.snapTo(sliderPosition)
+        } else {
+            animatedSliderPosition.animateTo(
+                targetValue = sliderPosition,
+                animationSpec = progressAnimSpec,
+            )
+        }
+    }
+
+    val displayPosition = if (isSeeking) sliderPosition else animatedSliderPosition.value
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -243,7 +261,7 @@ fun ReaderProgressTracker(
             contentAlignment = Alignment.Center,
         ) {
             LinearProgressIndicator(
-                progress = { sliderPosition },
+                progress = { displayPosition },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(3.dp)
@@ -266,7 +284,7 @@ fun ReaderProgressTracker(
                 // with a slimmer profile for the compact reading toolbar.
                 val handleWidth = 3.dp.toPx()
                 val halfWidth = handleWidth / 2f
-                val rawX = size.width * if (rtl) 1f - sliderPosition else sliderPosition
+                val rawX = size.width * if (rtl) 1f - displayPosition else displayPosition
                 val shiftedX = rawX + 2.dp.toPx()
                 val handleX =
                     shiftedX.coerceIn(halfWidth, (size.width - halfWidth).coerceAtLeast(halfWidth))

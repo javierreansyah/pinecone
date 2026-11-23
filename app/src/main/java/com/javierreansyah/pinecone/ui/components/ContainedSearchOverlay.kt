@@ -1,5 +1,11 @@
 package com.javierreansyah.pinecone.ui.components
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -133,26 +139,42 @@ fun ContainedSearchOverlay(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(end = 4.dp),
                     ) {
-                        if (textFieldState.text.isNotEmpty()) {
-                            IconButton(
-                                onClick = {
-                                    textFieldState.edit { replace(0, length, "") }
-                                    onClear?.invoke()
-                                },
-                            ) {
-                                Icon(
-                                    imageVector = MaterialSymbols.Outlined.Close,
-                                    contentDescription = stringResource(R.string.action_clear),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        val effectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+                        val spatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
+                        AnimatedContent(
+                            targetState = textFieldState.text.isNotEmpty(),
+                            transitionSpec = {
+                                fadeIn(animationSpec = effectsSpec) + scaleIn(
+                                    initialScale = 0.85f,
+                                    animationSpec = spatialSpec,
+                                ) togetherWith fadeOut(animationSpec = effectsSpec) + scaleOut(
+                                    targetScale = 0.85f,
+                                    animationSpec = spatialSpec,
                                 )
-                            }
-                        } else {
-                            IconButton(onClick = { launchVoiceSearch() }) {
-                                Icon(
-                                    imageVector = MaterialSymbols.Outlined.Mic,
-                                    contentDescription = stringResource(R.string.action_voice_search),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                            },
+                            label = "searchTrailingIcon",
+                        ) { hasQuery ->
+                            if (hasQuery) {
+                                IconButton(
+                                    onClick = {
+                                        textFieldState.edit { replace(0, length, "") }
+                                        onClear?.invoke()
+                                    },
+                                ) {
+                                    Icon(
+                                        imageVector = MaterialSymbols.Outlined.Close,
+                                        contentDescription = stringResource(R.string.action_clear),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            } else {
+                                IconButton(onClick = { launchVoiceSearch() }) {
+                                    Icon(
+                                        imageVector = MaterialSymbols.Outlined.Mic,
+                                        contentDescription = stringResource(R.string.action_voice_search),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                         }
                     }

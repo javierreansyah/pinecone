@@ -9,6 +9,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -874,7 +879,22 @@ private fun BackupSettingsSection(
                                     stringResource(R.string.nav_setup_now)
                                 },
                             )
-                            AnimatedVisibility(visible = isBackingUp) {
+                            val progressSpatialSpec =
+                                MaterialTheme.motionScheme.fastSpatialSpec<androidx.compose.ui.unit.IntSize>()
+                            val progressEffectsSpec =
+                                MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+                            val animatedBackupFraction by animateFloatAsState(
+                                targetValue = backupProgress.fraction.coerceIn(0f, 1f),
+                                animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+                                label = "backupProgressFraction",
+                            )
+                            AnimatedVisibility(
+                                visible = isBackingUp,
+                                enter = expandVertically(animationSpec = progressSpatialSpec) +
+                                        fadeIn(animationSpec = progressEffectsSpec),
+                                exit = shrinkVertically(animationSpec = progressSpatialSpec) +
+                                        fadeOut(animationSpec = progressEffectsSpec),
+                            ) {
                                 Column {
                                     Text(
                                         if (backupProgress.totalFiles == 0) {
@@ -888,7 +908,7 @@ private fun BackupSettingsSection(
                                         },
                                     )
                                     LinearWavyProgressIndicator(
-                                        progress = { backupProgress.fraction },
+                                        progress = { animatedBackupFraction },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(top = 8.dp),
@@ -935,7 +955,22 @@ private fun BackupSettingsSection(
                             Text(
                                 stringResource(R.string.settings_restore_summary),
                             )
-                            AnimatedVisibility(visible = isRestoring) {
+                            val restoreSpatialSpec =
+                                MaterialTheme.motionScheme.fastSpatialSpec<androidx.compose.ui.unit.IntSize>()
+                            val restoreEffectsSpec =
+                                MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+                            val animatedRestoreFraction by animateFloatAsState(
+                                targetValue = restoreProgress.fraction.coerceIn(0f, 1f),
+                                animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+                                label = "restoreProgressFraction",
+                            )
+                            AnimatedVisibility(
+                                visible = isRestoring,
+                                enter = expandVertically(animationSpec = restoreSpatialSpec) +
+                                        fadeIn(animationSpec = restoreEffectsSpec),
+                                exit = shrinkVertically(animationSpec = restoreSpatialSpec) +
+                                        fadeOut(animationSpec = restoreEffectsSpec),
+                            ) {
                                 Column {
                                     Text(
                                         if (restoreProgress.totalFiles == 0) {
@@ -949,7 +984,7 @@ private fun BackupSettingsSection(
                                         },
                                     )
                                     LinearWavyProgressIndicator(
-                                        progress = { restoreProgress.fraction },
+                                        progress = { animatedRestoreFraction },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(top = 8.dp),

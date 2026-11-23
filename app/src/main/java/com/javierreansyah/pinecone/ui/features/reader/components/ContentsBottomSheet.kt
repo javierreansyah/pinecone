@@ -170,11 +170,11 @@ fun ReaderBottomSheet(
                     .padding(end = 16.dp, bottom = 16.dp),
                 enter = fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) + scaleIn(
                     initialScale = 0.8f,
-                    animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()
+                    animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
                 ),
                 exit = fadeOut(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) + scaleOut(
                     targetScale = 0.8f,
-                    animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()
+                    animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
                 ),
             ) {
                 Box {

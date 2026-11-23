@@ -317,6 +317,11 @@ private fun AudioTransportButtons(
         stringResource(R.string.reader_next_track),
     )
     val sources = remember { List(3) { MutableInteractionSource() } }
+    val playCornerRadius by animateDpAsState(
+        targetValue = if (playing) 24.dp else 38.dp,
+        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+        label = "playPauseCornerRadius",
+    )
 
     ButtonGroup(
         overflowIndicator = { ButtonGroupDefaults.OverflowIndicator(menuState = it) },
@@ -351,7 +356,7 @@ private fun AudioTransportButtons(
                     FilledIconButton(
                         onClick = action,
                         shapes = IconButtonShapes(
-                            shape = RoundedCornerShape(if (isCenter) 28.dp else 38.dp),
+                            shape = RoundedCornerShape(if (isCenter) playCornerRadius else 38.dp),
                             pressedShape = RoundedCornerShape(if (isCenter) 18.dp else 20.dp),
                         ),
                         colors = IconButtonDefaults.filledIconButtonColors(

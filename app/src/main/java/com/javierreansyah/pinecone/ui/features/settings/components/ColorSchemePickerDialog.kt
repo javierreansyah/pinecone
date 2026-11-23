@@ -1,6 +1,11 @@
 package com.javierreansyah.pinecone.ui.features.settings.components
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -53,7 +58,21 @@ fun ColorPickerButton(
             ),
         onClick = onClick,
     ) {
-        AnimatedContent(isSelected) { selected ->
+        val effectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+        val spatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
+        AnimatedContent(
+            targetState = isSelected,
+            transitionSpec = {
+                fadeIn(animationSpec = effectsSpec) + scaleIn(
+                    initialScale = 0.8f,
+                    animationSpec = spatialSpec,
+                ) togetherWith fadeOut(animationSpec = effectsSpec) + scaleOut(
+                    targetScale = 0.8f,
+                    animationSpec = spatialSpec,
+                )
+            },
+            label = "colorPickerSelectedIcon",
+        ) { selected ->
             val iconTint = if (color.luminance() > 0.5f) Color.Black else Color.White
             when (selected) {
                 true -> Icon(

@@ -1,11 +1,7 @@
 package com.javierreansyah.pinecone.ui.features.library.components.book
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -14,8 +10,16 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Dp
@@ -37,24 +41,55 @@ fun BookCollection(
     bottomContentPadding: Dp = LocalAudioPlayerBottomPadding.current,
 ) {
     val layoutEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
-    key(scrollKey) {
-        AnimatedContent(
-            targetState = layoutMode,
-            transitionSpec = {
-                fadeIn(animationSpec = layoutEffectsSpec) +
-                        scaleIn(
-                            initialScale = 0.9f,
-                            animationSpec = layoutEffectsSpec,
-                        ) togetherWith fadeOut(animationSpec = layoutEffectsSpec) + scaleOut(
-                    targetScale = 0.9f,
-                    animationSpec = layoutEffectsSpec
-                )
-            },
-            label = "bookCollectionLayoutTransition",
-        ) { targetLayoutMode ->
+    val bookIds = remember(books) { books.map { it.id } }
+    val transitionKey = remember(layoutMode, scrollKey, bookIds) {
+        Triple(layoutMode, scrollKey, bookIds)
+    }
+
+    var displayedKey by remember { mutableStateOf(transitionKey) }
+    var displayedLayoutMode by remember { mutableStateOf(layoutMode) }
+    var displayedScrollKey by remember { mutableStateOf(scrollKey) }
+    var displayedBooks by remember { mutableStateOf(books) }
+    val alpha = remember { Animatable(1f) }
+
+    val latestBooks by rememberUpdatedState(books)
+    val latestLayoutMode by rememberUpdatedState(layoutMode)
+    val latestScrollKey by rememberUpdatedState(scrollKey)
+
+    SideEffect {
+        if (transitionKey == displayedKey) {
+            displayedBooks = books
+        }
+    }
+
+    LaunchedEffect(transitionKey) {
+        if (transitionKey != displayedKey) {
+            if (displayedBooks.isNotEmpty()) {
+                alpha.animateTo(0f, animationSpec = layoutEffectsSpec)
+            } else {
+                alpha.snapTo(0f)
+            }
+            displayedKey = transitionKey
+            displayedLayoutMode = latestLayoutMode
+            displayedScrollKey = latestScrollKey
+            displayedBooks = latestBooks
+        }
+        if (alpha.value < 1f) {
+            alpha.animateTo(1f, animationSpec = layoutEffectsSpec)
+        }
+    }
+
+    val activeBooks = if (transitionKey == displayedKey) books else displayedBooks
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .graphicsLayer { this.alpha = alpha.value },
+    ) {
+        key(displayedScrollKey, displayedLayoutMode) {
             BookGrid(
-                books = books,
-                layoutMode = targetLayoutMode,
+                books = activeBooks,
+                layoutMode = displayedLayoutMode,
                 onBookClick = onBookClick,
                 onBookLongClick = onBookLongClick,
                 selectedBooks = selectedBooks,

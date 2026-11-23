@@ -1,5 +1,11 @@
 package com.javierreansyah.pinecone.ui.root
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -224,14 +230,32 @@ internal fun AudioMiniPlayer(
                 IconButton(onClick = { onSkip(-10) }) {
                     Icon(MaterialSymbols.Outlined.Replay_10, stringResource(R.string.reader_rewind))
                 }
+                val playPauseEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+                val playPauseSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
                 FilledIconButton(
                     onClick = onPlayPause,
                     shapes = IconButtonDefaults.shapes(),
                 ) {
-                    Icon(
-                        imageVector = if (state.playing) MaterialSymbols.OutlinedFilled.Pause else MaterialSymbols.OutlinedFilled.Play_arrow,
-                        contentDescription = stringResource(if (state.playing) R.string.reader_pause else R.string.reader_play),
-                    )
+                    AnimatedContent(
+                        targetState = state.playing,
+                        transitionSpec = {
+                            fadeIn(animationSpec = playPauseEffectsSpec) +
+                                scaleIn(
+                                    initialScale = 0.75f,
+                                    animationSpec = playPauseSpatialSpec,
+                                ) togetherWith fadeOut(animationSpec = playPauseEffectsSpec) +
+                                scaleOut(
+                                    targetScale = 0.75f,
+                                    animationSpec = playPauseSpatialSpec,
+                                )
+                        },
+                        label = "miniPlayerPlayPauseTransition",
+                    ) { isPlaying ->
+                        Icon(
+                            imageVector = if (isPlaying) MaterialSymbols.OutlinedFilled.Pause else MaterialSymbols.OutlinedFilled.Play_arrow,
+                            contentDescription = stringResource(if (isPlaying) R.string.reader_pause else R.string.reader_play),
+                        )
+                    }
                 }
                 IconButton(onClick = { onSkip(10) }) {
                     Icon(
