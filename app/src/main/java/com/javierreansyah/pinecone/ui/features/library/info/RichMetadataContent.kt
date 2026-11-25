@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -15,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.publication.PublicationMetadata
+import com.javierreansyah.pinecone.ui.components.AppTextField
 
 @Composable
 fun RichMetadataEditor(
@@ -92,7 +92,7 @@ private fun MetadataField(
     value: String,
     change: (String) -> Unit,
 ) {
-    OutlinedTextField(
+    AppTextField(
         value = value,
         onValueChange = change,
         label = { Text(label) },

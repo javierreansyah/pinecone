@@ -329,9 +329,16 @@ private fun AllFilterItemsEmptyState(
         else -> stringResource(R.string.library_empty_tags)
     }
 
+    val supportingText = when (filterType) {
+        "author" -> stringResource(R.string.library_empty_authors_subtitle)
+        "space" -> stringResource(R.string.library_empty_spaces_subtitle)
+        else -> stringResource(R.string.library_empty_tags_subtitle)
+    }
+
     EmptyState(
         icon = icon,
         text = text,
+        supportingText = supportingText,
         modifier = modifier
             .padding(innerPadding)
             .fillMaxSize()

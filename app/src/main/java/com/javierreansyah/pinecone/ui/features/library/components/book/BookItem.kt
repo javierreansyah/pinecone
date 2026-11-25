@@ -3,12 +3,10 @@ package com.javierreansyah.pinecone.ui.features.library.components.book
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -38,7 +36,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.model.Book
@@ -81,8 +78,7 @@ fun BookItem(
             },
             trailingContent = {
                 val effectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
-                val scaleSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
-                val sizeSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntSize>()
+                val spatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
                 if (content != null) {
                     AnimatedContent(
                         targetState = isInMultiSelectMode,
@@ -109,12 +105,10 @@ fun BookItem(
                 } else {
                     AnimatedVisibility(
                         visible = isInMultiSelectMode,
-                        enter = expandHorizontally(animationSpec = sizeSpec) +
-                                fadeIn(animationSpec = effectsSpec) +
-                                scaleIn(initialScale = 0.8f, animationSpec = scaleSpec),
-                        exit = shrinkHorizontally(animationSpec = sizeSpec) +
-                                fadeOut(animationSpec = effectsSpec) +
-                                scaleOut(targetScale = 0.8f, animationSpec = scaleSpec),
+                        enter = fadeIn(animationSpec = effectsSpec) +
+                                scaleIn(initialScale = 0.8f, animationSpec = spatialSpec),
+                        exit = fadeOut(animationSpec = effectsSpec) +
+                                scaleOut(targetScale = 0.8f, animationSpec = spatialSpec),
                     ) {
                         Box(
                             modifier = Modifier.height(100.dp),

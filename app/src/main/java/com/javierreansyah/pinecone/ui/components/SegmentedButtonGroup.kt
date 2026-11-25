@@ -170,7 +170,8 @@ private fun FillWhenFitsConnectedRow(
             measurable.measure(childConstraints)
         }
 
-        val height = placeables.maxOf { it.height }.coerceIn(constraints.minHeight, constraints.maxHeight)
+        val height =
+            placeables.maxOf { it.height }.coerceIn(constraints.minHeight, constraints.maxHeight)
         val width = (placeables.sumOf { it.width } + totalSpacing)
             .coerceIn(constraints.minWidth, constraints.maxWidth)
 

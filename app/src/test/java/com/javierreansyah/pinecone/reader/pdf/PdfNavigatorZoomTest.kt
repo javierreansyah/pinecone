@@ -54,7 +54,7 @@ class PdfNavigatorZoomTest {
         val plan = calculatePdfTilePlan(
             pageBoundsInContent = pageBounds,
             viewportSize = viewport,
-            transform = PdfZoomTransform(scale = 1f, offset = Offset.Zero),
+            transform = PdfZoomTransform(offset = Offset.Zero),
             baseBitmapWidth = 600,
         )
         assertNull(plan)
@@ -101,8 +101,6 @@ class PdfNavigatorZoomTest {
             transform = PdfZoomTransform(scale = 4f, offset = Offset.Zero),
             baseBitmapWidth = 1800,
             overscanFraction = 0.15f,
-            maxTileDimensionPx = 3200,
-            maxTilePixels = 4_500_000,
         )
         val nonNull = requireNotNull(plan)
         assertTrue(nonNull.request.widthPx <= 3200)
@@ -120,7 +118,6 @@ class PdfNavigatorZoomTest {
                 viewportSize = screen,
                 transform = PdfZoomTransform(scale = 3f, offset = Offset(-1000f, -1400f)),
                 baseBitmapWidth = 1000,
-                overscanFraction = 0.12f,
             ),
         )
         val smallPan = requireNotNull(
@@ -129,7 +126,6 @@ class PdfNavigatorZoomTest {
                 viewportSize = screen,
                 transform = PdfZoomTransform(scale = 3f, offset = Offset(-1050f, -1450f)),
                 baseBitmapWidth = 1000,
-                overscanFraction = 0.12f,
             ),
         )
         assertTrue(
@@ -146,7 +142,6 @@ class PdfNavigatorZoomTest {
                 viewportSize = screen,
                 transform = PdfZoomTransform(scale = 4f, offset = Offset(-1500f, -2100f)),
                 baseBitmapWidth = 1000,
-                overscanFraction = 0.12f,
             ),
         )
         assertFalse(

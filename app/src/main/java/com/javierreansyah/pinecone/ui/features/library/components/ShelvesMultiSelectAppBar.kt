@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -25,6 +24,7 @@ import com.composables.icons.materialsymbols.outlined.Delete
 import com.composables.icons.materialsymbols.outlined.Drive_file_move
 import com.composables.icons.materialsymbols.outlined.Edit
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.components.AppTextField
 import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 
@@ -116,7 +116,7 @@ fun ShelvesMultiSelectAppBar(
             },
             text = {
                 Column {
-                    OutlinedTextField(
+                    AppTextField(
                         value = renameText,
                         onValueChange = { renameText = it },
                         singleLine = true,

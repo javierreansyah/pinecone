@@ -4,15 +4,12 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,6 +30,9 @@ import com.composables.icons.materialsymbols.outlined.Info
 import com.composables.icons.materialsymbols.outlined.More_vert
 import com.composables.icons.materialsymbols.outlined.Unarchive
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuDefaults
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuGroup
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuItem
 import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 
@@ -120,24 +120,25 @@ fun MultiSelectAppBar(
                             )
                         )
                     }
-                    val interactionSource = remember { MutableInteractionSource() }
-                    DropdownMenuGroup(
-                        shapes = MenuDefaults.groupShape(0, 1),
-                        interactionSource = interactionSource,
-                    ) {
+                    AppDropdownMenuGroup {
                         actions.forEachIndexed { index, action ->
-                            val color = if (action.destructive) MaterialTheme.colorScheme.error
-                            else MaterialTheme.colorScheme.onSurface
-                            SelectableDropdownMenuItem(
-                                selected = false,
-                                text = { Text(stringResource(action.label), color = color) },
-                                shapes = MenuDefaults.itemShape(index, actions.size),
+                            val itemColors = if (action.destructive) {
+                                AppDropdownMenuDefaults.destructiveItemColors()
+                            } else {
+                                MenuDefaults.itemColors()
+                            }
+                            AppDropdownMenuItem(
+                                text = { Text(stringResource(action.label)) },
+                                shape = AppDropdownMenuDefaults.itemShape(
+                                    index,
+                                    actions.size
+                                ).shape,
+                                colors = itemColors,
                                 leadingIcon = {
                                     Icon(
                                         imageVector = action.icon,
                                         contentDescription = null,
                                         modifier = Modifier.size(MenuDefaults.LeadingIconSize),
-                                        tint = color,
                                     )
                                 },
                                 onClick = {

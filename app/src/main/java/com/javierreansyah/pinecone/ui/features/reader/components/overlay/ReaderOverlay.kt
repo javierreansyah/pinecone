@@ -10,7 +10,9 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
@@ -348,7 +350,6 @@ fun ReaderOverlay(
                 initialValue = SheetValue.Hidden,
                 enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
             )
-            val sheetEffectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
             if (controlsState.value.showToc) {
                 ReaderBottomSheet(
                     initialTab = controlsState.value.contentsInitialTab,
@@ -400,10 +401,11 @@ fun ReaderOverlay(
                     )
                 }
             }
+            val searchOffsetSpec = MaterialTheme.motionScheme.defaultEffectsSpec<IntOffset>()
             AnimatedVisibility(
                 visible = controlsState.value.showSearch,
-                enter = fadeIn(animationSpec = sheetEffectsSpec),
-                exit = fadeOut(animationSpec = sheetEffectsSpec),
+                enter = slideInHorizontally(animationSpec = searchOffsetSpec) { it },
+                exit = slideOutHorizontally(animationSpec = searchOffsetSpec) { it },
             ) {
                 ReaderSearch(
                     wording = when {

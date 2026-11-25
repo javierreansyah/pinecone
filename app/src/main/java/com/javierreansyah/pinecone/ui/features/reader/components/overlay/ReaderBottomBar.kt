@@ -7,7 +7,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,14 +19,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.FlexibleBottomAppBar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuDefaults
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -66,6 +62,9 @@ import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Ink_highlighter
 import com.composables.icons.materialsymbols.outlined.Search
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuDefaults
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuGroup
+import com.javierreansyah.pinecone.ui.components.AppSelectableDropdownMenuItem
 import com.javierreansyah.pinecone.ui.components.ConnectedButtonGroup
 import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
 import kotlinx.coroutines.delay
@@ -493,14 +492,10 @@ fun ReaderTextSelectionControl(
                         "#4025c6da".toColorInt(),
                     )
                     val totalItems = swatches.size
-                    val groupInteractionSource = remember { MutableInteractionSource() }
-                    DropdownMenuGroup(
-                        shapes = MenuDefaults.groupShape(0, 1),
-                        interactionSource = groupInteractionSource,
-                    ) {
+                    AppDropdownMenuGroup {
                         swatches.forEachIndexed { index, colorInt ->
                             val isSelected = selectedColorInt == colorInt
-                            SelectableDropdownMenuItem(
+                            AppSelectableDropdownMenuItem(
                                 selected = isSelected,
                                 modifier = Modifier
                                     .width(64.dp),
@@ -527,7 +522,7 @@ fun ReaderTextSelectionControl(
                                     }
                                 },
                                 contentPadding = PaddingValues(0.dp),
-                                shapes = MenuDefaults.itemShape(index, totalItems),
+                                shapes = AppDropdownMenuDefaults.itemShape(index, totalItems),
                                 onClick = {
                                     onColorSelected(colorInt)
                                     expanded = false

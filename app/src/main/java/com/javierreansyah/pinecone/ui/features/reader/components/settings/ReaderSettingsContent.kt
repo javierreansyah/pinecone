@@ -996,9 +996,12 @@ private fun FontSwatch(
     }
 
     SwatchFrame(
-        modifier = modifier, isSelected = isSelected, label = label,
+        modifier = modifier,
+        isSelected = isSelected,
+        label = label,
         background = MaterialTheme.colorScheme.surfaceVariant,
         interaction = Modifier.clickable(onClick = onClick),
+        showOutline = false,
     ) {
         // Literata's internal glyph metrics have extra padding at the top, pushing it down visually.
         // We apply a tiny negative offset just to visually center it in the swatch box.

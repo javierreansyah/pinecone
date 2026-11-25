@@ -2,12 +2,10 @@ package com.javierreansyah.pinecone.ui.features.library.components
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -34,7 +32,6 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Book
@@ -162,6 +159,7 @@ fun ShelvesPage(
                 EmptyState(
                     icon = MaterialSymbols.Outlined.Folder,
                     text = stringResource(R.string.library_empty_shelves),
+                    supportingText = stringResource(R.string.library_empty_shelves_subtitle),
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(top = topContentPadding, bottom = bottomContentPadding)
@@ -245,7 +243,7 @@ private fun ShelfRowHeader(
         ) {
             Text(
                 text = shelfName,
-                style = MaterialTheme.typography.titleMediumEmphasized,
+                style = MaterialTheme.typography.titleMedium,
             )
             val countText = publicationCountLabel(booksCount, wording)
             Text(
@@ -255,16 +253,13 @@ private fun ShelfRowHeader(
             )
         }
         val spatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
-        val sizeSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntSize>()
         val effectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
         AnimatedVisibility(
             visible = isInMultiSelectMode,
-            enter = expandHorizontally(animationSpec = sizeSpec) +
-                fadeIn(animationSpec = effectsSpec) +
-                scaleIn(initialScale = 0.8f, animationSpec = spatialSpec),
-            exit = shrinkHorizontally(animationSpec = sizeSpec) +
-                fadeOut(animationSpec = effectsSpec) +
-                scaleOut(targetScale = 0.8f, animationSpec = spatialSpec),
+            enter = fadeIn(animationSpec = effectsSpec) +
+                    scaleIn(initialScale = 0.8f, animationSpec = spatialSpec),
+            exit = fadeOut(animationSpec = effectsSpec) +
+                    scaleOut(targetScale = 0.8f, animationSpec = spatialSpec),
         ) {
             Checkbox(
                 checked = isSelected,

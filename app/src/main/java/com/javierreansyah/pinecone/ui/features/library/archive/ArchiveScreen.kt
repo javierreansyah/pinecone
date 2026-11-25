@@ -24,6 +24,7 @@ fun ArchiveScreen(
         viewModel = viewModel,
         title = stringResource(R.string.library_archives_title),
         emptyText = stringResource(R.string.library_empty_archives),
+        emptySupportingText = stringResource(R.string.library_empty_archives_subtitle),
         emptyIcon = MaterialSymbols.Outlined.Book,
         archived = true,
     )

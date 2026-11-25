@@ -43,6 +43,7 @@ kotlin { compilerOptions { allWarningsAsErrors.set(true) } }
 dependencies {
     coreLibraryDesugaring(libs.desugar.jdk)
     api(project(":core:model"))
+    implementation(libs.androidx.core)
     implementation(libs.androidx.documentfile)
     api(libs.readium.shared)
     implementation(libs.mupdf)

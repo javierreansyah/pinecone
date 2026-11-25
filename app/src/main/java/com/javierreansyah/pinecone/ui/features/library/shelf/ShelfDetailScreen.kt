@@ -8,7 +8,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -27,14 +26,12 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -73,6 +70,9 @@ import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuDefaults
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuGroup
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuItem
 import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
 import com.javierreansyah.pinecone.ui.components.EditingActions
 import com.javierreansyah.pinecone.ui.components.EditingNavigationIcon
@@ -518,16 +518,10 @@ private fun ShelfDetailDefaultTopAppBar(
                             expanded = showMoreMenu,
                             onDismissRequest = { showMoreMenu = false },
                         ) {
-                            val groupInteractionSource =
-                                remember { MutableInteractionSource() }
-                            DropdownMenuGroup(
-                                shapes = MenuDefaults.groupShape(0, 1),
-                                interactionSource = groupInteractionSource,
-                            ) {
-                                SelectableDropdownMenuItem(
-                                    selected = false,
+                            AppDropdownMenuGroup {
+                                AppDropdownMenuItem(
                                     text = { Text(stringResource(R.string.action_select_multiple)) },
-                                    shapes = MenuDefaults.itemShape(0, totalItems),
+                                    shape = AppDropdownMenuDefaults.itemShape(0, totalItems).shape,
                                     leadingIcon = {
                                         Icon(
                                             MaterialSymbols.Outlined.Select,
@@ -541,10 +535,12 @@ private fun ShelfDetailDefaultTopAppBar(
                                     },
                                 )
                                 if (shelfId != "unshelved") {
-                                    SelectableDropdownMenuItem(
-                                        selected = false,
+                                    AppDropdownMenuItem(
                                         text = { Text(stringResource(R.string.action_rename)) },
-                                        shapes = MenuDefaults.itemShape(1, totalItems),
+                                        shape = AppDropdownMenuDefaults.itemShape(
+                                            1,
+                                            totalItems,
+                                        ).shape,
                                         leadingIcon = {
                                             Icon(
                                                 MaterialSymbols.Outlined.Edit,
@@ -559,16 +555,16 @@ private fun ShelfDetailDefaultTopAppBar(
                                     )
                                     if (onTransferShelf != null) {
                                         listOf(false, true).forEachIndexed { index, copy ->
-                                            SelectableDropdownMenuItem(
-                                                selected = false,
+                                            AppDropdownMenuItem(
                                                 text = { Text(stringResource(if (copy) R.string.library_copy_shelves else R.string.library_move_shelves)) },
-                                                shapes = MenuDefaults.itemShape(
+                                                shape = AppDropdownMenuDefaults.itemShape(
                                                     index + 2,
-                                                    totalItems
-                                                ),
+                                                    totalItems,
+                                                ).shape,
                                                 leadingIcon = {
                                                     Icon(
                                                         if (copy) MaterialSymbols.Outlined.Content_copy else MaterialSymbols.Outlined.Drive_file_move,
+                                                        modifier = Modifier.size(MenuDefaults.LeadingIconSize),
                                                         contentDescription = null
                                                     )
                                                 },
@@ -578,24 +574,18 @@ private fun ShelfDetailDefaultTopAppBar(
                                             )
                                         }
                                     }
-                                    SelectableDropdownMenuItem(
-                                        selected = false,
-                                        text = {
-                                            Text(
-                                                stringResource(R.string.action_delete),
-                                                color = MaterialTheme.colorScheme.error,
-                                            )
-                                        },
-                                        shapes = MenuDefaults.itemShape(
+                                    AppDropdownMenuItem(
+                                        text = { Text(stringResource(R.string.action_delete)) },
+                                        shape = AppDropdownMenuDefaults.itemShape(
                                             totalItems - 1,
-                                            totalItems
-                                        ),
+                                            totalItems,
+                                        ).shape,
+                                        colors = AppDropdownMenuDefaults.destructiveItemColors(),
                                         leadingIcon = {
                                             Icon(
                                                 MaterialSymbols.Outlined.Delete,
                                                 modifier = Modifier.size(MenuDefaults.LeadingIconSize),
                                                 contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.error,
                                             )
                                         },
                                         onClick = {

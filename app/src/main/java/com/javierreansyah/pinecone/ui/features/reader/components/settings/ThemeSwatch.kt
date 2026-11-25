@@ -82,7 +82,11 @@ fun ThemeSwatch(
 @Composable
 internal fun SwatchFrame(
     modifier: Modifier = Modifier,
-    isSelected: Boolean, label: String, background: Color, interaction: Modifier,
+    isSelected: Boolean,
+    label: String,
+    background: Color,
+    interaction: Modifier,
+    showOutline: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     val ringAlpha by animateFloatAsState(
@@ -117,7 +121,17 @@ internal fun SwatchFrame(
                 }
                 .clip(CircleShape)
                 .background(background)
-                .border(1.5.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                .then(
+                    if (showOutline) {
+                        Modifier.border(
+                            1.5.dp,
+                            MaterialTheme.colorScheme.outlineVariant,
+                            CircleShape
+                        )
+                    } else {
+                        Modifier
+                    },
+                )
                 .then(interaction),
             contentAlignment = Alignment.Center,
         ) { content() }

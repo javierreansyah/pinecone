@@ -47,6 +47,7 @@ internal fun LibraryCollectionScreen(
     emptyText: String,
     emptyIcon: ImageVector,
     archived: Boolean,
+    emptySupportingText: String? = null,
 ) {
     val preferences by viewModel.filters.preferences.collectAsStateWithLifecycle()
     com.javierreansyah.pinecone.ui.components.MutationErrorDialog(viewModel.bookActions.mutationErrors)
@@ -121,6 +122,7 @@ internal fun LibraryCollectionScreen(
                 EmptyState(
                     icon = emptyIcon,
                     text = emptyText,
+                    supportingText = emptySupportingText,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(

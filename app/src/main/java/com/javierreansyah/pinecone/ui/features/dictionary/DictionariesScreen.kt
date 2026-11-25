@@ -20,7 +20,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
@@ -47,6 +46,7 @@ import com.composables.icons.materialsymbols.outlined.Book
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.InstalledDictionary
 import com.javierreansyah.pinecone.data.repository.dictionary.DictionaryState
+import com.javierreansyah.pinecone.ui.components.AppTextField
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBarTitle
@@ -187,12 +187,14 @@ private fun DictionariesContent(
                 EmptyState(
                     icon = MaterialSymbols.Outlined.Book,
                     text = stringResource(R.string.dictionaries_empty),
+                    supportingText = stringResource(R.string.dictionaries_empty_subtitle),
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(
                             top = padding.calculateTopPadding(),
                             bottom = padding.calculateBottomPadding(),
-                        ),
+                        )
+                        .padding(16.dp),
                 )
             } else {
                 DictionariesList(
@@ -376,7 +378,7 @@ private fun RenameDictionaryDialog(
         onDismissRequest = onDismissRequest,
         title = { Text(stringResource(R.string.dictionaries_rename_title)) },
         text = {
-            OutlinedTextField(
+            AppTextField(
                 value = newName,
                 onValueChange = { newName = it },
                 singleLine = true,

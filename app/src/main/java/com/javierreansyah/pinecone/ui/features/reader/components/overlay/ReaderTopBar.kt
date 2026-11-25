@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
@@ -28,7 +27,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.PlainTooltip
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.SplitButtonDefaults
 import androidx.compose.material3.SplitButtonLayout
 import androidx.compose.material3.Text
@@ -69,6 +67,9 @@ import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
 import com.javierreansyah.pinecone.ui.components.AppBarButtonSize
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuDefaults
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuGroup
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuItem
 import com.javierreansyah.pinecone.ui.components.ConnectedButtonGroup
 import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
 import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconToggleButton
@@ -425,16 +426,11 @@ private fun ReaderTopBarMoreMenu(
         expanded = expanded,
         onDismissRequest = onDismiss,
     ) {
-        val groupInteractionSource = remember { MutableInteractionSource() }
-        DropdownMenuGroup(
-            shapes = MenuDefaults.groupShape(0, 1),
-            interactionSource = groupInteractionSource,
-        ) {
+        AppDropdownMenuGroup {
             items.forEachIndexed { index, item ->
                 when (item) {
                     "content" -> {
-                        SelectableDropdownMenuItem(
-                            selected = false,
+                        AppDropdownMenuItem(
                             text = {
                                 Text(stringResource(R.string.reader_menu_content))
                             },
@@ -451,16 +447,15 @@ private fun ReaderTopBarMoreMenu(
                                     ),
                                 )
                             },
-                            shapes = MenuDefaults.itemShape(
+                            shape = AppDropdownMenuDefaults.itemShape(
                                 index,
                                 items.size,
-                            ),
+                            ).shape,
                         )
                     }
 
                     "settings" -> {
-                        SelectableDropdownMenuItem(
-                            selected = false,
+                        AppDropdownMenuItem(
                             text = {
                                 Text(stringResource(R.string.reader_menu_settings))
                             },
@@ -477,16 +472,15 @@ private fun ReaderTopBarMoreMenu(
                                     ),
                                 )
                             },
-                            shapes = MenuDefaults.itemShape(
+                            shape = AppDropdownMenuDefaults.itemShape(
                                 index,
                                 items.size,
-                            ),
+                            ).shape,
                         )
                     }
 
                     "search" -> {
-                        SelectableDropdownMenuItem(
-                            selected = false,
+                        AppDropdownMenuItem(
                             text = {
                                 Text(stringResource(R.string.action_search))
                             },
@@ -503,16 +497,15 @@ private fun ReaderTopBarMoreMenu(
                                     ),
                                 )
                             },
-                            shapes = MenuDefaults.itemShape(
+                            shape = AppDropdownMenuDefaults.itemShape(
                                 index,
                                 items.size,
-                            ),
+                            ).shape,
                         )
                     }
 
                     "info" -> {
-                        SelectableDropdownMenuItem(
-                            selected = false,
+                        AppDropdownMenuItem(
                             text = {
                                 Text(stringResource(R.string.reader_menu_info))
                             },
@@ -529,10 +522,10 @@ private fun ReaderTopBarMoreMenu(
                                     ),
                                 )
                             },
-                            shapes = MenuDefaults.itemShape(
+                            shape = AppDropdownMenuDefaults.itemShape(
                                 index,
                                 items.size,
-                            ),
+                            ).shape,
                         )
                     }
                 }

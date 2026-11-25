@@ -30,7 +30,6 @@ import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
@@ -38,16 +37,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuDefaults
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.OutlinedTextFieldDefaults.FocusedBorderThickness
-import androidx.compose.material3.OutlinedTextFieldDefaults.UnfocusedBorderThickness
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TextFieldLabelPosition
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -86,6 +81,11 @@ import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Image
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.AppBarButtonSize
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuDefaults
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuGroup
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuItem
+import com.javierreansyah.pinecone.ui.components.AppTextField
+import com.javierreansyah.pinecone.ui.components.AppTextFieldDefaults
 import com.javierreansyah.pinecone.ui.components.topAppBarNavigationButtonColors
 import com.javierreansyah.pinecone.ui.components.topBarFadeBackground
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
@@ -262,7 +262,7 @@ private fun EditBookContent(
             onCoverUriChange = onCoverUriChange,
         )
 
-        OutlinedTextField(
+        AppTextField(
             value = uiState.title,
             onValueChange = onTitleChange,
             label = { Text(stringResource(R.string.library_sort_title)) },
@@ -288,7 +288,7 @@ private fun EditBookContent(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        OutlinedTextField(
+        AppTextField(
             value = uiState.description,
             onValueChange = onDescriptionChange,
             label = { Text(stringResource(R.string.publication_description)) },
@@ -419,13 +419,15 @@ private fun AutocompleteChipTextField(
         },
     ) {
         val interactionSource = remember { MutableInteractionSource() }
-        val baseDecorator = OutlinedTextFieldDefaults.decorator(
+        val colors = AppTextFieldDefaults.colors()
+        val shape = AppTextFieldDefaults.shape
+        val baseDecorator = TextFieldDefaults.decorator(
             state = textFieldState,
             enabled = true,
             lineLimits = TextFieldLineLimits.SingleLine,
             outputTransformation = null,
             interactionSource = interactionSource,
-            labelPosition = TextFieldLabelPosition.Cutout(isAlwaysMinimized = items.isNotEmpty()),
+            labelPosition = TextFieldLabelPosition.Inside(isAlwaysMinimized = items.isNotEmpty()),
             label = { Text(label) },
             trailingIcon = {
                 IconButton(
@@ -444,17 +446,16 @@ private fun AutocompleteChipTextField(
                     )
                 }
             },
-            colors = OutlinedTextFieldDefaults.colors(),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+            colors = colors,
             container = {
-                OutlinedTextFieldDefaults.Container(
+                TextFieldDefaults.Container(
                     enabled = true,
                     isError = false,
                     interactionSource = interactionSource,
-                    colors = OutlinedTextFieldDefaults.colors(),
-                    shape = OutlinedTextFieldDefaults.shape,
-                    focusedBorderThickness = FocusedBorderThickness,
-                    unfocusedBorderThickness = UnfocusedBorderThickness,
+                    colors = colors,
+                    shape = shape,
+                    focusedIndicatorLineThickness = 0.dp,
+                    unfocusedIndicatorLineThickness = 0.dp,
                 )
             },
         )
@@ -489,6 +490,12 @@ private fun AutocompleteChipTextField(
                                     selected = false,
                                     onClick = { },
                                     label = { Text(item) },
+                                    border = null,
+                                    colors = InputChipDefaults.inputChipColors(
+                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                        labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        trailingIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    ),
                                     trailingIcon = {
                                         Icon(
                                             imageVector = MaterialSymbols.Outlined.Close,
@@ -520,21 +527,16 @@ private fun AutocompleteChipTextField(
             modifier = Modifier.width(with(LocalDensity.current) { textFieldWidth.toDp() }),
             properties = PopupProperties(focusable = false),
         ) {
-            val groupInteractionSource = remember { MutableInteractionSource() }
-            DropdownMenuGroup(
-                shapes = MenuDefaults.groupShape(0, 1),
-                interactionSource = groupInteractionSource,
-            ) {
+            AppDropdownMenuGroup {
                 val finalSuggestions = filteredSuggestions.take(5)
                 val showCreateNew =
                     text.isNotBlank() && !suggestions.any { it.equals(text, ignoreCase = true) }
                 val totalCount = finalSuggestions.size + if (showCreateNew) 1 else 0
 
                 finalSuggestions.forEachIndexed { index, suggestion ->
-                    SelectableDropdownMenuItem(
-                        selected = false,
+                    AppDropdownMenuItem(
                         text = { Text(suggestion) },
-                        shapes = MenuDefaults.itemShape(index, totalCount),
+                        shape = AppDropdownMenuDefaults.itemShape(index, totalCount).shape,
                         onClick = {
                             onAdd(suggestion)
                             textFieldState.clearText()
@@ -544,10 +546,12 @@ private fun AutocompleteChipTextField(
                 }
 
                 if (showCreateNew) {
-                    SelectableDropdownMenuItem(
-                        selected = false,
+                    AppDropdownMenuItem(
                         text = { Text(stringResource(R.string.publication_create_new, text)) },
-                        shapes = MenuDefaults.itemShape(finalSuggestions.size, totalCount),
+                        shape = AppDropdownMenuDefaults.itemShape(
+                            finalSuggestions.size,
+                            totalCount,
+                        ).shape,
                         onClick = {
                             onAdd(text)
                             textFieldState.clearText()

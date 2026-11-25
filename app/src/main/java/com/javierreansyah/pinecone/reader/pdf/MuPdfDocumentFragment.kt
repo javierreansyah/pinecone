@@ -1,6 +1,5 @@
 @file:OptIn(
     org.readium.r2.shared.ExperimentalReadiumApi::class,
-    androidx.compose.foundation.layout.ExperimentalLayoutApi::class,
 )
 
 package com.javierreansyah.pinecone.reader.pdf
@@ -83,17 +82,17 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.withContext
 import org.readium.r2.navigator.input.TapEvent
 import org.readium.r2.navigator.pdf.PdfDocumentFragment
 import org.readium.r2.navigator.pdf.PdfDocumentFragmentInput
 import org.readium.r2.shared.util.data.ReadError
+import kotlin.time.Duration.Companion.milliseconds
 
 class MuPdfDocumentFragment(
     private val input: PdfDocumentFragmentInput<MuPdfSettings>,

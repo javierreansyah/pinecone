@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.ui.root
 
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
@@ -19,7 +17,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.ModalWideNavigationRail
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.SmallExtendedFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.WideNavigationRailItem
@@ -47,6 +44,9 @@ import com.composables.icons.materialsymbols.outlined.Upload
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuDefaults
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuGroup
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuItem
 import kotlinx.coroutines.launch
 import com.composables.icons.materialsymbols.outlinedfilled.Forest as FilledForest
 
@@ -121,15 +121,10 @@ fun AppDrawer(
                     expanded = menuExpanded,
                     onDismissRequest = { menuExpanded = false },
                 ) {
-                    val groupInteractionSource = remember { MutableInteractionSource() }
-                    DropdownMenuGroup(
-                        shapes = MenuDefaults.groupShape(0, 1),
-                        interactionSource = groupInteractionSource,
-                    ) {
-                        SelectableDropdownMenuItem(
-                            selected = false,
+                    AppDropdownMenuGroup {
+                        AppDropdownMenuItem(
                             text = { Text(stringResource(R.string.nav_import_files)) },
-                            shapes = MenuDefaults.itemShape(0, 2),
+                            shape = AppDropdownMenuDefaults.itemShape(0, 2).shape,
                             leadingIcon = {
                                 Icon(
                                     imageVector = MaterialSymbols.Outlined.Upload,
@@ -143,10 +138,9 @@ fun AppDrawer(
                                 onClose()
                             },
                         )
-                        SelectableDropdownMenuItem(
-                            selected = false,
+                        AppDropdownMenuItem(
                             text = { Text(stringResource(R.string.nav_scan_folder)) },
-                            shapes = MenuDefaults.itemShape(1, 2),
+                            shape = AppDropdownMenuDefaults.itemShape(1, 2).shape,
                             leadingIcon = {
                                 Icon(
                                     imageVector = MaterialSymbols.Outlined.Folder,

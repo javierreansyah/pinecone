@@ -291,6 +291,22 @@ private fun OrganizeContent(
                     .padding(top = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                val showFirstTimeHint = spacesEnabled &&
+                        searchQuery.isBlank() &&
+                        allSpaces.none { it.space.id != "_all_" } &&
+                        allSpaces.all { it.shelves.isEmpty() }
+
+                if (showFirstTimeHint) {
+                    item(key = "organize_hint") {
+                        Text(
+                            text = stringResource(R.string.library_organize_empty_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 4.dp),
+                        )
+                    }
+                }
+
                 if (showCreateSpace || showCreateShelf) {
                     item(key = "create_section") {
                         Column(
@@ -310,6 +326,9 @@ private fun OrganizeContent(
                                             MaterialSymbols.Outlined.Forest,
                                             contentDescription = null,
                                         )
+                                    },
+                                    supportingContent = {
+                                        Text(stringResource(R.string.library_new_space_hint))
                                     },
                                 ) {
                                     Text(
@@ -331,6 +350,11 @@ private fun OrganizeContent(
                                             MaterialSymbols.Outlined.Folder,
                                             contentDescription = null,
                                         )
+                                    },
+                                    supportingContent = if (spacesEnabled) {
+                                        { Text(stringResource(R.string.library_new_shelf_hint)) }
+                                    } else {
+                                        null
                                     },
                                 ) {
                                     Text(

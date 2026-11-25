@@ -1,12 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.settings
 
-import android.content.Intent
-import android.net.Uri
-import android.os.Environment
-import android.provider.DocumentsContract
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -29,20 +23,16 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedListItem
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
-import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -91,11 +81,13 @@ import com.javierreansyah.pinecone.ui.components.ListItemAccessory
 import com.javierreansyah.pinecone.ui.components.SegmentedListDefaults
 import com.javierreansyah.pinecone.ui.components.TopAppBarActionGroup
 import com.javierreansyah.pinecone.ui.features.settings.components.ColorSchemePickerDialog
+import com.javierreansyah.pinecone.ui.features.settings.components.RestoreBackupWarningDialog
+import com.javierreansyah.pinecone.ui.features.settings.components.RestoreBottomSheet
 import com.javierreansyah.pinecone.ui.features.settings.components.SettingsItem
 import com.javierreansyah.pinecone.ui.features.settings.components.SettingsSwitchItem
+import com.javierreansyah.pinecone.ui.features.settings.components.rememberBackupFolderPickerLauncher
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import kotlinx.coroutines.launch
-import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 
@@ -131,40 +123,12 @@ fun SettingsScreen(
     var showRestoreBottomSheet by remember { mutableStateOf(value = false) }
     var selectedBackupToRestore by remember { mutableStateOf<BackupFile?>(null) }
 
-    val folderPickerLauncher = rememberLauncherForActivityResult(
-        contract = object : ActivityResultContracts.OpenDocumentTree() {
-            override fun createIntent(context: android.content.Context, input: Uri?): Intent {
-                val intent = super.createIntent(context, input)
-                input?.let { intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, it) }
-                return intent
-            }
-        },
-    ) { uri ->
-        uri?.let {
-            val takeFlags: Int =
-                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            context.contentResolver.takePersistableUriPermission(it, takeFlags)
-            viewModel.updateSettings { current -> current.copy(backupFolderUri = it.toString()) }
-        }
+    val launchFolderPicker = rememberBackupFolderPickerLauncher { uri ->
+        viewModel.updateSettings { current -> current.copy(backupFolderUri = uri.toString()) }
     }
 
     val hasPermission = settings.backupFolderUri.isNotEmpty() &&
             context.contentResolver.persistedUriPermissions.any { it.uri.toString() == settings.backupFolderUri }
-
-    val launchFolderPicker = {
-        val pineconeDir = File(
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-            "Pinecone",
-        )
-        if (!pineconeDir.exists()) {
-            pineconeDir.mkdirs()
-        }
-        val initialUri = DocumentsContract.buildDocumentUri(
-            "com.android.externalstorage.documents",
-            "primary:Documents/Pinecone",
-        )
-        folderPickerLauncher.launch(initialUri)
-    }
 
     SettingsContent(
         settings = settings,
@@ -1076,131 +1040,4 @@ private fun RestoreDefaultWarningDialog(
             }
         },
     )
-}
-
-@Composable
-private fun RestoreBackupWarningDialog(
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.nav_restore_backup)) },
-        text = { Text(stringResource(R.string.settings_restore_backup_warning)) },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(
-                    stringResource(R.string.action_proceed),
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.action_cancel))
-            }
-        },
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun RestoreBottomSheet(
-    availableBackups: List<BackupFile>,
-    onDismiss: () -> Unit,
-    onSelectBackup: (BackupFile) -> Unit,
-) {
-    val bottomSheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
-    val scope = rememberCoroutineScope()
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = bottomSheetState,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 32.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.settings_restore_backup_sheet_title),
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 16.dp),
-            )
-
-            if (availableBackups.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.settings_no_backups_found),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 16.dp),
-                )
-            } else {
-                val groupedBackups =
-                    availableBackups.groupBy { backup -> backup.isManual }
-                val groups = groupedBackups.entries.sortedByDescending { (_, entryValue) ->
-                    entryValue.maxOfOrNull { backup -> backup.timestamp } ?: 0L
-                }
-
-                Column(
-                    modifier = Modifier.verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    groups.forEach { (isManual, backups) ->
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(
-                                text = if (isManual) stringResource(R.string.settings_backup_manual_label)
-                                else stringResource(R.string.settings_backup_auto_label),
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                            Column(verticalArrangement = Arrangement.spacedBy(SegmentedListDefaults.Gap)) {
-                                backups.sortedByDescending { backup -> backup.timestamp }
-                                    .forEachIndexed { index, backup ->
-                                        SegmentedListItem(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            colors = ListItemDefaults.segmentedColors(
-                                                containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                                                disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                                            ),
-                                            shapes = SegmentedListDefaults.shapes(
-                                                index = index,
-                                                count = backups.size
-                                            ),
-                                            onClick = {
-                                                onSelectBackup(backup)
-                                                scope.launch { bottomSheetState.hide() }
-                                                    .invokeOnCompletion {
-                                                        if (!bottomSheetState.isVisible) {
-                                                            onDismiss()
-                                                        }
-                                                    }
-                                            },
-                                            leadingContent = {
-                                                Icon(
-                                                    imageVector = MaterialSymbols.Outlined.History,
-                                                    contentDescription = null,
-                                                )
-                                            },
-                                            content = {
-                                                Text(
-                                                    text = backup.formattedDate,
-                                                )
-                                            },
-                                            trailingContent = {
-                                                Icon(
-                                                    imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                                                    contentDescription = null,
-                                                )
-                                            },
-                                        )
-                                    }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 }

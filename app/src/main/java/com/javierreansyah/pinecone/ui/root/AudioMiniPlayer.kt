@@ -26,6 +26,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,16 +40,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -61,6 +65,13 @@ import com.composables.icons.materialsymbols.outlinedfilled.Pause
 import com.composables.icons.materialsymbols.outlinedfilled.Play_arrow
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.reader.audio.AudioPlaybackState
+import com.javierreansyah.pinecone.ui.features.reader.components.drawAudioMorphGradient
+import com.javierreansyah.pinecone.ui.features.reader.components.maskWithAudioProgressGradient
+import com.javierreansyah.pinecone.ui.features.reader.components.rememberAudioFlowBarRenderer
+import com.javierreansyah.pinecone.ui.features.reader.components.rememberAudioGradientIntensity
+import com.javierreansyah.pinecone.ui.features.reader.components.rememberAudioGradientPalette
+import com.javierreansyah.pinecone.ui.features.reader.components.rememberAudioMorphMeshRenderer
+import com.javierreansyah.pinecone.ui.features.reader.components.rememberAudioMotionTime
 import java.io.File
 
 /** Extra scroll space, not viewport padding: content can draw behind the floating card. */
@@ -175,6 +186,7 @@ internal fun AudioMiniPlayer(
         tonalElevation = 2.dp,
     ) {
         Box {
+            val progressPalette = rememberAudioGradientPalette()
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -227,66 +239,138 @@ internal fun AudioMiniPlayer(
                         )
                     }
                 }
-                IconButton(onClick = { onSkip(-10) }) {
+                IconButton(
+                    onClick = { onSkip(-10) },
+                    shapes = IconButtonDefaults.shapes(),
+                ) {
                     Icon(MaterialSymbols.Outlined.Replay_10, stringResource(R.string.reader_rewind))
                 }
                 val playPauseEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
                 val playPauseSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
+                val pauseMorphRenderer = rememberAudioMorphMeshRenderer()
+                val pauseMorphIntensity = rememberAudioGradientIntensity(
+                    active = state.playing,
+                    label = "miniPlayerPauseMorphIntensity",
+                )
+                val pauseMorphTime = rememberAudioMotionTime(
+                    active = state.playing,
+                    intensity = pauseMorphIntensity,
+                )
                 FilledIconButton(
                     onClick = onPlayPause,
-                    shapes = IconButtonDefaults.shapes(),
+                    shapes = IconButtonDefaults.shapes(
+                        shape = IconButtonDefaults.smallSquareShape,
+                        pressedShape = IconButtonDefaults.smallPressedShape,
+                    ),
                 ) {
-                    AnimatedContent(
-                        targetState = state.playing,
-                        transitionSpec = {
-                            fadeIn(animationSpec = playPauseEffectsSpec) +
-                                scaleIn(
-                                    initialScale = 0.75f,
-                                    animationSpec = playPauseSpatialSpec,
-                                ) togetherWith fadeOut(animationSpec = playPauseEffectsSpec) +
-                                scaleOut(
-                                    targetScale = 0.75f,
-                                    animationSpec = playPauseSpatialSpec,
-                                )
-                        },
-                        label = "miniPlayerPlayPauseTransition",
-                    ) { isPlaying ->
-                        Icon(
-                            imageVector = if (isPlaying) MaterialSymbols.OutlinedFilled.Pause else MaterialSymbols.OutlinedFilled.Play_arrow,
-                            contentDescription = stringResource(if (isPlaying) R.string.reader_pause else R.string.reader_play),
-                        )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .drawAudioMorphGradient(
+                                renderer = pauseMorphRenderer,
+                                palette = progressPalette,
+                                timeSeconds = pauseMorphTime,
+                                intensity = pauseMorphIntensity,
+                                radius = 26.dp,
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        AnimatedContent(
+                            targetState = state.playing,
+                            transitionSpec = {
+                                fadeIn(animationSpec = playPauseEffectsSpec) +
+                                        scaleIn(
+                                            initialScale = 0.75f,
+                                            animationSpec = playPauseSpatialSpec,
+                                        ) togetherWith fadeOut(animationSpec = playPauseEffectsSpec) +
+                                        scaleOut(
+                                            targetScale = 0.75f,
+                                            animationSpec = playPauseSpatialSpec,
+                                        )
+                            },
+                            label = "miniPlayerPlayPauseTransition",
+                        ) { isPlaying ->
+                            Icon(
+                                imageVector = if (isPlaying) MaterialSymbols.OutlinedFilled.Pause else MaterialSymbols.OutlinedFilled.Play_arrow,
+                                contentDescription = stringResource(if (isPlaying) R.string.reader_pause else R.string.reader_play),
+                            )
+                        }
                     }
                 }
-                IconButton(onClick = { onSkip(10) }) {
+                IconButton(
+                    onClick = { onSkip(10) },
+                    shapes = IconButtonDefaults.shapes(),
+                ) {
                     Icon(
                         MaterialSymbols.Outlined.Forward_10,
-                        stringResource(R.string.reader_forward)
+                        stringResource(R.string.reader_forward),
                     )
                 }
             }
-            if (state.loading) {
-                LinearProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(MiniPlayerProgressHeight)
-                        .align(Alignment.BottomCenter),
-                )
-            } else {
-                val duration = state.durationSeconds?.takeIf { it > 0 }
-                LinearProgressIndicator(
-                    progress = {
-                        duration?.let {
-                            (state.elapsedSeconds.toFloat() / it).coerceIn(
-                                0f,
-                                1f
-                            )
-                        } ?: 0f
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(MiniPlayerProgressHeight)
-                        .align(Alignment.BottomCenter),
-                )
+            val flowBarRenderer = rememberAudioFlowBarRenderer()
+            val progressActive = state.playing || state.loading
+            val flowIntensity = rememberAudioGradientIntensity(
+                active = progressActive,
+                label = "miniPlayerProgressGradientIntensity",
+            )
+            val flowTime = rememberAudioMotionTime(
+                active = progressActive,
+                intensity = flowIntensity,
+            )
+            val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+            val trackColor = ProgressIndicatorDefaults.linearTrackColor
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(MiniPlayerProgressHeight)
+                    .align(Alignment.BottomCenter),
+            ) {
+                if (state.loading) {
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxSize(),
+                        color = Color.Transparent,
+                        trackColor = trackColor,
+                    )
+                    LinearProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .maskWithAudioProgressGradient(
+                                renderer = flowBarRenderer,
+                                palette = progressPalette,
+                                timeSeconds = flowTime,
+                                intensity = flowIntensity,
+                                rtl = rtl,
+                            ),
+                        color = progressPalette.baseColor,
+                        trackColor = Color.Transparent,
+                    )
+                } else {
+                    val duration = state.durationSeconds?.takeIf { it > 0 }
+                    val progress = duration?.let {
+                        (state.elapsedSeconds.toFloat() / it).coerceIn(0f, 1f)
+                    } ?: 0f
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier.fillMaxSize(),
+                        color = Color.Transparent,
+                        trackColor = trackColor,
+                        drawStopIndicator = {},
+                    )
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .maskWithAudioProgressGradient(
+                                renderer = flowBarRenderer,
+                                palette = progressPalette,
+                                timeSeconds = flowTime,
+                                intensity = flowIntensity,
+                                rtl = rtl,
+                            ),
+                        color = progressPalette.baseColor,
+                        trackColor = Color.Transparent,
+                    )
+                }
             }
         }
     }

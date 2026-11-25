@@ -64,6 +64,9 @@ interface BookDao {
     )
     fun getVisibleBooks(spaceId: String?): Flow<List<BookWithDetails>>
 
+    @Query("SELECT EXISTS(SELECT 1 FROM books)")
+    fun hasAnyBooks(): Flow<Boolean>
+
     @Query("SELECT EXISTS(SELECT 1 FROM books WHERE isArchived = 0 AND isUnsorted = 1)")
     fun hasUnsortedBooks(): Flow<Boolean>
 

@@ -1,18 +1,13 @@
 package com.javierreansyah.pinecone.ui.components
 
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.composables.icons.materialsymbols.MaterialSymbols
@@ -41,15 +36,10 @@ fun RenameDeleteMenu(
             expanded = isMenuExpanded,
             onDismissRequest = onMenuDismiss,
         ) {
-            val groupInteractionSource = remember { MutableInteractionSource() }
-            DropdownMenuGroup(
-                shapes = MenuDefaults.groupShape(0, 1),
-                interactionSource = groupInteractionSource,
-            ) {
-                SelectableDropdownMenuItem(
-                    selected = false,
+            AppDropdownMenuGroup {
+                AppDropdownMenuItem(
                     text = { Text(stringResource(R.string.action_rename)) },
-                    shapes = MenuDefaults.itemShape(0, 2),
+                    shape = AppDropdownMenuDefaults.itemShape(0, 2).shape,
                     leadingIcon = {
                         Icon(
                             MaterialSymbols.Outlined.Edit,
@@ -59,21 +49,15 @@ fun RenameDeleteMenu(
                     },
                     onClick = onRenameClick,
                 )
-                SelectableDropdownMenuItem(
-                    selected = false,
-                    text = {
-                        Text(
-                            stringResource(R.string.action_delete),
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                    },
-                    shapes = MenuDefaults.itemShape(1, 2),
+                AppDropdownMenuItem(
+                    text = { Text(stringResource(R.string.action_delete)) },
+                    shape = AppDropdownMenuDefaults.itemShape(1, 2).shape,
+                    colors = AppDropdownMenuDefaults.destructiveItemColors(),
                     leadingIcon = {
                         Icon(
                             MaterialSymbols.Outlined.Delete,
                             modifier = Modifier.size(MenuDefaults.LeadingIconSize),
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
                         )
                     },
                     onClick = onDeleteClick,

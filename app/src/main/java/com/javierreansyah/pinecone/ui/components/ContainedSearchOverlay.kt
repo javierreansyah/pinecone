@@ -53,6 +53,8 @@ fun ContainedSearchOverlay(
     onSearch: (String) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    autoFocus: Boolean = true,
+    onAutoFocusConsumed: () -> Unit = {},
     onClear: (() -> Unit)? = null,
     onVoiceResult: ((String) -> Unit)? = null,
     backgroundColor: Color = MaterialTheme.colorScheme.surface,
@@ -69,9 +71,12 @@ fun ContainedSearchOverlay(
         keyboardController?.hide()
     }
 
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-        keyboardController?.show()
+    LaunchedEffect(autoFocus) {
+        if (autoFocus) {
+            focusRequester.requestFocus()
+            keyboardController?.show()
+            onAutoFocusConsumed()
+        }
     }
 
     DisposableEffect(Unit) {

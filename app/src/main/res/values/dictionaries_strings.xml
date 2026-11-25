@@ -2,7 +2,8 @@
 <resources>
     <string name="dictionaries_delete_message">Are you sure you want to delete \'%s\'?</string>
     <string name="dictionaries_delete_title">Delete dictionary</string>
-    <string name="dictionaries_empty">No dictionaries installed\nTap + to import a Stardict .zip file</string>
+    <string name="dictionaries_empty">No dictionaries installed</string>
+    <string name="dictionaries_empty_subtitle">Tap + to import a Stardict .zip file.</string>
     <string name="dictionaries_import_stardict">Import Stardict</string>
     <string name="dictionaries_install_success">Dictionary installed successfully</string>
     <string name="dictionaries_installing">Installing dictionary…</string>

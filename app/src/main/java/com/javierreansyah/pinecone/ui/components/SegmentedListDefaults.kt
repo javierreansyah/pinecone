@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 object InsetListItemDefaults {
     val OuterHorizontalPadding: Dp = 4.dp
 
-    private val interactiveShape = RoundedCornerShape(12.dp)
+    val InteractiveShape: RoundedCornerShape = RoundedCornerShape(12.dp)
 
     val ContentPadding: PaddingValues
         get() = PaddingValues(
@@ -26,9 +26,9 @@ object InsetListItemDefaults {
 
     @Composable
     fun shapes(): ListItemShapes = ListItemDefaults.shapes(
-        pressedShape = interactiveShape,
-        focusedShape = interactiveShape,
-        hoveredShape = interactiveShape,
+        pressedShape = InteractiveShape,
+        focusedShape = InteractiveShape,
+        hoveredShape = InteractiveShape,
     )
 }
 

@@ -41,7 +41,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -58,7 +57,6 @@ import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SecondaryScrollableTabRow
 import androidx.compose.material3.SegmentedListItem
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.SplitButtonDefaults
 import androidx.compose.material3.SplitButtonLayout
 import androidx.compose.material3.SuggestionChip
@@ -131,6 +129,9 @@ import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import com.javierreansyah.pinecone.ui.components.AppBarButtonSize
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuDefaults
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuGroup
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuItem
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.InsetListItemDefaults
 import com.javierreansyah.pinecone.ui.components.SegmentedListDefaults
@@ -395,17 +396,35 @@ private fun BookInfoContent(
             var hasShelvesTab by remember { mutableStateOf(shelves.isNotEmpty()) }
             val tabs = BookInfoTab.entries.filter { it != BookInfoTab.Shelves || hasShelvesTab }
             val pagerState = rememberPagerState { tabs.size }
+            var pendingTabAfterInsert by remember { mutableStateOf<BookInfoTab?>(null) }
             LaunchedEffect(shelves.isNotEmpty()) {
                 if (shelves.isEmpty() && hasShelvesTab) {
                     val shelvesPage = tabs.indexOf(BookInfoTab.Shelves)
-                    val destination =
-                        if (pagerState.currentPage == shelvesPage || pagerState.targetPage == shelvesPage) {
+                    val destination = when {
+                        pagerState.currentPage == shelvesPage || pagerState.targetPage == shelvesPage ->
                             tabs.indexOf(BookInfoTab.About)
-                        } else pagerState.currentPage
+
+                        pagerState.currentPage > shelvesPage -> pagerState.currentPage - 1
+                        else -> pagerState.currentPage
+                    }
                     // Cancel any swipe/tab animation before shrinking the pager's page count.
                     pagerState.scrollToPage(destination)
+                    hasShelvesTab = false
+                } else if (shelves.isNotEmpty() && !hasShelvesTab) {
+                    val currentTab = tabs.getOrNull(pagerState.currentPage)
+                    if (currentTab != null && currentTab != BookInfoTab.About) {
+                        pendingTabAfterInsert = currentTab
+                    }
+                    hasShelvesTab = true
                 }
-                hasShelvesTab = shelves.isNotEmpty()
+            }
+            LaunchedEffect(tabs, pendingTabAfterInsert) {
+                val targetTab = pendingTabAfterInsert ?: return@LaunchedEffect
+                val destination = tabs.indexOf(targetTab)
+                if (destination >= 0 && pagerState.currentPage != destination) {
+                    pagerState.scrollToPage(destination)
+                }
+                pendingTabAfterInsert = null
             }
             val coroutineScope = rememberCoroutineScope()
 
@@ -503,15 +522,15 @@ private fun BookInfoContent(
 }
 
 private enum class BookInfoTab {
-    About, Chapters, Bookmarks, Notes, Shelves;
+    About, Shelves, Chapters, Bookmarks, Notes;
 
     @androidx.annotation.StringRes
     fun title(wording: PublicationWording): Int = when (this) {
         About -> wording.infoTitle
+        Shelves -> R.string.library_tab_shelves
         Chapters -> R.string.reader_chapters_title
         Bookmarks -> R.string.reader_bookmarks_title
         Notes -> R.string.reader_notes_title
-        Shelves -> R.string.library_tab_shelves
     }
 }
 
@@ -1083,17 +1102,13 @@ private fun BookButtonGroup(
                         expanded = splitMenuExpanded,
                         onDismissRequest = { splitMenuExpanded = false },
                     ) {
-                        val groupInteractionSource = remember { MutableInteractionSource() }
-                        DropdownMenuGroup(
-                            shapes = MenuDefaults.groupShape(0, 1),
-                            interactionSource = groupInteractionSource,
-                        ) {
-                            SelectableDropdownMenuItem(
-                                selected = false,
+                        AppDropdownMenuGroup {
+                            AppDropdownMenuItem(
                                 text = { Text(stringResource(if (isAudio) R.string.publication_listen_furthest else R.string.publication_read_furthest)) },
                                 leadingIcon = {
                                     Icon(
                                         imageVector = openIcon,
+                                        modifier = Modifier.size(MenuDefaults.LeadingIconSize),
                                         contentDescription = null,
                                     )
                                 },
@@ -1101,14 +1116,14 @@ private fun BookButtonGroup(
                                     splitMenuExpanded = false
                                     onReadFurthestClick()
                                 },
-                                shapes = MenuDefaults.itemShape(0, 2),
+                                shape = AppDropdownMenuDefaults.itemShape(0, 2).shape,
                             )
-                            SelectableDropdownMenuItem(
-                                selected = false,
+                            AppDropdownMenuItem(
                                 text = { Text(stringResource(if (isAudio) R.string.publication_listen_from_start else R.string.publication_read_from_start)) },
                                 leadingIcon = {
                                     Icon(
                                         imageVector = MaterialSymbols.Outlined.Replay,
+                                        modifier = Modifier.size(MenuDefaults.LeadingIconSize),
                                         contentDescription = null,
                                     )
                                 },
@@ -1116,19 +1131,12 @@ private fun BookButtonGroup(
                                     splitMenuExpanded = false
                                     onReadFromStartClick()
                                 },
-                                shapes = MenuDefaults.itemShape(1, 2),
+                                shape = AppDropdownMenuDefaults.itemShape(1, 2).shape,
                             )
                         }
                     }
                 }
             },
-        )
-
-        Box(
-            modifier = Modifier
-                .height(24.dp)
-                .width(1.dp)
-                .background(MaterialTheme.colorScheme.outlineVariant),
         )
 
         FilledTonalButton(

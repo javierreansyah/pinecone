@@ -1,17 +1,12 @@
 package com.javierreansyah.pinecone.ui.features.library.components
 
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuDefaults
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -27,6 +22,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuDefaults
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuGroup
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuItem
+import com.javierreansyah.pinecone.ui.components.AppTextField
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.combinedWording
 
@@ -60,7 +59,7 @@ fun RenameFilterDialog(
         title = { Text(title) },
         text = {
             Column {
-                OutlinedTextField(
+                AppTextField(
                     value = text,
                     onValueChange = {
                         text = it
@@ -77,16 +76,14 @@ fun RenameFilterDialog(
                     onDismissRequest = { expanded = false },
                     properties = PopupProperties(focusable = false),
                 ) {
-                    val groupInteractionSource = remember { MutableInteractionSource() }
-                    DropdownMenuGroup(
-                        shapes = MenuDefaults.groupShape(0, 1),
-                        interactionSource = groupInteractionSource,
-                    ) {
+                    AppDropdownMenuGroup {
                         filteredSuggestions.forEachIndexed { index, suggestion ->
-                            SelectableDropdownMenuItem(
-                                selected = false,
+                            AppDropdownMenuItem(
                                 text = { Text(suggestion) },
-                                shapes = MenuDefaults.itemShape(index, filteredSuggestions.size),
+                                shape = AppDropdownMenuDefaults.itemShape(
+                                    index,
+                                    filteredSuggestions.size,
+                                ).shape,
                                 onClick = {
                                     text = suggestion
                                     expanded = false

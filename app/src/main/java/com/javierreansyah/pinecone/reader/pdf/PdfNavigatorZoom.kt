@@ -121,10 +121,19 @@ internal fun calculatePdfTilePlan(
     if (interRight <= interLeft || interBottom <= interTop) return null
 
     val visibleRegion = PdfTileRegion(
-        left = ((interLeft - pageBoundsInContent.left) / pageBoundsInContent.width).coerceIn(0f, 1f),
+        left = ((interLeft - pageBoundsInContent.left) / pageBoundsInContent.width).coerceIn(
+            0f,
+            1f
+        ),
         top = ((interTop - pageBoundsInContent.top) / pageBoundsInContent.height).coerceIn(0f, 1f),
-        right = ((interRight - pageBoundsInContent.left) / pageBoundsInContent.width).coerceIn(0f, 1f),
-        bottom = ((interBottom - pageBoundsInContent.top) / pageBoundsInContent.height).coerceIn(0f, 1f),
+        right = ((interRight - pageBoundsInContent.left) / pageBoundsInContent.width).coerceIn(
+            0f,
+            1f
+        ),
+        bottom = ((interBottom - pageBoundsInContent.top) / pageBoundsInContent.height).coerceIn(
+            0f,
+            1f
+        ),
     )
 
     val padX = (interRight - interLeft) * overscanFraction
@@ -137,8 +146,14 @@ internal fun calculatePdfTilePlan(
     val region = PdfTileRegion(
         left = ((tileLeft - pageBoundsInContent.left) / pageBoundsInContent.width).coerceIn(0f, 1f),
         top = ((tileTop - pageBoundsInContent.top) / pageBoundsInContent.height).coerceIn(0f, 1f),
-        right = ((tileRight - pageBoundsInContent.left) / pageBoundsInContent.width).coerceIn(0f, 1f),
-        bottom = ((tileBottom - pageBoundsInContent.top) / pageBoundsInContent.height).coerceIn(0f, 1f),
+        right = ((tileRight - pageBoundsInContent.left) / pageBoundsInContent.width).coerceIn(
+            0f,
+            1f
+        ),
+        bottom = ((tileBottom - pageBoundsInContent.top) / pageBoundsInContent.height).coerceIn(
+            0f,
+            1f
+        ),
     )
 
     val rawWidth = (region.right - region.left) * pageBoundsInContent.width * transform.scale

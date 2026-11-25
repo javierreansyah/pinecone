@@ -1,7 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library.filters
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -16,14 +15,12 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -55,6 +52,9 @@ import com.composables.icons.materialsymbols.outlined.Select
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuDefaults
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuGroup
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuItem
 import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
 import com.javierreansyah.pinecone.ui.components.EditingActions
 import com.javierreansyah.pinecone.ui.components.EditingNavigationIcon
@@ -492,16 +492,10 @@ private fun FilterResultDefaultTopAppBar(
                                 expanded = showMenu,
                                 onDismissRequest = onMenuDismiss,
                             ) {
-                                val groupInteractionSource =
-                                    remember { MutableInteractionSource() }
-                                DropdownMenuGroup(
-                                    shapes = MenuDefaults.groupShape(0, 1),
-                                    interactionSource = groupInteractionSource,
-                                ) {
-                                    SelectableDropdownMenuItem(
-                                        selected = false,
+                                AppDropdownMenuGroup {
+                                    AppDropdownMenuItem(
                                         text = { Text(stringResource(R.string.action_select_multiple)) },
-                                        shapes = MenuDefaults.itemShape(0, 3),
+                                        shape = AppDropdownMenuDefaults.itemShape(0, 3).shape,
                                         leadingIcon = {
                                             Icon(
                                                 MaterialSymbols.Outlined.Select,
@@ -514,10 +508,9 @@ private fun FilterResultDefaultTopAppBar(
                                             onMenuDismiss()
                                         },
                                     )
-                                    SelectableDropdownMenuItem(
-                                        selected = false,
+                                    AppDropdownMenuItem(
                                         text = { Text(stringResource(R.string.action_rename)) },
-                                        shapes = MenuDefaults.itemShape(1, 3),
+                                        shape = AppDropdownMenuDefaults.itemShape(1, 3).shape,
                                         leadingIcon = {
                                             Icon(
                                                 MaterialSymbols.Outlined.Edit,
@@ -527,21 +520,15 @@ private fun FilterResultDefaultTopAppBar(
                                         },
                                         onClick = onRenameClick,
                                     )
-                                    SelectableDropdownMenuItem(
-                                        selected = false,
-                                        text = {
-                                            Text(
-                                                stringResource(R.string.action_delete),
-                                                color = MaterialTheme.colorScheme.error,
-                                            )
-                                        },
-                                        shapes = MenuDefaults.itemShape(2, 3),
+                                    AppDropdownMenuItem(
+                                        text = { Text(stringResource(R.string.action_delete)) },
+                                        shape = AppDropdownMenuDefaults.itemShape(2, 3).shape,
+                                        colors = AppDropdownMenuDefaults.destructiveItemColors(),
                                         leadingIcon = {
                                             Icon(
                                                 MaterialSymbols.Outlined.Delete,
                                                 modifier = Modifier.size(MenuDefaults.LeadingIconSize),
                                                 contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.error,
                                             )
                                         },
                                         onClick = onDeleteClick,
@@ -565,16 +552,14 @@ private fun FilterResultDefaultTopAppBar(
                     onDismissRequest = { isSuggestionsExpanded = false },
                     properties = PopupProperties(focusable = false),
                 ) {
-                    val groupInteractionSource = remember { MutableInteractionSource() }
-                    DropdownMenuGroup(
-                        shapes = MenuDefaults.groupShape(0, 1),
-                        interactionSource = groupInteractionSource,
-                    ) {
+                    AppDropdownMenuGroup {
                         filteredSuggestions.forEachIndexed { index, suggestion ->
-                            SelectableDropdownMenuItem(
-                                selected = false,
+                            AppDropdownMenuItem(
                                 text = { Text(suggestion) },
-                                shapes = MenuDefaults.itemShape(index, filteredSuggestions.size),
+                                shape = AppDropdownMenuDefaults.itemShape(
+                                    index,
+                                    filteredSuggestions.size,
+                                ).shape,
                                 onClick = {
                                     ignoreNextTextChange = true
                                     renameNameState.setTextAndPlaceCursorAtEnd(suggestion)

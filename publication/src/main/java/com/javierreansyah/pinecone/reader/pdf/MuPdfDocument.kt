@@ -17,6 +17,7 @@ import org.readium.r2.shared.util.pdf.PdfDocument
 import org.readium.r2.shared.util.pdf.PdfDocumentFactory
 import org.readium.r2.shared.util.resource.Resource
 import kotlin.reflect.KClass
+import androidx.core.graphics.createBitmap
 
 /** Owns a native document. All access, including destruction, uses the same lock. */
 class MuPdfDocument(private val native: Document) : PdfDocument {
@@ -146,7 +147,7 @@ class MuPdfDocument(private val native: Document) : PdfDocument {
                 val sy = safeHeight.toFloat() / (spanY * pageHeight)
                 val tx = -(bounds.x0 + safeLeft * pageWidth) * sx
                 val ty = -(bounds.y0 + safeTop * pageHeight) * sy
-                val bitmap = Bitmap.createBitmap(safeWidth, safeHeight, Bitmap.Config.ARGB_8888)
+                val bitmap = createBitmap(safeWidth, safeHeight)
                 val device = AndroidDrawDevice(bitmap)
                 try {
                     page.run(device, Matrix(sx, 0f, 0f, sy, tx, ty), null)

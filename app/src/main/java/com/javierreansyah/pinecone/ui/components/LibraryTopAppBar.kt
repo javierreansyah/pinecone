@@ -63,7 +63,7 @@ fun Modifier.topBarFadeBackground(
     Brush.verticalGradient(
         0f to color,
         0.25f to color.copy(alpha = 0.95f),
-        0.75f to color.copy(alpha = 0.85f),
+        0.75f to color.copy(alpha = 0.75f),
         1f to color.copy(alpha = 0f),
     ),
 )

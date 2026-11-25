@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -38,25 +40,34 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
 import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Apps
+import com.composables.icons.materialsymbols.outlined.Book
 import com.composables.icons.materialsymbols.outlined.Chevron_forward
+import com.composables.icons.materialsymbols.outlined.Description
 import com.composables.icons.materialsymbols.outlined.Folder
+import com.composables.icons.materialsymbols.outlined.Headphones
 import com.composables.icons.materialsymbols.outlined.Label
 import com.composables.icons.materialsymbols.outlined.Person
 import com.composables.icons.materialsymbols.outlined.Search
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.ShelfEntity
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.ui.components.InsetListItemDefaults
 import com.javierreansyah.pinecone.ui.components.SegmentedButtonGroup
+import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.SearchCategory
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookItem
 import com.javierreansyah.pinecone.ui.features.library.publicationWording
@@ -80,16 +91,29 @@ internal fun ExpandedSearchContent(
         SearchCategory.Authors to stringResource(R.string.library_authors_title),
         SearchCategory.Tags to stringResource(R.string.library_tags_title),
     )
+    val booksIcon = when (searchResults.contentWording) {
+        PublicationWording.Audiobooks -> MaterialSymbols.Outlined.Headphones
+        PublicationWording.Documents -> MaterialSymbols.Outlined.Description
+        else -> MaterialSymbols.Outlined.Book
+    }
+    val categoryIcons = SearchCategory.entries.map { category ->
+        when (category) {
+            SearchCategory.All -> MaterialSymbols.Outlined.Apps
+            SearchCategory.Books -> booksIcon
+            SearchCategory.Authors -> MaterialSymbols.Outlined.Person
+            SearchCategory.Shelves -> MaterialSymbols.Outlined.Folder
+            SearchCategory.Tags -> MaterialSymbols.Outlined.Label
+        }
+    }
     val chipScrollState = rememberScrollState()
 
     val categoryFilterBar: @Composable (Modifier) -> Unit = { barModifier ->
         SegmentedButtonGroup(
             options = SearchCategory.entries,
             optionLabel = { categoryLabels[it] ?: it.name },
-            icons = emptyList(),
+            icons = categoryIcons,
             selected = searchCategory,
             onSelected = onSearchCategoryChange,
-            fillWidth = true,
             modifier = barModifier
                 .fillMaxWidth()
                 .horizontalScroll(chipScrollState)
@@ -471,25 +495,67 @@ private fun SectionHeader(
         bottom = if (isBooksSection) 0.dp else 8.dp,
     ),
 ) {
-    val clickableModifier = Modifier
-        .fillMaxWidth()
-        .then(if (onHeaderClick != null) Modifier.clickable { onHeaderClick() } else Modifier)
-        .padding(paddingValues)
+    if (onHeaderClick != null) {
+        val layoutDirection = LocalLayoutDirection.current
+        val outerStart = InsetListItemDefaults.OuterHorizontalPadding
+        val innerStart = (paddingValues.calculateStartPadding(layoutDirection) - outerStart)
+            .coerceAtLeast(0.dp)
+        val innerVertical = 4.dp
+        val outerTop = (paddingValues.calculateTopPadding() - innerVertical).coerceAtLeast(0.dp)
+        val outerBottom =
+            (paddingValues.calculateBottomPadding() - innerVertical).coerceAtLeast(0.dp)
+        val outerEnd = paddingValues.calculateEndPadding(layoutDirection)
+            .coerceAtMost(InsetListItemDefaults.OuterHorizontalPadding)
 
-    Row(
-        modifier = clickableModifier.then(modifier),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = title, style = MaterialTheme.typography.titleMedium,
-        )
-        if (onHeaderClick != null) {
-            Icon(
-                imageVector = MaterialSymbols.Outlined.Chevron_forward,
-                contentDescription = actionDescription,
-                modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(modifier),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(
+                        start = outerStart,
+                        end = outerEnd,
+                        top = outerTop,
+                        bottom = outerBottom,
+                    )
+                    .clip(InsetListItemDefaults.InteractiveShape)
+                    .clickable(role = Role.Button, onClick = onHeaderClick)
+                    .padding(
+                        start = innerStart,
+                        end = 8.dp,
+                        top = innerVertical,
+                        bottom = innerVertical,
+                    ),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Icon(
+                    imageVector = MaterialSymbols.Outlined.Chevron_forward,
+                    contentDescription = actionDescription,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    } else {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(paddingValues)
+                .then(modifier),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
             )
         }
     }

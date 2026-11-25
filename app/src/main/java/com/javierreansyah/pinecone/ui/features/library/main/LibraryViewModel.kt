@@ -184,17 +184,20 @@ class LibraryViewModel @Inject constructor(
     }.flowOn(computation)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SearchResults())
 
+    private val hasAnyBooks: Flow<Boolean> = bookRepository.hasAnyBooks()
+
     private val hasUnsortedBooks: Flow<Boolean> = bookRepository.hasUnsortedBooks()
 
     private val librarySettings = readerPreferences.readerSettings
 
     private val contentState = combine(
-        filteredBooks, shelves, allBooks, searchResults,
-    ) { books, shelfList, all, results ->
+        filteredBooks, shelves, allBooks, searchResults, hasAnyBooks,
+    ) { books, shelfList, all, results, anyBooks ->
         LibraryScreenUiState(
             filteredBooks = books,
             shelves = shelfList,
             allBooks = all,
+            hasAnyBooksInDatabase = anyBooks,
             searchResults = results,
         )
     }

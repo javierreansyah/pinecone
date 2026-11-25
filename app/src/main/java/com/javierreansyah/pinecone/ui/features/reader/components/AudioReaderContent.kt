@@ -54,7 +54,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -322,6 +321,19 @@ private fun AudioTransportButtons(
         animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
         label = "playPauseCornerRadius",
     )
+    val pauseMorphPalette = rememberAudioGradientPalette(
+        baseColor = MaterialTheme.colorScheme.tertiaryContainer,
+        accentColor = MaterialTheme.colorScheme.primary,
+    )
+    val pauseMorphRenderer = rememberAudioMorphMeshRenderer()
+    val pauseMorphIntensity = rememberAudioGradientIntensity(
+        active = playing,
+        label = "pauseMorphGradientIntensity",
+    )
+    val pauseMorphTime = rememberAudioMotionTime(
+        active = playing,
+        intensity = pauseMorphIntensity,
+    )
 
     ButtonGroup(
         overflowIndicator = { ButtonGroupDefaults.OverflowIndicator(menuState = it) },
@@ -373,25 +385,38 @@ private fun AudioTransportButtons(
                             .height(76.dp),
                     ) {
                         if (isCenter) {
-                            AnimatedContent(
-                                targetState = playing,
-                                transitionSpec = {
-                                    fadeIn(animationSpec = effectsSpec) +
-                                            scaleIn(
-                                                initialScale = 0.75f,
-                                                animationSpec = iconSpatialSpec
-                                            ) togetherWith fadeOut(animationSpec = effectsSpec) + scaleOut(
-                                        targetScale = 0.75f,
-                                        animationSpec = iconSpatialSpec
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .drawAudioMorphGradient(
+                                        renderer = pauseMorphRenderer,
+                                        palette = pauseMorphPalette,
+                                        timeSeconds = pauseMorphTime,
+                                        intensity = pauseMorphIntensity,
+                                        radius = 68.dp,
+                                    ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                AnimatedContent(
+                                    targetState = playing,
+                                    transitionSpec = {
+                                        fadeIn(animationSpec = effectsSpec) +
+                                                scaleIn(
+                                                    initialScale = 0.75f,
+                                                    animationSpec = iconSpatialSpec
+                                                ) togetherWith fadeOut(animationSpec = effectsSpec) + scaleOut(
+                                            targetScale = 0.75f,
+                                            animationSpec = iconSpatialSpec
+                                        )
+                                    },
+                                    label = "playPauseTransition",
+                                ) { isPlaying ->
+                                    Icon(
+                                        imageVector = if (isPlaying) MaterialSymbols.OutlinedFilled.Pause else MaterialSymbols.OutlinedFilled.Play_arrow,
+                                        contentDescription = label,
+                                        modifier = Modifier.size(38.dp),
                                     )
-                                },
-                                label = "playPauseTransition",
-                            ) { isPlaying ->
-                                Icon(
-                                    imageVector = if (isPlaying) MaterialSymbols.OutlinedFilled.Pause else MaterialSymbols.OutlinedFilled.Play_arrow,
-                                    contentDescription = label,
-                                    modifier = Modifier.size(38.dp),
-                                )
+                                }
                             }
                         } else {
                             Icon(
@@ -481,8 +506,18 @@ private fun AudioSeekBar(
     )
 
     val seekLabel = stringResource(R.string.reader_audio_seek)
-    val primaryColor = MaterialTheme.colorScheme.primary
     val trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
+    val progressPalette = rememberAudioGradientPalette()
+    val flowBarRenderer = rememberAudioFlowBarRenderer()
+    val flowIntensity = rememberAudioGradientIntensity(
+        active = state.playing,
+        label = "audioProgressGradientIntensity",
+    )
+    val waveMoving = state.playing || waveHeight > 4.dp
+    val flowTime = rememberAudioMotionTime(
+        active = waveMoving,
+        intensity = flowIntensity,
+    )
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Box(
@@ -543,23 +578,48 @@ private fun AudioSeekBar(
                 },
             contentAlignment = Alignment.Center,
         ) {
-            LinearWavyProgressIndicator(
-                progress = { progress },
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(waveHeight.coerceAtLeast(4.dp))
                     .clearAndSetSemantics {},
-                color = primaryColor,
-                trackColor = trackColor,
-                stroke = indicatorStroke,
-                trackStroke = indicatorStroke,
-                gapSize = 6.dp,
-                stopSize = 3.dp,
-                amplitude = { 0.4f },
-                wavelength = 20.dp,
-                // Keep the wave moving until it has flattened, then stop its phase animation.
-                waveSpeed = if (state.playing || waveHeight > 4.dp) 20.dp else 0.dp,
-            )
+            ) {
+                LinearWavyProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.fillMaxSize(),
+                    color = Color.Transparent,
+                    trackColor = trackColor,
+                    stroke = indicatorStroke,
+                    trackStroke = indicatorStroke,
+                    gapSize = 6.dp,
+                    stopSize = 0.dp,
+                    amplitude = { 0.4f },
+                    wavelength = 20.dp,
+                    waveSpeed = 0.dp,
+                )
+                LinearWavyProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .maskWithAudioProgressGradient(
+                            renderer = flowBarRenderer,
+                            palette = progressPalette,
+                            timeSeconds = flowTime,
+                            intensity = flowIntensity,
+                            rtl = rtl,
+                        ),
+                    color = progressPalette.baseColor,
+                    trackColor = Color.Transparent,
+                    stroke = indicatorStroke,
+                    trackStroke = indicatorStroke,
+                    gapSize = 6.dp,
+                    stopSize = 3.dp,
+                    amplitude = { 0.4f },
+                    wavelength = 20.dp,
+                    // Keep the wave moving until it has flattened, then stop its phase animation.
+                    waveSpeed = if (waveMoving) 20.dp else 0.dp,
+                )
+            }
 
             Canvas(
                 modifier = Modifier
@@ -580,12 +640,17 @@ private fun AudioSeekBar(
                 val centerY = size.height / 2f
                 val halfHeight = 22.dp.toPx() / 2f
 
-                drawLine(
-                    color = primaryColor,
-                    start = Offset(clampedX, centerY - halfHeight),
-                    end = Offset(clampedX, centerY + halfHeight),
-                    strokeWidth = handleWidth,
-                    cap = StrokeCap.Round,
+                flowBarRenderer.drawHandleLine(
+                    drawScope = this,
+                    palette = progressPalette,
+                    timeSeconds = flowTime.value,
+                    intensity = flowIntensity.value,
+                    halfCyclePx = AudioProgressFlowHalfCycle.toPx(),
+                    rtl = rtl,
+                    x = clampedX,
+                    startY = centerY - halfHeight,
+                    endY = centerY + halfHeight,
+                    strokeWidthPx = handleWidth,
                 )
             }
         }

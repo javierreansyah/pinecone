@@ -20,6 +20,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import com.composables.icons.materialsymbols.MaterialSymbols
@@ -151,8 +153,16 @@ internal fun LibrarySearchOverlay(
     onAuthorsHeaderClick: () -> Unit,
     onTagsHeaderClick: () -> Unit,
     modifier: Modifier = Modifier,
+    autoFocus: Boolean = true,
+    onAutoFocusConsumed: () -> Unit = {},
 ) {
     val textFieldState = rememberTextFieldState(searchQuery)
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val dismissKeyboard = {
+        focusManager.clearFocus()
+        keyboardController?.hide()
+    }
 
     LaunchedEffect(textFieldState.text) {
         val currentText = textFieldState.text.toString()
@@ -168,18 +178,38 @@ internal fun LibrarySearchOverlay(
         onClear = { onSearchQueryChange("") },
         onVoiceResult = onSearchQueryChange,
         onClose = onClose,
+        autoFocus = autoFocus,
+        onAutoFocusConsumed = onAutoFocusConsumed,
         modifier = modifier,
     ) {
         ExpandedSearchContent(
             searchCategory = searchCategory,
             searchResults = searchResults,
             onSearchCategoryChange = onSearchCategoryChange,
-            onNavigateToReader = onNavigateToReader,
-            onNavigateToShelf = onNavigateToShelf,
-            onNavigateToAuthor = onNavigateToAuthor,
-            onNavigateToTag = onNavigateToTag,
-            onAuthorsHeaderClick = onAuthorsHeaderClick,
-            onTagsHeaderClick = onTagsHeaderClick,
+            onNavigateToReader = { bookId ->
+                dismissKeyboard()
+                onNavigateToReader(bookId)
+            },
+            onNavigateToShelf = { shelfId, name, count ->
+                dismissKeyboard()
+                onNavigateToShelf(shelfId, name, count)
+            },
+            onNavigateToAuthor = { author ->
+                dismissKeyboard()
+                onNavigateToAuthor(author)
+            },
+            onNavigateToTag = { tag ->
+                dismissKeyboard()
+                onNavigateToTag(tag)
+            },
+            onAuthorsHeaderClick = {
+                dismissKeyboard()
+                onAuthorsHeaderClick()
+            },
+            onTagsHeaderClick = {
+                dismissKeyboard()
+                onTagsHeaderClick()
+            },
         )
     }
 }

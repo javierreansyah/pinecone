@@ -40,6 +40,7 @@ fun UnsortedScreen(
             viewModel = viewModel,
             title = stringResource(R.string.library_unsorted_title),
             emptyText = stringResource(R.string.library_empty_unsorted),
+            emptySupportingText = stringResource(R.string.library_empty_unsorted_subtitle),
             emptyIcon = MaterialSymbols.Outlined.Inbox,
             archived = false,
         )

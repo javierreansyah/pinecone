@@ -2,18 +2,29 @@ package com.javierreansyah.pinecone.ui.features.library.main
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenuPopup
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.WideNavigationRailValue
 import androidx.compose.material3.rememberWideNavigationRailState
 import androidx.compose.runtime.Composable
@@ -33,14 +44,22 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Add
 import com.composables.icons.materialsymbols.outlined.Book
+import com.composables.icons.materialsymbols.outlined.Folder
+import com.composables.icons.materialsymbols.outlined.History
+import com.composables.icons.materialsymbols.outlined.Upload
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuDefaults
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuGroup
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuItem
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
@@ -63,6 +82,7 @@ import com.javierreansyah.pinecone.ui.features.library.components.book.BookConte
 import com.javierreansyah.pinecone.ui.features.library.fileFormat
 import com.javierreansyah.pinecone.ui.features.library.organize.SelectSpaceForShelfDialog
 import com.javierreansyah.pinecone.ui.features.library.publicationWording
+import com.javierreansyah.pinecone.ui.features.settings.components.rememberRestoreBackupAction
 import com.javierreansyah.pinecone.ui.root.AppDrawer
 import kotlinx.coroutines.launch
 
@@ -92,6 +112,7 @@ fun LibraryRoute(
     com.javierreansyah.pinecone.ui.components.MutationErrorDialog(viewModel.bookActions.mutationErrors)
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val onRestoreBackupClick = rememberRestoreBackupAction()
 
     LibraryScreen(
         uiState = uiState,
@@ -128,6 +149,7 @@ fun LibraryRoute(
         onNavigateToDictionaries = onNavigateToDictionaries,
         onImportFilesClick = onImportFilesClick,
         onScanFolderClick = onScanFolderClick,
+        onRestoreBackupClick = onRestoreBackupClick,
         importFeedbackState = importFeedbackState,
         importFeedbackEnabled = importFeedbackEnabled,
         onCancelImport = onCancelImport,
@@ -171,6 +193,7 @@ fun LibraryScreen(
     onNavigateToDictionaries: () -> Unit,
     onImportFilesClick: () -> Unit,
     onScanFolderClick: () -> Unit,
+    onRestoreBackupClick: () -> Unit = {},
     importFeedbackState: ImportFeedbackState = ImportFeedbackState(),
     importFeedbackEnabled: Boolean = false,
     onCancelImport: (String) -> Unit = {},
@@ -182,6 +205,7 @@ fun LibraryScreen(
 
     val showFilterSheet = remember { mutableStateOf(value = false) }
     var isSearchOpen by rememberSaveable { mutableStateOf(value = false) }
+    var shouldAutoFocusSearch by rememberSaveable { mutableStateOf(value = false) }
 
     var selectedBookContext by remember { mutableStateOf<Pair<String, String?>?>(null) }
     val selection = remember { LibrarySelection() }
@@ -269,7 +293,10 @@ fun LibraryScreen(
                             shelves = uiState.shelves,
                             selectedShelves = selectedShelves,
                             onOpenDrawerClick = { scope.launch { drawerState.expand() } },
-                            onSearchClick = { isSearchOpen = true },
+                            onSearchClick = {
+                                shouldAutoFocusSearch = true
+                                isSearchOpen = true
+                            },
                             onFilterClick = { showFilterSheet.value = true },
                             onToggleView = {
                                 scope.launch {
@@ -333,6 +360,7 @@ fun LibraryScreen(
                                 0 -> {
                                     LibraryBooksTabContent(
                                         showEmptyState = showEmptyState,
+                                        isLibraryEmpty = !uiState.hasAnyBooksInDatabase,
                                         books = uiState.filteredBooks,
                                         topContentPadding = topPadding,
                                         bottomContentPadding = bottomPadding + miniPlayerPadding,
@@ -348,6 +376,17 @@ fun LibraryScreen(
                                         onBookLongClick = { selectedBookContext = it to null },
                                         isInMultiSelectMode = isInMultiSelectMode && !isShelvesTab,
                                         scrollKey = uiState.bookPreferences.sortType to uiState.bookPreferences.isAscending,
+                                        emptyAction = if (!uiState.hasAnyBooksInDatabase) {
+                                            {
+                                                EmptyLibraryActions(
+                                                    onImportFilesClick = onImportFilesClick,
+                                                    onScanFolderClick = onScanFolderClick,
+                                                    onRestoreBackupClick = onRestoreBackupClick,
+                                                )
+                                            }
+                                        } else {
+                                            null
+                                        },
                                     )
                                 }
 
@@ -443,15 +482,17 @@ fun LibraryScreen(
             }
         }
 
-        val searchEffectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+        val searchOffsetSpec = MaterialTheme.motionScheme.defaultEffectsSpec<IntOffset>()
         val closeSearch = {
             isSearchOpen = false
+            shouldAutoFocusSearch = false
             onSearchQueryChange("")
+            onSearchCategoryChange(SearchCategory.All)
         }
         AnimatedVisibility(
             visible = isSearchOpen,
-            enter = fadeIn(animationSpec = searchEffectsSpec),
-            exit = fadeOut(animationSpec = searchEffectsSpec),
+            enter = slideInHorizontally(animationSpec = searchOffsetSpec) { it },
+            exit = ExitTransition.None,
         ) {
             LibrarySearchOverlay(
                 searchQuery = uiState.searchQuery,
@@ -460,30 +501,14 @@ fun LibraryScreen(
                 onSearchQueryChange = onSearchQueryChange,
                 onSearchCategoryChange = onSearchCategoryChange,
                 onClose = closeSearch,
-                onNavigateToReader = { bookId ->
-                    closeSearch()
-                    onNavigateToReader(bookId)
-                },
-                onNavigateToShelf = { shelfId, name, count ->
-                    closeSearch()
-                    onNavigateToShelf(shelfId, name, count)
-                },
-                onNavigateToAuthor = { author ->
-                    closeSearch()
-                    onNavigateToAuthor(author)
-                },
-                onNavigateToTag = { tag ->
-                    closeSearch()
-                    onNavigateToTag(tag)
-                },
-                onAuthorsHeaderClick = {
-                    closeSearch()
-                    onNavigateToAllAuthors()
-                },
-                onTagsHeaderClick = {
-                    closeSearch()
-                    onNavigateToAllTags()
-                },
+                onNavigateToReader = onNavigateToReader,
+                onNavigateToShelf = onNavigateToShelf,
+                onNavigateToAuthor = onNavigateToAuthor,
+                onNavigateToTag = onNavigateToTag,
+                onAuthorsHeaderClick = onNavigateToAllAuthors,
+                onTagsHeaderClick = onNavigateToAllTags,
+                autoFocus = shouldAutoFocusSearch,
+                onAutoFocusConsumed = { shouldAutoFocusSearch = false },
             )
         }
     }
@@ -568,6 +593,7 @@ private fun LibraryTopBar(
 @Composable
 private fun LibraryBooksTabContent(
     showEmptyState: Boolean,
+    isLibraryEmpty: Boolean,
     books: List<Book>,
     layoutMode: LayoutMode,
     selectedBooks: Set<String>,
@@ -577,6 +603,7 @@ private fun LibraryBooksTabContent(
     scrollKey: Any? = null,
     topContentPadding: Dp = 0.dp,
     bottomContentPadding: Dp = 0.dp,
+    emptyAction: (@Composable () -> Unit)? = null,
 ) {
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -585,11 +612,20 @@ private fun LibraryBooksTabContent(
         if (showEmptyState) {
             EmptyState(
                 icon = MaterialSymbols.Outlined.Book,
-                text = stringResource(R.string.library_empty_items),
+                text = stringResource(
+                    if (isLibraryEmpty) R.string.library_empty_library_title
+                    else R.string.library_empty_items,
+                ),
+                supportingText = if (isLibraryEmpty) {
+                    stringResource(R.string.library_empty_library_subtitle)
+                } else {
+                    null
+                },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(top = topContentPadding, bottom = bottomContentPadding)
                     .padding(16.dp),
+                action = emptyAction,
             )
         } else {
             BookCollection(
@@ -604,6 +640,96 @@ private fun LibraryBooksTabContent(
                 bottomContentPadding = bottomContentPadding,
             )
         }
+    }
+}
 
+@Composable
+private fun EmptyLibraryActions(
+    onImportFilesClick: () -> Unit,
+    onScanFolderClick: () -> Unit,
+    onRestoreBackupClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var menuExpanded by remember { mutableStateOf(value = false) }
+
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box {
+            Button(
+                onClick = { menuExpanded = true },
+                shapes = ButtonDefaults.shapes(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                ),
+                contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+            ) {
+                Icon(
+                    imageVector = MaterialSymbols.Outlined.Add,
+                    contentDescription = null,
+                    modifier = Modifier.size(ButtonDefaults.IconSize),
+                )
+                Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
+                Text(text = stringResource(R.string.action_import))
+            }
+
+            DropdownMenuPopup(
+                expanded = menuExpanded,
+                onDismissRequest = { menuExpanded = false },
+            ) {
+                AppDropdownMenuGroup {
+                    AppDropdownMenuItem(
+                        text = { Text(stringResource(R.string.nav_import_files)) },
+                        shape = AppDropdownMenuDefaults.itemShape(0, 2).shape,
+                        leadingIcon = {
+                            Icon(
+                                imageVector = MaterialSymbols.Outlined.Upload,
+                                modifier = Modifier.size(MenuDefaults.LeadingIconSize),
+                                contentDescription = null,
+                            )
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onImportFilesClick()
+                        },
+                    )
+                    AppDropdownMenuItem(
+                        text = { Text(stringResource(R.string.nav_scan_folder)) },
+                        shape = AppDropdownMenuDefaults.itemShape(1, 2).shape,
+                        leadingIcon = {
+                            Icon(
+                                imageVector = MaterialSymbols.Outlined.Folder,
+                                modifier = Modifier.size(MenuDefaults.LeadingIconSize),
+                                contentDescription = null,
+                            )
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onScanFolderClick()
+                        },
+                    )
+                }
+            }
+        }
+
+        TextButton(
+            onClick = onRestoreBackupClick,
+            shapes = ButtonDefaults.shapes(),
+            colors = ButtonDefaults.textButtonColors(
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
+            contentPadding = ButtonDefaults.TextButtonWithIconContentPadding,
+        ) {
+            Icon(
+                imageVector = MaterialSymbols.Outlined.History,
+                contentDescription = null,
+                modifier = Modifier.size(ButtonDefaults.IconSize),
+            )
+            Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
+            Text(text = stringResource(R.string.nav_restore_backup))
+        }
     }
 }
