@@ -1,12 +1,12 @@
 package com.javierreansyah.pinecone.ui.features.reader.components.overlay
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,15 +19,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.FlexibleBottomAppBar
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuDefaults
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,7 +51,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.toColorInt
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Arrow_forward
@@ -66,6 +61,11 @@ import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Ink_highlighter
 import com.composables.icons.materialsymbols.outlined.Search
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuDefaults
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuGroup
+import com.javierreansyah.pinecone.ui.components.AppSelectableDropdownMenuItem
+import com.javierreansyah.pinecone.ui.components.ConnectedButtonGroup
+import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -75,23 +75,36 @@ enum class BottomBarMode {
     PROGRESS, SEARCH_NAV, TEXT_SELECTION
 }
 
+private val HighlightSwatches = listOf(
+    0x40FAC02E.toInt(),
+    0x40FD7142.toInt(),
+    0x408BC24A.toInt(),
+    0x4025C6DA.toInt(),
+)
+
 @Composable
 fun ReaderDockedToolbar(
     modifier: Modifier = Modifier,
     readerBgColor: Color,
     readerTextColor: Color,
+    showGradient: Boolean = true,
     content: @Composable () -> Unit,
 ) {
+    val backgroundModifier = if (showGradient) {
+        Modifier.background(
+            Brush.verticalGradient(
+                colors = listOf(readerBgColor.copy(alpha = 0f), readerBgColor),
+            ),
+        )
+    } else {
+        Modifier
+    }
     // Compose's expressive bottom app bar uses the Material docked-toolbar tokens:
     // 64dp content height, 16dp side padding, and system-bar insets handled once here.
     FlexibleBottomAppBar(
         modifier = modifier
             .fillMaxWidth()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(readerBgColor.copy(alpha = 0f), readerBgColor),
-                ),
-            ),
+            .then(backgroundModifier),
         containerColor = Color.Transparent,
         contentColor = readerTextColor,
     ) {
@@ -161,6 +174,10 @@ fun ReaderProgressTracker(
     // Soften against the reading background in both light and dark themes.
     val progressColor = readerTextColor.copy(alpha = readerTextColor.alpha * 0.65f)
     val seekLabel = stringResource(R.string.publication_reading_progress)
+    val progressAnimSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+    val animatedSliderPosition = remember {
+        Animatable(progression.toFloat().coerceIn(0f, 1f))
+    }
 
     LaunchedEffect(progression, isSeeking, pendingSeek) {
         val target = pendingSeek
@@ -174,6 +191,19 @@ fun ReaderProgressTracker(
             sliderPosition = progression.toFloat().coerceIn(0f, 1f)
         }
     }
+
+    LaunchedEffect(sliderPosition, isSeeking) {
+        if (isSeeking) {
+            animatedSliderPosition.snapTo(sliderPosition)
+        } else {
+            animatedSliderPosition.animateTo(
+                targetValue = sliderPosition,
+                animationSpec = progressAnimSpec,
+            )
+        }
+    }
+
+    val displayPosition = if (isSeeking) sliderPosition else animatedSliderPosition.value
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -236,7 +266,7 @@ fun ReaderProgressTracker(
             contentAlignment = Alignment.Center,
         ) {
             LinearProgressIndicator(
-                progress = { sliderPosition },
+                progress = { displayPosition },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(3.dp)
@@ -259,7 +289,7 @@ fun ReaderProgressTracker(
                 // with a slimmer profile for the compact reading toolbar.
                 val handleWidth = 3.dp.toPx()
                 val halfWidth = handleWidth / 2f
-                val rawX = size.width * if (rtl) 1f - sliderPosition else sliderPosition
+                val rawX = size.width * if (rtl) 1f - displayPosition else displayPosition
                 val shiftedX = rawX + 2.dp.toPx()
                 val handleX =
                     shiftedX.coerceIn(halfWidth, (size.width - halfWidth).coerceAtLeast(halfWidth))
@@ -313,6 +343,7 @@ fun ReaderSearchNavigator(
     modifier: Modifier = Modifier,
     activeIndex: Int?,
     totalResults: Int,
+    containerColor: Color,
     textColor: Color,
     onPrev: () -> Unit,
     onNext: () -> Unit,
@@ -329,33 +360,37 @@ fun ReaderSearchNavigator(
             text = if (totalResults == 0) stringResource(R.string.reader_no_matches) else stringResource(
                 R.string.reader_result_num_of, currentNum, totalResults,
             ),
-            style = MaterialTheme.typography.labelMedium, color = textColor,
+            style = MaterialTheme.typography.labelMedium,
+            color = textColor,
             modifier = Modifier.padding(start = 8.dp),
         )
 
         Spacer(modifier = Modifier.weight(1f))
 
-        IconButton(
-            onClick = onPrev,
-            enabled = activeIndex != null && activeIndex > 0,
+        ConnectedButtonGroup(
+            containerColor = containerColor,
+            contentColor = textColor,
         ) {
-            Icon(
-                MaterialSymbols.Outlined.Arrow_back,
-                contentDescription = stringResource(R.string.action_back),
-                tint = if (activeIndex != null && activeIndex > 0) textColor
-                else textColor.copy(alpha = 0.3f),
-            )
-        }
-        IconButton(
-            onClick = onNext,
-            enabled = activeIndex != null && activeIndex < totalResults - 1,
-        ) {
-            Icon(
-                MaterialSymbols.Outlined.Arrow_forward,
-                contentDescription = stringResource(R.string.action_more),
-                tint = if (activeIndex != null && activeIndex < totalResults - 1) textColor
-                else textColor.copy(alpha = 0.3f),
-            )
+            ConnectedGroupIconButton(
+                onClick = onPrev,
+                enabled = activeIndex != null && activeIndex > 0,
+                contentColor = textColor,
+            ) {
+                Icon(
+                    MaterialSymbols.Outlined.Arrow_back,
+                    contentDescription = stringResource(R.string.action_back),
+                )
+            }
+            ConnectedGroupIconButton(
+                onClick = onNext,
+                enabled = activeIndex != null && activeIndex < totalResults - 1,
+                contentColor = textColor,
+            ) {
+                Icon(
+                    MaterialSymbols.Outlined.Arrow_forward,
+                    contentDescription = stringResource(R.string.action_more),
+                )
+            }
         }
     }
 }
@@ -364,6 +399,7 @@ fun ReaderSearchNavigator(
 fun ReaderTextSelectionControl(
     modifier: Modifier = Modifier,
     selectedColorInt: Int?,
+    containerColor: Color,
     readerTextColor: Color,
     showDeleteOption: Boolean,
     onCopy: () -> Unit,
@@ -381,106 +417,118 @@ fun ReaderTextSelectionControl(
             .height(48.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-
-        IconButton(onClick = onCopy) {
-            Icon(
-                MaterialSymbols.Outlined.Content_copy,
-                contentDescription = stringResource(R.string.action_copy),
-                tint = readerTextColor,
-            )
-        }
-        IconButton(onClick = onSearch) {
-            Icon(
-                MaterialSymbols.Outlined.Search,
-                contentDescription = stringResource(R.string.action_search),
-                tint = readerTextColor,
-            )
-        }
-        IconButton(onClick = onDefine) {
-            Icon(
-                MaterialSymbols.Outlined.Book_3,
-                contentDescription = stringResource(R.string.action_define),
-                tint = readerTextColor,
-            )
+        ConnectedButtonGroup(
+            containerColor = containerColor,
+            contentColor = readerTextColor,
+        ) {
+            ConnectedGroupIconButton(
+                onClick = onCopy,
+                contentColor = readerTextColor,
+            ) {
+                Icon(
+                    MaterialSymbols.Outlined.Content_copy,
+                    contentDescription = stringResource(R.string.action_copy),
+                )
+            }
+            ConnectedGroupIconButton(
+                onClick = onSearch,
+                contentColor = readerTextColor,
+            ) {
+                Icon(
+                    MaterialSymbols.Outlined.Search,
+                    contentDescription = stringResource(R.string.action_search),
+                )
+            }
+            ConnectedGroupIconButton(
+                onClick = onDefine,
+                contentColor = readerTextColor,
+            ) {
+                Icon(
+                    MaterialSymbols.Outlined.Book_3,
+                    contentDescription = stringResource(R.string.action_define),
+                )
+            }
         }
 
         Spacer(modifier = Modifier.weight(1f))
 
-        if (showDeleteOption) {
-            IconButton(onClick = onDelete) {
-                Icon(
-                    MaterialSymbols.Outlined.Delete,
-                    contentDescription = stringResource(R.string.action_delete),
-                    tint = readerTextColor,
-                )
-            }
-        }
-        IconButton(onClick = onMakeNote) {
-            Icon(
-                MaterialSymbols.Outlined.Edit,
-                contentDescription = stringResource(R.string.reader_make_note),
-                tint = readerTextColor,
-            )
-        }
-        Box {
-            IconButton(onClick = { expanded = true }) {
-                Icon(
-                    MaterialSymbols.Outlined.Ink_highlighter,
-                    contentDescription = stringResource(R.string.reader_highlight_color),
-                    tint = selectedColorInt?.let { Color(it).copy(alpha = 1f) } ?: readerTextColor,
-                )
-            }
-            DropdownMenuPopup(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-            ) {
-                val swatches = listOf(
-                    "#40fac02e".toColorInt(),
-                    "#40fd7142".toColorInt(),
-                    "#408bc24a".toColorInt(),
-                    "#4025c6da".toColorInt(),
-                )
-                val totalItems = swatches.size
-                val groupInteractionSource = remember { MutableInteractionSource() }
-                DropdownMenuGroup(
-                    shapes = MenuDefaults.groupShape(0, 1),
-                    interactionSource = groupInteractionSource,
+        ConnectedButtonGroup(
+            containerColor = containerColor,
+            contentColor = readerTextColor,
+        ) {
+            if (showDeleteOption) {
+                ConnectedGroupIconButton(
+                    onClick = onDelete,
+                    contentColor = readerTextColor,
                 ) {
-                    swatches.forEachIndexed { index, colorInt ->
-                        val isSelected = selectedColorInt == colorInt
-                        SelectableDropdownMenuItem(
-                            selected = isSelected,
-                            modifier = Modifier
-                                .width(64.dp),
-                            text = {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    contentAlignment = Alignment.Center,
-                                ) {
+                    Icon(
+                        MaterialSymbols.Outlined.Delete,
+                        contentDescription = stringResource(R.string.action_delete),
+                    )
+                }
+            }
+            ConnectedGroupIconButton(
+                onClick = onMakeNote,
+                contentColor = readerTextColor,
+            ) {
+                Icon(
+                    MaterialSymbols.Outlined.Edit,
+                    contentDescription = stringResource(R.string.reader_make_note),
+                )
+            }
+            Box {
+                ConnectedGroupIconButton(
+                    onClick = { expanded = true },
+                    contentColor = selectedColorInt?.let { Color(it).copy(alpha = 1f) }
+                        ?: readerTextColor,
+                ) {
+                    Icon(
+                        MaterialSymbols.Outlined.Ink_highlighter,
+                        contentDescription = stringResource(R.string.reader_highlight_color),
+                    )
+                }
+                DropdownMenuPopup(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false },
+                ) {
+                    val totalItems = HighlightSwatches.size
+                    AppDropdownMenuGroup {
+                        HighlightSwatches.forEachIndexed { index, colorInt ->
+                            val isSelected = selectedColorInt == colorInt
+                            AppSelectableDropdownMenuItem(
+                                selected = isSelected,
+                                modifier = Modifier
+                                    .width(64.dp),
+                                text = {
                                     Box(
-                                        modifier = Modifier
-                                            .size(24.dp)
-                                            .background(
-                                                color = Color(colorInt).copy(alpha = 1f),
-                                                shape = CircleShape,
-                                            )
-                                            .border(
-                                                width = 2.dp,
-                                                color = MaterialTheme.colorScheme.surfaceContainer.copy(
-                                                    alpha = 0.2f,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(24.dp)
+                                                .background(
+                                                    color = Color(colorInt).copy(alpha = 1f),
+                                                    shape = CircleShape,
+                                                )
+                                                .border(
+                                                    width = 2.dp,
+                                                    color = MaterialTheme.colorScheme.surfaceContainer.copy(
+                                                        alpha = 0.2f,
+                                                    ),
+                                                    shape = CircleShape,
                                                 ),
-                                                shape = CircleShape,
-                                            ),
-                                    )
-                                }
-                            },
-                            contentPadding = PaddingValues(0.dp),
-                            shapes = MenuDefaults.itemShape(index, totalItems),
-                            onClick = {
-                                onColorSelected(colorInt)
-                                expanded = false
-                            },
-                        )
+                                        )
+                                    }
+                                },
+                                contentPadding = PaddingValues(0.dp),
+                                shapes = AppDropdownMenuDefaults.itemShape(index, totalItems),
+                                onClick = {
+                                    onColorSelected(colorInt)
+                                    expanded = false
+                                },
+                            )
+                        }
                     }
                 }
             }

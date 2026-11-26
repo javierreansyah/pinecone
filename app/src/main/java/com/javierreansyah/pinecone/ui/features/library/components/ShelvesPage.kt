@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,6 +29,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Book
@@ -60,10 +60,13 @@ fun ShelvesPage(
     selectedShelves: Set<String> = emptySet(),
     onShelfLongClick: ((String) -> Unit)? = null,
     spaceNames: Map<String, String> = emptyMap(),
+    topContentPadding: Dp = 0.dp,
     bottomContentPadding: Dp = 0.dp,
     onShelfToggleSelect: ((String) -> Unit)? = null,
 ) {
     val layoutEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+    val layoutSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
+    val itemPlacementSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
 
     key(scrollKey) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.TopStart) {
@@ -73,23 +76,21 @@ fun ShelvesPage(
                     transitionSpec = {
                         fadeIn(animationSpec = layoutEffectsSpec) +
                                 scaleIn(
-                                    initialScale = 0.9f,
-                                    animationSpec = layoutEffectsSpec,
+                                    initialScale = 0.96f,
+                                    animationSpec = layoutSpatialSpec,
                                 ) togetherWith fadeOut(animationSpec = layoutEffectsSpec) + scaleOut(
-                            targetScale = 0.9f,
-                            animationSpec = layoutEffectsSpec,
+                            targetScale = 0.96f,
+                            animationSpec = layoutSpatialSpec,
                         )
                     },
                     label = "shelvesPageLayoutTransition",
                 ) { targetLayoutMode ->
                     LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .then(
-                                if (targetLayoutMode != LayoutMode.List) Modifier.padding(vertical = 4.dp)
-                                else Modifier,
-                            ),
-                        contentPadding = PaddingValues(top = 8.dp, bottom = bottomContentPadding),
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            top = topContentPadding + 8.dp,
+                            bottom = bottomContentPadding,
+                        ),
                     ) {
                         items(shelves, key = { (itShelf, _) -> itShelf.id }) { shelfWithCovers ->
                             val visibleBooks = shelfWithCovers.books
@@ -102,9 +103,15 @@ fun ShelvesPage(
                                 } else spaceNames[shelfWithCovers.shelf.spaceId]
                             val isItemSelectable = !isUnshelved
                             val itemInMultiSelectMode = isInMultiSelectMode && isItemSelectable
+                            val itemModifier = Modifier.animateItem(
+                                fadeInSpec = layoutEffectsSpec,
+                                placementSpec = itemPlacementSpec,
+                                fadeOutSpec = layoutEffectsSpec,
+                            )
 
                             if (targetLayoutMode == LayoutMode.List) {
                                 ShelfListItem(
+                                    modifier = itemModifier,
                                     shelfWithCovers = shelfWithCovers,
                                     spaceName = spaceName,
                                     onClick = {
@@ -125,6 +132,7 @@ fun ShelvesPage(
                                 )
                             } else {
                                 ShelfRowItem(
+                                    modifier = itemModifier,
                                     shelfWithCovers = shelfWithCovers,
                                     spaceName = spaceName,
                                     booksCount = booksCount,
@@ -149,8 +157,10 @@ fun ShelvesPage(
                 EmptyState(
                     icon = MaterialSymbols.Outlined.Folder,
                     text = stringResource(R.string.library_empty_shelves),
+                    supportingText = stringResource(R.string.library_empty_shelves_subtitle),
                     modifier = Modifier
                         .fillMaxSize()
+                        .padding(top = topContentPadding, bottom = bottomContentPadding)
                         .padding(16.dp),
                 )
             }
@@ -160,6 +170,7 @@ fun ShelvesPage(
 
 @Composable
 private fun ShelfRowItem(
+    modifier: Modifier = Modifier,
     shelfWithCovers: ShelfWithCovers,
     booksCount: Int,
     spaceName: String? = null,
@@ -173,7 +184,7 @@ private fun ShelfRowItem(
     onToggleSelect: (() -> Unit)? = null,
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .combinedClickable(
                 onClick = {
@@ -191,7 +202,7 @@ private fun ShelfRowItem(
                     onLongClick?.invoke()
                 },
             )
-            .padding(vertical = 4.dp),
+            .padding(top = 8.dp, bottom = 4.dp),
     ) {
         ShelfRowHeader(
             shelfName = shelfWithCovers.shelf.name,
@@ -200,7 +211,6 @@ private fun ShelfRowItem(
             wording = publicationWording(visibleBooks.map { it.book.fileFormat() }),
             isInMultiSelectMode = isInMultiSelectMode,
             isSelected = isSelected,
-            onToggleSelect = onToggleSelect,
         )
         ShelfBooksHorizontalRow(
             shelfId = shelfWithCovers.shelf.id,
@@ -219,7 +229,6 @@ private fun ShelfRowHeader(
     wording: PublicationWording,
     isInMultiSelectMode: Boolean = false,
     isSelected: Boolean = false,
-    onToggleSelect: (() -> Unit)? = null,
 ) {
     Row(
         modifier = Modifier
@@ -228,13 +237,11 @@ private fun ShelfRowHeader(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(vertical = 4.dp),
+            modifier = Modifier.weight(1f),
         ) {
             Text(
                 text = shelfName,
-                style = MaterialTheme.typography.titleMediumEmphasized,
+                style = MaterialTheme.typography.titleMedium,
             )
             val countText = publicationCountLabel(booksCount, wording)
             Text(
@@ -243,12 +250,10 @@ private fun ShelfRowHeader(
                 color = MaterialTheme.colorScheme.primary,
             )
         }
-        if (isInMultiSelectMode) {
-            Checkbox(
-                checked = isSelected,
-                onCheckedChange = { onToggleSelect?.invoke() },
-            )
-        }
+        AnimatedSelectionCheckbox(
+            visible = isInMultiSelectMode,
+            checked = isSelected,
+        )
     }
 }
 

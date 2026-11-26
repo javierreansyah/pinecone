@@ -1,10 +1,9 @@
 package com.javierreansyah.pinecone.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Arrangement
@@ -39,6 +38,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.javierreansyah.pinecone.R
 
@@ -84,6 +84,8 @@ internal fun OperationFeedback(
             label = "Operation progress",
         )
     }
+    val fabSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
+    val fabEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
     AnimatedVisibility(
         visible = fabVisible,
         // Material's FAB menu already supplies the same horizontal and bottom edge spacing.
@@ -96,18 +98,10 @@ internal fun OperationFeedback(
             else Modifier,
         ),
         // Own the edge spacing so the entire button clears the window in the same flight.
-        enter = slideInHorizontally(
-            tween(
-                220,
-                easing = LinearOutSlowInEasing
-            )
-        ) { it + edgeSpacingPx },
-        exit = slideOutHorizontally(
-            tween(
-                200,
-                easing = FastOutLinearInEasing
-            )
-        ) { it + edgeSpacingPx },
+        enter = slideInHorizontally(animationSpec = fabSpatialSpec) { it + edgeSpacingPx } +
+                fadeIn(animationSpec = fabEffectsSpec),
+        exit = slideOutHorizontally(animationSpec = fabSpatialSpec) { it + edgeSpacingPx } +
+                fadeOut(animationSpec = fabEffectsSpec),
     ) {
         if (menuContent != null) {
             menuContent()

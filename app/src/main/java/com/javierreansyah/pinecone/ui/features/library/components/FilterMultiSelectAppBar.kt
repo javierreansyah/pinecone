@@ -1,7 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library.components
 
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -15,6 +14,7 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Delete
 import com.composables.icons.materialsymbols.outlined.Edit
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 
 @Composable
@@ -39,28 +39,23 @@ fun FilterMultiSelectAppBar(
         onSelectAll = onSelectAll,
         modifier = modifier,
         content = {
-            IconButton(
+            ConnectedGroupIconButton(
                 onClick = onRenameClick,
                 enabled = selectedCount > 0,
             ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Edit,
                     contentDescription = stringResource(R.string.action_rename),
-                    tint = if (selectedCount > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(
-                        alpha = 0.38f,
-                    ),
                 )
             }
-            IconButton(
+            ConnectedGroupIconButton(
                 onClick = { showDeleteConfirmation = true },
                 enabled = selectedCount > 0,
+                contentColor = if (selectedCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
             ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Delete,
                     contentDescription = stringResource(R.string.action_delete),
-                    tint = if (selectedCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(
-                        alpha = 0.38f,
-                    ),
                 )
             }
         },

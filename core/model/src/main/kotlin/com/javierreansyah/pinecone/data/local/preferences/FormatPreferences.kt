@@ -12,6 +12,7 @@ data class FormatPreferences(
     val epubLigatures: Boolean? = null,
     val epubVerticalText: Boolean? = null,
     val epubImageFilterFollowTheme: Boolean = true,
+    val epubImageViewer: Boolean = true,
 ) {
     init {
         require(epubSpread in setOf("auto", "never", "always"))

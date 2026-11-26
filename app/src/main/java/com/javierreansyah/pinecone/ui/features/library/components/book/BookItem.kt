@@ -1,14 +1,18 @@
 package com.javierreansyah.pinecone.ui.features.library.components.book
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -17,18 +21,24 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.ui.components.InsetListItemDefaults
+import com.javierreansyah.pinecone.ui.features.library.components.AnimatedSelectionCheckbox
 
 @Composable
 fun BookItem(
@@ -42,82 +52,98 @@ fun BookItem(
     content: @Composable (() -> Unit)? = null,
 ) {
     if (isList) {
-        Row(
-            modifier = modifier
-                .fillMaxWidth()
-                .then(
-                    if (onLongClick != null) {
-                        Modifier.combinedClickable(
-                            onClick = onClick,
-                            onLongClick = onLongClick,
+        ListItem(
+            onClick = onClick,
+            onLongClick = onLongClick,
+            modifier = modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
+            shapes = InsetListItemDefaults.shapes(),
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.Top,
+            leadingContent = {
+                Box(
+                    modifier = Modifier
+                        .height(100.dp)
+                        .aspectRatio(2f / 3f),
+                ) {
+                    BookCoverWithSelection(
+                        book = book,
+                        isSelected = isSelected,
+                        isInMultiSelectMode = isInMultiSelectMode,
+                        isList = true,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            },
+            trailingContent = {
+                val effectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+                if (content != null) {
+                    AnimatedContent(
+                        targetState = isInMultiSelectMode,
+                        transitionSpec = {
+                            fadeIn(animationSpec = effectsSpec) togetherWith
+                                    fadeOut(animationSpec = effectsSpec)
+                        },
+                        label = "bookListTrailing",
+                    ) { multiSelect ->
+                        if (multiSelect) {
+                            Box(
+                                modifier = Modifier.height(100.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Checkbox(
+                                    checked = isSelected,
+                                    onCheckedChange = null,
+                                )
+                            }
+                        } else {
+                            content()
+                        }
+                    }
+                } else {
+                    AnimatedSelectionCheckbox(
+                        visible = isInMultiSelectMode,
+                        checked = isSelected,
+                        modifier = Modifier.height(100.dp),
+                    )
+                }
+            },
+            content = {
+                Column(
+                    modifier = Modifier.height(100.dp),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Column {
+                        Text(
+                            text = book.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = if (book.authors.isNotEmpty()) book.authors.joinToString(", ") else stringResource(
+                                R.string.publication_unknown_author,
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    if (book.isRead) {
+                        Text(
+                            text = "100% ✓",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
                         )
                     } else {
-                        Modifier.clickable(
-                            onClick = onClick,
+                        Text(
+                            text = "${(book.furthestProgression * 100).toInt()}%",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
                         )
-                    },
-                )
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Box(
-                modifier = Modifier
-                    .height(100.dp)
-                    .aspectRatio(2f / 3f),
-            ) {
-                BookCoverWithSelection(
-                    book = book,
-                    isSelected = isSelected,
-                    isInMultiSelectMode = isInMultiSelectMode,
-                    isList = true,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(100.dp),
-                verticalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Column {
-                    Text(
-                        text = book.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = if (book.authors.isNotEmpty()) book.authors.joinToString(", ") else stringResource(
-                            R.string.publication_unknown_author,
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    }
                 }
-                if (book.isRead) {
-                    Text(
-                        text = "100% ✓",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                } else {
-                    Text(
-                        text = "${(book.furthestProgression * 100).toInt()}%",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
-            if (isInMultiSelectMode) {
-                Checkbox(
-                    checked = isSelected,
-                    onCheckedChange = null,
-                )
-            } else {
-                content?.invoke()
-            }
-        }
+            },
+        )
     } else {
         Column(
             modifier = modifier
@@ -192,16 +218,29 @@ fun BookCoverWithSelection(
     isInMultiSelectMode: Boolean = false,
     isList: Boolean = false,
 ) {
+    val effectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+    val spatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
+    val coverScale by animateFloatAsState(
+        targetValue = if (isSelected && !isList) 0.94f else 1f,
+        animationSpec = spatialSpec,
+        label = "bookSelectionCoverScale",
+    )
+
     Box(modifier = modifier, contentAlignment = Alignment.TopStart) {
         CoverImage(
             book = book,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    scaleX = coverScale
+                    scaleY = coverScale
+                },
         ) {
             Box(modifier = Modifier.matchParentSize()) {
                 AnimatedVisibility(
                     visible = isSelected && !isList,
-                    enter = fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()),
-                    exit = fadeOut(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()),
+                    enter = fadeIn(animationSpec = effectsSpec),
+                    exit = fadeOut(animationSpec = effectsSpec),
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     Box(
@@ -213,12 +252,10 @@ fun BookCoverWithSelection(
                 }
             }
         }
-        if (!isList && isInMultiSelectMode) {
-            Checkbox(
-                checked = isSelected,
-                onCheckedChange = null,
-                modifier = Modifier.padding(4.dp),
-            )
-        }
+        AnimatedSelectionCheckbox(
+            visible = !isList && isInMultiSelectMode,
+            checked = isSelected,
+            modifier = Modifier.padding(4.dp),
+        )
     }
 }

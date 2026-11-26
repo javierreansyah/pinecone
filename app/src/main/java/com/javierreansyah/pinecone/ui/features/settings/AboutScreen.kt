@@ -14,7 +14,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,6 +34,8 @@ import com.composables.icons.materialsymbols.outlined.Info
 import com.composables.icons.materialsymbols.outlined.Keyboard_arrow_right
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
+import com.javierreansyah.pinecone.ui.components.LibraryTopAppBarTitle
+import com.javierreansyah.pinecone.ui.components.SegmentedListDefaults
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 
 @Composable
@@ -64,23 +68,33 @@ fun AboutScreen(
             },
         )
     }
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val scrollState = rememberScrollState()
+    val topAppBarState = rememberTopAppBarState()
+    val canScroll by remember {
+        derivedStateOf { scrollState.maxValue > 0 || topAppBarState.heightOffset < 0f }
+    }
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+        state = topAppBarState,
+        canScroll = { canScroll },
+    )
 
     Scaffold(
-        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = modifier.then(
+            if (canScroll) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection) else Modifier,
+        ),
         topBar = {
             LibraryTopAppBar(
-                title = { Text(stringResource(R.string.about_title)) },
+                title = { LibraryTopAppBarTitle(stringResource(R.string.about_title)) },
                 onBack = onNavigateBack,
-                scrollBehavior = scrollBehavior,
+                scrollBehavior = if (canScroll) scrollBehavior else null,
             )
         },
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(scrollState, enabled = canScroll)
                 .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
                 .padding(bottom = LocalAudioPlayerBottomPadding.current)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
@@ -92,11 +106,11 @@ fun AboutScreen(
 
             Column(
                 modifier = Modifier.padding(top = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+                verticalArrangement = Arrangement.spacedBy(SegmentedListDefaults.Gap),
             ) {
                 SegmentedListItem(
                     colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                    shapes = ListItemDefaults.segmentedShapes(index = 0, count = 3),
+                    shapes = SegmentedListDefaults.shapes(index = 0, count = 3),
                     onClick = {
                         showLicense = true
                     },
@@ -121,7 +135,7 @@ fun AboutScreen(
 
                 SegmentedListItem(
                     colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                    shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
+                    shapes = SegmentedListDefaults.shapes(index = 1, count = 3),
                     onClick = {
                         val intent = Intent(
                             Intent.ACTION_VIEW,
@@ -150,7 +164,7 @@ fun AboutScreen(
 
                 SegmentedListItem(
                     colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                    shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
+                    shapes = SegmentedListDefaults.shapes(index = 2, count = 3),
                     onClick = onNavigateToOpenSourceLicenses,
                     leadingContent = {
                         Icon(

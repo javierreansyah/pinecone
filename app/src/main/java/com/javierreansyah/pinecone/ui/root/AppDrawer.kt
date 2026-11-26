@@ -1,6 +1,5 @@
 package com.javierreansyah.pinecone.ui.root
 
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -8,18 +7,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.ModalWideNavigationRail
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.SmallExtendedFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.WideNavigationRailItem
@@ -38,15 +32,14 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Add
 import com.composables.icons.materialsymbols.outlined.Archive
 import com.composables.icons.materialsymbols.outlined.Book_3
-import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Forest
 import com.composables.icons.materialsymbols.outlined.Inbox
 import com.composables.icons.materialsymbols.outlined.Menu_open
 import com.composables.icons.materialsymbols.outlined.Settings
-import com.composables.icons.materialsymbols.outlined.Upload
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.SpaceEntity
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
+import com.javierreansyah.pinecone.ui.components.ImportActionsMenu
 import kotlinx.coroutines.launch
 import com.composables.icons.materialsymbols.outlinedfilled.Forest as FilledForest
 
@@ -117,51 +110,18 @@ fun AppDrawer(
                     text = { Text(text = stringResource(R.string.action_import)) },
                 )
 
-                DropdownMenuPopup(
+                ImportActionsMenu(
                     expanded = menuExpanded,
                     onDismissRequest = { menuExpanded = false },
-                ) {
-                    val groupInteractionSource = remember { MutableInteractionSource() }
-                    DropdownMenuGroup(
-                        shapes = MenuDefaults.groupShape(0, 1),
-                        interactionSource = groupInteractionSource,
-                    ) {
-                        SelectableDropdownMenuItem(
-                            selected = false,
-                            text = { Text(stringResource(R.string.nav_import_files)) },
-                            shapes = MenuDefaults.itemShape(0, 2),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = MaterialSymbols.Outlined.Upload,
-                                    modifier = Modifier.size(MenuDefaults.LeadingIconSize),
-                                    contentDescription = null,
-                                )
-                            },
-                            onClick = {
-                                menuExpanded = false
-                                onImportFilesClick()
-                                onClose()
-                            },
-                        )
-                        SelectableDropdownMenuItem(
-                            selected = false,
-                            text = { Text(stringResource(R.string.nav_scan_folder)) },
-                            shapes = MenuDefaults.itemShape(1, 2),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = MaterialSymbols.Outlined.Folder,
-                                    modifier = Modifier.size(MenuDefaults.LeadingIconSize),
-                                    contentDescription = null,
-                                )
-                            },
-                            onClick = {
-                                menuExpanded = false
-                                onScanFolderClick()
-                                onClose()
-                            },
-                        )
-                    }
-                }
+                    onImportFilesClick = {
+                        onImportFilesClick()
+                        onClose()
+                    },
+                    onScanFolderClick = {
+                        onScanFolderClick()
+                        onClose()
+                    },
+                )
             }
 
             if (hasUnsortedBooks) {

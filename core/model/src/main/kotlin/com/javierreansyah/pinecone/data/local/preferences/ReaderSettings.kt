@@ -20,6 +20,7 @@ data class InstalledDictionary(
 data class ReaderSettings(
     val themeMode: String = "System",
     val colorPalette: String = "Dynamic",
+    val amoledDarkMode: Boolean = true,
     val themeContrast: String = "Standard",
     val locale: String = "System",
     val brightness: Float = 0.5f,

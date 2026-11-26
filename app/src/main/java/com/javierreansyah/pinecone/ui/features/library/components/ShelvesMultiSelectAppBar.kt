@@ -4,9 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -26,6 +24,8 @@ import com.composables.icons.materialsymbols.outlined.Delete
 import com.composables.icons.materialsymbols.outlined.Drive_file_move
 import com.composables.icons.materialsymbols.outlined.Edit
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.components.AppTextField
+import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 
 @Composable
@@ -54,7 +54,7 @@ fun ShelvesMultiSelectAppBar(
         onSelectAll = onSelectAll,
         modifier = modifier,
         content = {
-            IconButton(
+            ConnectedGroupIconButton(
                 onClick = {
                     renameText = selectedShelfName
                     showRenameDialog = true
@@ -64,32 +64,36 @@ fun ShelvesMultiSelectAppBar(
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Edit,
                     contentDescription = stringResource(R.string.action_rename),
-                    tint = if (selectedCount == 1) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(
-                        alpha = 0.38f,
-                    ),
                 )
             }
             if (onTransfer != null) {
-                IconButton(onClick = { onTransfer(false) }, enabled = selectedCount > 0) {
+                ConnectedGroupIconButton(
+                    onClick = { onTransfer(false) },
+                    enabled = selectedCount > 0,
+                ) {
                     Icon(
                         MaterialSymbols.Outlined.Drive_file_move,
-                        contentDescription = stringResource(R.string.library_move_shelves)
+                        contentDescription = stringResource(R.string.library_move_shelves),
                     )
                 }
-                IconButton(onClick = { onTransfer(true) }, enabled = selectedCount > 0) {
+                ConnectedGroupIconButton(
+                    onClick = { onTransfer(true) },
+                    enabled = selectedCount > 0,
+                ) {
                     Icon(
                         MaterialSymbols.Outlined.Content_copy,
-                        contentDescription = stringResource(R.string.library_copy_shelves)
+                        contentDescription = stringResource(R.string.library_copy_shelves),
                     )
                 }
             }
-            IconButton(onClick = { showDeleteConfirmation = true }, enabled = selectedCount > 0) {
+            ConnectedGroupIconButton(
+                onClick = { showDeleteConfirmation = true },
+                enabled = selectedCount > 0,
+                contentColor = if (selectedCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+            ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Delete,
                     contentDescription = stringResource(R.string.action_delete),
-                    tint = if (selectedCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(
-                        alpha = 0.38f,
-                    ),
                 )
             }
         },
@@ -112,7 +116,7 @@ fun ShelvesMultiSelectAppBar(
             },
             text = {
                 Column {
-                    OutlinedTextField(
+                    AppTextField(
                         value = renameText,
                         onValueChange = { renameText = it },
                         singleLine = true,

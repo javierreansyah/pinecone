@@ -36,12 +36,15 @@ abstract class PublicationLicenseAssetsTask : DefaultTask() {
     @TaskAction
     fun generate() {
         val directory = outputDirectory.get().asFile.apply { mkdirs() }
-        val files = licenseFiles.files.associateBy { it.name } + nativeLicenseFiles.files.associateBy {
-            "mupdf/" + it.relativeTo(nativeLicenseRoot.get().asFile).invariantSeparatorsPath
-        }
-        directory.walkTopDown().filter { it.isFile && it.relativeTo(directory).invariantSeparatorsPath !in files }.forEach {
-            check(it.delete()) { "Cannot remove obsolete generated notice: $it" }
-        }
+        val files =
+            licenseFiles.files.associateBy { it.name } + nativeLicenseFiles.files.associateBy {
+                "mupdf/" + it.relativeTo(nativeLicenseRoot.get().asFile).invariantSeparatorsPath
+            }
+        directory.walkTopDown()
+            .filter { it.isFile && it.relativeTo(directory).invariantSeparatorsPath !in files }
+            .forEach {
+                check(it.delete()) { "Cannot remove obsolete generated notice: $it" }
+            }
         files.forEach { (name, source) ->
             val target = directory.resolve(name)
             target.parentFile.mkdirs()
@@ -57,7 +60,17 @@ val publicationLicenseAssets: TaskProvider<PublicationLicenseAssetsTask> =
         nativeLicenseRoot.set(rootProject.layout.projectDirectory.dir("native/mupdf/source"))
         if (providers.gradleProperty("mupdfFromSource").map(String::toBoolean).getOrElse(false)) {
             nativeLicenseFiles.from(rootProject.fileTree("native/mupdf/source") {
-                include("COPYING", "thirdparty/**/COPYING*", "thirdparty/**/LICENSE*", "thirdparty/**/NOTICE*", "thirdparty/**/OFL*", "thirdparty/**/FTL.TXT", "resources/**/OFL*", "resources/**/LICENSE*", "resources/**/COPYING*")
+                include(
+                    "COPYING",
+                    "thirdparty/**/COPYING*",
+                    "thirdparty/**/LICENSE*",
+                    "thirdparty/**/NOTICE*",
+                    "thirdparty/**/OFL*",
+                    "thirdparty/**/FTL.TXT",
+                    "resources/**/OFL*",
+                    "resources/**/LICENSE*",
+                    "resources/**/COPYING*"
+                )
                 exclude("**/.git/**", "**/build/**")
             })
         }
@@ -66,15 +79,19 @@ val publicationLicenseAssets: TaskProvider<PublicationLicenseAssetsTask> =
 
 android {
     namespace = "com.javierreansyah.pinecone"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 1
+        }
+    }
     buildToolsVersion = "37.0.0"
 
     defaultConfig {
         applicationId = "com.javierreansyah.pinecone"
         minSdk = 34
         targetSdk = 37
-        versionCode = 100000
-        versionName = "1.0.0"
+        versionCode = 100010
+        versionName = "1.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -175,7 +192,7 @@ androidComponents {
             PublicationLicenseAssetsTask::outputDirectory
         )
         val appVersionName = android.defaultConfig.versionName
-        val baseVersionCode = android.defaultConfig.versionCode ?: 100000
+        val baseVersionCode = android.defaultConfig.versionCode ?: 100010
         val abiCodeOffsets = mapOf(
             "armeabi-v7a" to 1,
             "arm64-v8a" to 2,

@@ -1,14 +1,13 @@
 package com.javierreansyah.pinecone.ui.features.settings
 
-import android.content.Intent
-import android.net.Uri
-import android.os.Environment
-import android.provider.DocumentsContract
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -24,22 +23,16 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedListItem
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
-import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -62,6 +55,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Contrast
+import com.composables.icons.materialsymbols.outlined.Dark_mode
 import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.Forest
 import com.composables.icons.materialsymbols.outlined.History
@@ -80,14 +74,20 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.CoverDisplayMode
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.data.repository.backup.BackupProgress
+import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
+import com.javierreansyah.pinecone.ui.components.LibraryTopAppBarTitle
 import com.javierreansyah.pinecone.ui.components.ListItemAccessory
+import com.javierreansyah.pinecone.ui.components.SegmentedListDefaults
+import com.javierreansyah.pinecone.ui.components.TopAppBarActionGroup
 import com.javierreansyah.pinecone.ui.features.settings.components.ColorSchemePickerDialog
 import com.javierreansyah.pinecone.ui.features.settings.components.SettingsItem
 import com.javierreansyah.pinecone.ui.features.settings.components.SettingsSwitchItem
+import com.javierreansyah.pinecone.ui.features.settings.components.formatBackupFolderLabel
+import com.javierreansyah.pinecone.ui.features.settings.components.rememberBackupFolderPickerLauncher
+import com.javierreansyah.pinecone.ui.features.settings.components.rememberRestoreBackupAction
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import kotlinx.coroutines.launch
-import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 
@@ -97,15 +97,10 @@ fun SettingsScreen(
     onNavigateToAbout: () -> Unit = {},
 ) {
     val context = LocalContext.current
-    val navRestoringBackupMsg = stringResource(R.string.nav_restoring_backup)
-    val navRestoreSuccessMsg = stringResource(R.string.nav_restore_success)
-    val navRestoreFailedMsg = stringResource(R.string.nav_restore_failed)
-    val restorePartialMsg = stringResource(R.string.settings_restore_partial)
     val navStartingBackupMsg = stringResource(R.string.nav_starting_backup)
     val navBackupSuccessMsg = stringResource(R.string.nav_backup_success)
     val navBackupFailedMsg = stringResource(R.string.nav_backup_failed)
     val restoreSuccessMsg = stringResource(R.string.settings_restore_defaults_success)
-    val errorSetBackupLocationMsg = stringResource(R.string.settings_error_set_backup_location)
 
     val scope = rememberCoroutineScope()
     val viewModel: SettingsViewModel = hiltViewModel()
@@ -115,48 +110,20 @@ fun SettingsScreen(
     val backupProgress by viewModel.backupProgress.collectAsStateWithLifecycle()
     val isRestoring by viewModel.isRestoring.collectAsStateWithLifecycle()
     val restoreProgress by viewModel.restoreProgress.collectAsStateWithLifecycle()
-    val availableBackups by viewModel.availableBackups.collectAsStateWithLifecycle()
 
     var showColorPicker by remember { mutableStateOf(value = false) }
     var showRestoreDefaultWarning by remember { mutableStateOf(value = false) }
-    var showRestoreWarning by remember { mutableStateOf(value = false) }
-    var showRestoreBottomSheet by remember { mutableStateOf(value = false) }
-    var selectedBackupToRestore by remember { mutableStateOf<BackupFile?>(null) }
 
-    val folderPickerLauncher = rememberLauncherForActivityResult(
-        contract = object : ActivityResultContracts.OpenDocumentTree() {
-            override fun createIntent(context: android.content.Context, input: Uri?): Intent {
-                val intent = super.createIntent(context, input)
-                input?.let { intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, it) }
-                return intent
-            }
-        },
-    ) { uri ->
-        uri?.let {
-            val takeFlags: Int =
-                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            context.contentResolver.takePersistableUriPermission(it, takeFlags)
-            viewModel.updateSettings { current -> current.copy(backupFolderUri = it.toString()) }
-        }
+    val launchFolderPicker = rememberBackupFolderPickerLauncher { uri ->
+        viewModel.updateSettings { current -> current.copy(backupFolderUri = uri.toString()) }
     }
+    val onRestoreClick = rememberRestoreBackupAction(
+        viewModel = viewModel,
+        showProgressDialog = false,
+    )
 
     val hasPermission = settings.backupFolderUri.isNotEmpty() &&
             context.contentResolver.persistedUriPermissions.any { it.uri.toString() == settings.backupFolderUri }
-
-    val launchFolderPicker = {
-        val pineconeDir = File(
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-            "Pinecone",
-        )
-        if (!pineconeDir.exists()) {
-            pineconeDir.mkdirs()
-        }
-        val initialUri = DocumentsContract.buildDocumentUri(
-            "com.android.externalstorage.documents",
-            "primary:Documents/Pinecone",
-        )
-        folderPickerLauncher.launch(initialUri)
-    }
 
     SettingsContent(
         settings = settings,
@@ -172,6 +139,9 @@ fun SettingsScreen(
             viewModel.updateSettings { current -> current.copy(themeMode = themeMode) }
         },
         onColorPaletteClick = { showColorPicker = true },
+        onAmoledDarkModeChanged = { enabled ->
+            viewModel.updateSettings { current -> current.copy(amoledDarkMode = enabled) }
+        },
         onThemeContrastSelected = { themeContrast ->
             viewModel.updateSettings { current -> current.copy(themeContrast = themeContrast) }
         },
@@ -224,27 +194,20 @@ fun SettingsScreen(
             if (!hasPermission) {
                 launchFolderPicker()
             } else {
+                val appContext = context.applicationContext
                 viewModel.performFullBackup(
                     onStart = {
-                        Toast.makeText(context, navStartingBackupMsg, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(appContext, navStartingBackupMsg, Toast.LENGTH_SHORT).show()
                     },
                     onSuccess = {
-                        Toast.makeText(context, navBackupSuccessMsg, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(appContext, navBackupSuccessMsg, Toast.LENGTH_SHORT).show()
                     },
                 ) {
-                    Toast.makeText(context, navBackupFailedMsg, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(appContext, navBackupFailedMsg, Toast.LENGTH_SHORT).show()
                 }
             }
         },
-        onRestoreClick = {
-            if (!hasPermission) {
-                Toast.makeText(context, errorSetBackupLocationMsg, Toast.LENGTH_LONG).show()
-                launchFolderPicker()
-            } else {
-                viewModel.loadBackups()
-                showRestoreBottomSheet = true
-            }
-        },
+        onRestoreClick = onRestoreClick,
     )
 
     if (showColorPicker) {
@@ -271,35 +234,6 @@ fun SettingsScreen(
         }
     }
 
-    if (showRestoreWarning) {
-        RestoreBackupWarningDialog(
-            onDismiss = {
-                showRestoreWarning = false
-                selectedBackupToRestore = null
-            },
-        ) {
-            showRestoreWarning = false
-            selectedBackupToRestore?.uri?.let { uri ->
-                viewModel.restoreFullBackup(
-                    uri = uri,
-                    onStart = {
-                        Toast.makeText(context, navRestoringBackupMsg, Toast.LENGTH_SHORT)
-                            .show()
-                    },
-                    onSuccess = {
-                        Toast.makeText(context, navRestoreSuccessMsg, Toast.LENGTH_SHORT).show()
-                    },
-                    onWarning = {
-                        Toast.makeText(context, restorePartialMsg, Toast.LENGTH_LONG).show()
-                    },
-                ) {
-                    Toast.makeText(context, navRestoreFailedMsg, Toast.LENGTH_SHORT).show()
-                }
-            }
-            selectedBackupToRestore = null
-        }
-    }
-
     if (showRestoreDefaultWarning) {
         RestoreDefaultWarningDialog(
             onDismiss = { showRestoreDefaultWarning = false },
@@ -309,6 +243,7 @@ fun SettingsScreen(
                 current.copy(
                     themeMode = "System",
                     colorPalette = "Dynamic",
+                    amoledDarkMode = true,
                     themeContrast = "Standard",
                     locale = "System",
                     autoBackupFrequency = "12h",
@@ -332,18 +267,6 @@ fun SettingsScreen(
             ).show()
         }
     }
-
-    if (showRestoreBottomSheet) {
-        RestoreBottomSheet(
-            availableBackups = availableBackups,
-            onDismiss = { showRestoreBottomSheet = false },
-            onSelectBackup = { backup ->
-                selectedBackupToRestore = backup
-                showRestoreBottomSheet = false
-                showRestoreWarning = true
-            },
-        )
-    }
 }
 
 @Composable
@@ -359,6 +282,7 @@ private fun SettingsContent(
     onRestoreDefaultClick: () -> Unit,
     onThemeModeSelected: (String) -> Unit,
     onColorPaletteClick: () -> Unit,
+    onAmoledDarkModeChanged: (Boolean) -> Unit,
     onThemeContrastSelected: (String) -> Unit,
     onSpacesEnabledChanged: (Boolean) -> Unit,
     onShowAllSpacesChanged: (Boolean) -> Unit,
@@ -386,9 +310,9 @@ private fun SettingsContent(
     ) { innerPadding ->
         Column(
             modifier = Modifier
-                .padding(innerPadding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
+                .padding(innerPadding)
                 .padding(bottom = LocalAudioPlayerBottomPadding.current)
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -409,6 +333,7 @@ private fun SettingsContent(
                 settings = settings,
                 onThemeModeSelected = onThemeModeSelected,
                 onColorPaletteClick = onColorPaletteClick,
+                onAmoledDarkModeChanged = onAmoledDarkModeChanged,
                 onThemeContrastSelected = onThemeContrastSelected,
             )
 
@@ -440,17 +365,18 @@ private fun SettingsTopBar(
     modifier: Modifier = Modifier,
 ) {
     LibraryTopAppBar(
-        title = { Text(stringResource(R.string.settings_title)) },
+        title = { LibraryTopAppBarTitle(stringResource(R.string.settings_title)) },
         onBack = onNavigateBack,
         actions = {
-            IconButton(
-                shapes = IconButtonDefaults.shapes(),
-                onClick = onRestoreDefaultClick,
-            ) {
-                Icon(
-                    imageVector = MaterialSymbols.Outlined.Restart_alt,
-                    contentDescription = stringResource(R.string.settings_restore_defaults),
-                )
+            TopAppBarActionGroup {
+                ConnectedGroupIconButton(
+                    onClick = onRestoreDefaultClick,
+                ) {
+                    Icon(
+                        imageVector = MaterialSymbols.Outlined.Restart_alt,
+                        contentDescription = stringResource(R.string.settings_restore_defaults),
+                    )
+                }
             }
         },
         scrollBehavior = scrollBehavior,
@@ -471,7 +397,7 @@ private fun SettingsSection(
             modifier = Modifier.padding(bottom = 8.dp),
         )
         Column(
-            verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+            verticalArrangement = Arrangement.spacedBy(SegmentedListDefaults.Gap),
             modifier = Modifier.padding(bottom = 16.dp),
         ) { content() }
     }
@@ -493,7 +419,7 @@ private fun LanguageSettingsSection(
         val localeKey = if (settings.locale == "in") "id" else settings.locale
 
         SettingsItem(
-            shapes = ListItemDefaults.segmentedShapes(index = 0, count = 1),
+            shapes = SegmentedListDefaults.shapes(index = 0, count = 1),
             content = { Text(languageLabel) },
             value = localeKey.takeIf { it in languagesMap } ?: "System",
             options = languagesMap.keys.toList(),
@@ -522,7 +448,7 @@ private fun LibrarySettingsSection(
             CoverDisplayMode.Cover to stringResource(R.string.settings_cover_cover),
         )
         SettingsItem(
-            shapes = ListItemDefaults.segmentedShapes(index = 0, count = 3),
+            shapes = SegmentedListDefaults.shapes(index = 0, count = 3),
             content = {
                 Text(
                     stringResource(R.string.settings_cover_display),
@@ -535,7 +461,7 @@ private fun LibrarySettingsSection(
             leadingIcon = { Icon(MaterialSymbols.Outlined.Image, contentDescription = null) },
         )
         SettingsSwitchItem(
-            shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
+            shapes = SegmentedListDefaults.shapes(index = 1, count = 3),
             title = stringResource(R.string.settings_library_bottom_navigation),
             summary = stringResource(R.string.settings_library_bottom_navigation_summary),
             checked = settings.showLibraryBottomNavigation,
@@ -543,7 +469,7 @@ private fun LibrarySettingsSection(
             icon = MaterialSymbols.Outlined.Swap_horiz,
         )
         SettingsSwitchItem(
-            shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
+            shapes = SegmentedListDefaults.shapes(index = 2, count = 3),
             title = stringResource(R.string.settings_unsorted_enabled),
             summary = stringResource(R.string.settings_unsorted_enabled_summary),
             checked = settings.unsortedEnabled,
@@ -561,7 +487,7 @@ private fun SpaceSettingsSection(
 ) {
     SettingsSection(stringResource(R.string.settings_space)) {
         SettingsSwitchItem(
-            shapes = ListItemDefaults.segmentedShapes(index = 0, count = 2),
+            shapes = SegmentedListDefaults.shapes(index = 0, count = 2),
             title = stringResource(R.string.settings_spaces_enabled),
             summary = stringResource(R.string.settings_spaces_enabled_summary),
             checked = settings.spacesEnabled,
@@ -569,7 +495,7 @@ private fun SpaceSettingsSection(
             icon = MaterialSymbols.Outlined.Forest,
         )
         SettingsSwitchItem(
-            shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
+            shapes = SegmentedListDefaults.shapes(index = 1, count = 2),
             title = stringResource(R.string.settings_hide_all_space),
             summary = stringResource(R.string.settings_hide_all_space_summary),
             checked = !settings.showAllSpaces,
@@ -585,6 +511,7 @@ private fun ThemeSettingsSection(
     settings: ReaderSettings,
     onThemeModeSelected: (String) -> Unit,
     onColorPaletteClick: () -> Unit,
+    onAmoledDarkModeChanged: (Boolean) -> Unit,
     onThemeContrastSelected: (String) -> Unit,
 ) {
     SettingsSection(stringResource(R.string.reader_settings_theme)) {
@@ -596,7 +523,7 @@ private fun ThemeSettingsSection(
 
         val themeLabel = stringResource(R.string.settings_theme_mode)
         SettingsItem(
-            shapes = ListItemDefaults.segmentedShapes(index = 0, count = 3),
+            shapes = SegmentedListDefaults.shapes(index = 0, count = 4),
             content = { Text(themeLabel) },
             value = settings.themeMode,
             options = themeOptionsMap.keys.toList(),
@@ -633,7 +560,7 @@ private fun ThemeSettingsSection(
                 containerColor = MaterialTheme.colorScheme.surfaceContainer,
                 disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
             ),
-            shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
+            shapes = SegmentedListDefaults.shapes(index = 1, count = 4),
             onClick = onColorPaletteClick,
             leadingContent = {
                 ListItemAccessory {
@@ -681,6 +608,15 @@ private fun ThemeSettingsSection(
             },
         )
 
+        SettingsSwitchItem(
+            shapes = SegmentedListDefaults.shapes(index = 2, count = 4),
+            title = stringResource(R.string.settings_amoled_dark_mode),
+            summary = stringResource(R.string.settings_amoled_dark_mode_summary),
+            checked = settings.amoledDarkMode,
+            onChanged = onAmoledDarkModeChanged,
+            icon = MaterialSymbols.Outlined.Dark_mode,
+        )
+
         val themeContrastMap = mapOf(
             "Standard" to stringResource(R.string.settings_option_standard),
             "Medium" to stringResource(R.string.settings_option_medium),
@@ -689,7 +625,7 @@ private fun ThemeSettingsSection(
 
         val themeContrastLabel = stringResource(R.string.settings_theme_contrast)
         SettingsItem(
-            shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
+            shapes = SegmentedListDefaults.shapes(index = 3, count = 4),
             content = {
                 Text(
                     themeContrastLabel,
@@ -736,7 +672,7 @@ private fun BackupSettingsSection(
             )
 
             Column(
-                verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+                verticalArrangement = Arrangement.spacedBy(SegmentedListDefaults.Gap),
                 modifier = Modifier.padding(bottom = 16.dp)
             ) {
                 val backupLocationLabel = stringResource(R.string.settings_backup_location)
@@ -747,7 +683,7 @@ private fun BackupSettingsSection(
                         containerColor = MaterialTheme.colorScheme.surfaceContainer,
                         disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                     ),
-                    shapes = ListItemDefaults.segmentedShapes(index = 0, count = 4),
+                    shapes = SegmentedListDefaults.shapes(index = 0, count = 4),
                     onClick = onBackupLocationClick,
                     leadingContent = {
                         ListItemAccessory {
@@ -764,8 +700,12 @@ private fun BackupSettingsSection(
                     },
                     supportingContent = {
                         Text(
-                            if (hasPermission) stringResource(R.string.settings_option_selected)
-                            else stringResource(R.string.settings_option_not_selected),
+                            if (hasPermission) {
+                                formatBackupFolderLabel(settings.backupFolderUri)
+                                    ?: stringResource(R.string.settings_option_selected)
+                            } else {
+                                stringResource(R.string.settings_option_not_selected)
+                            },
                         )
                     },
                     trailingContent = {
@@ -789,7 +729,7 @@ private fun BackupSettingsSection(
 
                 val autoBackupFrequencyLabel = stringResource(R.string.settings_auto_backup_freq)
                 SettingsItem(
-                    shapes = ListItemDefaults.segmentedShapes(index = 1, count = 4),
+                    shapes = SegmentedListDefaults.shapes(index = 1, count = 4),
                     content = {
                         Text(
                             autoBackupFrequencyLabel,
@@ -826,7 +766,7 @@ private fun BackupSettingsSection(
                         containerColor = MaterialTheme.colorScheme.surfaceContainer,
                         disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                     ),
-                    shapes = ListItemDefaults.segmentedShapes(index = 2, count = 4),
+                    shapes = SegmentedListDefaults.shapes(index = 2, count = 4),
                     enabled = hasPermission && !isBackingUp && !isRestoring,
                     onClick = onBackupClick,
                     leadingContent = {
@@ -854,7 +794,22 @@ private fun BackupSettingsSection(
                                     stringResource(R.string.nav_setup_now)
                                 },
                             )
-                            AnimatedVisibility(visible = isBackingUp) {
+                            val progressSpatialSpec =
+                                MaterialTheme.motionScheme.fastSpatialSpec<androidx.compose.ui.unit.IntSize>()
+                            val progressEffectsSpec =
+                                MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+                            val animatedBackupFraction by animateFloatAsState(
+                                targetValue = backupProgress.fraction.coerceIn(0f, 1f),
+                                animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+                                label = "backupProgressFraction",
+                            )
+                            AnimatedVisibility(
+                                visible = isBackingUp,
+                                enter = expandVertically(animationSpec = progressSpatialSpec) +
+                                        fadeIn(animationSpec = progressEffectsSpec),
+                                exit = shrinkVertically(animationSpec = progressSpatialSpec) +
+                                        fadeOut(animationSpec = progressEffectsSpec),
+                            ) {
                                 Column {
                                     Text(
                                         if (backupProgress.totalFiles == 0) {
@@ -868,7 +823,7 @@ private fun BackupSettingsSection(
                                         },
                                     )
                                     LinearWavyProgressIndicator(
-                                        progress = { backupProgress.fraction },
+                                        progress = { animatedBackupFraction },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(top = 8.dp),
@@ -894,7 +849,7 @@ private fun BackupSettingsSection(
                         containerColor = MaterialTheme.colorScheme.surfaceContainer,
                         disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                     ),
-                    shapes = ListItemDefaults.segmentedShapes(index = 3, count = 4),
+                    shapes = SegmentedListDefaults.shapes(index = 3, count = 4),
                     enabled = hasPermission && !isBackingUp && !isRestoring,
                     onClick = onRestoreClick,
                     leadingContent = {
@@ -915,7 +870,22 @@ private fun BackupSettingsSection(
                             Text(
                                 stringResource(R.string.settings_restore_summary),
                             )
-                            AnimatedVisibility(visible = isRestoring) {
+                            val restoreSpatialSpec =
+                                MaterialTheme.motionScheme.fastSpatialSpec<androidx.compose.ui.unit.IntSize>()
+                            val restoreEffectsSpec =
+                                MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+                            val animatedRestoreFraction by animateFloatAsState(
+                                targetValue = restoreProgress.fraction.coerceIn(0f, 1f),
+                                animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+                                label = "restoreProgressFraction",
+                            )
+                            AnimatedVisibility(
+                                visible = isRestoring,
+                                enter = expandVertically(animationSpec = restoreSpatialSpec) +
+                                        fadeIn(animationSpec = restoreEffectsSpec),
+                                exit = shrinkVertically(animationSpec = restoreSpatialSpec) +
+                                        fadeOut(animationSpec = restoreEffectsSpec),
+                            ) {
                                 Column {
                                     Text(
                                         if (restoreProgress.totalFiles == 0) {
@@ -929,7 +899,7 @@ private fun BackupSettingsSection(
                                         },
                                     )
                                     LinearWavyProgressIndicator(
-                                        progress = { restoreProgress.fraction },
+                                        progress = { animatedRestoreFraction },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(top = 8.dp),
@@ -967,14 +937,14 @@ private fun AboutSettingsSection(
 
         Column(
             modifier = Modifier.padding(bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+            verticalArrangement = Arrangement.spacedBy(SegmentedListDefaults.Gap),
         ) {
             SegmentedListItem(
                 colors = ListItemDefaults.segmentedColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,
                     disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                 ),
-                shapes = ListItemDefaults.segmentedShapes(index = 0, count = 1),
+                shapes = SegmentedListDefaults.shapes(index = 0, count = 1),
                 onClick = onNavigateToAbout,
                 leadingContent = {
                     Icon(
@@ -1021,131 +991,4 @@ private fun RestoreDefaultWarningDialog(
             }
         },
     )
-}
-
-@Composable
-private fun RestoreBackupWarningDialog(
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.nav_restore_backup)) },
-        text = { Text(stringResource(R.string.settings_restore_backup_warning)) },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(
-                    stringResource(R.string.action_proceed),
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.action_cancel))
-            }
-        },
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun RestoreBottomSheet(
-    availableBackups: List<BackupFile>,
-    onDismiss: () -> Unit,
-    onSelectBackup: (BackupFile) -> Unit,
-) {
-    val bottomSheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
-    val scope = rememberCoroutineScope()
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = bottomSheetState,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 32.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.settings_restore_backup_sheet_title),
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 16.dp),
-            )
-
-            if (availableBackups.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.settings_no_backups_found),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 16.dp),
-                )
-            } else {
-                val groupedBackups =
-                    availableBackups.groupBy { backup -> backup.isManual }
-                val groups = groupedBackups.entries.sortedByDescending { (_, entryValue) ->
-                    entryValue.maxOfOrNull { backup -> backup.timestamp } ?: 0L
-                }
-
-                Column(
-                    modifier = Modifier.verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    groups.forEach { (isManual, backups) ->
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(
-                                text = if (isManual) stringResource(R.string.settings_backup_manual_label)
-                                else stringResource(R.string.settings_backup_auto_label),
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                            Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
-                                backups.sortedByDescending { backup -> backup.timestamp }
-                                    .forEachIndexed { index, backup ->
-                                        SegmentedListItem(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            colors = ListItemDefaults.segmentedColors(
-                                                containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                                                disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                                            ),
-                                            shapes = ListItemDefaults.segmentedShapes(
-                                                index = index,
-                                                count = backups.size
-                                            ),
-                                            onClick = {
-                                                onSelectBackup(backup)
-                                                scope.launch { bottomSheetState.hide() }
-                                                    .invokeOnCompletion {
-                                                        if (!bottomSheetState.isVisible) {
-                                                            onDismiss()
-                                                        }
-                                                    }
-                                            },
-                                            leadingContent = {
-                                                Icon(
-                                                    imageVector = MaterialSymbols.Outlined.History,
-                                                    contentDescription = null,
-                                                )
-                                            },
-                                            content = {
-                                                Text(
-                                                    text = backup.formattedDate,
-                                                )
-                                            },
-                                            trailingContent = {
-                                                Icon(
-                                                    imageVector = MaterialSymbols.Outlined.Keyboard_arrow_right,
-                                                    contentDescription = null,
-                                                )
-                                            },
-                                        )
-                                    }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 }

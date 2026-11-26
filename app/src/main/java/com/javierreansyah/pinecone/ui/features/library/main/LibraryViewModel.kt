@@ -75,7 +75,22 @@ class LibraryViewModel @Inject constructor(
     private val _isBooksLoading = MutableStateFlow(value = true)
     private val _isShelvesLoading = MutableStateFlow(value = true)
 
-    private val globalSpaceId: StateFlow<String?> = prefsManager.getEffectiveSpaceFlow().stateIn(
+    private val allSpaces: StateFlow<List<SpaceEntity>> = bookRepository.getAllSpaces().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList(),
+    )
+
+    private val globalSpaceId: StateFlow<String?> = combine(
+        prefsManager.getEffectiveSpaceFlow(),
+        allSpaces,
+    ) { spaceId, spaces ->
+        if (spaceId != null && spaceId != "_all_" && spaces.isNotEmpty() && spaces.none { it.id == spaceId }) {
+            "_all_"
+        } else {
+            spaceId
+        }
+    }.distinctUntilChanged().stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = null,
@@ -91,12 +106,6 @@ class LibraryViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList(),
         )
-
-    private val allSpaces: StateFlow<List<SpaceEntity>> = bookRepository.getAllSpaces().stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList(),
-    )
 
     private val allShelvesEntities: StateFlow<List<ShelfEntity>> =
         bookRepository.searchShelves("").stateIn(
@@ -184,17 +193,20 @@ class LibraryViewModel @Inject constructor(
     }.flowOn(computation)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SearchResults())
 
+    private val hasAnyBooks: Flow<Boolean> = bookRepository.hasAnyBooks()
+
     private val hasUnsortedBooks: Flow<Boolean> = bookRepository.hasUnsortedBooks()
 
     private val librarySettings = readerPreferences.readerSettings
 
     private val contentState = combine(
-        filteredBooks, shelves, allBooks, searchResults,
-    ) { books, shelfList, all, results ->
+        filteredBooks, shelves, allBooks, searchResults, hasAnyBooks,
+    ) { books, shelfList, all, results, anyBooks ->
         LibraryScreenUiState(
             filteredBooks = books,
             shelves = shelfList,
             allBooks = all,
+            hasAnyBooksInDatabase = anyBooks,
             searchResults = results,
         )
     }

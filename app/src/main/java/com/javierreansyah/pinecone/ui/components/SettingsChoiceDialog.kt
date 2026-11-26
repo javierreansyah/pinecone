@@ -38,7 +38,7 @@ fun <T : Any> SettingsChoiceDialog(
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
                     .selectableGroup(),
-                verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+                verticalArrangement = Arrangement.spacedBy(SegmentedListDefaults.Gap),
             ) {
                 if (options.isEmpty() && emptyText != null) {
                     Text(emptyText, style = MaterialTheme.typography.bodyLarge)
@@ -53,7 +53,7 @@ fun <T : Any> SettingsChoiceDialog(
                                 onSelected(option)
                                 onDismiss()
                             },
-                            shapes = ListItemDefaults.segmentedShapes(
+                            shapes = SegmentedListDefaults.shapes(
                                 index = index,
                                 count = options.size
                             ),

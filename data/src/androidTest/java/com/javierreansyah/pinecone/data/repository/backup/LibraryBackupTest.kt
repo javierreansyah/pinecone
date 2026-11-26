@@ -15,6 +15,8 @@ import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.data.local.database.library.PublicationRenditionEntity
 import com.javierreansyah.pinecone.data.local.preferences.JsonPreferenceSerializer
+import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesData
+import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferencesData
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
@@ -58,12 +60,22 @@ class LibraryBackupTest {
             }
             val assetsBefore = f.assets.booksDirectory.list().orEmpty().toSet()
             val coversBefore = f.assets.coversDirectory.list().orEmpty().toSet()
-            for (badId in listOf("../escaped", "..\\escaped", "/absolute", "C:drive", "bad\u0000id")) {
+            for (badId in listOf(
+                "../escaped",
+                "..\\escaped",
+                "/absolute",
+                "C:drive",
+                "bad\u0000id"
+            )) {
                 val malicious = snapshot.copy(
                     library = snapshot.library.copy(
                         books = snapshot.library.books.map { it.copy(id = badId) },
                         renditions = snapshot.library.renditions.map { it.copy(bookId = badId) },
-                        bookSpaceCrossRefs = snapshot.library.bookSpaceCrossRefs.map { it.copy(bookId = badId) },
+                        bookSpaceCrossRefs = snapshot.library.bookSpaceCrossRefs.map {
+                            it.copy(
+                                bookId = badId
+                            )
+                        },
                     ),
                     books = snapshot.books.map { it.copy(bookId = badId) },
                     renditions = snapshot.renditions.map { it.copy(bookId = badId) },
@@ -77,7 +89,10 @@ class LibraryBackupTest {
                 }
                 val result = f.backups.restoreSnapshot(saved.uri)
                 assertTrue(result.toString(), result is BackupResult.Failure)
-                assertEquals("Invalid book identity", (result as BackupResult.Failure).cause?.message)
+                assertEquals(
+                    "Invalid book identity",
+                    (result as BackupResult.Failure).cause?.message
+                )
                 assertEquals(source, f.db.bookDao().getEntity(source.id))
                 assertEquals(settings, f.preferences.readerSettings.first())
                 assertArrayEquals(originalBytes, File(source.filePath).readBytes())
@@ -92,26 +107,35 @@ class LibraryBackupTest {
         fixture { f ->
             val source = f.seedBook()
             val settings = f.preferences.readerSettings.first()
-            val snapshot = snapshotJson.decodeFromString<com.javierreansyah.pinecone.data.model.VaultSnapshot>(
-                f.context.assets.open("compatibility/v1.0.0/snapshot.json").bufferedReader().use { it.readText() }
-            )
+            val snapshot =
+                snapshotJson.decodeFromString<com.javierreansyah.pinecone.data.model.VaultSnapshot>(
+                    f.context.assets.open("compatibility/v1.0.0/snapshot.json").bufferedReader()
+                        .use { it.readText() }
+                )
             val malicious = snapshot.copy(dictionaries = snapshot.dictionaries.map {
                 it.copy(dictionary = it.dictionary.copy(id = "../escape"))
             })
             val portable = f.file(".pinebackup")
             java.util.zip.ZipOutputStream(portable.outputStream()).use { zip ->
                 zip.putNextEntry(java.util.zip.ZipEntry("manifest.json"))
-                zip.write(snapshotJson.encodeToString(
-                    com.javierreansyah.pinecone.data.model.PortableBackupManifest(snapshot = malicious)
-                ).encodeToByteArray())
+                zip.write(
+                    snapshotJson.encodeToString(
+                        com.javierreansyah.pinecone.data.model.PortableBackupManifest(snapshot = malicious)
+                    ).encodeToByteArray()
+                )
                 zip.closeEntry()
             }
             val result = f.backups.importPortable(Uri.fromFile(portable))
             assertTrue(result.toString(), result is BackupResult.Failure)
-            assertEquals("Invalid dictionary identity", (result as BackupResult.Failure).cause?.message)
+            assertEquals(
+                "Invalid dictionary identity",
+                (result as BackupResult.Failure).cause?.message
+            )
             assertTrue(f.backups.listSnapshots().isEmpty())
             val dirs = requireNotNull(f.vault.open(false))
-            assertTrue(listOf(dirs.books, dirs.covers, dirs.dictionaries).all { it.listFiles().isEmpty() })
+            assertTrue(listOf(dirs.books, dirs.covers, dirs.dictionaries).all {
+                it.listFiles().isEmpty()
+            })
             assertEquals(source, f.db.bookDao().getEntity(source.id))
             assertEquals(settings, f.preferences.readerSettings.first())
         }
@@ -143,28 +167,35 @@ class LibraryBackupTest {
             val snapshotsBefore = f.backups.listSnapshots()
             val dirs = requireNotNull(f.vault.open(false))
             val objectFolders = listOf(dirs.books, dirs.covers, dirs.dictionaries)
-            val objectsBefore = objectFolders.map { folder -> folder.listFiles().map { it.name }.toSet() }
+            val objectsBefore =
+                objectFolders.map { folder -> folder.listFiles().map { it.name }.toSet() }
             val portable = f.file(".pinebackup")
             var corrupted = false
-            java.util.zip.ZipInputStream(f.context.assets.open("compatibility/v1.0.0/portable.pinebackup")).use { input ->
-                java.util.zip.ZipOutputStream(portable.outputStream()).use { output ->
-                    while (true) {
-                        val entry = input.nextEntry ?: break
-                        var bytes = input.readBytes()
-                        if (entry.name != "manifest.json" && !corrupted) {
-                            bytes = bytes.copyOf(bytes.size - 1)
-                            corrupted = true
+            java.util.zip.ZipInputStream(f.context.assets.open("compatibility/v1.0.0/portable.pinebackup"))
+                .use { input ->
+                    java.util.zip.ZipOutputStream(portable.outputStream()).use { output ->
+                        while (true) {
+                            val entry = input.nextEntry ?: break
+                            var bytes = input.readBytes()
+                            if (entry.name != "manifest.json" && !corrupted) {
+                                bytes = bytes.copyOf(bytes.size - 1)
+                                corrupted = true
+                            }
+                            output.putNextEntry(java.util.zip.ZipEntry(entry.name))
+                            output.write(bytes)
+                            output.closeEntry()
                         }
-                        output.putNextEntry(java.util.zip.ZipEntry(entry.name))
-                        output.write(bytes)
-                        output.closeEntry()
                     }
                 }
-            }
             assertTrue(corrupted)
             val result = f.backups.importPortable(Uri.fromFile(portable))
-            assertTrue(result.toString(), result is BackupResult.Failure && result.reason == BackupFailure.MALFORMED_ARCHIVE)
-            assertEquals(objectsBefore, objectFolders.map { folder -> folder.listFiles().map { it.name }.toSet() })
+            assertTrue(
+                result.toString(),
+                result is BackupResult.Failure && result.reason == BackupFailure.MALFORMED_ARCHIVE
+            )
+            assertEquals(
+                objectsBefore,
+                objectFolders.map { folder -> folder.listFiles().map { it.name }.toSet() })
             assertEquals(snapshotsBefore, f.backups.listSnapshots())
             assertEquals(source, f.db.bookDao().getEntity(source.id))
             assertEquals(settings, f.preferences.readerSettings.first())
@@ -183,7 +214,10 @@ class LibraryBackupTest {
             }
             assertTrue(dirs.covers.delete())
             val result = f.backups.createSnapshot(true)
-            assertTrue(result.toString(), result is BackupResult.Failure && result.reason == BackupFailure.UNSUPPORTED_VERSION)
+            assertTrue(
+                result.toString(),
+                result is BackupResult.Failure && result.reason == BackupFailure.UNSUPPORTED_VERSION
+            )
             assertNull(dirs.vault.findFile("objects")?.findFile("covers"))
             assertEquals(source, f.db.bookDao().getEntity(source.id))
             assertTrue(File(source.filePath).isFile)
@@ -207,18 +241,33 @@ class LibraryBackupTest {
     fun versionOneVaultRestoresAllPersistedContent() = runBlocking {
         fixture { f ->
             val root = requireNotNull(f.vault.open(true)).vault
-            java.util.zip.ZipInputStream(f.context.assets.open("compatibility/v1.0.0/vault.zip")).use { zip ->
-                while (true) {
-                    val entry = zip.nextEntry ?: break
-                    val parts = entry.name.split('/')
-                    var parent = root
-                    parts.dropLast(1).forEach { name ->
-                        parent = parent.findFile(name) ?: requireNotNull(parent.createDirectory(name))
+            java.util.zip.ZipInputStream(f.context.assets.open("compatibility/v1.0.0/vault.zip"))
+                .use { zip ->
+                    while (true) {
+                        val entry = zip.nextEntry ?: break
+                        val parts = entry.name.split('/')
+                        var parent = root
+                        parts.dropLast(1).forEach { name ->
+                            parent = parent.findFile(name) ?: requireNotNull(
+                                parent.createDirectory(
+                                    name
+                                )
+                            )
+                        }
+                        val file = parent.findFile(parts.last()) ?: requireNotNull(
+                            parent.createFile(
+                                "application/octet-stream",
+                                parts.last()
+                            )
+                        )
+                        requireNotNull(
+                            f.context.contentResolver.openOutputStream(
+                                file.uri,
+                                "wt"
+                            )
+                        ).use { zip.copyTo(it) }
                     }
-                    val file = parent.findFile(parts.last()) ?: requireNotNull(parent.createFile("application/octet-stream", parts.last()))
-                    requireNotNull(f.context.contentResolver.openOutputStream(file.uri, "wt")).use { zip.copyTo(it) }
                 }
-            }
             assertSuccess(f.backups.restoreSnapshot(f.backups.listSnapshots().single().uri))
             assertBaselineRestored(f)
         }
@@ -232,11 +281,14 @@ class LibraryBackupTest {
             val portable = f.file(".pinebackup")
             java.util.zip.ZipOutputStream(portable.outputStream()).use { zip ->
                 zip.putNextEntry(java.util.zip.ZipEntry("manifest.json"))
-                zip.write("""{"format":"pinecone-portable-backup","formatVersion":3,"unknownFuturePayload":{}}""".encodeToByteArray())
+                zip.write("""{"format":"pinecone-portable-backup","formatVersion":4,"unknownFuturePayload":{}}""".encodeToByteArray())
                 zip.closeEntry()
             }
             val result = f.backups.importPortable(Uri.fromFile(portable))
-            assertTrue(result.toString(), result is BackupResult.Failure && result.reason == BackupFailure.UNSUPPORTED_VERSION)
+            assertTrue(
+                result.toString(),
+                result is BackupResult.Failure && result.reason == BackupFailure.UNSUPPORTED_VERSION
+            )
             assertEquals(source, f.db.bookDao().getEntity(source.id))
             assertEquals(settings, f.preferences.readerSettings.first())
             assertTrue(File(source.filePath).isFile)
@@ -252,6 +304,15 @@ class LibraryBackupTest {
         assertTrue(File(requireNotNull(book.coverPath)).isFile)
         assertEquals("Retained note", f.db.noteDao().getAllNotesSync().single().noteText)
         assertEquals("Baseline", f.db.bookmarkDao().getAllBookmarksSync().single().chapterTitle)
+        assertEquals(
+            setOf("_all_", "personal"),
+            f.db.spaceDao().getAllSpacesSync().map { it.id }.toSet(),
+        )
+        assertEquals(
+            setOf(book.id to "_all_", book.id to "personal"),
+            f.db.spaceDao().getAllBookSpaceCrossRefsSync().map { it.bookId to it.spaceId }.toSet(),
+        )
+        assertEquals("personal", f.db.shelfDao().getShelfById("favorites")?.spaceId)
         assertEquals(book.id, f.db.shelfDao().getShelfRefsSync("favorites").single().bookId)
         assertEquals(book.filePath, f.db.publicationDao().rendition(book.id, "original")?.filePath)
         assertEquals(1.15, f.preferences.readerSettings.first().fontSize, 0.0)
@@ -295,7 +356,10 @@ class LibraryBackupTest {
             }
             val result = f.backups.restoreSnapshot(saved.uri)
             assertTrue(result is BackupResult.Failure)
-            assertEquals("Conflicting backup object references", (result as BackupResult.Failure).cause?.message)
+            assertEquals(
+                "Conflicting backup object references",
+                (result as BackupResult.Failure).cause?.message
+            )
             assertEquals(source, f.db.bookDao().getEntity(source.id))
             assertTrue(File(source.filePath).isFile)
         }
@@ -413,7 +477,8 @@ class LibraryBackupTest {
             val objectFile = requireNotNull(f.vault.open(false)).books.listFiles().single()
             (f.context.contentResolver.openOutputStream(objectFile.uri, "wt") ?: return@fixture)
                 .use { it.write(byteArrayOf(0)) }
-            val filesBeforeFailure = f.assets.booksDirectory.listFiles().orEmpty().map { it.name }.toSet()
+            val filesBeforeFailure =
+                f.assets.booksDirectory.listFiles().orEmpty().map { it.name }.toSet()
             restoreProgress.clear()
             assertTrue(f.backups.restoreSnapshot(imported.uri) { restoreProgress += it } is BackupResult.Failure)
             assertTrue(restoreProgress.isNotEmpty())
@@ -421,7 +486,10 @@ class LibraryBackupTest {
             assertEquals(restored, f.db.bookDao().getEntity(source.id))
             assertEquals(listOf(note), f.db.noteDao().getAllNotesSync())
             assertArrayEquals(bytes, File(restored.filePath).readBytes())
-            assertEquals(filesBeforeFailure, f.assets.booksDirectory.listFiles().orEmpty().map { it.name }.toSet())
+            assertEquals(
+                filesBeforeFailure,
+                f.assets.booksDirectory.listFiles().orEmpty().map { it.name }.toSet()
+            )
         }
     }
 
@@ -479,12 +547,96 @@ class LibraryBackupTest {
         }
     }
 
+    @Test
+    fun customSpacesShelvesSettingsAndStaleGlobalSpaceRoundTripCleanly() = runBlocking {
+        fixture { f ->
+            val fictionBook = f.seedBook("Fiction book")
+            val scienceBook = f.seedBook("Science book")
+            val fictionSpace = f.library.createSpaceWithBooks("Fiction", listOf(fictionBook.id))
+            val scienceSpace = f.library.createSpaceWithBooks("Non Fiction", listOf(scienceBook.id))
+            val fictionShelf =
+                f.library.createShelfWithBooks(
+                    fictionSpace,
+                    "Classic Literature",
+                    listOf(fictionBook.id)
+                )
+            val scienceShelf =
+                f.library.createShelfWithBooks(scienceSpace, "Science", listOf(scienceBook.id))
+            f.preferences.updateSettings {
+                it.copy(
+                    colorPalette = "#B9C3FF",
+                    amoledDarkMode = false,
+                    fontSize = 1.25,
+                )
+            }
+
+            assertSuccess(f.backups.createSnapshot(true))
+            val saved = f.backups.listSnapshots().single()
+            assertEquals(2, saved.bookCount)
+            assertEquals(2, saved.customSpaceCount)
+            assertEquals(2, saved.shelfCount)
+            val decoded = java.util.zip.ZipInputStream(
+                requireNotNull(f.context.contentResolver.openInputStream(saved.uri))
+            ).use { zip ->
+                zip.nextEntry
+                snapshotJson.decodeFromString<com.javierreansyah.pinecone.data.model.VaultSnapshot>(
+                    zip.readBytes().decodeToString()
+                )
+            }
+            assertEquals(3, decoded.formatVersion)
+
+            f.library.deleteBooks(listOf(fictionBook.id, scienceBook.id))
+            val staleSpace = f.library.createSpace("Temporary space")
+            f.libraryPreferences.setGlobalSpace(staleSpace)
+            f.preferences.updateSettings {
+                it.copy(
+                    colorPalette = "Dynamic",
+                    amoledDarkMode = true,
+                    fontSize = 1.0,
+                )
+            }
+
+            assertSuccess(f.backups.restoreSnapshot(saved.uri))
+            assertEquals(
+                setOf("_all_", fictionSpace, scienceSpace),
+                f.db.spaceDao().getAllSpacesSync().map { it.id }.toSet(),
+            )
+            assertEquals(
+                setOf(
+                    fictionBook.id to "_all_",
+                    fictionBook.id to fictionSpace,
+                    scienceBook.id to "_all_",
+                    scienceBook.id to scienceSpace,
+                ),
+                f.db.spaceDao().getAllBookSpaceCrossRefsSync().map { it.bookId to it.spaceId }
+                    .toSet(),
+            )
+            assertEquals(fictionSpace, f.db.shelfDao().getShelfById(fictionShelf)?.spaceId)
+            assertEquals(scienceSpace, f.db.shelfDao().getShelfById(scienceShelf)?.spaceId)
+            assertEquals(
+                listOf(fictionBook.id),
+                f.db.shelfDao().getShelfRefsSync(fictionShelf).map { it.bookId },
+            )
+            assertEquals(
+                listOf(scienceBook.id),
+                f.db.shelfDao().getShelfRefsSync(scienceShelf).map { it.bookId },
+            )
+            val restoredSettings = f.preferences.readerSettings.first()
+            assertEquals("#B9C3FF", restoredSettings.colorPalette)
+            assertFalse(restoredSettings.amoledDarkMode)
+            assertEquals(1.25, restoredSettings.fontSize, 0.0)
+            assertEquals("_all_", f.libraryPreferences.getEffectiveSpaceFlow().first())
+        }
+    }
+
     private class Fixture {
         val context: Context = InstrumentationRegistry.getInstrumentation().targetContext
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         private val files = mutableSetOf<File>()
         private val settings =
             File(context.cacheDir, "audit-${UUID.randomUUID()}.json").also { files += it }
+        private val librarySettings =
+            File(context.cacheDir, "audit-library-${UUID.randomUUID()}.json").also { files += it }
         val preferences = ReaderPreferences(
             DataStoreFactory.create(
                 serializer = JsonPreferenceSerializer(
@@ -493,6 +645,16 @@ class LibraryBackupTest {
                 ),
                 scope = scope, produceFile = { settings },
             )
+        )
+        val libraryPreferences = LibraryPreferencesManager(
+            DataStoreFactory.create(
+                serializer = JsonPreferenceSerializer(
+                    LibraryPreferencesData.serializer(),
+                    LibraryPreferencesData()
+                ),
+                scope = scope, produceFile = { librarySettings },
+            ),
+            preferences,
         )
         val db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
             .addCallback(AppDatabase.BACKUP_REVISION_CALLBACK).build()
@@ -511,6 +673,7 @@ class LibraryBackupTest {
         val backups = BackupRepository(
             context,
             preferences,
+            libraryPreferences,
             db,
             library,
             Dispatchers.IO,
@@ -546,8 +709,10 @@ class LibraryBackupTest {
             preferences.updateAllSettings(ReaderSettings(backupFolderUri = selectedTree.toString()))
         }
 
-        suspend fun seedBook(): BookEntity {
-            val source = file(".pdf", assets.booksDirectory).apply { writeBytes(syntheticPdf()) }
+        suspend fun seedBook(title: String = "Saved book"): BookEntity {
+            val pdfBytes = if (title == "Saved book") syntheticPdf()
+            else syntheticPdf() + "\n% $title\n".encodeToByteArray()
+            val source = file(".pdf", assets.booksDirectory).apply { writeBytes(pdfBytes) }
             val cover = file(".png", assets.coversDirectory)
             val bitmap =
                 android.graphics.Bitmap.createBitmap(2, 2, android.graphics.Bitmap.Config.ARGB_8888)
@@ -560,7 +725,7 @@ class LibraryBackupTest {
             val hash = source.inputStream().use { BackupArchiveIO.copyAndDigest(it).sha256 }
             val book = BookEntity(
                 hash,
-                "Saved book",
+                title,
                 cover.path,
                 source.path,
                 "application/pdf",
@@ -591,7 +756,11 @@ class LibraryBackupTest {
         }
 
         suspend fun close() {
-            preferences.readerSettings.first().installedDictionaries.forEach { dictionaries.delete(it.id) }
+            preferences.readerSettings.first().installedDictionaries.forEach {
+                dictionaries.delete(
+                    it.id
+                )
+            }
             db.bookDao().getAllBooksSync().forEach {
                 files += File(it.filePath)
                 it.coverPath?.let { path -> files += File(path) }

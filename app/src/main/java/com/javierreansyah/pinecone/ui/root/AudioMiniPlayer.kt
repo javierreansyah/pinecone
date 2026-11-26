@@ -20,6 +20,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
@@ -51,10 +53,13 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Forward_10
 import com.composables.icons.materialsymbols.outlined.Headphones
 import com.composables.icons.materialsymbols.outlined.Replay_10
-import com.composables.icons.materialsymbols.outlinedfilled.Pause
-import com.composables.icons.materialsymbols.outlinedfilled.Play_arrow
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.reader.audio.AudioPlaybackState
+import com.javierreansyah.pinecone.ui.components.GradientMaskedProgressBar
+import com.javierreansyah.pinecone.ui.components.LocalAnimatedEffectsVisible
+import com.javierreansyah.pinecone.ui.components.MorphingPlayPauseContent
+import com.javierreansyah.pinecone.ui.components.rememberAnimatedGradientMotionState
+import com.javierreansyah.pinecone.ui.components.rememberAnimatedGradientPalette
 import java.io.File
 
 /** Extra scroll space, not viewport padding: content can draw behind the floating card. */
@@ -132,19 +137,21 @@ fun AudioMiniPlayerBar(includeNavigationBarPadding: Boolean = true, bottomInset:
             .graphicsLayer { alpha = 0f }
             .clearAndSetSemantics {},
     ) {
-        AudioMiniPlayer(
-            state = state,
-            coverPath = state.coverPath,
-            onOpenPlayer = {},
-            onPlayPause = {},
-            onSkip = {},
-            modifier = Modifier
-                .then(if (includeNavigationBarPadding) Modifier.navigationBarsPadding() else Modifier)
-                .padding(
-                    horizontal = MiniPlayerHorizontalPadding,
-                    vertical = MiniPlayerOuterVerticalPadding
-                ),
-        )
+        CompositionLocalProvider(LocalAnimatedEffectsVisible provides false) {
+            AudioMiniPlayer(
+                state = state,
+                coverPath = null,
+                onOpenPlayer = {},
+                onPlayPause = {},
+                onSkip = {},
+                modifier = Modifier
+                    .then(if (includeNavigationBarPadding) Modifier.navigationBarsPadding() else Modifier)
+                    .padding(
+                        horizontal = MiniPlayerHorizontalPadding,
+                        vertical = MiniPlayerOuterVerticalPadding
+                    ),
+            )
+        }
     }
 }
 
@@ -169,6 +176,7 @@ internal fun AudioMiniPlayer(
         tonalElevation = 2.dp,
     ) {
         Box {
+            val progressPalette = rememberAnimatedGradientPalette()
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -221,49 +229,95 @@ internal fun AudioMiniPlayer(
                         )
                     }
                 }
-                IconButton(onClick = { onSkip(-10) }) {
+                IconButton(
+                    onClick = { onSkip(-10) },
+                    shapes = IconButtonDefaults.shapes(),
+                ) {
                     Icon(MaterialSymbols.Outlined.Replay_10, stringResource(R.string.reader_rewind))
                 }
+                val pauseMorphMotion = rememberAnimatedGradientMotionState(
+                    active = state.playing,
+                    label = "miniPlayerPauseMorphIntensity",
+                )
                 FilledIconButton(
                     onClick = onPlayPause,
+                    shapes = IconButtonDefaults.shapes(
+                        shape = IconButtonDefaults.smallSquareShape,
+                        pressedShape = IconButtonDefaults.smallPressedShape,
+                    ),
+                ) {
+                    MorphingPlayPauseContent(
+                        playing = state.playing,
+                        contentDescription = stringResource(
+                            if (state.playing) R.string.reader_pause else R.string.reader_play,
+                        ),
+                        palette = progressPalette,
+                        motion = pauseMorphMotion,
+                        gradientRadius = 26.dp,
+                        label = "miniPlayerPlayPauseTransition",
+                    )
+                }
+                IconButton(
+                    onClick = { onSkip(10) },
                     shapes = IconButtonDefaults.shapes(),
                 ) {
                     Icon(
-                        imageVector = if (state.playing) MaterialSymbols.OutlinedFilled.Pause else MaterialSymbols.OutlinedFilled.Play_arrow,
-                        contentDescription = stringResource(if (state.playing) R.string.reader_pause else R.string.reader_play),
-                    )
-                }
-                IconButton(onClick = { onSkip(10) }) {
-                    Icon(
                         MaterialSymbols.Outlined.Forward_10,
-                        stringResource(R.string.reader_forward)
+                        stringResource(R.string.reader_forward),
                     )
                 }
             }
-            if (state.loading) {
-                LinearProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(MiniPlayerProgressHeight)
-                        .align(Alignment.BottomCenter),
-                )
-            } else {
-                val duration = state.durationSeconds?.takeIf { it > 0 }
-                LinearProgressIndicator(
-                    progress = {
-                        duration?.let {
-                            (state.elapsedSeconds.toFloat() / it).coerceIn(
-                                0f,
-                                1f
-                            )
-                        } ?: 0f
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(MiniPlayerProgressHeight)
-                        .align(Alignment.BottomCenter),
-                )
-            }
+            val progressActive = state.playing || state.loading
+            val flowMotion = rememberAnimatedGradientMotionState(
+                active = progressActive,
+                label = "miniPlayerProgressGradientIntensity",
+            )
+            val trackColor = ProgressIndicatorDefaults.linearTrackColor
+            val duration = state.durationSeconds?.takeIf { it > 0 }
+            val progress = duration?.let {
+                (state.elapsedSeconds.toFloat() / it).coerceIn(0f, 1f)
+            } ?: 0f
+            GradientMaskedProgressBar(
+                palette = progressPalette,
+                motion = flowMotion,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(MiniPlayerProgressHeight)
+                    .align(Alignment.BottomCenter),
+                track = { trackModifier ->
+                    if (state.loading) {
+                        LinearProgressIndicator(
+                            modifier = trackModifier,
+                            color = Color.Transparent,
+                            trackColor = trackColor,
+                        )
+                    } else {
+                        LinearProgressIndicator(
+                            progress = { progress },
+                            modifier = trackModifier,
+                            color = Color.Transparent,
+                            trackColor = trackColor,
+                            drawStopIndicator = {},
+                        )
+                    }
+                },
+                indicator = { indicatorModifier, baseColor ->
+                    if (state.loading) {
+                        LinearProgressIndicator(
+                            modifier = indicatorModifier,
+                            color = baseColor,
+                            trackColor = Color.Transparent,
+                        )
+                    } else {
+                        LinearProgressIndicator(
+                            progress = { progress },
+                            modifier = indicatorModifier,
+                            color = baseColor,
+                            trackColor = Color.Transparent,
+                        )
+                    }
+                },
+            )
         }
     }
 }

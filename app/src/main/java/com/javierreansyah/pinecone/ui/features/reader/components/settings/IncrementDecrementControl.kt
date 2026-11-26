@@ -50,6 +50,9 @@ fun IncrementDecrementControl(
             Text(
                 text = label,
                 style = MaterialTheme.typography.titleMedium,
+                color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(
+                    alpha = 0.38f,
+                ),
                 modifier = Modifier.weight(1f),
             )
             IncrementDecrementButtons(value, onStep, enabled)
@@ -85,7 +88,7 @@ private fun IncrementDecrementButtons(
         IconButton(
             onClick = { onStep(-1) },
             enabled = enabled,
-            colors = IconButtonDefaults.iconButtonColors(
+            colors = IconButtonDefaults.filledTonalIconButtonColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
             ),
@@ -148,7 +151,7 @@ private fun IncrementDecrementButtons(
         IconButton(
             onClick = { onStep(1) },
             enabled = enabled,
-            colors = IconButtonDefaults.iconButtonColors(
+            colors = IconButtonDefaults.filledTonalIconButtonColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
             ),

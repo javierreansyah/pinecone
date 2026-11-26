@@ -24,29 +24,25 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.clearText
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuDefaults
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.OutlinedTextFieldDefaults.FocusedBorderThickness
-import androidx.compose.material3.OutlinedTextFieldDefaults.UnfocusedBorderThickness
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TextFieldLabelPosition
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -60,13 +56,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -75,11 +72,18 @@ import coil3.compose.AsyncImage
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Add
 import com.composables.icons.materialsymbols.outlined.Arrow_back
-import com.composables.icons.materialsymbols.outlined.Check
 import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Image
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuDefaults
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuGroup
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuItem
+import com.javierreansyah.pinecone.ui.components.AppTextField
+import com.javierreansyah.pinecone.ui.components.AppTextFieldDefaults
+import com.javierreansyah.pinecone.ui.components.TopAppBarCircleIconButton
+import com.javierreansyah.pinecone.ui.components.TopAppBarSaveButton
+import com.javierreansyah.pinecone.ui.components.topBarFadeBackground
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import java.io.File
 
@@ -169,13 +173,15 @@ private fun EditBookTopAppBar(
     modifier: Modifier = Modifier,
 ) {
     TopAppBar(
-        title = { Text(title) },
+        title = {
+            Text(
+                text = title,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
         navigationIcon = {
-            FilledTonalIconButton(
-                shapes = IconButtonDefaults.shapes(),
-                onClick = onNavigateBack,
-                colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-            ) {
+            TopAppBarCircleIconButton(onClick = onNavigateBack) {
                 Icon(
                     MaterialSymbols.Outlined.Arrow_back,
                     contentDescription = stringResource(R.string.action_back),
@@ -183,25 +189,16 @@ private fun EditBookTopAppBar(
             }
         },
         actions = {
-            FilledIconButton(
-                modifier = Modifier
-                    .padding(end = 6.dp)
-                    .size(
-                        IconButtonDefaults.smallContainerSize(
-                            widthOption = IconButtonDefaults.IconButtonWidthOption.Wide,
-                        ),
-                    ),
-                shapes = IconButtonDefaults.shapes(),
+            TopAppBarSaveButton(
                 onClick = onSave,
                 enabled = !isSaving,
-            ) {
-                Icon(
-                    imageVector = MaterialSymbols.Outlined.Check,
-                    contentDescription = stringResource(R.string.action_save),
-                )
-            }
+            )
         },
-        modifier = modifier,
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Transparent,
+            scrolledContainerColor = Color.Transparent,
+        ),
+        modifier = modifier.topBarFadeBackground(),
     )
 }
 
@@ -224,10 +221,10 @@ private fun EditBookContent(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(innerPadding)
             .consumeWindowInsets(innerPadding)
             .imePadding()
             .verticalScroll(rememberScrollState())
+            .padding(innerPadding)
             .padding(bottom = LocalAudioPlayerBottomPadding.current)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
@@ -247,7 +244,7 @@ private fun EditBookContent(
             onCoverUriChange = onCoverUriChange,
         )
 
-        OutlinedTextField(
+        AppTextField(
             value = uiState.title,
             onValueChange = onTitleChange,
             label = { Text(stringResource(R.string.library_sort_title)) },
@@ -273,7 +270,7 @@ private fun EditBookContent(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        OutlinedTextField(
+        AppTextField(
             value = uiState.description,
             onValueChange = onDescriptionChange,
             label = { Text(stringResource(R.string.publication_description)) },
@@ -385,9 +382,14 @@ private fun AutocompleteChipTextField(
     onRemove: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var text by remember { mutableStateOf("") }
+    val textFieldState = rememberTextFieldState()
+    val text = textFieldState.text.toString()
     var expanded by remember { mutableStateOf(value = false) }
     var textFieldWidth by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(text) {
+        expanded = text.isNotBlank()
+    }
 
     val filteredSuggestions = remember(suggestions, items, text) {
         suggestions.filter { it.contains(text, ignoreCase = true) && it !in items }
@@ -399,31 +401,64 @@ private fun AutocompleteChipTextField(
         },
     ) {
         val interactionSource = remember { MutableInteractionSource() }
+        val colors = AppTextFieldDefaults.colors()
+        val shape = AppTextFieldDefaults.shape
+        val baseDecorator = TextFieldDefaults.decorator(
+            state = textFieldState,
+            enabled = true,
+            lineLimits = TextFieldLineLimits.SingleLine,
+            outputTransformation = null,
+            interactionSource = interactionSource,
+            labelPosition = TextFieldLabelPosition.Inside(isAlwaysMinimized = items.isNotEmpty()),
+            label = { Text(label) },
+            trailingIcon = {
+                IconButton(
+                    enabled = text.isNotBlank(),
+                    onClick = {
+                        if (text.isNotBlank()) {
+                            onAdd(text)
+                            textFieldState.clearText()
+                            expanded = false
+                        }
+                    },
+                ) {
+                    Icon(
+                        MaterialSymbols.Outlined.Add,
+                        contentDescription = stringResource(R.string.action_add),
+                    )
+                }
+            },
+            colors = colors,
+            container = {
+                TextFieldDefaults.Container(
+                    enabled = true,
+                    isError = false,
+                    interactionSource = interactionSource,
+                    colors = colors,
+                    shape = shape,
+                    focusedIndicatorLineThickness = 0.dp,
+                    unfocusedIndicatorLineThickness = 0.dp,
+                )
+            },
+        )
 
         BasicTextField(
-            value = text,
-            onValueChange = {
-                text = it
-                expanded = it.isNotBlank()
-            },
+            state = textFieldState,
             modifier = Modifier.fillMaxWidth(),
             interactionSource = interactionSource,
             textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            lineLimits = TextFieldLineLimits.SingleLine,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    if (text.isNotBlank()) {
-                        onAdd(text)
-                        text = ""
-                        expanded = false
-                    }
-                },
-            ),
-        ) { innerTextField ->
-            OutlinedTextFieldDefaults.DecorationBox(
-                value = if (items.isNotEmpty()) " " else text,
-                innerTextField = {
+            onKeyboardAction = {
+                if (text.isNotBlank()) {
+                    onAdd(text)
+                    textFieldState.clearText()
+                    expanded = false
+                }
+            },
+            decorator = { innerTextField ->
+                baseDecorator.Decoration {
                     CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
                         FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -437,6 +472,12 @@ private fun AutocompleteChipTextField(
                                     selected = false,
                                     onClick = { },
                                     label = { Text(item) },
+                                    border = null,
+                                    colors = InputChipDefaults.inputChipColors(
+                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                        labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        trailingIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    ),
                                     trailingIcon = {
                                         Icon(
                                             imageVector = MaterialSymbols.Outlined.Close,
@@ -458,44 +499,9 @@ private fun AutocompleteChipTextField(
                             }
                         }
                     }
-                },
-                enabled = true,
-                singleLine = true,
-                visualTransformation = VisualTransformation.None,
-                interactionSource = interactionSource,
-                label = { Text(label) },
-                trailingIcon = {
-                    IconButton(
-                        enabled = text.isNotBlank(),
-                        onClick = {
-                            if (text.isNotBlank()) {
-                                onAdd(text)
-                                text = ""
-                                expanded = false
-                            }
-                        },
-                    ) {
-                        Icon(
-                            MaterialSymbols.Outlined.Add,
-                            contentDescription = stringResource(R.string.action_add),
-                        )
-                    }
-                },
-                colors = OutlinedTextFieldDefaults.colors(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-                container = {
-                    OutlinedTextFieldDefaults.Container(
-                        enabled = true,
-                        isError = false,
-                        interactionSource = interactionSource,
-                        colors = OutlinedTextFieldDefaults.colors(),
-                        shape = OutlinedTextFieldDefaults.shape,
-                        focusedBorderThickness = FocusedBorderThickness,
-                        unfocusedBorderThickness = UnfocusedBorderThickness,
-                    )
-                },
-            )
-        }
+                }
+            },
+        )
 
         DropdownMenuPopup(
             expanded = expanded && text.isNotBlank(),
@@ -503,37 +509,34 @@ private fun AutocompleteChipTextField(
             modifier = Modifier.width(with(LocalDensity.current) { textFieldWidth.toDp() }),
             properties = PopupProperties(focusable = false),
         ) {
-            val groupInteractionSource = remember { MutableInteractionSource() }
-            DropdownMenuGroup(
-                shapes = MenuDefaults.groupShape(0, 1),
-                interactionSource = groupInteractionSource,
-            ) {
+            AppDropdownMenuGroup {
                 val finalSuggestions = filteredSuggestions.take(5)
                 val showCreateNew =
                     text.isNotBlank() && !suggestions.any { it.equals(text, ignoreCase = true) }
                 val totalCount = finalSuggestions.size + if (showCreateNew) 1 else 0
 
                 finalSuggestions.forEachIndexed { index, suggestion ->
-                    SelectableDropdownMenuItem(
-                        selected = false,
+                    AppDropdownMenuItem(
                         text = { Text(suggestion) },
-                        shapes = MenuDefaults.itemShape(index, totalCount),
+                        shape = AppDropdownMenuDefaults.itemShape(index, totalCount).shape,
                         onClick = {
                             onAdd(suggestion)
-                            text = ""
+                            textFieldState.clearText()
                             expanded = false
                         },
                     )
                 }
 
                 if (showCreateNew) {
-                    SelectableDropdownMenuItem(
-                        selected = false,
+                    AppDropdownMenuItem(
                         text = { Text(stringResource(R.string.publication_create_new, text)) },
-                        shapes = MenuDefaults.itemShape(finalSuggestions.size, totalCount),
+                        shape = AppDropdownMenuDefaults.itemShape(
+                            finalSuggestions.size,
+                            totalCount,
+                        ).shape,
                         onClick = {
                             onAdd(text)
-                            text = ""
+                            textFieldState.clearText()
                             expanded = false
                         },
                     )

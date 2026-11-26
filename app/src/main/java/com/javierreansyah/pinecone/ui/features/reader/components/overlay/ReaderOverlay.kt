@@ -10,7 +10,9 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
@@ -77,6 +79,7 @@ import com.javierreansyah.pinecone.ui.features.reader.ReaderViewModel
 import com.javierreansyah.pinecone.ui.features.reader.components.ExternalLinkBottomSheet
 import com.javierreansyah.pinecone.ui.features.reader.components.NoteBottomSheet
 import com.javierreansyah.pinecone.ui.features.reader.components.ReaderBottomSheet
+import com.javierreansyah.pinecone.ui.features.reader.components.ReaderImageViewer
 import com.javierreansyah.pinecone.ui.features.reader.components.ReaderSearch
 import com.javierreansyah.pinecone.ui.features.reader.components.dictionary.DictionaryFormatter
 import com.javierreansyah.pinecone.ui.features.reader.components.settings.ReaderSettingsContent
@@ -108,6 +111,8 @@ fun ReaderOverlay(
     val searchState = searchViewModel.searchState.collectAsStateWithLifecycle()
     val definitionState = dictionaryViewModel.definitionState.collectAsStateWithLifecycle()
     val externalLinkState = viewModel.externalLinkState.collectAsStateWithLifecycle()
+    val imageViewerState by viewModel.imageViewerState.collectAsStateWithLifecycle()
+    val imageViewerChromeVisible by viewModel.imageViewerChromeVisible.collectAsStateWithLifecycle()
 
     val themeColors = viewModel.themeColors.collectAsStateWithLifecycle()
     val settings by viewModel.settingsFlow.collectAsStateWithLifecycle(
@@ -127,6 +132,7 @@ fun ReaderOverlay(
     val activeRendition by viewModel.activeRendition.collectAsStateWithLifecycle()
     val publication by viewModel.publication.collectAsStateWithLifecycle()
     val useBookSettings by viewModel.useBookSettings.collectAsStateWithLifecycle()
+    val pdfPreferences by viewModel.pdfPreferences.collectAsStateWithLifecycle()
     val fixedEpub = publication?.metadata?.layout == org.readium.r2.shared.publication.Layout.FIXED
 
     LaunchedEffect(activeRendition) { notesViewModel.setRendition(activeRendition) }
@@ -166,6 +172,9 @@ fun ReaderOverlay(
 
     BackHandler(enabled = searchState.value.isInNavMode) {
         searchViewModel.exitSearchNavigation()
+    }
+    BackHandler(enabled = imageViewerState != null) {
+        viewModel.closeImageViewer()
     }
     BackHandler(
         enabled = profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF &&
@@ -245,6 +254,8 @@ fun ReaderOverlay(
                 readMode = bookState.value.readMode,
                 onToggleReadMode = viewModel::togglePdfReadMode,
                 converting = bookState.value.converting,
+                pdfMode = profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF,
+                pdfDarkPage = pdfPreferences.invert == true,
             )
 
             ReaderBottomBarSection(
@@ -265,6 +276,9 @@ fun ReaderOverlay(
                 currentPage = bookState.value.currentPage,
                 totalPages = bookState.value.totalPages,
                 showProgressBar = profile != com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF,
+                showGradient = profile != com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF,
+                pdfMode = profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF,
+                pdfDarkPage = pdfPreferences.invert == true,
                 readerBgColor = effectiveBgColor,
                 readerTextColor = effectiveTextColor,
                 onSeekToProgression = { progression ->
@@ -342,7 +356,6 @@ fun ReaderOverlay(
                 initialValue = SheetValue.Hidden,
                 enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
             )
-            val sheetEffectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
             if (controlsState.value.showToc) {
                 ReaderBottomSheet(
                     initialTab = controlsState.value.contentsInitialTab,
@@ -394,10 +407,11 @@ fun ReaderOverlay(
                     )
                 }
             }
+            val searchOffsetSpec = MaterialTheme.motionScheme.defaultEffectsSpec<IntOffset>()
             AnimatedVisibility(
                 visible = controlsState.value.showSearch,
-                enter = fadeIn(animationSpec = sheetEffectsSpec),
-                exit = fadeOut(animationSpec = sheetEffectsSpec),
+                enter = slideInHorizontally(animationSpec = searchOffsetSpec) { it },
+                exit = slideOutHorizontally(animationSpec = searchOffsetSpec) { it },
             ) {
                 ReaderSearch(
                     wording = when {
@@ -466,6 +480,29 @@ fun ReaderOverlay(
                 )
             }
 
+            val imageFadeSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+            val lastImageViewerState = remember { arrayOf(imageViewerState) }
+            if (imageViewerState != null) {
+                lastImageViewerState[0] = imageViewerState
+            }
+            AnimatedVisibility(
+                visible = imageViewerState != null,
+                enter = fadeIn(animationSpec = imageFadeSpec),
+                exit = fadeOut(animationSpec = imageFadeSpec),
+            ) {
+                lastImageViewerState[0]?.let { viewerState ->
+                    ReaderImageViewer(
+                        state = viewerState,
+                        showChrome = imageViewerChromeVisible,
+                        readerBgColor = effectiveBgColor,
+                        readerTextColor = effectiveTextColor,
+                        onToggleChrome = viewModel::toggleImageViewerChrome,
+                        onToggleInvert = viewModel::toggleImageViewerInvert,
+                        onClose = viewModel::closeImageViewer,
+                    )
+                }
+            }
+
             val conversionMessage = if (bookState.value.conversionTotal > 0) {
                 stringResource(
                     R.string.publication_work_processing,
@@ -531,6 +568,8 @@ fun ReaderTopBarSection(
     readMode: Boolean = false,
     onToggleReadMode: () -> Unit = {},
     converting: Boolean = false,
+    pdfMode: Boolean = false,
+    pdfDarkPage: Boolean = false,
 ) {
     val actionsSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
     val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
@@ -577,6 +616,8 @@ fun ReaderTopBarSection(
             readMode = readMode,
             onToggleReadMode = onToggleReadMode,
             converting = converting,
+            pdfMode = pdfMode,
+            pdfDarkPage = pdfDarkPage,
         )
     }
 }
@@ -606,7 +647,14 @@ fun ReaderBottomBarSection(
     onColorSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
     showProgressBar: Boolean = true,
+    showGradient: Boolean = true,
+    pdfMode: Boolean = false,
+    pdfDarkPage: Boolean = false,
 ) {
+    val pdfContainerColor = if (pdfDarkPage) Color.Black else Color.White
+    val pdfContentColor = if (pdfDarkPage) Color.White else Color.Black
+    val barContainerColor = if (pdfMode) pdfContainerColor else readerBgColor
+    val barContentColor = if (pdfMode) pdfContentColor else readerTextColor
     val isSelectionActive = selectionLocator != null || viewingHighlight != null
     val showBottomBar = showControls && !showSearch || isSelectionActive
 
@@ -635,6 +683,7 @@ fun ReaderBottomBarSection(
             modifier = Modifier,
             readerBgColor = readerBgColor,
             readerTextColor = readerTextColor,
+            showGradient = showGradient,
         ) {
             val currentMode = when {
                 isSelectionActive -> BottomBarMode.TEXT_SELECTION
@@ -676,7 +725,8 @@ fun ReaderBottomBarSection(
                         ReaderSearchNavigator(
                             activeIndex = activeSearchIndex,
                             totalResults = searchResultsSize,
-                            textColor = readerTextColor,
+                            containerColor = barContainerColor,
+                            textColor = barContentColor,
                             onPrev = onPrevSearchResult,
                             onNext = onNextSearchResult,
                         )
@@ -698,7 +748,8 @@ fun ReaderBottomBarSection(
 
                         ReaderTextSelectionControl(
                             selectedColorInt = selectedColorInt,
-                            readerTextColor = readerTextColor,
+                            containerColor = barContainerColor,
+                            readerTextColor = barContentColor,
                             showDeleteOption = viewingHighlight != null && selectionLocator == null,
                             onCopy = { onCopy(highlightText) },
                             onSearch = { onSearch(highlightText) },
@@ -723,6 +774,7 @@ fun PineconeThemedContent(
     AppTheme(
         darkTheme = uiDarkTheme,
         colorPalette = settings.colorPalette,
+        amoledDarkMode = settings.amoledDarkMode,
         themeContrast = settings.themeContrast,
         content = content,
     )

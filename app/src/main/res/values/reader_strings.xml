@@ -23,8 +23,10 @@
     <string name="reader_highlight_color">Highlight color</string>
     <string name="reader_horizontal">Horizontal navigation</string>
     <string name="reader_image_filter_activation">Apply image filter</string>
+    <string name="reader_image_load_failed">Could not load this image.</string>
     <string name="reader_image_settings_hint">This Readium image navigator supports paged viewing and image zoom. It does not expose typography or continuous-scroll preferences.</string>
     <string name="reader_in_document">In title</string>
+    <string name="reader_invert_image">Invert image colors</string>
     <string name="reader_invert_pages">Invert page colors</string>
     <string name="reader_jump_go_back">Go back</string>
     <string name="reader_jump_history_mode">Jump history</string>
@@ -105,6 +107,7 @@
     <string name="reader_settings_image_filter_darken">Darken</string>
     <string name="reader_settings_image_filter_invert">Invert</string>
     <string name="reader_settings_image_filter_none">None</string>
+    <string name="reader_settings_image_viewer">Tap image to zoom</string>
     <string name="reader_settings_letter_spacing">Letter spacing</string>
     <string name="reader_settings_line_spacing">Line spacing</string>
     <string name="reader_settings_new_theme">New theme</string>

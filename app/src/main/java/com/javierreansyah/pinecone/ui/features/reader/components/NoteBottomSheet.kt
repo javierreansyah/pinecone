@@ -22,7 +22,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
@@ -40,6 +39,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
+import com.javierreansyah.pinecone.ui.components.AppTextField
+import com.javierreansyah.pinecone.ui.components.AppTextFieldDefaults
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,18 +77,14 @@ fun NoteBottomSheet(
                 color = TextFieldDefaults.colors().unfocusedContainerColor,
             ) {
                 Column {
-                    TextField(
+                    AppTextField(
                         value = text,
                         onValueChange = { text = it },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
-                        colors = TextFieldDefaults.colors(
+                        colors = AppTextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            disabledIndicatorColor = Color.Transparent,
-                            errorIndicatorColor = Color.Transparent,
                         ),
                         minLines = 3,
                         maxLines = 5,

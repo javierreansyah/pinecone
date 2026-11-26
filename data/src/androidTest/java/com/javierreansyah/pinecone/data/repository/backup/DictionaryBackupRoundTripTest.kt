@@ -10,6 +10,8 @@ import com.javierreansyah.pinecone.data.local.database.dictionary.DictionaryStor
 import com.javierreansyah.pinecone.data.local.database.library.AppDatabase
 import com.javierreansyah.pinecone.data.local.preferences.InstalledDictionary
 import com.javierreansyah.pinecone.data.local.preferences.JsonPreferenceSerializer
+import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesData
+import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferencesData
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
@@ -48,6 +50,7 @@ class DictionaryBackupRoundTripTest {
         )
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         val settingsFile = File(context.cacheDir, "backup-preferences-$id.json")
+        val librarySettingsFile = File(context.cacheDir, "backup-library-preferences-$id.json")
         val preferences = ReaderPreferences(
             DataStoreFactory.create(
                 serializer = JsonPreferenceSerializer(
@@ -57,6 +60,17 @@ class DictionaryBackupRoundTripTest {
                 scope = scope,
                 produceFile = { settingsFile },
             )
+        )
+        val libraryPreferences = LibraryPreferencesManager(
+            DataStoreFactory.create(
+                serializer = JsonPreferenceSerializer(
+                    LibraryPreferencesData.serializer(),
+                    LibraryPreferencesData()
+                ),
+                scope = scope,
+                produceFile = { librarySettingsFile },
+            ),
+            preferences,
         )
         val db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
             .addCallback(AppDatabase.BACKUP_REVISION_CALLBACK).build()
@@ -72,7 +86,7 @@ class DictionaryBackupRoundTripTest {
             Dispatchers.IO
         )
         val backups = BackupRepository(
-            context, preferences, db, library, Dispatchers.IO, dictionaries,
+            context, preferences, libraryPreferences, db, library, Dispatchers.IO, dictionaries,
             DictionaryRestoreJournal(context), BackupVault(context, preferences), assets
         )
         try {
@@ -134,6 +148,7 @@ class DictionaryBackupRoundTripTest {
             scope.coroutineContext.job.cancelAndJoin()
             DocumentFile.fromTreeUri(context, tree)?.findFile("PineconeBackup")?.delete()
             settingsFile.delete()
+            librarySettingsFile.delete()
         }
     }
 }

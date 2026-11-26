@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Switch
@@ -222,7 +221,7 @@ class UiReuseTest {
                 MaterialTheme {
                     Box(Modifier.width(320.dp)) {
                         SegmentedListItem(
-                            shapes = ListItemDefaults.segmentedShapes(index = 0, count = 1),
+                            shapes = SegmentedListDefaults.shapes(index = 0, count = 1),
                             modifier = Modifier.testTag("row"),
                             verticalAlignment = Alignment.Top,
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
@@ -303,9 +302,9 @@ class UiReuseTest {
         val enabled = mutableStateOf(true)
         compose.setContent {
             MaterialTheme {
-                Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
+                Column(verticalArrangement = Arrangement.spacedBy(SegmentedListDefaults.Gap)) {
                     SettingsSwitchItem(
-                        ListItemDefaults.segmentedShapes(index = 0, count = 1),
+                        SegmentedListDefaults.shapes(index = 0, count = 1),
                         "Hide All", "Hide the All space", !showAll.value,
                         { showAll.value = !it }, MaterialSymbols.Outlined.Visibility_off,
                         enabled = enabled.value

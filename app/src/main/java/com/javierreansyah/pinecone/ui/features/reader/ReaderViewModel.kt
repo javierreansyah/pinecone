@@ -1,6 +1,8 @@
 package com.javierreansyah.pinecone.ui.features.reader
 
 import android.app.Application
+import android.graphics.ImageDecoder
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.javierreansyah.pinecone.R
@@ -9,6 +11,7 @@ import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.data.local.preferences.decodeReadingOverrides
 import com.javierreansyah.pinecone.data.local.preferences.epubImageFilterCss
+import com.javierreansyah.pinecone.data.local.preferences.isEpubImageInvertActive
 import com.javierreansyah.pinecone.data.local.preferences.readingThemeIsDark
 import com.javierreansyah.pinecone.data.local.preferences.withReadingPreferencesFrom
 import com.javierreansyah.pinecone.data.publication.PublicationFormats
@@ -22,8 +25,14 @@ import com.javierreansyah.pinecone.data.repository.library.readingSessionToken
 import com.javierreansyah.pinecone.reader.epub.toEpubPreferences
 import com.javierreansyah.pinecone.reader.pdf.MuPdfPreferences
 import com.javierreansyah.pinecone.reader.pdf.toMuPdfPreferences
+import com.javierreansyah.pinecone.ui.features.reader.components.ImageViewerState
+import com.javierreansyah.pinecone.ui.features.reader.components.ReaderImageContent
+import com.javierreansyah.pinecone.ui.features.reader.components.isSvgLink
+import com.javierreansyah.pinecone.ui.features.reader.components.sanitizeSvgMarkup
+import com.javierreansyah.pinecone.ui.features.reader.components.shouldOpenInImageViewer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -41,14 +50,19 @@ import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.readium.r2.navigator.epub.EpubPreferences
+import org.readium.r2.shared.ExperimentalReadiumApi
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Locator.Companion.fromJSON
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.epub.pageList
+import org.readium.r2.shared.publication.services.content.Content
 import org.readium.r2.shared.publication.services.positions
+import java.nio.ByteBuffer
+import kotlin.math.roundToInt
 
 data class BookState(
     val title: String = "",
@@ -103,6 +117,7 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
     private var conversionJob: Job? = null
     private var currentConversionId: String? = null
     private var openJob: Job? = null
+    private var imageLoadJob: Job? = null
 
     private val _positions = MutableStateFlow<List<Locator>>(emptyList())
     val positions: StateFlow<List<Locator>> = _positions.asStateFlow()
@@ -124,6 +139,12 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
 
     private val _externalLinkState = MutableStateFlow(ExternalLinkState())
     val externalLinkState: StateFlow<ExternalLinkState> = _externalLinkState.asStateFlow()
+
+    private val _imageViewerState = MutableStateFlow<ImageViewerState?>(null)
+    val imageViewerState: StateFlow<ImageViewerState?> = _imageViewerState.asStateFlow()
+
+    private val _imageViewerChromeVisible = MutableStateFlow(false)
+    val imageViewerChromeVisible: StateFlow<Boolean> = _imageViewerChromeVisible.asStateFlow()
 
     private val _currentLocator = MutableStateFlow<Locator?>(null)
     val currentLocator: StateFlow<Locator?> = _currentLocator.asStateFlow()
@@ -170,6 +191,20 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
         combine(settingsFlow, systemDarkThemeFlow) { settings, systemDark ->
             settings.epubImageFilterCss(systemDark)
         }.stateIn(viewModelScope, SharingStarted.Eagerly, "")
+
+    val isEpubImageInvertActive: StateFlow<Boolean> =
+        combine(settingsFlow, systemDarkThemeFlow) { settings, systemDark ->
+            settings.isEpubImageInvertActive(systemDark)
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            ReaderSettings().isEpubImageInvertActive(initialSystemDark),
+        )
+
+    val epubImageViewerEnabled: StateFlow<Boolean> =
+        settingsFlow.map { it.formatPreferences.epubImageViewer }
+            .distinctUntilChanged()
+            .stateIn(viewModelScope, SharingStarted.Eagerly, FormatPreferences().epubImageViewer)
 
     private val themeSettings = settingsFlow
         .map(ReaderSettings::toReaderThemeSettings)
@@ -227,6 +262,7 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
                 )
             }.distinctUntilChanged().collect { identity ->
                 if (identity.maintenance) {
+                    closeImageViewer()
                     openJob?.cancel()
                     _publication.value?.let { retiredPublications += it }
                     _publication.value = null
@@ -269,6 +305,7 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
     }
 
     fun openBook() {
+        closeImageViewer()
         val previous = openJob
         previous?.cancel()
         openJob = viewModelScope.launch {
@@ -531,6 +568,119 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
         _externalLinkState.update { it.copy(showMenu = false) }
     }
 
+    @OptIn(ExperimentalReadiumApi::class)
+    fun openImageViewer(element: Content.Element) {
+        val pub = _publication.value ?: return
+        if (!shouldOpenInImageViewer(
+                element,
+                pub,
+                _positions.value,
+                _bookState.value.currentPage
+            )
+        ) {
+            return
+        }
+        val caption = when (element) {
+            is Content.ImageElement -> element.text
+            is Content.SvgElement -> element.text
+            else -> null
+        }?.takeIf { it.isNotBlank() }
+
+        imageLoadJob?.cancel()
+        _imageViewerState.value = ImageViewerState(
+            content = ReaderImageContent.Loading,
+            caption = caption,
+            inverted = isEpubImageInvertActive.value,
+        )
+        _imageViewerChromeVisible.value = true
+
+        imageLoadJob = viewModelScope.launch {
+            val loaded = when (element) {
+                is Content.ImageElement -> loadImageElement(pub, element)
+                is Content.SvgElement -> loadSvgElement(element.svg)
+                else -> ReaderImageContent.Error
+            }
+            _imageViewerState.update { current ->
+                current?.copy(content = loaded)
+            }
+        }
+    }
+
+    fun toggleImageViewerInvert() {
+        _imageViewerState.update { current ->
+            current?.copy(inverted = !current.inverted)
+        }
+    }
+
+    fun toggleImageViewerChrome() {
+        if (_imageViewerState.value != null) {
+            _imageViewerChromeVisible.update { !it }
+        }
+    }
+
+    fun closeImageViewer() {
+        imageLoadJob?.cancel()
+        imageLoadJob = null
+        _imageViewerState.value = null
+        _imageViewerChromeVisible.value = false
+    }
+
+    @OptIn(ExperimentalReadiumApi::class)
+    private suspend fun loadImageElement(
+        publication: Publication,
+        element: Content.ImageElement,
+    ): ReaderImageContent = withContext(Dispatchers.IO) {
+        try {
+            val resource = publication.get(element.embeddedLink)
+                ?: return@withContext ReaderImageContent.Error
+            val bytes = try {
+                resource.read().getOrNull()
+            } finally {
+                resource.close()
+            } ?: return@withContext ReaderImageContent.Error
+            if (bytes.isEmpty() || bytes.size > MAX_VIEWER_IMAGE_BYTES) {
+                return@withContext ReaderImageContent.Error
+            }
+            if (isSvgLink(
+                    element.embeddedLink.href.toString(),
+                    element.embeddedLink.mediaType?.toString()
+                )
+            ) {
+                val sanitized = sanitizeSvgMarkup(bytes.toString(Charsets.UTF_8))
+                    ?: return@withContext ReaderImageContent.Error
+                return@withContext ReaderImageContent.Svg(sanitized)
+            }
+            val source = ImageDecoder.createSource(ByteBuffer.wrap(bytes))
+            val bitmap = ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
+                val width = info.size.width
+                val height = info.size.height
+                if (width > MAX_VIEWER_IMAGE_DIMENSION || height > MAX_VIEWER_IMAGE_DIMENSION) {
+                    val ratio = minOf(
+                        MAX_VIEWER_IMAGE_DIMENSION.toFloat() / width,
+                        MAX_VIEWER_IMAGE_DIMENSION.toFloat() / height,
+                    )
+                    decoder.setTargetSize(
+                        (width * ratio).roundToInt().coerceAtLeast(1),
+                        (height * ratio).roundToInt().coerceAtLeast(1),
+                    )
+                }
+            }
+            ReaderImageContent.Bitmap(bitmap.asImageBitmap())
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            timber.log.Timber.w(error, "Could not decode EPUB image resource")
+            ReaderImageContent.Error
+        }
+    }
+
+    private suspend fun loadSvgElement(rawSvg: String): ReaderImageContent =
+        withContext(Dispatchers.Default) {
+            val sanitized = sanitizeSvgMarkup(rawSvg)
+                ?: return@withContext ReaderImageContent.Error
+            ReaderImageContent.Svg(sanitized)
+        }
+
     fun showToc() {
         _controlsState.update {
             it.copy(
@@ -590,8 +740,14 @@ class ReaderViewModel @dagger.assisted.AssistedInject constructor(
     }
 
     override fun onCleared() {
+        imageLoadJob?.cancel()
         openJob?.cancel()
         closeBook()
+    }
+
+    companion object {
+        private const val MAX_VIEWER_IMAGE_BYTES = 32 * 1024 * 1024
+        private const val MAX_VIEWER_IMAGE_DIMENSION = 4096
     }
 
     @dagger.assisted.AssistedFactory

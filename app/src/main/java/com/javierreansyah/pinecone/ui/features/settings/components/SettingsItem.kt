@@ -2,9 +2,7 @@ package com.javierreansyah.pinecone.ui.features.settings.components
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.ListItemShapes
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -19,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Keyboard_arrow_right
 import com.javierreansyah.pinecone.ui.components.ListItemAccessory
+import com.javierreansyah.pinecone.ui.components.SegmentedListDefaults
 import com.javierreansyah.pinecone.ui.components.SettingsChoiceDialog
 
 @Composable
@@ -37,10 +36,7 @@ fun <T : Any> SettingsItem(
     SegmentedListItem(
         verticalAlignment = Alignment.Top,
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-        colors = ListItemDefaults.segmentedColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-        ),
+        colors = SegmentedListDefaults.colors(),
         shapes = shapes,
         enabled = enabled,
         onClick = { showDialog = true },
@@ -82,10 +78,7 @@ internal fun SettingsSwitchItem(
     SegmentedListItem(
         verticalAlignment = Alignment.Top,
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-        colors = ListItemDefaults.segmentedColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-        ),
+        colors = SegmentedListDefaults.colors(),
         shapes = shapes,
         enabled = enabled,
         onClick = { onChanged(!checked) },

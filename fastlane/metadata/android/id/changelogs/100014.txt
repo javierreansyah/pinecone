@@ -1,0 +1,5 @@
+- Antarmuka Material 3 baru, mode gelap AMOLED, animasi lebih halus, dan ikon aplikasi terbaru.
+- Penampil gambar EPUB ketuk-untuk-perbesar dengan opsi balik warna.
+- Peningkatan perbesaran PDF, jarak tata letak, dan kontrol bilah atas.
+- Format cadangan v3 dengan pemulihan terpandu yang lebih aman (kompatibel dengan cadangan v1.0.0).
+- Impor massal lebih mulus, tampilan kosong lebih jelas, dan mesin baca terbaru (Readium 3.4.0).

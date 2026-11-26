@@ -39,6 +39,7 @@ data class LibraryScreenUiState(
     val filteredBooks: List<Book> = emptyList(),
     val shelves: List<ShelfWithCovers> = emptyList(),
     val allBooks: List<Book> = emptyList(),
+    val hasAnyBooksInDatabase: Boolean = true,
     val searchResults: SearchResults = SearchResults(),
     val isBooksLoading: Boolean = true,
     val isShelvesLoading: Boolean = true,

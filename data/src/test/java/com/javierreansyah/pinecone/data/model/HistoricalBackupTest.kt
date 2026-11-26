@@ -15,9 +15,12 @@ class HistoricalBackupTest {
 
     @Test
     fun taggedVersionOneDataStillDecodesWithoutDroppingSavedValues() {
-        val snapshot = Json.decodeFromString<VaultSnapshot>(fixture("snapshot.json").decodeToString())
-        val reader = Json.decodeFromString<ReaderPreferencesData>(fixture("reader_preferences.json").decodeToString())
-        val library = Json.decodeFromString<LibraryPreferencesData>(fixture("library_preferences.json").decodeToString())
+        val snapshot =
+            Json.decodeFromString<VaultSnapshot>(fixture("snapshot.json").decodeToString())
+        val reader =
+            Json.decodeFromString<ReaderPreferencesData>(fixture("reader_preferences.json").decodeToString())
+        val library =
+            Json.decodeFromString<LibraryPreferencesData>(fixture("library_preferences.json").decodeToString())
         assertEquals(reader.settings, snapshot.settings)
         assertTrue(reader.legacyMigrationComplete)
         assertEquals("personal", library.globalSpaceId)
@@ -31,12 +34,16 @@ class HistoricalBackupTest {
         assertEquals("Retained note", snapshot.library.notes.single().noteText)
         assertEquals("Baseline author", snapshot.library.credits.single().name)
         assertEquals(0.75, snapshot.library.books.single().furthestProgression, 0.0)
-        assertEquals(snapshot.library.books.single().id, snapshot.library.renditions.single().bookId)
+        assertEquals(
+            snapshot.library.books.single().id,
+            snapshot.library.renditions.single().bookId
+        )
     }
 
     @Test
     fun historicalFixtureBytesHaveNotChanged() {
-        val hashes = Json.decodeFromString<Map<String, String>>(fixture("checksums.json").decodeToString())
+        val hashes =
+            Json.decodeFromString<Map<String, String>>(fixture("checksums.json").decodeToString())
         hashes.forEach { (name, expected) ->
             val actual = MessageDigest.getInstance("SHA-256").digest(fixture(name))
                 .joinToString("") { "%02x".format(it) }

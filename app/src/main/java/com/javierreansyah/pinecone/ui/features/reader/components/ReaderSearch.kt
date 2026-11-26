@@ -1,41 +1,41 @@
 package com.javierreansyah.pinecone.ui.features.reader.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.LinearWavyProgressIndicator
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SearchBarDefaults
-import androidx.compose.material3.SearchBarValue
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberContainedSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -44,15 +44,14 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.composables.icons.materialsymbols.MaterialSymbols
-import com.composables.icons.materialsymbols.outlined.Chevron_backward
-import com.composables.icons.materialsymbols.outlined.Close
-import com.composables.icons.materialsymbols.outlined.Mic
 import com.composables.icons.materialsymbols.outlined.Search
 import com.javierreansyah.pinecone.R
-import com.javierreansyah.pinecone.ui.components.PredictiveBackOverlay
-import com.javierreansyah.pinecone.ui.components.rememberVoiceSearchLauncher
+import com.javierreansyah.pinecone.ui.components.ContainedSearchOverlay
+import com.javierreansyah.pinecone.ui.components.EmptyState
+import com.javierreansyah.pinecone.ui.components.InsetListItemDefaults
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.reader.SearchResultItem
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
 fun ReaderSearch(
@@ -67,11 +66,9 @@ fun ReaderSearch(
     modifier: Modifier = Modifier,
     wording: PublicationWording = PublicationWording.Items,
 ) {
-    val focusRequester = remember { FocusRequester() }
-    val keyboardController = LocalSoftwareKeyboardController.current
-
-    val textFieldState = remember { TextFieldState(query) }
-    val searchBarState = rememberContainedSearchBarState(initialValue = SearchBarValue.Expanded)
+    val textFieldState = rememberTextFieldState(query)
+    val latestQuery by rememberUpdatedState(query)
+    val latestOnQueryChange by rememberUpdatedState(onQueryChange)
 
     LaunchedEffect(query) {
         if (textFieldState.text.toString() != query) {
@@ -81,190 +78,124 @@ fun ReaderSearch(
         }
     }
 
-    LaunchedEffect(textFieldState.text) {
-        val currentText = textFieldState.text.toString()
-        if (currentText != query) {
-            onQueryChange(currentText)
-        }
-    }
-
-    val launchVoiceSearch = rememberVoiceSearchLauncher { spokenText ->
-        textFieldState.edit { replace(0, length, spokenText) }
-        onQueryChange(spokenText)
-        onSearch(spokenText)
-        keyboardController?.hide()
-    }
-
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-        keyboardController?.show()
+    LaunchedEffect(textFieldState) {
+        snapshotFlow { textFieldState.text.toString() }
+            .distinctUntilChanged()
+            .collect { currentText ->
+                if (currentText != latestQuery) {
+                    latestOnQueryChange(currentText)
+                }
+            }
     }
 
     val backgroundColor = MaterialTheme.colorScheme.surface
 
-    PredictiveBackOverlay(
+    ContainedSearchOverlay(
+        textFieldState = textFieldState,
+        placeholderText = stringResource(wording.searchHint),
+        onSearch = onSearch,
+        onClear = { onQueryChange("") },
+        onVoiceResult = { spokenText ->
+            onQueryChange(spokenText)
+            onSearch(spokenText)
+        },
         onClose = onClose,
         modifier = modifier,
         backgroundColor = backgroundColor,
-    ) { dismiss ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(top = 8.dp),
-        ) {
-
-            SearchBarDefaults.InputField(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .focusRequester(focusRequester),
-                textFieldState = textFieldState,
-                searchBarState = searchBarState,
-                colors = SearchBarDefaults.inputFieldColors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                ),
-                onSearch = {
-                    onSearch(textFieldState.text.toString())
-                    keyboardController?.hide()
-                },
-                placeholder = {
-                    Text(
-                        stringResource(wording.searchHint),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                },
-                leadingIcon = {
-                    IconButton(onClick = dismiss) {
-                        Icon(
-                            MaterialSymbols.Outlined.Chevron_backward,
-                            contentDescription = stringResource(R.string.action_close),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(28.dp),
-                        )
-                    }
-                },
-                trailingIcon = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(end = 4.dp),
-                    ) {
-                        if (textFieldState.text.isNotEmpty()) {
-                            IconButton(
-                                onClick = {
-                                    textFieldState.edit { replace(0, length, "") }
-                                    onQueryChange("")
-                                },
-                            ) {
-                                Icon(
-                                    MaterialSymbols.Outlined.Close,
-                                    contentDescription = stringResource(R.string.action_clear),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        } else {
-                            IconButton(onClick = { launchVoiceSearch() }) {
-                                Icon(
-                                    MaterialSymbols.Outlined.Mic,
-                                    contentDescription = stringResource(R.string.action_voice_search),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                    }
-                },
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Box(modifier = Modifier.fillMaxSize()) {
-                LazyColumn(
-                    contentPadding = PaddingValues(bottom = 8.dp, top = 16.dp),
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    if (searchPerformed && results.isNotEmpty()) {
-                        item {
-                            Surface(
-                                color = backgroundColor, modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                val resultsText = androidx.compose.ui.res.pluralStringResource(
-                                    R.plurals.reader_search_results_count,
-                                    results.size,
-                                    results.size,
-                                )
-                                Text(
-                                    text = resultsText,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(
-                                        start = 20.dp,
-                                        end = 20.dp,
-                                        bottom = 16.dp,
-                                    ),
-                                )
-                            }
-                        }
-                    }
-
-                    itemsIndexed(results) { index, item ->
-                        SearchResultCard(
-                            item = item,
-                            index = index,
-                            query = query,
-                            onClick = { onResultClick(index) },
-                        )
-                    }
-
-                    if (searchPerformed && !isLoading && results.isEmpty()) {
-                        item {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 64.dp),
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                                ) {
-                                    Icon(
-                                        MaterialSymbols.Outlined.Search,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(48.dp),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                                    )
-                                    Text(
-                                        stringResource(
-                                            R.string.reader_search_no_results_for,
-                                            query,
-                                        ),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = isLoading,
-                    enter = fadeIn(animationSpec = actionsEffectsSpec),
-                    exit = fadeOut(animationSpec = actionsEffectsSpec),
-                    modifier = Modifier.align(Alignment.TopCenter),
-                ) {
-                    LinearWavyProgressIndicator(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(8.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                    )
+    ) {
+        val listState = rememberLazyListState()
+        val fadeHeight = 16.dp
+        val fadeHeightPx = with(LocalDensity.current) { fadeHeight.toPx() }
+        val topFadeAlpha by remember(listState, fadeHeightPx) {
+            derivedStateOf {
+                if (listState.firstVisibleItemIndex > 0) {
+                    1f
+                } else {
+                    (listState.firstVisibleItemScrollOffset / fadeHeightPx).coerceIn(0f, 1f)
                 }
             }
+        }
+
+        val actionsEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+        AnimatedVisibility(
+            visible = isLoading,
+            enter = fadeIn(animationSpec = actionsEffectsSpec),
+            exit = fadeOut(animationSpec = actionsEffectsSpec),
+        ) {
+            LinearWavyProgressIndicator(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+        ) {
+            LazyColumn(
+                state = listState,
+                contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                if (searchPerformed && results.isNotEmpty()) {
+                    item {
+                        val resultsText = pluralStringResource(
+                            R.plurals.reader_search_results_count,
+                            results.size,
+                            results.size,
+                        )
+                        Text(
+                            text = resultsText,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(
+                                start = 20.dp,
+                                end = 20.dp,
+                                bottom = 16.dp,
+                            ),
+                        )
+                    }
+                }
+
+                itemsIndexed(results) { index, item ->
+                    SearchResultCard(
+                        item = item,
+                        index = index,
+                        query = query,
+                        onClick = { onResultClick(index) },
+                    )
+                }
+
+                if (searchPerformed && !isLoading && results.isEmpty()) {
+                    item {
+                        EmptyState(
+                            icon = MaterialSymbols.Outlined.Search,
+                            text = stringResource(R.string.reader_search_no_results_for, query),
+                            iconSize = 48.dp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 64.dp),
+                        )
+                    }
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(fadeHeight)
+                    .align(Alignment.TopCenter)
+                    .graphicsLayer { alpha = topFadeAlpha }
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(backgroundColor, backgroundColor.copy(alpha = 0f)),
+                        ),
+                    ),
+            )
         }
     }
 }
@@ -279,69 +210,63 @@ fun SearchResultCard(
 ) {
     val primary = MaterialTheme.colorScheme.primary
     val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+    val subtitleText = if (item.positionLabel.isNotBlank()) {
+        "${index + 1} | ${item.positionLabel}"
+    } else {
+        (index + 1).toString()
+    }
+    val snippet = buildAnnotatedString {
+        val before = item.textBefore?.trim() ?: ""
+        val highlight = item.highlight ?: query
+        val after = item.textAfter?.trim() ?: ""
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Column {
+        if (before.isNotBlank()) {
+            withStyle(SpanStyle(color = onSurfaceVariant, fontSize = 14.sp)) {
+                append(before)
+                if (!before.endsWith(" ")) append(" ")
+            }
+        }
+        withStyle(
+            SpanStyle(
+                color = primary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                background = primary.copy(alpha = 0.12f),
+            ),
+        ) {
+            append(highlight)
+        }
+        if (after.isNotBlank()) {
+            withStyle(SpanStyle(color = onSurfaceVariant, fontSize = 14.sp)) {
+                if (!after.startsWith(" ")) append(" ")
+                append(after)
+            }
+        }
+    }
 
+    ListItem(
+        onClick = onClick,
+        modifier = modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
+        shapes = InsetListItemDefaults.shapes(),
+        colors = ListItemDefaults.colors(
+            containerColor = Color.Transparent,
+            contentColor = primary,
+        ),
+        contentPadding = InsetListItemDefaults.ContentPadding,
+        supportingContent = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(text = subtitleText)
+                Text(
+                    text = snippet,
+                    lineHeight = 20.sp,
+                    modifier = Modifier.widthIn(max = 600.dp),
+                )
+            }
+        },
+        content = {
             Text(
                 text = item.chapterTitle ?: stringResource(R.string.reader_unknown_chapter),
-                style = MaterialTheme.typography.titleMedium,
-                color = primary,
             )
-
-            val subtitleText = if (item.positionLabel.isNotBlank()) {
-                "${index + 1} | ${item.positionLabel}"
-            } else {
-                (index + 1).toString()
-            }
-            Text(
-                text = subtitleText,
-                style = MaterialTheme.typography.bodySmall,
-                color = onSurfaceVariant,
-            )
-        }
-
-        val snippet = buildAnnotatedString {
-            val before = item.textBefore?.trim() ?: ""
-            val highlight = item.highlight ?: query
-            val after = item.textAfter?.trim() ?: ""
-
-            if (before.isNotBlank()) {
-                withStyle(SpanStyle(color = onSurfaceVariant, fontSize = 14.sp)) {
-                    append(before)
-                    if (!before.endsWith(" ")) append(" ")
-                }
-            }
-            withStyle(
-                SpanStyle(
-                    color = primary,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    background = primary.copy(alpha = 0.12f),
-                ),
-            ) {
-                append(highlight)
-            }
-            if (after.isNotBlank()) {
-                withStyle(SpanStyle(color = onSurfaceVariant, fontSize = 14.sp)) {
-                    if (!after.startsWith(" ")) append(" ")
-                    append(after)
-                }
-            }
-        }
-
-        Text(
-            text = snippet,
-            style = MaterialTheme.typography.bodyMedium,
-            lineHeight = 20.sp,
-            modifier = Modifier.widthIn(max = 600.dp),
-        )
-
-    }
+        },
+    )
 }

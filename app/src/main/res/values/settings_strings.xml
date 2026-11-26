@@ -2,6 +2,8 @@
 <resources>
     <string name="settings_about_app">About this app</string>
     <string name="settings_about_section">About</string>
+    <string name="settings_amoled_dark_mode">AMOLED dark mode</string>
+    <string name="settings_amoled_dark_mode_summary">Use pure black surfaces in dark mode.</string>
     <string name="settings_auto_backup_freq">Auto backup frequency</string>
     <item name="settings_backup_auto_label" type="string">@string/reader_settings_theme_auto</item>
     <string name="settings_backup_freq_12h">12 hours</string>
@@ -16,12 +18,14 @@
     <string name="settings_backup_preferences">Local backup</string>
     <string name="settings_choose_color_scheme">Choose color scheme</string>
     <string name="settings_color_palette">Color palette</string>
-    <string name="settings_error_set_backup_location">Please select a backup location first</string>
+    <string name="settings_restore_select_folder_title">Select backup folder</string>
+    <string name="settings_restore_select_folder_message">Choose your Pinecone backup folder to scan for available backups. Once selected, you can pick which snapshot to restore.</string>
+    <string name="settings_restore_choose_folder">Choose folder</string>
     <string name="settings_hide_all_space">Hide \"All\" space</string>
     <string name="settings_hide_all_space_summary">Hide \"All\" from the navigation rail.</string>
     <string name="settings_language">@string/publication_language</string>
     <string name="settings_last_backup_format">Last: %s</string>
-    <string name="settings_library_bottom_navigation">Show library bottom navigation</string>
+    <string name="settings_library_bottom_navigation">Show library view switcher</string>
     <string name="settings_library_bottom_navigation_summary">Show the titles and shelves switcher.</string>
     <string name="settings_no_backups_found">No backups found in the selected folder.</string>
     <string name="settings_option_dark">@string/reader_settings_theme_dark</string>
@@ -57,4 +61,16 @@
     <string name="settings_backup_preparing">Preparing backup…</string>
     <string name="settings_backup_progress">Files completed: %1$d of %2$d</string>
     <string name="settings_restore_preparing">Preparing restore…</string>
+    <plurals name="settings_backup_titles_count">
+        <item quantity="one">%d title</item>
+        <item quantity="other">%d titles</item>
+    </plurals>
+    <plurals name="settings_backup_spaces_count">
+        <item quantity="one">%d space</item>
+        <item quantity="other">%d spaces</item>
+    </plurals>
+    <plurals name="settings_backup_shelves_count">
+        <item quantity="one">%d shelf</item>
+        <item quantity="other">%d shelves</item>
+    </plurals>
 </resources>

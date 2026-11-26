@@ -1,13 +1,7 @@
 package com.javierreansyah.pinecone.ui.features.reader.components
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -35,11 +29,9 @@ import androidx.compose.material3.ButtonGroup
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconButtonShapes
-import androidx.compose.material3.IconToggleButtonShapes
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -56,9 +48,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
@@ -89,11 +79,18 @@ import com.composables.icons.materialsymbols.outlined.Replay_10
 import com.composables.icons.materialsymbols.outlined.Skip_next
 import com.composables.icons.materialsymbols.outlined.Skip_previous
 import com.composables.icons.materialsymbols.outlined.Tune
-import com.composables.icons.materialsymbols.outlinedfilled.Pause
-import com.composables.icons.materialsymbols.outlinedfilled.Play_arrow
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.reader.audio.AudioPlaybackState
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
+import com.javierreansyah.pinecone.ui.components.ConnectedButtonGroup
+import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
+import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconToggleButton
+import com.javierreansyah.pinecone.ui.components.GradientMaskedProgressBar
+import com.javierreansyah.pinecone.ui.components.LocalAnimatedEffectsVisible
+import com.javierreansyah.pinecone.ui.components.MorphingPlayPauseContent
+import com.javierreansyah.pinecone.ui.components.rememberAnimatedGradientMotionState
+import com.javierreansyah.pinecone.ui.components.rememberAnimatedGradientPalette
+import com.javierreansyah.pinecone.ui.components.rememberFlowGradientLinePainter
 import kotlinx.coroutines.delay
 import java.io.File
 import java.util.Locale
@@ -317,6 +314,19 @@ private fun AudioTransportButtons(
         stringResource(R.string.reader_next_track),
     )
     val sources = remember { List(3) { MutableInteractionSource() } }
+    val playCornerRadius by animateDpAsState(
+        targetValue = if (playing) 24.dp else 38.dp,
+        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+        label = "playPauseCornerRadius",
+    )
+    val pauseMorphPalette = rememberAnimatedGradientPalette(
+        baseColor = MaterialTheme.colorScheme.tertiaryContainer,
+        accentColor = MaterialTheme.colorScheme.primary,
+    )
+    val pauseMorphMotion = rememberAnimatedGradientMotionState(
+        active = playing,
+        label = "pauseMorphGradientIntensity",
+    )
 
     ButtonGroup(
         overflowIndicator = { ButtonGroupDefaults.OverflowIndicator(menuState = it) },
@@ -333,8 +343,6 @@ private fun AudioTransportButtons(
             customItem(
                 buttonGroupContent = {
                     val interactionSource = sources[index]
-                    val effectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
-                    val iconSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
                     val isCenter = index == 1
 
                     val containerColor = if (isCenter) {
@@ -351,7 +359,7 @@ private fun AudioTransportButtons(
                     FilledIconButton(
                         onClick = action,
                         shapes = IconButtonShapes(
-                            shape = RoundedCornerShape(if (isCenter) 28.dp else 38.dp),
+                            shape = RoundedCornerShape(if (isCenter) playCornerRadius else 38.dp),
                             pressedShape = RoundedCornerShape(if (isCenter) 18.dp else 20.dp),
                         ),
                         colors = IconButtonDefaults.filledIconButtonColors(
@@ -368,26 +376,14 @@ private fun AudioTransportButtons(
                             .height(76.dp),
                     ) {
                         if (isCenter) {
-                            AnimatedContent(
-                                targetState = playing,
-                                transitionSpec = {
-                                    fadeIn(animationSpec = effectsSpec) +
-                                            scaleIn(
-                                                initialScale = 0.75f,
-                                                animationSpec = iconSpatialSpec
-                                            ) togetherWith fadeOut(animationSpec = effectsSpec) + scaleOut(
-                                        targetScale = 0.75f,
-                                        animationSpec = iconSpatialSpec
-                                    )
-                                },
-                                label = "playPauseTransition",
-                            ) { isPlaying ->
-                                Icon(
-                                    imageVector = if (isPlaying) MaterialSymbols.OutlinedFilled.Pause else MaterialSymbols.OutlinedFilled.Play_arrow,
-                                    contentDescription = label,
-                                    modifier = Modifier.size(38.dp),
-                                )
-                            }
+                            MorphingPlayPauseContent(
+                                playing = playing,
+                                contentDescription = label,
+                                palette = pauseMorphPalette,
+                                motion = pauseMorphMotion,
+                                gradientRadius = 68.dp,
+                                iconSize = 38.dp,
+                            )
                         } else {
                             Icon(
                                 imageVector = if (index == 0) MaterialSymbols.Outlined.Skip_previous else MaterialSymbols.Outlined.Skip_next,
@@ -475,9 +471,17 @@ private fun AudioSeekBar(
         label = "audioWaveHeight",
     )
 
+    val effectsVisible = LocalAnimatedEffectsVisible.current
     val seekLabel = stringResource(R.string.reader_audio_seek)
-    val primaryColor = MaterialTheme.colorScheme.primary
     val trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
+    val progressPalette = rememberAnimatedGradientPalette()
+    val linePainter = rememberFlowGradientLinePainter()
+    val waveMoving = effectsVisible && (state.playing || waveHeight > 4.dp)
+    val flowMotion = rememberAnimatedGradientMotionState(
+        active = state.playing,
+        label = "audioProgressGradientIntensity",
+        keepTimeRunning = waveMoving,
+    )
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Box(
@@ -538,22 +542,44 @@ private fun AudioSeekBar(
                 },
             contentAlignment = Alignment.Center,
         ) {
-            LinearWavyProgressIndicator(
-                progress = { progress },
+            GradientMaskedProgressBar(
+                palette = progressPalette,
+                motion = flowMotion,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(waveHeight.coerceAtLeast(4.dp))
                     .clearAndSetSemantics {},
-                color = primaryColor,
-                trackColor = trackColor,
-                stroke = indicatorStroke,
-                trackStroke = indicatorStroke,
-                gapSize = 6.dp,
-                stopSize = 3.dp,
-                amplitude = { 0.4f },
-                wavelength = 20.dp,
-                // Keep the wave moving until it has flattened, then stop its phase animation.
-                waveSpeed = if (state.playing || waveHeight > 4.dp) 20.dp else 0.dp,
+                track = { trackModifier ->
+                    LinearWavyProgressIndicator(
+                        progress = { progress },
+                        modifier = trackModifier,
+                        color = Color.Transparent,
+                        trackColor = trackColor,
+                        stroke = indicatorStroke,
+                        trackStroke = indicatorStroke,
+                        gapSize = 6.dp,
+                        stopSize = 0.dp,
+                        amplitude = { 0.4f },
+                        wavelength = 20.dp,
+                        waveSpeed = 0.dp,
+                    )
+                },
+                indicator = { indicatorModifier, baseColor ->
+                    LinearWavyProgressIndicator(
+                        progress = { progress },
+                        modifier = indicatorModifier,
+                        color = baseColor,
+                        trackColor = Color.Transparent,
+                        stroke = indicatorStroke,
+                        trackStroke = indicatorStroke,
+                        gapSize = 6.dp,
+                        stopSize = 3.dp,
+                        amplitude = { 0.4f },
+                        wavelength = 20.dp,
+                        // Keep the wave moving until it has flattened, then stop its phase animation.
+                        waveSpeed = if (waveMoving) 20.dp else 0.dp,
+                    )
+                },
             )
 
             Canvas(
@@ -565,6 +591,7 @@ private fun AudioSeekBar(
                         alpha = handleOpacity.coerceIn(0f, 1f)
                     },
             ) {
+                if (handleOpacity <= 0f) return@Canvas
                 // Draw only the final handle; animate its layer vertically, never its width/shape.
                 val handleWidth = 4.5.dp.toPx()
                 val halfWidth = handleWidth / 2f
@@ -575,12 +602,15 @@ private fun AudioSeekBar(
                 val centerY = size.height / 2f
                 val halfHeight = 22.dp.toPx() / 2f
 
-                drawLine(
-                    color = primaryColor,
-                    start = Offset(clampedX, centerY - halfHeight),
-                    end = Offset(clampedX, centerY + halfHeight),
-                    strokeWidth = handleWidth,
-                    cap = StrokeCap.Round,
+                linePainter.drawLine(
+                    drawScope = this,
+                    palette = progressPalette,
+                    motion = flowMotion,
+                    rtl = rtl,
+                    x = clampedX,
+                    startY = centerY - halfHeight,
+                    endY = centerY + halfHeight,
+                    strokeWidthPx = handleWidth,
                 )
             }
         }
@@ -657,22 +687,20 @@ private fun AudioActionsStrip(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
+        ConnectedButtonGroup(
             modifier = Modifier
-                .widthIn(max = 56.dp * 6 + ButtonGroupDefaults.ConnectedSpaceBetween * 5)
+                .widthIn(max = 48.dp * 6)
                 .fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
-            verticalAlignment = Alignment.CenterVertically,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         ) {
-            ExpressiveConnectedActionButton(
+            AudioStripActionButton(
                 onClick = { onSkip(-10) },
                 modifier = Modifier.weight(1f),
                 icon = MaterialSymbols.Outlined.Replay_10,
                 contentDescription = stringResource(R.string.reader_rewind),
-                shape = ButtonGroupDefaults.connectedLeadingButtonShape,
-                pressedShape = ButtonGroupDefaults.connectedLeadingButtonPressShape,
             )
-            ExpressiveConnectedActionButton(
+            AudioStripActionButton(
                 onClick = onToggleBookmark,
                 modifier = Modifier.weight(1f),
                 icon = MaterialSymbols.Outlined.Bookmark,
@@ -681,54 +709,42 @@ private fun AudioActionsStrip(
                 contentDescription = stringResource(
                     if (isBookmarked) R.string.reader_remove_bookmark else R.string.reader_add_bookmark
                 ),
-                shape = RoundedCornerShape(4.dp),
-                pressedShape = ButtonGroupDefaults.connectedMiddleButtonPressShape,
                 tint = if (isBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            ExpressiveConnectedActionButton(
+            AudioStripActionButton(
                 onClick = onAddNote,
                 modifier = Modifier.weight(1f),
                 enabled = canAddNote,
                 icon = MaterialSymbols.Outlined.Edit_note,
                 contentDescription = stringResource(R.string.reader_add_note),
-                shape = RoundedCornerShape(4.dp),
-                pressedShape = ButtonGroupDefaults.connectedMiddleButtonPressShape,
             )
-            ExpressiveConnectedActionButton(
+            AudioStripActionButton(
                 onClick = onOpenBookmarks,
                 modifier = Modifier.weight(1f),
                 icon = MaterialSymbols.Outlined.List,
                 contentDescription = stringResource(R.string.reader_bookmarks_title),
-                shape = RoundedCornerShape(4.dp),
-                pressedShape = ButtonGroupDefaults.connectedMiddleButtonPressShape,
             )
-            ExpressiveConnectedActionButton(
+            AudioStripActionButton(
                 onClick = onOpenSettings,
                 modifier = Modifier.weight(1f),
                 icon = MaterialSymbols.Outlined.Tune,
                 contentDescription = stringResource(R.string.settings_title),
-                shape = RoundedCornerShape(4.dp),
-                pressedShape = ButtonGroupDefaults.connectedMiddleButtonPressShape,
             )
-            ExpressiveConnectedActionButton(
+            AudioStripActionButton(
                 onClick = { onSkip(10) },
                 modifier = Modifier.weight(1f),
                 icon = MaterialSymbols.Outlined.Forward_10,
                 contentDescription = stringResource(R.string.reader_forward),
-                shape = ButtonGroupDefaults.connectedTrailingButtonShape,
-                pressedShape = ButtonGroupDefaults.connectedTrailingButtonPressShape,
             )
         }
     }
 }
 
 @Composable
-private fun ExpressiveConnectedActionButton(
+private fun AudioStripActionButton(
     onClick: () -> Unit,
     icon: ImageVector,
     contentDescription: String,
-    shape: Shape,
-    pressedShape: Shape,
     modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     enabled: Boolean = true,
@@ -749,30 +765,23 @@ private fun ExpressiveConnectedActionButton(
         }
     }
     if (filledIcon != null) {
-        FilledIconToggleButton(
+        ConnectedGroupIconToggleButton(
             checked = selected,
             onCheckedChange = { onClick() },
             enabled = enabled,
-            shapes = IconToggleButtonShapes(shape = shape, pressedShape = pressedShape),
-            colors = IconButtonDefaults.filledIconToggleButtonColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                contentColor = tint,
-                checkedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                checkedContentColor = tint,
-            ),
-            modifier = modifier.height(48.dp),
+            buttonSize = 48.dp,
+            contentColor = tint,
+            checkedContentColor = tint,
+            modifier = modifier,
             content = content,
         )
     } else {
-        FilledIconButton(
+        ConnectedGroupIconButton(
             onClick = onClick,
             enabled = enabled,
-            shapes = IconButtonShapes(shape = shape, pressedShape = pressedShape),
-            colors = IconButtonDefaults.filledIconButtonColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                contentColor = tint,
-            ),
-            modifier = modifier.height(48.dp),
+            buttonSize = 48.dp,
+            contentColor = tint,
+            modifier = modifier,
             content = content,
         )
     }

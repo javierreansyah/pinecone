@@ -1,26 +1,24 @@
 package com.javierreansyah.pinecone.ui.features.library.filters
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -31,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -38,9 +37,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -53,9 +49,17 @@ import com.composables.icons.materialsymbols.outlined.Select
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuDefaults
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuGroup
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuItem
+import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
 import com.javierreansyah.pinecone.ui.components.EditingActions
 import com.javierreansyah.pinecone.ui.components.EditingNavigationIcon
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
+import com.javierreansyah.pinecone.ui.components.LibraryTopAppBarTitle
+import com.javierreansyah.pinecone.ui.components.LocalTopAppBarCollapsedRow
+import com.javierreansyah.pinecone.ui.components.TopAppBarActionGroup
+import com.javierreansyah.pinecone.ui.components.horizontalPadding
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.FilterSortPreferences
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
@@ -71,6 +75,7 @@ import com.javierreansyah.pinecone.ui.features.library.deleteCollectionTitle
 import com.javierreansyah.pinecone.ui.features.library.fileFormat
 import com.javierreansyah.pinecone.ui.features.library.inNamedCollection
 import com.javierreansyah.pinecone.ui.features.library.publicationWording
+import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 
 @Composable
 fun FilterResultScreen(
@@ -180,7 +185,7 @@ private fun FilterResultContent(
     var showFilterSheet by remember { mutableStateOf(value = false) }
     var showDeleteConfirm by remember { mutableStateOf(value = false) }
     var isRenaming by remember { mutableStateOf(value = false) }
-    var renameName by remember { mutableStateOf(TextFieldValue("")) }
+    val renameNameState = rememberTextFieldState()
     var showMergeWarningDialog by remember { mutableStateOf(value = false) }
     var pendingRenameName by remember { mutableStateOf("") }
     val selection = remember { LibrarySelection() }
@@ -201,13 +206,12 @@ private fun FilterResultContent(
                 isInMultiSelectMode = isInMultiSelectMode,
                 showMenu = showMenu,
                 isRenaming = isRenaming,
-                renameName = renameName,
+                renameNameState = renameNameState,
                 suggestions = suggestionList,
                 scrollBehavior = scrollBehavior,
-                onRenameNameChange = { renameName = it },
                 onCancelRename = { isRenaming = false },
                 onSaveRename = {
-                    val newName = renameName.text.trim()
+                    val newName = renameNameState.text.toString().trim()
                     if (newName.isNotBlank()) {
                         if (newName in suggestionList && newName != filterValue) {
                             pendingRenameName = newName
@@ -226,10 +230,7 @@ private fun FilterResultContent(
                 onMenuDismiss = { showMenu = false },
                 onRenameClick = {
                     showMenu = false
-                    renameName = TextFieldValue(
-                        text = filterValue,
-                        selection = TextRange(filterValue.length),
-                    )
+                    renameNameState.setTextAndPlaceCursorAtEnd(filterValue)
                     isRenaming = true
                 },
                 onDeleteClick = {
@@ -266,10 +267,11 @@ private fun FilterResultContent(
                 }
             },
             onBookLongClick = { selectedBookContext = it to null },
-            scrollKey = Triple(
+            scrollKey = listOf(
                 preferences.sortType,
                 preferences.isAscending,
                 preferences.selectedStatus,
+                preferences.selectedFormats,
             ),
         )
     }
@@ -344,10 +346,9 @@ private fun FilterResultTopBar(
     isInMultiSelectMode: Boolean,
     showMenu: Boolean,
     isRenaming: Boolean,
-    renameName: TextFieldValue,
+    renameNameState: TextFieldState,
     suggestions: List<String>,
     scrollBehavior: TopAppBarScrollBehavior,
-    onRenameNameChange: (TextFieldValue) -> Unit,
     onCancelRename: () -> Unit,
     onSaveRename: () -> Unit,
     onNavigateBack: () -> Unit,
@@ -368,9 +369,8 @@ private fun FilterResultTopBar(
             filterValue = filterValue,
             showMenu = showMenu,
             isRenaming = isRenaming,
-            renameName = renameName,
+            renameNameState = renameNameState,
             suggestions = suggestions,
-            onRenameNameChange = onRenameNameChange,
             onCancelRename = onCancelRename,
             onSaveRename = onSaveRename,
             onNavigateBack = onNavigateBack,
@@ -391,9 +391,8 @@ private fun FilterResultDefaultTopAppBar(
     filterValue: String,
     showMenu: Boolean,
     isRenaming: Boolean,
-    renameName: TextFieldValue,
+    renameNameState: TextFieldState,
     suggestions: List<String>,
-    onRenameNameChange: (TextFieldValue) -> Unit,
     onCancelRename: () -> Unit,
     onSaveRename: () -> Unit,
     onNavigateBack: () -> Unit,
@@ -407,13 +406,15 @@ private fun FilterResultDefaultTopAppBar(
     modifier: Modifier = Modifier,
 ) {
     var isSuggestionsExpanded by remember { mutableStateOf(value = false) }
-    val filteredSuggestions = remember(renameName.text, suggestions) {
-        if (renameName.text.isBlank()) emptyList()
+    var ignoreNextTextChange by remember { mutableStateOf(value = false) }
+    val currentRenameText = renameNameState.text.toString()
+    val filteredSuggestions = remember(currentRenameText, suggestions) {
+        if (currentRenameText.isBlank()) emptyList()
         else suggestions.filter {
             it.contains(
-                renameName.text,
+                currentRenameText,
                 ignoreCase = true,
-            ) && it != renameName.text
+            ) && it != currentRenameText
         }.take(5)
     }
 
@@ -421,7 +422,20 @@ private fun FilterResultDefaultTopAppBar(
 
     LaunchedEffect(isRenaming) {
         if (isRenaming) {
+            isSuggestionsExpanded = false
             focusRequester.requestFocus()
+            var isFirst = true
+            snapshotFlow { renameNameState.text.toString() }.collect {
+                if (isFirst) {
+                    isFirst = false
+                } else if (ignoreNextTextChange) {
+                    ignoreNextTextChange = false
+                } else {
+                    isSuggestionsExpanded = true
+                }
+            }
+        } else {
+            isSuggestionsExpanded = false
         }
     }
 
@@ -429,29 +443,25 @@ private fun FilterResultDefaultTopAppBar(
         LibraryTopAppBar(
             onBack = onNavigateBack,
             title = {
+                val isCollapsed = LocalTopAppBarCollapsedRow.current
                 if (isRenaming) {
                     BasicTextField(
-                        value = renameName,
-                        onValueChange = {
-                            onRenameNameChange(it)
-                            isSuggestionsExpanded = true
-                        },
+                        state = renameNameState,
                         textStyle = LocalTextStyle.current.copy(
                             color = MaterialTheme.colorScheme.onSurface,
                         ),
                         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                        singleLine = false,
-                        maxLines = 2,
+                        lineLimits = if (isCollapsed) {
+                            TextFieldLineLimits.SingleLine
+                        } else {
+                            TextFieldLineLimits.MultiLine(maxHeightInLines = 2)
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .focusRequester(focusRequester),
                     )
                 } else {
-                    Text(
-                        text = filterValue,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    LibraryTopAppBarTitle(text = filterValue)
                 }
             },
             navigationIcon = {
@@ -459,11 +469,8 @@ private fun FilterResultDefaultTopAppBar(
             },
             actions = {
                 EditingActions(isRenaming, onSaveRename) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        IconButton(
-                            shapes = IconButtonDefaults.shapes(),
+                    TopAppBarActionGroup {
+                        ConnectedGroupIconButton(
                             onClick = onFilterClick,
                         ) {
                             Icon(
@@ -472,7 +479,9 @@ private fun FilterResultDefaultTopAppBar(
                             )
                         }
                         Box {
-                            IconButton(onClick = onMenuToggle) {
+                            ConnectedGroupIconButton(
+                                onClick = onMenuToggle,
+                            ) {
                                 Icon(
                                     MaterialSymbols.Outlined.More_vert,
                                     contentDescription = stringResource(R.string.action_more),
@@ -482,16 +491,10 @@ private fun FilterResultDefaultTopAppBar(
                                 expanded = showMenu,
                                 onDismissRequest = onMenuDismiss,
                             ) {
-                                val groupInteractionSource =
-                                    remember { MutableInteractionSource() }
-                                DropdownMenuGroup(
-                                    shapes = MenuDefaults.groupShape(0, 1),
-                                    interactionSource = groupInteractionSource,
-                                ) {
-                                    SelectableDropdownMenuItem(
-                                        selected = false,
+                                AppDropdownMenuGroup {
+                                    AppDropdownMenuItem(
                                         text = { Text(stringResource(R.string.action_select_multiple)) },
-                                        shapes = MenuDefaults.itemShape(0, 3),
+                                        shape = AppDropdownMenuDefaults.itemShape(0, 3).shape,
                                         leadingIcon = {
                                             Icon(
                                                 MaterialSymbols.Outlined.Select,
@@ -504,10 +507,9 @@ private fun FilterResultDefaultTopAppBar(
                                             onMenuDismiss()
                                         },
                                     )
-                                    SelectableDropdownMenuItem(
-                                        selected = false,
+                                    AppDropdownMenuItem(
                                         text = { Text(stringResource(R.string.action_rename)) },
-                                        shapes = MenuDefaults.itemShape(1, 3),
+                                        shape = AppDropdownMenuDefaults.itemShape(1, 3).shape,
                                         leadingIcon = {
                                             Icon(
                                                 MaterialSymbols.Outlined.Edit,
@@ -517,21 +519,15 @@ private fun FilterResultDefaultTopAppBar(
                                         },
                                         onClick = onRenameClick,
                                     )
-                                    SelectableDropdownMenuItem(
-                                        selected = false,
-                                        text = {
-                                            Text(
-                                                stringResource(R.string.action_delete),
-                                                color = MaterialTheme.colorScheme.error,
-                                            )
-                                        },
-                                        shapes = MenuDefaults.itemShape(2, 3),
+                                    AppDropdownMenuItem(
+                                        text = { Text(stringResource(R.string.action_delete)) },
+                                        shape = AppDropdownMenuDefaults.itemShape(2, 3).shape,
+                                        colors = AppDropdownMenuDefaults.destructiveItemColors(),
                                         leadingIcon = {
                                             Icon(
                                                 MaterialSymbols.Outlined.Delete,
                                                 modifier = Modifier.size(MenuDefaults.LeadingIconSize),
                                                 contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.error,
                                             )
                                         },
                                         onClick = onDeleteClick,
@@ -542,10 +538,6 @@ private fun FilterResultDefaultTopAppBar(
                     }
                 }
             },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                scrolledContainerColor = MaterialTheme.colorScheme.surface,
-            ),
             scrollBehavior = scrollBehavior,
         )
 
@@ -559,23 +551,17 @@ private fun FilterResultDefaultTopAppBar(
                     onDismissRequest = { isSuggestionsExpanded = false },
                     properties = PopupProperties(focusable = false),
                 ) {
-                    val groupInteractionSource = remember { MutableInteractionSource() }
-                    DropdownMenuGroup(
-                        shapes = MenuDefaults.groupShape(0, 1),
-                        interactionSource = groupInteractionSource,
-                    ) {
+                    AppDropdownMenuGroup {
                         filteredSuggestions.forEachIndexed { index, suggestion ->
-                            SelectableDropdownMenuItem(
-                                selected = false,
+                            AppDropdownMenuItem(
                                 text = { Text(suggestion) },
-                                shapes = MenuDefaults.itemShape(index, filteredSuggestions.size),
+                                shape = AppDropdownMenuDefaults.itemShape(
+                                    index,
+                                    filteredSuggestions.size,
+                                ).shape,
                                 onClick = {
-                                    onRenameNameChange(
-                                        TextFieldValue(
-                                            text = suggestion,
-                                            selection = TextRange(suggestion.length),
-                                        ),
-                                    )
+                                    ignoreNextTextChange = true
+                                    renameNameState.setTextAndPlaceCursorAtEnd(suggestion)
                                     isSuggestionsExpanded = false
                                 },
                             )
@@ -601,14 +587,19 @@ private fun FilterResultBookContent(
 ) {
     Box(
         modifier = modifier
-            .padding(innerPadding)
+            .horizontalPadding(innerPadding)
             .fillMaxSize(),
     ) {
         if (books.isEmpty()) {
             Text(
                 stringResource(R.string.library_empty_items),
                 style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier
+                    .padding(
+                        top = innerPadding.calculateTopPadding(),
+                        bottom = innerPadding.calculateBottomPadding(),
+                    )
+                    .padding(16.dp),
             )
         } else {
             BookCollection(
@@ -619,6 +610,8 @@ private fun FilterResultBookContent(
                 selectedBooks = selectedBooks,
                 isInMultiSelectMode = isInMultiSelectMode,
                 scrollKey = scrollKey,
+                topContentPadding = innerPadding.calculateTopPadding(),
+                bottomContentPadding = innerPadding.calculateBottomPadding() + LocalAudioPlayerBottomPadding.current,
             )
         }
     }

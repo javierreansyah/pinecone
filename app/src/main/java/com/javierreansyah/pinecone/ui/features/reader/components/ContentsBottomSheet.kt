@@ -7,7 +7,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.LocalOverscrollFactory
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,16 +15,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.PrimaryTabRow
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -49,6 +45,9 @@ import com.composables.icons.materialsymbols.outlined.Sort
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuDefaults
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuGroup
+import com.javierreansyah.pinecone.ui.components.AppSelectableDropdownMenuItem
 import com.javierreansyah.pinecone.ui.features.reader.components.contents.BookmarksList
 import com.javierreansyah.pinecone.ui.features.reader.components.contents.NotesList
 import com.javierreansyah.pinecone.ui.features.reader.components.contents.TocList
@@ -170,11 +169,11 @@ fun ReaderBottomSheet(
                     .padding(end = 16.dp, bottom = 16.dp),
                 enter = fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) + scaleIn(
                     initialScale = 0.8f,
-                    animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()
+                    animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
                 ),
                 exit = fadeOut(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) + scaleOut(
                     targetScale = 0.8f,
-                    animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()
+                    animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
                 ),
             ) {
                 Box {
@@ -194,25 +193,21 @@ fun ReaderBottomSheet(
                         expanded = showSortMenu,
                         onDismissRequest = { showSortMenu = false },
                     ) {
-                        val groupInteractionSource = remember { MutableInteractionSource() }
-                        DropdownMenuGroup(
-                            shapes = MenuDefaults.groupShape(0, 1),
-                            interactionSource = groupInteractionSource,
-                        ) {
+                        AppDropdownMenuGroup {
                             listOf(
                                 SortOption.CREATION_DATE_DESC to R.string.reader_sort_creation_date_desc,
                                 SortOption.CREATION_DATE_ASC to R.string.reader_sort_creation_date_asc,
                                 SortOption.BOOK_ORDER_ASC to R.string.reader_sort_reading_order_asc,
                                 SortOption.BOOK_ORDER_DESC to R.string.reader_sort_reading_order_desc,
                             ).forEachIndexed { index, (option, label) ->
-                                SelectableDropdownMenuItem(
+                                AppSelectableDropdownMenuItem(
                                     selected = sortOption == option,
                                     text = { Text(stringResource(label)) },
                                     onClick = {
                                         onSortOptionChange(option)
                                         showSortMenu = false
                                     },
-                                    shapes = MenuDefaults.itemShape(index, 4),
+                                    shapes = AppDropdownMenuDefaults.itemShape(index, 4),
                                 )
                             }
                         }

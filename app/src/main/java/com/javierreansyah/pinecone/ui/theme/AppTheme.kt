@@ -1,8 +1,8 @@
 package com.javierreansyah.pinecone.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MotionScheme
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
@@ -16,6 +16,7 @@ import com.materialkolor.rememberDynamicColorScheme
 fun AppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     colorPalette: String = "Dynamic",
+    amoledDarkMode: Boolean = true,
     themeContrast: String = "Standard",
     content: @Composable () -> Unit,
 ) {
@@ -43,17 +44,27 @@ fun AppTheme(
         }
     }
 
+    val useNeutralAmoledSurfaces = darkTheme && amoledDarkMode
+    val neutralOverride = if (useNeutralAmoledSurfaces) Color.Black else null
+
     val dynamicColorScheme = rememberDynamicColorScheme(
         isDark = darkTheme,
+        isAmoled = amoledDarkMode,
+        neutral = neutralOverride,
+        neutralVariant = neutralOverride,
         style = PaletteStyle.TonalSpot,
         specVersion = ColorSpec.SpecVersion.SPEC_2025,
         contrastLevel = contrastLevel,
         seedColor = if (seedColor == Color.White) systemSeedColor else seedColor,
+        modifyColorScheme = if (useNeutralAmoledSurfaces) ::clearSurfaceTint else null,
     )
 
-    MaterialTheme(
+    MaterialExpressiveTheme(
         colorScheme = dynamicColorScheme,
-        motionScheme = MotionScheme.expressive(),
+        typography = AppTypography,
         content = content,
     )
 }
+
+private fun clearSurfaceTint(colorScheme: ColorScheme): ColorScheme =
+    colorScheme.copy(surfaceTint = Color.Transparent)

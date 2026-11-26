@@ -2,7 +2,8 @@
 <resources>
     <string name="dictionaries_delete_message">Apakah Anda yakin ingin menghapus \'%s\'?</string>
     <string name="dictionaries_delete_title">Hapus kamus</string>
-    <string name="dictionaries_empty">Kamus tidak terinstal\nKetuk + untuk mengimpor file .zip Stardict</string>
+    <string name="dictionaries_empty">Kamus tidak terinstal</string>
+    <string name="dictionaries_empty_subtitle">Ketuk + untuk mengimpor file .zip Stardict.</string>
     <string name="dictionaries_import_stardict">Impor Stardict</string>
     <string name="dictionaries_install_success">Kamus berhasil diinstal</string>
     <string name="dictionaries_installing">Menginstal kamus…</string>

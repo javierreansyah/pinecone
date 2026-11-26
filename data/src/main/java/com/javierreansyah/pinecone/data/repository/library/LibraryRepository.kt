@@ -57,6 +57,8 @@ class LibraryRepository @Inject constructor(
     fun getVisibleBooks(spaceId: String?): Flow<List<BookWithDetails>> =
         bookDao.getVisibleBooks(spaceId)
 
+    fun hasAnyBooks(): Flow<Boolean> = bookDao.hasAnyBooks()
+
     fun hasUnsortedBooks(): Flow<Boolean> = bookDao.hasUnsortedBooks()
 
     private val storageMutex get() = assets.mutationMutex

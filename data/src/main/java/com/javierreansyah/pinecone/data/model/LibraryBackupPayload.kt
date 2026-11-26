@@ -62,7 +62,7 @@ data class RenditionObjectReference(
 @Serializable
 data class VaultSnapshot(
     val format: String = "pinecone-vault-snapshot",
-    val formatVersion: Int = 2,
+    val formatVersion: Int = 3,
     val id: String,
     val createdAt: Long,
     val backupKind: String,
@@ -87,6 +87,6 @@ data class VaultFormat(
 @Serializable
 data class PortableBackupManifest(
     val format: String = "pinecone-portable-backup",
-    val formatVersion: Int = 2,
+    val formatVersion: Int = 3,
     val snapshot: VaultSnapshot,
 )

@@ -7,31 +7,24 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.PlainTooltip
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.SplitButtonDefaults
 import androidx.compose.material3.SplitButtonLayout
 import androidx.compose.material3.Text
@@ -48,8 +41,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -71,6 +64,15 @@ import com.composables.icons.materialsymbols.outlined.Search
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
+import com.javierreansyah.pinecone.ui.components.AppBarButtonSize
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuDefaults
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuGroup
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuItem
+import com.javierreansyah.pinecone.ui.components.ConnectedButtonGroup
+import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
+import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconToggleButton
+import com.javierreansyah.pinecone.ui.components.TopAppBarCircleIconButton
+import com.javierreansyah.pinecone.ui.components.topBarFadeBackground
 import org.readium.r2.shared.publication.Locator
 import com.composables.icons.materialsymbols.outlinedfilled.Bookmark_check as FilledBookmarkCheck
 
@@ -102,15 +104,18 @@ fun ReaderTopBar(
     readMode: Boolean = false,
     onToggleReadMode: () -> Unit = {},
     converting: Boolean = false,
+    pdfMode: Boolean = false,
+    pdfDarkPage: Boolean = false,
 ) {
+    val pdfContainerColor = if (pdfDarkPage) Color.Black else Color.White
+    val pdfContentColor = if (pdfDarkPage) Color.White else Color.Black
+    val barContainerColor = if (pdfMode) pdfContainerColor else readerBgColor
+    val barContentColor = if (pdfMode) pdfContentColor else readerTextColor
+
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(readerBgColor, Color.Transparent),
-                ),
-            ),
+            .topBarFadeBackground(barContainerColor),
     ) {
         TopAppBar(
             title = {
@@ -132,7 +137,7 @@ fun ReaderTopBar(
                     ) {
                         Text(
                             text = searchQuery,
-                            color = readerTextColor,
+                            color = barContentColor,
                             style = MaterialTheme.typography.titleMedium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -142,24 +147,23 @@ fun ReaderTopBar(
             },
             navigationIcon = {
                 if (audioPlayer) {
-                    FilledTonalIconButton(
-                        onClick = onBack,
-                        shapes = IconButtonDefaults.shapes(),
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        ),
-                    ) {
+                    TopAppBarCircleIconButton(onClick = onBack) {
                         Icon(
                             MaterialSymbols.Outlined.Keyboard_arrow_down,
                             contentDescription = stringResource(R.string.reader_collapse_audio_player),
                         )
                     }
                 } else {
-                    IconButton(onClick = onBack) {
+                    TopAppBarCircleIconButton(
+                        onClick = onBack,
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                            containerColor = barContainerColor,
+                            contentColor = barContentColor,
+                        ),
+                    ) {
                         Icon(
                             MaterialSymbols.Outlined.Arrow_back,
                             contentDescription = stringResource(R.string.action_back),
-                            tint = readerTextColor,
                         )
                     }
                 }
@@ -205,216 +209,74 @@ fun ReaderTopBar(
                 ) { state ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (state == TopBarState.SEARCH) {
-                            IconButton(onClick = onCloseSearch) {
+                            TopAppBarCircleIconButton(
+                                onClick = onCloseSearch,
+                                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                    containerColor = barContainerColor,
+                                    contentColor = barContentColor,
+                                ),
+                            ) {
                                 Icon(
                                     MaterialSymbols.Outlined.Close,
                                     contentDescription = stringResource(R.string.action_close),
-                                    tint = readerTextColor,
                                 )
                             }
                         } else {
                             if (state == TopBarState.JUMP) {
+                                val jumpContainerColor = if (audioPlayer) {
+                                    MaterialTheme.colorScheme.surfaceContainerHigh
+                                } else {
+                                    barContentColor.copy(alpha = 0.18f)
+                                        .compositeOver(barContainerColor)
+                                }
                                 JumpHistoryPill(
                                     onGoBack = onGoBackToOriginClick,
                                     onClear = onClearJumpOriginClick,
-                                    textColor = readerTextColor,
+                                    textColor = barContentColor,
+                                    containerColor = jumpContainerColor,
                                 )
-                                Spacer(modifier = Modifier.width(4.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
                             }
 
-                            if (showReadMode && !converting) {
-                                IconButton(onClick = onToggleReadMode) {
-                                    Icon(
-                                        imageVector = if (readMode) MaterialSymbols.Outlined.Description else MaterialSymbols.Outlined.Menu_book,
-                                        contentDescription = stringResource(if (readMode) R.string.reader_original_pdf else R.string.reader_read_mode),
-                                        tint = readerTextColor,
-                                    )
+                            val items =
+                                remember(state, canSearch, showReadMode, audioPlayer, pdfMode) {
+                                    buildList {
+                                        if (pdfMode && !audioPlayer) add("bookmark")
+                                        if ((state == TopBarState.JUMP || showReadMode) && !audioPlayer) add(
+                                            "content"
+                                        )
+                                        if (state == TopBarState.JUMP && !audioPlayer) add("settings")
+                                        if (canSearch) add("search")
+                                        if (!audioPlayer) add("info")
+                                    }
                                 }
-                            }
 
-                            if (!audioPlayer) {
-                                IconButton(onClick = onToggleBookmark) {
-                                    AnimatedSelectionIcon(
-                                        selected = isBookmarked,
-                                        outlinedIcon = MaterialSymbols.Outlined.Bookmark,
-                                        filledIcon = MaterialSymbols.OutlinedFilled.FilledBookmarkCheck,
-                                        contentDescription = if (isBookmarked) stringResource(R.string.reader_remove_bookmark) else stringResource(
-                                            R.string.reader_add_bookmark,
-                                        ),
-                                        tint = readerTextColor,
-                                    )
-                                }
-                            } else {
-                                IconButton(onClick = onInfoClick) {
+                            if (audioPlayer) {
+                                TopAppBarCircleIconButton(onClick = onInfoClick) {
                                     Icon(
                                         MaterialSymbols.Outlined.Info,
                                         contentDescription = stringResource(R.string.reader_menu_info),
-                                        tint = readerTextColor,
                                     )
                                 }
-                            }
-
-                            if (state == TopBarState.NORMAL && !audioPlayer) {
-                                if (!showReadMode) IconButton(onClick = onTocClick) {
-                                    Icon(
-                                        MaterialSymbols.Outlined.List,
-                                        contentDescription = stringResource(R.string.reader_toc_title),
-                                        modifier = Modifier.size(28.dp),
-                                        tint = readerTextColor,
-                                    )
-                                }
-
-                                IconButton(onClick = onSettingsClick) {
-                                    Icon(
-                                        if (typographySettings) MaterialSymbols.Outlined.Match_case else MaterialSymbols.Outlined.Tune,
-                                        contentDescription = stringResource(if (typographySettings) R.string.reader_settings_typography else R.string.reader_format_settings),
-                                        modifier = Modifier.size(28.dp),
-                                        tint = readerTextColor,
-                                    )
-                                }
-                            }
-
-                            val items = remember(state, canSearch, showReadMode, audioPlayer) {
-                                buildList {
-                                    if ((state == TopBarState.JUMP || showReadMode) && !audioPlayer) add(
-                                        "content"
-                                    )
-                                    if (state == TopBarState.JUMP && !audioPlayer) add("settings")
-                                    if (canSearch) add("search")
-                                    if (!audioPlayer) add("info")
-                                }
-                            }
-
-                            if (items.isNotEmpty()) {
-                                var showMoreMenu by remember { mutableStateOf(value = false) }
-                                Box {
-                                    IconButton(onClick = { showMoreMenu = true }) {
-                                        Icon(
-                                            MaterialSymbols.Outlined.More_vert,
-                                            contentDescription = stringResource(R.string.action_more),
-                                            tint = readerTextColor,
-                                        )
-                                    }
-                                    DropdownMenuPopup(
-                                        expanded = showMoreMenu,
-                                        onDismissRequest = { showMoreMenu = false },
-                                    ) {
-                                        val groupInteractionSource =
-                                            remember { MutableInteractionSource() }
-                                        DropdownMenuGroup(
-                                            shapes = MenuDefaults.groupShape(0, 1),
-                                            interactionSource = groupInteractionSource,
-                                        ) {
-                                            items.forEachIndexed { index, item ->
-                                                when (item) {
-                                                    "content" -> {
-                                                        SelectableDropdownMenuItem(
-                                                            selected = false,
-                                                            text = {
-                                                                Text(stringResource(R.string.reader_menu_content))
-                                                            },
-                                                            onClick = {
-                                                                onTocClick()
-                                                                showMoreMenu = false
-                                                            },
-                                                            leadingIcon = {
-                                                                Icon(
-                                                                    MaterialSymbols.Outlined.List,
-                                                                    contentDescription = null,
-                                                                    modifier = Modifier.size(
-                                                                        MenuDefaults.LeadingIconSize,
-                                                                    ),
-                                                                )
-                                                            },
-                                                            shapes = MenuDefaults.itemShape(
-                                                                index,
-                                                                items.size,
-                                                            ),
-                                                        )
-                                                    }
-
-                                                    "settings" -> {
-                                                        SelectableDropdownMenuItem(
-                                                            selected = false,
-                                                            text = {
-                                                                Text(stringResource(R.string.reader_menu_settings))
-                                                            },
-                                                            onClick = {
-                                                                onSettingsClick()
-                                                                showMoreMenu = false
-                                                            },
-                                                            leadingIcon = {
-                                                                Icon(
-                                                                    MaterialSymbols.Outlined.Match_case,
-                                                                    contentDescription = null,
-                                                                    modifier = Modifier.size(
-                                                                        MenuDefaults.LeadingIconSize,
-                                                                    ),
-                                                                )
-                                                            },
-                                                            shapes = MenuDefaults.itemShape(
-                                                                index,
-                                                                items.size,
-                                                            ),
-                                                        )
-                                                    }
-
-                                                    "search" -> {
-                                                        SelectableDropdownMenuItem(
-                                                            selected = false,
-                                                            text = {
-                                                                Text(stringResource(R.string.action_search))
-                                                            },
-                                                            onClick = {
-                                                                onSearchClick()
-                                                                showMoreMenu = false
-                                                            },
-                                                            leadingIcon = {
-                                                                Icon(
-                                                                    MaterialSymbols.Outlined.Search,
-                                                                    contentDescription = null,
-                                                                    modifier = Modifier.size(
-                                                                        MenuDefaults.LeadingIconSize,
-                                                                    ),
-                                                                )
-                                                            },
-                                                            shapes = MenuDefaults.itemShape(
-                                                                index,
-                                                                items.size,
-                                                            ),
-                                                        )
-                                                    }
-
-                                                    "info" -> {
-                                                        SelectableDropdownMenuItem(
-                                                            selected = false,
-                                                            text = {
-                                                                Text(stringResource(R.string.reader_menu_info))
-                                                            },
-                                                            onClick = {
-                                                                onInfoClick()
-                                                                showMoreMenu = false
-                                                            },
-                                                            leadingIcon = {
-                                                                Icon(
-                                                                    MaterialSymbols.Outlined.Info,
-                                                                    contentDescription = null,
-                                                                    modifier = Modifier.size(
-                                                                        MenuDefaults.LeadingIconSize,
-                                                                    ),
-                                                                )
-                                                            },
-                                                            shapes = MenuDefaults.itemShape(
-                                                                index,
-                                                                items.size,
-                                                            ),
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                            } else {
+                                ReaderTopBarButtonGroup(
+                                    state = state,
+                                    isBookmarked = isBookmarked,
+                                    typographySettings = typographySettings,
+                                    showReadMode = showReadMode,
+                                    readMode = readMode,
+                                    converting = converting,
+                                    pdfMode = pdfMode,
+                                    moreItems = items,
+                                    containerColor = barContainerColor,
+                                    contentColor = barContentColor,
+                                    onToggleReadMode = onToggleReadMode,
+                                    onToggleBookmark = onToggleBookmark,
+                                    onSettingsClick = onSettingsClick,
+                                    onTocClick = onTocClick,
+                                    onSearchClick = onSearchClick,
+                                    onInfoClick = onInfoClick,
+                                )
                             }
                         }
                     }
@@ -422,10 +284,284 @@ fun ReaderTopBar(
             },
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = Color.Transparent,
-                navigationIconContentColor = readerTextColor,
-                actionIconContentColor = readerTextColor,
+                navigationIconContentColor = barContentColor,
+                actionIconContentColor = barContentColor,
             ),
         )
+    }
+}
+
+@Composable
+private fun ReaderTopBarButtonGroup(
+    state: TopBarState,
+    isBookmarked: Boolean,
+    typographySettings: Boolean,
+    showReadMode: Boolean,
+    readMode: Boolean,
+    converting: Boolean,
+    pdfMode: Boolean,
+    moreItems: List<String>,
+    containerColor: Color,
+    contentColor: Color,
+    onToggleReadMode: () -> Unit,
+    onToggleBookmark: () -> Unit,
+    onSettingsClick: () -> Unit,
+    onTocClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onInfoClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var showMoreMenu by remember { mutableStateOf(false) }
+
+    ConnectedButtonGroup(
+        modifier = modifier,
+        containerColor = containerColor,
+        contentColor = contentColor,
+    ) {
+        if (showReadMode && !converting) {
+            ConnectedGroupIconButton(
+                onClick = onToggleReadMode,
+                contentColor = contentColor,
+            ) {
+                Icon(
+                    imageVector = if (readMode) MaterialSymbols.Outlined.Description else MaterialSymbols.Outlined.Menu_book,
+                    contentDescription = stringResource(if (readMode) R.string.reader_original_pdf else R.string.reader_read_mode),
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+        }
+
+        if (!pdfMode) {
+            ConnectedGroupIconToggleButton(
+                checked = isBookmarked,
+                onCheckedChange = { onToggleBookmark() },
+                contentColor = contentColor,
+            ) {
+                AnimatedSelectionIcon(
+                    selected = isBookmarked,
+                    outlinedIcon = MaterialSymbols.Outlined.Bookmark,
+                    filledIcon = MaterialSymbols.OutlinedFilled.FilledBookmarkCheck,
+                    contentDescription = if (isBookmarked) stringResource(R.string.reader_remove_bookmark) else stringResource(
+                        R.string.reader_add_bookmark,
+                    ),
+                    modifier = Modifier.size(24.dp),
+                    tint = contentColor,
+                )
+            }
+        }
+
+        if (state == TopBarState.NORMAL) {
+            if (!showReadMode) {
+                ConnectedGroupIconButton(
+                    onClick = onTocClick,
+                    contentColor = contentColor,
+                ) {
+                    Icon(
+                        imageVector = MaterialSymbols.Outlined.List,
+                        contentDescription = stringResource(R.string.reader_toc_title),
+                        modifier = Modifier.size(26.dp),
+                    )
+                }
+            }
+
+            ConnectedGroupIconButton(
+                onClick = onSettingsClick,
+                contentColor = contentColor,
+            ) {
+                Icon(
+                    imageVector = if (typographySettings) MaterialSymbols.Outlined.Match_case else MaterialSymbols.Outlined.Tune,
+                    contentDescription = stringResource(if (typographySettings) R.string.reader_settings_typography else R.string.reader_format_settings),
+                    modifier = Modifier.size(26.dp),
+                )
+            }
+        }
+
+        if (moreItems.isNotEmpty()) {
+            Box {
+                ConnectedGroupIconButton(
+                    onClick = { showMoreMenu = true },
+                    contentColor = contentColor,
+                ) {
+                    Icon(
+                        MaterialSymbols.Outlined.More_vert,
+                        contentDescription = stringResource(R.string.action_more),
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+                ReaderTopBarMoreMenu(
+                    expanded = showMoreMenu,
+                    items = moreItems,
+                    isBookmarked = isBookmarked,
+                    onDismiss = { showMoreMenu = false },
+                    onToggleBookmark = onToggleBookmark,
+                    onTocClick = onTocClick,
+                    onSettingsClick = onSettingsClick,
+                    onSearchClick = onSearchClick,
+                    onInfoClick = onInfoClick,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReaderTopBarMoreMenu(
+    expanded: Boolean,
+    items: List<String>,
+    isBookmarked: Boolean,
+    onDismiss: () -> Unit,
+    onToggleBookmark: () -> Unit,
+    onTocClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onInfoClick: () -> Unit,
+) {
+    DropdownMenuPopup(
+        expanded = expanded,
+        onDismissRequest = onDismiss,
+    ) {
+        AppDropdownMenuGroup {
+            items.forEachIndexed { index, item ->
+                when (item) {
+                    "bookmark" -> {
+                        AppDropdownMenuItem(
+                            text = {
+                                Text(
+                                    stringResource(
+                                        if (isBookmarked) {
+                                            R.string.reader_remove_bookmark
+                                        } else {
+                                            R.string.reader_add_bookmark
+                                        },
+                                    ),
+                                )
+                            },
+                            onClick = {
+                                onToggleBookmark()
+                                onDismiss()
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = if (isBookmarked) {
+                                        MaterialSymbols.OutlinedFilled.FilledBookmarkCheck
+                                    } else {
+                                        MaterialSymbols.Outlined.Bookmark
+                                    },
+                                    contentDescription = null,
+                                    modifier = Modifier.size(
+                                        MenuDefaults.LeadingIconSize,
+                                    ),
+                                )
+                            },
+                            shape = AppDropdownMenuDefaults.itemShape(
+                                index,
+                                items.size,
+                            ).shape,
+                        )
+                    }
+
+                    "content" -> {
+                        AppDropdownMenuItem(
+                            text = {
+                                Text(stringResource(R.string.reader_menu_content))
+                            },
+                            onClick = {
+                                onTocClick()
+                                onDismiss()
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    MaterialSymbols.Outlined.List,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(
+                                        MenuDefaults.LeadingIconSize,
+                                    ),
+                                )
+                            },
+                            shape = AppDropdownMenuDefaults.itemShape(
+                                index,
+                                items.size,
+                            ).shape,
+                        )
+                    }
+
+                    "settings" -> {
+                        AppDropdownMenuItem(
+                            text = {
+                                Text(stringResource(R.string.reader_menu_settings))
+                            },
+                            onClick = {
+                                onSettingsClick()
+                                onDismiss()
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    MaterialSymbols.Outlined.Match_case,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(
+                                        MenuDefaults.LeadingIconSize,
+                                    ),
+                                )
+                            },
+                            shape = AppDropdownMenuDefaults.itemShape(
+                                index,
+                                items.size,
+                            ).shape,
+                        )
+                    }
+
+                    "search" -> {
+                        AppDropdownMenuItem(
+                            text = {
+                                Text(stringResource(R.string.action_search))
+                            },
+                            onClick = {
+                                onSearchClick()
+                                onDismiss()
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    MaterialSymbols.Outlined.Search,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(
+                                        MenuDefaults.LeadingIconSize,
+                                    ),
+                                )
+                            },
+                            shape = AppDropdownMenuDefaults.itemShape(
+                                index,
+                                items.size,
+                            ).shape,
+                        )
+                    }
+
+                    "info" -> {
+                        AppDropdownMenuItem(
+                            text = {
+                                Text(stringResource(R.string.reader_menu_info))
+                            },
+                            onClick = {
+                                onInfoClick()
+                                onDismiss()
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    MaterialSymbols.Outlined.Info,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(
+                                        MenuDefaults.LeadingIconSize,
+                                    ),
+                                )
+                            },
+                            shape = AppDropdownMenuDefaults.itemShape(
+                                index,
+                                items.size,
+                            ).shape,
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -436,23 +572,24 @@ fun JumpHistoryPill(
     onClear: () -> Unit,
     textColor: Color,
     modifier: Modifier = Modifier,
+    containerColor: Color = Color.Transparent,
 ) {
     val description = stringResource(R.string.action_clear)
-    val size = SplitButtonDefaults.ExtraSmallContainerHeight
-    val transparentOutline = textColor.copy(alpha = 0.3f)
+    val size = AppBarButtonSize
+    val buttonColors = ButtonDefaults.filledTonalButtonColors(
+        containerColor = containerColor,
+        contentColor = textColor,
+    )
 
     SplitButtonLayout(
         leadingButton = {
-            SplitButtonDefaults.OutlinedLeadingButton(
+            SplitButtonDefaults.LeadingButton(
                 onClick = onGoBack,
                 modifier = Modifier.heightIn(size),
                 shapes = SplitButtonDefaults.leadingButtonShapesFor(size),
                 contentPadding = SplitButtonDefaults.leadingButtonContentPaddingFor(size),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = textColor,
-                    containerColor = Color.Transparent,
-                ),
-                border = BorderStroke(1.dp, transparentOutline),
+                colors = buttonColors,
+                elevation = null,
             ) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Restart_alt,
@@ -470,28 +607,23 @@ fun JumpHistoryPill(
         },
         trailingButton = {
             TooltipBox(
-                positionProvider = TooltipDefaults.rememberTooltipPositionProvider(positioning = TooltipAnchorPosition.Above),
+                positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+                    positioning = TooltipAnchorPosition.Above,
+                ),
                 tooltip = {
                     PlainTooltip {
                         Text(description)
                     }
                 },
                 state = rememberTooltipState(),
-                modifier = Modifier.fillMaxHeight(),
             ) {
-                SplitButtonDefaults.OutlinedTrailingButton(
-                    checked = false,
-                    onCheckedChange = { _ -> onClear() },
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .heightIn(size),
+                SplitButtonDefaults.TrailingButton(
+                    onClick = onClear,
+                    modifier = Modifier.heightIn(size),
                     shapes = SplitButtonDefaults.trailingButtonShapesFor(size),
                     contentPadding = SplitButtonDefaults.trailingButtonContentPaddingFor(size),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = textColor,
-                        containerColor = Color.Transparent,
-                    ),
-                    border = BorderStroke(1.dp, transparentOutline),
+                    colors = buttonColors,
+                    elevation = null,
                 ) {
                     Icon(
                         imageVector = MaterialSymbols.Outlined.Close,

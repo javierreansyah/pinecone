@@ -9,7 +9,11 @@ require(version == libs.versions.mupdf.get()) { "Update the MuPDF source pin and
 
 android {
     namespace = "com.artifex.mupdf.fitz"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 1
+        }
+    }
     buildToolsVersion = "37.0.0"
     ndkVersion = pin["ndk"].toString()
     defaultConfig {

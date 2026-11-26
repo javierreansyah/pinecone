@@ -41,7 +41,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -58,7 +57,6 @@ import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SecondaryScrollableTabRow
 import androidx.compose.material3.SegmentedListItem
-import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.SplitButtonDefaults
 import androidx.compose.material3.SplitButtonLayout
 import androidx.compose.material3.SuggestionChip
@@ -130,7 +128,13 @@ import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
+import com.javierreansyah.pinecone.ui.components.AppBarButtonSize
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuDefaults
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuGroup
+import com.javierreansyah.pinecone.ui.components.AppDropdownMenuItem
 import com.javierreansyah.pinecone.ui.components.EmptyState
+import com.javierreansyah.pinecone.ui.components.InsetListItemDefaults
+import com.javierreansyah.pinecone.ui.components.SegmentedListDefaults
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
@@ -392,17 +396,35 @@ private fun BookInfoContent(
             var hasShelvesTab by remember { mutableStateOf(shelves.isNotEmpty()) }
             val tabs = BookInfoTab.entries.filter { it != BookInfoTab.Shelves || hasShelvesTab }
             val pagerState = rememberPagerState { tabs.size }
+            var pendingTabAfterInsert by remember { mutableStateOf<BookInfoTab?>(null) }
             LaunchedEffect(shelves.isNotEmpty()) {
                 if (shelves.isEmpty() && hasShelvesTab) {
                     val shelvesPage = tabs.indexOf(BookInfoTab.Shelves)
-                    val destination =
-                        if (pagerState.currentPage == shelvesPage || pagerState.targetPage == shelvesPage) {
+                    val destination = when {
+                        pagerState.currentPage == shelvesPage || pagerState.targetPage == shelvesPage ->
                             tabs.indexOf(BookInfoTab.About)
-                        } else pagerState.currentPage
+
+                        pagerState.currentPage > shelvesPage -> pagerState.currentPage - 1
+                        else -> pagerState.currentPage
+                    }
                     // Cancel any swipe/tab animation before shrinking the pager's page count.
                     pagerState.scrollToPage(destination)
+                    hasShelvesTab = false
+                } else if (shelves.isNotEmpty() && !hasShelvesTab) {
+                    val currentTab = tabs.getOrNull(pagerState.currentPage)
+                    if (currentTab != null && currentTab != BookInfoTab.About) {
+                        pendingTabAfterInsert = currentTab
+                    }
+                    hasShelvesTab = true
                 }
-                hasShelvesTab = shelves.isNotEmpty()
+            }
+            LaunchedEffect(tabs, pendingTabAfterInsert) {
+                val targetTab = pendingTabAfterInsert ?: return@LaunchedEffect
+                val destination = tabs.indexOf(targetTab)
+                if (destination >= 0 && pagerState.currentPage != destination) {
+                    pagerState.scrollToPage(destination)
+                }
+                pendingTabAfterInsert = null
             }
             val coroutineScope = rememberCoroutineScope()
 
@@ -500,15 +522,15 @@ private fun BookInfoContent(
 }
 
 private enum class BookInfoTab {
-    About, Chapters, Bookmarks, Notes, Shelves;
+    About, Shelves, Chapters, Bookmarks, Notes;
 
     @androidx.annotation.StringRes
     fun title(wording: PublicationWording): Int = when (this) {
         About -> wording.infoTitle
+        Shelves -> R.string.library_tab_shelves
         Chapters -> R.string.reader_chapters_title
         Bookmarks -> R.string.reader_bookmarks_title
         Notes -> R.string.reader_notes_title
-        Shelves -> R.string.library_tab_shelves
     }
 }
 
@@ -649,30 +671,23 @@ private fun ChaptersTabContent(
                     if (sourcePage != null) link == currentChapter else currentHref == linkHref
                 val pageLabel = getChapterPageLabel(link, positions)
                 ListItem(
-                    modifier = Modifier.clickable {
+                    onClick = {
                         val targetLocator = positions.chapterLocator(link)
                         onChapterClick(targetLocator)
                     },
-                    leadingContent = null,
-                    trailingContent = null,
-                    overlineContent = null,
+                    modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
+                    shapes = InsetListItemDefaults.shapes(),
+                    colors = ListItemDefaults.colors(
+                        containerColor = Color.Transparent,
+                        contentColor = if (isCurrentChapter) MaterialTheme.colorScheme.primary else Color.Unspecified,
+                        supportingContentColor = if (isCurrentChapter) MaterialTheme.colorScheme.primary else Color.Unspecified,
+                    ),
+                    contentPadding = InsetListItemDefaults.ContentPadding,
                     supportingContent = if (pageLabel.isNotBlank()) {
-                        {
-                            Text(
-                                text = pageLabel,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                        { Text(text = pageLabel) }
                     } else null,
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                    elevation = ListItemDefaults.elevation(),
                     content = {
-                        Text(
-                            text = link.title ?: link.href.toString(),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = if (isCurrentChapter) MaterialTheme.colorScheme.primary else Color.Unspecified,
-                        )
+                        Text(text = link.title ?: link.href.toString())
                     },
                 )
             }
@@ -722,9 +737,8 @@ private fun BookmarksTabContent(
             currentLocator?.let { locator ->
                 item {
                     ListItem(
-                        modifier = Modifier.clickable {
-                            onNavigateToLocator(locator)
-                        },
+                        onClick = { onNavigateToLocator(locator) },
+                        modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
                         leadingContent = {
                             Icon(
                                 imageVector = MaterialSymbols.Outlined.Book,
@@ -732,23 +746,15 @@ private fun BookmarksTabContent(
                                 tint = MaterialTheme.colorScheme.primary,
                             )
                         },
-                        trailingContent = null,
-                        overlineContent = null,
                         supportingContent = {
                             val label = getPositionLabel(locator, positions, readMode)
-                            Text(
-                                text = label.ifBlank { stringResource(R.string.reader_in_document) },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            Text(text = label.ifBlank { stringResource(R.string.reader_in_document) })
                         },
+                        shapes = InsetListItemDefaults.shapes(),
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                        elevation = ListItemDefaults.elevation(),
+                        contentPadding = InsetListItemDefaults.ContentPadding,
                         content = {
-                            Text(
-                                text = stringResource(R.string.publication_info_current_position),
-                                style = MaterialTheme.typography.titleMedium,
-                            )
+                            Text(text = stringResource(R.string.publication_info_current_position))
                         },
                     )
                 }
@@ -757,9 +763,8 @@ private fun BookmarksTabContent(
             furthestLocator?.let { locator ->
                 item {
                     ListItem(
-                        modifier = Modifier.clickable {
-                            onJumpToLocator(locator)
-                        },
+                        onClick = { onJumpToLocator(locator) },
+                        modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
                         leadingContent = {
                             Icon(
                                 imageVector = MaterialSymbols.Outlined.Book,
@@ -774,26 +779,18 @@ private fun BookmarksTabContent(
                                 Icon(
                                     imageVector = MaterialSymbols.Outlined.Delete,
                                     contentDescription = stringResource(R.string.action_delete),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         },
-                        overlineContent = null,
                         supportingContent = {
                             val label = getPositionLabel(locator, positions, readMode)
-                            Text(
-                                text = label.ifBlank { stringResource(R.string.reader_in_document) },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            Text(text = label.ifBlank { stringResource(R.string.reader_in_document) })
                         },
+                        shapes = InsetListItemDefaults.shapes(),
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                        elevation = ListItemDefaults.elevation(),
+                        contentPadding = InsetListItemDefaults.ContentPadding,
                         content = {
-                            Text(
-                                text = stringResource(R.string.publication_info_furthest_position),
-                                style = MaterialTheme.typography.titleMedium,
-                            )
+                            Text(text = stringResource(R.string.publication_info_furthest_position))
                         },
                     )
                 }
@@ -824,10 +821,8 @@ private fun BookmarksTabContent(
                                 }?.title ?: inDocument
 
                         ListItem(
-                            modifier = Modifier.clickable {
-                                onJumpToLocator(locator)
-                            },
-                            leadingContent = null,
+                            onClick = { onJumpToLocator(locator) },
+                            modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
                             trailingContent = {
                                 androidx.compose.material3.IconButton(
                                     onClick = { onDeleteBookmark(bookmark.id) },
@@ -835,25 +830,21 @@ private fun BookmarksTabContent(
                                     Icon(
                                         imageVector = MaterialSymbols.Outlined.Delete,
                                         contentDescription = stringResource(R.string.action_delete),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
                             },
-                            overlineContent = null,
                             supportingContent = {
                                 val label = getPositionLabel(locator, positions, readMode)
-                                Text(
-                                    text = label.ifBlank { inDocument },
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                                Text(text = label.ifBlank { inDocument })
                             },
+                            shapes = InsetListItemDefaults.shapes(),
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                            elevation = ListItemDefaults.elevation(),
+                            contentPadding = InsetListItemDefaults.ContentPadding,
                             content = {
                                 Text(
                                     text = chapterTitle,
-                                    style = MaterialTheme.typography.titleMedium,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
                                 )
                             },
                         )
@@ -908,53 +899,75 @@ private fun NotesTabContent(
                                     .substringBefore("#")
                             }?.title ?: inDocument
 
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onNoteClick(locator) }
-                            .padding(horizontal = 20.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        com.javierreansyah.pinecone.ui.features.reader.components.contents.EntryHeader(
-                            title = chapterTitle,
-                            positionLabel = getPositionLabel(locator, positions, readMode),
-                            onDelete = { onDeleteNote(note.id) },
-                        )
-
-                        locator.text.highlight?.takeIf { it.isNotBlank() }?.let { highlight ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(IntrinsicSize.Min),
+                    val positionLabel = getPositionLabel(locator, positions, readMode)
+                    ListItem(
+                        onClick = { onNoteClick(locator) },
+                        modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
+                        verticalAlignment = Alignment.Top,
+                        shapes = InsetListItemDefaults.shapes(),
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                        contentPadding = InsetListItemDefaults.ContentPadding,
+                        trailingContent = {
+                            androidx.compose.material3.IconButton(
+                                onClick = { onDeleteNote(note.id) },
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .width(4.dp)
-                                        .fillMaxHeight()
-                                        .clip(CircleShape)
-                                        .background(
-                                            Color(note.color).copy(
-                                                alpha = 1f,
-                                            ),
-                                        ),
-                                )
-                                Text(
-                                    text = highlight,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(start = 12.dp),
+                                Icon(
+                                    imageVector = MaterialSymbols.Outlined.Delete,
+                                    contentDescription = stringResource(R.string.action_delete),
                                 )
                             }
-                        }
+                        },
+                        supportingContent = {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                if (positionLabel.isNotBlank()) {
+                                    Text(text = positionLabel)
+                                }
 
-                        if (note.noteText.isNotBlank()) {
+                                locator.text.highlight?.takeIf { it.isNotBlank() }
+                                    ?.let { highlight ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(IntrinsicSize.Min),
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .width(4.dp)
+                                                    .fillMaxHeight()
+                                                    .clip(CircleShape)
+                                                    .background(
+                                                        Color(note.color).copy(
+                                                            alpha = 1f,
+                                                        ),
+                                                    ),
+                                            )
+                                            Text(
+                                                text = highlight,
+                                                modifier = Modifier.padding(start = 12.dp),
+                                            )
+                                        }
+                                    }
+
+                                if (note.noteText.isNotBlank()) {
+                                    Text(
+                                        text = note.noteText,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                }
+                            }
+                        },
+                        content = {
                             Text(
-                                text = note.noteText,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
+                                text = chapterTitle,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
                             )
-                        }
-                    }
+                        },
+                    )
                 }
             }
         }
@@ -1089,17 +1102,13 @@ private fun BookButtonGroup(
                         expanded = splitMenuExpanded,
                         onDismissRequest = { splitMenuExpanded = false },
                     ) {
-                        val groupInteractionSource = remember { MutableInteractionSource() }
-                        DropdownMenuGroup(
-                            shapes = MenuDefaults.groupShape(0, 1),
-                            interactionSource = groupInteractionSource,
-                        ) {
-                            SelectableDropdownMenuItem(
-                                selected = false,
+                        AppDropdownMenuGroup {
+                            AppDropdownMenuItem(
                                 text = { Text(stringResource(if (isAudio) R.string.publication_listen_furthest else R.string.publication_read_furthest)) },
                                 leadingIcon = {
                                     Icon(
                                         imageVector = openIcon,
+                                        modifier = Modifier.size(MenuDefaults.LeadingIconSize),
                                         contentDescription = null,
                                     )
                                 },
@@ -1107,14 +1116,14 @@ private fun BookButtonGroup(
                                     splitMenuExpanded = false
                                     onReadFurthestClick()
                                 },
-                                shapes = MenuDefaults.itemShape(0, 2),
+                                shape = AppDropdownMenuDefaults.itemShape(0, 2).shape,
                             )
-                            SelectableDropdownMenuItem(
-                                selected = false,
+                            AppDropdownMenuItem(
                                 text = { Text(stringResource(if (isAudio) R.string.publication_listen_from_start else R.string.publication_read_from_start)) },
                                 leadingIcon = {
                                     Icon(
                                         imageVector = MaterialSymbols.Outlined.Replay,
+                                        modifier = Modifier.size(MenuDefaults.LeadingIconSize),
                                         contentDescription = null,
                                     )
                                 },
@@ -1122,19 +1131,12 @@ private fun BookButtonGroup(
                                     splitMenuExpanded = false
                                     onReadFromStartClick()
                                 },
-                                shapes = MenuDefaults.itemShape(1, 2),
+                                shape = AppDropdownMenuDefaults.itemShape(1, 2).shape,
                             )
                         }
                     }
                 }
             },
-        )
-
-        Box(
-            modifier = Modifier
-                .height(24.dp)
-                .width(1.dp)
-                .background(MaterialTheme.colorScheme.outlineVariant),
         )
 
         FilledTonalButton(
@@ -1480,12 +1482,12 @@ private fun BookMetadata(
         }.filter { (_, value) -> metadataValue(value) != null }.distinct()
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+            verticalArrangement = Arrangement.spacedBy(SegmentedListDefaults.Gap),
         ) {
             fields.forEachIndexed { index, (label, value) ->
                 SegmentedListItem(
                     colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                    shapes = ListItemDefaults.segmentedShapes(index = index, count = fields.size),
+                    shapes = SegmentedListDefaults.shapes(index = index, count = fields.size),
                     overlineContent = { Text(label) },
                     content = { Text(value) },
                 )
@@ -1501,21 +1503,22 @@ private fun BookInfoTopButtons(
     onNavigateToEdit: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val topButtonColors = IconButtonDefaults.filledTonalIconButtonColors(
+        containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.8f),
+        contentColor = MaterialTheme.colorScheme.onBackground,
+    )
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 8.dp),
+            .padding(horizontal = 4.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         FilledTonalIconButton(
-            shapes = IconButtonDefaults.shapes(),
+            modifier = Modifier.size(AppBarButtonSize),
+            shape = CircleShape,
             onClick = onNavigateBack,
-            colors = IconButtonDefaults.filledTonalIconButtonColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(
-                    alpha = 0.8f,
-                ),
-            ),
+            colors = topButtonColors,
         ) {
             Icon(
                 MaterialSymbols.Outlined.Arrow_back,
@@ -1524,13 +1527,10 @@ private fun BookInfoTopButtons(
         }
 
         FilledTonalIconButton(
-            shapes = IconButtonDefaults.shapes(),
+            modifier = Modifier.size(AppBarButtonSize),
+            shape = CircleShape,
             onClick = { onNavigateToEdit(bookId) },
-            colors = IconButtonDefaults.filledTonalIconButtonColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(
-                    alpha = 0.8f,
-                ),
-            ),
+            colors = topButtonColors,
         ) {
             Icon(
                 MaterialSymbols.Outlined.Edit,

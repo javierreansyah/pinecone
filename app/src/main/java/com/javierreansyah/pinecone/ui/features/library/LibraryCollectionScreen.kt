@@ -5,10 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,12 +22,17 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Select
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
+import com.javierreansyah.pinecone.ui.components.LibraryTopAppBarTitle
+import com.javierreansyah.pinecone.ui.components.TopAppBarActionGroup
+import com.javierreansyah.pinecone.ui.components.horizontalPadding
 import com.javierreansyah.pinecone.ui.features.library.components.FilterResultBottomSheet
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectTopBarTransition
 import com.javierreansyah.pinecone.ui.features.library.components.SelectedBooksBar
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookCollection
+import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 
 @Composable
 internal fun LibraryCollectionScreen(
@@ -43,6 +45,7 @@ internal fun LibraryCollectionScreen(
     emptyText: String,
     emptyIcon: ImageVector,
     archived: Boolean,
+    emptySupportingText: String? = null,
 ) {
     val preferences by viewModel.filters.preferences.collectAsStateWithLifecycle()
     com.javierreansyah.pinecone.ui.components.MutationErrorDialog(viewModel.bookActions.mutationErrors)
@@ -76,26 +79,28 @@ internal fun LibraryCollectionScreen(
                 },
             ) {
                 LibraryTopAppBar(
-                    title = { Text(title) },
+                    title = { LibraryTopAppBarTitle(title) },
                     onBack = onNavigateBack,
                     isEmpty = isEmpty,
                     scrollBehavior = scrollBehavior,
                     actions = {
-                        IconButton(
-                            shapes = IconButtonDefaults.shapes(),
-                            onClick = { selection.enter() }) {
-                            Icon(
-                                MaterialSymbols.Outlined.Select,
-                                contentDescription = stringResource(R.string.action_select_multiple),
-                            )
-                        }
-                        IconButton(
-                            shapes = IconButtonDefaults.shapes(),
-                            onClick = { showFilterSheet = true }) {
-                            Icon(
-                                MaterialSymbols.Outlined.Tune,
-                                contentDescription = stringResource(R.string.action_filter),
-                            )
+                        TopAppBarActionGroup {
+                            ConnectedGroupIconButton(
+                                onClick = { selection.enter() },
+                            ) {
+                                Icon(
+                                    MaterialSymbols.Outlined.Select,
+                                    contentDescription = stringResource(R.string.action_select_multiple),
+                                )
+                            }
+                            ConnectedGroupIconButton(
+                                onClick = { showFilterSheet = true },
+                            ) {
+                                Icon(
+                                    MaterialSymbols.Outlined.Tune,
+                                    contentDescription = stringResource(R.string.action_filter),
+                                )
+                            }
                         }
                     },
                 )
@@ -104,15 +109,20 @@ internal fun LibraryCollectionScreen(
     ) { innerPadding ->
         Box(
             Modifier
-                .padding(innerPadding)
+                .horizontalPadding(innerPadding)
                 .fillMaxSize()
         ) {
             if (isEmpty) {
                 EmptyState(
                     icon = emptyIcon,
                     text = emptyText,
+                    supportingText = emptySupportingText,
                     modifier = Modifier
                         .fillMaxSize()
+                        .padding(
+                            top = innerPadding.calculateTopPadding(),
+                            bottom = innerPadding.calculateBottomPadding(),
+                        )
                         .padding(16.dp),
                 )
             } else {
@@ -127,11 +137,14 @@ internal fun LibraryCollectionScreen(
                         )
                     },
                     onBookLongClick = { selection.enter(setOf(it)) },
-                    scrollKey = Triple(
+                    scrollKey = listOf(
                         preferences.sortType,
                         preferences.isAscending,
-                        preferences.selectedStatus
+                        preferences.selectedStatus,
+                        preferences.selectedFormats,
                     ),
+                    topContentPadding = innerPadding.calculateTopPadding(),
+                    bottomContentPadding = innerPadding.calculateBottomPadding() + LocalAudioPlayerBottomPadding.current,
                 )
             }
         }

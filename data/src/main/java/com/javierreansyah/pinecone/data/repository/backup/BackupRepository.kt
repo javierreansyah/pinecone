@@ -9,6 +9,7 @@ import androidx.room.withTransaction
 import com.javierreansyah.pinecone.data.local.database.dictionary.DictionaryStore
 import com.javierreansyah.pinecone.data.local.database.dictionary.validDictionaryId
 import com.javierreansyah.pinecone.data.local.database.library.BookEntity
+import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.data.model.BookObjectReference
@@ -19,6 +20,7 @@ import com.javierreansyah.pinecone.data.model.RenditionObjectReference
 import com.javierreansyah.pinecone.data.model.VaultObject
 import com.javierreansyah.pinecone.data.model.VaultObjectKind
 import com.javierreansyah.pinecone.data.model.VaultSnapshot
+import com.javierreansyah.pinecone.data.model.library.ALL_SPACES_ID
 import com.javierreansyah.pinecone.data.model.toBackupRecord
 import com.javierreansyah.pinecone.data.model.toEntity
 import com.javierreansyah.pinecone.di.IoDispatcher
@@ -29,6 +31,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonPrimitive
+import timber.log.Timber
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -50,12 +55,16 @@ data class BackupSnapshotInfo(
     val id: String,
     val timestamp: Long,
     val isManual: Boolean,
+    val bookCount: Int = 0,
+    val customSpaceCount: Int = 0,
+    val shelfCount: Int = 0,
 )
 
 @Singleton
 class BackupRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val preferences: ReaderPreferences,
+    private val libraryPreferences: LibraryPreferencesManager,
     private val database: com.javierreansyah.pinecone.data.local.database.library.AppDatabase,
     private val libraryRepository: com.javierreansyah.pinecone.data.repository.library.LibraryRepository,
     @IoDispatcher private val ioDispatcher: kotlinx.coroutines.CoroutineDispatcher,
@@ -81,10 +90,18 @@ class BackupRepository @Inject constructor(
                 val dirs = vault.open(create = false) ?: return@runCatching emptyList()
                 readSnapshots(dirs).asSequence().map { (file, snapshot) ->
                     BackupSnapshotInfo(
-                        file.uri, snapshot.id, snapshot.createdAt,
-                        snapshot.backupKind == MANUAL,
+                        uri = file.uri,
+                        id = snapshot.id,
+                        timestamp = snapshot.createdAt,
+                        isManual = snapshot.backupKind == MANUAL,
+                        bookCount = snapshot.recordCounts["books"] ?: snapshot.library.books.size,
+                        customSpaceCount = snapshot.library.spaces.count { it.id != ALL_SPACES_ID },
+                        shelfCount = snapshot.recordCounts["shelves"]
+                            ?: snapshot.library.shelves.size,
                     )
-                }.sortedByDescending { (_, _, itTimestamp, _) -> itTimestamp }.toList()
+                }.sortedByDescending { it.timestamp }.toList()
+            }.onFailure { error ->
+                Timber.w(error, "Could not list backup snapshots")
             }.getOrDefault(emptyList())
         }
     }
@@ -100,10 +117,12 @@ class BackupRepository @Inject constructor(
                     ?: return@withLock BackupResult.Failure(BackupFailure.BACKUP_LOCATION_MISSING)
                 restoreLocked(readSnapshot(uri), dirs, onProgress)
             } catch (e: UnsupportedBackupException) {
+                Timber.w(e, "Unsupported backup snapshot version")
                 BackupResult.Failure(BackupFailure.UNSUPPORTED_VERSION, e)
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled
             } catch (e: Exception) {
+                Timber.w(e, "Failed to read backup snapshot for restore")
                 BackupResult.Failure(BackupFailure.MALFORMED_ARCHIVE, e)
             }
         }
@@ -115,10 +134,12 @@ class BackupRepository @Inject constructor(
                 try {
                     exportLocked(readSnapshot(snapshotUri), destination)
                 } catch (e: UnsupportedBackupException) {
+                    Timber.w(e, "Unsupported backup snapshot version for export")
                     BackupResult.Failure(BackupFailure.UNSUPPORTED_VERSION, e)
                 } catch (cancelled: kotlinx.coroutines.CancellationException) {
                     throw cancelled
                 } catch (e: Exception) {
+                    Timber.w(e, "Failed to read backup snapshot for export")
                     BackupResult.Failure(BackupFailure.MALFORMED_ARCHIVE, e)
                 }
             }
@@ -138,6 +159,10 @@ class BackupRepository @Inject constructor(
             val pending = database.backupStateDao().pendingSettingsJson()
             if (pending != null) {
                 applyRestoredSettings(json.decodeFromString(pending))
+                val validSpaceIds =
+                    database.spaceDao().getAllSpacesSync()
+                        .mapTo(mutableSetOf()) { it.id } + ALL_SPACES_ID
+                libraryPreferences.reconcileGlobalSpace(validSpaceIds)
                 database.backupStateDao().setPendingSettingsJson(null)
             }
             database.operationDao().finishRestore()
@@ -311,12 +336,16 @@ class BackupRepository @Inject constructor(
             val duration = System.currentTimeMillis() - started
             BackupResult.Success(id, bytesWritten, bytesReused, duration, phases, warnings)
         } catch (e: SecurityException) {
+            Timber.w(e, "Backup failed: permission denied")
             BackupResult.Failure(BackupFailure.PERMISSION_DENIED, e)
         } catch (e: InvalidDictionaryException) {
+            Timber.w(e, "Backup failed: invalid dictionary database")
             BackupResult.Failure(BackupFailure.INVALID_DATABASE, e)
         } catch (e: UnsupportedBackupException) {
+            Timber.w(e, "Backup failed: unsupported vault or snapshot version")
             BackupResult.Failure(BackupFailure.UNSUPPORTED_VERSION, e)
         } catch (e: IllegalArgumentException) {
+            Timber.w(e, "Backup failed: validation error")
             val reason = when {
                 e.message?.contains("dictionary", ignoreCase = true) == true ->
                     BackupFailure.MISSING_DICTIONARY
@@ -328,6 +357,7 @@ class BackupRepository @Inject constructor(
         } catch (cancelled: kotlinx.coroutines.CancellationException) {
             throw cancelled
         } catch (e: Exception) {
+            Timber.w(e, "Backup failed: I/O error")
             BackupResult.Failure(BackupFailure.IO_ERROR, e)
         } finally {
             leases.forEach { it.close() }
@@ -509,10 +539,33 @@ class BackupRepository @Inject constructor(
             val bytes = zip.readLimitedMetadata()
             require(zip.nextEntry == null)
             val text = bytes.toString(Charsets.UTF_8)
-            checkBackupFormat(json, text, SNAPSHOT_FORMAT)
-            return json.decodeFromString<VaultSnapshot>(text).also {
+            return decodeSnapshot(text).also {
                 validateSnapshot(it)
             }
+        }
+    }
+
+    private fun decodeSnapshot(text: String): VaultSnapshot {
+        val root = checkBackupFormat(json, text, SNAPSHOT_FORMAT)
+        return when (root["formatVersion"]?.jsonPrimitive?.intOrNull) {
+            LEGACY_SNAPSHOT_FORMAT_VERSION -> decodeSnapshotV2(text)
+            CURRENT_SNAPSHOT_FORMAT_VERSION -> decodeSnapshotV3(text)
+            else -> throw UnsupportedBackupException()
+        }
+    }
+
+    private fun decodeSnapshotV2(text: String): VaultSnapshot =
+        json.decodeFromString<VaultSnapshot>(text)
+
+    private fun decodeSnapshotV3(text: String): VaultSnapshot =
+        json.decodeFromString<VaultSnapshot>(text)
+
+    private fun decodePortableManifest(text: String): PortableBackupManifest {
+        val root = checkBackupFormat(json, text, PORTABLE_FORMAT)
+        return when (root["formatVersion"]?.jsonPrimitive?.intOrNull) {
+            LEGACY_SNAPSHOT_FORMAT_VERSION -> json.decodeFromString<PortableBackupManifest>(text)
+            CURRENT_SNAPSHOT_FORMAT_VERSION -> json.decodeFromString<PortableBackupManifest>(text)
+            else -> throw UnsupportedBackupException()
         }
     }
 
@@ -555,13 +608,17 @@ class BackupRepository @Inject constructor(
         } else dirs.snapshots.listFiles().filter { it.name?.endsWith(".pinesnapshot") == true }
         return files.mapNotNull { file ->
             if (requireAll) file to readSnapshot(file.uri)
-            else runCatching { file to readSnapshot(file.uri) }.getOrNull()
+            else runCatching { file to readSnapshot(file.uri) }
+                .onFailure { error ->
+                    Timber.w(error, "Skipping unreadable backup snapshot: %s", file.name)
+                }
+                .getOrNull()
         }
     }
 
     private fun validateSnapshot(snapshot: VaultSnapshot) {
         require(snapshot.format == SNAPSHOT_FORMAT)
-        if (snapshot.formatVersion != FORMAT_VERSION) throw UnsupportedBackupException()
+        if (snapshot.formatVersion !in SUPPORTED_SNAPSHOT_FORMAT_VERSIONS) throw UnsupportedBackupException()
         require(snapshot.library.books.all { BackupArchiveIO.safeFileName(it.id) }) { "Invalid book identity" }
         require(snapshot.dictionaries.all { validDictionaryId(it.dictionary.id) }) { "Invalid dictionary identity" }
         allObjects(snapshot)
@@ -569,7 +626,7 @@ class BackupRepository @Inject constructor(
         require(snapshot.backupKind == MANUAL || snapshot.backupKind == AUTOMATIC)
         require(snapshot.recordCounts == recordCounts(snapshot.library))
         require(validRelationships(snapshot.library))
-        if (snapshot.library.version != FORMAT_VERSION) throw UnsupportedBackupException()
+        if (snapshot.library.version != LIBRARY_PAYLOAD_VERSION) throw UnsupportedBackupException()
         require(snapshot.renditions.map { it.bookId to it.key }
             .toSet() == snapshot.library.renditions.map { it.bookId to it.key }.toSet())
         require(snapshot.renditions.size == snapshot.library.renditions.size)
@@ -724,7 +781,10 @@ class BackupRepository @Inject constructor(
             val rebased = snapshot.library.books.map { book ->
                 val (_, refBook, refCover) = refs[book.id] ?: error("Missing book object")
                 val bookTarget =
-                    BackupArchiveIO.restoreTarget(booksDir, "${book.id}_$token.${refBook.fileName.substringAfterLast('.')}")
+                    BackupArchiveIO.restoreTarget(
+                        booksDir,
+                        "${book.id}_$token.${refBook.fileName.substringAfterLast('.')}"
+                    )
                 stagedBooks += bookTarget
                 copyRawObject(dirs.books, refBook, bookTarget)
                 onFileRestored()
@@ -743,7 +803,10 @@ class BackupRepository @Inject constructor(
             snapshot.dictionaries.forEach { (referenceDictionary, referenceObjectInfo) ->
                 val objectFile = dirs.dictionaries.findFile(referenceObjectInfo.fileName)
                     ?: error("Missing dictionary object")
-                val staged = BackupArchiveIO.restoreTarget(context.cacheDir, "dict_${referenceDictionary.id}_$token.db")
+                val staged = BackupArchiveIO.restoreTarget(
+                    context.cacheDir,
+                    "dict_${referenceDictionary.id}_$token.db"
+                )
                 dictionaryStages += DictionaryStage(referenceDictionary, staged)
                 verifyDictionaryObject(objectFile, referenceObjectInfo, staged)
                 validateDictionary(staged, migrate = true)
@@ -774,7 +837,13 @@ class BackupRepository @Inject constructor(
                 preferences.readerSettings.first().installedDictionaries.map { it.id }.toSet(),
             )
             try {
-                val pending = json.encodeToString(snapshot.settings)
+                val resolvedSettings = snapshot.settings.copy(
+                    installedDictionaries = snapshot.dictionaries.map { (itDictionary5, _) -> itDictionary5 },
+                    activeDictionaryId = snapshot.activeDictionaryId,
+                )
+                val pending = json.encodeToString(resolvedSettings)
+                val restoredSpaceIds =
+                    snapshot.library.spaces.mapTo(mutableSetOf()) { it.id } + ALL_SPACES_ID
                 withContext(kotlinx.coroutines.NonCancellable) {
                     database.withTransaction {
                         replaceLibrary(
@@ -784,15 +853,11 @@ class BackupRepository @Inject constructor(
                         database.backupStateDao().setPendingSettingsJson(pending)
                     }
                     committed = true
+                    applyRestoredSettings(resolvedSettings)
+                    libraryPreferences.reconcileGlobalSpace(restoredSpaceIds)
+                    dictionaryRollback.commit()
+                    database.backupStateDao().setPendingSettingsJson(null)
                 }
-                applyRestoredSettings(
-                    snapshot.settings.copy(
-                        installedDictionaries = snapshot.dictionaries.map { (itDictionary5, _) -> itDictionary5 },
-                        activeDictionaryId = snapshot.activeDictionaryId,
-                    ),
-                )
-                dictionaryRollback.commit()
-                database.backupStateDao().setPendingSettingsJson(null)
                 oldBooks.forEach { book ->
                     deleteOwnedFile(book.filePath); book.coverPath?.let(::deleteOwnedFile)
                 }
@@ -806,14 +871,18 @@ class BackupRepository @Inject constructor(
                 throw error
             }
         } catch (e: SecurityException) {
+            Timber.w(e, "Restore failed: permission denied")
             BackupResult.Failure(BackupFailure.PERMISSION_DENIED, e)
         } catch (e: InvalidDictionaryException) {
+            Timber.w(e, "Restore failed: invalid dictionary database")
             BackupResult.Failure(BackupFailure.INVALID_DATABASE, e)
         } catch (e: IllegalArgumentException) {
+            Timber.w(e, "Restore failed: validation/checksum mismatch")
             BackupResult.Failure(BackupFailure.CHECKSUM_MISMATCH, e)
         } catch (cancelled: kotlinx.coroutines.CancellationException) {
             throw cancelled
         } catch (e: Exception) {
+            Timber.w(e, "Restore failed (committed=%s)", committed)
             if (committed) BackupResult.Partial(BackupFailure.IO_ERROR)
             else BackupResult.Failure(BackupFailure.IO_ERROR, e)
         } finally {
@@ -909,8 +978,12 @@ class BackupRepository @Inject constructor(
             resolver.openOutputStream(destination, "wt")?.use { output ->
                 ZipOutputStream(output.buffered()).use { zip ->
                     zip.setLevel(Deflater.DEFAULT_COMPRESSION)
-                    val manifest = json.encodeToString(PortableBackupManifest(snapshot = snapshot))
-                        .toByteArray()
+                    val manifest = json.encodeToString(
+                        PortableBackupManifest(
+                            formatVersion = snapshot.formatVersion,
+                            snapshot = snapshot,
+                        )
+                    ).toByteArray()
                     zip.putNextEntry(ZipEntry("manifest.json")); zip.write(manifest); zip.closeEntry()
                     allObjects(snapshot).forEach { info ->
                         val folder = objectFolder(dirs, info.kind)
@@ -957,11 +1030,10 @@ class BackupRepository @Inject constructor(
                 val manifestEntry = zip.nextEntry ?: error("Empty archive")
                 require(manifestEntry.name == "manifest.json")
                 val text = zip.readLimitedMetadata().toString(Charsets.UTF_8)
-                checkBackupFormat(json, text, PORTABLE_FORMAT)
                 val (portableFormat, portableFormatVersion, portableSnapshot) =
-                    json.decodeFromString<PortableBackupManifest>(text)
+                    decodePortableManifest(text)
                 require(portableFormat == PORTABLE_FORMAT)
-                if (portableFormatVersion != FORMAT_VERSION) throw UnsupportedBackupException()
+                if (portableFormatVersion !in SUPPORTED_SNAPSHOT_FORMAT_VERSIONS) throw UnsupportedBackupException()
                 snapshot = portableSnapshot.also(::validateSnapshot)
                 val expected =
                     allObjects(snapshot).associateBy { info ->
@@ -1030,11 +1102,10 @@ class BackupRepository @Inject constructor(
             val first = zip.nextEntry ?: error("Empty export")
             require(first.name == "manifest.json")
             val text = zip.readLimitedMetadata().toString(Charsets.UTF_8)
-            checkBackupFormat(json, text, PORTABLE_FORMAT)
             val (portableFormat2, portableFormatVersion2, portableSnapshot2) =
-                json.decodeFromString<PortableBackupManifest>(text)
+                decodePortableManifest(text)
             require(portableFormat2 == PORTABLE_FORMAT)
-            if (portableFormatVersion2 != FORMAT_VERSION) throw UnsupportedBackupException()
+            if (portableFormatVersion2 !in SUPPORTED_SNAPSHOT_FORMAT_VERSIONS) throw UnsupportedBackupException()
             val expected =
                 allObjects(portableSnapshot2).associateBy { info ->
                     "objects/${kindFolder(info.kind)}/${info.fileName}"
@@ -1259,7 +1330,6 @@ class BackupRepository @Inject constructor(
     companion object {
         private const val SNAPSHOT_FORMAT = "pinecone-vault-snapshot"
         private const val PORTABLE_FORMAT = "pinecone-portable-backup"
-        private const val FORMAT_VERSION = 2
         private const val RETENTION = 3
         private const val AUTOMATIC = "automatic"
         private const val MANUAL = "manual"

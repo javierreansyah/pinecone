@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.input.TextFieldState
@@ -24,7 +22,6 @@ import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SearchBarDefaults
@@ -63,6 +60,8 @@ import com.composables.icons.materialsymbols.outlined.Mic
 import com.composables.icons.materialsymbols.outlined.Search
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
+import com.javierreansyah.pinecone.ui.components.EmptyState
+import com.javierreansyah.pinecone.ui.components.SegmentedListDefaults
 import com.javierreansyah.pinecone.ui.components.rememberVoiceSearchLauncher
 import com.composables.icons.materialsymbols.outlinedfilled.Folder as FilledFolder
 import com.composables.icons.materialsymbols.outlinedfilled.Forest as FilledForest
@@ -291,16 +290,32 @@ private fun OrganizeContent(
                     .padding(top = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                val showFirstTimeHint = spacesEnabled &&
+                        searchQuery.isBlank() &&
+                        allSpaces.none { it.space.id != "_all_" } &&
+                        allSpaces.all { it.shelves.isEmpty() }
+
+                if (showFirstTimeHint) {
+                    item(key = "organize_hint") {
+                        Text(
+                            text = stringResource(R.string.library_organize_empty_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 4.dp),
+                        )
+                    }
+                }
+
                 if (showCreateSpace || showCreateShelf) {
                     item(key = "create_section") {
                         Column(
-                            verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+                            verticalArrangement = Arrangement.spacedBy(SegmentedListDefaults.Gap),
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             if (showCreateSpace) {
                                 SegmentedListItem(
-                                    colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                                    shapes = ListItemDefaults.segmentedShapes(
+                                    colors = SegmentedListDefaults.colors(),
+                                    shapes = SegmentedListDefaults.shapes(
                                         index = 0,
                                         count = if (showCreateShelf) 2 else 1
                                     ),
@@ -311,6 +326,9 @@ private fun OrganizeContent(
                                             contentDescription = null,
                                         )
                                     },
+                                    supportingContent = {
+                                        Text(stringResource(R.string.library_new_space_hint))
+                                    },
                                 ) {
                                     Text(
                                         text = stringResource(R.string.library_new_space) + " \"$searchQuery\"",
@@ -320,8 +338,8 @@ private fun OrganizeContent(
 
                             if (showCreateShelf) {
                                 SegmentedListItem(
-                                    colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                                    shapes = ListItemDefaults.segmentedShapes(
+                                    colors = SegmentedListDefaults.colors(),
+                                    shapes = SegmentedListDefaults.shapes(
                                         index = if (showCreateSpace) 1 else 0,
                                         count = if (showCreateSpace) 2 else 1
                                     ),
@@ -331,6 +349,11 @@ private fun OrganizeContent(
                                             MaterialSymbols.Outlined.Folder,
                                             contentDescription = null,
                                         )
+                                    },
+                                    supportingContent = if (spacesEnabled) {
+                                        { Text(stringResource(R.string.library_new_shelf_hint)) }
+                                    } else {
+                                        null
                                     },
                                 ) {
                                     Text(
@@ -353,14 +376,14 @@ private fun OrganizeContent(
                             )
                             Column(
                                 modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+                                verticalArrangement = Arrangement.spacedBy(SegmentedListDefaults.Gap),
                             ) {
                                 spaces.forEachIndexed { index, (space, state, _) ->
                                     val selected = state == ToggleableState.On
                                     key(space.id) {
                                         SegmentedListItem(
-                                            colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                                            shapes = ListItemDefaults.segmentedShapes(
+                                            colors = SegmentedListDefaults.colors(),
+                                            shapes = SegmentedListDefaults.shapes(
                                                 index = index,
                                                 count = spaces.size
                                             ),
@@ -414,14 +437,14 @@ private fun OrganizeContent(
                         )
                         Column(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+                            verticalArrangement = Arrangement.spacedBy(SegmentedListDefaults.Gap),
                         ) {
                             shelves.forEachIndexed { index, (shelf, state) ->
                                 val selected = state == ToggleableState.On
                                 key(shelf.id) {
                                     SegmentedListItem(
-                                        colors = ListItemDefaults.segmentedColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                                        shapes = ListItemDefaults.segmentedShapes(
+                                        colors = SegmentedListDefaults.colors(),
+                                        shapes = SegmentedListDefaults.shapes(
                                             index = index,
                                             count = shelves.size
                                         ),
@@ -473,27 +496,12 @@ private fun OrganizeEmptyResults(
     searchQuery: String,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        contentAlignment = Alignment.Center,
+    EmptyState(
+        icon = MaterialSymbols.Outlined.Search,
+        text = stringResource(R.string.reader_search_no_results_for, searchQuery),
+        iconSize = 48.dp,
         modifier = modifier
             .fillMaxSize()
             .padding(vertical = 48.dp),
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Icon(
-                MaterialSymbols.Outlined.Search,
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-            )
-            Text(
-                stringResource(R.string.reader_search_no_results_for, searchQuery),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
+    )
 }

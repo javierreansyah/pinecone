@@ -7,9 +7,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -21,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
@@ -87,7 +93,10 @@ internal fun ScreenDismissSurface(
             }
             .background(backgroundColor),
     ) {
-        content()
+        CompositionLocalProvider(
+            LocalContentColor provides contentColorFor(backgroundColor),
+            content = content,
+        )
     }
 }
 
@@ -110,7 +119,8 @@ fun PredictiveBackOverlay(
         }
     }
 
-    PredictiveBackHandler {
+    val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateFlow.collectAsState()
+    PredictiveBackHandler(enabled = lifecycleState.isAtLeast(Lifecycle.State.RESUMED)) {
         if (state.isDismissing) {
             it.collect { }
         } else {

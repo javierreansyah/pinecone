@@ -22,13 +22,23 @@
         <item quantity="other">Are you sure you want to delete %d shelves? The titles inside will not be deleted.</item>
     </plurals>
     <string name="library_empty_archives">No archived titles.</string>
+    <string name="library_empty_archives_subtitle">Archive titles you want to hide from your main library without deleting them.</string>
     <string name="library_empty_authors">No authors found.</string>
+    <string name="library_empty_authors_subtitle">Authors appear automatically from your imported titles.</string>
     <string name="library_empty_items">No titles found</string>
+    <string name="library_empty_items_subtitle">Try adjusting your filters or switching to another space.</string>
+    <string name="library_empty_items_unsorted_subtitle">Some titles are waiting in Unsorted, or try adjusting your filters or space.</string>
+    <string name="library_empty_library_title">Your library is empty</string>
+    <string name="library_empty_library_subtitle">Import ebooks, comics, or audiobooks, or scan a folder to get started.</string>
     <string name="library_empty_shelf">Empty shelf</string>
     <string name="library_empty_shelves">No shelves found</string>
+    <string name="library_empty_shelves_subtitle">Group titles in a space into custom collections.</string>
     <string name="library_empty_spaces">No spaces yet</string>
+    <string name="library_empty_spaces_subtitle">Separate your library into spaces like fiction, non-fiction, or study, each with its own shelves.</string>
     <string name="library_empty_tags">No tags found.</string>
+    <string name="library_empty_tags_subtitle">Label titles to filter and find them across all spaces.</string>
     <string name="library_empty_unsorted">No unsorted titles.</string>
+    <string name="library_empty_unsorted_subtitle">Newly imported titles land here until you organize them into a space or shelf.</string>
     <string name="library_format_audio">Audio</string>
     <string name="library_format_comics">Comics</string>
     <string name="library_format_images">Images</string>
@@ -40,7 +50,11 @@
     <string name="library_label_unshelved">Unshelved</string>
     <string name="library_move_shelves">Move to space</string>
     <string name="library_new_shelf">New shelf</string>
+    <string name="library_new_shelf_hint">Collection of titles inside a space</string>
     <string name="library_new_space">New space</string>
+    <string name="library_new_space_hint">Separate library (e.g. fiction, non-fiction, study)</string>
+    <string name="library_open_unsorted">Open Unsorted</string>
+    <string name="library_organize_empty_hint">Type a name above to create a space (e.g. fiction, non-fiction, study) or a shelf.</string>
     <string name="library_organize_search_placeholder">Search or create</string>
     <string name="library_rename_author_title">Rename author</string>
     <string name="library_rename_shelf_title">Rename shelf</string>

@@ -12,10 +12,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -33,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.core.graphics.toColorInt
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.components.AppTextField
 import com.javierreansyah.pinecone.ui.components.SegmentedButtonGroup
 
 @Composable
@@ -75,6 +77,9 @@ fun CustomColorPickerDialog(
                 .fillMaxWidth()
                 .padding(16.dp),
             shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = AlertDialogDefaults.containerColor,
+            ),
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -108,7 +113,7 @@ fun CustomColorPickerDialog(
                     )
                 }
 
-                OutlinedTextField(
+                AppTextField(
                     value = name,
                     onValueChange = { name = it },
                     label = { Text(stringResource(R.string.reader_settings_theme_name)) },
@@ -116,7 +121,7 @@ fun CustomColorPickerDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                OutlinedTextField(
+                AppTextField(
                     value = bgColorInput,
                     onValueChange = { bgColorInput = formatColorInput(it) },
                     label = { Text(stringResource(R.string.reader_settings_bg_color)) },
@@ -126,7 +131,7 @@ fun CustomColorPickerDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                OutlinedTextField(
+                AppTextField(
                     value = textColorInput,
                     onValueChange = { textColorInput = formatColorInput(it) },
                     label = { Text(stringResource(R.string.reader_settings_text_color)) },

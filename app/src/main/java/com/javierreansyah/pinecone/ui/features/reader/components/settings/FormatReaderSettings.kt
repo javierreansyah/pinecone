@@ -39,6 +39,7 @@ import com.composables.icons.materialsymbols.outlined.Restart_alt
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.data.publication.ReaderProfile
+import com.javierreansyah.pinecone.ui.components.InsetListItemDefaults
 import com.javierreansyah.pinecone.ui.components.SegmentedButtonGroup
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -325,7 +326,10 @@ private fun FormatAdvancedSettings(
             if (isPdf && onReparsePdf != null) {
                 ListItem(
                     onClick = onReparsePdf,
+                    modifier = Modifier.padding(horizontal = InsetListItemDefaults.OuterHorizontalPadding),
+                    shapes = InsetListItemDefaults.shapes(),
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    contentPadding = InsetListItemDefaults.ContentPadding,
                     supportingContent = { Text(stringResource(R.string.reader_reparse_pdf_description)) },
                     trailingContent = {
                         Icon(MaterialSymbols.Outlined.Restart_alt, contentDescription = null)

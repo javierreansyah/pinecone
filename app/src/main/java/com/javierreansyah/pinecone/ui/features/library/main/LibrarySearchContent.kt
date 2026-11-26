@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,6 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -32,22 +35,39 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.offset
 import com.composables.icons.materialsymbols.MaterialSymbols
+import com.composables.icons.materialsymbols.outlined.Apps
+import com.composables.icons.materialsymbols.outlined.Book
 import com.composables.icons.materialsymbols.outlined.Chevron_forward
+import com.composables.icons.materialsymbols.outlined.Description
 import com.composables.icons.materialsymbols.outlined.Folder
+import com.composables.icons.materialsymbols.outlined.Headphones
 import com.composables.icons.materialsymbols.outlined.Label
 import com.composables.icons.materialsymbols.outlined.Person
 import com.composables.icons.materialsymbols.outlined.Search
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.ShelfEntity
 import com.javierreansyah.pinecone.data.model.Book
+import com.javierreansyah.pinecone.ui.components.InsetListItemDefaults
 import com.javierreansyah.pinecone.ui.components.SegmentedButtonGroup
+import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.SearchCategory
 import com.javierreansyah.pinecone.ui.features.library.components.book.BookItem
 import com.javierreansyah.pinecone.ui.features.library.publicationWording
@@ -64,34 +84,52 @@ internal fun ExpandedSearchContent(
     onAuthorsHeaderClick: () -> Unit,
     onTagsHeaderClick: () -> Unit,
 ) {
-    Column(
+    val categoryLabels = mapOf(
+        SearchCategory.All to stringResource(R.string.action_all),
+        SearchCategory.Books to stringResource(searchResults.contentWording.libraryTab),
+        SearchCategory.Shelves to stringResource(R.string.library_tab_shelves),
+        SearchCategory.Authors to stringResource(R.string.library_authors_title),
+        SearchCategory.Tags to stringResource(R.string.library_tags_title),
+    )
+    val booksIcon = when (searchResults.contentWording) {
+        PublicationWording.Audiobooks -> MaterialSymbols.Outlined.Headphones
+        PublicationWording.Documents -> MaterialSymbols.Outlined.Description
+        else -> MaterialSymbols.Outlined.Book
+    }
+    val categoryIcons = SearchCategory.entries.map { category ->
+        when (category) {
+            SearchCategory.All -> MaterialSymbols.Outlined.Apps
+            SearchCategory.Books -> booksIcon
+            SearchCategory.Authors -> MaterialSymbols.Outlined.Person
+            SearchCategory.Shelves -> MaterialSymbols.Outlined.Folder
+            SearchCategory.Tags -> MaterialSymbols.Outlined.Label
+        }
+    }
+    val chipScrollState = rememberScrollState()
+
+    val categoryFilterBar: @Composable (Modifier) -> Unit = { barModifier ->
+        SegmentedButtonGroup(
+            options = SearchCategory.entries,
+            optionLabel = { categoryLabels[it] ?: it.name },
+            icons = categoryIcons,
+            selected = searchCategory,
+            onSelected = onSearchCategoryChange,
+            modifier = barModifier
+                .fillMaxWidth()
+                .horizontalScroll(chipScrollState)
+                .padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+        )
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface),
     ) {
-        val categoryLabels = mapOf(
-            SearchCategory.All to stringResource(R.string.action_all),
-            SearchCategory.Books to stringResource(searchResults.contentWording.libraryTab),
-            SearchCategory.Shelves to stringResource(R.string.library_tab_shelves),
-            SearchCategory.Authors to stringResource(R.string.library_authors_title),
-            SearchCategory.Tags to stringResource(R.string.library_tags_title),
-        )
-
-        SegmentedButtonGroup(
-            options = SearchCategory.entries,
-            optionLabel = { categoryLabels[it] ?: it.name },
-            icons = emptyList(),
-            selected = searchCategory,
-            onSelected = onSearchCategoryChange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
-        )
-
         SearchResultsContent(
             searchCategory = searchCategory,
             results = searchResults,
+            categoryFilterBar = categoryFilterBar,
             onBookClick = { book ->
                 onNavigateToReader(
                     book.id
@@ -116,6 +154,7 @@ internal fun ExpandedSearchContent(
 private fun SearchResultsContent(
     searchCategory: SearchCategory,
     results: SearchResults,
+    categoryFilterBar: @Composable (Modifier) -> Unit,
     onBookClick: (Book) -> Unit,
     onShelfClick: (ShelfEntity) -> Unit,
     onAuthorClick: (String) -> Unit,
@@ -126,6 +165,10 @@ private fun SearchResultsContent(
     val fastEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
 
     val gridState = rememberLazyGridState()
+    val booksGridState = rememberLazyGridState()
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val fadeHeight = 16.dp
+    val fadeHeightPx = with(LocalDensity.current) { fadeHeight.toPx() }
 
     Box(modifier = Modifier.fillMaxSize()) {
         val isSearchEmpty = results.query.isEmpty()
@@ -176,40 +219,71 @@ private fun SearchResultsContent(
             !isSearchEmpty && results.books.isEmpty() && results.shelves.isEmpty() && results.authors.isEmpty() && results.tags.isEmpty()
 
         val showOnlyBooksGrid = !isAll && searchCategory == SearchCategory.Books
+        val activeGridState = if (showOnlyBooksGrid) booksGridState else gridState
+        val topFadeAlpha by remember(activeGridState, isEmptyResults, fadeHeightPx) {
+            derivedStateOf {
+                if (isEmptyResults) {
+                    0f
+                } else if (activeGridState.firstVisibleItemIndex > 0) {
+                    1f
+                } else {
+                    (activeGridState.firstVisibleItemScrollOffset / fadeHeightPx).coerceIn(0f, 1f)
+                }
+            }
+        }
 
         if (isEmptyResults) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(vertical = 48.dp),
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+            Column(modifier = Modifier.fillMaxSize()) {
+                categoryFilterBar(Modifier)
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(vertical = 48.dp),
                 ) {
-                    Icon(
-                        MaterialSymbols.Outlined.Search,
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                    )
-                    Text(
-                        stringResource(R.string.reader_search_no_results_for, results.query),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        Icon(
+                            MaterialSymbols.Outlined.Search,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                        )
+                        Text(
+                            stringResource(R.string.reader_search_no_results_for, results.query),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         } else if (showOnlyBooksGrid) {
             BookCollection(
                 books = booksToShow,
+                gridState = booksGridState,
                 onBookClick = { id ->
                     val book =
                         booksToShow.find { book -> book.id == id }
                     book?.let(onBookClick)
                 },
                 fastEffectsSpec = fastEffectsSpec,
+                header = {
+                    val horizontalBleed = 8.dp
+                    categoryFilterBar(
+                        Modifier.layout { measurable, constraints ->
+                            val bleedPx = horizontalBleed.roundToPx()
+                            val placeable = measurable.measure(
+                                constraints.offset(horizontal = bleedPx * 2),
+                            )
+                            layout(constraints.maxWidth, placeable.height) {
+                                placeable.place(-bleedPx, 0)
+                            }
+                        },
+                    )
+                },
                 content = {
                     SectionHeader(
                         title = stringResource(booksToShow.publicationWording().libraryTab),
@@ -228,12 +302,15 @@ private fun SearchResultsContent(
             LazyVerticalGrid(
                 state = gridState,
                 columns = GridCells.Fixed(2),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = 16.dp),
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                item(key = "category_filter", span = { GridItemSpan(maxLineSpan) }) {
+                    categoryFilterBar(Modifier)
+                }
+
                 if (booksToShow.isNotEmpty() && isAll) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         BooksSection(
@@ -346,6 +423,19 @@ private fun SearchResultsContent(
                 }
             }
         }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(fadeHeight)
+                .align(Alignment.TopCenter)
+                .graphicsLayer { alpha = topFadeAlpha }
+                .background(
+                    Brush.verticalGradient(
+                        listOf(surfaceColor, surfaceColor.copy(alpha = 0f)),
+                    ),
+                ),
+        )
     }
 }
 
@@ -405,25 +495,67 @@ private fun SectionHeader(
         bottom = if (isBooksSection) 0.dp else 8.dp,
     ),
 ) {
-    val clickableModifier = Modifier
-        .fillMaxWidth()
-        .then(if (onHeaderClick != null) Modifier.clickable { onHeaderClick() } else Modifier)
-        .padding(paddingValues)
+    if (onHeaderClick != null) {
+        val layoutDirection = LocalLayoutDirection.current
+        val outerStart = InsetListItemDefaults.OuterHorizontalPadding
+        val innerStart = (paddingValues.calculateStartPadding(layoutDirection) - outerStart)
+            .coerceAtLeast(0.dp)
+        val innerVertical = 4.dp
+        val outerTop = (paddingValues.calculateTopPadding() - innerVertical).coerceAtLeast(0.dp)
+        val outerBottom =
+            (paddingValues.calculateBottomPadding() - innerVertical).coerceAtLeast(0.dp)
+        val outerEnd = paddingValues.calculateEndPadding(layoutDirection)
+            .coerceAtMost(InsetListItemDefaults.OuterHorizontalPadding)
 
-    Row(
-        modifier = clickableModifier.then(modifier),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = title, style = MaterialTheme.typography.titleMedium,
-        )
-        if (onHeaderClick != null) {
-            Icon(
-                imageVector = MaterialSymbols.Outlined.Chevron_forward,
-                contentDescription = actionDescription,
-                modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(modifier),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(
+                        start = outerStart,
+                        end = outerEnd,
+                        top = outerTop,
+                        bottom = outerBottom,
+                    )
+                    .clip(InsetListItemDefaults.InteractiveShape)
+                    .clickable(role = Role.Button, onClick = onHeaderClick)
+                    .padding(
+                        start = innerStart,
+                        end = 8.dp,
+                        top = innerVertical,
+                        bottom = innerVertical,
+                    ),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Icon(
+                    imageVector = MaterialSymbols.Outlined.Chevron_forward,
+                    contentDescription = actionDescription,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    } else {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(paddingValues)
+                .then(modifier),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
             )
         }
     }
@@ -460,23 +592,31 @@ private fun SearchFilterItem(
 @Composable
 private fun BookCollection(
     books: List<Book>,
+    gridState: LazyGridState,
     onBookClick: (String) -> Unit,
     onBookLongClick: ((String) -> Unit)? = null,
     fastEffectsSpec: FiniteAnimationSpec<Float>? = null,
+    header: (@Composable () -> Unit)? = null,
     content: @Composable (() -> Unit)? = null,
 ) {
-    val gridState = rememberLazyGridState()
-
     val itemWidth = 100.dp
     val horizontalPadding = 8.dp
 
     LazyVerticalGrid(
         state = gridState,
         columns = GridCells.Adaptive(minSize = itemWidth),
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = horizontalPadding),
+        contentPadding = PaddingValues(
+            start = horizontalPadding,
+            end = horizontalPadding,
+            bottom = 16.dp,
+        ),
+        modifier = Modifier.fillMaxSize(),
     ) {
+        if (header != null) {
+            item(key = "category_filter", span = { GridItemSpan(maxLineSpan) }) {
+                header()
+            }
+        }
         if (content != null) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Column {
