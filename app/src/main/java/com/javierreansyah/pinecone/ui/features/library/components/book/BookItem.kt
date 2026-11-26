@@ -5,8 +5,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -40,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.model.Book
 import com.javierreansyah.pinecone.ui.components.InsetListItemDefaults
+import com.javierreansyah.pinecone.ui.features.library.components.AnimatedSelectionCheckbox
 
 @Composable
 fun BookItem(
@@ -78,7 +77,6 @@ fun BookItem(
             },
             trailingContent = {
                 val effectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
-                val spatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
                 if (content != null) {
                     AnimatedContent(
                         targetState = isInMultiSelectMode,
@@ -103,23 +101,11 @@ fun BookItem(
                         }
                     }
                 } else {
-                    AnimatedVisibility(
+                    AnimatedSelectionCheckbox(
                         visible = isInMultiSelectMode,
-                        enter = fadeIn(animationSpec = effectsSpec) +
-                                scaleIn(initialScale = 0.8f, animationSpec = spatialSpec),
-                        exit = fadeOut(animationSpec = effectsSpec) +
-                                scaleOut(targetScale = 0.8f, animationSpec = spatialSpec),
-                    ) {
-                        Box(
-                            modifier = Modifier.height(100.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Checkbox(
-                                checked = isSelected,
-                                onCheckedChange = null,
-                            )
-                        }
-                    }
+                        checked = isSelected,
+                        modifier = Modifier.height(100.dp),
+                    )
                 }
             },
             content = {
@@ -266,22 +252,10 @@ fun BookCoverWithSelection(
                 }
             }
         }
-        AnimatedVisibility(
+        AnimatedSelectionCheckbox(
             visible = !isList && isInMultiSelectMode,
-            enter = fadeIn(animationSpec = effectsSpec) + scaleIn(
-                initialScale = 0.8f,
-                animationSpec = spatialSpec,
-            ),
-            exit = fadeOut(animationSpec = effectsSpec) + scaleOut(
-                targetScale = 0.8f,
-                animationSpec = spatialSpec,
-            ),
+            checked = isSelected,
             modifier = Modifier.padding(4.dp),
-        ) {
-            Checkbox(
-                checked = isSelected,
-                onCheckedChange = null,
-            )
-        }
+        )
     }
 }

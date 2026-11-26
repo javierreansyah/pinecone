@@ -1,13 +1,7 @@
 package com.javierreansyah.pinecone.ui.features.reader.components
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -85,14 +79,18 @@ import com.composables.icons.materialsymbols.outlined.Replay_10
 import com.composables.icons.materialsymbols.outlined.Skip_next
 import com.composables.icons.materialsymbols.outlined.Skip_previous
 import com.composables.icons.materialsymbols.outlined.Tune
-import com.composables.icons.materialsymbols.outlinedfilled.Pause
-import com.composables.icons.materialsymbols.outlinedfilled.Play_arrow
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.reader.audio.AudioPlaybackState
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
 import com.javierreansyah.pinecone.ui.components.ConnectedButtonGroup
 import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
 import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconToggleButton
+import com.javierreansyah.pinecone.ui.components.GradientMaskedProgressBar
+import com.javierreansyah.pinecone.ui.components.LocalAnimatedEffectsVisible
+import com.javierreansyah.pinecone.ui.components.MorphingPlayPauseContent
+import com.javierreansyah.pinecone.ui.components.rememberAnimatedGradientMotionState
+import com.javierreansyah.pinecone.ui.components.rememberAnimatedGradientPalette
+import com.javierreansyah.pinecone.ui.components.rememberFlowGradientLinePainter
 import kotlinx.coroutines.delay
 import java.io.File
 import java.util.Locale
@@ -321,18 +319,13 @@ private fun AudioTransportButtons(
         animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
         label = "playPauseCornerRadius",
     )
-    val pauseMorphPalette = rememberAudioGradientPalette(
+    val pauseMorphPalette = rememberAnimatedGradientPalette(
         baseColor = MaterialTheme.colorScheme.tertiaryContainer,
         accentColor = MaterialTheme.colorScheme.primary,
     )
-    val pauseMorphRenderer = rememberAudioMorphMeshRenderer()
-    val pauseMorphIntensity = rememberAudioGradientIntensity(
+    val pauseMorphMotion = rememberAnimatedGradientMotionState(
         active = playing,
         label = "pauseMorphGradientIntensity",
-    )
-    val pauseMorphTime = rememberAudioMotionTime(
-        active = playing,
-        intensity = pauseMorphIntensity,
     )
 
     ButtonGroup(
@@ -350,8 +343,6 @@ private fun AudioTransportButtons(
             customItem(
                 buttonGroupContent = {
                     val interactionSource = sources[index]
-                    val effectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
-                    val iconSpatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
                     val isCenter = index == 1
 
                     val containerColor = if (isCenter) {
@@ -385,39 +376,14 @@ private fun AudioTransportButtons(
                             .height(76.dp),
                     ) {
                         if (isCenter) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .drawAudioMorphGradient(
-                                        renderer = pauseMorphRenderer,
-                                        palette = pauseMorphPalette,
-                                        timeSeconds = pauseMorphTime,
-                                        intensity = pauseMorphIntensity,
-                                        radius = 68.dp,
-                                    ),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                AnimatedContent(
-                                    targetState = playing,
-                                    transitionSpec = {
-                                        fadeIn(animationSpec = effectsSpec) +
-                                                scaleIn(
-                                                    initialScale = 0.75f,
-                                                    animationSpec = iconSpatialSpec
-                                                ) togetherWith fadeOut(animationSpec = effectsSpec) + scaleOut(
-                                            targetScale = 0.75f,
-                                            animationSpec = iconSpatialSpec
-                                        )
-                                    },
-                                    label = "playPauseTransition",
-                                ) { isPlaying ->
-                                    Icon(
-                                        imageVector = if (isPlaying) MaterialSymbols.OutlinedFilled.Pause else MaterialSymbols.OutlinedFilled.Play_arrow,
-                                        contentDescription = label,
-                                        modifier = Modifier.size(38.dp),
-                                    )
-                                }
-                            }
+                            MorphingPlayPauseContent(
+                                playing = playing,
+                                contentDescription = label,
+                                palette = pauseMorphPalette,
+                                motion = pauseMorphMotion,
+                                gradientRadius = 68.dp,
+                                iconSize = 38.dp,
+                            )
                         } else {
                             Icon(
                                 imageVector = if (index == 0) MaterialSymbols.Outlined.Skip_previous else MaterialSymbols.Outlined.Skip_next,
@@ -505,18 +471,16 @@ private fun AudioSeekBar(
         label = "audioWaveHeight",
     )
 
+    val effectsVisible = LocalAnimatedEffectsVisible.current
     val seekLabel = stringResource(R.string.reader_audio_seek)
     val trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
-    val progressPalette = rememberAudioGradientPalette()
-    val flowBarRenderer = rememberAudioFlowBarRenderer()
-    val flowIntensity = rememberAudioGradientIntensity(
+    val progressPalette = rememberAnimatedGradientPalette()
+    val linePainter = rememberFlowGradientLinePainter()
+    val waveMoving = effectsVisible && (state.playing || waveHeight > 4.dp)
+    val flowMotion = rememberAnimatedGradientMotionState(
         active = state.playing,
         label = "audioProgressGradientIntensity",
-    )
-    val waveMoving = state.playing || waveHeight > 4.dp
-    val flowTime = rememberAudioMotionTime(
-        active = waveMoving,
-        intensity = flowIntensity,
+        keepTimeRunning = waveMoving,
     )
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -578,48 +542,45 @@ private fun AudioSeekBar(
                 },
             contentAlignment = Alignment.Center,
         ) {
-            Box(
+            GradientMaskedProgressBar(
+                palette = progressPalette,
+                motion = flowMotion,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(waveHeight.coerceAtLeast(4.dp))
                     .clearAndSetSemantics {},
-            ) {
-                LinearWavyProgressIndicator(
-                    progress = { progress },
-                    modifier = Modifier.fillMaxSize(),
-                    color = Color.Transparent,
-                    trackColor = trackColor,
-                    stroke = indicatorStroke,
-                    trackStroke = indicatorStroke,
-                    gapSize = 6.dp,
-                    stopSize = 0.dp,
-                    amplitude = { 0.4f },
-                    wavelength = 20.dp,
-                    waveSpeed = 0.dp,
-                )
-                LinearWavyProgressIndicator(
-                    progress = { progress },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .maskWithAudioProgressGradient(
-                            renderer = flowBarRenderer,
-                            palette = progressPalette,
-                            timeSeconds = flowTime,
-                            intensity = flowIntensity,
-                            rtl = rtl,
-                        ),
-                    color = progressPalette.baseColor,
-                    trackColor = Color.Transparent,
-                    stroke = indicatorStroke,
-                    trackStroke = indicatorStroke,
-                    gapSize = 6.dp,
-                    stopSize = 3.dp,
-                    amplitude = { 0.4f },
-                    wavelength = 20.dp,
-                    // Keep the wave moving until it has flattened, then stop its phase animation.
-                    waveSpeed = if (waveMoving) 20.dp else 0.dp,
-                )
-            }
+                track = { trackModifier ->
+                    LinearWavyProgressIndicator(
+                        progress = { progress },
+                        modifier = trackModifier,
+                        color = Color.Transparent,
+                        trackColor = trackColor,
+                        stroke = indicatorStroke,
+                        trackStroke = indicatorStroke,
+                        gapSize = 6.dp,
+                        stopSize = 0.dp,
+                        amplitude = { 0.4f },
+                        wavelength = 20.dp,
+                        waveSpeed = 0.dp,
+                    )
+                },
+                indicator = { indicatorModifier, baseColor ->
+                    LinearWavyProgressIndicator(
+                        progress = { progress },
+                        modifier = indicatorModifier,
+                        color = baseColor,
+                        trackColor = Color.Transparent,
+                        stroke = indicatorStroke,
+                        trackStroke = indicatorStroke,
+                        gapSize = 6.dp,
+                        stopSize = 3.dp,
+                        amplitude = { 0.4f },
+                        wavelength = 20.dp,
+                        // Keep the wave moving until it has flattened, then stop its phase animation.
+                        waveSpeed = if (waveMoving) 20.dp else 0.dp,
+                    )
+                },
+            )
 
             Canvas(
                 modifier = Modifier
@@ -630,6 +591,7 @@ private fun AudioSeekBar(
                         alpha = handleOpacity.coerceIn(0f, 1f)
                     },
             ) {
+                if (handleOpacity <= 0f) return@Canvas
                 // Draw only the final handle; animate its layer vertically, never its width/shape.
                 val handleWidth = 4.5.dp.toPx()
                 val halfWidth = handleWidth / 2f
@@ -640,12 +602,10 @@ private fun AudioSeekBar(
                 val centerY = size.height / 2f
                 val halfHeight = 22.dp.toPx() / 2f
 
-                flowBarRenderer.drawHandleLine(
+                linePainter.drawLine(
                     drawScope = this,
                     palette = progressPalette,
-                    timeSeconds = flowTime.value,
-                    intensity = flowIntensity.value,
-                    halfCyclePx = AudioProgressFlowHalfCycle.toPx(),
+                    motion = flowMotion,
                     rtl = rtl,
                     x = clampedX,
                     startY = centerY - halfHeight,

@@ -9,13 +9,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,7 +23,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
-import com.composables.icons.materialsymbols.outlined.Check
 import com.composables.icons.materialsymbols.outlined.Close
 import com.javierreansyah.pinecone.R
 
@@ -44,10 +37,7 @@ internal fun EditingNavigationIcon(editing: Boolean, onBack: () -> Unit, onCance
     )
     val navEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
 
-    FilledTonalIconButton(
-        modifier = Modifier.size(AppBarButtonSize),
-        shape = CircleShape,
-        colors = topAppBarNavigationButtonColors(),
+    TopAppBarCircleIconButton(
         onClick = {
             if (editing) {
                 onCancel()
@@ -115,18 +105,7 @@ internal fun EditingActions(
         label = "actionsContent",
     ) { isEditing ->
         if (isEditing) {
-            FilledIconButton(
-                modifier = Modifier
-                    .padding(end = 6.dp)
-                    .size(width = 60.dp, height = AppBarButtonSize),
-                shapes = IconButtonDefaults.shapes(),
-                onClick = onSave,
-            ) {
-                Icon(
-                    MaterialSymbols.Outlined.Check,
-                    contentDescription = stringResource(R.string.action_save)
-                )
-            }
+            TopAppBarSaveButton(onClick = onSave)
         } else {
             content()
         }

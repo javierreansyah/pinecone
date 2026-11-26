@@ -3,8 +3,6 @@ package com.javierreansyah.pinecone.ui.features.library.filters
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -38,7 +36,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
@@ -62,6 +59,7 @@ import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBarTitle
 import com.javierreansyah.pinecone.ui.components.LocalTopAppBarCollapsedRow
 import com.javierreansyah.pinecone.ui.components.TopAppBarActionGroup
+import com.javierreansyah.pinecone.ui.components.horizontalPadding
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.FilterSortPreferences
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
@@ -269,10 +267,11 @@ private fun FilterResultContent(
                 }
             },
             onBookLongClick = { selectedBookContext = it to null },
-            scrollKey = Triple(
+            scrollKey = listOf(
                 preferences.sortType,
                 preferences.isAscending,
                 preferences.selectedStatus,
+                preferences.selectedFormats,
             ),
         )
     }
@@ -586,13 +585,9 @@ private fun FilterResultBookContent(
     modifier: Modifier = Modifier,
     scrollKey: Any? = null,
 ) {
-    val layoutDirection = LocalLayoutDirection.current
     Box(
         modifier = modifier
-            .padding(
-                start = innerPadding.calculateStartPadding(layoutDirection),
-                end = innerPadding.calculateEndPadding(layoutDirection),
-            )
+            .horizontalPadding(innerPadding)
             .fillMaxSize(),
     ) {
         if (books.isEmpty()) {

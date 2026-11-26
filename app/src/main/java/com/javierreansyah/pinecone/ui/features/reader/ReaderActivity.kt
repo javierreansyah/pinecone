@@ -252,8 +252,9 @@ class ReaderActivity : AppCompatActivity(), ReaderNavigationRouter {
                 combine(
                     viewModel.controlsState.map { it.showControls }.distinctUntilChanged(),
                     viewModel.settingsFlow.map { it.alwaysShowStatusBar }.distinctUntilChanged(),
-                ) { showControls, alwaysShowStatusBar ->
-                    showControls || alwaysShowStatusBar
+                    viewModel.imageViewerChromeVisible,
+                ) { showControls, alwaysShowStatusBar, imageViewerChromeVisible ->
+                    showControls || alwaysShowStatusBar || imageViewerChromeVisible
                 }.distinctUntilChanged().collect { showSystemBars ->
                     val windowInsetsController =
                         WindowCompat.getInsetsController(window, window.decorView)

@@ -2,6 +2,7 @@ package com.javierreansyah.pinecone.reader.pdf
 
 import android.content.Context
 import android.graphics.Bitmap
+import androidx.core.graphics.createBitmap
 import com.artifex.mupdf.fitz.Document
 import com.artifex.mupdf.fitz.Matrix
 import com.artifex.mupdf.fitz.Outline
@@ -17,7 +18,6 @@ import org.readium.r2.shared.util.pdf.PdfDocument
 import org.readium.r2.shared.util.pdf.PdfDocumentFactory
 import org.readium.r2.shared.util.resource.Resource
 import kotlin.reflect.KClass
-import androidx.core.graphics.createBitmap
 
 /** Owns a native document. All access, including destruction, uses the same lock. */
 class MuPdfDocument(private val native: Document) : PdfDocument {

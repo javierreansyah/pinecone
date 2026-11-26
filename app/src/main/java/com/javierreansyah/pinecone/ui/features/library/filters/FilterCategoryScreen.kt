@@ -3,8 +3,6 @@ package com.javierreansyah.pinecone.ui.features.library.filters
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,7 +25,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -46,6 +43,7 @@ import com.javierreansyah.pinecone.ui.components.ListItemAccessory
 import com.javierreansyah.pinecone.ui.components.RenameDeleteMenu
 import com.javierreansyah.pinecone.ui.components.SegmentedListDefaults
 import com.javierreansyah.pinecone.ui.components.TopAppBarActionGroup
+import com.javierreansyah.pinecone.ui.components.horizontalPadding
 import com.javierreansyah.pinecone.ui.features.library.LibrarySelection
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.combinedWording
@@ -362,15 +360,11 @@ private fun AllFilterItemsList(
     onLongClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val layoutDirection = LocalLayoutDirection.current
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(SegmentedListDefaults.Gap),
         modifier = modifier
             .fillMaxSize()
-            .padding(
-                start = innerPadding.calculateStartPadding(layoutDirection),
-                end = innerPadding.calculateEndPadding(layoutDirection),
-            )
+            .horizontalPadding(innerPadding)
             .padding(horizontal = 16.dp),
         contentPadding = PaddingValues(
             top = innerPadding.calculateTopPadding(),

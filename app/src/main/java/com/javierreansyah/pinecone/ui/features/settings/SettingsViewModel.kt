@@ -10,7 +10,9 @@ import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
 import com.javierreansyah.pinecone.data.repository.backup.BackupProgress
 import com.javierreansyah.pinecone.data.repository.backup.BackupRepository
 import com.javierreansyah.pinecone.data.repository.backup.BackupResult
+import com.javierreansyah.pinecone.di.ApplicationScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,6 +28,9 @@ data class BackupFile(
     val timestamp: Long,
     val isManual: Boolean,
     val formattedDate: String,
+    val bookCount: Int = 0,
+    val spaceCount: Int = 0,
+    val shelfCount: Int = 0,
 )
 
 @HiltViewModel
@@ -34,6 +39,7 @@ class SettingsViewModel @Inject constructor(
     private val readerPreferences: ReaderPreferences,
     private val backupRepository: BackupRepository,
     private val restoreBackup: com.javierreansyah.pinecone.domain.RestoreBackup,
+    @ApplicationScope private val applicationScope: CoroutineScope,
 ) : ViewModel() {
     private val _settings = MutableStateFlow(ReaderSettings())
     val settings: StateFlow<ReaderSettings> = _settings.asStateFlow()
@@ -60,7 +66,7 @@ class SettingsViewModel @Inject constructor(
         readerPreferences.updateSettings(transform)
 
     fun performFullBackup(onStart: () -> Unit, onSuccess: () -> Unit, onFailure: () -> Unit) {
-        viewModelScope.launch {
+        applicationScope.launch {
             if (_isBackingUp.value) return@launch
             _backupProgress.value = BackupProgress()
             _isBackingUp.value = true
@@ -70,7 +76,7 @@ class SettingsViewModel @Inject constructor(
                     _backupProgress.value = it
                 }
                 if (result.isSuccess) {
-                    loadBackups(); onSuccess()
+                    loadBackupsSuspended(); onSuccess()
                 } else onFailure()
             } finally {
                 _isBackingUp.value = false
@@ -87,10 +93,16 @@ class SettingsViewModel @Inject constructor(
     suspend fun loadBackupsSuspended() {
         val formatter = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
         _availableBackups.value =
-            backupRepository.listSnapshots().map { (itUri, itId, itTimestamp, itIsManual) ->
+            backupRepository.listSnapshots().map { info ->
                 BackupFile(
-                    itUri, itId, itTimestamp, itIsManual,
-                    formatter.format(Date(itTimestamp)),
+                    uri = info.uri,
+                    name = info.id,
+                    timestamp = info.timestamp,
+                    isManual = info.isManual,
+                    formattedDate = formatter.format(Date(info.timestamp)),
+                    bookCount = info.bookCount,
+                    spaceCount = info.customSpaceCount,
+                    shelfCount = info.shelfCount,
                 )
             }
     }
@@ -102,7 +114,7 @@ class SettingsViewModel @Inject constructor(
         onWarning: () -> Unit,
         onFailure: () -> Unit,
     ) {
-        viewModelScope.launch {
+        applicationScope.launch {
             if (_isRestoring.value) return@launch
             _restoreProgress.value = BackupProgress()
             _isRestoring.value = true
@@ -116,6 +128,8 @@ class SettingsViewModel @Inject constructor(
                     }
 
                     is BackupResult.Partial -> {
+                        application.imageLoader.memoryCache?.clear()
+                        application.imageLoader.diskCache?.clear()
                         onWarning(); onSuccess()
                     }
 

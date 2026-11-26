@@ -342,7 +342,8 @@ fun ReaderSettingsContent(
                                     epubSpread = "auto",
                                     epubLigatures = null,
                                     epubVerticalText = null,
-                                    epubImageFilterFollowTheme = true
+                                    epubImageFilterFollowTheme = true,
+                                    epubImageViewer = true,
                                 ),
                             )
                         }
@@ -880,6 +881,20 @@ internal fun AdvancedTabContent(
                 title = stringResource(R.string.reader_settings_text_normalization),
                 isChecked = settings.textNormalization,
                 onCheckedChange = { onSettingsChange { current -> current.copy(textNormalization = it) } },
+            )
+
+            SettingsSwitchRow(
+                title = stringResource(R.string.reader_settings_image_viewer),
+                isChecked = settings.formatPreferences.epubImageViewer,
+                onCheckedChange = { enabled ->
+                    onSettingsChange { current ->
+                        current.copy(
+                            formatPreferences = current.formatPreferences.copy(
+                                epubImageViewer = enabled,
+                            ),
+                        )
+                    }
+                },
             )
 
         }

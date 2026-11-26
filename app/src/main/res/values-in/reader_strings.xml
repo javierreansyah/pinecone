@@ -23,8 +23,10 @@
     <string name="reader_highlight_color">Warna sorotan</string>
     <string name="reader_horizontal">Navigasi horizontal</string>
     <string name="reader_image_filter_activation">Terapkan filter gambar</string>
+    <string name="reader_image_load_failed">Gambar ini tidak dapat dimuat.</string>
     <string name="reader_image_settings_hint">Navigator gambar Readium ini mendukung tampilan per halaman dan pembesaran gambar. Pengaturan tipografi dan gulir berkelanjutan tidak tersedia.</string>
     <string name="reader_in_document">Dalam judul</string>
+    <string name="reader_invert_image">Balikkan warna gambar</string>
     <string name="reader_invert_pages">Balikkan warna halaman</string>
     <string name="reader_jump_go_back">@string/action_back</string>
     <string name="reader_jump_history_mode">Riwayat lompatan</string>
@@ -102,6 +104,7 @@
     <string name="reader_settings_image_filter_darken">Gelapkan</string>
     <string name="reader_settings_image_filter_invert">Inversi</string>
     <string name="reader_settings_image_filter_none">Tidak ada</string>
+    <string name="reader_settings_image_viewer">Ketuk gambar untuk memperbesar</string>
     <string name="reader_settings_letter_spacing">Spasi huruf</string>
     <string name="reader_settings_line_spacing">Spasi baris</string>
     <string name="reader_settings_new_theme">Tema baru</string>

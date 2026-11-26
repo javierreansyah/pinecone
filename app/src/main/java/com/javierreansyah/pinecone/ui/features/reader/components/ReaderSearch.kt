@@ -12,13 +12,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
@@ -29,6 +27,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -47,9 +47,11 @@ import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Search
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.ContainedSearchOverlay
+import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.InsetListItemDefaults
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.reader.SearchResultItem
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
 fun ReaderSearch(
@@ -64,7 +66,9 @@ fun ReaderSearch(
     modifier: Modifier = Modifier,
     wording: PublicationWording = PublicationWording.Items,
 ) {
-    val textFieldState = remember { TextFieldState(query) }
+    val textFieldState = rememberTextFieldState(query)
+    val latestQuery by rememberUpdatedState(query)
+    val latestOnQueryChange by rememberUpdatedState(onQueryChange)
 
     LaunchedEffect(query) {
         if (textFieldState.text.toString() != query) {
@@ -74,11 +78,14 @@ fun ReaderSearch(
         }
     }
 
-    LaunchedEffect(textFieldState.text) {
-        val currentText = textFieldState.text.toString()
-        if (currentText != query) {
-            onQueryChange(currentText)
-        }
+    LaunchedEffect(textFieldState) {
+        snapshotFlow { textFieldState.text.toString() }
+            .distinctUntilChanged()
+            .collect { currentText ->
+                if (currentText != latestQuery) {
+                    latestOnQueryChange(currentText)
+                }
+            }
     }
 
     val backgroundColor = MaterialTheme.colorScheme.surface
@@ -165,32 +172,14 @@ fun ReaderSearch(
 
                 if (searchPerformed && !isLoading && results.isEmpty()) {
                     item {
-                        Box(
-                            contentAlignment = Alignment.Center,
+                        EmptyState(
+                            icon = MaterialSymbols.Outlined.Search,
+                            text = stringResource(R.string.reader_search_no_results_for, query),
+                            iconSize = 48.dp,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = 64.dp),
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(16.dp),
-                            ) {
-                                Icon(
-                                    MaterialSymbols.Outlined.Search,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(48.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                                )
-                                Text(
-                                    stringResource(
-                                        R.string.reader_search_no_results_for,
-                                        query,
-                                    ),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
+                        )
                     }
                 }
             }

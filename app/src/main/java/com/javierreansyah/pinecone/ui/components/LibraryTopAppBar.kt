@@ -2,8 +2,10 @@ package com.javierreansyah.pinecone.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonColors
@@ -29,6 +31,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
+import com.composables.icons.materialsymbols.outlined.Check
 import com.javierreansyah.pinecone.R
 
 val LocalTopAppBarCollapsedRow = compositionLocalOf { false }
@@ -54,6 +57,45 @@ internal fun topAppBarNavigationButtonColors(): IconButtonColors {
         containerColor = containerColor,
         contentColor = contentColorFor(containerColor),
     )
+}
+
+@Composable
+fun TopAppBarCircleIconButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    colors: IconButtonColors = topAppBarNavigationButtonColors(),
+    content: @Composable () -> Unit,
+) {
+    FilledTonalIconButton(
+        onClick = onClick,
+        modifier = modifier.size(AppBarButtonSize),
+        enabled = enabled,
+        shape = CircleShape,
+        colors = colors,
+        content = content,
+    )
+}
+
+@Composable
+fun TopAppBarSaveButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    FilledIconButton(
+        onClick = onClick,
+        modifier = modifier
+            .padding(end = 6.dp)
+            .size(width = 60.dp, height = AppBarButtonSize),
+        enabled = enabled,
+        shapes = IconButtonDefaults.shapes(),
+    ) {
+        Icon(
+            imageVector = MaterialSymbols.Outlined.Check,
+            contentDescription = stringResource(R.string.action_save),
+        )
+    }
 }
 
 @Composable
@@ -103,12 +145,7 @@ fun LibraryTopAppBar(
         if (navigationIcon != null) {
             navigationIcon()
         } else {
-            FilledTonalIconButton(
-                modifier = Modifier.size(AppBarButtonSize),
-                shape = CircleShape,
-                colors = topAppBarNavigationButtonColors(),
-                onClick = onBack,
-            ) {
+            TopAppBarCircleIconButton(onClick = onBack) {
                 Icon(
                     MaterialSymbols.Outlined.Arrow_back,
                     contentDescription = stringResource(R.string.action_back),

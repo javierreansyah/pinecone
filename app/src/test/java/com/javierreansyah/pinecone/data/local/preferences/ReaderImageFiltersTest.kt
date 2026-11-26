@@ -71,16 +71,21 @@ class ReaderImageFiltersTest {
     fun `EPUB filters follow dark surfaces or can be active in light surfaces`() {
         val settings = ReaderSettings(pineconeThemePreset = "Light", imageFilter = "Invert")
         assertEquals("", settings.epubImageFilterCss(true))
+        assertFalse(settings.isEpubImageInvertActive(true))
         val dark = settings.copy(pineconeThemePreset = "Dark")
         assertTrue("invert(1)" in dark.epubImageFilterCss(false))
+        assertTrue(dark.isEpubImageInvertActive(false))
         val always = settings.copy(
             formatPreferences = settings.formatPreferences.copy(epubImageFilterFollowTheme = false)
         )
         assertTrue("invert(1)" in always.epubImageFilterCss(false))
+        assertTrue(always.isEpubImageInvertActive(false))
         assertTrue(
             "brightness(" in always.copy(imageFilter = "Darken").epubImageFilterCss(false)
         )
+        assertFalse(always.copy(imageFilter = "Darken").isEpubImageInvertActive(false))
         assertEquals("", always.copy(imageFilter = "None").epubImageFilterCss(false))
+        assertFalse(always.copy(imageFilter = "None").isEpubImageInvertActive(false))
     }
 
     @Test

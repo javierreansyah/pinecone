@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -18,10 +16,8 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -41,7 +37,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -51,16 +46,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Add
 import com.composables.icons.materialsymbols.outlined.Book
-import com.composables.icons.materialsymbols.outlined.Folder
 import com.composables.icons.materialsymbols.outlined.History
-import com.composables.icons.materialsymbols.outlined.Upload
+import com.composables.icons.materialsymbols.outlined.Inbox
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.local.database.library.ShelfWithCovers
 import com.javierreansyah.pinecone.data.model.Book
-import com.javierreansyah.pinecone.ui.components.AppDropdownMenuDefaults
-import com.javierreansyah.pinecone.ui.components.AppDropdownMenuGroup
-import com.javierreansyah.pinecone.ui.components.AppDropdownMenuItem
 import com.javierreansyah.pinecone.ui.components.EmptyState
+import com.javierreansyah.pinecone.ui.components.ImportActionsMenu
+import com.javierreansyah.pinecone.ui.components.horizontalPadding
 import com.javierreansyah.pinecone.ui.features.library.FileFilter
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.LibrarySelection
@@ -340,15 +333,11 @@ fun LibraryScreen(
                 ) { innerPadding ->
                     var miniPlayerHeight by remember { mutableIntStateOf(0) }
                     val miniPlayerPadding = with(LocalDensity.current) { miniPlayerHeight.toDp() }
-                    val layoutDirection = LocalLayoutDirection.current
                     val topPadding = innerPadding.calculateTopPadding()
                     val bottomPadding = innerPadding.calculateBottomPadding()
                     Box(
                         Modifier
-                            .padding(
-                                start = innerPadding.calculateStartPadding(layoutDirection),
-                                end = innerPadding.calculateEndPadding(layoutDirection),
-                            )
+                            .horizontalPadding(innerPadding)
                             .fillMaxSize()
                     ) {
                         HorizontalPager(
@@ -361,6 +350,7 @@ fun LibraryScreen(
                                     LibraryBooksTabContent(
                                         showEmptyState = showEmptyState,
                                         isLibraryEmpty = !uiState.hasAnyBooksInDatabase,
+                                        hasUnsortedBooks = uiState.hasUnsortedBooks,
                                         books = uiState.filteredBooks,
                                         topContentPadding = topPadding,
                                         bottomContentPadding = bottomPadding + miniPlayerPadding,
@@ -375,17 +365,34 @@ fun LibraryScreen(
                                         },
                                         onBookLongClick = { selectedBookContext = it to null },
                                         isInMultiSelectMode = isInMultiSelectMode && !isShelvesTab,
-                                        scrollKey = uiState.bookPreferences.sortType to uiState.bookPreferences.isAscending,
-                                        emptyAction = if (!uiState.hasAnyBooksInDatabase) {
-                                            {
-                                                EmptyLibraryActions(
-                                                    onImportFilesClick = onImportFilesClick,
-                                                    onScanFolderClick = onScanFolderClick,
-                                                    onRestoreBackupClick = onRestoreBackupClick,
-                                                )
+                                        scrollKey = listOf(
+                                            uiState.globalSpaceId,
+                                            uiState.bookPreferences.sortType,
+                                            uiState.bookPreferences.isAscending,
+                                            uiState.bookPreferences.selectedStatus,
+                                            uiState.bookPreferences.selectedShelfFilter,
+                                            uiState.bookPreferences.selectedFormats,
+                                        ),
+                                        emptyAction = when {
+                                            !uiState.hasAnyBooksInDatabase -> {
+                                                {
+                                                    EmptyLibraryActions(
+                                                        onImportFilesClick = onImportFilesClick,
+                                                        onScanFolderClick = onScanFolderClick,
+                                                        onRestoreBackupClick = onRestoreBackupClick,
+                                                    )
+                                                }
                                             }
-                                        } else {
-                                            null
+
+                                            uiState.hasUnsortedBooks -> {
+                                                {
+                                                    EmptyLibraryUnsortedAction(
+                                                        onOpenUnsortedClick = onNavigateToUnsorted,
+                                                    )
+                                                }
+                                            }
+
+                                            else -> null
                                         },
                                     )
                                 }
@@ -594,6 +601,7 @@ private fun LibraryTopBar(
 private fun LibraryBooksTabContent(
     showEmptyState: Boolean,
     isLibraryEmpty: Boolean,
+    hasUnsortedBooks: Boolean,
     books: List<Book>,
     layoutMode: LayoutMode,
     selectedBooks: Set<String>,
@@ -616,11 +624,13 @@ private fun LibraryBooksTabContent(
                     if (isLibraryEmpty) R.string.library_empty_library_title
                     else R.string.library_empty_items,
                 ),
-                supportingText = if (isLibraryEmpty) {
-                    stringResource(R.string.library_empty_library_subtitle)
-                } else {
-                    null
-                },
+                supportingText = stringResource(
+                    when {
+                        isLibraryEmpty -> R.string.library_empty_library_subtitle
+                        hasUnsortedBooks -> R.string.library_empty_items_unsorted_subtitle
+                        else -> R.string.library_empty_items_subtitle
+                    },
+                ),
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(top = topContentPadding, bottom = bottomContentPadding)
@@ -676,43 +686,12 @@ private fun EmptyLibraryActions(
                 Text(text = stringResource(R.string.action_import))
             }
 
-            DropdownMenuPopup(
+            ImportActionsMenu(
                 expanded = menuExpanded,
                 onDismissRequest = { menuExpanded = false },
-            ) {
-                AppDropdownMenuGroup {
-                    AppDropdownMenuItem(
-                        text = { Text(stringResource(R.string.nav_import_files)) },
-                        shape = AppDropdownMenuDefaults.itemShape(0, 2).shape,
-                        leadingIcon = {
-                            Icon(
-                                imageVector = MaterialSymbols.Outlined.Upload,
-                                modifier = Modifier.size(MenuDefaults.LeadingIconSize),
-                                contentDescription = null,
-                            )
-                        },
-                        onClick = {
-                            menuExpanded = false
-                            onImportFilesClick()
-                        },
-                    )
-                    AppDropdownMenuItem(
-                        text = { Text(stringResource(R.string.nav_scan_folder)) },
-                        shape = AppDropdownMenuDefaults.itemShape(1, 2).shape,
-                        leadingIcon = {
-                            Icon(
-                                imageVector = MaterialSymbols.Outlined.Folder,
-                                modifier = Modifier.size(MenuDefaults.LeadingIconSize),
-                                contentDescription = null,
-                            )
-                        },
-                        onClick = {
-                            menuExpanded = false
-                            onScanFolderClick()
-                        },
-                    )
-                }
-            }
+                onImportFilesClick = onImportFilesClick,
+                onScanFolderClick = onScanFolderClick,
+            )
         }
 
         TextButton(
@@ -731,5 +710,30 @@ private fun EmptyLibraryActions(
             Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
             Text(text = stringResource(R.string.nav_restore_backup))
         }
+    }
+}
+
+@Composable
+private fun EmptyLibraryUnsortedAction(
+    onOpenUnsortedClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Button(
+        onClick = onOpenUnsortedClick,
+        modifier = modifier,
+        shapes = ButtonDefaults.shapes(),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+        contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+    ) {
+        Icon(
+            imageVector = MaterialSymbols.Outlined.Inbox,
+            contentDescription = null,
+            modifier = Modifier.size(ButtonDefaults.IconSize),
+        )
+        Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
+        Text(text = stringResource(R.string.library_open_unsorted))
     }
 }

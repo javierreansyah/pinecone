@@ -51,7 +51,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.toColorInt
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Arrow_back
 import com.composables.icons.materialsymbols.outlined.Arrow_forward
@@ -75,6 +74,13 @@ import kotlin.time.Duration.Companion.milliseconds
 enum class BottomBarMode {
     PROGRESS, SEARCH_NAV, TEXT_SELECTION
 }
+
+private val HighlightSwatches = listOf(
+    0x40FAC02E.toInt(),
+    0x40FD7142.toInt(),
+    0x408BC24A.toInt(),
+    0x4025C6DA.toInt(),
+)
 
 @Composable
 fun ReaderDockedToolbar(
@@ -485,15 +491,9 @@ fun ReaderTextSelectionControl(
                     expanded = expanded,
                     onDismissRequest = { expanded = false },
                 ) {
-                    val swatches = listOf(
-                        "#40fac02e".toColorInt(),
-                        "#40fd7142".toColorInt(),
-                        "#408bc24a".toColorInt(),
-                        "#4025c6da".toColorInt(),
-                    )
-                    val totalItems = swatches.size
+                    val totalItems = HighlightSwatches.size
                     AppDropdownMenuGroup {
-                        swatches.forEachIndexed { index, colorInt ->
+                        HighlightSwatches.forEachIndexed { index, colorInt ->
                             val isSelected = selectedColorInt == colorInt
                             AppSelectableDropdownMenuItem(
                                 selected = isSelected,

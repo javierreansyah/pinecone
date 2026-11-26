@@ -5,19 +5,17 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
@@ -31,14 +29,15 @@ import com.composables.icons.materialsymbols.outlined.Menu
 import com.composables.icons.materialsymbols.outlined.Search
 import com.composables.icons.materialsymbols.outlined.Tune
 import com.javierreansyah.pinecone.R
-import com.javierreansyah.pinecone.ui.components.AppBarButtonSize
 import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
 import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconToggleButton
 import com.javierreansyah.pinecone.ui.components.ContainedSearchOverlay
 import com.javierreansyah.pinecone.ui.components.TopAppBarActionGroup
+import com.javierreansyah.pinecone.ui.components.TopAppBarCircleIconButton
 import com.javierreansyah.pinecone.ui.components.topBarFadeBackground
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
 import com.javierreansyah.pinecone.ui.features.library.SearchCategory
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
 internal fun LibraryHomeTopAppBar(
@@ -52,7 +51,6 @@ internal fun LibraryHomeTopAppBar(
     onToggleView: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val backgroundColor = MaterialTheme.colorScheme.background
     val effectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
     TopAppBar(
         title = {
@@ -69,15 +67,7 @@ internal fun LibraryHomeTopAppBar(
             }
         },
         navigationIcon = {
-            FilledTonalIconButton(
-                modifier = Modifier.size(AppBarButtonSize),
-                shape = CircleShape,
-                colors = IconButtonDefaults.filledTonalIconButtonColors(
-                    containerColor = backgroundColor,
-                    contentColor = contentColorFor(backgroundColor),
-                ),
-                onClick = onOpenDrawerClick,
-            ) {
+            TopAppBarCircleIconButton(onClick = onOpenDrawerClick) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Menu,
                     contentDescription = stringResource(R.string.action_menu),
@@ -164,11 +154,17 @@ internal fun LibrarySearchOverlay(
         keyboardController?.hide()
     }
 
-    LaunchedEffect(textFieldState.text) {
-        val currentText = textFieldState.text.toString()
-        if (currentText != searchQuery) {
-            onSearchQueryChange(currentText)
-        }
+    val latestSearchQuery by rememberUpdatedState(searchQuery)
+    val latestOnSearchQueryChange by rememberUpdatedState(onSearchQueryChange)
+
+    LaunchedEffect(textFieldState) {
+        snapshotFlow { textFieldState.text.toString() }
+            .distinctUntilChanged()
+            .collect { currentText ->
+                if (currentText != latestSearchQuery) {
+                    latestOnSearchQueryChange(currentText)
+                }
+            }
     }
 
     ContainedSearchOverlay(

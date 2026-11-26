@@ -22,7 +22,9 @@
     <string name="library_empty_archives_subtitle">Arsipkan judul yang ingin disembunyikan dari pustaka utama tanpa menghapusnya.</string>
     <string name="library_empty_authors">Penulis tidak ditemukan.</string>
     <string name="library_empty_authors_subtitle">Penulis akan muncul otomatis dari judul yang Anda impor.</string>
-    <string name="library_empty_items">judul tidak ditemukan</string>
+    <string name="library_empty_items">Judul tidak ditemukan</string>
+    <string name="library_empty_items_subtitle">Coba ubah filter atau beralih ke ruang lain.</string>
+    <string name="library_empty_items_unsorted_subtitle">Beberapa judul menunggu di Belum disortir, atau coba ubah filter atau ruang Anda.</string>
     <string name="library_empty_library_title">Pustaka masih kosong</string>
     <string name="library_empty_library_subtitle">Impor ebook, komik, atau buku audio, atau pindai folder untuk memulai.</string>
     <string name="library_empty_shelf">Rak kosong</string>
@@ -48,6 +50,7 @@
     <string name="library_new_shelf_hint">Koleksi judul di dalam sebuah ruang</string>
     <string name="library_new_space">Ruang baru</string>
     <string name="library_new_space_hint">Pustaka terpisah (mis. fiksi, nonfiksi, belajar)</string>
+    <string name="library_open_unsorted">Buka Belum disortir</string>
     <string name="library_organize_empty_hint">Ketik nama di atas untuk membuat ruang (mis. fiksi, nonfiksi, belajar) atau rak.</string>
     <string name="library_organize_search_placeholder">Cari atau buat</string>
     <string name="library_rename_author_title">Ubah nama penulis</string>

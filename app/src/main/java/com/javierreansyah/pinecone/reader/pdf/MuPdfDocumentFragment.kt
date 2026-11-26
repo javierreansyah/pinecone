@@ -40,7 +40,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -65,9 +64,9 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.stringResource
@@ -93,6 +92,17 @@ import org.readium.r2.navigator.pdf.PdfDocumentFragment
 import org.readium.r2.navigator.pdf.PdfDocumentFragmentInput
 import org.readium.r2.shared.util.data.ReadError
 import kotlin.time.Duration.Companion.milliseconds
+
+private val PdfInvertColorFilter = ColorFilter.colorMatrix(
+    ColorMatrix(
+        floatArrayOf(
+            -1f, 0f, 0f, 0f, 255f,
+            0f, -1f, 0f, 0f, 255f,
+            0f, 0f, -1f, 0f, 255f,
+            0f, 0f, 0f, 1f, 0f,
+        ),
+    ),
+)
 
 class MuPdfDocumentFragment(
     private val input: PdfDocumentFragmentInput<MuPdfSettings>,
@@ -221,7 +231,7 @@ class MuPdfDocumentFragment(
         val topInset = WindowInsets.statusBarsIgnoringVisibility
             .union(WindowInsets.displayCutout)
             .asPaddingValues()
-            .calculateTopPadding()
+            .calculateTopPadding() * 2
         val scrollPage = preferences.fitWidth && (!preferences.scroll || preferences.horizontal)
         val scrollBy: (Float) -> Float = remember(list, pager, preferences.scroll) {
             { delta ->
@@ -230,6 +240,7 @@ class MuPdfDocumentFragment(
             }
         }
         val containerWidthPx = LocalWindowInfo.current.containerSize.width
+        val containerWidthDp = with(LocalDensity.current) { containerWidthPx.toDp() }
         val baseRenderWidth = if (containerWidthPx > 0) {
             containerWidthPx.coerceIn(720, 1800)
         } else {
@@ -255,7 +266,7 @@ class MuPdfDocumentFragment(
                             pdf,
                             index,
                             preferences,
-                            Modifier.width((containerWidthPx / resources.displayMetrics.density).dp),
+                            Modifier.width(containerWidthDp),
                             aspectRatios[index],
                             matchesByPage[index].orEmpty(), highlights.focusedIndex,
                             baseRenderWidth,
@@ -351,8 +362,7 @@ class MuPdfDocumentFragment(
             }
         }
         var renderedTile by remember(pdf, index) { mutableStateOf<RenderedPdfTile?>(null) }
-        var pageCoords by remember(index) { mutableStateOf<LayoutCoordinates?>(null) }
-        var positionTick by remember(index) { mutableIntStateOf(0) }
+        var boxBoundsInContent by remember(index) { mutableStateOf<Rect?>(null) }
 
         LaunchedEffect(pdf, index, bitmap, zoomState) {
             val baseBitmap = bitmap ?: run {
@@ -360,21 +370,12 @@ class MuPdfDocumentFragment(
                 return@LaunchedEffect
             }
             snapshotFlow {
-                @Suppress("UNUSED_EXPRESSION")
-                positionTick
-                val contentCoords = zoomState.contentCoordinates
-                val coords = pageCoords
+                val boxBounds = boxBoundsInContent
                 val transform = zoomState.transform
                 val viewportSize = zoomState.viewportSize
-                if (
-                    contentCoords == null ||
-                    coords == null ||
-                    !contentCoords.isAttached ||
-                    !coords.isAttached
-                ) {
+                if (boxBounds == null) {
                     null
                 } else {
-                    val boxBounds = contentCoords.localBoundingBoxOf(coords, clipBounds = false)
                     val imageViewport = pdfImageViewport(
                         boxBounds.width,
                         boxBounds.height,
@@ -447,32 +448,7 @@ class MuPdfDocumentFragment(
         ) {
             bitmap?.let {
                 val baseImage = remember(it) { it.asImageBitmap() }
-                val filter = if (preferences.invert == true) ColorFilter.colorMatrix(
-                    ColorMatrix(
-                        floatArrayOf(
-                            -1f,
-                            0f,
-                            0f,
-                            0f,
-                            255f,
-                            0f,
-                            -1f,
-                            0f,
-                            0f,
-                            255f,
-                            0f,
-                            0f,
-                            -1f,
-                            0f,
-                            255f,
-                            0f,
-                            0f,
-                            0f,
-                            1f,
-                            0f,
-                        )
-                    )
-                ) else null
+                val filter = if (preferences.invert == true) PdfInvertColorFilter else null
                 val scrollPage =
                     preferences.fitWidth && (!preferences.scroll || preferences.horizontal)
                 val viewport = if (scrollPage) Modifier
@@ -493,8 +469,16 @@ class MuPdfDocumentFragment(
                     Box(
                         image
                             .onGloballyPositioned { coords ->
-                                pageCoords = coords
-                                positionTick++
+                                val contentCoords = zoomState.contentCoordinates
+                                boxBoundsInContent = if (
+                                    contentCoords != null &&
+                                    contentCoords.isAttached &&
+                                    coords.isAttached
+                                ) {
+                                    contentCoords.localBoundingBoxOf(coords, clipBounds = false)
+                                } else {
+                                    null
+                                }
                             }
                             .drawWithContent {
                                 drawContent()

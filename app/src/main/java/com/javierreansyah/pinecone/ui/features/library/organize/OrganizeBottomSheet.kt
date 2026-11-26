@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.input.TextFieldState
@@ -62,6 +60,7 @@ import com.composables.icons.materialsymbols.outlined.Mic
 import com.composables.icons.materialsymbols.outlined.Search
 import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.AnimatedSelectionIcon
+import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.SegmentedListDefaults
 import com.javierreansyah.pinecone.ui.components.rememberVoiceSearchLauncher
 import com.composables.icons.materialsymbols.outlinedfilled.Folder as FilledFolder
@@ -497,27 +496,12 @@ private fun OrganizeEmptyResults(
     searchQuery: String,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        contentAlignment = Alignment.Center,
+    EmptyState(
+        icon = MaterialSymbols.Outlined.Search,
+        text = stringResource(R.string.reader_search_no_results_for, searchQuery),
+        iconSize = 48.dp,
         modifier = modifier
             .fillMaxSize()
             .padding(vertical = 48.dp),
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Icon(
-                MaterialSymbols.Outlined.Search,
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-            )
-            Text(
-                stringResource(R.string.reader_search_no_results_for, searchQuery),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
+    )
 }

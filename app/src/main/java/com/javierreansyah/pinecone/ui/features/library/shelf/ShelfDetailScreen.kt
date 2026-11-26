@@ -10,8 +10,6 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -50,7 +48,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -79,6 +76,7 @@ import com.javierreansyah.pinecone.ui.components.EditingNavigationIcon
 import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.components.TopAppBarActionGroup
+import com.javierreansyah.pinecone.ui.components.horizontalPadding
 import com.javierreansyah.pinecone.ui.features.library.LayoutMode
 import com.javierreansyah.pinecone.ui.features.library.LibrarySelection
 import com.javierreansyah.pinecone.ui.features.library.PublicationWording
@@ -205,10 +203,11 @@ fun ShelfDetailScreen(
         } else null,
         onBookClick = onNavigateToReader,
         onBookLongClick = { selectedBookForMenu = it },
-        scrollKey = Triple(
+        scrollKey = listOf(
             preferences.sortType,
             preferences.isAscending,
             preferences.selectedStatus,
+            preferences.selectedFormats,
         ),
     )
 
@@ -621,15 +620,11 @@ private fun ShelfDetailBookListContent(
     scrollKey: Any? = null,
 ) {
     val layoutEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
-    val layoutDirection = LocalLayoutDirection.current
     val topPadding = contentPadding.calculateTopPadding()
     val bottomPadding = contentPadding.calculateBottomPadding()
     Box(
         modifier = modifier
-            .padding(
-                start = contentPadding.calculateStartPadding(layoutDirection),
-                end = contentPadding.calculateEndPadding(layoutDirection),
-            )
+            .horizontalPadding(contentPadding)
             .fillMaxSize(),
     ) {
         if (shelfWithCovers == null) {

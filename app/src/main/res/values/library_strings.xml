@@ -26,6 +26,8 @@
     <string name="library_empty_authors">No authors found.</string>
     <string name="library_empty_authors_subtitle">Authors appear automatically from your imported titles.</string>
     <string name="library_empty_items">No titles found</string>
+    <string name="library_empty_items_subtitle">Try adjusting your filters or switching to another space.</string>
+    <string name="library_empty_items_unsorted_subtitle">Some titles are waiting in Unsorted, or try adjusting your filters or space.</string>
     <string name="library_empty_library_title">Your library is empty</string>
     <string name="library_empty_library_subtitle">Import ebooks, comics, or audiobooks, or scan a folder to get started.</string>
     <string name="library_empty_shelf">Empty shelf</string>
@@ -51,6 +53,7 @@
     <string name="library_new_shelf_hint">Collection of titles inside a space</string>
     <string name="library_new_space">New space</string>
     <string name="library_new_space_hint">Separate library (e.g. fiction, non-fiction, study)</string>
+    <string name="library_open_unsorted">Open Unsorted</string>
     <string name="library_organize_empty_hint">Type a name above to create a space (e.g. fiction, non-fiction, study) or a shelf.</string>
     <string name="library_organize_search_placeholder">Search or create</string>
     <string name="library_rename_author_title">Rename author</string>

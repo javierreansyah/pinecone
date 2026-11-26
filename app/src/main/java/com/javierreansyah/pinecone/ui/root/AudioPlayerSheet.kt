@@ -66,6 +66,7 @@ import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import com.javierreansyah.pinecone.R
+import com.javierreansyah.pinecone.ui.components.LocalAnimatedEffectsVisible
 import com.javierreansyah.pinecone.ui.features.reader.AudioPlayerScreen
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
@@ -348,7 +349,9 @@ fun AudioPlayerSheetHost(backStack: MutableList<NavKey>, content: @Composable ()
                             .graphicsLayer { alpha = fullAlpha }
                             .then(if (fullAlpha < 1f) Modifier.clearAndSetSemantics {} else Modifier),
                     ) {
-                        playerEntries.lastOrNull()?.Content()
+                        CompositionLocalProvider(LocalAnimatedEffectsVisible provides (fullAlpha > 0f)) {
+                            playerEntries.lastOrNull()?.Content()
+                        }
                     }
                 }
                 if (opacity.miniPlayer > 0f) {

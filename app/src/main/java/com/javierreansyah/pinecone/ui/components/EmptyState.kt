@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -22,6 +23,7 @@ fun EmptyState(
     text: String,
     modifier: Modifier = Modifier,
     supportingText: String? = null,
+    iconSize: Dp = 64.dp,
     action: (@Composable () -> Unit)? = null,
 ) {
     Column(
@@ -32,7 +34,7 @@ fun EmptyState(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            modifier = Modifier.size(64.dp),
+            modifier = Modifier.size(iconSize),
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
         )
         Spacer(modifier = Modifier.height(16.dp))

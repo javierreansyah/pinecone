@@ -9,10 +9,11 @@ class BackupFormatTest {
     fun futureVersionsAreRejectedBeforeDecodingUnknownPayloads() {
         listOf(
             """{"format":"pinecone-backup-vault","formatVersion":3,"future":{}}""",
-            """{"format":"pinecone-portable-backup","formatVersion":3,"future":{}}""",
-            """{"format":"pinecone-vault-snapshot","formatVersion":3,"future":{}}""",
-            """{"format":"pinecone-vault-snapshot","formatVersion":2,"library":{"version":3,"future":{}}}""",
-            """{"format":"pinecone-portable-backup","formatVersion":2,"snapshot":{"format":"pinecone-vault-snapshot","formatVersion":3,"future":{}}}""",
+            """{"format":"pinecone-portable-backup","formatVersion":4,"future":{}}""",
+            """{"format":"pinecone-vault-snapshot","formatVersion":4,"future":{}}""",
+            """{"format":"pinecone-vault-snapshot","formatVersion":3,"library":{"version":3,"future":{}}}""",
+            """{"format":"pinecone-portable-backup","formatVersion":3,"snapshot":{"format":"pinecone-vault-snapshot","formatVersion":4,"future":{}}}""",
+            """{"format":"pinecone-portable-backup","formatVersion":2,"snapshot":{"format":"pinecone-vault-snapshot","formatVersion":3,"library":{"version":2}}}""",
         ).forEach { text ->
             val format = Json.parseToJsonElement(text).let {
                 (it as kotlinx.serialization.json.JsonObject).getValue("format")
@@ -53,6 +54,21 @@ class BackupFormatTest {
             Json,
             """{"format":"pinecone-vault-snapshot","formatVersion":2,"library":{"version":2}}""",
             "pinecone-vault-snapshot"
+        )
+        checkBackupFormat(
+            Json,
+            """{"format":"pinecone-vault-snapshot","formatVersion":3,"library":{"version":2}}""",
+            "pinecone-vault-snapshot"
+        )
+        checkBackupFormat(
+            Json,
+            """{"format":"pinecone-portable-backup","formatVersion":2,"snapshot":{"format":"pinecone-vault-snapshot","formatVersion":2,"library":{"version":2}}}""",
+            "pinecone-portable-backup"
+        )
+        checkBackupFormat(
+            Json,
+            """{"format":"pinecone-portable-backup","formatVersion":3,"snapshot":{"format":"pinecone-vault-snapshot","formatVersion":3,"library":{"version":2}}}""",
+            "pinecone-portable-backup"
         )
     }
 }

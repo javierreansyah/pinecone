@@ -31,11 +31,8 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuPopup
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
@@ -75,18 +72,17 @@ import coil3.compose.AsyncImage
 import com.composables.icons.materialsymbols.MaterialSymbols
 import com.composables.icons.materialsymbols.outlined.Add
 import com.composables.icons.materialsymbols.outlined.Arrow_back
-import com.composables.icons.materialsymbols.outlined.Check
 import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Edit
 import com.composables.icons.materialsymbols.outlined.Image
 import com.javierreansyah.pinecone.R
-import com.javierreansyah.pinecone.ui.components.AppBarButtonSize
 import com.javierreansyah.pinecone.ui.components.AppDropdownMenuDefaults
 import com.javierreansyah.pinecone.ui.components.AppDropdownMenuGroup
 import com.javierreansyah.pinecone.ui.components.AppDropdownMenuItem
 import com.javierreansyah.pinecone.ui.components.AppTextField
 import com.javierreansyah.pinecone.ui.components.AppTextFieldDefaults
-import com.javierreansyah.pinecone.ui.components.topAppBarNavigationButtonColors
+import com.javierreansyah.pinecone.ui.components.TopAppBarCircleIconButton
+import com.javierreansyah.pinecone.ui.components.TopAppBarSaveButton
 import com.javierreansyah.pinecone.ui.components.topBarFadeBackground
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import java.io.File
@@ -185,12 +181,7 @@ private fun EditBookTopAppBar(
             )
         },
         navigationIcon = {
-            FilledTonalIconButton(
-                modifier = Modifier.size(AppBarButtonSize),
-                shape = CircleShape,
-                onClick = onNavigateBack,
-                colors = topAppBarNavigationButtonColors(),
-            ) {
+            TopAppBarCircleIconButton(onClick = onNavigateBack) {
                 Icon(
                     MaterialSymbols.Outlined.Arrow_back,
                     contentDescription = stringResource(R.string.action_back),
@@ -198,19 +189,10 @@ private fun EditBookTopAppBar(
             }
         },
         actions = {
-            FilledIconButton(
-                modifier = Modifier
-                    .padding(end = 6.dp)
-                    .size(width = 60.dp, height = AppBarButtonSize),
-                shapes = IconButtonDefaults.shapes(),
+            TopAppBarSaveButton(
                 onClick = onSave,
                 enabled = !isSaving,
-            ) {
-                Icon(
-                    imageVector = MaterialSymbols.Outlined.Check,
-                    contentDescription = stringResource(R.string.action_save),
-                )
-            }
+            )
         },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.Transparent,

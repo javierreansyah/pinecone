@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataMigration
 import androidx.datastore.core.DataStore
 import androidx.datastore.dataStore
+import com.javierreansyah.pinecone.data.model.library.ALL_SPACES_ID
 import com.javierreansyah.pinecone.data.model.library.FilterSortPreferences
 import com.javierreansyah.pinecone.data.model.library.LayoutMode
 import com.javierreansyah.pinecone.data.model.library.SortType
@@ -70,6 +71,17 @@ class LibraryPreferencesManager internal constructor(
 
     suspend fun setGlobalSpace(spaceId: String?) {
         store.updateData { it.copy(globalSpaceId = spaceId) }
+    }
+
+    suspend fun reconcileGlobalSpace(validSpaceIds: Set<String>) {
+        store.updateData { data ->
+            val current = data.globalSpaceId
+            if (current != null && current != ALL_SPACES_ID && current !in validSpaceIds) {
+                data.copy(globalSpaceId = ALL_SPACES_ID)
+            } else {
+                data
+            }
+        }
     }
 
     fun getEffectiveSpaceFlow(): Flow<String?> = combine(

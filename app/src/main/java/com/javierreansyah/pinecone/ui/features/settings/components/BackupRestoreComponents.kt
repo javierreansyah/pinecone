@@ -3,7 +3,6 @@ package com.javierreansyah.pinecone.ui.features.settings.components
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Environment
 import android.provider.DocumentsContract
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -36,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
@@ -50,7 +50,33 @@ import com.javierreansyah.pinecone.ui.components.SegmentedListDefaults
 import com.javierreansyah.pinecone.ui.features.settings.BackupFile
 import com.javierreansyah.pinecone.ui.features.settings.SettingsViewModel
 import kotlinx.coroutines.launch
-import java.io.File
+import java.net.URLDecoder
+
+internal fun formatBackupFolderLabel(uriString: String): String? {
+    if (uriString.isBlank()) return null
+    val marker = "/tree/"
+    val markerIndex = uriString.indexOf(marker)
+    if (markerIndex < 0) return null
+    val encodedDocId = uriString.substring(markerIndex + marker.length)
+        .substringBefore('/')
+        .substringBefore('?')
+    if (encodedDocId.isBlank()) return null
+    val decoded = runCatching { URLDecoder.decode(encodedDocId, Charsets.UTF_8.name()) }
+        .getOrNull()
+        ?.trim()
+        ?: return null
+    val normalized = when {
+        decoded.startsWith("primary:") -> decoded.removePrefix("primary:")
+        ':' in decoded -> {
+            val volume = decoded.substringBefore(':')
+            val path = decoded.substringAfter(':').trimStart('/')
+            if (path.isBlank()) volume else "$volume/$path"
+        }
+
+        else -> decoded
+    }.trim('/')
+    return normalized.takeIf { it.isNotBlank() }
+}
 
 @Composable
 fun rememberBackupFolderPickerLauncher(
@@ -75,13 +101,6 @@ fun rememberBackupFolderPickerLauncher(
     }
 
     return {
-        val pineconeDir = File(
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-            "Pinecone",
-        )
-        if (!pineconeDir.exists()) {
-            pineconeDir.mkdirs()
-        }
         val initialUri = DocumentsContract.buildDocumentUri(
             "com.android.externalstorage.documents",
             "primary:Documents/Pinecone",
@@ -93,6 +112,7 @@ fun rememberBackupFolderPickerLauncher(
 @Composable
 fun rememberRestoreBackupAction(
     viewModel: SettingsViewModel = hiltViewModel(),
+    showProgressDialog: Boolean = true,
 ): () -> Unit {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -101,13 +121,13 @@ fun rememberRestoreBackupAction(
     val navRestoreSuccessMsg = stringResource(R.string.nav_restore_success)
     val navRestoreFailedMsg = stringResource(R.string.nav_restore_failed)
     val restorePartialMsg = stringResource(R.string.settings_restore_partial)
-    val errorSetBackupLocationMsg = stringResource(R.string.settings_error_set_backup_location)
 
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val isRestoring by viewModel.isRestoring.collectAsStateWithLifecycle()
     val restoreProgress by viewModel.restoreProgress.collectAsStateWithLifecycle()
     val availableBackups by viewModel.availableBackups.collectAsStateWithLifecycle()
 
+    var showSelectFolderDialog by remember { mutableStateOf(value = false) }
     var showRestoreBottomSheet by remember { mutableStateOf(value = false) }
     var showRestoreWarning by remember { mutableStateOf(value = false) }
     var selectedBackupToRestore by remember { mutableStateOf<BackupFile?>(null) }
@@ -127,9 +147,20 @@ fun rememberRestoreBackupAction(
         }
     }
 
+    if (showSelectFolderDialog) {
+        SelectBackupFolderDialog(
+            onDismiss = { showSelectFolderDialog = false },
+            onChooseFolder = {
+                showSelectFolderDialog = false
+                launchFolderPicker()
+            },
+        )
+    }
+
     if (showRestoreBottomSheet) {
         RestoreBottomSheet(
             availableBackups = availableBackups,
+            backupFolderLabel = formatBackupFolderLabel(settings.backupFolderUri),
             onDismiss = { showRestoreBottomSheet = false },
             onSelectBackup = { backup ->
                 selectedBackupToRestore = backup
@@ -147,35 +178,35 @@ fun rememberRestoreBackupAction(
             },
         ) {
             showRestoreWarning = false
+            val appContext = context.applicationContext
             selectedBackupToRestore?.uri?.let { uri ->
                 viewModel.restoreFullBackup(
                     uri = uri,
                     onStart = {
-                        Toast.makeText(context, navRestoringBackupMsg, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(appContext, navRestoringBackupMsg, Toast.LENGTH_SHORT).show()
                     },
                     onSuccess = {
-                        Toast.makeText(context, navRestoreSuccessMsg, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(appContext, navRestoreSuccessMsg, Toast.LENGTH_SHORT).show()
                     },
                     onWarning = {
-                        Toast.makeText(context, restorePartialMsg, Toast.LENGTH_LONG).show()
+                        Toast.makeText(appContext, restorePartialMsg, Toast.LENGTH_LONG).show()
                     },
                 ) {
-                    Toast.makeText(context, navRestoreFailedMsg, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(appContext, navRestoreFailedMsg, Toast.LENGTH_SHORT).show()
                 }
             }
             selectedBackupToRestore = null
         }
     }
 
-    if (isRestoring) {
+    if (showProgressDialog && isRestoring) {
         RestoreBackupProgressDialog(progress = restoreProgress)
     }
 
     return {
         if (!isRestoring) {
             if (!hasPermission) {
-                Toast.makeText(context, errorSetBackupLocationMsg, Toast.LENGTH_LONG).show()
-                launchFolderPicker()
+                showSelectFolderDialog = true
             } else {
                 scope.launch {
                     viewModel.loadBackupsSuspended()
@@ -187,7 +218,29 @@ fun rememberRestoreBackupAction(
 }
 
 @Composable
-fun RestoreBackupWarningDialog(
+private fun SelectBackupFolderDialog(
+    onDismiss: () -> Unit,
+    onChooseFolder: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_restore_select_folder_title)) },
+        text = { Text(stringResource(R.string.settings_restore_select_folder_message)) },
+        confirmButton = {
+            TextButton(onClick = onChooseFolder) {
+                Text(stringResource(R.string.settings_restore_choose_folder))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun RestoreBackupWarningDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
@@ -257,8 +310,9 @@ private fun RestoreBackupProgressDialog(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RestoreBottomSheet(
+private fun RestoreBottomSheet(
     availableBackups: List<BackupFile>,
+    backupFolderLabel: String?,
     onDismiss: () -> Unit,
     onSelectBackup: (BackupFile) -> Unit,
 ) {
@@ -278,8 +332,16 @@ fun RestoreBottomSheet(
             Text(
                 text = stringResource(R.string.settings_restore_backup_sheet_title),
                 style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 16.dp),
+                modifier = Modifier.padding(bottom = if (backupFolderLabel != null) 2.dp else 16.dp),
             )
+            if (backupFolderLabel != null) {
+                Text(
+                    text = backupFolderLabel,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 16.dp),
+                )
+            }
 
             if (availableBackups.isEmpty()) {
                 Text(
@@ -339,6 +401,26 @@ fun RestoreBottomSheet(
                                                 Text(
                                                     text = backup.formattedDate,
                                                 )
+                                            },
+                                            supportingContent = {
+                                                val summary = listOf(
+                                                    pluralStringResource(
+                                                        R.plurals.settings_backup_titles_count,
+                                                        backup.bookCount,
+                                                        backup.bookCount,
+                                                    ),
+                                                    pluralStringResource(
+                                                        R.plurals.settings_backup_spaces_count,
+                                                        backup.spaceCount,
+                                                        backup.spaceCount,
+                                                    ),
+                                                    pluralStringResource(
+                                                        R.plurals.settings_backup_shelves_count,
+                                                        backup.shelfCount,
+                                                        backup.shelfCount,
+                                                    ),
+                                                ).joinToString(" · ")
+                                                Text(text = summary)
                                             },
                                             trailingContent = {
                                                 Icon(

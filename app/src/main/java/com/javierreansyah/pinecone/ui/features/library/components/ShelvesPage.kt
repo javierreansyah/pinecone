@@ -1,7 +1,6 @@
 package com.javierreansyah.pinecone.ui.features.library.components
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -20,7 +19,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -252,20 +250,10 @@ private fun ShelfRowHeader(
                 color = MaterialTheme.colorScheme.primary,
             )
         }
-        val spatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
-        val effectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
-        AnimatedVisibility(
+        AnimatedSelectionCheckbox(
             visible = isInMultiSelectMode,
-            enter = fadeIn(animationSpec = effectsSpec) +
-                    scaleIn(initialScale = 0.8f, animationSpec = spatialSpec),
-            exit = fadeOut(animationSpec = effectsSpec) +
-                    scaleOut(targetScale = 0.8f, animationSpec = spatialSpec),
-        ) {
-            Checkbox(
-                checked = isSelected,
-                onCheckedChange = null,
-            )
-        }
+            checked = isSelected,
+        )
     }
 }
 

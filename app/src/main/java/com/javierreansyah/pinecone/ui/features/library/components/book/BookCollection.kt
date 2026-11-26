@@ -11,7 +11,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -41,9 +40,8 @@ fun BookCollection(
     bottomContentPadding: Dp = LocalAudioPlayerBottomPadding.current,
 ) {
     val layoutEffectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
-    val bookIds = remember(books) { books.map { it.id } }
-    val transitionKey = remember(layoutMode, scrollKey, bookIds) {
-        Triple(layoutMode, scrollKey, bookIds)
+    val transitionKey = remember(layoutMode, scrollKey) {
+        layoutMode to scrollKey
     }
 
     var displayedKey by remember { mutableStateOf(transitionKey) }
@@ -56,7 +54,7 @@ fun BookCollection(
     val latestLayoutMode by rememberUpdatedState(layoutMode)
     val latestScrollKey by rememberUpdatedState(scrollKey)
 
-    SideEffect {
+    LaunchedEffect(books, displayedKey) {
         if (transitionKey == displayedKey) {
             displayedBooks = books
         }

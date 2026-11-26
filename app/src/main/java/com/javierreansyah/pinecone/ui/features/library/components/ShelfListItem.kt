@@ -1,10 +1,5 @@
 package com.javierreansyah.pinecone.ui.features.library.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
@@ -14,7 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -102,25 +96,11 @@ fun ShelfListItem(
             )
         },
         trailingContent = {
-            val effectsSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
-            val spatialSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
-            AnimatedVisibility(
+            AnimatedSelectionCheckbox(
                 visible = isInMultiSelectMode,
-                enter = fadeIn(animationSpec = effectsSpec) +
-                        scaleIn(initialScale = 0.8f, animationSpec = spatialSpec),
-                exit = fadeOut(animationSpec = effectsSpec) +
-                        scaleOut(targetScale = 0.8f, animationSpec = spatialSpec),
-            ) {
-                Box(
-                    modifier = Modifier.height(100.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Checkbox(
-                        checked = isSelected,
-                        onCheckedChange = null,
-                    )
-                }
-            }
+                checked = isSelected,
+                modifier = Modifier.height(100.dp),
+            )
         },
         content = {
             Text(

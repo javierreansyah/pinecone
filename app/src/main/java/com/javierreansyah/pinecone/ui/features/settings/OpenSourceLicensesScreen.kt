@@ -1,12 +1,9 @@
 package com.javierreansyah.pinecone.ui.features.settings
 
 import android.content.Context
-import android.content.res.Resources
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,8 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.composables.icons.materialsymbols.MaterialSymbols
@@ -42,6 +37,7 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBarTitle
 import com.javierreansyah.pinecone.ui.components.SegmentedListDefaults
+import com.javierreansyah.pinecone.ui.components.horizontalPadding
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import com.mikepenz.aboutlibraries.Libs
 import com.mikepenz.aboutlibraries.entity.Library
@@ -53,15 +49,14 @@ import kotlinx.coroutines.withContext
 private var cachedOpenSourceLibraries: List<Library>? = null
 
 private suspend fun loadOpenSourceLibraries(
-    context: Context,
-    resources: Resources,
+    appContext: Context,
 ): List<Library> {
     cachedOpenSourceLibraries?.let { return it }
     return withContext(Dispatchers.IO) {
         val customJson =
-            resources.openRawResource(R.raw.custom_libraries).bufferedReader()
+            appContext.resources.openRawResource(R.raw.custom_libraries).bufferedReader()
                 .use { it.readText() }
-        val (generatedLibsLibraries, _) = Libs.Builder().withContext(context).build()
+        val (generatedLibsLibraries, _) = Libs.Builder().withContext(appContext).build()
         val (customLibsLibraries, _) = Libs.Builder().withJson(customJson).build()
 
         (generatedLibsLibraries + customLibsLibraries)
@@ -76,15 +71,14 @@ fun OpenSourceLicensesScreen(
     onLicenseClick: (libraryId: String, libraryName: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
-    val resources = LocalResources.current
+    val appContext = LocalContext.current.applicationContext
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     var libraries by remember { mutableStateOf(cachedOpenSourceLibraries) }
 
     LaunchedEffect(Unit) {
         if (libraries == null) {
-            libraries = loadOpenSourceLibraries(context, resources)
+            libraries = loadOpenSourceLibraries(appContext)
         }
     }
 
@@ -108,14 +102,10 @@ fun OpenSourceLicensesScreen(
                     .padding(16.dp),
             )
         } else {
-            val layoutDirection = LocalLayoutDirection.current
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(
-                        start = innerPadding.calculateStartPadding(layoutDirection),
-                        end = innerPadding.calculateEndPadding(layoutDirection),
-                    )
+                    .horizontalPadding(innerPadding)
                     .padding(horizontal = 16.dp),
                 contentPadding = PaddingValues(
                     top = innerPadding.calculateTopPadding() + 8.dp,
@@ -168,15 +158,14 @@ fun OpenSourceLicenseDetailScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
-    val resources = LocalResources.current
+    val appContext = LocalContext.current.applicationContext
     var library by remember(libraryId) {
         mutableStateOf(cachedOpenSourceLibraries?.find { it.uniqueId == libraryId })
     }
 
     LaunchedEffect(libraryId) {
         if (library == null) {
-            library = loadOpenSourceLibraries(context, resources).find { it.uniqueId == libraryId }
+            library = loadOpenSourceLibraries(appContext).find { it.uniqueId == libraryId }
         }
     }
 

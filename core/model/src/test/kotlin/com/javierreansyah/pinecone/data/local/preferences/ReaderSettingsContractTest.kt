@@ -34,4 +34,15 @@ class ReaderSettingsContractTest {
         val disabled = ReaderSettings(amoledDarkMode = false)
         assertEquals(disabled, Json.decodeFromString<ReaderSettings>(Json.encodeToString(disabled)))
     }
+
+    @Test
+    fun epubImageViewerDefaultsToTrueForLegacyJsonAndRoundTripsFalse() {
+        val legacy =
+            Json.decodeFromString<ReaderSettings>("""{"formatPreferences":{"epubSpread":"auto"}}""")
+        assertEquals(true, legacy.formatPreferences.epubImageViewer)
+        val disabled = ReaderSettings(
+            formatPreferences = FormatPreferences(epubImageViewer = false),
+        )
+        assertEquals(disabled, Json.decodeFromString<ReaderSettings>(Json.encodeToString(disabled)))
+    }
 }

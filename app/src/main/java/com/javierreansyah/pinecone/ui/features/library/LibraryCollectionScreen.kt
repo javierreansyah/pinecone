@@ -2,8 +2,6 @@ package com.javierreansyah.pinecone.ui.features.library
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -17,7 +15,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -30,6 +27,7 @@ import com.javierreansyah.pinecone.ui.components.EmptyState
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBar
 import com.javierreansyah.pinecone.ui.components.LibraryTopAppBarTitle
 import com.javierreansyah.pinecone.ui.components.TopAppBarActionGroup
+import com.javierreansyah.pinecone.ui.components.horizontalPadding
 import com.javierreansyah.pinecone.ui.features.library.components.FilterResultBottomSheet
 import com.javierreansyah.pinecone.ui.features.library.components.MultiSelectTopBarTransition
 import com.javierreansyah.pinecone.ui.features.library.components.SelectedBooksBar
@@ -109,13 +107,9 @@ internal fun LibraryCollectionScreen(
             }
         },
     ) { innerPadding ->
-        val layoutDirection = LocalLayoutDirection.current
         Box(
             Modifier
-                .padding(
-                    start = innerPadding.calculateStartPadding(layoutDirection),
-                    end = innerPadding.calculateEndPadding(layoutDirection),
-                )
+                .horizontalPadding(innerPadding)
                 .fillMaxSize()
         ) {
             if (isEmpty) {
@@ -143,10 +137,11 @@ internal fun LibraryCollectionScreen(
                         )
                     },
                     onBookLongClick = { selection.enter(setOf(it)) },
-                    scrollKey = Triple(
+                    scrollKey = listOf(
                         preferences.sortType,
                         preferences.isAscending,
-                        preferences.selectedStatus
+                        preferences.selectedStatus,
+                        preferences.selectedFormats,
                     ),
                     topContentPadding = innerPadding.calculateTopPadding(),
                     bottomContentPadding = innerPadding.calculateBottomPadding() + LocalAudioPlayerBottomPadding.current,

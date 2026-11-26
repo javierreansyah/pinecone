@@ -18,7 +18,9 @@
     <string name="settings_backup_preferences">Cadangan lokal</string>
     <string name="settings_choose_color_scheme">Pilih skema warna</string>
     <string name="settings_color_palette">Palet warna</string>
-    <string name="settings_error_set_backup_location">Harap pilih lokasi cadangan terlebih dahulu</string>
+    <string name="settings_restore_select_folder_title">Pilih folder cadangan</string>
+    <string name="settings_restore_select_folder_message">Pilih folder cadangan Pinecone Anda untuk memindai cadangan yang tersedia. Setelah dipilih, Anda dapat memilih cuplikan yang ingin dipulihkan.</string>
+    <string name="settings_restore_choose_folder">Pilih folder</string>
     <string name="settings_hide_all_space">Sembunyikan ruang Semua</string>
     <string name="settings_hide_all_space_summary">Sembunyikan Semua dari navigasi.</string>
     <string name="settings_language">@string/publication_language</string>
@@ -59,4 +61,13 @@
     <string name="settings_backup_preparing">Menyiapkan cadangan…</string>
     <string name="settings_backup_progress">Berkas selesai: %1$d dari %2$d</string>
     <string name="settings_restore_preparing">Menyiapkan pemulihan…</string>
+    <plurals name="settings_backup_titles_count">
+        <item quantity="other">%d judul</item>
+    </plurals>
+    <plurals name="settings_backup_spaces_count">
+        <item quantity="other">%d ruang</item>
+    </plurals>
+    <plurals name="settings_backup_shelves_count">
+        <item quantity="other">%d rak</item>
+    </plurals>
 </resources>

@@ -8,11 +8,8 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -33,10 +30,9 @@ import com.composables.icons.materialsymbols.outlined.Close
 import com.composables.icons.materialsymbols.outlined.Deselect
 import com.composables.icons.materialsymbols.outlined.Select_all
 import com.javierreansyah.pinecone.R
-import com.javierreansyah.pinecone.ui.components.AppBarButtonSize
 import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
 import com.javierreansyah.pinecone.ui.components.TopAppBarActionGroup
-import com.javierreansyah.pinecone.ui.components.topAppBarNavigationButtonColors
+import com.javierreansyah.pinecone.ui.components.TopAppBarCircleIconButton
 import com.javierreansyah.pinecone.ui.components.topBarFadeBackground
 
 @Composable
@@ -84,12 +80,7 @@ internal fun SelectionTopAppBar(
             }
         },
         navigationIcon = {
-            FilledTonalIconButton(
-                modifier = Modifier.size(AppBarButtonSize),
-                shape = CircleShape,
-                colors = topAppBarNavigationButtonColors(),
-                onClick = onCloseMultiSelect,
-            ) {
+            TopAppBarCircleIconButton(onClick = onCloseMultiSelect) {
                 Icon(
                     imageVector = MaterialSymbols.Outlined.Close,
                     contentDescription = stringResource(R.string.action_cancel),

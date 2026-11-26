@@ -81,11 +81,11 @@ import com.javierreansyah.pinecone.ui.components.ListItemAccessory
 import com.javierreansyah.pinecone.ui.components.SegmentedListDefaults
 import com.javierreansyah.pinecone.ui.components.TopAppBarActionGroup
 import com.javierreansyah.pinecone.ui.features.settings.components.ColorSchemePickerDialog
-import com.javierreansyah.pinecone.ui.features.settings.components.RestoreBackupWarningDialog
-import com.javierreansyah.pinecone.ui.features.settings.components.RestoreBottomSheet
 import com.javierreansyah.pinecone.ui.features.settings.components.SettingsItem
 import com.javierreansyah.pinecone.ui.features.settings.components.SettingsSwitchItem
+import com.javierreansyah.pinecone.ui.features.settings.components.formatBackupFolderLabel
 import com.javierreansyah.pinecone.ui.features.settings.components.rememberBackupFolderPickerLauncher
+import com.javierreansyah.pinecone.ui.features.settings.components.rememberRestoreBackupAction
 import com.javierreansyah.pinecone.ui.root.LocalAudioPlayerBottomPadding
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -97,15 +97,10 @@ fun SettingsScreen(
     onNavigateToAbout: () -> Unit = {},
 ) {
     val context = LocalContext.current
-    val navRestoringBackupMsg = stringResource(R.string.nav_restoring_backup)
-    val navRestoreSuccessMsg = stringResource(R.string.nav_restore_success)
-    val navRestoreFailedMsg = stringResource(R.string.nav_restore_failed)
-    val restorePartialMsg = stringResource(R.string.settings_restore_partial)
     val navStartingBackupMsg = stringResource(R.string.nav_starting_backup)
     val navBackupSuccessMsg = stringResource(R.string.nav_backup_success)
     val navBackupFailedMsg = stringResource(R.string.nav_backup_failed)
     val restoreSuccessMsg = stringResource(R.string.settings_restore_defaults_success)
-    val errorSetBackupLocationMsg = stringResource(R.string.settings_error_set_backup_location)
 
     val scope = rememberCoroutineScope()
     val viewModel: SettingsViewModel = hiltViewModel()
@@ -115,17 +110,17 @@ fun SettingsScreen(
     val backupProgress by viewModel.backupProgress.collectAsStateWithLifecycle()
     val isRestoring by viewModel.isRestoring.collectAsStateWithLifecycle()
     val restoreProgress by viewModel.restoreProgress.collectAsStateWithLifecycle()
-    val availableBackups by viewModel.availableBackups.collectAsStateWithLifecycle()
 
     var showColorPicker by remember { mutableStateOf(value = false) }
     var showRestoreDefaultWarning by remember { mutableStateOf(value = false) }
-    var showRestoreWarning by remember { mutableStateOf(value = false) }
-    var showRestoreBottomSheet by remember { mutableStateOf(value = false) }
-    var selectedBackupToRestore by remember { mutableStateOf<BackupFile?>(null) }
 
     val launchFolderPicker = rememberBackupFolderPickerLauncher { uri ->
         viewModel.updateSettings { current -> current.copy(backupFolderUri = uri.toString()) }
     }
+    val onRestoreClick = rememberRestoreBackupAction(
+        viewModel = viewModel,
+        showProgressDialog = false,
+    )
 
     val hasPermission = settings.backupFolderUri.isNotEmpty() &&
             context.contentResolver.persistedUriPermissions.any { it.uri.toString() == settings.backupFolderUri }
@@ -199,27 +194,20 @@ fun SettingsScreen(
             if (!hasPermission) {
                 launchFolderPicker()
             } else {
+                val appContext = context.applicationContext
                 viewModel.performFullBackup(
                     onStart = {
-                        Toast.makeText(context, navStartingBackupMsg, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(appContext, navStartingBackupMsg, Toast.LENGTH_SHORT).show()
                     },
                     onSuccess = {
-                        Toast.makeText(context, navBackupSuccessMsg, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(appContext, navBackupSuccessMsg, Toast.LENGTH_SHORT).show()
                     },
                 ) {
-                    Toast.makeText(context, navBackupFailedMsg, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(appContext, navBackupFailedMsg, Toast.LENGTH_SHORT).show()
                 }
             }
         },
-        onRestoreClick = {
-            if (!hasPermission) {
-                Toast.makeText(context, errorSetBackupLocationMsg, Toast.LENGTH_LONG).show()
-                launchFolderPicker()
-            } else {
-                viewModel.loadBackups()
-                showRestoreBottomSheet = true
-            }
-        },
+        onRestoreClick = onRestoreClick,
     )
 
     if (showColorPicker) {
@@ -243,35 +231,6 @@ fun SettingsScreen(
                 String.format("#%06X", 0xFFFFFF and color.toArgb())
             }
             viewModel.updateSettings { current -> current.copy(colorPalette = newPalette) }
-        }
-    }
-
-    if (showRestoreWarning) {
-        RestoreBackupWarningDialog(
-            onDismiss = {
-                showRestoreWarning = false
-                selectedBackupToRestore = null
-            },
-        ) {
-            showRestoreWarning = false
-            selectedBackupToRestore?.uri?.let { uri ->
-                viewModel.restoreFullBackup(
-                    uri = uri,
-                    onStart = {
-                        Toast.makeText(context, navRestoringBackupMsg, Toast.LENGTH_SHORT)
-                            .show()
-                    },
-                    onSuccess = {
-                        Toast.makeText(context, navRestoreSuccessMsg, Toast.LENGTH_SHORT).show()
-                    },
-                    onWarning = {
-                        Toast.makeText(context, restorePartialMsg, Toast.LENGTH_LONG).show()
-                    },
-                ) {
-                    Toast.makeText(context, navRestoreFailedMsg, Toast.LENGTH_SHORT).show()
-                }
-            }
-            selectedBackupToRestore = null
         }
     }
 
@@ -307,18 +266,6 @@ fun SettingsScreen(
                 Toast.LENGTH_SHORT,
             ).show()
         }
-    }
-
-    if (showRestoreBottomSheet) {
-        RestoreBottomSheet(
-            availableBackups = availableBackups,
-            onDismiss = { showRestoreBottomSheet = false },
-            onSelectBackup = { backup ->
-                selectedBackupToRestore = backup
-                showRestoreBottomSheet = false
-                showRestoreWarning = true
-            },
-        )
     }
 }
 
@@ -753,8 +700,12 @@ private fun BackupSettingsSection(
                     },
                     supportingContent = {
                         Text(
-                            if (hasPermission) stringResource(R.string.settings_option_selected)
-                            else stringResource(R.string.settings_option_not_selected),
+                            if (hasPermission) {
+                                formatBackupFolderLabel(settings.backupFolderUri)
+                                    ?: stringResource(R.string.settings_option_selected)
+                            } else {
+                                stringResource(R.string.settings_option_not_selected)
+                            },
                         )
                     },
                     trailingContent = {

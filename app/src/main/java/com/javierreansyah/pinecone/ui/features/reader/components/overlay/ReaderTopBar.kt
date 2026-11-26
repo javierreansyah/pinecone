@@ -17,11 +17,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -73,7 +71,7 @@ import com.javierreansyah.pinecone.ui.components.AppDropdownMenuItem
 import com.javierreansyah.pinecone.ui.components.ConnectedButtonGroup
 import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconButton
 import com.javierreansyah.pinecone.ui.components.ConnectedGroupIconToggleButton
-import com.javierreansyah.pinecone.ui.components.topAppBarNavigationButtonColors
+import com.javierreansyah.pinecone.ui.components.TopAppBarCircleIconButton
 import com.javierreansyah.pinecone.ui.components.topBarFadeBackground
 import org.readium.r2.shared.publication.Locator
 import com.composables.icons.materialsymbols.outlinedfilled.Bookmark_check as FilledBookmarkCheck
@@ -149,22 +147,15 @@ fun ReaderTopBar(
             },
             navigationIcon = {
                 if (audioPlayer) {
-                    FilledTonalIconButton(
-                        modifier = Modifier.size(AppBarButtonSize),
-                        onClick = onBack,
-                        shape = CircleShape,
-                        colors = topAppBarNavigationButtonColors(),
-                    ) {
+                    TopAppBarCircleIconButton(onClick = onBack) {
                         Icon(
                             MaterialSymbols.Outlined.Keyboard_arrow_down,
                             contentDescription = stringResource(R.string.reader_collapse_audio_player),
                         )
                     }
                 } else {
-                    FilledTonalIconButton(
-                        modifier = Modifier.size(AppBarButtonSize),
+                    TopAppBarCircleIconButton(
                         onClick = onBack,
-                        shape = CircleShape,
                         colors = IconButtonDefaults.filledTonalIconButtonColors(
                             containerColor = barContainerColor,
                             contentColor = barContentColor,
@@ -218,10 +209,8 @@ fun ReaderTopBar(
                 ) { state ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (state == TopBarState.SEARCH) {
-                            FilledTonalIconButton(
-                                modifier = Modifier.size(AppBarButtonSize),
+                            TopAppBarCircleIconButton(
                                 onClick = onCloseSearch,
-                                shape = CircleShape,
                                 colors = IconButtonDefaults.filledTonalIconButtonColors(
                                     containerColor = barContainerColor,
                                     contentColor = barContentColor,
@@ -249,24 +238,21 @@ fun ReaderTopBar(
                                 Spacer(modifier = Modifier.width(8.dp))
                             }
 
-                            val items = remember(state, canSearch, showReadMode, audioPlayer) {
-                                buildList {
-                                    if ((state == TopBarState.JUMP || showReadMode) && !audioPlayer) add(
-                                        "content"
-                                    )
-                                    if (state == TopBarState.JUMP && !audioPlayer) add("settings")
-                                    if (canSearch) add("search")
-                                    if (!audioPlayer) add("info")
+                            val items =
+                                remember(state, canSearch, showReadMode, audioPlayer, pdfMode) {
+                                    buildList {
+                                        if (pdfMode && !audioPlayer) add("bookmark")
+                                        if ((state == TopBarState.JUMP || showReadMode) && !audioPlayer) add(
+                                            "content"
+                                        )
+                                        if (state == TopBarState.JUMP && !audioPlayer) add("settings")
+                                        if (canSearch) add("search")
+                                        if (!audioPlayer) add("info")
+                                    }
                                 }
-                            }
 
                             if (audioPlayer) {
-                                FilledTonalIconButton(
-                                    modifier = Modifier.size(AppBarButtonSize),
-                                    onClick = onInfoClick,
-                                    shape = CircleShape,
-                                    colors = topAppBarNavigationButtonColors(),
-                                ) {
+                                TopAppBarCircleIconButton(onClick = onInfoClick) {
                                     Icon(
                                         MaterialSymbols.Outlined.Info,
                                         contentDescription = stringResource(R.string.reader_menu_info),
@@ -280,6 +266,7 @@ fun ReaderTopBar(
                                     showReadMode = showReadMode,
                                     readMode = readMode,
                                     converting = converting,
+                                    pdfMode = pdfMode,
                                     moreItems = items,
                                     containerColor = barContainerColor,
                                     contentColor = barContentColor,
@@ -312,6 +299,7 @@ private fun ReaderTopBarButtonGroup(
     showReadMode: Boolean,
     readMode: Boolean,
     converting: Boolean,
+    pdfMode: Boolean,
     moreItems: List<String>,
     containerColor: Color,
     contentColor: Color,
@@ -343,21 +331,23 @@ private fun ReaderTopBarButtonGroup(
             }
         }
 
-        ConnectedGroupIconToggleButton(
-            checked = isBookmarked,
-            onCheckedChange = { onToggleBookmark() },
-            contentColor = contentColor,
-        ) {
-            AnimatedSelectionIcon(
-                selected = isBookmarked,
-                outlinedIcon = MaterialSymbols.Outlined.Bookmark,
-                filledIcon = MaterialSymbols.OutlinedFilled.FilledBookmarkCheck,
-                contentDescription = if (isBookmarked) stringResource(R.string.reader_remove_bookmark) else stringResource(
-                    R.string.reader_add_bookmark,
-                ),
-                modifier = Modifier.size(24.dp),
-                tint = contentColor,
-            )
+        if (!pdfMode) {
+            ConnectedGroupIconToggleButton(
+                checked = isBookmarked,
+                onCheckedChange = { onToggleBookmark() },
+                contentColor = contentColor,
+            ) {
+                AnimatedSelectionIcon(
+                    selected = isBookmarked,
+                    outlinedIcon = MaterialSymbols.Outlined.Bookmark,
+                    filledIcon = MaterialSymbols.OutlinedFilled.FilledBookmarkCheck,
+                    contentDescription = if (isBookmarked) stringResource(R.string.reader_remove_bookmark) else stringResource(
+                        R.string.reader_add_bookmark,
+                    ),
+                    modifier = Modifier.size(24.dp),
+                    tint = contentColor,
+                )
+            }
         }
 
         if (state == TopBarState.NORMAL) {
@@ -401,7 +391,9 @@ private fun ReaderTopBarButtonGroup(
                 ReaderTopBarMoreMenu(
                     expanded = showMoreMenu,
                     items = moreItems,
+                    isBookmarked = isBookmarked,
                     onDismiss = { showMoreMenu = false },
+                    onToggleBookmark = onToggleBookmark,
                     onTocClick = onTocClick,
                     onSettingsClick = onSettingsClick,
                     onSearchClick = onSearchClick,
@@ -416,7 +408,9 @@ private fun ReaderTopBarButtonGroup(
 private fun ReaderTopBarMoreMenu(
     expanded: Boolean,
     items: List<String>,
+    isBookmarked: Boolean,
     onDismiss: () -> Unit,
+    onToggleBookmark: () -> Unit,
     onTocClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onSearchClick: () -> Unit,
@@ -429,6 +423,43 @@ private fun ReaderTopBarMoreMenu(
         AppDropdownMenuGroup {
             items.forEachIndexed { index, item ->
                 when (item) {
+                    "bookmark" -> {
+                        AppDropdownMenuItem(
+                            text = {
+                                Text(
+                                    stringResource(
+                                        if (isBookmarked) {
+                                            R.string.reader_remove_bookmark
+                                        } else {
+                                            R.string.reader_add_bookmark
+                                        },
+                                    ),
+                                )
+                            },
+                            onClick = {
+                                onToggleBookmark()
+                                onDismiss()
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = if (isBookmarked) {
+                                        MaterialSymbols.OutlinedFilled.FilledBookmarkCheck
+                                    } else {
+                                        MaterialSymbols.Outlined.Bookmark
+                                    },
+                                    contentDescription = null,
+                                    modifier = Modifier.size(
+                                        MenuDefaults.LeadingIconSize,
+                                    ),
+                                )
+                            },
+                            shape = AppDropdownMenuDefaults.itemShape(
+                                index,
+                                items.size,
+                            ).shape,
+                        )
+                    }
+
                     "content" -> {
                         AppDropdownMenuItem(
                             text = {

@@ -15,6 +15,8 @@ import com.javierreansyah.pinecone.data.local.database.library.BookmarkEntity
 import com.javierreansyah.pinecone.data.local.database.library.NoteEntity
 import com.javierreansyah.pinecone.data.local.database.library.PublicationRenditionEntity
 import com.javierreansyah.pinecone.data.local.preferences.JsonPreferenceSerializer
+import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesData
+import com.javierreansyah.pinecone.data.local.preferences.LibraryPreferencesManager
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferences
 import com.javierreansyah.pinecone.data.local.preferences.ReaderPreferencesData
 import com.javierreansyah.pinecone.data.local.preferences.ReaderSettings
@@ -279,7 +281,7 @@ class LibraryBackupTest {
             val portable = f.file(".pinebackup")
             java.util.zip.ZipOutputStream(portable.outputStream()).use { zip ->
                 zip.putNextEntry(java.util.zip.ZipEntry("manifest.json"))
-                zip.write("""{"format":"pinecone-portable-backup","formatVersion":3,"unknownFuturePayload":{}}""".encodeToByteArray())
+                zip.write("""{"format":"pinecone-portable-backup","formatVersion":4,"unknownFuturePayload":{}}""".encodeToByteArray())
                 zip.closeEntry()
             }
             val result = f.backups.importPortable(Uri.fromFile(portable))
@@ -302,6 +304,15 @@ class LibraryBackupTest {
         assertTrue(File(requireNotNull(book.coverPath)).isFile)
         assertEquals("Retained note", f.db.noteDao().getAllNotesSync().single().noteText)
         assertEquals("Baseline", f.db.bookmarkDao().getAllBookmarksSync().single().chapterTitle)
+        assertEquals(
+            setOf("_all_", "personal"),
+            f.db.spaceDao().getAllSpacesSync().map { it.id }.toSet(),
+        )
+        assertEquals(
+            setOf(book.id to "_all_", book.id to "personal"),
+            f.db.spaceDao().getAllBookSpaceCrossRefsSync().map { it.bookId to it.spaceId }.toSet(),
+        )
+        assertEquals("personal", f.db.shelfDao().getShelfById("favorites")?.spaceId)
         assertEquals(book.id, f.db.shelfDao().getShelfRefsSync("favorites").single().bookId)
         assertEquals(book.filePath, f.db.publicationDao().rendition(book.id, "original")?.filePath)
         assertEquals(1.15, f.preferences.readerSettings.first().fontSize, 0.0)
@@ -536,12 +547,96 @@ class LibraryBackupTest {
         }
     }
 
+    @Test
+    fun customSpacesShelvesSettingsAndStaleGlobalSpaceRoundTripCleanly() = runBlocking {
+        fixture { f ->
+            val fictionBook = f.seedBook("Fiction book")
+            val scienceBook = f.seedBook("Science book")
+            val fictionSpace = f.library.createSpaceWithBooks("Fiction", listOf(fictionBook.id))
+            val scienceSpace = f.library.createSpaceWithBooks("Non Fiction", listOf(scienceBook.id))
+            val fictionShelf =
+                f.library.createShelfWithBooks(
+                    fictionSpace,
+                    "Classic Literature",
+                    listOf(fictionBook.id)
+                )
+            val scienceShelf =
+                f.library.createShelfWithBooks(scienceSpace, "Science", listOf(scienceBook.id))
+            f.preferences.updateSettings {
+                it.copy(
+                    colorPalette = "#B9C3FF",
+                    amoledDarkMode = false,
+                    fontSize = 1.25,
+                )
+            }
+
+            assertSuccess(f.backups.createSnapshot(true))
+            val saved = f.backups.listSnapshots().single()
+            assertEquals(2, saved.bookCount)
+            assertEquals(2, saved.customSpaceCount)
+            assertEquals(2, saved.shelfCount)
+            val decoded = java.util.zip.ZipInputStream(
+                requireNotNull(f.context.contentResolver.openInputStream(saved.uri))
+            ).use { zip ->
+                zip.nextEntry
+                snapshotJson.decodeFromString<com.javierreansyah.pinecone.data.model.VaultSnapshot>(
+                    zip.readBytes().decodeToString()
+                )
+            }
+            assertEquals(3, decoded.formatVersion)
+
+            f.library.deleteBooks(listOf(fictionBook.id, scienceBook.id))
+            val staleSpace = f.library.createSpace("Temporary space")
+            f.libraryPreferences.setGlobalSpace(staleSpace)
+            f.preferences.updateSettings {
+                it.copy(
+                    colorPalette = "Dynamic",
+                    amoledDarkMode = true,
+                    fontSize = 1.0,
+                )
+            }
+
+            assertSuccess(f.backups.restoreSnapshot(saved.uri))
+            assertEquals(
+                setOf("_all_", fictionSpace, scienceSpace),
+                f.db.spaceDao().getAllSpacesSync().map { it.id }.toSet(),
+            )
+            assertEquals(
+                setOf(
+                    fictionBook.id to "_all_",
+                    fictionBook.id to fictionSpace,
+                    scienceBook.id to "_all_",
+                    scienceBook.id to scienceSpace,
+                ),
+                f.db.spaceDao().getAllBookSpaceCrossRefsSync().map { it.bookId to it.spaceId }
+                    .toSet(),
+            )
+            assertEquals(fictionSpace, f.db.shelfDao().getShelfById(fictionShelf)?.spaceId)
+            assertEquals(scienceSpace, f.db.shelfDao().getShelfById(scienceShelf)?.spaceId)
+            assertEquals(
+                listOf(fictionBook.id),
+                f.db.shelfDao().getShelfRefsSync(fictionShelf).map { it.bookId },
+            )
+            assertEquals(
+                listOf(scienceBook.id),
+                f.db.shelfDao().getShelfRefsSync(scienceShelf).map { it.bookId },
+            )
+            val restoredSettings = f.preferences.readerSettings.first()
+            assertEquals("#B9C3FF", restoredSettings.colorPalette)
+            assertFalse(restoredSettings.amoledDarkMode)
+            assertEquals(1.25, restoredSettings.fontSize, 0.0)
+            assertEquals("_all_", f.libraryPreferences.getEffectiveSpaceFlow().first())
+        }
+    }
+
     private class Fixture {
         val context: Context = InstrumentationRegistry.getInstrumentation().targetContext
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         private val files = mutableSetOf<File>()
         private val settings =
             File(context.cacheDir, "audit-${UUID.randomUUID()}.json").also { files += it }
+        private val librarySettings =
+            File(context.cacheDir, "audit-library-${UUID.randomUUID()}.json").also { files += it }
         val preferences = ReaderPreferences(
             DataStoreFactory.create(
                 serializer = JsonPreferenceSerializer(
@@ -550,6 +645,16 @@ class LibraryBackupTest {
                 ),
                 scope = scope, produceFile = { settings },
             )
+        )
+        val libraryPreferences = LibraryPreferencesManager(
+            DataStoreFactory.create(
+                serializer = JsonPreferenceSerializer(
+                    LibraryPreferencesData.serializer(),
+                    LibraryPreferencesData()
+                ),
+                scope = scope, produceFile = { librarySettings },
+            ),
+            preferences,
         )
         val db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
             .addCallback(AppDatabase.BACKUP_REVISION_CALLBACK).build()
@@ -568,6 +673,7 @@ class LibraryBackupTest {
         val backups = BackupRepository(
             context,
             preferences,
+            libraryPreferences,
             db,
             library,
             Dispatchers.IO,
@@ -603,8 +709,10 @@ class LibraryBackupTest {
             preferences.updateAllSettings(ReaderSettings(backupFolderUri = selectedTree.toString()))
         }
 
-        suspend fun seedBook(): BookEntity {
-            val source = file(".pdf", assets.booksDirectory).apply { writeBytes(syntheticPdf()) }
+        suspend fun seedBook(title: String = "Saved book"): BookEntity {
+            val pdfBytes = if (title == "Saved book") syntheticPdf()
+            else syntheticPdf() + "\n% $title\n".encodeToByteArray()
+            val source = file(".pdf", assets.booksDirectory).apply { writeBytes(pdfBytes) }
             val cover = file(".png", assets.coversDirectory)
             val bitmap =
                 android.graphics.Bitmap.createBitmap(2, 2, android.graphics.Bitmap.Config.ARGB_8888)
@@ -617,7 +725,7 @@ class LibraryBackupTest {
             val hash = source.inputStream().use { BackupArchiveIO.copyAndDigest(it).sha256 }
             val book = BookEntity(
                 hash,
-                "Saved book",
+                title,
                 cover.path,
                 source.path,
                 "application/pdf",

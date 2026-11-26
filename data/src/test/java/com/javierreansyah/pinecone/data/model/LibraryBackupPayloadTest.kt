@@ -46,6 +46,7 @@ class LibraryBackupPayloadTest {
             activeDictionaryId = "",
         )
 
+        assertEquals(3, snapshot.formatVersion)
         assertEquals(snapshot, json.decodeFromString<VaultSnapshot>(json.encodeToString(snapshot)))
     }
 

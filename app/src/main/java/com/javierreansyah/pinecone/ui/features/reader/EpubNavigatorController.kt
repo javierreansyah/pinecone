@@ -15,6 +15,7 @@ import com.javierreansyah.pinecone.R
 import com.javierreansyah.pinecone.data.publication.conversion.GeneratedEpubLocations
 import com.javierreansyah.pinecone.data.publication.resolveGeneratedLocator
 import com.javierreansyah.pinecone.data.repository.library.readingSessionToken
+import com.javierreansyah.pinecone.ui.features.reader.components.shouldOpenInImageViewer
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -181,6 +182,32 @@ class EpubNavigatorController(
     }
 
     private fun setupNavigatorListener(nav: EpubNavigatorFragment) {
+        nav.addInputListener(
+            object : InputListener {
+                override fun onTap(event: TapEvent): Boolean {
+                    if (notesViewModel.selectionState.value.selectionLocator != null || notesViewModel.selectionState.value.viewingHighlight != null) {
+                        notesViewModel.hideSelectionMenu()
+                        notesViewModel.hideViewHighlight()
+                        return true
+                    }
+                    if (viewModel.epubImageViewerEnabled.value) {
+                        val content = event.targetElement?.content
+                        if (shouldOpenInImageViewer(
+                                element = content,
+                                publication = viewModel.publication.value,
+                                positions = viewModel.positions.value,
+                                currentPage = viewModel.bookState.value.currentPage,
+                            )
+                        ) {
+                            viewModel.openImageViewer(requireNotNull(content))
+                            return true
+                        }
+                    }
+                    return false
+                }
+            },
+        )
+
         (nav as? OverflowableNavigator)?.let { overflowableNav ->
             nav.addInputListener(
                 DirectionalNavigationAdapter(
@@ -192,11 +219,6 @@ class EpubNavigatorController(
         nav.addInputListener(
             object : InputListener {
                 override fun onTap(event: TapEvent): Boolean {
-                    if (notesViewModel.selectionState.value.selectionLocator != null || notesViewModel.selectionState.value.viewingHighlight != null) {
-                        notesViewModel.hideSelectionMenu()
-                        notesViewModel.hideViewHighlight()
-                        return true
-                    }
                     viewModel.toggleControls()
                     return true
                 }

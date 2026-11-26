@@ -79,6 +79,7 @@ import com.javierreansyah.pinecone.ui.features.reader.ReaderViewModel
 import com.javierreansyah.pinecone.ui.features.reader.components.ExternalLinkBottomSheet
 import com.javierreansyah.pinecone.ui.features.reader.components.NoteBottomSheet
 import com.javierreansyah.pinecone.ui.features.reader.components.ReaderBottomSheet
+import com.javierreansyah.pinecone.ui.features.reader.components.ReaderImageViewer
 import com.javierreansyah.pinecone.ui.features.reader.components.ReaderSearch
 import com.javierreansyah.pinecone.ui.features.reader.components.dictionary.DictionaryFormatter
 import com.javierreansyah.pinecone.ui.features.reader.components.settings.ReaderSettingsContent
@@ -110,6 +111,8 @@ fun ReaderOverlay(
     val searchState = searchViewModel.searchState.collectAsStateWithLifecycle()
     val definitionState = dictionaryViewModel.definitionState.collectAsStateWithLifecycle()
     val externalLinkState = viewModel.externalLinkState.collectAsStateWithLifecycle()
+    val imageViewerState by viewModel.imageViewerState.collectAsStateWithLifecycle()
+    val imageViewerChromeVisible by viewModel.imageViewerChromeVisible.collectAsStateWithLifecycle()
 
     val themeColors = viewModel.themeColors.collectAsStateWithLifecycle()
     val settings by viewModel.settingsFlow.collectAsStateWithLifecycle(
@@ -169,6 +172,9 @@ fun ReaderOverlay(
 
     BackHandler(enabled = searchState.value.isInNavMode) {
         searchViewModel.exitSearchNavigation()
+    }
+    BackHandler(enabled = imageViewerState != null) {
+        viewModel.closeImageViewer()
     }
     BackHandler(
         enabled = profile == com.javierreansyah.pinecone.data.publication.ReaderProfile.PDF &&
@@ -472,6 +478,29 @@ fun ReaderOverlay(
                     },
                     onDismiss = viewModel::hideExternalLinkMenu,
                 )
+            }
+
+            val imageFadeSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+            val lastImageViewerState = remember { arrayOf(imageViewerState) }
+            if (imageViewerState != null) {
+                lastImageViewerState[0] = imageViewerState
+            }
+            AnimatedVisibility(
+                visible = imageViewerState != null,
+                enter = fadeIn(animationSpec = imageFadeSpec),
+                exit = fadeOut(animationSpec = imageFadeSpec),
+            ) {
+                lastImageViewerState[0]?.let { viewerState ->
+                    ReaderImageViewer(
+                        state = viewerState,
+                        showChrome = imageViewerChromeVisible,
+                        readerBgColor = effectiveBgColor,
+                        readerTextColor = effectiveTextColor,
+                        onToggleChrome = viewModel::toggleImageViewerChrome,
+                        onToggleInvert = viewModel::toggleImageViewerInvert,
+                        onClose = viewModel::closeImageViewer,
+                    )
+                }
             }
 
             val conversionMessage = if (bookState.value.conversionTotal > 0) {
