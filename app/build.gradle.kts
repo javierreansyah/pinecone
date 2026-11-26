@@ -90,8 +90,8 @@ android {
         applicationId = "com.javierreansyah.pinecone"
         minSdk = 34
         targetSdk = 37
-        versionCode = 100000
-        versionName = "1.0.0"
+        versionCode = 100010
+        versionName = "1.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -192,7 +192,7 @@ androidComponents {
             PublicationLicenseAssetsTask::outputDirectory
         )
         val appVersionName = android.defaultConfig.versionName
-        val baseVersionCode = android.defaultConfig.versionCode ?: 100000
+        val baseVersionCode = android.defaultConfig.versionCode ?: 100010
         val abiCodeOffsets = mapOf(
             "armeabi-v7a" to 1,
             "arm64-v8a" to 2,

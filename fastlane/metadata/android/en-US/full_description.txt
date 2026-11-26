@@ -7,7 +7,7 @@ Organize your way
 Arrange titles in shelves and separate spaces, edit book details and covers, and organize multiple titles at once. Keep new imports in an Unsorted inbox or archive titles for later.
 
 Read comfortably
-Adjust fonts, text size, spacing, colors, and brightness. Read PDFs in their original layout or switch to a reflowable view generated on your device. Scanned pages remain images; OCR is not supported.
+Adjust fonts, text size, spacing, colors, and brightness, and tap images in EPUB books to inspect and zoom. Read PDFs in their original layout or switch to a reflowable view generated on your device. Scanned pages remain images; OCR is not supported.
 
 Remember and discover
 Keep your place with reading progress, bookmarks, notes, and highlights where supported. Search inside EPUB books and PDFs, or import a StarDict dictionary for offline word lookup.
@@ -15,4 +15,4 @@ Keep your place with reading progress, bookmarks, notes, and highlights where su
 Listen and keep your library safe
 Play audiobook packages and supported audio files, navigate chapters, and adjust playback speed. Create manual or scheduled local backups and restore your library, dictionaries, settings, and reading progress.
 
-Choose a light or dark theme and an English or Indonesian interface. Requires Android 14 or newer.
+Choose a light, dark, or AMOLED theme and an English or Indonesian interface. Requires Android 14 or newer.

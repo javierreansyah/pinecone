@@ -19,8 +19,9 @@ and loading newer formats into older apps are unsupported; reject them before ch
   app-private storage, reinstall, and restore. Android cloud backup/device transfer is disabled.
   Never clear or uninstall a user's app to test recovery without explicit authorization.
 - Commit increasing `versionCode` values; keep app, database and backup versions independent.
-  The unreleased app baseline is **1.0.0 / 100004**; library/dictionary schemas and backup formats
-  are currently **2**. Preserve the higher app code so earlier same-key test APKs can upgrade.
+  The initial public baseline is **1.0.0 / 100004**; **1.1.0 / 100014** is the current release,
+  with library/dictionary schemas at **2** and backup snapshots at **3** (supporting **2–3**).
+  Preserve the higher app code so earlier same-key test APKs can upgrade.
 - Public artifacts and tags are immutable unless replacement is explicitly authorized. Verify
   tags identify the reviewed release commit; frozen fixtures retain their original source identity.
 

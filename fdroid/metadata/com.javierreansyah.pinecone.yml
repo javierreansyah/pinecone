@@ -12,13 +12,14 @@ RepoType: git
 Repo: https://github.com/javierreansyah/pinecone.git
 
 Builds:
-  - versionName: 1.0.0
-    versionCode: 100001
-    commit: v1.0.0
+  - versionName: 1.1.0
+    versionCode: 100011
+    commit: v1.1.0
     sudo:
+      - apt-get update
+      - apt-get install -y make gcc g++ pkg-config
       - echo "deb https://deb.debian.org/debian bookworm main" > /etc/apt/sources.list.d/bookworm.list
       - apt-get update
-      - apt-get install -y make gcc g++ pkg-config openjdk-21-jdk-headless
       - apt-get install -y -t bookworm openjdk-17-jdk-headless
     gradle:
       - yes
@@ -26,7 +27,7 @@ Builds:
     srclibs:
       - MuPDF@8ad45e92f0935d3d87f1db3f873086472a5e1b24
     prebuild:
-      - sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
+      - sdkmanager "platforms;android-37.1" "build-tools;37.0.0"
       - git -C $$MuPDF$$ submodule update --init --recursive
       - rm -f gradle/mupdf-prebuilt.settings.gradle.kts
       - mkdir -p native/mupdf
@@ -46,13 +47,14 @@ Builds:
       - mupdfFromSource=true
       - abiFilter=armeabi-v7a
 
-  - versionName: 1.0.0
-    versionCode: 100002
-    commit: v1.0.0
+  - versionName: 1.1.0
+    versionCode: 100012
+    commit: v1.1.0
     sudo:
+      - apt-get update
+      - apt-get install -y make gcc g++ pkg-config
       - echo "deb https://deb.debian.org/debian bookworm main" > /etc/apt/sources.list.d/bookworm.list
       - apt-get update
-      - apt-get install -y make gcc g++ pkg-config openjdk-21-jdk-headless
       - apt-get install -y -t bookworm openjdk-17-jdk-headless
     gradle:
       - yes
@@ -60,7 +62,7 @@ Builds:
     srclibs:
       - MuPDF@8ad45e92f0935d3d87f1db3f873086472a5e1b24
     prebuild:
-      - sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
+      - sdkmanager "platforms;android-37.1" "build-tools;37.0.0"
       - git -C $$MuPDF$$ submodule update --init --recursive
       - rm -f gradle/mupdf-prebuilt.settings.gradle.kts
       - mkdir -p native/mupdf
@@ -80,13 +82,14 @@ Builds:
       - mupdfFromSource=true
       - abiFilter=arm64-v8a
 
-  - versionName: 1.0.0
-    versionCode: 100003
-    commit: v1.0.0
+  - versionName: 1.1.0
+    versionCode: 100013
+    commit: v1.1.0
     sudo:
+      - apt-get update
+      - apt-get install -y make gcc g++ pkg-config
       - echo "deb https://deb.debian.org/debian bookworm main" > /etc/apt/sources.list.d/bookworm.list
       - apt-get update
-      - apt-get install -y make gcc g++ pkg-config openjdk-21-jdk-headless
       - apt-get install -y -t bookworm openjdk-17-jdk-headless
     gradle:
       - yes
@@ -94,7 +97,7 @@ Builds:
     srclibs:
       - MuPDF@8ad45e92f0935d3d87f1db3f873086472a5e1b24
     prebuild:
-      - sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
+      - sdkmanager "platforms;android-37.1" "build-tools;37.0.0"
       - git -C $$MuPDF$$ submodule update --init --recursive
       - rm -f gradle/mupdf-prebuilt.settings.gradle.kts
       - mkdir -p native/mupdf
@@ -114,13 +117,14 @@ Builds:
       - mupdfFromSource=true
       - abiFilter=x86
 
-  - versionName: 1.0.0
-    versionCode: 100004
-    commit: v1.0.0
+  - versionName: 1.1.0
+    versionCode: 100014
+    commit: v1.1.0
     sudo:
+      - apt-get update
+      - apt-get install -y make gcc g++ pkg-config
       - echo "deb https://deb.debian.org/debian bookworm main" > /etc/apt/sources.list.d/bookworm.list
       - apt-get update
-      - apt-get install -y make gcc g++ pkg-config openjdk-21-jdk-headless
       - apt-get install -y -t bookworm openjdk-17-jdk-headless
     gradle:
       - yes
@@ -128,7 +132,7 @@ Builds:
     srclibs:
       - MuPDF@8ad45e92f0935d3d87f1db3f873086472a5e1b24
     prebuild:
-      - sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
+      - sdkmanager "platforms;android-37.1" "build-tools;37.0.0"
       - git -C $$MuPDF$$ submodule update --init --recursive
       - rm -f gradle/mupdf-prebuilt.settings.gradle.kts
       - mkdir -p native/mupdf
@@ -160,5 +164,5 @@ VercodeOperation:
   - '%c + 2'
   - '%c + 3'
   - '%c + 4'
-CurrentVersion: 1.0.0
-CurrentVersionCode: 100004
+CurrentVersion: 1.1.0
+CurrentVersionCode: 100014

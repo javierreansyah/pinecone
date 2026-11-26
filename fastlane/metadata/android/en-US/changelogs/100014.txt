@@ -1,0 +1,5 @@
+- Refreshed Material 3 interface, AMOLED dark mode, smoother motion, and updated app icon.
+- Tap-to-zoom EPUB image viewer with optional color inversion.
+- Improved PDF zoom rendering, layout spacing, and toolbar controls.
+- Backup format v3 with safer, guided restoration (compatible with v1.0.0 backups).
+- Smoother bulk imports, clearer empty states, and updated reading engine (Readium 3.4.0).
