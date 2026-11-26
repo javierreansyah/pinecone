@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/images/app-icon.jpg" width="160" alt="Pinecone icon" />
+  <img src="docs/images/app-icon.png" width="160" alt="Pinecone icon" />
   <h1>Pinecone</h1>
   <p>
     A comfortable home for your books, documents, comics, and audiobooks on Android.
@@ -32,13 +32,13 @@ images; OCR is not supported.
 |------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
 | <img src="docs/images/library-search.png" width="280" alt="Search results for Shakespeare across books, audiobooks and authors" /> | <img src="docs/images/spaces.png" width="280" alt="Fiction and Non Fiction spaces with title counts" /> | <img src="docs/images/bulk-selection.png" width="280" alt="Three selected books with bulk actions and a paused audio mini player" /> |
 
-| Shelf membership                                                                                              | Notes and highlights                                                                            | Converted PDF chapters                                                                                         |
-|---------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
-| <img src="docs/images/bulk-organize.png" width="280" alt="Organize selected books into spaces and shelves" /> | <img src="docs/images/notes.png" width="280" alt="A saved highlighted word and reading note" /> | <img src="docs/images/pdf-chapters.png" width="280" alt="Chapter navigation in the converted PDF read mode" /> |
+| Shelf membership                                                                                              | Notes and highlights                                                                            | Playback settings                                                                                                      |
+|---------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| <img src="docs/images/bulk-organize.png" width="280" alt="Organize selected books into spaces and shelves" /> | <img src="docs/images/notes.png" width="280" alt="A saved highlighted word and reading note" /> | <img src="docs/images/audiobook-settings.png" width="280" alt="Audiobook playback speed, pitch and reading options" /> |
 
-| Playback settings                                                                                                      | App appearance                                                                                       | Backup and restore                                                                                                                 |
-|------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| <img src="docs/images/audiobook-settings.png" width="280" alt="Audiobook playback speed, pitch and reading options" /> | <img src="docs/images/appearance.png" width="280" alt="Material color palettes for the app theme" /> | <img src="docs/images/backup-restore.png" width="280" alt="Local backup location, schedule, manual backup and restore controls" /> |
+| App appearance                                                                                       | Backup and restore                                                                                                                 |
+|------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| <img src="docs/images/appearance.png" width="280" alt="Material color palettes for the app theme" /> | <img src="docs/images/backup-restore.png" width="280" alt="Local backup location, schedule, manual backup and restore controls" /> |
 
 </details>
 
